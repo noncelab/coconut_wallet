@@ -161,12 +161,17 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
                             CommonStateIconPath.triangleWarning,
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(
+                              context.coconutColors.appLockWarningBackground,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           CoconutLayout.spacing_50w,
                           Text(
                             t.wallet_info_screen.backup_required,
-                            style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
+                            style: CoconutTypography.body2_14_Bold.setColor(
+                              context.coconutColors.appLockWarningBackground,
+                            ),
                             textAlign: TextAlign.end,
                           ),
                           CoconutLayout.spacing_100w,

@@ -820,7 +820,7 @@ class CoconutColors {
       warning: kCoconutWarning,
       danger: kCoconutDanger,
       success: ds.CoconutColors.successOnLight,
-      appLockWarningBackground: kCoconutWarningCard,
+      appLockWarningBackground: kCoconutWarning,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
