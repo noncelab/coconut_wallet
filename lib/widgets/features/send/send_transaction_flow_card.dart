@@ -278,40 +278,25 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       return [];
     }
 
-    final isZeroBased = widget.mode == SendTransactionFlowCardMode.navigable;
-    final offset = isZeroBased ? 0 : 1;
-
     if (widget.inputAmounts.length <= 5) {
       return List.generate(
         widget.inputAmounts.length,
         (index) => _FlowNode(
           type: _FlowNodeType.input,
-          title: _localizedInputTitle(context, index + offset),
+          title: _localizedInputTitle(context, index),
           amount: widget.inputAmounts[index],
         ),
       );
     }
 
     return [
-      _FlowNode(
-        type: _FlowNodeType.input,
-        title: _localizedInputTitle(context, 0 + offset),
-        amount: widget.inputAmounts[0],
-      ),
-      _FlowNode(
-        type: _FlowNodeType.input,
-        title: _localizedInputTitle(context, 1 + offset),
-        amount: widget.inputAmounts[1],
-      ),
-      _FlowNode(
-        type: _FlowNodeType.input,
-        title: _localizedInputTitle(context, 2 + offset),
-        amount: widget.inputAmounts[2],
-      ),
+      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 0), amount: widget.inputAmounts[0]),
+      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 1), amount: widget.inputAmounts[1]),
+      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 2), amount: widget.inputAmounts[2]),
       const _FlowNode(type: _FlowNodeType.ellipsis, title: '...', amount: null),
       _FlowNode(
         type: _FlowNodeType.input,
-        title: _localizedInputTitle(context, widget.inputAmounts.length - 1 + offset),
+        title: _localizedInputTitle(context, widget.inputAmounts.length - 1),
         amount: widget.inputAmounts.last,
       ),
     ];
@@ -443,7 +428,6 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     final int outputAndChangeRowCount = widget.externalOutputAmounts.length + (hasChange ? 1 : 0);
     final bool shouldShowAllExternal = outputAndChangeRowCount <= 4;
 
-    final outputOffset = isNavigable ? 0 : 1;
     if (shouldShowAllExternal) {
       for (int i = 0; i < widget.externalOutputAmounts.length; i++) {
         final target = i < externalTargets.length ? externalTargets[i] : null;
@@ -452,7 +436,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
         nodes.add(
           _FlowNode(
             type: _FlowNodeType.output,
-            title: _localizedOutputTitle(context, i + outputOffset),
+            title: _localizedOutputTitle(context, target?.outputIndex ?? i),
             amount: widget.externalOutputAmounts[i],
             tapTarget: canNavigate ? target : null,
           ),
@@ -475,7 +459,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
-          title: _localizedOutputTitle(context, 0 + outputOffset),
+          title: _localizedOutputTitle(context, firstTarget?.outputIndex ?? 0),
           amount: widget.externalOutputAmounts.first,
           tapTarget: canNavigateFirst ? firstTarget : null,
         ),
@@ -484,7 +468,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
-          title: _localizedOutputTitle(context, widget.externalOutputAmounts.length - 1 + outputOffset),
+          title: _localizedOutputTitle(context, lastTarget?.outputIndex ?? widget.externalOutputAmounts.length - 1),
           amount: widget.externalOutputAmounts.last,
           tapTarget: canNavigateLast ? lastTarget : null,
         ),

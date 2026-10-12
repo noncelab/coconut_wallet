@@ -168,6 +168,43 @@ void main() {
   final inputId = getUtxoId(_inputHash, 0);
   final realmInputId = getRealmUtxoId(1, _inputHash, 0);
 
+  test('output details preserve transaction indices with change at any position', () async {
+    for (final changeIndex in [0, 1, 2]) {
+      final outputs = [
+        TransactionOutput.forPayment(200000, vault.getAddress(10)),
+        TransactionOutput.forPayment(200000, vault.getAddress(11)),
+      ]..insert(
+        changeIndex,
+        TransactionOutput.forPayment(
+          599000,
+          vault.getAddress(1, isChange: true),
+          derivationPath: '${vault.derivationPath}/1/1',
+          isChangeOutput: true,
+        ),
+      );
+      final transaction = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment(_inputHash, 0, sequence: 0xfffffffd)],
+        outputs,
+        AddressType.p2wpkh,
+      );
+      transaction.utxoList.add(Utxo(_inputHash, 0, 1000000, '${vault.derivationPath}/0/0'));
+      await initializeTransaction(transaction);
+
+      expect(viewModel.outputDetailItems.map((item) => item.outputIndex), [0, 1, 2]);
+      expect(
+        viewModel.outputDetailItems.where((item) => !item.isChange).map((item) => item.outputIndex),
+        [0, 1, 2].where((index) => index != changeIndex),
+      );
+      expect(viewModel.externalOutputAmounts, [200000, 200000]);
+      expect(viewModel.changeOutputAmounts, [599000]);
+      expect(viewModel.fee, 1000);
+      for (final item in viewModel.outputDetailItems) {
+        expect(item.address, viewModel.signedTx!.outputs[item.outputIndex].getAddress());
+        expect(item.amount, viewModel.signedTx!.outputs[item.outputIndex].amount);
+      }
+    }
+  });
+
   test('normal broadcast persists input tags on a PSBT-owned output and clears only consumed links', () async {
     addTag('savings', inputId);
     addTag('unrelated', 'another-utxo');
