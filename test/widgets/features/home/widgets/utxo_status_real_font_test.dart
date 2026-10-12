@@ -11,7 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 Future<void> _load(String family, List<String> files) async {
   final loader = FontLoader(family);
   for (final file in files) {
-    loader.addFont(Future.value(ByteData.view(Uint8List.fromList(File('assets/fonts/$file').readAsBytesSync()).buffer)));
+    loader.addFont(
+      Future.value(ByteData.view(Uint8List.fromList(File('assets/fonts/$file').readAsBytesSync()).buffer)),
+    );
   }
   await loader.load();
 }
@@ -54,7 +56,8 @@ void main() {
           expect(
             paragraph.size.width,
             greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity) - 0.01),
-            reason: 'side $side "$text" width ${paragraph.size.width} needs ${paragraph.getMaxIntrinsicWidth(double.infinity)}',
+            reason:
+                'side $side "$text" width ${paragraph.size.width} needs ${paragraph.getMaxIntrinsicWidth(double.infinity)}',
           );
         }
       }

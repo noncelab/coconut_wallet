@@ -79,10 +79,10 @@ trezor-android:
 trezor-bind: trezor-android trezor-ios
 
 fastlane-mainnet:
-	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
+	$(MAKE) realm-clean && cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 
 fastlane-regtest:
-	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+	$(MAKE) realm-clean && cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_prep:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
 ifeq ($(SKIP_PREP),true)
