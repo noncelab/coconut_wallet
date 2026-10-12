@@ -79,6 +79,9 @@ class CoconutTextField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function(String) onChanged;
+  final VoidCallback? onTap;
+  final ScrollController? scrollController;
+  final ScrollPhysics? scrollPhysics;
   final VoidCallback? onEditingComplete;
   final EdgeInsets? padding;
   final Color? activeColor;
@@ -87,6 +90,7 @@ class CoconutTextField extends StatefulWidget {
   final Color? errorColor;
   final Color? borderColor;
   final Color? backgroundColor;
+  final Color? textColor;
   final int? maxLength;
   final int? maxLines;
   final Widget? prefix;
@@ -135,6 +139,9 @@ class CoconutTextField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    this.onTap,
+    this.scrollController,
+    this.scrollPhysics,
     this.onEditingComplete,
     this.readOnly = false,
     this.padding,
@@ -144,6 +151,7 @@ class CoconutTextField extends StatefulWidget {
     this.errorColor,
     this.borderColor,
     this.backgroundColor,
+    this.textColor,
     this.maxLength,
     this.maxLines,
     this.prefix,
@@ -537,7 +545,8 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             ? (widget.maxLength != null && _text.runes.length > widget.maxLength! ? _errorColor : _focusedBorderColor)
             : _borderColor;
 
-    final resolvedTextColor = widget.enabled ? context.coconutColors.primaryText : context.coconutColors.secondaryText;
+    final resolvedTextColor =
+        widget.enabled ? widget.textColor ?? context.coconutColors.primaryText : context.coconutColors.secondaryText;
     final placeholderLeftInset = widget.prefix == null ? resolvedPadding.left : _prefixSize.width;
     final placeholderRightInset =
         resolvedSuffix != null ? _suffixSize.width + resolvedSuffixEdgePadding : resolvedPadding.right;
@@ -561,10 +570,14 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             color: _backgroundColor,
           ),
           child: Stack(
+            fit: StackFit.passthrough,
             children: [
               CupertinoTextField(
                 focusNode: widget.focusNode,
                 controller: _inputController,
+                onTap: widget.onTap,
+                scrollController: widget.scrollController,
+                scrollPhysics: widget.scrollPhysics,
                 inputFormatters: widget.textInputFormatter,
                 obscureText: widget.obscureText,
                 textAlign: widget.textAlign ?? TextAlign.start,
@@ -591,7 +604,10 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                 decoration: const BoxDecoration(color: Colors.transparent),
                 maxLength: widget.maxLength,
                 maxLines: resolvedMaxLines,
-                prefix: Container(key: _prefixGlobalKey, alignment: Alignment.center, child: widget.prefix),
+                prefix:
+                    widget.prefix == null
+                        ? null
+                        : Container(key: _prefixGlobalKey, alignment: Alignment.center, child: widget.prefix),
                 suffix: null,
                 keyboardType: widget.textInputType,
                 textInputAction: widget.textInputAction,

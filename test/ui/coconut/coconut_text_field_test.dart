@@ -4,6 +4,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  for (final style in CoconutTextFieldStyle.values) {
+    for (final hasPrefix in [false, true]) {
+      testWidgets('${style.name} lays out and accepts input with prefix=$hasPrefix', (tester) async {
+        final controller = TextEditingController();
+        final focusNode = FocusNode();
+        addTearDown(controller.dispose);
+        addTearDown(focusNode.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildCoconutThemeData(),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: CoconutTextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  onChanged: (_) {},
+                  style: style,
+                  prefix: hasPrefix ? const Icon(Icons.search) : null,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final height = tester.getSize(find.byType(CoconutTextField)).height;
+        expect(height, style == CoconutTextFieldStyle.bordered ? 52 : inExclusiveRange(0, 52));
+        await tester.tap(find.byType(CoconutTextField));
+        await tester.pump();
+        expect(focusNode.hasFocus, isTrue);
+        await tester.enterText(find.byType(EditableText), 'bc1qexample');
+        expect(controller.text, 'bc1qexample');
+      });
+    }
+  }
+
   testWidgets('disables contextual font shaping for default Pretendard input text', (tester) async {
     final controller = TextEditingController(text: '1x2');
     final focusNode = FocusNode();
