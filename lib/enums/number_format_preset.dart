@@ -11,8 +11,8 @@ enum NumberFormatPreset {
   /// 1.234,5678 9012 형식 (독일, 스페인 등)
   commaDecimal(displayLabel: '1.234,5678 9012', decimalSeparator: ',', groupingSeparator: '.'),
 
-  /// 1'234.5678 9012 형식 (스위스)
-  swiss(displayLabel: "1'234.5678 9012", decimalSeparator: '.', groupingSeparator: '\u2019'),
+  /// 1’234.5678 9012 형식 (스위스) — 예시도 실제 천단위 구분자(U+2019)를 쓴다
+  swiss(displayLabel: '1\u2019234.5678 9012', decimalSeparator: '.', groupingSeparator: '\u2019'),
 
   /// 1 234,5678 9012 형식 (프랑스 등)
   frenchSpace(displayLabel: '1 234,5678 9012', decimalSeparator: ',', groupingSeparator: ' ');
