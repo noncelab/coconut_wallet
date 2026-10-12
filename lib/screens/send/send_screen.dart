@@ -1445,7 +1445,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Consumer<SendViewModel>(
       builder: (context, model, _) {
         final color = context.coconutColors.secondaryText;
-        final strongColor = context.coconutColors.secondaryTextStrong;
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
