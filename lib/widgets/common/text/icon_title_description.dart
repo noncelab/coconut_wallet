@@ -47,7 +47,7 @@ class IconTitleDescription extends StatelessWidget {
                   width: iconSize,
                   height: iconSize,
                   fit: BoxFit.contain,
-                  colorFilter: iconColor != null ? ColorFilter.mode(iconColor!, BlendMode.srcIn) : null,
+                  colorFilter: ColorFilter.mode(iconColor ?? context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),
               ),
             ),
