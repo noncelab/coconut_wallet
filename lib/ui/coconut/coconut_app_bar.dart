@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -181,11 +180,7 @@ class CoconutAppBar {
   static SystemUiOverlayStyle _systemOverlayStyle(Brightness brightness) {
     final iconBrightness = brightness == Brightness.light ? Brightness.dark : Brightness.light;
 
-    if (Platform.isIOS) {
-      return SystemUiOverlayStyle(statusBarIconBrightness: iconBrightness);
-    }
-
-    return SystemUiOverlayStyle(statusBarIconBrightness: iconBrightness);
+    return SystemUiOverlayStyle(statusBarBrightness: brightness, statusBarIconBrightness: iconBrightness);
   }
 }
 
