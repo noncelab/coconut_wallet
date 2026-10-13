@@ -670,9 +670,14 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         final optionState = data.optionState;
         final selectedUtxoList = data.selectedUtxoList;
 
-        if (isSelected && selectedUtxoList.length == 1) {
+        if (isSelected) {
           final utxoTagProvider = context.read<UtxoTagProvider>();
-          final tags = utxoTagProvider.getUtxoTagsByUtxoId(widget.id, selectedUtxoList.first.utxoId);
+          final seenTagIds = <String>{};
+          final tags =
+              selectedUtxoList
+                  .expand((utxo) => utxoTagProvider.getUtxoTagsByUtxoId(widget.id, utxo.utxoId))
+                  .where((tag) => seenTagIds.add(tag.id))
+                  .toList();
 
           if (tags.isNotEmpty) {
             final firstTag = tags.first;
