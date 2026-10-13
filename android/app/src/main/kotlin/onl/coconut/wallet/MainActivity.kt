@@ -10,6 +10,7 @@ import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMethodCodec
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -20,6 +21,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL_OPEN_APP_SETTINGS = "app-settings"
     private val CHANNEL_BITBOX02 = "bitbox02"
     private val CHANNEL_DEVICE_DEK = "onl.coconut.wallet/device-dek"
+    private var pinAuthStorageChannel: MethodChannel? = null
     private var osChannel: MethodChannel? = null
     private var pendingBitcoinUri: String? = null
     private var bitbox02Handler: Bitbox02MethodHandler? = null
@@ -31,6 +33,13 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        pinAuthStorageChannel = MethodChannel(
+            messenger,
+            "onl.coconut.wallet/pin_auth_storage",
+            StandardMethodCodec.INSTANCE,
+            messenger.makeBackgroundTaskQueue()
+        ).also { it.setMethodCallHandler(PinAuthStorageHandler(applicationContext)) }
         osChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         pendingBitcoinUri = extractBitcoinUri(intent)
 
@@ -185,6 +194,8 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     override fun onDestroy() {
+        pinAuthStorageChannel?.setMethodCallHandler(null)
+        pinAuthStorageChannel = null
         trezorHandler?.dispose()
         trezorHandler = null
         super.onDestroy()

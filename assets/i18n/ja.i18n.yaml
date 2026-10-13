@@ -224,6 +224,12 @@ utxo_order_enums:
 
 # lib/screens/common
 pin_check_screen:
+  retry_after: "$time後に再試行可能"
+  time_hour: "時間"
+  time_minute: "分"
+  time_second: "秒"
+  authentication_unavailable: "認証情報を確認できません。しばらくしてから画面を開き直してください。"
+  authentication_busy: "認証中です。しばらくしてから再試行してください。"
   text: "パスワードを入力してください"
 
 # lib/screens/home
@@ -1577,6 +1583,8 @@ errors:
     already_in_use: "パスワードは既に使用されています"
     process_failed: "処理中に問題が発生しました"
     save_failed: "保存中に問題が発生しました"
+    authentication_required: "認証の有効期限が切れました。前の画面に戻って再認証してください。"
+    state_uncertain: "PINの保存状態を確認できません。アプリを開き直してPIN設定を確認してください。"
     incorrect: "パスワードが一致しません"
   data_loading_failed: "データ読み込み中にエラーが発生しました。"
   data_not_found: "データが見つかりません。"

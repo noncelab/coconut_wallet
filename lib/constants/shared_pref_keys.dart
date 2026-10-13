@@ -105,6 +105,9 @@ class SharedPrefKeys {
   static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
       'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
 
+  /// 승인된 전체 초기화의 완료 전까지 유지하는 복구 표시 (keysToReset에 넣지 않음).
+  static const String kAppResetPending = 'APP_RESET_PENDING';
+
   /// 비밀번호 분실 시 초기화 대상
   /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
   /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.

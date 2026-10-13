@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -385,6 +386,24 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
         if (!mounted || !pinVerified) return;
       }
       await authProvider.deletePin();
+    } catch (error) {
+      if (!mounted) return;
+      final message = switch (error) {
+        PinAuthException(code: PinAuthError.unauthorized) => t.errors.pin_setting_error.authentication_required,
+        PinAuthException(code: PinAuthError.stateUncertain) => t.errors.pin_setting_error.state_uncertain,
+        _ => t.errors.pin_setting_error.process_failed,
+      };
+      await showDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.settings_screen.disable_app_lock_title,
+              description: message,
+              rightButtonText: t.confirm,
+              onTapRight: () => Navigator.of(dialogContext).pop(),
+            ),
+      );
     } finally {
       _isDisablingAppLock = false;
     }

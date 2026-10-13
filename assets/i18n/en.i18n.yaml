@@ -225,6 +225,12 @@ utxo_order_enums:
 
 # lib/screens/common
 pin_check_screen:
+  retry_after: "Can retry after $time"
+  time_hour: "hour"
+  time_minute: "min"
+  time_second: "sec"
+  authentication_unavailable: "Unable to access authentication data. Reopen this screen and try again."
+  authentication_busy: "Authentication is in progress. Please try again shortly."
   text: "Enter your password"
 
 # lib/screens/home
@@ -1589,6 +1595,8 @@ errors:
     already_in_use: "Password already in use"
     process_failed: "Problem occurred during processing"
     save_failed: "Problem occurred during saving"
+    authentication_required: "Authentication expired. Return to the previous screen and authenticate again."
+    state_uncertain: "Cannot confirm the saved PIN state. Reopen the app to check your PIN settings."
     incorrect: "Password does not match"
   data_loading_failed: "An error occurred while loading data."
   data_not_found: "No data found."

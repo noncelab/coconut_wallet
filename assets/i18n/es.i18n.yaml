@@ -226,6 +226,12 @@ utxo_order_enums:
 
 #lib/screens/common
 pin_check_screen:
+  retry_after: "Puedes volver a intentarlo después de $time"
+  time_hour: " h"
+  time_minute: " min"
+  time_second: " s"
+  authentication_unavailable: "No se puede acceder a los datos de autenticación. Vuelve a abrir esta pantalla e inténtalo de nuevo."
+  authentication_busy: "La autenticación está en curso. Vuelve a intentarlo en unos instantes."
   text: "Introduce tu contraseña"
 
 #lib/screens/home
@@ -1580,6 +1586,8 @@ errors:
     already_in_use: "La contraseña ya está en uso"
     process_failed: "Se produjo un error durante el procesamiento"
     save_failed: "Se produjo un error durante el guardado"
+    authentication_required: "La autenticación ha caducado. Vuelve a la pantalla anterior y autentícate de nuevo."
+    state_uncertain: "No se puede confirmar el estado del PIN guardado. Abre de nuevo la app y revisa los ajustes del PIN."
     incorrect: "La contraseña no coincide"
   data_loading_failed: "Se produjo un error al cargar los datos."
   data_not_found: "No se encontraron datos."
