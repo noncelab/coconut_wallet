@@ -138,7 +138,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             context.read<WalletProvider>(),
             context.read<AddressRepository>(),
             context.read<SendInfoProvider>(),
-            (outputCount) => _showUsePreviewConfirmDialog(context, outputCount),
+            () => _showUsePreviewConfirmDialog(context),
           ),
       child: Builder(
         builder: (context) {
@@ -160,7 +160,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     );
   }
 
-  Future<bool> _showUsePreviewConfirmDialog(BuildContext context, int outputCount) async {
+  Future<bool> _showUsePreviewConfirmDialog(BuildContext context) async {
     final result = await showDialog<bool>(
       barrierDismissible: false,
       context: context,
@@ -670,7 +670,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         final optionState = data.optionState;
         final selectedUtxoList = data.selectedUtxoList;
 
-        if (isSelected) {
+        if (isSelected && selectedUtxoList.length == 1) {
           final utxoTagProvider = context.read<UtxoTagProvider>();
           final tags = utxoTagProvider.getUtxoTagsByUtxoId(widget.id, selectedUtxoList.first.utxoId);
 
@@ -1231,7 +1231,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 walletId: widget.id,
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
-                isSplitMode: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),

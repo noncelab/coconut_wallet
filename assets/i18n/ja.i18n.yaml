@@ -1136,6 +1136,8 @@ split_utxo_screen:
   question_split_evenly: "いくつに分割しますか？"
   label_split_method: "分割基準"
   label_selected_utxo: "選択したUTXO"
+  selected_utxo_count(param=count):
+    other: "${count}個"
   label_estimated_fee: "予想手数料"
   add_new_amount: "金額を追加"
   and_more_tags: "他${count}件"
@@ -1162,7 +1164,7 @@ split_utxo_screen:
   big_tx_confirm:
     create: "作成する"
     preview: "結果を確認"
-    description: "分割数が多いため、トランザクションの作成に時間がかかる場合があります。先に予想結果を確認しますか？"
+    description: "トランザクションのサイズが大きいため、作成に時間がかかる場合があります。先に予想結果を確認しますか？"
 
 label_management_screen:
   title: "メモの管理"

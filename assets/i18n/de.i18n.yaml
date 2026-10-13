@@ -1087,6 +1087,8 @@ split_utxo_screen:
   question_split_evenly: "In wie viele Teile?"
   label_split_method: "Teilungsmethode"
   label_selected_utxo: "Ausgewähltes UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Geschätzte Gebühr"
   add_new_amount: "Betrag hinzufügen"
   and_more_tags: "und ${count} weitere"
@@ -1113,7 +1115,7 @@ split_utxo_screen:
   big_tx_confirm:
     create: "Erstellen"
     preview: "Vorschau"
-    description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+    description: "Die Transaktion ist groß, daher kann die Erstellung einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
 
 label_management_screen:
   title: "Notizen verwalten"
