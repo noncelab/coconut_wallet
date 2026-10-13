@@ -601,7 +601,7 @@ class UtxoSplitTransactionBuilder {
     return exactAmounts;
   }
 
-  Future<List<WalletAddress>> _getReceiveAddresses(int count) async {
+  Future<List<WalletAddress>> _getReceiveAddresses(int count, {bool Function()? isCancelled}) async {
     if (_cachedReceiveAddresses.length >= count) {
       return _cachedReceiveAddresses.sublist(0, count);
     }
@@ -614,6 +614,7 @@ class UtxoSplitTransactionBuilder {
       additionalCount,
       false,
       true,
+      cancelCheck: isCancelled,
     );
 
     if (addresses.length < additionalCount) {
@@ -626,11 +627,15 @@ class UtxoSplitTransactionBuilder {
     return _cachedReceiveAddresses.sublist(0, count);
   }
 
-  Future<Map<String, int>> _buildSweepRecipients(List<int> exactAmounts, List<UtxoState> utxos) async {
+  Future<Map<String, int>> _buildSweepRecipients(
+    List<int> exactAmounts,
+    List<UtxoState> utxos, {
+    bool Function()? isCancelled,
+  }) async {
     final totalAmount = _sumOfAmounts(utxos);
     final totalOutputCount = exactAmounts.length + 1; // +1 for sweep output
 
-    final addresses = await _getReceiveAddresses(totalOutputCount);
+    final addresses = await _getReceiveAddresses(totalOutputCount, isCancelled: isCancelled);
 
     if (addresses.length < totalOutputCount) {
       throw StateError('Not enough unused addresses. Required: $totalOutputCount, Available: ${addresses.length}');
@@ -686,13 +691,13 @@ class UtxoSplitTransactionBuilder {
     List<int> desiredAmounts,
     List<UtxoState> utxos,
   ) {
-    return _createTransactionBuildTask(() async {
+    return _createTransactionBuildTask((isCancelled) async {
       final exactAmounts = List<int>.from(desiredAmounts);
       if (exactAmounts.isEmpty) {
         throw StateError('desiredAmounts must contain at least one output');
       }
       exactAmounts.removeLast();
-      return _buildSweepRecipients(exactAmounts, utxos);
+      return _buildSweepRecipients(exactAmounts, utxos, isCancelled: isCancelled);
     }, utxos);
   }
 
@@ -716,10 +721,11 @@ class UtxoSplitTransactionBuilder {
     final completer = Completer<TransactionBuildResult>();
     StreamSubscription? subscription;
     Isolate? isolate;
+    var isCancelled = false;
 
     () async {
       try {
-        isolate = await Isolate.spawn<_SplitBuildIsolateRequest>(
+        final spawned = await Isolate.spawn<_SplitBuildIsolateRequest>(
           _splitBuildIsolateEntry,
           _SplitBuildIsolateRequest(
             sendPort: receivePort.sendPort,
@@ -731,6 +737,13 @@ class UtxoSplitTransactionBuilder {
             scriptPathPolicy: _scriptPathPolicy,
           ),
         );
+
+        /// spawn 진행 중 취소됐으면 아무도 참조하지 않는 고아 isolate가 되기 전에 즉시 종료한다
+        if (isCancelled) {
+          spawned.kill(priority: Isolate.immediate);
+          return;
+        }
+        isolate = spawned;
 
         subscription = receivePort.listen((message) {
           if (completer.isCompleted) {
@@ -768,6 +781,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
+        isCancelled = true;
         isolate?.kill(priority: Isolate.immediate);
         isolate = null;
         await subscription?.cancel();
@@ -799,7 +813,7 @@ class UtxoSplitTransactionBuilder {
   }
 
   CancelableTask<TransactionBuildResult> _createTransactionBuildTask(
-    Future<Map<String, int>> Function() prepareRecipients,
+    Future<Map<String, int>> Function(bool Function() isCancelled) prepareRecipients,
     List<UtxoState> utxos,
   ) {
     final completer = Completer<TransactionBuildResult>();
@@ -808,7 +822,7 @@ class UtxoSplitTransactionBuilder {
 
     () async {
       try {
-        final recipients = await prepareRecipients();
+        final recipients = await prepareRecipients(() => isCancelled);
         if (isCancelled) {
           if (!completer.isCompleted) {
             completer.completeError(const TaskCancelledException());

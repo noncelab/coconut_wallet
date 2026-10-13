@@ -181,6 +181,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       },
     );
 
+    /// 다이얼로그가 닫히면 포커스가 입력 필드로 복귀하는데, 포커스 상태에선
+    /// 결과 박스(isFocused 체크)가 숨겨져 빌드/프리뷰 진행이 보이지 않는다
+    FocusManager.instance.primaryFocus?.unfocus();
     return result ?? false;
   }
 
