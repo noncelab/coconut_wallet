@@ -96,11 +96,12 @@ List<String> get _labels => [
   t.wallet_home_screen.edit.category.analysis,
 ];
 
-bool _verifyLayout(WidgetTester tester) {
+Finder _title(String label) => find.byWidgetPredicate((widget) => widget is Text && widget.semanticsLabel == label);
+
+void _verifyLayout(WidgetTester tester) {
   final heights = <double>{};
-  final modes = <bool>{};
   for (final label in _labels) {
-    final title = find.text(label);
+    final title = _title(label);
     final tile = find.ancestor(of: title, matching: find.byType(ShrinkAnimationButton)).first;
     final check = find.descendant(
       of: tile,
@@ -119,22 +120,17 @@ bool _verifyLayout(WidgetTester tester) {
     final checkRect = tester.getRect(check);
     final tileRect = tester.getRect(tile);
     final iconRect = tester.getRect(find.byWidget(icon.widget));
-    final below = textRect.top > checkRect.bottom;
-    modes.add(below);
     heights.add(tileRect.height);
     expect(checkRect.top - tileRect.top, closeTo(15, 0.01));
     expect(tileRect.right - checkRect.right, closeTo(15, 0.01));
-    if (below) {
-      expect(textRect.top - checkRect.bottom, greaterThanOrEqualTo(3.99));
-    } else {
-      expect(textRect.top, closeTo(checkRect.top, 0.01));
-      expect(checkRect.left - textRect.right, greaterThanOrEqualTo(7.99));
-    }
+    expect(textRect.top, closeTo(checkRect.top, 0.01));
+    expect(checkRect.left - textRect.right, greaterThanOrEqualTo(7.99));
     expect(iconRect.top - textRect.bottom, greaterThanOrEqualTo(11.99));
     expect(iconRect.bottom, lessThanOrEqualTo(tileRect.bottom));
     expect(textRect.left, greaterThanOrEqualTo(tileRect.left));
     expect(textRect.right, lessThanOrEqualTo(tileRect.right));
     final text = tester.widget<Text>(title);
+    expect(text.data!.replaceAll(RegExp(r'\s'), ''), label.replaceAll(RegExp(r'\s'), ''));
     expect(text.maxLines, isNull);
     expect(text.overflow, isNull);
     expect(find.ancestor(of: title, matching: find.byType(FittedBox)), findsNothing);
@@ -142,9 +138,7 @@ bool _verifyLayout(WidgetTester tester) {
   for (final height in heights) {
     expect(height, closeTo(heights.first, 0.001));
   }
-  expect(modes, hasLength(1));
   expect(tester.takeException(), isNull);
-  return modes.single;
 }
 
 void main() {
@@ -160,15 +154,48 @@ void main() {
     for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.de, AppLocale.ja, AppLocale.es]) {
       testWidgets('responsive tiles $width ${locale.name}', (tester) async {
         await _pump(tester, width, 1, locale);
-        final below = _verifyLayout(tester);
+        _verifyLayout(tester);
         if (locale == AppLocale.ko) {
-          expect(below, width < 414);
-          if (width >= 344) {
+          if (width == 344) {
             for (final label in _labels) {
-              final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+              final paragraph = tester.renderObject<RenderParagraph>(
+                find.descendant(of: _title(label), matching: find.byType(RichText)),
+              );
+              final displayed = tester.widget<Text>(_title(label)).data!;
+              final linesByTop = <double, String>{};
+              for (var offset = 0; offset < displayed.length; offset++) {
+                final boxes = paragraph.getBoxesForSelection(
+                  TextSelection(baseOffset: offset, extentOffset: offset + 1),
+                );
+                if (boxes.isNotEmpty) {
+                  final top = boxes.first.top;
+                  linesByTop[top] = (linesByTop[top] ?? '') + displayed[offset];
+                }
+              }
+              final ranges = linesByTop.values.map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
+              if (label == _labels[0]) expect(ranges, ['잔액', '합계']);
+              if (label == _labels[1]) expect(ranges, ['지갑', '목록']);
+              debugPrint('ko344 rendered lines: $label => ${ranges.join(" / ")}');
+              expect(
+                ranges.length,
+                label == t.wallet_home_screen.edit.category.analysis
+                    ? 1
+                    : label == t.wallet_home_screen.edit.category.recent_transactions
+                    ? 3
+                    : 2,
+              );
+            }
+          }
+          if (width >= 414) {
+            for (final label in _labels) {
+              final paragraph = tester.renderObject<RenderParagraph>(
+                find.descendant(of: _title(label), matching: find.byType(RichText)),
+              );
               final lines =
                   paragraph
-                      .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: label.length))
+                      .getBoxesForSelection(
+                        TextSelection(baseOffset: 0, extentOffset: tester.widget<Text>(_title(label)).data!.length),
+                      )
                       .map((box) => box.top)
                       .toSet();
               expect(lines.length, label == t.wallet_home_screen.edit.category.recent_transactions ? 2 : 1);
@@ -181,20 +208,22 @@ void main() {
   testWidgets('bold text and external scale retain fixed tile policy', (tester) async {
     await _pump(tester, 344, 2, AppLocale.de, bold: true);
     _verifyLayout(tester);
-    final paragraph = tester.renderObject<RenderParagraph>(find.text(_labels.first));
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: _title(_labels.first), matching: find.byType(RichText)),
+    );
     expect(paragraph.textScaler.scale(14), 14);
   });
   testWidgets('resize keeps pending toggle and saves original order only on completion', (tester) async {
     final preferences = await _pump(tester, 344, 1, AppLocale.ko);
-    expect(_verifyLayout(tester), isTrue);
-    final title = find.text(t.wallet_home_screen.edit.category.recent_transactions);
+    _verifyLayout(tester);
+    final title = _title(t.wallet_home_screen.edit.category.recent_transactions);
     await tester.ensureVisible(title);
     await tester.tap(title);
     await tester.pumpAndSettle();
     expect(preferences.saved, isNull);
     tester.view.physicalSize = const Size(414, 1000);
     await tester.pumpAndSettle();
-    expect(_verifyLayout(tester), isFalse);
+    _verifyLayout(tester);
     final button = tester.widget<FixedBottomButton>(find.byType(FixedBottomButton));
     expect(button.isActive, isTrue);
     await button.onButtonClicked();
@@ -205,7 +234,7 @@ void main() {
   });
   testWidgets('fixed tile shows guidance without enabling save', (tester) async {
     final preferences = await _pump(tester, 344, 1, AppLocale.ko);
-    final title = find.text(t.wallet_home_screen.edit.category.total_balance);
+    final title = _title(t.wallet_home_screen.edit.category.total_balance);
     await tester.ensureVisible(title);
     await tester.tap(title);
     await tester.pump(const Duration(milliseconds: 250));

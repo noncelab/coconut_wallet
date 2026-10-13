@@ -527,7 +527,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     const tilePadding = EdgeInsets.all(14);
                     final tileBorder = Border.all(color: Colors.transparent);
                     const checkSize = 16.0;
-                    const checkTitleGap = 4.0;
                     const inlineGap = 8.0;
                     const titleIconGap = 12.0;
                     const iconSize = 32.0;
@@ -543,34 +542,44 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     final direction = Directionality.of(context);
                     final contentWidth = itemWidth - tilePadding.horizontal - tileBorder.dimensions.horizontal;
                     final inlineWidth = math.max(0.0, contentWidth - checkSize - inlineGap);
-                    final painters =
-                        displayHomeWidgets.map((widget) {
-                          return TextPainter(
-                            text: TextSpan(
-                              text: _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                              style: labelStyle,
-                            ),
-                            textDirection: direction,
-                            locale: locale,
-                            textScaler: TextScaler.noScaling,
-                            textHeightBehavior: defaults.textHeightBehavior,
-                          )..layout();
-                        }).toList();
-                    late final bool titleBelowCheck;
+                    final wrappedLabels = <String, String>{};
+                    final painter = TextPainter(
+                      textDirection: direction,
+                      locale: locale,
+                      textScaler: TextScaler.noScaling,
+                      textHeightBehavior: defaults.textHeightBehavior,
+                    );
                     var titleHeight = 0.0;
                     try {
-                      titleBelowCheck = painters.any((painter) => painter.width > inlineWidth);
-                      for (final painter in painters) {
-                        painter.layout(maxWidth: titleBelowCheck ? contentWidth : inlineWidth);
+                      for (final widget in displayHomeWidgets) {
+                        final type = widget['homeFeatureTypeString'].toString();
+                        final lines = <String>[];
+                        // Preserve explicit breaks; prefer spaces before splitting a long word.
+                        for (final paragraph in _getHomeFeatureLabel(type).split('\n')) {
+                          var line = '';
+                          for (final word in paragraph.split(' ')) {
+                            final candidate = line.isEmpty ? word : '$line $word';
+                            painter.text = TextSpan(text: candidate, style: labelStyle);
+                            painter.layout();
+                            if (line.isNotEmpty && painter.width > inlineWidth) {
+                              lines.add(line);
+                              line = word;
+                            } else {
+                              line = candidate;
+                            }
+                          }
+                          lines.add(line);
+                        }
+                        final label = lines.join('\n');
+                        wrappedLabels[type] = label;
+                        painter.text = TextSpan(text: label, style: labelStyle);
+                        painter.layout(maxWidth: inlineWidth);
                         titleHeight = math.max(titleHeight, painter.height);
                       }
                     } finally {
-                      for (final painter in painters) {
-                        painter.dispose();
-                      }
+                      painter.dispose();
                     }
-                    final titleTop = titleBelowCheck ? checkSize + checkTitleGap : 0.0;
-                    final headerHeight = math.max(checkSize, titleTop + titleHeight);
+                    final headerHeight = math.max(checkSize, titleHeight);
                     final itemHeight = math.max(
                       itemWidth,
                       tilePadding.vertical + tileBorder.dimensions.vertical + headerHeight + titleIconGap + iconSize,
@@ -619,10 +628,13 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                 children: [
                                                   Positioned(
                                                     left: 0,
-                                                    right: titleBelowCheck ? 0 : checkSize + inlineGap,
-                                                    top: titleTop,
+                                                    right: checkSize + inlineGap,
+                                                    top: 0,
                                                     child: Text(
-                                                      _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
+                                                      wrappedLabels[widget['homeFeatureTypeString'].toString()]!,
+                                                      semanticsLabel: _getHomeFeatureLabel(
+                                                        widget['homeFeatureTypeString'].toString(),
+                                                      ),
                                                       style: labelStyle,
                                                       locale: locale,
                                                       textDirection: direction,
