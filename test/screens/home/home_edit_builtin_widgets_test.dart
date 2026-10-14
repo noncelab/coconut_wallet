@@ -42,6 +42,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:flutter/cupertino.dart' show CupertinoScrollBehavior;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -164,6 +165,7 @@ Future<void> _openWidgetsTab(
   Size size = const Size(800, 6000),
   List<WalletItemBase>? walletList,
   NavigatorObserver? routeObserver,
+  bool disableAnimations = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -222,6 +224,9 @@ Future<void> _openWidgetsTab(
       child: MaterialApp(
         theme: buildCoconutThemeData(),
         navigatorObservers: [if (routeObserver != null) routeObserver],
+        builder:
+            (context, child) =>
+                MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: disableAnimations), child: child!),
         home: screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets),
       ),
     ),
@@ -1099,7 +1104,7 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('the balance trend widget flies into the total balance card and back', (tester) async {
+    testWidgets('the balance trend opens insights without scaling the total label or period filters', (tester) async {
       await _openWidgetsTab(
         tester,
         fake: false,
@@ -1122,6 +1127,10 @@ void main() {
                           kind: HomeItemKind.widget,
                           order: 0,
                           span: HomeSpan.wide,
+                          configuration: {
+                            'walletIds': [1],
+                            'period': 'month',
+                          },
                         ),
                       ),
                 ),
@@ -1134,11 +1143,26 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('home-widget-tap-trend')));
       await tester.pump();
-      await tester.pump(HodlInsightsScreen.transitionDuration ~/ 2);
-      expect(tester.takeException(), isNull);
-      await tester.pump(HodlInsightsScreen.transitionDuration);
+      final sizes = <String, List<Size>>{'hodl-insights-total-label': [], 'hodl-insights-balance-periods': []};
+      for (var frame = 0; frame < 6; frame++) {
+        await tester.pump(const Duration(milliseconds: 80));
+        for (final entry in sizes.entries) {
+          entry.value.add(tester.getRect(find.byKey(Key(entry.key))).size);
+        }
+        expect(tester.takeException(), isNull);
+      }
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byKey(const Key('hodl-insights-balance')), findsOneWidget);
+      for (final entry in sizes.entries) {
+        final settled = tester.getRect(find.byKey(Key(entry.key))).size;
+        for (final size in entry.value) {
+          expect(size.width, closeTo(settled.width, 0.01), reason: '${entry.key} width during entry');
+          expect(size.height, closeTo(settled.height, 0.01), reason: '${entry.key} height during entry');
+        }
+      }
+      final insights = tester.element(find.byKey(const Key('hodl-insights-list'))).read<HodlInsightsViewModel>();
+      expect(insights.walletIds, [1]);
+      expect(insights.balancePeriod, HomeWidgetPeriod.month);
 
       Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
       await tester.pump();
@@ -1146,6 +1170,49 @@ void main() {
       await tester.pump(HodlInsightsScreen.transitionDuration);
       expect(tester.takeException(), isNull);
       expect(find.byKey(const ValueKey('home-widget-tap-trend')), findsOneWidget);
+      await _close(tester);
+    });
+
+    testWidgets('reduced motion shows completed section values without the delayed fill animation', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, disableAnimations: true);
+      expect(tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal, 1);
+      expect(find.text(t.hodl_insights.total_utxos(count: 2)), findsOneWidget);
+      final fill = tester.getSize(find.byKey(const Key('goal-progress-fill'))).width;
+      expect(fill, greaterThan(0));
+      await tester.pump(const Duration(seconds: 3));
+      expect(tester.getSize(find.byKey(const Key('goal-progress-fill'))).width, fill);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('repeated scroll and bounce reuse settled section paint layers', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        size: const Size(400, 800),
+        screen:
+            (viewModel) => ScrollConfiguration(behavior: const CupertinoScrollBehavior(), child: insights(viewModel)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final list = find.byKey(const Key('hodl-insights-list'));
+      final boundaries = [
+        for (final section in HodlInsightsSection.values)
+          tester.renderObject<RenderRepaintBoundary>(find.byKey(ValueKey('hodl-insights-repaint-${section.name}'))),
+      ];
+      for (final boundary in boundaries) {
+        boundary.debugResetMetrics();
+      }
+      for (var attempt = 0; attempt < 3; attempt++) {
+        await tester.drag(list, const Offset(0, 240));
+        await tester.pumpAndSettle();
+      }
+      expect(boundaries.first.debugAsymmetricPaintCount, greaterThan(0));
+      expect(boundaries.first.debugSymmetricPaintCount, 0, reason: 'bounce moves the cached layer without repainting');
+      for (final boundary in boundaries) {
+        expect(boundary.debugNeedsPaint, isFalse);
+      }
+      expect(tester.takeException(), isNull);
       await _close(tester);
     });
 

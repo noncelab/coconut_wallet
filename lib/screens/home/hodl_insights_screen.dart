@@ -121,17 +121,20 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
         widget.heroTag != null && widget.heroSection == section
             ? Hero(tag: widget.heroTag!, flightShuttleBuilder: _cardShuttle, child: child)
             : child;
-    return Column(
-      key: _sectionKeys[section],
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (title != null) title,
-        _SectionHighlight(
-          key: ValueKey('hodl-insights-highlight-${section.name}'),
-          active: _highlighted == section,
-          child: card,
-        ),
-      ],
+    return RepaintBoundary(
+      key: ValueKey('hodl-insights-repaint-${section.name}'),
+      child: Column(
+        key: _sectionKeys[section],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null) title,
+          _SectionHighlight(
+            key: ValueKey('hodl-insights-highlight-${section.name}'),
+            active: _highlighted == section,
+            child: card,
+          ),
+        ],
+      ),
     );
   }
 
@@ -752,7 +755,7 @@ class _BalanceCard extends StatelessWidget {
           SizedBox(
             key: const Key('hodl-insights-balance-chart'),
             height: 88,
-            child: _BalanceChart(viewModel: viewModel),
+            child: RepaintBoundary(child: _BalanceChart(viewModel: viewModel)),
           ),
           CoconutLayout.spacing_200h,
           Row(
@@ -798,15 +801,23 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
   late double _to = widget.progress;
   Animation<double>? _route;
   Timer? _start;
+  bool _reduceMotion = false;
 
   double get _value => _from + (_to - _from) * _curve.value;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_reduceMotion) {
+      _start?.cancel();
+      _route?.removeStatusListener(_onRouteStatus);
+      _controller.value = 1;
+    }
     if (_route != null) return;
     final route = ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
     _route = route;
+    if (_reduceMotion) return;
     if (route.isCompleted) {
       _scheduleStart();
     } else {
@@ -832,6 +843,10 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
     if (widget.progress == _to) return;
     _from = _value;
     _to = widget.progress;
+    if (_reduceMotion) {
+      _controller.value = 1;
+      return;
+    }
     if (_start?.isActive ?? false) return;
     _controller.forward(from: 0);
   }

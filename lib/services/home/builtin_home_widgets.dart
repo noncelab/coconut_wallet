@@ -97,7 +97,7 @@ void Function(BuildContext context, HomeItem item) _openInsights(HodlInsightsSec
   final period = settings.period ?? HomeWidgetPeriod.week;
   HodlInsightsScreen.open(
     context,
-    heroTag: insightsHeroTag(item.id),
+    heroTag: section == HodlInsightsSection.balance ? null : insightsHeroTag(item.id),
     walletIds: settings.walletIds,
     balancePeriod: section == HodlInsightsSection.balance ? period : HomeWidgetPeriod.week,
     activityPeriod: section == HodlInsightsSection.activity ? period : HomeWidgetPeriod.week,
@@ -165,7 +165,6 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.bitcoinBalanceTrend,
     onTap: _openInsights(HodlInsightsSection.balance),
-    flyToInsightsSection: HodlInsightsSection.balance,
     spans: const [HomeSpan.small, HomeSpan.wide],
     category: HomeItemCategory.balance,
     settings: const HomeWidgetSettingsSpec(
