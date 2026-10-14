@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) {
+  Future<void> _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) async {
     if (_viewModel.shouldAddWalletBeforeLaunch(feature)) {
       if (useShortcutWallet) {
         _viewModel.remindAddWallet();
@@ -132,10 +132,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    FeatureLauncher(
+    await FeatureLauncher(
       wallets: () => _viewModel.wallets,
       pickWallet: _pickWallet,
     ).launch(context, feature, walletContext: useShortcutWallet ? _viewModel.shortcutWalletContext : null);
+    if (mounted) setState(() {});
   }
 
   Future<int?> _pickWallet(BuildContext context, List<int> candidateWalletIds) {
@@ -289,7 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAllFeaturesScreen(bool noWallets) => AllFeaturesScreen(
     registry: _viewModel.features,
-    isAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
+    isAvailable:
+        (feature) =>
+            (feature.isAvailable?.call(context) ?? true) &&
+            (feature.parentId == null ||
+                feature.context != FeatureContext.wallet ||
+                _viewModel.wallets.isEmpty ||
+                _viewModel.wallets.any(feature.supportsWallet)),
     isDimmed: (feature) => noWallets && feature.context == FeatureContext.wallet,
     onLaunch: (context, feature) => _launch(context, feature, useShortcutWallet: false),
     onFakeBalanceTap: (context) => openFakeBalanceFromSearch(context, _viewModel),

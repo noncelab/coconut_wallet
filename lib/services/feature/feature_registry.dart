@@ -1,4 +1,9 @@
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:coconut_wallet/services/feature/builtin_features.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 
@@ -6,10 +11,16 @@ export 'package:coconut_wallet/services/feature/builtin_features.dart' show Feat
 
 class FeatureSearchResult {
   final FeatureItem item;
+  final FeatureItem matchedItem;
   final List<String> matchedPath;
   final int score;
 
-  const FeatureSearchResult({required this.item, required this.matchedPath, required this.score});
+  const FeatureSearchResult({
+    required this.item,
+    required this.matchedItem,
+    required this.matchedPath,
+    required this.score,
+  });
 }
 
 class FeatureRegistry {
@@ -29,6 +40,12 @@ class FeatureRegistry {
           keywords: listing.tags,
           parentId: FeatureIds.appSettings,
           source: FeatureSource.ccos,
+          isAvailable: (_) => listing.category == CcosFeatureCategory.theme && listing.isSelectableTheme,
+          launch:
+              (context, _) =>
+                  context.read<PreferenceProvider>().getCcosFeatureAvailability(listing.id).isAvailable
+                      ? AppSettingsScreen.open(context, AppSettingsTarget.theme, highlightTheme: listing.linkedVariant)
+                      : openCoconutOpenStoreIntroScreen(context),
         ),
     ];
   }
@@ -41,13 +58,13 @@ class FeatureRegistry {
 
   List<FeatureItem> childrenOf(String id) => all.where((item) => item.parentId == id).toList();
 
-  List<FeatureSearchResult> search(String query) {
+  List<FeatureSearchResult> search(String query, {bool Function(FeatureItem)? isAvailable}) {
     final normalizedQuery = _normalize(query);
     if (normalizedQuery.isEmpty) return const [];
 
     final results = <FeatureSearchResult>[];
     for (final item in topLevel) {
-      final best = _bestMatch(item, normalizedQuery);
+      final best = _bestMatch(item, normalizedQuery, isAvailable);
       if (best != null) results.add(best);
     }
     final order = {for (var i = 0; i < all.length; i++) all[i].id: i};
@@ -58,13 +75,14 @@ class FeatureRegistry {
     return results;
   }
 
-  FeatureSearchResult? _bestMatch(FeatureItem topLevelItem, String query) {
+  FeatureSearchResult? _bestMatch(FeatureItem topLevelItem, String query, bool Function(FeatureItem)? isAvailable) {
     FeatureSearchResult? best;
     void visit(FeatureItem item, List<String> path) {
+      if (isAvailable != null && !isAvailable(item)) return;
       final currentPath = [...path, item.label()];
       final score = _itemScore(item, query);
       if (score > 0 && (best == null || score > best!.score)) {
-        best = FeatureSearchResult(item: topLevelItem, matchedPath: currentPath, score: score);
+        best = FeatureSearchResult(item: topLevelItem, matchedItem: item, matchedPath: currentPath, score: score);
       }
       for (final child in childrenOf(item.id)) {
         visit(child, currentPath);

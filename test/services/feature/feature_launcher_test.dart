@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
+import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -8,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/wallet_mock.dart';
 
-SinglesigWalletItem _hotWallet(int id) {
+SinglesigWalletItem _hotWallet(int id, {bool passphrase = false}) {
   return SinglesigWalletItem(
     id: id,
     name: 'hot$id',
@@ -22,7 +23,7 @@ SinglesigWalletItem _hotWallet(int id) {
       derivationPath: "m/84'/1'/0'",
       accountIndex: 0,
       backupVerified: true,
-      enterPassphraseWhenSigning: false,
+      enterPassphraseWhenSigning: passphrase,
       createdAt: DateTime(2026),
     ),
   );
@@ -44,6 +45,24 @@ void main() {
   final watchOnly1 = WalletMock.createSingleSigWalletItem(id: 1);
   final watchOnly2 = WalletMock.createSingleSigWalletItem(id: 2);
   final hot3 = _hotWallet(3);
+
+  test('child capabilities restrict wallet choice without reusing an unsupported preferred wallet', () {
+    final registry = FeatureRegistry.builtin();
+    final multi = WalletMock.createMultiSigWalletItem(id: 5);
+    final passphrase = _hotWallet(4, passphrase: true);
+    final wallets = [watchOnly1, hot3, passphrase, multi];
+    expect(
+      resolveWallet(registry.byId('wallet_detail.mnemonic_backup')!, wallets, const ShortcutWalletContext.wallet(1)),
+      const WalletChoice.ask([3, 4]),
+    );
+    expect(resolveWallet(registry.byId('wallet_detail.passphrase')!, wallets, null), const WalletChoice.direct(4));
+    expect(resolveWallet(registry.byId('wallet_detail.bsms')!, wallets, null), const WalletChoice.direct(5));
+    expect(resolveWallet(registry.byId('wallet_detail.xpub')!, wallets, null), const WalletChoice.ask([1, 3, 4]));
+    expect(
+      resolveWallet(registry.byId('wallet_detail.mnemonic_backup')!, [watchOnly1, multi], null),
+      const WalletChoice.unavailable(),
+    );
+  });
 
   test('no wallets → unavailable', () {
     expect(resolveWallet(_item(), const [], null), const WalletChoice.unavailable());

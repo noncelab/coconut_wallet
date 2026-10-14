@@ -84,6 +84,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => AddressListScreen(
             id: args.id,
             initialShowOnlyWatchedAddresses: args.initialShowOnlyWatchedAddresses ?? false,
+            initialShowOnlyUnusedAddresses: args.initialShowOnlyUnusedAddresses,
           ),
         ),
     AppRouteNames.transactionList:
@@ -172,6 +173,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             showMfpInput: args.showMfpInput ?? false,
             highlightMnemonicBackup: args.highlightMnemonicBackup ?? false,
             showTargetSetting: args.showTargetSetting ?? false,
+            initialTarget: args.initialTarget,
           ),
         ),
     AppRouteNames.broadcastingComplete:

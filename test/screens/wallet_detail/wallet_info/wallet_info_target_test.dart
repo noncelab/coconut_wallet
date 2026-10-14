@@ -8,6 +8,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -236,7 +237,7 @@ void main() {
     expect(model.targetSats, isNull);
   });
 
-  Future<_Analytics> openTargetSheet(WidgetTester tester) async {
+  Future<_Analytics> openTargetSheet(WidgetTester tester, {WalletInfoTarget? focus}) async {
     final analytics = _Analytics();
     tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
@@ -254,12 +255,13 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
-          home: const LoaderOverlay(
+          home: LoaderOverlay(
             child: WalletInfoScreen(
               id: 1,
               walletType: WalletType.singleSignature,
               entryPoint: '/wallet-home',
-              showTargetSetting: true,
+              showTargetSetting: focus == null,
+              initialTarget: focus,
             ),
           ),
         ),
@@ -267,8 +269,22 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(find.byType(SingleTextFieldBottomSheet), findsOneWidget);
+    expect(find.byType(SingleTextFieldBottomSheet), focus == null ? findsOneWidget : findsNothing);
     return analytics;
+  }
+
+  for (final focus in [WalletInfoTarget.extendedPublicKey, WalletInfoTarget.delete]) {
+    testWidgets('search reveals $focus without invoking its sensitive action', (tester) async {
+      final analytics = await openTargetSheet(tester, focus: focus);
+      final target = find.byKey(ValueKey('wallet-info-focus-${focus.name}'));
+      expect(target, findsOneWidget);
+      final rect = tester.getRect(target);
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(932));
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(analytics.events, isEmpty);
+      expect(walletProvider.walletItemList, hasLength(1));
+    });
   }
 
   testWidgets('saved event follows persistence and contains no amount', (tester) async {

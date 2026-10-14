@@ -284,7 +284,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     );
   }
 
-  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.item, _row(entry));
+  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.launchItem, _row(entry));
 
   Widget _row(AllFeaturesEntry entry) {
     final colors = context.coconutColors;
@@ -296,7 +296,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
               ? const Key('all-features-fake-balance-result')
               : ValueKey('all-features-item-${feature.id}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => _launch(context, feature),
+      onTap: () => _launch(context, entry.launchItem),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Row(

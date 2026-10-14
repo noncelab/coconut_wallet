@@ -45,6 +45,7 @@ void main() {
     expect(viewModel.isSearching, isTrue);
     final result = viewModel.results.single;
     expect(result.item.id, 'settings');
+    expect(result.launchItem.id, 'settings.fiat');
     expect(result.path, ['앱 설정', '통화']);
 
     viewModel.search('보내');

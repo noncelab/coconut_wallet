@@ -141,7 +141,7 @@ void main() {
     expect(find.text('Settings › Currency'), findsOneWidget);
     expect(find.text(t.all_features.categories.transactions), findsNothing);
     await tester.tap(find.byKey(const ValueKey('all-features-item-settings')));
-    expect(launched, ['settings']);
+    expect(launched, ['settings.fiat']);
 
     await tester.enterText(find.byKey(const Key('all-features-search')), 'zzz');
     await tester.pump();

@@ -133,7 +133,50 @@ void main() {
     final results = registry.search('PIN');
 
     expect(results.first.item.id, FeatureIds.appSettings);
+    expect(results.first.matchedItem.id, '${FeatureIds.appSettings}.pin');
     expect(results.first.matchedPath, hasLength(2));
+  });
+
+  test('all registered sub-features have their own launch action', () {
+    for (final item in registry.all.where((item) => !item.isTopLevel)) {
+      expect(item.launch, isNotNull, reason: item.id);
+    }
+  });
+
+  test('availability is applied before ranking and does not hide an available sibling', () {
+    final scoped = FeatureRegistry([
+      FeatureItem(id: 'settings', label: () => 'Settings'),
+      FeatureItem(id: 'settings.hidden', parentId: 'settings', label: () => 'Choice'),
+      FeatureItem(id: 'settings.visible', parentId: 'settings', label: () => 'Choice details'),
+    ]);
+    final result = scoped.search('choice', isAvailable: (item) => item.id != 'settings.hidden').single;
+    expect(result.matchedItem.id, 'settings.visible');
+    expect(result.score, 2);
+    expect(scoped.search('choice', isAvailable: (item) => item.id != 'settings'), isEmpty);
+  });
+
+  test('equal scores retain parent-first traversal and registry group order', () {
+    final scoped = FeatureRegistry([
+      FeatureItem(id: 'first', label: () => 'Match'),
+      FeatureItem(id: 'first.child', parentId: 'first', label: () => 'Match'),
+      FeatureItem(id: 'second', label: () => 'Match'),
+    ]);
+    final results = scoped.search('match');
+    expect(results.map((result) => result.item.id), ['first', 'second']);
+    expect(results.first.matchedItem.id, 'first');
+  });
+
+  test('label import and export aliases resolve to separate targets in every locale', () {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      for (final (query, id) in [
+        (t.label_management_screen.import_title, 'label_management.import'),
+        (t.label_management_screen.export_title, 'label_management.export'),
+      ]) {
+        expect(registry.search(query).first.matchedItem.id, id, reason: locale.languageCode);
+      }
+    }
   });
 
   test('wallet info searches lead to wallet detail', () {
