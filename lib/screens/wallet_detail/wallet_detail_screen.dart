@@ -613,13 +613,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
               child: SizeChangedLayoutNotifier(
                 key: _bottomActionBarKey,
                 child: BottomActionBar(
+                  padding:
+                      _viewModel.wallet.hasLocalKey
+                          ? EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 16)
+                          : null,
                   child: AnimatedSlide(
                     offset: isExpanded ? Offset.zero : const Offset(0, 0.35),
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Expanded(
+                        _buildBottomActionButtonSlot(
                           child: AnimatedScale(
                             scale: isExpanded ? 1 : 0.8,
                             duration: const Duration(milliseconds: 200),
@@ -641,7 +646,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                             ),
                           ),
                         ),
-                        Expanded(
+                        _buildBottomActionButtonSlot(
                           child: AnimatedScale(
                             scale: isExpanded ? 1 : 0.8,
                             duration: const Duration(milliseconds: 200),
@@ -664,7 +669,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                           ),
                         ),
                         if (_viewModel.wallet.hasLocalKey)
-                          Expanded(
+                          _buildBottomActionButtonSlot(
                             child: AnimatedScale(
                               scale: isExpanded ? 1 : 0.8,
                               duration: const Duration(milliseconds: 200),
@@ -689,6 +694,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         );
       },
     );
+  }
+
+  Widget _buildBottomActionButtonSlot({required Widget child}) {
+    if (_viewModel.wallet.hasLocalKey) {
+      return Flexible(child: IntrinsicWidth(child: child));
+    }
+    return Expanded(child: child);
   }
 
   Future<void> _onMoveToVaultPressed() async {
