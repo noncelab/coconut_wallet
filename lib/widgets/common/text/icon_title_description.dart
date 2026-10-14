@@ -56,12 +56,9 @@ class IconTitleDescription extends StatelessWidget {
           ],
         ),
         CoconutLayout.spacing_200h,
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: iconSize + iconTextGap),
-          child: Text(
-            description,
-            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText).copyWith(height: 1.5),
-          ),
+        Text(
+          description,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText).copyWith(height: 1.5),
         ),
       ],
     );

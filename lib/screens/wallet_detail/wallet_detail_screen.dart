@@ -722,7 +722,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
     };
     final sheetContent = SafeArea(
       top: false,
-      child: Padding(padding: const EdgeInsets.only(left: 16, right: 16, bottom: 0), child: content),
+      child: Padding(padding: const EdgeInsets.only(left: 23, right: 23, bottom: 0), child: content),
     );
     CommonBottomSheets.showBottomSheet<int>(
       context: context,
