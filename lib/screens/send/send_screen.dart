@@ -118,9 +118,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
 
   final LayerLink _vaultInfoLink = LayerLink();
-  final GlobalKey _vaultInfoLabelKey = GlobalKey();
-  final GlobalKey _vaultInfoIconKey = GlobalKey();
-  double? _vaultInfoArrowPosition;
   Timer? _vaultInfoTimer;
   bool _isVaultInfoVisible = false;
 
@@ -134,14 +131,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       _hideVaultInfo();
       return;
     }
-    final labelBox = _vaultInfoLabelKey.currentContext?.findRenderObject() as RenderBox?;
-    final iconBox = _vaultInfoIconKey.currentContext?.findRenderObject() as RenderBox?;
-    if (labelBox == null || iconBox == null) return;
-    final iconCenter = iconBox.localToGlobal(Offset(iconBox.size.width / 2, iconBox.size.height));
-    setState(() {
-      _vaultInfoArrowPosition = labelBox.globalToLocal(iconCenter).dx;
-      _isVaultInfoVisible = true;
-    });
+    setState(() => _isVaultInfoVisible = true);
     _vaultInfoTimer?.cancel();
     _vaultInfoTimer = Timer(const Duration(seconds: 5), _hideVaultInfo);
   }
@@ -600,17 +590,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   if (widget.isMoveToVault && _isVaultInfoVisible)
                     Positioned(
                       left: 16,
+                      right: 16,
                       top: 0,
-                      width: MediaQuery.sizeOf(context).width - 16,
                       child: CompositedTransformFollower(
                         link: _vaultInfoLink,
                         showWhenUnlinked: false,
                         targetAnchor: Alignment.bottomRight,
                         followerAnchor: Alignment.topRight,
-                        offset: const Offset(16, 0),
+                        offset: Offset.zero,
                         child: CoconutToolTip(
-                          width: MediaQuery.sizeOf(context).width - 16,
-                          bubbleArrowPosition: _vaultInfoArrowPosition,
+                          width: MediaQuery.sizeOf(context).width - 32,
+                          isBubbleClipperSideLeft: false,
+                          bubbleArrowPosition: MediaQuery.sizeOf(context).width - 32 - 15,
                           tooltipType: CoconutTooltipType.placement,
                           backgroundColor: context.coconutColors.popoverBackground,
                           isPlacementTooltipVisible: true,
@@ -1735,28 +1726,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       left: 16,
       right: 16,
       child: CompositedTransformTarget(
-        key: _vaultInfoLabelKey,
         link: _vaultInfoLink,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _toggleVaultInfo,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                t.wallet_detail_screen.move_to_vault,
-                style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.secondaryText),
-              ),
-              const SizedBox(width: 2),
-              SvgPicture.asset(
-                CommonStateIconPath.circleInfo,
-                key: _vaultInfoIconKey,
-                width: 16,
-                height: 16,
-                colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.only(right: 7),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  t.wallet_detail_screen.move_to_vault,
+                  style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.secondaryText),
+                ),
+                const SizedBox(width: 2),
+                SvgPicture.asset(
+                  CommonStateIconPath.circleInfo,
+                  width: 16,
+                  height: 16,
+                  colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+                ),
+              ],
+            ),
           ),
         ),
       ),
