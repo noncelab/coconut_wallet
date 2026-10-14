@@ -766,7 +766,7 @@ void main() {
     expect(target, const HomeGridPosition(0, 0));
   });
 
-  testWidgets('a wide widget moves ahead when its preview just touches the row above', (tester) async {
+  testWidgets('a wide widget stays put while only its feedback touches the row above', (tester) async {
     HomeGridPosition? target;
     final registry =
         HomeItemRegistry()
@@ -818,6 +818,7 @@ void main() {
 
     final previewTouchesTopRow =
         tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface'))) + const Offset(178, 246);
+    expect(tester.getRect(find.byKey(const ValueKey('home-item-wide'))).contains(previewTouchesTopRow), isTrue);
     final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-wide'))));
     await tester.pump(const Duration(milliseconds: 600));
     await gesture.moveTo(previewTouchesTopRow);
@@ -825,7 +826,7 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
 
-    expect(target, const HomeGridPosition(0, 0));
+    expect(target, const HomeGridPosition(0, 2));
   });
 
   testWidgets('a wide widget dropped over a shortcut moves ahead of that whole row', (tester) async {

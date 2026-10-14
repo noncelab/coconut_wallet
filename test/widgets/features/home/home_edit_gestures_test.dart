@@ -198,7 +198,10 @@ void main() {
 
     await first.up();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(model.configuration.items.map((item) => item.id), ['3', '1', '2']);
+    expect(
+      {for (final item in model.configuration.items) item.id: item.position},
+      {'1': const HomeGridPosition(0, 2), '2': const HomeGridPosition(2, 0), '3': const HomeGridPosition(0, 0)},
+    );
     expect(repository.load(), model.configuration);
     await tester.pumpWidget(const SizedBox());
   });

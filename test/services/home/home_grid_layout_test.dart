@@ -1,12 +1,210 @@
+import 'dart:math';
+
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
+import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 HomeItem item(String id, int order, HomeSpan span, HomeItemKind kind) =>
     HomeItem(id: id, definitionId: id, kind: kind, order: order, span: span);
 
+HomeConfiguration mixedHome() => HomeConfiguration(
+  shortcutWalletContext: const ShortcutWalletContext.wallet(7),
+  items: [
+    for (final (index, (id, span, column, row))
+        in [
+          ('balance', HomeSpan.wide, 0, 0),
+          ('wallet', HomeSpan.small, 0, 2),
+          ('utxo', HomeSpan.small, 2, 2),
+          ('price', HomeSpan.small, 0, 4),
+          ('receive', HomeSpan.shortcut, 2, 4),
+          ('send', HomeSpan.shortcut, 3, 4),
+          ('organizer', HomeSpan.shortcut, 3, 5),
+          ('hodl', HomeSpan.shortcut, 2, 5),
+          ('recent', HomeSpan.wide, 0, 6),
+        ].indexed)
+      HomeItem(
+        id: id,
+        definitionId: 'definition-$id',
+        kind: span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+        order: index,
+        span: span,
+        position: HomeGridPosition(column, row),
+        configuration: {'label': id},
+      ),
+  ],
+);
+
+void expectValidLayout(HomeConfiguration configuration) {
+  final occupied = <(int, int)>{};
+  for (final item in configuration.items) {
+    final position = item.position!;
+    expect(position.column, greaterThanOrEqualTo(0), reason: item.id);
+    expect(position.row, greaterThanOrEqualTo(0), reason: item.id);
+    expect(position.column + item.span.width, lessThanOrEqualTo(HomeGridLayout.columns), reason: item.id);
+    if (item.span == HomeSpan.small) expect(position.column.isEven, isTrue, reason: item.id);
+    for (var row = position.row; row < position.row + item.span.height; row++) {
+      for (var column = position.column; column < position.column + item.span.width; column++) {
+        expect(occupied.add((column, row)), isTrue, reason: '${item.id} overlaps at ($column, $row)');
+      }
+    }
+  }
+  final restored = HomeConfiguration.fromJson(configuration.toJson())!;
+  expect(restored, configuration);
+  expect(HomeGridLayout(restored).positionedConfiguration, configuration, reason: 'saving must not repair the drop');
+}
+
+void expectPositions(HomeConfiguration actual, HomeConfiguration before, Map<String, HomeGridPosition> changes) {
+  expect(actual.version, before.version);
+  expect(actual.shortcutWalletContext, before.shortcutWalletContext);
+  expect(actual.items.map((item) => item.id), before.items.map((item) => item.id));
+  for (final item in before.items) {
+    expect(actual.items.singleWhere((other) => other.id == item.id), item.copyWith(position: changes[item.id]));
+  }
+  expectValidLayout(actual);
+}
+
 void main() {
+  group('spatial drops in a mixed home', () {
+    for (final (first, second) in [
+      ('receive', 'send'),
+      ('receive', 'hodl'),
+      ('send', 'organizer'),
+      ('hodl', 'organizer'),
+      ('wallet', 'utxo'),
+      ('wallet', 'price'),
+      ('balance', 'recent'),
+    ]) {
+      for (final (moving, target) in [(first, second), (second, first)]) {
+        test('$moving onto $target swaps only those two positions', () {
+          final before = mixedHome();
+          final layout = HomeGridLayout(before);
+          final source = layout.positionOf(moving)!;
+          final destination = layout.positionOf(target)!;
+
+          final moved = layout.moveToCell(moving, destination);
+
+          expectPositions(moved, before, {moving: destination, target: source});
+          expect(HomeGridLayout(moved).moveToCell(moving, source), before);
+        });
+      }
+    }
+
+    test('a 2×2 exchanges space with four shortcuts while keeping their relative positions', () {
+      final before = mixedHome();
+
+      final moved = HomeGridLayout(before).moveToCell('wallet', const HomeGridPosition(2, 4));
+
+      expectPositions(moved, before, {
+        'wallet': const HomeGridPosition(2, 4),
+        'receive': const HomeGridPosition(0, 2),
+        'send': const HomeGridPosition(1, 2),
+        'hodl': const HomeGridPosition(0, 3),
+        'organizer': const HomeGridPosition(1, 3),
+      });
+    });
+
+    for (final moving in ['balance', 'recent']) {
+      test('$moving exchanges space with two 2×2 widgets without moving the other rows', () {
+        final before = mixedHome();
+        final layout = HomeGridLayout(before);
+        final source = layout.positionOf(moving)!;
+
+        final moved = layout.moveToCell(moving, const HomeGridPosition(0, 2));
+
+        expectPositions(moved, before, {
+          moving: const HomeGridPosition(0, 2),
+          'wallet': source,
+          'utxo': HomeGridPosition(2, source.row),
+        });
+      });
+    }
+
+    for (final target in ['wallet', 'balance']) {
+      test('a shortcut onto $target relocates only that larger widget when the old cell cannot fit it', () {
+        final before = mixedHome();
+        final layout = HomeGridLayout(before);
+        final destination = layout.positionOf(target)!;
+
+        final moved = layout.moveToCell('receive', destination);
+
+        expectPositions(moved, before, {'receive': destination, target: const HomeGridPosition(0, 8)});
+      });
+    }
+
+    test('a displaced group uses the vacated footprint before unrelated gaps above it', () {
+      final before = HomeConfiguration(
+        items: [
+          for (final (index, (id, span, column, row))
+              in [
+                ('stationary', HomeSpan.shortcut, 3, 0),
+                ('small', HomeSpan.small, 0, 2),
+                ('top-left', HomeSpan.shortcut, 2, 2),
+                ('top-right', HomeSpan.shortcut, 3, 2),
+                ('bottom-left', HomeSpan.shortcut, 2, 3),
+                ('bottom-right', HomeSpan.shortcut, 3, 3),
+                ('wide', HomeSpan.wide, 0, 8),
+              ].indexed)
+            item(
+              id,
+              index,
+              span,
+              span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+            ).copyWith(position: HomeGridPosition(column, row)),
+        ],
+      );
+
+      final moved = HomeGridLayout(before).moveToCell('wide', const HomeGridPosition(0, 2));
+
+      expectPositions(moved, before, {
+        'wide': const HomeGridPosition(0, 2),
+        'small': const HomeGridPosition(0, 8),
+        'top-left': const HomeGridPosition(2, 8),
+        'top-right': const HomeGridPosition(3, 8),
+        'bottom-left': const HomeGridPosition(2, 9),
+        'bottom-right': const HomeGridPosition(3, 9),
+      });
+    });
+
+    test('empty, unchanged and invalid targets preserve all unrelated positions', () {
+      final before = mixedHome();
+      final layout = HomeGridLayout(before);
+
+      expectPositions(layout.moveToCell('receive', const HomeGridPosition(3, 10)), before, {
+        'receive': const HomeGridPosition(3, 10),
+      });
+      expect(layout.moveToCell('receive', layout.positionOf('receive')!), before);
+      expect(layout.moveToCell('missing', const HomeGridPosition(0, 0)), before);
+      expect(layout.moveToCell('wallet', const HomeGridPosition(1, 2)), before);
+      expect(layout.moveToCell('balance', const HomeGridPosition(1, 0)), before);
+      expect(layout.moveToCell('send', const HomeGridPosition(0, -1)), before);
+    });
+
+    test('sequences of mixed drops retain every item, its settings and a stable nonoverlapping layout', () {
+      final random = Random(752);
+      final initial = mixedHome();
+      var current = initial;
+      for (var step = 0; step < 240; step++) {
+        final moving = current.items[random.nextInt(current.items.length)];
+        final row = random.nextInt(12);
+        final target = HomeGridLayout.anchorForSpan(HomeGridPosition(random.nextInt(4), row), moving.span);
+        final moved = HomeGridLayout(current).moveToCell(moving.id, target);
+
+        expect(HomeGridLayout(moved).positionOf(moving.id), target, reason: 'step $step');
+        expectValidLayout(moved);
+        expect(moved.version, initial.version);
+        expect(moved.shortcutWalletContext, initial.shortcutWalletContext);
+        expect(moved.items.length, initial.items.length);
+        for (final item in initial.items) {
+          final actual = moved.items.singleWhere((other) => other.id == item.id);
+          expect(actual, item.copyWith(position: actual.position), reason: 'step $step, ${item.id}');
+        }
+        current = moved;
+      }
+    });
+  });
+
   test('moving a 2×2 before another keeps four visually grouped shortcuts ahead of the 4×2', () {
     final config = HomeConfiguration(
       items: [
@@ -116,27 +314,23 @@ void main() {
       ],
     );
 
-    for (final moved in [
-      HomeGridLayout(config).moveToCell('lower-1', const HomeGridPosition(0, 2)),
-      HomeGridLayout(config).moveBefore('lower-1', 'wide'),
-    ]) {
-      final layout = HomeGridLayout(moved);
-      expect(layout.positionOf('small'), const HomeGridPosition(0, 0));
-      for (var row = 0; row < 2; row++) {
-        for (var column = 2; column < 4; column++) {
-          expect(layout.positionOf('upper-$row-$column'), HomeGridPosition(column, row));
-        }
+    final moved = HomeGridLayout(config).moveBefore('lower-1', 'wide');
+    final layout = HomeGridLayout(moved);
+    expect(layout.positionOf('small'), const HomeGridPosition(0, 0));
+    for (var row = 0; row < 2; row++) {
+      for (var column = 2; column < 4; column++) {
+        expect(layout.positionOf('upper-$row-$column'), HomeGridPosition(column, row));
       }
-      expect(layout.positionOf('lower-1'), const HomeGridPosition(0, 2));
-      expect(layout.positionOf('wide'), const HomeGridPosition(0, 3));
-      expect(layout.positionOf('lower-0'), const HomeGridPosition(0, 5));
-      expect(layout.positionOf('lower-2'), const HomeGridPosition(2, 5));
-      expect(layout.positionOf('lower-3'), const HomeGridPosition(3, 5));
-      expect(layout.positionOf('last'), const HomeGridPosition(0, 6));
     }
+    expect(layout.positionOf('lower-1'), const HomeGridPosition(0, 2));
+    expect(layout.positionOf('wide'), const HomeGridPosition(0, 3));
+    expect(layout.positionOf('lower-0'), const HomeGridPosition(0, 5));
+    expect(layout.positionOf('lower-2'), const HomeGridPosition(2, 5));
+    expect(layout.positionOf('lower-3'), const HomeGridPosition(3, 5));
+    expect(layout.positionOf('last'), const HomeGridPosition(0, 6));
   });
 
-  test('moving a 4×2 between two shortcut rows shifts the lower row and following group', () {
+  test('moving a 4×2 between shortcut rows preserves shortcuts outside its footprint', () {
     final config = HomeConfiguration(
       items: [
         for (var column = 0; column < 4; column++)
@@ -214,12 +408,13 @@ void main() {
       expect(layout.positionOf('top-$column'), HomeGridPosition(column, 0));
     }
     expect(layout.positionOf('wide'), const HomeGridPosition(0, 1));
-    expect(layout.positionOf('single'), const HomeGridPosition(0, 3));
-    expect(layout.positionOf('small'), const HomeGridPosition(0, 4));
-    expect(layout.positionOf('lower-a'), const HomeGridPosition(2, 4));
-    expect(layout.positionOf('lower-b'), const HomeGridPosition(3, 4));
-    expect(layout.positionOf('lower-c'), const HomeGridPosition(2, 5));
-    expect(layout.positionOf('lower-d'), const HomeGridPosition(3, 5));
+    expect(layout.positionOf('single'), const HomeGridPosition(0, 4));
+    expect(layout.positionOf('small'), const HomeGridPosition(2, 4));
+    expect(layout.positionOf('lower-a'), const HomeGridPosition(1, 4));
+    expect(layout.positionOf('lower-b'), const HomeGridPosition(0, 5));
+    expect(layout.positionOf('lower-c'), const HomeGridPosition(2, 3));
+    expect(layout.positionOf('lower-d'), const HomeGridPosition(3, 3));
+    expectValidLayout(moved);
   });
 
   test('adding a 4×2 after four shortcuts leaves no completely empty row', () {

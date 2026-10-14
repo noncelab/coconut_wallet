@@ -213,7 +213,10 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     HomeItem? target;
     for (final item in layout.itemsInVisualOrder.reversed) {
       final position = layout.positionOf(item.id)!;
-      if (geometry.rectOf(position, item.span).contains(local) && _accepts(item, draggedId)) {
+      // Share the gap between neighbors and keep the source cell while the pointer is still over it.
+      // Otherwise a slow drag can snap halfway through a tall row and displace unrelated items.
+      if (geometry.rectOf(position, item.span).inflate(_gap / 2).contains(local) &&
+          (item.id == draggedId || _accepts(item, draggedId))) {
         target = item;
         break;
       }
@@ -221,15 +224,13 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
     String? targetId;
     HomeGridPosition? cell;
-    if (target != null &&
-        widget.onInsertBefore != null &&
-        (dragged.span != HomeSpan.wide || widget.onMoveToCell == null)) {
-      targetId = target.id;
-    } else if (widget.onMoveToCell != null) {
+    if (widget.onMoveToCell != null) {
       cell =
           target == null
               ? geometry.dropPosition(layout, dragged, local - _dragAnchor)
               : HomeGridLayout.anchorForSpan(layout.positionOf(target.id)!, dragged.span);
+    } else if (target != null && target.id != draggedId && widget.onInsertBefore != null) {
+      targetId = target.id;
     }
     if (_previewDraggedId == draggedId && _previewTargetId == targetId && _previewCell == cell) return;
     _previewDraggedId = draggedId;
@@ -395,12 +396,10 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final dragged = _itemById(draggedId);
     final onMoveToCell = widget.onMoveToCell;
     final onInsertBefore = widget.onInsertBefore;
-    if (onMoveToCell != null && dragged?.span == HomeSpan.wide) {
+    if (onMoveToCell != null) {
       onMoveToCell(draggedId, HomeGridLayout.anchorForSpan(position, dragged?.span));
     } else if (onInsertBefore != null) {
       onInsertBefore(draggedId, target.id);
-    } else {
-      onMoveToCell?.call(draggedId, position);
     }
   }
 
@@ -441,10 +440,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
               return _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
             },
             feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
-            childWhenDragging: Padding(
-              padding: EdgeInsets.only(left: lead, top: lead),
-              child: Opacity(opacity: 0.3, child: box),
-            ),
+            childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
             child: _Jiggle(
               enabled: arranging && !MediaQuery.disableAnimationsOf(context),
               child: Stack(
@@ -514,7 +510,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             onDragEnd: (_) => _endDrag(),
             dragAnchorStrategy: (_, __, ___) => _dragAnchor = Offset(size.width / 2, size.height / 2),
             feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
-            childWhenDragging: Opacity(opacity: 0.3, child: box),
+            childWhenDragging: SizedBox(width: size.width, height: size.height),
             child: box,
           ),
     );

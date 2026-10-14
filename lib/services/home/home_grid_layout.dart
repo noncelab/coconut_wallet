@@ -37,23 +37,17 @@ class HomeGridLayout {
     return position;
   }
 
+  /// Moves to a grid cell while preserving items that do not conflict with the target.
   HomeConfiguration moveToCell(String id, HomeGridPosition target) {
     final item = _itemsById[id];
     if (item == null || !canMoveToCell(id, target)) return positionedConfiguration;
     final source = _positions[id]!;
     if (source == target) return positionedConfiguration;
     final placed = Map<String, HomeGridPosition>.of(_positions)..remove(id);
-    if (item.span == HomeSpan.shortcut && source.row > target.row && _hasWideOnRow(placed, target.row, exceptId: id)) {
-      _shiftRowsDown(placed, fromRow: target.row, by: item.span.height);
-    } else if (item.span == HomeSpan.wide && target.row < source.row && !_crossesTallItem(placed, target.row, id)) {
-      _shiftRowsDown(placed, fromRow: target.row, toRow: source.row, by: item.span.height);
-    } else {
-      return _placeAndRelocateDisplaced(item, source, target, placed);
-    }
-    placed[id] = target;
-    return _withPositions(placed);
+    return _placeAndRelocateDisplaced(item, source, target, placed);
   }
 
+  /// Inserts in visual order, allowing the following items to flow into new rows.
   HomeConfiguration moveBefore(String id, String beforeId) {
     if (id == beforeId) return positionedConfiguration;
     final moving = _itemsById[id];
@@ -62,7 +56,11 @@ class HomeGridLayout {
     if (moving.span == HomeSpan.shortcut &&
         before.span == HomeSpan.wide &&
         _positions[id]!.row > _positions[beforeId]!.row) {
-      return moveToCell(id, HomeGridPosition(0, _positions[beforeId]!.row));
+      final target = HomeGridPosition(0, _positions[beforeId]!.row);
+      final placed = Map<String, HomeGridPosition>.of(_positions)..remove(id);
+      _shiftRowsDown(placed, fromRow: target.row, by: moving.span.height);
+      placed[id] = target;
+      return _withPositions(placed);
     }
     final ordered = itemsInVisualOrder..remove(moving);
     ordered.insert(ordered.indexOf(before), moving);
@@ -157,20 +155,10 @@ class HomeGridLayout {
     }
   }
 
-  bool _hasWideOnRow(Map<String, HomeGridPosition> placed, int row, {required String exceptId}) => configuration.items
-      .any((other) => other.id != exceptId && other.span == HomeSpan.wide && placed[other.id]?.row == row);
-
-  bool _crossesTallItem(Map<String, HomeGridPosition> placed, int row, String exceptId) =>
-      configuration.items.any((other) {
-        if (other.id == exceptId) return false;
-        final position = placed[other.id];
-        return position != null && position.row < row && row < position.row + other.span.height;
-      });
-
-  void _shiftRowsDown(Map<String, HomeGridPosition> placed, {required int fromRow, int? toRow, required int by}) {
+  void _shiftRowsDown(Map<String, HomeGridPosition> placed, {required int fromRow, required int by}) {
     for (final entry in placed.entries.toList()) {
       final position = entry.value;
-      if (position.row >= fromRow && (toRow == null || position.row < toRow)) {
+      if (position.row >= fromRow) {
         placed[entry.key] = HomeGridPosition(position.column, position.row + by);
       }
     }
@@ -201,9 +189,39 @@ class HomeGridLayout {
     }
     placed[item.id] = target;
     for (final other in displaced) {
-      placed[other.id] = _fits(other.span, source, placed) ? source : _firstFreeFrom(other.span, placed, _origin);
+      final previous = _positions[other.id]!;
+      final translated = HomeGridPosition(
+        source.column + previous.column - target.column,
+        source.row + previous.row - target.row,
+      );
+      final withinVacatedArea =
+          translated.column >= source.column &&
+          translated.row >= source.row &&
+          translated.column + other.span.width <= source.column + item.span.width &&
+          translated.row + other.span.height <= source.row + item.span.height;
+      // Keep the displaced group together in the space vacated by the moving item.
+      placed[other.id] =
+          withinVacatedArea && _fits(other.span, translated, placed)
+              ? translated
+              : _firstFreeWithin(other.span, placed, source, item.span) ??
+                  (_fits(other.span, source, placed) ? source : _firstFreeFrom(other.span, placed, _origin));
     }
     return _withPositions(placed);
+  }
+
+  HomeGridPosition? _firstFreeWithin(
+    HomeSpan span,
+    Map<String, HomeGridPosition> placed,
+    HomeGridPosition start,
+    HomeSpan area,
+  ) {
+    for (var row = start.row; row <= start.row + area.height - span.height; row++) {
+      for (var column = start.column; column <= start.column + area.width - span.width; column++) {
+        final candidate = HomeGridPosition(column, row);
+        if (_fits(span, candidate, placed)) return candidate;
+      }
+    }
+    return null;
   }
 
   Map<String, HomeGridPosition> _placeItems() {
