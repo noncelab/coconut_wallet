@@ -332,9 +332,6 @@ class CommonBottomSheets {
                           onVerticalDragEnd: (details) {
                             handleDrag();
                           },
-                          onVerticalDragCancel: () {
-                            handleDrag();
-                          },
                           child: Container(
                             color: resolvedBackgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -359,9 +356,6 @@ class CommonBottomSheets {
                             draggableController.jumpTo(draggableController.size + delta);
                           },
                           onVerticalDragEnd: (details) {
-                            handleDrag();
-                          },
-                          onVerticalDragCancel: () {
                             handleDrag();
                           },
                           child: CoconutAppBar.build(
@@ -802,7 +796,6 @@ class _SheetDragForwarderState extends State<_SheetDragForwarder> {
         widget.controller.jumpTo(widget.controller.size + delta);
       },
       onVerticalDragEnd: (_) => _handleDragEnd(),
-      onVerticalDragCancel: () => _handleDragEnd(),
       child: widget.child,
     );
   }

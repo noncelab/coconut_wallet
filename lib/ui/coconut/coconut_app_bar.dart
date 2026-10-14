@@ -209,7 +209,7 @@ class _AppBarLeading extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 4),
+        padding: EdgeInsets.only(left: assetName == CommonActionIconPath.close ? 12 : 4),
         child: CoconutAppBarActionButton(
           buttonKey: iconKey,
           onPressed: onPressed,
