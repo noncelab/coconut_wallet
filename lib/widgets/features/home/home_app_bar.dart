@@ -20,6 +20,7 @@ class HomeAppBar extends StatelessWidget {
   final bool isArranging;
   final LayerLink addWalletButtonLink;
   final VoidCallback onArrangeDone;
+  final VoidCallback? onUndoArrangement;
   final VoidCallback onEdit;
   final VoidCallback onAddWallet;
   final VoidCallback onSettings;
@@ -32,6 +33,7 @@ class HomeAppBar extends StatelessWidget {
     required this.isArranging,
     required this.addWalletButtonLink,
     required this.onArrangeDone,
+    this.onUndoArrangement,
     required this.onEdit,
     required this.onAddWallet,
     required this.onSettings,
@@ -68,6 +70,14 @@ class HomeAppBar extends StatelessWidget {
       ),
       appTitle: '',
       actionButtonList: [
+        if (isArranging && onUndoArrangement != null)
+          CupertinoButton(
+            key: const Key('home-arrange-undo'),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: const Size(40, 40),
+            onPressed: onUndoArrangement,
+            child: Text(t.home_presets.undo, style: CoconutTypography.body2_14_Bold.copyWith(color: iconColor)),
+          ),
         if (isArranging)
           CupertinoButton(
             key: const Key('home-arrange-done'),

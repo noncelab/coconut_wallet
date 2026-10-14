@@ -20,8 +20,6 @@ class HomeItemsView extends StatefulWidget {
   static const double cell = 80;
   static const double gap = 12;
 
-  static const arrangeIdleTimeout = Duration(seconds: 10);
-
   static const reorderHoverDelay = Duration(milliseconds: 180);
   static const reorderDuration = Duration(milliseconds: 280);
 
@@ -74,7 +72,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   Timer? _autoScrollTimer;
   double _autoScrollStep = 0;
   Timer? _previewTimer;
-  Timer? _idleTimer;
   final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
   String? _draggedId;
   int? _dragPointer;
@@ -90,13 +87,11 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _restartIdleTimer();
   }
 
   @override
   void didUpdateWidget(covariant HomeItemsView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isArranging != widget.isArranging) _restartIdleTimer();
     if (oldWidget.isArranging && !widget.isArranging) cancelActiveDrag();
     if (oldWidget.configuration != widget.configuration) {
       if (_draggedId != null) cancelActiveDrag();
@@ -113,7 +108,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _idleTimer?.cancel();
     if (_dragPointer case final pointer?) GestureBinding.instance.cancelPointer(pointer);
     _previewTimer?.cancel();
     _stopAutoScroll();
@@ -150,12 +144,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     _dragPointer = null;
     _stopAutoScroll();
     _clearPreview();
-  }
-
-  void _restartIdleTimer() {
-    _idleTimer?.cancel();
-    _idleTimer =
-        widget.isArranging ? Timer(HomeItemsView.arrangeIdleTimeout, () => widget.onArrangeDone?.call()) : null;
   }
 
   void _onDragUpdate(String draggedId, DragUpdateDetails details) {
@@ -381,16 +369,11 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             ),
           ),
         );
-        return Listener(
+        return GestureDetector(
+          key: const ValueKey('home-grid-arranging'),
           behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) => _restartIdleTimer(),
-          onPointerMove: (_) => _restartIdleTimer(),
-          child: GestureDetector(
-            key: const ValueKey('home-grid-arranging'),
-            behavior: HitTestBehavior.translucent,
-            onTap: widget.isArranging ? widget.onArrangeDone : null,
-            child: grid,
-          ),
+          onTap: widget.isArranging ? widget.onArrangeDone : null,
+          child: grid,
         );
       },
     );

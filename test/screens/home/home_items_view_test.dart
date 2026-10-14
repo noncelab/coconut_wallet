@@ -1647,15 +1647,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
-    testWidgets('arranging ends by itself after ten seconds without input', (tester) async {
+    testWidgets('arranging remains active after a minute without input', (tester) async {
       var done = 0;
       await pumpGrid(tester, isArranging: true, onArrangeDone: () => done++, onRemove: (_) {});
-      await tester.pump(const Duration(seconds: 9));
-      await tester.drag(find.byKey(const ValueKey('home-item-a')), const Offset(0, 30));
-      await tester.pump(const Duration(seconds: 9));
+      await tester.pump(const Duration(seconds: 12));
       expect(done, 0);
-      await tester.pump(const Duration(seconds: 2));
-      expect(done, 1);
+      await tester.pump(const Duration(seconds: 48));
+      expect(done, 0);
+      expect(tester.widget<HomeItemsView>(find.byType(HomeItemsView)).isArranging, isTrue);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 200));

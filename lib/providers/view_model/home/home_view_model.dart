@@ -192,17 +192,30 @@ class HomeViewModel extends ChangeNotifier {
     return result;
   }
 
-  HomeConfiguration _apply(HomeConfiguration next) {
-    _configuration = HomeGridLayout(next).positionedConfiguration;
+  HomeConfiguration? _previousArrangement;
+
+  bool get canUndoArrangement => _previousArrangement != null;
+
+  void undoArrangement() {
+    final previous = _previousArrangement;
+    if (previous != null) _apply(previous);
+  }
+
+  HomeConfiguration _apply(HomeConfiguration next, {bool rememberArrangement = false}) {
+    final positioned = HomeGridLayout(next).positionedConfiguration;
+    if (rememberArrangement && positioned == _configuration) return _configuration;
+    _previousArrangement = rememberArrangement ? _configuration : null;
+    _configuration = positioned;
     _repository.save(_configuration);
     notifyListeners();
     return _configuration;
   }
 
   void moveToCell(String id, HomeGridPosition position) =>
-      _apply(HomeGridLayout(_configuration).moveToCell(id, position));
+      _apply(HomeGridLayout(_configuration).moveToCell(id, position), rememberArrangement: true);
 
-  void insertBefore(String id, String beforeId) => _apply(HomeGridLayout(_configuration).moveBefore(id, beforeId));
+  void insertBefore(String id, String beforeId) =>
+      _apply(HomeGridLayout(_configuration).moveBefore(id, beforeId), rememberArrangement: true);
 
   void removeItem(String id) => _apply(_configuration.removeItem(id));
 

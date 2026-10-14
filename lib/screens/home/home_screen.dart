@@ -236,6 +236,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _viewModel.finishArranging();
   }
 
+  void _undoArrangement() {
+    _itemsKey.currentState?.cancelActiveDrag();
+    _viewModel.undoArrangement();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -393,6 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isArranging: arranging,
       addWalletButtonLink: _addWalletButtonLink,
       onArrangeDone: _finishArranging,
+      onUndoArrangement: _viewModel.canUndoArrangement ? _undoArrangement : null,
       onEdit: () => _openHomeEdit(context),
       onAddWallet: () => _openAddWallet(context),
       onSettings: () => _openAppSettings(context),
