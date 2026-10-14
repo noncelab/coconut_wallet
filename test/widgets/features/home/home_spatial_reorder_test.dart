@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
@@ -48,9 +50,10 @@ HomeConfiguration _mixedHome() {
 }
 
 class _GridHarness extends StatefulWidget {
-  const _GridHarness({super.key, required this.withMenus});
+  const _GridHarness({super.key, required this.withMenus, this.initialConfiguration});
 
   final bool withMenus;
+  final HomeConfiguration? initialConfiguration;
 
   @override
   State<_GridHarness> createState() => _GridHarnessState();
@@ -58,7 +61,7 @@ class _GridHarness extends StatefulWidget {
 
 class _GridHarnessState extends State<_GridHarness> {
   final gridKey = GlobalKey<HomeItemsViewState>();
-  HomeConfiguration configuration = _mixedHome();
+  late HomeConfiguration configuration;
   late final HomeItemRegistry registry;
   final cellDrops = <(String, HomeGridPosition)>[];
   final insertionDrops = <(String, String)>[];
@@ -67,6 +70,7 @@ class _GridHarnessState extends State<_GridHarness> {
   @override
   void initState() {
     super.initState();
+    configuration = widget.initialConfiguration ?? _mixedHome();
     registry = HomeItemRegistry();
     for (final item in configuration.items) {
       registry.register(_LabelDefinition(item));
@@ -113,8 +117,8 @@ class _GridHarnessState extends State<_GridHarness> {
 
 Finder _item(String id) => find.byKey(ValueKey('home-item-$id'));
 
-Map<String, Offset> _paintedPositions(WidgetTester tester) => {
-  for (final item in _mixedHome().items) item.id: tester.getTopLeft(_item(item.id)),
+Map<String, Offset> _paintedPositions(WidgetTester tester, [HomeConfiguration? configuration]) => {
+  for (final item in (configuration ?? _mixedHome()).items) item.id: tester.getTopLeft(_item(item.id)),
 };
 
 Map<String, HomeGridPosition> _savedPositions(HomeConfiguration configuration) => {
@@ -134,13 +138,17 @@ void _expectSingleDragCopy(WidgetTester tester, String source, Size originalSize
   expect(tester.getSize(_item(source)), originalSize, reason: 'The empty placeholder must keep its dimensions.');
 }
 
-Future<_GridHarnessState> _pumpGrid(WidgetTester tester, {required bool withMenus}) async {
+Future<_GridHarnessState> _pumpGrid(
+  WidgetTester tester, {
+  required bool withMenus,
+  HomeConfiguration? initialConfiguration,
+}) async {
   tester.view.physicalSize = const Size(414, 896);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final key = GlobalKey<_GridHarnessState>();
-  await tester.pumpWidget(_GridHarness(key: key, withMenus: withMenus));
+  await tester.pumpWidget(_GridHarness(key: key, withMenus: withMenus, initialConfiguration: initialConfiguration));
   return key.currentState!;
 }
 
@@ -174,9 +182,129 @@ Future<void> _settleHover(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+HomeConfiguration _smallWidgetAndShortcutColumns(int widgetColumn) {
+  final placements = <(String, HomeSpan, HomeGridPosition)>[
+    ('bitcoin_balance_trend', HomeSpan.wide, const HomeGridPosition(0, 0)),
+    ('all_wallet_stack', HomeSpan.small, HomeGridPosition(widgetColumn, 2)),
+    for (final row in [2, 3])
+      for (var column = 0; column < 4; column++)
+        if (column < widgetColumn || column >= widgetColumn + 2)
+          ('shortcut:$column:$row', HomeSpan.shortcut, HomeGridPosition(column, row)),
+    ('recent_transactions_4x2', HomeSpan.wide, const HomeGridPosition(0, 4)),
+  ];
+  return HomeConfiguration(
+    items: [
+      for (var index = 0; index < placements.length; index++)
+        HomeItem(
+          id: placements[index].$1,
+          definitionId: placements[index].$1,
+          kind: placements[index].$2 == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+          order: index,
+          span: placements[index].$2,
+          position: placements[index].$3,
+          configuration: {'fixtureMarker': placements[index].$1},
+        ),
+    ],
+  );
+}
+
+Map<String, Offset> _cellOrigins(Offset surface, Map<String, HomeGridPosition> positions) => {
+  for (final entry in positions.entries)
+    entry.key:
+        surface +
+        Offset(
+          entry.value.column * (HomeItemsView.cell + HomeItemsView.gap),
+          entry.value.row * (HomeItemsView.cell + HomeItemsView.gap),
+        ),
+};
+
 void main() {
   for (final withMenus in [true, false]) {
     final branch = withMenus ? 'with menus' : 'without menus';
+    for (final move in [
+      (source: 0, target: 1, displaced: 2, vacated: 0),
+      (source: 2, target: 1, displaced: 1, vacated: 3),
+      (source: 1, target: 0, displaced: 0, vacated: 2),
+      (source: 1, target: 2, displaced: 3, vacated: 1),
+    ]) {
+      for (final ending in ['hover drop', 'quick drop', 'cancel']) {
+        testWidgets('2×2 column ${move.source} → ${move.target} $ending $branch preserves the other column and rows', (
+          tester,
+        ) async {
+          final original = _smallWidgetAndShortcutColumns(move.source);
+          final harness = await _pumpGrid(tester, withMenus: withMenus, initialConfiguration: original);
+          final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+          final originalPositions = _savedPositions(original);
+          final originalPainted = _cellOrigins(surface, originalPositions);
+          expect(
+            _paintedPositions(tester, original),
+            originalPainted,
+            reason: 'The saved center column must render as-is.',
+          );
+          final expectedPositions = {
+            ...originalPositions,
+            'all_wallet_stack': HomeGridPosition(move.target, 2),
+            'shortcut:${move.displaced}:2': HomeGridPosition(move.vacated, 2),
+            'shortcut:${move.displaced}:3': HomeGridPosition(move.vacated, 3),
+          };
+          final expectedPainted = _cellOrigins(surface, expectedPositions);
+          final sourceSize = tester.getSize(_item('all_wallet_stack'));
+          final destination = expectedPainted['all_wallet_stack']! + sourceSize.center(Offset.zero);
+          final gesture = await _holdAndMove(tester, 'all_wallet_stack', destination);
+
+          if (ending != 'quick drop') {
+            await _settleHover(tester);
+            expect(
+              _paintedPositions(tester, original),
+              expectedPainted,
+              reason: 'Only the widget and the two shortcuts in its target column may move.',
+            );
+            _expectSingleDragCopy(tester, 'all_wallet_stack', sourceSize);
+            expect(harness.configuration, original, reason: 'A preview must not change the saved configuration.');
+            expect(harness.cellDrops, isEmpty);
+            expect(harness.insertionDrops, isEmpty);
+          }
+
+          if (ending == 'cancel') {
+            await gesture.cancel();
+          } else {
+            await gesture.up();
+          }
+          await tester.pump();
+          // A quick release commits in the first frame's post-frame callback.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          final committedPositions = ending == 'cancel' ? originalPositions : expectedPositions;
+          final committedPainted = ending == 'cancel' ? originalPainted : expectedPainted;
+          expect(_savedPositions(harness.configuration), committedPositions);
+          expect(_paintedPositions(tester, original), committedPainted);
+          expect(
+            harness.cellDrops,
+            ending == 'cancel' ? isEmpty : [('all_wallet_stack', HomeGridPosition(move.target, 2))],
+          );
+          expect(harness.insertionDrops, isEmpty);
+          expect(find.text('item:all_wallet_stack'), findsOneWidget);
+
+          final restored = HomeConfiguration.fromJson(jsonDecode(jsonEncode(harness.configuration.toJson())))!;
+          final expected = HomeConfiguration(
+            version: original.version,
+            shortcutWalletContext: original.shortcutWalletContext,
+            items: [for (final item in original.items) item.copyWith(position: committedPositions[item.id])],
+          );
+          expect(restored, expected, reason: 'JSON must preserve positions, item order, metadata and wallet context.');
+          await tester.pumpWidget(const SizedBox());
+          await _pumpGrid(tester, withMenus: withMenus, initialConfiguration: restored);
+          expect(
+            _paintedPositions(tester, restored),
+            committedPainted,
+            reason: 'Reloading must preserve the center column.',
+          );
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
+
     for (final (source, target) in [('shortcut:receive', 'shortcut:send'), ('shortcut:send', 'shortcut:receive')]) {
       testWidgets('$source → $target $branch previews and commits only the adjacent pair', (tester) async {
         final harness = await _pumpGrid(tester, withMenus: withMenus);

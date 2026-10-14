@@ -32,7 +32,9 @@ class HomeGridLayout {
   }
 
   static HomeGridPosition anchorForSpan(HomeGridPosition position, HomeSpan? span) {
-    if (span == HomeSpan.small) return HomeGridPosition((position.column ~/ 2) * 2, position.row);
+    if (span == HomeSpan.small) {
+      return HomeGridPosition(position.column.clamp(0, columns - HomeSpan.small.width), position.row);
+    }
     if (span == HomeSpan.wide) return HomeGridPosition(0, position.row);
     return position;
   }
@@ -138,7 +140,7 @@ class HomeGridLayout {
           nextRow();
           continue;
         }
-        if (_fits(item.span, HomeGridPosition(column, row), positions)) break;
+        if (_isFlowColumn(item.span, column) && _fits(item.span, HomeGridPosition(column, row), positions)) break;
         column++;
         if (column >= columns) nextRow();
       }
@@ -241,7 +243,7 @@ class HomeGridLayout {
             previousPosition == null
                 ? _origin
                 : HomeGridPosition(previousPosition.column + previous!.span.width, previousPosition.row);
-        placed[item.id] = _firstFreeFrom(item.span, placed, start);
+        placed[item.id] = _firstFreeFrom(item.span, placed, start, useFlowColumns: true);
       }
       previous = item;
     }
@@ -260,7 +262,7 @@ class HomeGridLayout {
           rowHeight = 0;
           continue;
         }
-        if (_withinBounds(item.span, HomeGridPosition(column, row))) break;
+        if (_isFlowColumn(item.span, column) && _withinBounds(item.span, HomeGridPosition(column, row))) break;
         column++;
       }
       placed[item.id] = HomeGridPosition(column, row);
@@ -274,11 +276,16 @@ class HomeGridLayout {
     }
   }
 
-  HomeGridPosition _firstFreeFrom(HomeSpan span, Map<String, HomeGridPosition> placed, HomeGridPosition start) {
+  HomeGridPosition _firstFreeFrom(
+    HomeSpan span,
+    Map<String, HomeGridPosition> placed,
+    HomeGridPosition start, {
+    bool useFlowColumns = false,
+  }) {
     for (var row = start.row; ; row++) {
       for (var column = row == start.row ? start.column : 0; column <= columns - span.width; column++) {
         final candidate = HomeGridPosition(column, row);
-        if (_fits(span, candidate, placed)) return candidate;
+        if ((!useFlowColumns || _isFlowColumn(span, column)) && _fits(span, candidate, placed)) return candidate;
       }
     }
   }
@@ -305,10 +312,10 @@ class HomeGridLayout {
   }
 
   bool _withinBounds(HomeSpan span, HomeGridPosition position) =>
-      position.column >= 0 &&
-      position.row >= 0 &&
-      position.column + span.width <= columns &&
-      (span != HomeSpan.small || position.column.isEven);
+      position.column >= 0 && position.row >= 0 && position.column + span.width <= columns;
+
+  // Keep preset and insertion flow unchanged; explicit positions may use any fitting column.
+  bool _isFlowColumn(HomeSpan span, int column) => span != HomeSpan.small || column.isEven;
 
   bool _tallRowConflict(HomeSpan a, HomeGridPosition aPosition, HomeSpan b, HomeGridPosition bPosition) =>
       a.height > 1 &&

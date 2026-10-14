@@ -644,7 +644,7 @@ void main() {
     expect(target, const HomeGridPosition(0, 0));
   });
 
-  testWidgets('a 2×2 widget snaps to an even column between two 1×1 shortcuts', (tester) async {
+  testWidgets('a 2×2 widget fits in the center between two 1×1 shortcuts', (tester) async {
     HomeGridPosition? target;
     final registry =
         HomeItemRegistry()
@@ -702,7 +702,7 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
 
-    expect(target, const HomeGridPosition(2, 0));
+    expect(target, const HomeGridPosition(1, 0));
   });
 
   testWidgets('a 4×2 widget drops into row zero from its empty side cell', (tester) async {

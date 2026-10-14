@@ -2,12 +2,52 @@ import 'dart:math';
 
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
+import 'package:coconut_wallet/model/home/home_item_definition.dart';
 import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 HomeItem item(String id, int order, HomeSpan span, HomeItemKind kind) =>
     HomeItem(id: id, definitionId: id, kind: kind, order: order, span: span);
+
+class _SmallDefinition extends HomeItemDefinition {
+  const _SmallDefinition(String id)
+    : super(
+        id: id,
+        kind: HomeItemKind.widget,
+        supportedSpans: const [HomeSpan.small],
+        category: HomeItemCategory.wallets,
+      );
+
+  @override
+  Widget build(BuildContext context, HomeItem item) => const SizedBox.shrink();
+}
+
+HomeConfiguration homeWithShortcutBlock(int widgetColumn) => HomeConfiguration(
+  shortcutWalletContext: const ShortcutWalletContext.wallet(7),
+  items: [
+    for (final (index, (id, span, column, row))
+        in [
+          ('header', HomeSpan.wide, 0, 0),
+          ('wallet', HomeSpan.small, widgetColumn, 2),
+          ('near-top', HomeSpan.shortcut, widgetColumn == 0 ? 2 : 1, 2),
+          ('far-top', HomeSpan.shortcut, widgetColumn == 0 ? 3 : 0, 2),
+          ('near-bottom', HomeSpan.shortcut, widgetColumn == 0 ? 2 : 1, 3),
+          ('far-bottom', HomeSpan.shortcut, widgetColumn == 0 ? 3 : 0, 3),
+          ('footer', HomeSpan.wide, 0, 4),
+        ].indexed)
+      HomeItem(
+        id: id,
+        definitionId: id,
+        kind: span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+        order: index,
+        span: span,
+        position: HomeGridPosition(column, row),
+        configuration: {'label': id},
+      ),
+  ],
+);
 
 HomeConfiguration mixedHome() => HomeConfiguration(
   shortcutWalletContext: const ShortcutWalletContext.wallet(7),
@@ -43,7 +83,6 @@ void expectValidLayout(HomeConfiguration configuration) {
     expect(position.column, greaterThanOrEqualTo(0), reason: item.id);
     expect(position.row, greaterThanOrEqualTo(0), reason: item.id);
     expect(position.column + item.span.width, lessThanOrEqualTo(HomeGridLayout.columns), reason: item.id);
-    if (item.span == HomeSpan.small) expect(position.column.isEven, isTrue, reason: item.id);
     for (var row = position.row; row < position.row + item.span.height; row++) {
       for (var column = position.column; column < position.column + item.span.width; column++) {
         expect(occupied.add((column, row)), isTrue, reason: '${item.id} overlaps at ($column, $row)');
@@ -66,6 +105,137 @@ void expectPositions(HomeConfiguration actual, HomeConfiguration before, Map<Str
 }
 
 void main() {
+  group('center column', () {
+    test('2×2 anchors preserve all valid columns and clamp at both edges', () {
+      for (final (column, expected) in [(-2, 0), (-1, 0), (0, 0), (1, 1), (2, 2), (3, 2), (5, 2)]) {
+        expect(
+          HomeGridLayout.anchorForSpan(HomeGridPosition(column, 3), HomeSpan.small),
+          HomeGridPosition(expected, 3),
+        );
+      }
+      expect(HomeGridLayout.anchorForSpan(const HomeGridPosition(1, 3), HomeSpan.wide), const HomeGridPosition(0, 3));
+      expect(
+        HomeGridLayout.anchorForSpan(const HomeGridPosition(1, 3), HomeSpan.shortcut),
+        const HomeGridPosition(1, 3),
+      );
+    });
+
+    for (final sourceColumn in [0, 2]) {
+      test('moving from column $sourceColumn displaces only the near shortcuts and can move back', () {
+        final before = homeWithShortcutBlock(sourceColumn);
+        final vacatedColumn = sourceColumn == 0 ? 0 : 3;
+
+        final moved = HomeGridLayout(before).moveToCell('wallet', const HomeGridPosition(1, 2));
+
+        expectPositions(moved, before, {
+          'wallet': const HomeGridPosition(1, 2),
+          'near-top': HomeGridPosition(vacatedColumn, 2),
+          'near-bottom': HomeGridPosition(vacatedColumn, 3),
+        });
+        expect(HomeGridLayout(moved).moveToCell('wallet', HomeGridPosition(sourceColumn, 2)), before);
+      });
+    }
+
+    test('a saved centered widget survives JSON, definition normalization and repeated layout', () {
+      final centered = HomeGridLayout(homeWithShortcutBlock(0)).moveToCell('wallet', const HomeGridPosition(1, 2));
+      final decoded = HomeConfiguration.fromJson(centered.toJson())!;
+      final normalized = decoded.normalize((id) => id == 'wallet' ? const _SmallDefinition('wallet') : null);
+
+      expect(normalized, centered);
+      expect(HomeGridLayout(normalized).positionedConfiguration, centered);
+      expect(HomeGridLayout(HomeGridLayout(normalized).positionedConfiguration).positionedConfiguration, centered);
+      expect(HomeGridLayout(normalized).positionOf('wallet'), const HomeGridPosition(1, 2));
+    });
+
+    test('adding and removing items preserves a centered widget and the other saved positions', () {
+      final centered = HomeGridLayout(homeWithShortcutBlock(0)).moveToCell('wallet', const HomeGridPosition(1, 2));
+      final added =
+          HomeGridLayout(
+            centered.addItem(item('new-shortcut', 99, HomeSpan.shortcut, HomeItemKind.shortcut)),
+          ).positionedConfiguration;
+
+      for (final original in centered.items) {
+        expect(added.items.singleWhere((other) => other.id == original.id), original);
+      }
+      expectValidLayout(added);
+      expect(HomeGridLayout(added.removeItem('new-shortcut')).positionedConfiguration, centered);
+      final removed = HomeGridLayout(centered.removeItem('far-top')).positionedConfiguration;
+      expect(removed.items.singleWhere((item) => item.id == 'wallet').position, const HomeGridPosition(1, 2));
+      for (final original in centered.items.where((item) => item.id != 'far-top')) {
+        expect(removed.items.singleWhere((other) => other.id == original.id).position, original.position);
+      }
+      expectValidLayout(removed);
+    });
+
+    test('normalizing a resized widget preserves a valid center anchor', () {
+      final before = HomeConfiguration(
+        items: [
+          item('wallet', 0, HomeSpan.wide, HomeItemKind.widget).copyWith(position: const HomeGridPosition(1, 3)),
+          item('left', 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(0, 3)),
+          item('right', 2, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(3, 3)),
+        ],
+      );
+      final resized = before.normalize((id) => id == 'wallet' ? const _SmallDefinition('wallet') : null);
+      final layout = HomeGridLayout(resized);
+
+      expect(layout.positionOf('wallet'), const HomeGridPosition(1, 3));
+      expect(layout.positionOf('left'), const HomeGridPosition(0, 3));
+      expect(layout.positionOf('right'), const HomeGridPosition(3, 3));
+      expectValidLayout(layout.positionedConfiguration);
+    });
+
+    test('a resized 2×2 can move to the center after automatic placement', () {
+      final resized = HomeConfiguration(
+        items: [
+          item('left', 0, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(0, 1)),
+          item('right', 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(3, 1)),
+          item('wallet', 2, HomeSpan.wide, HomeItemKind.widget).copyWith(span: HomeSpan.small),
+        ],
+      );
+      final positioned = HomeGridLayout(resized).positionedConfiguration;
+      final moved = HomeGridLayout(positioned).moveToCell('wallet', const HomeGridPosition(1, 1));
+
+      expectPositions(moved, positioned, {'wallet': const HomeGridPosition(1, 1)});
+    });
+
+    test('a displaced 2×2 uses a center gap without moving unrelated shortcuts', () {
+      final before = HomeConfiguration(
+        items: [
+          item('left', 0, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(0, 0)),
+          item('right', 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(3, 0)),
+          item('wallet', 2, HomeSpan.small, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 2)),
+          item('moving', 3, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(3, 4)),
+        ],
+      );
+
+      final moved = HomeGridLayout(before).moveToCell('moving', const HomeGridPosition(0, 2));
+
+      expectPositions(moved, before, {'moving': const HomeGridPosition(0, 2), 'wallet': const HomeGridPosition(1, 0)});
+    });
+
+    for (final positionedPrefix in [false, true]) {
+      test('automatic placement retains the previous alignment with a positioned prefix: $positionedPrefix', () {
+        final config = HomeConfiguration(
+          items: [
+            item(
+              'first',
+              0,
+              HomeSpan.shortcut,
+              HomeItemKind.shortcut,
+            ).copyWith(position: positionedPrefix ? const HomeGridPosition(0, 0) : null),
+            item('wallet', 1, HomeSpan.small, HomeItemKind.widget),
+            item('last', 2, HomeSpan.shortcut, HomeItemKind.shortcut),
+          ],
+        );
+        final layout = HomeGridLayout(config);
+
+        expect(layout.positionOf('first'), const HomeGridPosition(0, 0));
+        expect(layout.positionOf('wallet'), const HomeGridPosition(2, 0));
+        expect(layout.positionOf('last'), HomeGridPosition(0, positionedPrefix ? 1 : 2));
+      });
+    }
+  });
+
   group('spatial drops in a mixed home', () {
     for (final (first, second) in [
       ('receive', 'send'),
@@ -176,7 +346,7 @@ void main() {
       });
       expect(layout.moveToCell('receive', layout.positionOf('receive')!), before);
       expect(layout.moveToCell('missing', const HomeGridPosition(0, 0)), before);
-      expect(layout.moveToCell('wallet', const HomeGridPosition(1, 2)), before);
+      expect(layout.moveToCell('wallet', const HomeGridPosition(3, 2)), before);
       expect(layout.moveToCell('balance', const HomeGridPosition(1, 0)), before);
       expect(layout.moveToCell('send', const HomeGridPosition(0, -1)), before);
     });
@@ -409,9 +579,13 @@ void main() {
     }
     expect(layout.positionOf('wide'), const HomeGridPosition(0, 1));
     expect(layout.positionOf('single'), const HomeGridPosition(0, 4));
-    expect(layout.positionOf('small'), const HomeGridPosition(2, 4));
-    expect(layout.positionOf('lower-a'), const HomeGridPosition(1, 4));
-    expect(layout.positionOf('lower-b'), const HomeGridPosition(0, 5));
+    expect(
+      layout.positionOf('small'),
+      const HomeGridPosition(1, 4),
+      reason: 'the center is now the first fitting position in the vacated wide footprint',
+    );
+    expect(layout.positionOf('lower-a'), const HomeGridPosition(3, 4));
+    expect(layout.positionOf('lower-b'), const HomeGridPosition(3, 5));
     expect(layout.positionOf('lower-c'), const HomeGridPosition(2, 3));
     expect(layout.positionOf('lower-d'), const HomeGridPosition(3, 3));
     expectValidLayout(moved);
@@ -643,7 +817,7 @@ void main() {
     );
   });
 
-  test('2×2 widgets use even columns while 4×2 may start on an odd row', () {
+  test('2×2 widgets use all fitting columns while 4×2 may start on an odd row', () {
     final config = HomeConfiguration(
       items: [
         const HomeItem(
@@ -666,8 +840,12 @@ void main() {
     );
     final layout = HomeGridLayout(config);
 
-    expect(layout.canMoveToCell('small', const HomeGridPosition(1, 2)), isFalse);
+    expect(layout.canMoveToCell('small', const HomeGridPosition(0, 2)), isTrue);
+    expect(layout.canMoveToCell('small', const HomeGridPosition(1, 2)), isTrue);
     expect(layout.canMoveToCell('small', const HomeGridPosition(2, 2)), isTrue);
+    expect(layout.canMoveToCell('small', const HomeGridPosition(-1, 2)), isFalse);
+    expect(layout.canMoveToCell('small', const HomeGridPosition(3, 2)), isFalse);
+    expect(layout.canMoveToCell('small', const HomeGridPosition(1, -1)), isFalse);
     expect(layout.canMoveToCell('wide', const HomeGridPosition(0, 3)), isTrue);
     expect(layout.canMoveToCell('wide', const HomeGridPosition(0, 4)), isTrue);
   });
@@ -841,7 +1019,7 @@ void main() {
     expect(HomeConfiguration.fromJson(moved.toJson()), moved);
   });
 
-  test('a 2×2 cannot use the middle columns between two shortcuts', () {
+  test('a 2×2 can use the middle columns between two shortcuts', () {
     final config = HomeConfiguration(
       items: [
         const HomeItem(
@@ -872,10 +1050,9 @@ void main() {
     );
 
     final layout = HomeGridLayout(config);
-    expect(
-      HomeGridLayout(layout.moveToCell('middle', const HomeGridPosition(1, 0))).positionOf('middle'),
-      const HomeGridPosition(0, 2),
-    );
+    expectPositions(layout.moveToCell('middle', const HomeGridPosition(1, 0)), config, {
+      'middle': const HomeGridPosition(1, 0),
+    });
   });
 
   test('legacy row layout keeps the visible gap below two shortcuts', () {

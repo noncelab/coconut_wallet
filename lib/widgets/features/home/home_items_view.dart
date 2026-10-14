@@ -212,14 +212,27 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
     HomeItem? target;
     for (final item in layout.itemsInVisualOrder.reversed) {
+      if (item.id == draggedId) continue;
       final position = layout.positionOf(item.id)!;
-      // Share the gap between neighbors and keep the source cell while the pointer is still over it.
-      // Otherwise a slow drag can snap halfway through a tall row and displace unrelated items.
-      if (geometry.rectOf(position, item.span).inflate(_gap / 2).contains(local) &&
-          (item.id == draggedId || _accepts(item, draggedId))) {
+      final rect = geometry.rectOf(position, item.span).inflate(_gap / 2);
+      if (local.dx >= rect.left &&
+          local.dx <= rect.right &&
+          local.dy >= rect.top &&
+          local.dy <= rect.bottom &&
+          _accepts(item, draggedId)) {
         target = item;
         break;
       }
+    }
+    // Keep the source interior stable, but resolve shared edges to another item or a new cell.
+    // Including the source's left edge would prevent an exact one-column move to the left.
+    final sourceRect = geometry.rectOf(layout.positionOf(draggedId)!, dragged.span).inflate(_gap / 2);
+    if (target == null &&
+        local.dx > sourceRect.left &&
+        local.dx < sourceRect.right &&
+        local.dy > sourceRect.top &&
+        local.dy < sourceRect.bottom) {
+      target = dragged;
     }
 
     String? targetId;
