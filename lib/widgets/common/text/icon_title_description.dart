@@ -20,7 +20,7 @@ class IconTitleDescription extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const iconSize = 18.0;
-    const iconTextGap = 8.0;
+    const iconTextGap = 4.0;
     final titleStyle = CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText);
     final titlePainter = TextPainter(
       text: TextSpan(text: title, style: DefaultTextStyle.of(context).style.merge(titleStyle)),

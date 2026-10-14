@@ -35,7 +35,7 @@ class ShowVaultNoBalanceBottomSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconTitleDescription(
-          svgIconPath: CommonStateIconPath.circleInfo,
+          svgIconPath: CommonStateIconPath.bulb,
           title: t.wallet_detail_screen.vault_intro,
           description: t.wallet_detail_screen.vault_description,
         ),
@@ -86,7 +86,7 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconTitleDescription(
-          svgIconPath: CommonStateIconPath.circleInfo,
+          svgIconPath: CommonStateIconPath.bulb,
           title: t.wallet_detail_screen.vault_intro,
           description: t.wallet_detail_screen.vault_description,
         ),
@@ -94,10 +94,22 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 20.0),
           child: Divider(height: 1, color: context.coconutColors.divider),
         ),
-        IconTitleDescription(
-          svgIconPath: FeatureWalletIconPath.walletEyes,
-          title: t.wallet_detail_screen.vault_watch_only_title,
-          description: t.wallet_detail_screen.vault_watch_only_description,
+        SvgPicture.asset(
+          FeatureWalletIconPath.walletEyes,
+          width: 36,
+          height: 36,
+          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+        ),
+        CoconutLayout.spacing_400h,
+        Text(
+          t.wallet_detail_screen.vault_watch_only_title,
+          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+        ),
+        CoconutLayout.spacing_100h,
+        Text(
+          t.wallet_detail_screen.vault_watch_only_description,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+          textAlign: TextAlign.center,
         ),
         CoconutLayout.spacing_800h,
         InlineActionButton(

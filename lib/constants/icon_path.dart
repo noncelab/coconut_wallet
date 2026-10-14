@@ -110,6 +110,7 @@ abstract final class CommonStateIconPath {
   static const String statusLoading = 'assets/svg/common/state/status-loading.svg';
   static const String stopSign = 'assets/svg/common/state/stop-sign.svg';
   static const String triangleWarning = 'assets/svg/common/state/triangle-warning.svg';
+  static const String bulb = 'assets/svg/brand/motifs/bulb.svg';
 }
 
 abstract final class CommonVisibilityIconPath {
