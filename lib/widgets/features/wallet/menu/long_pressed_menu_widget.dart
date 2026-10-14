@@ -103,12 +103,17 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   late Animation<double> _shakeAnimation;
   final math.Random _random = math.Random();
   bool _isClosing = false;
+  bool _isClosingForAction = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _menuAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
+    _menuAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      reverseDuration: const Duration(milliseconds: 170),
+    );
 
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
 
@@ -134,7 +139,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     }
 
     _menuAnimationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _isClosing) {
+      if (status == AnimationStatus.dismissed && _isClosing) {
         _removeOverlay();
       }
     });
@@ -191,7 +196,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
       onRemove: () {
         if (!identical(_menuHistory, entry)) return;
         _menuHistory = null;
-        dismissMenu();
+        _startHideAnimation();
       },
     );
     _menuHistory = entry;
@@ -199,7 +204,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     // Local history alone does not notify Android's ahead-of-time Back handling.
     _menuRoute = route;
     _menuPopEntry = _MenuPopEntry(() {
-      if (mounted && identical(_menuHistory, entry)) dismissMenu();
+      if (mounted && identical(_menuHistory, entry)) _startHideAnimation();
     });
     route.registerPopEntry(_menuPopEntry!);
   }
@@ -232,6 +237,8 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   }
 
   void _removeOverlay() {
+    _isClosing = false;
+    _isClosingForAction = false;
     _removeMenuHistory();
     _overlayEntry?.remove();
     _overlayEntry = null;
@@ -242,18 +249,23 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     _isMenuPointerActive = false;
   }
 
-  void _startHideAnimation() {
-    _removeMenuHistory();
-    if (_overlayEntry == null) {
+  void _startHideAnimation({bool releaseNavigation = false}) {
+    if (_isClosing) return;
+    if (_overlayEntry == null || MediaQuery.disableAnimationsOf(context) || _menuAnimationController.value == 0) {
+      dismissMenu();
       return;
     }
+    // Keep Back focused on this menu until it disappears; selected actions may open another route immediately.
+    if (releaseNavigation) _removeMenuHistory();
     _isClosing = true;
-    _menuAnimationController.duration = const Duration(milliseconds: 150);
-    _menuAnimationController.forward(from: 0.0);
+    _isClosingForAction = releaseNavigation;
+    _isMenuPointerActive = false;
+    _overlayEntry?.markNeedsBuild();
+    _menuAnimationController.reverse();
   }
 
   Future<void> showMenu() async {
-    if (!mounted || widget.isEditMode || _isCapturingChild) {
+    if (!mounted || widget.isEditMode || _isCapturingChild || _isClosing) {
       return;
     }
     final generation = ++_menuGeneration;
@@ -311,9 +323,10 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
-        return Listener(
+        final content = Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: (event) {
+            if (_isClosing) return;
             if (_menuRect?.contains(event.position) != true) return;
             _isMenuPointerActive = true;
             _updateHoveredMenuItem(event.position);
@@ -339,9 +352,15 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                     onTap: _startHideAnimation,
                     child:
                         widget.useGlassOverlay
-                            ? BackdropFilter(
-                              filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                              child: ColoredBox(color: Colors.black.withValues(alpha: 0.55)),
+                            ? AnimatedBuilder(
+                              animation: _menuAnimationController,
+                              builder: (_, _) {
+                                final progress = _menuAnimationController.value;
+                                return BackdropFilter(
+                                  filter: ui.ImageFilter.blur(sigmaX: 3 * progress, sigmaY: 3 * progress),
+                                  child: ColoredBox(color: Colors.black.withValues(alpha: 0.55 * progress)),
+                                );
+                              },
                             )
                             : CustomPaint(
                               painter: _DimExceptRectPainter(
@@ -465,7 +484,10 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                             builder: (context, child) {
                               final scale = _computeMenuScale();
                               final alignment = isAboveChild ? Alignment.bottomCenter : Alignment.topCenter;
-                              return Transform.scale(scale: scale, alignment: alignment, child: child);
+                              return Opacity(
+                                opacity: _menuAnimationController.value,
+                                child: Transform.scale(scale: scale, alignment: alignment, child: child),
+                              );
                             },
                             child: SizedBox(
                               key: const Key('long-pressed-menu-box'),
@@ -507,7 +529,8 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                                                 button: true,
                                                 label: widget.menuItems[index].title,
                                                 onTap: () {
-                                                  _startHideAnimation();
+                                                  if (_isClosing) return;
+                                                  _startHideAnimation(releaseNavigation: true);
                                                   widget.menuItems[index].onSelected();
                                                 },
                                                 child: AnimatedContainer(
@@ -571,6 +594,10 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
             ],
           ),
         );
+        return IgnorePointer(
+          ignoring: _isClosingForAction,
+          child: AbsorbPointer(absorbing: _isClosing, child: content),
+        );
       },
     );
 
@@ -579,17 +606,15 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
     // 메뉴 등장 애니메이션: 30% -> 110% -> 100%
     _isClosing = false;
-    _menuAnimationController.duration = const Duration(milliseconds: 220);
-    _menuAnimationController.forward(from: 0.0);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _menuAnimationController.value = 1;
+    } else {
+      _menuAnimationController.forward(from: 0.0);
+    }
   }
 
   double _computeMenuScale() {
     final t = _menuAnimationController.value;
-
-    if (_isClosing) {
-      // 닫힐 때: 100% -> 0%
-      return 1.0 * (1.0 - t);
-    }
 
     // 열릴 때: 30% -> 110% -> 100%
     const double startScale = 0.3;
@@ -625,11 +650,12 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   }
 
   void _selectHoveredMenuItem() {
+    if (_isClosing) return;
     final selectedIndex = _hoveredMenuIndex;
     if (selectedIndex == null) return;
 
     _hoveredMenuIndex = null;
-    _startHideAnimation();
+    _startHideAnimation(releaseNavigation: true);
     widget.menuItems[selectedIndex].onSelected();
   }
 
@@ -721,8 +747,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   /// 0이면 원래 크기, 1이면 다 커진 상태
   double _expansion() {
     if (_overlayEntry == null) return 0;
-    final t = _menuAnimationController.value;
-    return _isClosing ? 1 - t : t;
+    return _menuAnimationController.value;
   }
 
   Matrix4 _childTransform(Size size) {
