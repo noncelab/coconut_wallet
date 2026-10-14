@@ -61,7 +61,8 @@ class HomeCubePagerState extends State<HomeCubePager> {
       animation: _controller,
       child: child,
       builder: (context, child) {
-        final page = _controller.hasClients && _controller.position.haveDimensions ? _controller.page ?? 0 : 0.0;
+        // 교체된 ScrollPosition은 기존 페이지를 갖고 있어도 첫 레이아웃 전에는 haveDimensions가 false다.
+        final page = _controller.hasClients && _controller.position.hasContentDimensions ? _controller.page ?? 0 : 0.0;
         final offset = (index - page).clamp(-1.0, 1.0);
         return Transform(
           alignment: offset > 0 ? Alignment.centerLeft : Alignment.centerRight,

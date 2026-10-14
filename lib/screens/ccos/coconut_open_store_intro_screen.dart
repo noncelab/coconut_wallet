@@ -87,6 +87,10 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     duration: const Duration(milliseconds: 750),
   );
   bool _hasCompletedLoading = false;
+  bool _hasStartedLoading = false;
+  bool _reduceMotion = false;
+  ModalRoute<dynamic>? _route;
+  Animation<double>? _routeAnimation;
   bool _hasStartedStoryEntrance = false;
   bool _isLoadingUnderlayVisible = true;
   bool _isSceneOverviewVisible = false;
@@ -351,7 +355,56 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       _loadingController.value = _loadingPreviewFrame;
       return;
     }
-    _loadingController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final route = ModalRoute.of(context);
+    if (_route != route) {
+      _routeAnimation?.removeStatusListener(_handleRouteStatus);
+      _route = route;
+      _routeAnimation = route?.animation;
+      _routeAnimation?.addStatusListener(_handleRouteStatus);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startLoadingWhenReady());
+  }
+
+  void _handleRouteStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _startLoadingWhenReady();
+    }
+  }
+
+  void _startLoadingWhenReady() {
+    if (!mounted ||
+        _freezeLoadingPreview ||
+        _hasCompletedLoading ||
+        (_route != null && !_route!.isCurrent) ||
+        (_routeAnimation != null && _routeAnimation!.status != AnimationStatus.completed)) {
+      return;
+    }
+    if (_reduceMotion) {
+      _finishLoadingWithoutAnimation();
+    } else if (!_hasStartedLoading) {
+      _hasStartedLoading = true;
+      _loadingController.forward();
+    }
+  }
+
+  void _finishLoadingWithoutAnimation() {
+    if (_hasCompletedLoading) {
+      return;
+    }
+    _loadingController.stop();
+    setState(() {
+      _hasStartedLoading = true;
+      _hasStartedStoryEntrance = true;
+      _hasCompletedLoading = true;
+      _isLoadingUnderlayVisible = false;
+    });
+    _storyEntranceController.value = 1;
   }
 
   void _handleLoadingProgress() {
@@ -386,8 +439,10 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_handleRouteStatus);
     _pageController.dispose();
     _loadingController.removeListener(_handleLoadingProgress);
+    _loadingCurve.dispose();
     _loadingController.dispose();
     for (final controller in _sceneControllers) {
       controller.dispose();
@@ -415,60 +470,65 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
           isApplied: isApplied,
         );
 
-        return Stack(
-          children: [
-            Scaffold(
-              backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
-              appBar:
-                  _hasCompletedLoading
-                      ? PreferredSize(
-                        preferredSize: const Size.fromHeight(56),
-                        child: Visibility(
-                          maintainSize: true,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          visible: !_isSceneOverviewVisible,
-                          child: CoconutAppBar.build(
-                            context: context,
-                            foregroundColor: _textPrimary,
-                            leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
-                            onBackPressed: () => Navigator.of(context).maybePop(),
-                            actionButtonList: [
-                              CoconutAppBarActionButton(
-                                onPressed: _openSceneOverview,
-                                highlightColor: _accentBlue.withValues(alpha: 0.22),
-                                icon: SvgPicture.asset(
-                                  CommonMenuIconPath.hamburger,
-                                  width: 24,
-                                  height: 24,
-                                  colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
+        // Stack clips layout overflow, but the enlarged logo paints beyond its
+        // layout bounds. Keep that paint inside the route during edge-back.
+        return ClipRect(
+          key: const ValueKey('open-store-route-clip'),
+          child: Stack(
+            children: [
+              Scaffold(
+                backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
+                appBar:
+                    _hasCompletedLoading
+                        ? PreferredSize(
+                          preferredSize: const Size.fromHeight(56),
+                          child: Visibility(
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            visible: !_isSceneOverviewVisible,
+                            child: CoconutAppBar.build(
+                              context: context,
+                              foregroundColor: _textPrimary,
+                              leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
+                              onBackPressed: () => Navigator.of(context).maybePop(),
+                              actionButtonList: [
+                                CoconutAppBarActionButton(
+                                  onPressed: _openSceneOverview,
+                                  highlightColor: _accentBlue.withValues(alpha: 0.22),
+                                  icon: SvgPicture.asset(
+                                    CommonMenuIconPath.hamburger,
+                                    width: 24,
+                                    height: 24,
+                                    colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      )
-                      : null,
-              body: Stack(
-                children: [
-                  if (_hasCompletedLoading)
-                    _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
-                  if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
-                ],
-              ),
-            ),
-            if (_hasCompletedLoading && _isSceneOverviewVisible)
-              Positioned.fill(
-                child: _SceneOverviewOverlay(
-                  items: sceneItems,
-                  currentIndex: _currentSceneIndex,
-                  entranceAnimation: _overviewController,
-                  onClose: _closeSceneOverview,
-                  onSelect: _animateToScene,
+                        )
+                        : null,
+                body: Stack(
+                  children: [
+                    if (_hasCompletedLoading)
+                      _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
+                    if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
+                      _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+                  ],
                 ),
               ),
-          ],
+              if (_hasCompletedLoading && _isSceneOverviewVisible)
+                Positioned.fill(
+                  child: _SceneOverviewOverlay(
+                    items: sceneItems,
+                    currentIndex: _currentSceneIndex,
+                    entranceAnimation: _overviewController,
+                    onClose: _closeSceneOverview,
+                    onSelect: _animateToScene,
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
