@@ -21,6 +21,9 @@ class LongPressedMenuWidget extends StatefulWidget {
 
   final VoidCallback? onMenuOpen;
 
+  /// 다른 제스처 인식기가 길게 누르기를 처리하는 경우 false로 설정한다.
+  final bool enableLongPress;
+
   /// dropdown 바깥을 탭하면 닫히도록 할지 여부
   final bool dismissOnTapOutside;
 
@@ -60,6 +63,7 @@ class LongPressedMenuWidget extends StatefulWidget {
     required this.child,
     required this.menuItems,
     this.onMenuOpen,
+    this.enableLongPress = true,
     this.dismissOnTapOutside = true,
     this.spacing = 8.0,
     this.isEditMode = false,
@@ -75,15 +79,17 @@ class LongPressedMenuWidget extends StatefulWidget {
   });
 
   @override
-  State<LongPressedMenuWidget> createState() => _LongPressedMenuWidgetState();
+  LongPressedMenuWidgetState createState() => LongPressedMenuWidgetState();
 }
 
-class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with TickerProviderStateMixin {
+class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _childRepaintBoundaryKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   ui.Image? _capturedChildImage;
   bool _isCapturingChild = false;
+  int _menuGeneration = 0;
   Rect? _menuRect;
   int? _hoveredMenuIndex;
   bool _isMenuPointerActive = false;
@@ -98,6 +104,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _menuAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
 
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
@@ -148,6 +155,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
     if (oldWidget.isEditMode != widget.isEditMode) {
       if (widget.isEditMode) {
+        dismissMenu();
         // 편집 모드 진입 → 쉐이킹 시작 및 닫기 버튼 표시
         _startShakeWithRandomDelay();
         _closeButtonController.forward();
@@ -162,6 +170,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _menuGeneration++;
     _removeOverlay();
     _menuAnimationController.dispose();
     _shakeController.dispose();
@@ -170,6 +180,20 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
   }
 
   double get _headerHeight => widget.menuHeaderBuilder == null ? 0 : widget.menuHeaderHeight;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) dismissMenu();
+  }
+
+  /// 메뉴와 진행 중인 캡처를 즉시 취소해 같은 포인터로 드래그를 이어갈 수 있게 한다.
+  void dismissMenu() {
+    _menuGeneration++;
+    _isCapturingChild = false;
+    _isClosing = false;
+    _removeOverlay();
+    _menuAnimationController.reset();
+  }
 
   void _removeOverlay() {
     _overlayEntry?.remove();
@@ -190,13 +214,18 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     _menuAnimationController.forward(from: 0.0);
   }
 
-  Future<void> _showMenu() async {
-    if (widget.isEditMode || _isCapturingChild) {
+  Future<void> showMenu() async {
+    if (!mounted || widget.isEditMode || _isCapturingChild) {
       return;
     }
+    final generation = ++_menuGeneration;
     _isCapturingChild = true;
     vibrateExtraLight();
     widget.onMenuOpen?.call();
+    if (!mounted || generation != _menuGeneration || widget.isEditMode) {
+      if (generation == _menuGeneration) _isCapturingChild = false;
+      return;
+    }
     // 이미 떠 있으면 제거
     if (_overlayEntry != null) {
       _removeOverlay();
@@ -222,20 +251,21 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
       childSize.height + _expandedGrowth * 2,
     ).inflate(widget.useGlassOverlay ? 6 : 0);
 
+    ui.Image? capturedImage;
     if (widget.useGlassOverlay) {
       try {
-        _capturedChildImage = await childRepaintBoundary.toImage(pixelRatio: MediaQuery.devicePixelRatioOf(context));
+        capturedImage = await childRepaintBoundary.toImage(pixelRatio: MediaQuery.devicePixelRatioOf(context));
       } catch (_) {
-        _isCapturingChild = false;
+        if (generation == _menuGeneration) _isCapturingChild = false;
         return;
       }
-      if (!mounted) {
-        _capturedChildImage?.dispose();
-        _capturedChildImage = null;
-        _isCapturingChild = false;
+      if (!mounted || generation != _menuGeneration || widget.isEditMode) {
+        capturedImage.dispose();
+        if (generation == _menuGeneration) _isCapturingChild = false;
         return;
       }
     }
+    _capturedChildImage = capturedImage;
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
@@ -569,10 +599,10 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final child = GestureDetector(
       key: _childKey,
       behavior: HitTestBehavior.opaque,
-      onLongPress: _showMenu,
+      onLongPress: widget.enableLongPress ? showMenu : null,
       child: RepaintBoundary(
         key: _childRepaintBoundaryKey,
         child: AnimatedBuilder(
@@ -640,6 +670,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
         ),
       ),
     );
+    return widget.enableLongPress ? child : Semantics(onLongPress: widget.isEditMode ? null : showMenu, child: child);
   }
 
   /// 길게 눌렀을 때 child가 사방으로 커지는 거리. 크기와 상관없이 모든 위젯·바로가기가 같은 만큼 커진다.

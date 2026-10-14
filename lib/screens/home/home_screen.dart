@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final LayerLink _addWalletButtonLink = LayerLink();
   final GlobalKey<HomeCubePagerState> _pagerKey = GlobalKey();
+  final GlobalKey<HomeItemsViewState> _itemsKey = GlobalKey();
 
   /// All Features 말풍선이 보이는 동안 홈을 살짝 밀어 보인다. 처음엔 곧바로, 그다음엔 [_peekInterval]마다,
   /// 앱을 켤 때마다 최대 [_peekLimit]번. 사용자가 홈을 만지고 있으면 그 차례는 건너뛴다.
@@ -230,6 +231,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (feature != null) _launch(context, feature);
   }
 
+  void _finishArranging() {
+    _itemsKey.currentState?.cancelActiveDrag();
+    _viewModel.finishArranging();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -250,7 +256,9 @@ class _HomeScreenState extends State<HomeScreen> {
               (context, arranging, child) => PopScope(
                 canPop: !arranging,
                 onPopInvokedWithResult: (didPop, _) {
-                  if (!didPop) _viewModel.finishArranging();
+                  if (!didPop && _itemsKey.currentState?.cancelActiveDrag() != true) {
+                    _viewModel.finishArranging();
+                  }
                 },
                 child: HomeCubePager(
                   key: _pagerKey,
@@ -347,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Consumer<HomeViewModel>(
                     builder:
                         (context, viewModel, _) => HomeItemsView(
+                          key: _itemsKey,
                           configuration: viewModel.configuration,
                           registry: viewModel.registry,
                           onMoveToCell: viewModel.moveToCell,
@@ -354,7 +363,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           menuItemsOf: (item) => _menuItemsOf(context, item),
                           isArranging: viewModel.isArranging,
                           onRemove: _remove,
-                          onArrangeDone: viewModel.finishArranging,
+                          onArrangeStart: viewModel.startArranging,
+                          onArrangeDone: _finishArranging,
                           onResize: (item, span) => viewModel.resizeItem(item.id, span),
                           badgeInset: _gridBadgeInset,
                           minHeight: math.max(
@@ -382,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isSyncing: status.isSyncing,
       isArranging: arranging,
       addWalletButtonLink: _addWalletButtonLink,
-      onArrangeDone: _viewModel.finishArranging,
+      onArrangeDone: _finishArranging,
       onEdit: () => _openHomeEdit(context),
       onAddWallet: () => _openAddWallet(context),
       onSettings: () => _openAppSettings(context),
