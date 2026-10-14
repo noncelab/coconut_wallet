@@ -87,6 +87,9 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _childRepaintBoundaryKey = GlobalKey();
   OverlayEntry? _overlayEntry;
+  LocalHistoryEntry? _menuHistory;
+  ModalRoute<dynamic>? _menuRoute;
+  _MenuPopEntry? _menuPopEntry;
   ui.Image? _capturedChildImage;
   bool _isCapturingChild = false;
   int _menuGeneration = 0;
@@ -181,6 +184,39 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
   double get _headerHeight => widget.menuHeaderBuilder == null ? 0 : widget.menuHeaderHeight;
 
+  void _registerMenuHistory(ModalRoute<dynamic> route) {
+    _removeMenuHistory();
+    late final LocalHistoryEntry entry;
+    entry = LocalHistoryEntry(
+      onRemove: () {
+        if (!identical(_menuHistory, entry)) return;
+        _menuHistory = null;
+        dismissMenu();
+      },
+    );
+    _menuHistory = entry;
+    route.addLocalHistoryEntry(entry);
+    // Local history alone does not notify Android's ahead-of-time Back handling.
+    _menuRoute = route;
+    _menuPopEntry = _MenuPopEntry(() {
+      if (mounted && identical(_menuHistory, entry)) dismissMenu();
+    });
+    route.registerPopEntry(_menuPopEntry!);
+  }
+
+  void _removeMenuHistory() {
+    final entry = _menuHistory;
+    _menuHistory = null;
+    entry?.remove();
+    final popEntry = _menuPopEntry;
+    if (popEntry != null) {
+      _menuRoute?.unregisterPopEntry(popEntry);
+      popEntry.canPopNotifier.dispose();
+      _menuPopEntry = null;
+      _menuRoute = null;
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) dismissMenu();
@@ -196,6 +232,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   }
 
   void _removeOverlay() {
+    _removeMenuHistory();
     _overlayEntry?.remove();
     _overlayEntry = null;
     _capturedChildImage?.dispose();
@@ -206,6 +243,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   }
 
   void _startHideAnimation() {
+    _removeMenuHistory();
     if (_overlayEntry == null) {
       return;
     }
@@ -220,24 +258,28 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     }
     final generation = ++_menuGeneration;
     _isCapturingChild = true;
+    if (_overlayEntry != null) _removeOverlay();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      if (!route.isCurrent) {
+        _isCapturingChild = false;
+        return;
+      }
+      _registerMenuHistory(route);
+    }
     vibrateExtraLight();
     widget.onMenuOpen?.call();
     if (!mounted || generation != _menuGeneration || widget.isEditMode) {
       if (generation == _menuGeneration) _isCapturingChild = false;
       return;
     }
-    // 이미 떠 있으면 제거
-    if (_overlayEntry != null) {
-      _removeOverlay();
-    }
-
     final RenderBox? childRenderBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
     final RenderRepaintBoundary? childRepaintBoundary =
         _childRepaintBoundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     final OverlayState overlay = Overlay.of(context);
 
     if (childRenderBox == null || childRepaintBoundary == null) {
-      _isCapturingChild = false;
+      dismissMenu();
       return;
     }
 
@@ -256,7 +298,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
       try {
         capturedImage = await childRepaintBoundary.toImage(pixelRatio: MediaQuery.devicePixelRatioOf(context));
       } catch (_) {
-        if (generation == _menuGeneration) _isCapturingChild = false;
+        if (generation == _menuGeneration) dismissMenu();
         return;
       }
       if (!mounted || generation != _menuGeneration || widget.isEditMode) {
@@ -687,6 +729,21 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     final grow = _expandedGrowth * 2 * _expansion();
     if (grow == 0 || size.isEmpty) return Matrix4.identity();
     return Matrix4.diagonal3Values((size.width + grow) / size.width, (size.height + grow) / size.height, 1);
+  }
+}
+
+class _MenuPopEntry extends PopEntry<Object?> {
+  _MenuPopEntry(this.onBack);
+
+  final VoidCallback onBack;
+
+  @override
+  final ValueNotifier<bool> canPopNotifier = ValueNotifier(false);
+
+  @override
+  void onPopInvokedWithResult(bool didPop, Object? result) {
+    // Wait until the route finishes iterating its pop entries before removing this one.
+    if (!didPop) scheduleMicrotask(onBack);
   }
 }
 
