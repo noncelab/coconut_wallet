@@ -61,6 +61,7 @@ class _GridHarness extends StatefulWidget {
 
 class _GridHarnessState extends State<_GridHarness> {
   final gridKey = GlobalKey<HomeItemsViewState>();
+  final scrollController = ScrollController();
   late HomeConfiguration configuration;
   late final HomeItemRegistry registry;
   final cellDrops = <(String, HomeGridPosition)>[];
@@ -78,9 +79,16 @@ class _GridHarnessState extends State<_GridHarness> {
   }
 
   @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => MaterialApp(
     theme: buildCoconutThemeData(),
     home: SingleChildScrollView(
+      controller: scrollController,
       child: Center(
         child: SizedBox(
           width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
@@ -221,6 +229,213 @@ Map<String, Offset> _cellOrigins(Offset surface, Map<String, HomeGridPosition> p
 void main() {
   for (final withMenus in [true, false]) {
     final branch = withMenus ? 'with menus' : 'without menus';
+    for (final crossing in [
+      (column: 0, grabX: 10.0, destinationX: 355.0, name: 'content beyond right while finger inside'),
+      (column: 2, grabX: 162.0, destinationX: 1.0, name: 'content beyond left while finger inside'),
+      (column: 2, grabX: 10.0, destinationX: -1.0, name: 'finger beyond left while content inside'),
+      (column: 0, grabX: 162.0, destinationX: 357.0, name: 'finger beyond right while content inside'),
+    ]) {
+      testWidgets('${crossing.name} $branch cancels both preview and commit', (tester) async {
+        final original = _smallWidgetAndShortcutColumns(crossing.column);
+        final harness = await _pumpGrid(tester, withMenus: withMenus, initialConfiguration: original);
+        final rect = tester.getRect(_item('all_wallet_stack'));
+        final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+        final painted = _paintedPositions(tester, original);
+        final gesture = await tester.startGesture(rect.topLeft + Offset(crossing.grabX, 10));
+        await tester.pump(const Duration(milliseconds: 600));
+        await gesture.moveTo(surface + Offset(crossing.destinationX, 194));
+        await _settleHover(tester);
+        expect(
+          _paintedPositions(tester, original),
+          painted,
+          reason: 'No destination should be previewed outside the grid.',
+        );
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(
+          harness.configuration,
+          original,
+          reason: 'An invalid preview cannot fall through to another drop policy.',
+        );
+        expect(harness.cellDrops, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+    for (final fraction in [const Offset(0.15, 0.15), const Offset(0.85, 0.85)]) {
+      for (final move in [(source: 0, target: 1), (source: 2, target: 1)]) {
+        testWidgets('off-center grab $fraction column ${move.source} → ${move.target} $branch follows content', (
+          tester,
+        ) async {
+          final harness = await _pumpGrid(
+            tester,
+            withMenus: withMenus,
+            initialConfiguration: _smallWidgetAndShortcutColumns(move.source),
+          );
+          final rect = tester.getRect(_item('all_wallet_stack'));
+          final start = rect.topLeft + Offset(rect.width * fraction.dx, rect.height * fraction.dy);
+          final gesture = await tester.startGesture(start);
+          await tester.pump(const Duration(milliseconds: 600));
+          await gesture.moveTo(start + Offset((move.target - move.source) * 92.0, 0));
+          await _settleHover(tester);
+          await gesture.up();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(harness.cellDrops, [('all_wallet_stack', HomeGridPosition(move.target, 2))]);
+          expect(_savedPositions(harness.configuration)['all_wallet_stack'], HomeGridPosition(move.target, 2));
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
+
+    for (final cell in [
+      const HomeGridPosition(0, 2),
+      const HomeGridPosition(1, 2),
+      const HomeGridPosition(0, 3),
+      const HomeGridPosition(1, 3),
+    ]) {
+      testWidgets('shortcut can land at internal cell $cell of a 2×2 widget $branch', (tester) async {
+        final harness = await _pumpGrid(tester, withMenus: withMenus);
+        final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+        final destination = surface + Offset(cell.column * 92.0 + 40, cell.row * 92.0 + 40);
+        final gesture = await _holdAndMove(tester, 'shortcut:receive', destination);
+        await _settleHover(tester);
+        final preview = _paintedPositions(tester);
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(harness.cellDrops, [('shortcut:receive', cell)]);
+        expect(_savedPositions(harness.configuration)['shortcut:receive'], cell);
+        expect(_paintedPositions(tester), preview, reason: 'The committed placement must match the visible preview.');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('quickly dropped item stays at the finger and can be grabbed during neighbor reflow $branch', (
+      tester,
+    ) async {
+      final harness = await _pumpGrid(tester, withMenus: withMenus);
+      const source = 'shortcut:receive';
+      const target = 'shortcut:send';
+      final original = harness.configuration;
+      final originalPaint = _paintedPositions(tester);
+      for (var step = 0; step < 8; step++) {
+        final sourceStart = originalPaint[step.isEven ? source : target]!;
+        final targetStart = originalPaint[step.isEven ? target : source]!;
+        final gesture = await tester.startGesture(sourceStart + const Offset(40, 40));
+        await tester.pump(Duration(milliseconds: step == 0 ? 600 : 16));
+        await gesture.moveTo(targetStart + const Offset(40, 40));
+        await gesture.up();
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.getTopLeft(_item(source)),
+          targetStart,
+          reason: 'The held content must not fly from its old cell.',
+        );
+        expect(harness.cellDrops.last.$1, source, reason: 'Re-grabbing the visible item must keep the same identity.');
+        // Re-grab while the neighbor is still moving through this cell. A second pointer remains
+        // down for only one frame here; the next iteration exercises a complete long press.
+        final regrab = await tester.startGesture(targetStart + const Offset(40, 40));
+        await tester.pump(const Duration(milliseconds: 16));
+        await regrab.cancel();
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(harness.configuration, original);
+      expect(harness.cellDrops, hasLength(8));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final outside in [const Offset(-20, 886), const Offset(434, 886), const Offset(207, 920)]) {
+      testWidgets('drag outside viewport at $outside $branch stops edge auto-scroll', (tester) async {
+        final harness = await _pumpGrid(tester, withMenus: withMenus);
+        final gesture = await _holdAndMove(tester, 'shortcut:receive', outside);
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(harness.scrollController.offset, 0, reason: 'Outside a scroll viewport is not an active edge zone.');
+        await gesture.cancel();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('inside bottom edge $branch still auto-scrolls and stops when crossing the side', (tester) async {
+      final harness = await _pumpGrid(tester, withMenus: withMenus);
+      final gesture = await _holdAndMove(tester, 'shortcut:receive', const Offset(207, 880));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(harness.scrollController.offset, greaterThan(0));
+      final offset = harness.scrollController.offset;
+      await gesture.moveTo(const Offset(-1, 880));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(harness.scrollController.offset, offset);
+      await gesture.cancel();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('far shortcut drag $branch shifts the sequence and keeps large widgets still', (tester) async {
+      final harness = await _pumpGrid(tester, withMenus: withMenus);
+      final before = harness.configuration;
+      final slots = _savedPositions(before);
+      final gesture = await _holdAndMove(
+        tester,
+        'shortcut:receive',
+        tester.getCenter(_item('shortcut:utxo_organizer')),
+      );
+      await _settleHover(tester);
+      final preview = _paintedPositions(tester);
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(_savedPositions(harness.configuration), {
+        ...slots,
+        'shortcut:send': slots['shortcut:receive'],
+        'shortcut:hodl_insights': slots['shortcut:send'],
+        'shortcut:utxo_organizer': slots['shortcut:hodl_insights'],
+        'shortcut:receive': slots['shortcut:utxo_organizer'],
+      });
+      expect(_paintedPositions(tester), preview);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final waitMs in [16, 260]) {
+      testWidgets('sparse gap zigzag and corner crossing at ${waitMs}ms $branch cancels without saving', (
+        tester,
+      ) async {
+        final original = _mixedHome().removeItem('fiat_price_trend_2x2');
+        final harness = await _pumpGrid(tester, withMenus: withMenus, initialConfiguration: original);
+        const source = 'all_wallet_stack';
+        final sourceCenter = tester.getCenter(_item(source));
+        final surface = tester.getRect(find.byKey(const ValueKey('home-grid-surface')));
+        final emptyCenter = sourceCenter + const Offset(0, 184);
+        final gesture = await tester.startGesture(sourceCenter);
+        await tester.pump(const Duration(milliseconds: 600));
+        for (var round = 0; round < 4; round++) {
+          for (final point in [
+            emptyCenter,
+            emptyCenter + const Offset(92, 0),
+            sourceCenter,
+            Offset(surface.left - 1, surface.top - 1),
+            Offset(surface.right + 1, surface.top),
+            emptyCenter,
+            sourceCenter,
+          ]) {
+            await gesture.moveTo(point);
+            await tester.pump(Duration(milliseconds: waitMs));
+            expect(harness.configuration, original, reason: 'A fast or slow hover must never save.');
+            expect(harness.cellDrops, isEmpty);
+            expect(tester.takeException(), isNull);
+          }
+        }
+        await gesture.cancel();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(harness.configuration, original);
+        expect(_paintedPositions(tester, original), _cellOrigins(surface.topLeft, _savedPositions(original)));
+        expect(harness.cellDrops, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     for (final move in [
       (source: 0, target: 1, displaced: 2, vacated: 0),
       (source: 2, target: 1, displaced: 1, vacated: 3),

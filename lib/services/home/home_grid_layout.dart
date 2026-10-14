@@ -45,8 +45,73 @@ class HomeGridLayout {
     if (item == null || !canMoveToCell(id, target)) return positionedConfiguration;
     final source = _positions[id]!;
     if (source == target) return positionedConfiguration;
+    final rowExchange = _exchangeWithWideRow(item, source, target);
+    if (rowExchange != null) return rowExchange;
+    if (item.span == HomeSpan.shortcut) {
+      final visual = itemsInVisualOrder;
+      final sourceIndex = visual.indexOf(item);
+      final targetIndex = visual.indexWhere((other) => _positions[other.id] == target);
+      if (targetIndex >= 0) {
+        final first = math.min(sourceIndex, targetIndex);
+        final last = math.max(sourceIndex, targetIndex);
+        final run = visual.sublist(first, last + 1);
+        if (run.every((other) => other.span == HomeSpan.shortcut)) {
+          final slots = [for (final other in run) _positions[other.id]!];
+          run.remove(item);
+          run.insert(targetIndex - first, item);
+          return _withPositions({
+            ..._positions,
+            for (var index = 0; index < run.length; index++) run[index].id: slots[index],
+          });
+        }
+      }
+    }
     final placed = Map<String, HomeGridPosition>.of(_positions)..remove(id);
     return _placeAndRelocateDisplaced(item, source, target, placed);
+  }
+
+  /// A wide destination can use the source row if its companions fit beside the moving widget.
+  /// Keep this local to two complete, disjoint row bands; otherwise use ordinary collision handling.
+  HomeConfiguration? _exchangeWithWideRow(HomeItem moving, HomeGridPosition source, HomeGridPosition target) {
+    if (moving.span != HomeSpan.small || (source.row - target.row).abs() < HomeSpan.small.height) return null;
+    final wide =
+        configuration.items.where((other) {
+          final position = _positions[other.id]!;
+          return other.span == HomeSpan.wide && position.row == target.row;
+        }).firstOrNull;
+    if (wide == null) return null;
+    final companions = <HomeItem>[];
+    for (final other in itemsInVisualOrder) {
+      if (other.id == moving.id) continue;
+      final position = _positions[other.id]!;
+      if (position.row >= source.row + moving.span.height || position.row + other.span.height <= source.row) continue;
+      if (position.row < source.row || position.row + other.span.height > source.row + moving.span.height) return null;
+      companions.add(other);
+    }
+    final placed =
+        Map<String, HomeGridPosition>.of(_positions)
+          ..remove(moving.id)
+          ..remove(wide.id);
+    for (final other in companions) {
+      placed.remove(other.id);
+    }
+    if (!_fits(moving.span, target, placed)) return null;
+    placed[moving.id] = target;
+    final wideTarget = HomeGridPosition(0, source.row);
+    if (!_fits(wide.span, wideTarget, placed)) return null;
+    placed[wide.id] = wideTarget;
+    final destinationBand = HomeGridPosition(0, target.row);
+    for (final other in companions) {
+      final previous = _positions[other.id]!;
+      final translated = HomeGridPosition(previous.column, target.row + previous.row - source.row);
+      final position =
+          _fits(other.span, translated, placed)
+              ? translated
+              : _firstFreeWithin(other.span, placed, destinationBand, HomeSpan.wide);
+      if (position == null) return null;
+      placed[other.id] = position;
+    }
+    return _withPositions(placed);
   }
 
   /// Inserts in visual order, allowing the following items to flow into new rows.

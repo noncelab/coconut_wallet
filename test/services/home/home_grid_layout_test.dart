@@ -237,10 +237,50 @@ void main() {
   });
 
   group('spatial drops in a mixed home', () {
+    for (final column in [0, 1, 2]) {
+      test('a 2×2 at column $column exchanges a 4×2 row with its companion shortcuts', () {
+        final before = mixedHome();
+        final moved = HomeGridLayout(before).moveToCell('price', HomeGridPosition(column, 0));
+        final layout = HomeGridLayout(moved);
+        expect(layout.positionOf('price'), HomeGridPosition(column, 0));
+        expect(layout.positionOf('balance'), const HomeGridPosition(0, 4));
+        expect(layout.rows, 8, reason: 'The two existing row bands can exchange without appending an empty band.');
+        for (final id in ['receive', 'send', 'hodl', 'organizer']) {
+          expect(layout.positionOf(id)!.row, inInclusiveRange(0, 1));
+        }
+        for (final id in ['wallet', 'utxo', 'recent']) {
+          expect(layout.positionOf(id), HomeGridLayout(before).positionOf(id));
+        }
+        expectValidLayout(moved);
+        for (final original in before.items) {
+          expect(
+            moved.items.singleWhere((item) => item.id == original.id),
+            original.copyWith(position: layout.positionOf(original.id)),
+          );
+        }
+      });
+    }
+    for (final moving in ['receive', 'send', 'hodl', 'organizer']) {
+      for (final target in ['receive', 'send', 'hodl', 'organizer'].where((id) => id != moving)) {
+        test('$moving into shortcut $target shifts the intervening visual sequence', () {
+          final before = mixedHome();
+          final layout = HomeGridLayout(before);
+          final order = ['receive', 'send', 'hodl', 'organizer'];
+          final targetIndex = order.indexOf(target);
+          order.remove(moving);
+          order.insert(targetIndex, moving);
+          final slots = [
+            for (final id in ['receive', 'send', 'hodl', 'organizer']) layout.positionOf(id)!,
+          ];
+          final expected = {for (var i = 0; i < order.length; i++) order[i]: slots[i]};
+          final moved = layout.moveToCell(moving, layout.positionOf(target)!);
+          expectPositions(moved, before, expected);
+          expect(HomeGridLayout(moved).moveToCell(moving, layout.positionOf(moving)!), before);
+        });
+      }
+    }
     for (final (first, second) in [
       ('receive', 'send'),
-      ('receive', 'hodl'),
-      ('send', 'organizer'),
       ('hodl', 'organizer'),
       ('wallet', 'utxo'),
       ('wallet', 'price'),
