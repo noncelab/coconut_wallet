@@ -11,6 +11,9 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup,
         CoconutUnderlinedButton;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
@@ -33,6 +36,7 @@ import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.da
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 
@@ -201,7 +205,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               _buildUtxoTagList(viewModel),
                               Expanded(
                                 child:
-                                    viewModel.isInitialized
+                                    viewModel.hasLoadError
+                                        ? _buildEmptyState(viewModel)
+                                        : viewModel.isInitialized
                                         ? Stack(
                                           children: [
                                             Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
@@ -421,8 +427,77 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     );
   }
 
+  Widget _buildEmptyState(UtxoSelectionViewModel viewModel) {
+    final copy = t.utxo_selection_screen;
+    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoTagName != t.all;
+    final hasError = viewModel.hasLoadError;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              hasError ? CommonStateIconPath.circleWarning : FeatureShortcutIconPath.utxos,
+              width: 48,
+              height: 48,
+              colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+            ),
+            CoconutLayout.spacing_400h,
+            Text(
+              hasError
+                  ? copy.load_error_title
+                  : hasFilter
+                  ? copy.empty_filtered_title
+                  : copy.empty_title,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            CoconutLayout.spacing_200h,
+            Text(
+              hasError
+                  ? copy.load_error_description
+                  : hasFilter
+                  ? copy.empty_filtered_description
+                  : copy.empty_description,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            CoconutLayout.spacing_500h,
+            CoconutButton(
+              text:
+                  hasError
+                      ? t.retry
+                      : hasFilter
+                      ? copy.reset_filter
+                      : t.receive,
+              height: 48,
+              buttonType: CoconutButtonType.outlined,
+              borderColor: context.coconutColors.borderStrong,
+              backgroundColor: widget.backgroundColor ?? context.coconutColors.background,
+              foregroundColor: context.coconutColors.primaryText,
+              onPressed: () {
+                _removeUtxoOrderDropdown();
+                if (hasError) {
+                  viewModel.initialize(widget.selectedUtxoList);
+                } else if (hasFilter) {
+                  viewModel.setSelectedUtxoTagName(t.all);
+                } else {
+                  Navigator.of(
+                    context,
+                  ).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.walletId));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildUtxoList(UtxoSelectionViewModel viewModel) {
     final filteredUtxoList = viewModel.filteredUtxoList;
+    if (filteredUtxoList.isEmpty) return _buildEmptyState(viewModel);
 
     return ListView.separated(
       key: ValueKey(viewModel.selectedUtxoTagName),

@@ -1080,6 +1080,13 @@ send_screen:
 utxo_selection_screen:
   title: "UTXO 고르기"
   skip: "건너뛰기"
+  empty_title: "선택할 수 있는 UTXO가 없어요"
+  empty_description: "받은 비트코인의 입금이 확정되면 여기에서 선택할 수 있어요."
+  empty_filtered_title: "조건에 맞는 UTXO가 없어요"
+  empty_filtered_description: "다른 태그를 선택하거나 필터를 초기화해 주세요."
+  reset_filter: "필터 초기화"
+  load_error_title: "UTXO 목록을 불러오지 못했어요"
+  load_error_description: "잠시 후 다시 시도해 주세요."
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO 선택"
@@ -1762,6 +1769,8 @@ label_export_screen:
   create_file: "파일 만들기"
   view_list: "목록 보기"
   no_wallet: "지갑을 찾을 수 없어요."
+  empty_wallet_title: "아직 추가된 지갑이 없어요"
+  empty_wallet_description: "지갑을 추가하면 거래 메모와 UTXO 태그를 내보낼 수 있어요."
   no_file: "파일을 찾을 수 없어요.\n먼저 [파일 만들기]에서 파일을 생성해 주세요."
   loading_title: "파일을 만들고 있어요"
   success_title: "파일을 공유할까요?"

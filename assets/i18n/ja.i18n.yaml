@@ -1079,6 +1079,13 @@ send_screen:
 utxo_selection_screen:
   title: "UTXO選択"
   skip: "スキップ"
+  empty_title: "選択できるUTXOがありません"
+  empty_description: "受け取ったビットコインは、入金が承認されるとここで選択できます。"
+  empty_filtered_title: "条件に一致するUTXOがありません"
+  empty_filtered_description: "別のタグを選択するか、フィルターをリセットしてください。"
+  reset_filter: "フィルターをリセット"
+  load_error_title: "UTXO一覧を読み込めませんでした"
+  load_error_description: "しばらくしてから再試行してください。"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO選択"
@@ -1744,6 +1751,8 @@ label_export_screen:
   create_file: "ファイルを作成"
   view_list: "リストを表示"
   no_wallet: "ウォレットが見つかりません"
+  empty_wallet_title: "追加されたウォレットはありません"
+  empty_wallet_description: "ウォレットを追加すると、取引メモとUTXOタグをエクスポートできます。"
   no_file: "ファイルが見つかりません。\nまず［ファイルを作成］でファイルを作成してください。"
   loading_title: "ファイルを作成しています"
   success_title: "ファイルを共有しますか？"

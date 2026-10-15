@@ -1081,6 +1081,13 @@ send_screen:
 utxo_selection_screen:
   title: "UTXOs auswählen"
   skip: "überspringen"
+  empty_title: "Keine UTXOs zur Auswahl verfügbar"
+  empty_description: "Empfangene Bitcoin können nach der Bestätigung hier ausgewählt werden."
+  empty_filtered_title: "Keine UTXOs entsprechen diesen Filtern"
+  empty_filtered_description: "Bitte wählen Sie ein anderes Tag oder setzen Sie die Filter zurück."
+  reset_filter: "Filter zurücksetzen"
+  load_error_title: "UTXOs konnten nicht geladen werden"
+  load_error_description: "Bitte versuchen Sie es gleich noch einmal."
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXOs auswählen"
@@ -1695,6 +1702,8 @@ label_export_screen:
   create_file: "Datei erstellen"
   view_list: "Liste anzeigen"
   no_wallet: "Wallet nicht gefunden"
+  empty_wallet_title: "Noch keine Wallet hinzugefügt"
+  empty_wallet_description: "Fügen Sie eine Wallet hinzu, um Transaktionsnotizen und UTXO-Tags zu exportieren."
   no_file: "Datei nicht gefunden.\nBitte erstellen Sie zuerst unter [Datei erstellen] eine Datei."
   loading_title: "Datei wird erstellt..."
   success_title: "Möchten Sie die Datei teilen?"
