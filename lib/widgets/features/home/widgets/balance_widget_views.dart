@@ -360,7 +360,12 @@ class BalanceChangeOverTimeView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               for (final label in dayLabels)
-                Text(label, style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText)),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label, style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText)),
+                  ),
+                ),
             ],
           ),
         ],

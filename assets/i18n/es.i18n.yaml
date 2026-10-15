@@ -956,6 +956,13 @@ wallet_connect_screen:
       
 # lib/screens/wallet_list
 wallet_list:
+  balance_history_detail:
+    wallets_at_date: "Carteras en este momento"
+    no_wallets: "No hay carteras para mostrar en este momento"
+    changed_wallets_only: "Solo carteras con cambios"
+    transaction_count(cardinal):
+      one: "${n} transacción"
+      other: "${n} transacciones"
   header:
     total_amount: "Saldo total"
     balance_history: "Cambio de saldo"

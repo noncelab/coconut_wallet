@@ -20,6 +20,8 @@ class TransactionItemCard extends StatelessWidget {
   final Function onPressed;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
+  final bool compact;
+  final Color? backgroundColor;
 
   late final TransactionStatus? status;
 
@@ -31,6 +33,8 @@ class TransactionItemCard extends StatelessWidget {
     required this.onPressed,
     this.padding = const EdgeInsets.symmetric(horizontal: Sizes.size20, vertical: Sizes.size16),
     this.borderRadius = 12,
+    this.compact = false,
+    this.backgroundColor,
   }) {
     status = TransactionUtil.getStatus(tx);
   }
@@ -152,27 +156,41 @@ class TransactionItemCard extends StatelessWidget {
       onPressed: () {
         onPressed();
       },
-      defaultColor: colors.surface,
+      defaultColor: backgroundColor ?? colors.surface,
       pressedOverlayColor: colors.surfacePressOverlay,
       pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
       borderWidth: 0,
       borderRadius: borderRadius,
       child: Container(
         padding: padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildTimestamp(context, transactionTimeStamp),
-            CoconutLayout.spacing_200h,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
-            ),
-            if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
-          ],
-        ),
+        child:
+            compact
+                ? Row(
+                  children: [
+                    Text(
+                      transactionTimeStamp[1],
+                      style: CoconutTypography.body3_12_Number.setColor(colors.tertiaryText),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatus(context),
+                    const SizedBox(width: 12),
+                    _buildAmount(context),
+                  ],
+                )
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTimestamp(context, transactionTimeStamp),
+                    CoconutLayout.spacing_200h,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
+                    ),
+                    if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
+                  ],
+                ),
       ),
     );
   }

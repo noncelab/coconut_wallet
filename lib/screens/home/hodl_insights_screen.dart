@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutColors, CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -10,6 +9,8 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/wallet_onboarding_view.dart';
@@ -83,6 +84,30 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   bool _movedToInitialSection = false;
   HodlInsightsSection? _highlighted;
   double _leadingSpace = 0;
+  Animation<double>? _routeAnimation;
+  bool _cardHeroActive = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _routeAnimation)) return;
+    _routeAnimation?.removeStatusListener(_onRouteStatus);
+    _routeAnimation = animation;
+    _cardHeroActive = animation?.status != AnimationStatus.completed;
+    animation?.addStatusListener(_onRouteStatus);
+  }
+
+  void _onRouteStatus(AnimationStatus status) {
+    final active = status != AnimationStatus.completed;
+    if (active != _cardHeroActive && mounted) setState(() => _cardHeroActive = active);
+  }
+
+  @override
+  void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteStatus);
+    super.dispose();
+  }
 
   /// 처음 그려진 직후 한 번만, 위젯에서 고른 구역으로 스크롤하고 잠깐 강조한다.
   void _moveToInitialSection(HodlInsightsSection section) {
@@ -118,7 +143,9 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
 
   Widget _section(HodlInsightsSection section, {Widget? title, required Widget child}) {
     final card =
-        widget.heroTag != null && widget.heroSection == section
+        widget.heroTag != null &&
+                widget.heroSection == section &&
+                (section != HodlInsightsSection.balance || _cardHeroActive)
             ? Hero(tag: widget.heroTag!, flightShuttleBuilder: _cardShuttle, child: child)
             : child;
     return Column(
@@ -241,7 +268,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                               title: _SectionTitle(
                                 t.hodl_insights.transaction_activity,
                                 top: _sectionGap,
-                                trailing: _PeriodChips(
+                                trailing: BalanceHistoryPeriodChips(
                                   key: const Key('hodl-insights-activity-periods'),
                                   selected: viewModel.activityPeriod,
                                   onSelected: viewModel.selectActivityPeriod,
@@ -459,94 +486,22 @@ class _LowerBand extends StatelessWidget {
   }
 }
 
-/// 잔액 그래프. 손가락을 올리거나 끌면 그 날의 잔액과 날짜를 보여 준다.
-class _BalanceChart extends StatefulWidget {
+/// 상세 화면으로 확대되는 잔액 그래프.
+class _BalanceChart extends StatelessWidget {
   final HodlInsightsViewModel viewModel;
-
   const _BalanceChart({required this.viewModel});
 
   @override
-  State<_BalanceChart> createState() => _BalanceChartState();
-}
-
-class _BalanceChartState extends State<_BalanceChart> {
-  int? _selected;
-
-  void _select(Offset position, double width, int count) {
-    if (count < 2 || width <= 0) return;
-    final index = (position.dx.clamp(0.0, width) / width * (count - 1)).round();
-    if (index != _selected) setState(() => _selected = index);
-  }
-
-  void _clear() {
-    if (_selected != null) setState(() => _selected = null);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final viewModel = widget.viewModel;
-    final values = viewModel.chartBalances;
-    final days = viewModel.chartBalanceDays;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = constraints.biggest;
-        final selected = _selected != null && _selected! < values.length && _selected! < days.length ? _selected : null;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (details) => _select(details.localPosition, size.width, values.length),
-          onTapUp: (_) => _clear(),
-          onTapCancel: _clear,
-          onHorizontalDragStart: (details) => _select(details.localPosition, size.width, values.length),
-          onHorizontalDragUpdate: (details) => _select(details.localPosition, size.width, values.length),
-          onHorizontalDragEnd: (_) => _clear(),
-          onHorizontalDragCancel: _clear,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(child: HomeSparkline(values: values, selectedIndex: selected)),
-              if (selected != null)
-                Builder(
-                  builder: (context) {
-                    final point = HomeSparkline.pointOf(values, selected, size);
-                    const labelWidth = 150.0;
-                    final left =
-                        (point.dx - labelWidth / 2).clamp(0.0, math.max(0.0, size.width - labelWidth)).toDouble();
-                    final day = days[selected];
-                    return Positioned(
-                      left: left,
-                      top: -36,
-                      width: labelWidth,
-                      child: Container(
-                        key: const Key('hodl-insights-balance-readout'),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(8)),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                _btcText(viewModel, values[selected].toInt()),
-                                style: CoconutTypography.body3_12_NumberBold.copyWith(color: colors.primaryText),
-                              ),
-                            ),
-                            Text(
-                              viewModel.chartUsesMonths
-                                  ? '${formatHomeMonth(day)} ${day.year}'
-                                  : formatHomeShortDate(day),
-                              style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        );
-      },
+    final chart = Material(color: Colors.transparent, child: HomeSparkline(values: viewModel.chartBalances));
+    final hasCardHero = context.findAncestorWidgetOfExactType<Hero>() != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: hasCardHero ? null : () => WalletBalanceHistoryScreen.open(context, viewModel),
+      child:
+          hasCardHero
+              ? chart
+              : Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart),
     );
   }
 }
@@ -587,47 +542,6 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
           if (trailing != null) trailing!,
-        ],
-      ),
-    );
-  }
-}
-
-/// 1주 · 1개월 · 3개월 · 1년 · 전체
-class _PeriodChips extends StatelessWidget {
-  final HomeWidgetPeriod selected;
-  final ValueChanged<HomeWidgetPeriod> onSelected;
-
-  const _PeriodChips({super.key, required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final period in HodlInsightsViewModel.periods)
-            GestureDetector(
-              key: ValueKey('hodl-insights-period-${period.name}'),
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onSelected(period),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: period == selected ? colors.primaryText : null,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  homePeriodLabel(period),
-                  style: CoconutTypography.caption_10.copyWith(
-                    color: period == selected ? colors.background : colors.tertiaryText,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -675,7 +589,7 @@ class _BalanceCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _PeriodChips(
+              BalanceHistoryPeriodChips(
                 key: const Key('hodl-insights-balance-periods'),
                 selected: viewModel.balancePeriod,
                 onSelected: viewModel.selectBalancePeriod,
