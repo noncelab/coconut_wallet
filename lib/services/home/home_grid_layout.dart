@@ -26,6 +26,38 @@ class HomeGridLayout {
     return rowComparison != 0 ? rowComparison : aPosition.column.compareTo(bPosition.column);
   });
 
+  /// Reflows a resized item's suffix, filling gaps without moving the visual prefix.
+  /// Dragging and loading retain explicit spaces; resizing intentionally makes room or closes it.
+  HomeConfiguration resizeItem(String id, HomeSpan span) {
+    final ordered = itemsInVisualOrder;
+    final index = ordered.indexWhere((item) => item.id == id);
+    if (index < 0 || ordered[index].span == span || span.width <= 0 || span.width > columns || span.height <= 0) {
+      return positionedConfiguration;
+    }
+    final resized = HomeGridLayout(
+      HomeConfiguration(
+        version: configuration.version,
+        items: [for (final (i, item) in ordered.indexed) item.copyWith(order: i, span: i == index ? span : item.span)],
+        shortcutWalletContext: configuration.shortcutWalletContext,
+      ),
+    );
+    final positions = {for (final item in ordered.take(index)) item.id: _positions[item.id]!};
+    final previous = index == 0 ? null : ordered[index - 1];
+    final start =
+        previous == null
+            ? anchorForSpan(_positions[id]!, span)
+            : HomeGridPosition(_positions[previous.id]!.column + previous.span.width, _positions[previous.id]!.row);
+    final target = resized._firstFreeFrom(span, positions, start);
+    positions[id] = target;
+    // Search the remaining resized row again for each item: a later shortcut can
+    // fill a hole that a preceding 2×2 or 4×2 could not use. Never jump above the resized item.
+    final suffixStart = HomeGridPosition(target.row == start.row ? start.column : 0, target.row);
+    for (final item in ordered.skip(index + 1)) {
+      positions[item.id] = resized._firstFreeFrom(item.span, positions, suffixStart);
+    }
+    return resized._withPositions(positions);
+  }
+
   bool canMoveToCell(String id, HomeGridPosition target) {
     final item = _itemsById[id];
     return item != null && _withinBounds(item.span, target);

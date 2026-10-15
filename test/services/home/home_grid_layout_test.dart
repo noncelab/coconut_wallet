@@ -1188,4 +1188,52 @@ void main() {
     expect(layout.positionOf('b'), const HomeGridPosition(0, 0));
     expect(layout.positionOf('c'), const HomeGridPosition(0, 2));
   });
+
+  test('resize is a pure preview and retains an explicit leading gap', () {
+    final configuration = HomeConfiguration(
+      items: [
+        item('target', 0, HomeSpan.wide, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 4)),
+        item('a', 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(0, 6)),
+        item('b', 2, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(1, 6)),
+      ],
+    );
+    final before = configuration.toJson();
+    final layout = HomeGridLayout(configuration);
+
+    final preview = layout.resizeItem('target', HomeSpan.small);
+
+    expect(configuration.toJson(), before);
+    expect(layout.positionOf('a'), const HomeGridPosition(0, 6));
+    expect(HomeGridLayout(preview).positionOf('target'), const HomeGridPosition(0, 4));
+    expect(HomeGridLayout(preview).positionOf('a'), const HomeGridPosition(2, 4));
+    expect(HomeGridLayout(preview).positionOf('b'), const HomeGridPosition(3, 4));
+    expect(HomeGridLayout(preview).positionedConfiguration, preview);
+  });
+
+  test('resize does not change load or drag preservation of explicit holes', () {
+    final configuration = HomeConfiguration(
+      items: [
+        item('target', 0, HomeSpan.small, HomeItemKind.widget).copyWith(position: const HomeGridPosition(1, 2)),
+        item('a', 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: const HomeGridPosition(0, 6)),
+      ],
+    );
+    final layout = HomeGridLayout(configuration);
+
+    expect(layout.positionedConfiguration, configuration);
+    expect(layout.resizeItem('target', HomeSpan.small), configuration);
+    final dragged = layout.moveToCell('a', const HomeGridPosition(3, 6));
+    expect(HomeGridLayout(dragged).positionOf('target'), const HomeGridPosition(1, 2));
+    expect(HomeGridLayout(dragged).positionOf('a'), const HomeGridPosition(3, 6));
+  });
+
+  test('resize rejects missing items and spans that cannot fit a grid', () {
+    final configuration = HomeConfiguration(
+      items: [item('target', 0, HomeSpan.small, HomeItemKind.widget).copyWith(position: const HomeGridPosition(1, 2))],
+    );
+    final layout = HomeGridLayout(configuration);
+    expect(layout.resizeItem('missing', HomeSpan.wide), configuration);
+    for (final span in [const HomeSpan(0, 2), const HomeSpan(5, 2), const HomeSpan(2, 0), const HomeSpan(-1, 2)]) {
+      expect(layout.resizeItem('target', span), configuration);
+    }
+  });
 }
