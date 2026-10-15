@@ -1,8 +1,11 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+
+typedef ScreenNameExtractor = String? Function(RouteSettings settings);
+
+String? defaultNameExtractor(RouteSettings settings) => settings.name;
 
 /// Named pages that log their own screen_view, like the unnamed CCOS pages
 /// (coconut_open_store_first_pow_scene.dart): the observer leaves them out and the page mixes in
