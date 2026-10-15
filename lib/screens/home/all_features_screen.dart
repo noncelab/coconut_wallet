@@ -35,7 +35,7 @@ class AllFeaturesScreen extends StatefulWidget {
   State<AllFeaturesScreen> createState() => _AllFeaturesScreenState();
 }
 
-class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
+class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKeepAliveClientMixin<AllFeaturesScreen> {
   static const _searchVerticalPadding = 14.0;
   static const _fakeBalanceIconPath = 'assets/svg/features/widgets/fake-balance-mask.svg';
 
@@ -60,6 +60,9 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     extraFeature: widget.onFakeBalanceTap == null ? null : _fakeBalanceFeature,
   );
   final TextEditingController _controller = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -90,6 +93,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colors = context.coconutColors;
     return ChangeNotifierProvider.value(
       value: _viewModel,

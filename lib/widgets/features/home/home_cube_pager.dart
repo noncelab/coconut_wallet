@@ -59,7 +59,7 @@ class HomeCubePagerState extends State<HomeCubePager> {
   Widget _face(int index, Widget child) {
     return AnimatedBuilder(
       animation: _controller,
-      child: child,
+      child: ExcludeFocus(excluding: _page != index, child: child),
       builder: (context, child) {
         // 교체된 ScrollPosition은 기존 페이지를 갖고 있어도 첫 레이아웃 전에는 haveDimensions가 false다.
         final page = _controller.hasClients && _controller.position.hasContentDimensions ? _controller.page ?? 0 : 0.0;
