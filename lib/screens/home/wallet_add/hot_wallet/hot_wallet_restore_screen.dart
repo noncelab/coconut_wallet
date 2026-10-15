@@ -363,6 +363,14 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     final viewModel = context.watch<HotWalletRestoreViewModel>();
     return PopScope(
       canPop: _canPop && !_isSubmitting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _isSubmitting || _isLeavingScreen) return;
+        if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+          FocusScope.of(context).unfocus();
+          return;
+        }
+        _handleAppBarBackPressed();
+      },
       child: Stack(
         children: [
           Listener(
@@ -494,9 +502,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
   }
 
   void _popScreen() {
+    if (_canPop) return;
     setState(() => _canPop = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) Navigator.of(context).pop();
     });
   }
 
