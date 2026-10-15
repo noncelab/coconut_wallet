@@ -245,76 +245,81 @@ class _BarChartState extends State<_BarChart> {
       backgroundColor: context.coconutColors.surfaceBottomSheet,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      t.utxo_overview_screen.interval_info_title,
-                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                    ),
-                  ),
-                  if (widget.onThemeSettingTap != null)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          widget.onThemeSettingTap?.call();
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
-                        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t.utxo_overview_screen.interval_info_title,
+                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ...getUtxoBucketRanges(dustThreshold: widget.dustThreshold).map((r) {
-                final isDustRange = r.max <= widget.dustThreshold;
-                final isWhale = r.label == 'whale';
-                final rangeStr =
-                    isWhale
-                        ? '≥ 10 ${t.btc}'
-                        : (isDustRange
-                            ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
-                            : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)}');
-                final color = tierTheme.colorForSats(r.max, dustThreshold: widget.dustThreshold);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                      ),
-                      SizedBox(
-                        width: 54,
-                        child: Text(
-                          r.label,
-                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                    if (widget.onThemeSettingTap != null)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            widget.onThemeSettingTap?.call();
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
+                          ),
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          rangeStr,
-                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...getUtxoBucketRanges(dustThreshold: widget.dustThreshold).map((r) {
+                  final isDustRange = r.max <= widget.dustThreshold;
+                  final isWhale = r.label == 'whale';
+                  final rangeStr =
+                      isWhale
+                          ? '≥ 10 ${t.btc}'
+                          : (isDustRange
+                              ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
+                              : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)}');
+                  final color = tierTheme.colorForSats(r.max, dustThreshold: widget.dustThreshold);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                r.label,
+                                maxLines: 1,
+                                style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                              ),
+                              Text(
+                                rangeStr,
+                                style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ),
