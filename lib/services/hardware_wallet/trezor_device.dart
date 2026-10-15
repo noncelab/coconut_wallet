@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
@@ -95,7 +96,54 @@ class TrezorDevice {
     this.usesThp = false,
   });
 
-  static Future<TrezorDevice> connect({TrezorTransport transport = TrezorTransport.ble}) async {
+  static Future<void>? _connectionQueue;
+  static TrezorDevice? _activeDevice;
+
+  // Native transports own one session; finish cleanup before starting its replacement.
+  static Future<T> _serializeConnection<T>(Future<T> Function() action) async {
+    final previous = _connectionQueue;
+    final done = Completer<void>();
+    _connectionQueue = done.future;
+    try {
+      if (previous != null) await previous;
+      return await action();
+    } finally {
+      if (identical(_connectionQueue, done.future)) _connectionQueue = null;
+      done.complete();
+    }
+  }
+
+  static Future<TrezorDevice> connect({
+    TrezorTransport transport = TrezorTransport.ble,
+    Future<String> Function()? pairingCodeRequested,
+    bool Function()? isCancelled,
+  }) => _serializeConnection(() async {
+    void checkCancelled() {
+      if (isCancelled?.call() ?? false) {
+        throw const TrezorPairingException('PAIRING_CANCELLED', 'Pairing cancelled by user');
+      }
+    }
+
+    checkCancelled();
+    await _activeDevice?._disconnect();
+    checkCancelled();
+    if (pairingCodeRequested != null) onPairingCodeRequested = pairingCodeRequested;
+    try {
+      final device = await _connect(transport: transport);
+      _activeDevice = device;
+      if (isCancelled?.call() ?? false) {
+        await device._disconnect();
+        checkCancelled();
+      }
+      return device;
+    } finally {
+      if (pairingCodeRequested != null && identical(onPairingCodeRequested, pairingCodeRequested)) {
+        onPairingCodeRequested = null;
+      }
+    }
+  });
+
+  static Future<TrezorDevice> _connect({required TrezorTransport transport}) async {
     _ensureHandlerRegistered();
     try {
       final raw = await _channel.invokeMethod<String>('connect', {'transport': transport.name});
@@ -150,9 +198,7 @@ class TrezorDevice {
   }
 
   static Future<void> cancel() async {
-    //try {
     await _channel.invokeMethod('cancel');
-    //} on PlatformException catch (_) {}
   }
 
   static Future<bool> isConnected(TrezorTransport transport) async {
@@ -263,11 +309,15 @@ class TrezorDevice {
     }
   }
 
-  Future<void> disconnect() async {
+  Future<void> disconnect() => _serializeConnection(_disconnect);
+
+  Future<void> _disconnect() async {
+    if (!identical(_activeDevice, this)) return;
     try {
       await _channel.invokeMethod('disconnect', {'id': id, 'transport': transport.name});
     } on PlatformException catch (_) {}
 
+    _activeDevice = null;
     if (lastConnected == this) {
       lastConnected = null;
       cachedFingerprint = null;

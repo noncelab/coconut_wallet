@@ -36,8 +36,8 @@ class WalletConnectInfoRow extends StatelessWidget {
 
 /// Unified error card used by wallet connect screens.
 ///
-/// Shows a warning icon, title, description, error message, and optional
-/// numbered troubleshooting steps.
+/// Shows a warning icon, title, description, and optional user guidance.
+/// [errorMessage] must contain user-facing text, never raw exceptions.
 class WalletConnectErrorCard extends StatelessWidget {
   final String title;
   final String description;
@@ -81,12 +81,14 @@ class WalletConnectErrorCard extends StatelessWidget {
                   style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                   textAlign: TextAlign.center,
                 ),
-                CoconutLayout.spacing_200h,
-                Text(
-                  errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
+                if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                  CoconutLayout.spacing_200h,
+                  Text(
+                    errorMessage!,
+                    style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 if (steps != null && steps!.isNotEmpty) ...[
                   CoconutLayout.spacing_300h,
                   Column(

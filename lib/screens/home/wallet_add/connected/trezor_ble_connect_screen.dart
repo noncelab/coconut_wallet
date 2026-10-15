@@ -48,6 +48,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   late TrezorBleConnectViewModel _viewModel;
   bool _isAddingWallet = false;
+  bool _isClosing = false;
   bool _isVerifyingPairingCode = false;
   TrezorBleConnectStep? _lastStep;
   final ScrollController _scrollController = ScrollController();
@@ -239,6 +240,17 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isClosing || !mounted) return;
+    _isClosing = true;
+    final route = ModalRoute.of(context);
+    try {
+      await _close();
+    } finally {
+      if (mounted && route?.isCurrent == true) _isClosing = false;
+    }
+  }
+
+  Future<void> _close() async {
     if (_viewModel.step == TrezorBleConnectStep.pairing) {
       _viewModel.cancelPairing();
       Navigator.pop(context);

@@ -49,6 +49,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   late final Future<String?> Function() _pinHandler;
   late final Future<TrezorPassphraseResponse> Function(bool) _passphraseHandler;
   bool _isAddingWallet = false;
+  bool _isClosing = false;
   bool _isVerifyingPairingCode = false;
   TrezorUsbConnectStep? _lastStep;
   final ScrollController _scrollController = ScrollController();
@@ -183,6 +184,17 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isClosing || !mounted) return;
+    _isClosing = true;
+    final route = ModalRoute.of(context);
+    try {
+      await _close();
+    } finally {
+      if (mounted && route?.isCurrent == true) _isClosing = false;
+    }
+  }
+
+  Future<void> _close() async {
     if (_viewModel.step == TrezorUsbConnectStep.pinEntry) {
       _viewModel.cancelPin();
       Navigator.pop(context);
@@ -379,7 +391,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
             WalletConnectErrorCard(
               title: t.wallet_connect_screen.guide_trezor.error.title,
               description: t.wallet_connect_screen.guide_trezor.error.usb_description,
-              errorMessage: vm.errorMessage,
             ),
             CoconutLayout.spacing_400h,
             _buildInfoCardForTrezorSuite(),

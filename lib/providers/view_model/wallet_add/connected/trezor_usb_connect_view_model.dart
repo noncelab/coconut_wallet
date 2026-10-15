@@ -36,6 +36,9 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   String _fingerprint = '';
   String? _errorMessage;
   bool _disposed = false;
+  int _connectionAttempt = 0;
+  Future<String> Function()? _pairingCallback;
+  bool _isConnecting = false;
   Completer<String?>? _pinCompleter;
   Completer<String>? _pairingCodeCompleter;
   String _pin = '';
@@ -63,7 +66,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   bool resumeFromExistingSession() {
     final device = TrezorDevice.lastConnected;
     final cachedXpub = device?.cachedXpub;
-    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    if (_disposed || device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
     _device = device;
     _xpub = cachedXpub;
     _fingerprint = device.cachedFingerprint ?? '';
@@ -72,19 +75,35 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> connect() async {
-    if (_step == TrezorUsbConnectStep.connecting) return;
+    if (_disposed || _isConnecting || isConnected) return;
+    final attempt = ++_connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
+    _isConnecting = true;
     _setState(TrezorUsbConnectStep.connecting);
     _errorMessage = null;
-    TrezorDevice.onPairingCodeRequested = () async {
-      _pairingCodeCompleter = Completer<String>();
+    Future<String> callback() async {
+      if (isCancelled()) return '';
+      final completer = Completer<String>();
+      _pairingCodeCompleter = completer;
       _setState(TrezorUsbConnectStep.pairing);
-      final code = await _pairingCodeCompleter!.future;
-      _pairingCodeCompleter = null;
-      _setState(TrezorUsbConnectStep.connecting);
+      final code = await completer.future;
+      if (identical(_pairingCodeCompleter, completer)) _pairingCodeCompleter = null;
+      if (!isCancelled()) _setState(TrezorUsbConnectStep.connecting);
       return code;
-    };
+    }
+
+    _pairingCallback = callback;
     try {
-      _device = await TrezorDevice.connect(transport: TrezorTransport.usb);
+      final device = await TrezorDevice.connect(
+        transport: TrezorTransport.usb,
+        pairingCodeRequested: callback,
+        isCancelled: isCancelled,
+      );
+      if (isCancelled()) {
+        await device.disconnect();
+        return;
+      }
+      _device = device;
       TrezorDevice.lastConnected = _device;
       debugPrint(
         'TREZOR_USB connected passphraseProtection=${_device!.passphraseProtection} '
@@ -94,22 +113,29 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       );
 
       await _ensureMinStepDuration(const Duration(milliseconds: 1500));
+      if (isCancelled()) return;
       _setState(TrezorUsbConnectStep.passphraseUseQuestion);
     } on TrezorPairingCodeWrongException catch (e) {
+      if (isCancelled()) return;
       _errorMessage = e.message;
       _isPairingCodeWrong = true;
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
     } on TrezorPairingException catch (e) {
+      if (isCancelled()) return;
       _errorMessage = e.message;
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
     } catch (error) {
+      if (isCancelled()) return;
       _errorMessage = error.toString();
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
     } finally {
-      TrezorDevice.onPairingCodeRequested = null;
+      if (attempt == _connectionAttempt) {
+        _pairingCallback = null;
+        _isConnecting = false;
+      }
     }
   }
 
@@ -131,22 +157,28 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   /// If not, first call applySettings to enable it — the user must confirm on the device.
   /// The user cannot skip this step after choosing to use passphrase.
   Future<void> selectUsePassphrase() async {
-    if (!_device!.passphraseProtection) {
+    final device = _device;
+    if (_disposed || device == null) return;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
+    if (!device.passphraseProtection) {
       _setState(TrezorUsbConnectStep.passphraseEnabling);
       try {
-        await _device!.applySettings(usePassphrase: true);
+        await device.applySettings(usePassphrase: true);
+        if (isCancelled()) return;
       } catch (error) {
+        if (isCancelled()) return;
         _errorMessage = error.toString();
         await _disconnectDevice();
         _setState(TrezorUsbConnectStep.error);
         return;
       }
       // After enabling, update the device flag so downstream logic works correctly
-      _device!.passphraseProtection = true;
+      device.passphraseProtection = true;
     }
-    if (_device!.passphraseAlwaysOnDevice) {
+    if (device.passphraseAlwaysOnDevice) {
       _setState(TrezorUsbConnectStep.passphraseOnDevice);
-    } else if (!_device!.supportsPassphraseEntry) {
+    } else if (!device.supportsPassphraseEntry) {
       _setState(TrezorUsbConnectStep.passphraseInput);
     } else {
       _setState(TrezorUsbConnectStep.passphraseSourceSelection);
@@ -182,11 +214,18 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
 
   /// Internal: call createSession (THP only) then proceed to getXPub.
   Future<void> _createSessionAndProceed(TrezorPassphraseType type, {String value = ''}) async {
+    final device = _device;
+    if (_disposed || device == null) return;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
     try {
-      await _device!.createSession(type: type, value: value);
+      await device.createSession(type: type, value: value);
+      if (isCancelled()) return;
       await _ensureMinStepDuration(const Duration(milliseconds: 1500));
+      if (isCancelled()) return;
       await _proceedToXpub();
     } catch (error) {
+      if (isCancelled()) return;
       _errorMessage = error.toString();
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
@@ -195,17 +234,27 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
 
   /// Step 6: getXPub + getFingerprint → connected.
   Future<void> _proceedToXpub() async {
+    final device = _device;
+    if (_disposed || device == null) return;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
     _setState(TrezorUsbConnectStep.passphraseProcessing);
     try {
       final network = NetworkType.currentNetworkType;
       final keypath = network.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
-      _xpub = await _device!.getXPub(keypath: keypath, network: network.toString());
-      _device!.cachedXpub = _xpub;
-      _fingerprint = await _device!.getFingerprint();
-      _device!.cachedFingerprint = _fingerprint;
+      final xpub = await device.getXPub(keypath: keypath, network: network.toString());
+      if (isCancelled()) return;
+      _xpub = xpub;
+      device.cachedXpub = _xpub;
+      final fingerprint = await device.getFingerprint();
+      if (isCancelled()) return;
+      _fingerprint = fingerprint;
+      device.cachedFingerprint = _fingerprint;
       await _ensureMinStepDuration(const Duration(milliseconds: 1000));
+      if (isCancelled()) return;
       _setState(TrezorUsbConnectStep.connected);
     } catch (error) {
+      if (isCancelled()) return;
       _errorMessage = error.toString();
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
@@ -240,8 +289,25 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   void cancelPairing() {
-    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
-      _pairingCodeCompleter!.complete('');
+    _cancelConnection();
+    _disconnectDevice().catchError((_) {});
+  }
+
+  void _cancelConnection() {
+    _connectionAttempt++;
+    _isConnecting = false;
+    final pinCompleter = _pinCompleter;
+    if (pinCompleter != null && !pinCompleter.isCompleted) pinCompleter.complete('');
+    _pinCompleter = null;
+    _pin = '';
+    _pendingPassphraseResponse = null;
+    final completer = _pairingCodeCompleter;
+    if (completer != null && !completer.isCompleted) completer.complete('');
+    _pairingCodeCompleter = null;
+    final callback = _pairingCallback;
+    _pairingCallback = null;
+    if (callback != null && identical(TrezorDevice.onPairingCodeRequested, callback)) {
+      TrezorDevice.cancel().catchError((_) {});
     }
   }
 
@@ -291,6 +357,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _cancelConnection();
     await _disconnectDevice();
     _xpub = '';
     _fingerprint = '';
@@ -299,16 +366,12 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   void reset() {
+    _cancelConnection();
     _device?.disconnect().catchError((_) {});
     _device = null;
     _step = TrezorUsbConnectStep.idle;
     _errorMessage = null;
     _isPairingCodeWrong = false;
-    _pairingCodeCompleter = null;
-    _pin = '';
-    _pinCompleter?.complete('');
-    _pinCompleter = null;
-    _pendingPassphraseResponse = null;
     _xpub = '';
     _fingerprint = '';
     if (!_disposed) notifyListeners();
@@ -353,16 +416,8 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _pinCompleter?.complete('');
-    _pinCompleter = null;
-    final pairingCompleter = _pairingCodeCompleter;
-    if (pairingCompleter != null && !pairingCompleter.isCompleted) {
-      pairingCompleter.complete('');
-    }
-    _pairingCodeCompleter = null;
-    TrezorDevice.onPairingCodeRequested = null;
+    _cancelConnection();
     if (_step != TrezorUsbConnectStep.connected) {
-      TrezorDevice.cancel().catchError((_) {});
       _device?.disconnect().catchError((_) {});
     }
     _device = null;
