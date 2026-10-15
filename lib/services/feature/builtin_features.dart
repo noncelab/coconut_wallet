@@ -138,9 +138,9 @@ bool _canEditWalletAppearance(WalletItemBase wallet) {
 }
 
 /// 언어를 바꾸면 [t]가 새 번역으로 바뀌므로, 라벨은 부를 때마다 지금 번역에서 읽는다.
-TranslationsFeatureRegistryKo get _labels => t.feature_registry;
-TranslationsFeatureSearchKo get _search => t.feature_search;
-TranslationsFeatureSubLabelsKo get _subLabels => t.feature_sub_labels;
+Translations$feature_registry$ko get _labels => t.feature_registry;
+Translations$feature_search$ko get _search => t.feature_search;
+Translations$feature_sub_labels$ko get _subLabels => t.feature_sub_labels;
 
 List<FeatureItem> builtinFeatures() {
   return [
