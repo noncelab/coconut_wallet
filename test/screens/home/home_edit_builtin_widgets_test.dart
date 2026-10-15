@@ -1339,7 +1339,21 @@ void main() {
         );
         await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
         await tester.pump();
-        await tester.pump(HodlInsightsScreen.transitionDuration ~/ 2);
+        // Sliver scroll offsets are applied during layout; sample the flight's actual frames.
+        // A single 240ms pump skips the layout/tick pair that retargets a moving Hero destination.
+        Rect? previousRect;
+        for (var frame = 0; frame < 15; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final rect = tester.getRect(find.byKey(Key(target.$3)));
+          expect(rect.left, greaterThanOrEqualTo(0), reason: '${target.$1} frame $frame');
+          expect(rect.right, lessThanOrEqualTo(400), reason: '${target.$1} frame $frame');
+          expect(rect.top, greaterThanOrEqualTo(0), reason: '${target.$1} frame $frame');
+          expect(rect.bottom, lessThanOrEqualTo(800), reason: '${target.$1} frame $frame');
+          if (previousRect != null) {
+            expect(rect.top, greaterThanOrEqualTo(previousRect.top - .01), reason: 'flight must not reverse abruptly');
+          }
+          previousRect = rect;
+        }
         expect(tester.takeException(), isNull);
         final targetRect = tester.getRect(find.byKey(Key(target.$3)));
         expect(targetRect.top, lessThan(800), reason: '${target.$1}: $targetRect');
@@ -1392,7 +1406,7 @@ void main() {
       for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
         for (final shortContent in [false, true]) {
           testWidgets(
-            '$platform ${shortContent ? "short" : "long"} content stays fixed on held edge pulls, up and cancel',
+            '$platform ${shortContent ? "short" : "long"} content preserves bounce across refresh, release and regrab',
             (tester) async {
               final size = Size(platform == TargetPlatform.iOS ? 390 : 360, shortContent ? 4000 : 800);
               const bottomInset = 34.0;
@@ -1409,77 +1423,220 @@ void main() {
               );
               await tester.pumpAndSettle();
               final list = find.byKey(const Key('hodl-insights-list'));
-              final scrollable = find.descendant(of: list, matching: find.byType(Scrollable));
-              final position = tester.state<ScrollableState>(scrollable).position;
+              final position =
+                  tester.state<ScrollableState>(find.descendant(of: list, matching: find.byType(Scrollable))).position;
+              expect(position.physics, isA<BouncingScrollPhysics>());
               expect(position.maxScrollExtent, shortContent ? 0 : greaterThan(0));
               final viewport = tester.getRect(list);
-              expect(
-                viewport.bottom,
-                shortContent ? lessThanOrEqualTo(size.height - bottomInset) : closeTo(size.height - bottomInset, .01),
-              );
+              expect(viewport.bottom, lessThanOrEqualTo(size.height - bottomInset));
               for (final bottom in [false, true]) {
                 final edge = bottom ? position.maxScrollExtent : position.minScrollExtent;
-                position.jumpTo(edge);
-                await tester.pumpAndSettle();
-                final card = find.byKey(const Key('transaction-activity-summary'));
-                if (bottom) {
-                  final bounds = tester.getRect(card);
-                  expect(bounds.top, greaterThanOrEqualTo(viewport.top));
-                  expect(bounds.bottom, lessThanOrEqualTo(size.height - bottomInset));
-                }
                 for (final cancel in [false, true]) {
+                  position.jumpTo(edge);
+                  await tester.pumpAndSettle();
+                  final card = find.byKey(const Key('transaction-activity-summary'));
+                  if (bottom) {
+                    final bounds = tester.getRect(card);
+                    expect(bounds.top, greaterThanOrEqualTo(viewport.top));
+                    expect(bounds.bottom, lessThanOrEqualTo(size.height - bottomInset));
+                  }
                   final origin = Offset(viewport.left + 6, viewport.center.dy);
                   final gesture = await tester.startGesture(origin);
                   for (var step = 0; step < 6; step++) {
                     await gesture.moveBy(Offset(0, bottom ? -20 : 20));
                     await tester.pump(const Duration(milliseconds: 16));
+                  }
+                  final held = position.pixels;
+                  if (shortContent) {
+                    expect(held, edge, reason: 'native physics does not drag content that fits');
+                  } else {
+                    expect((held - edge).abs(), greaterThan(20), reason: 'keep the original outward pull effect');
+                    expect(position.activity, isA<DragScrollActivity>());
+                  }
+                  final activity = position.activity;
+                  final dimensions = [position.minScrollExtent, position.maxScrollExtent, position.viewportDimension];
+                  final heldCard = tester.getRect(card);
+                  for (var refresh = 0; refresh < 3; refresh++) {
+                    _widgetsViewModel!.refresh();
+                    await tester.pump(const Duration(milliseconds: 80));
                     expect(
                       position.pixels,
-                      closeTo(edge, .01),
-                      reason: 'held pull: bottom=$bottom cancel=$cancel step=$step physics=${position.physics}',
+                      closeTo(held, .01),
+                      reason: 'same-shaped refresh must not reset a held pull',
                     );
+                    expect(position.activity, same(activity));
+                    expect(tester.getRect(card), heldCard);
+                    expect([
+                      position.minScrollExtent,
+                      position.maxScrollExtent,
+                      position.viewportDimension,
+                    ], dimensions);
                   }
-                  final fixedCard = tester.getRect(card);
                   await tester.pump(const Duration(milliseconds: 250));
-                  expect(position.pixels, closeTo(edge, .01), reason: 'stationary pointer must not spring back');
-                  expect(tester.getRect(card), fixedCard);
+                  final simulation = position.physics.createBallisticSimulation(position, 0);
                   if (cancel) {
                     await gesture.cancel();
                   } else {
                     await gesture.up();
                   }
-                  for (var frame = 0; frame < 20; frame++) {
+                  final returning = position.activity;
+                  var previousDistance = (held - edge).abs();
+                  for (var frame = 0; frame < 45; frame++) {
+                    if (frame % 3 == 0) _widgetsViewModel!.refresh();
                     await tester.pump(const Duration(milliseconds: 16));
-                    expect(position.pixels, closeTo(edge, .01), reason: 'release frame $frame');
-                    expect(tester.getRect(card), fixedCard);
+                    final distance = (position.pixels - edge).abs();
+                    expect(
+                      distance,
+                      lessThanOrEqualTo(previousDistance + .01),
+                      reason: 'one continuous return, frame $frame',
+                    );
+                    if (!shortContent && !simulation!.isDone(frame * .016)) {
+                      expect(
+                        position.pixels,
+                        closeTo(simulation.x(frame * .016), .02),
+                        reason: 'relayout must not interrupt native spring at frame $frame',
+                      );
+                      expect(position.activity, same(returning));
+                    }
+                    previousDistance = distance;
                   }
+                  await tester.pumpAndSettle();
+                  expect(position.pixels, closeTo(edge, .01));
                   if (!shortContent) {
+                    final pull = await tester.startGesture(origin);
+                    for (var step = 0; step < 5; step++) {
+                      await pull.moveBy(Offset(0, bottom ? -20 : 20));
+                      await tester.pump(const Duration(milliseconds: 16));
+                    }
+                    await tester.pump(const Duration(milliseconds: 250));
+                    await pull.up();
+                    await tester.pump();
+                    await tester.pump(const Duration(milliseconds: 64));
+                    final beforeRegrab = position.pixels;
                     final regrab = await tester.startGesture(origin);
-                    await regrab.moveBy(Offset(0, bottom ? 60 : -60));
-                    await tester.pump(const Duration(milliseconds: 16));
-                    await regrab.moveBy(Offset(0, bottom ? 60 : -60));
-                    await tester.pump(const Duration(milliseconds: 16));
+                    _widgetsViewModel!.refresh();
+                    await tester.pump(const Duration(milliseconds: 64));
+                    expect(
+                      position.pixels,
+                      closeTo(beforeRegrab, .01),
+                      reason: 'pointer down must hold the current return position',
+                    );
+                    for (var step = 0; step < 3; step++) {
+                      await regrab.moveBy(Offset(0, bottom ? 60 : -60));
+                      await tester.pump(const Duration(milliseconds: 16));
+                    }
                     expect(
                       position.pixels,
                       bottom ? lessThan(edge) : greaterThan(edge),
-                      reason: 'reverse regrab must scroll immediately',
+                      reason: 'reverse regrab follows the pointer into the content',
                     );
                     await regrab.cancel();
-                    await tester.pumpAndSettle();
-                    position.jumpTo(edge);
                     await tester.pumpAndSettle();
                   }
                 }
               }
-              expect(find.descendant(of: list, matching: find.byType(StretchingOverscrollIndicator)), findsNothing);
-              expect(find.descendant(of: list, matching: find.byType(GlowingOverscrollIndicator)), findsNothing);
               expect(tester.takeException(), isNull);
               await _close(tester);
             },
           );
         }
 
-        testWidgets('$platform initial section positioning remains visible with fixed edges', (tester) async {
+        for (final bottom in [false, true]) {
+          testWidgets('$platform ${bottom ? "bottom" : "top"} bounce stays held during entry reveal relayout', (
+            tester,
+          ) async {
+            await _openWidgetsTab(
+              tester,
+              fake: false,
+              size: Size(platform == TargetPlatform.iOS ? 390 : 360, 800),
+              platform: platform,
+              screen:
+                  (viewModel) =>
+                      ScrollConfiguration(behavior: const CupertinoScrollBehavior(), child: insights(viewModel)),
+            );
+            final list = find.byKey(const Key('hodl-insights-list'));
+            final position =
+                tester.state<ScrollableState>(find.descendant(of: list, matching: find.byType(Scrollable))).position;
+            final edge = bottom ? position.maxScrollExtent : position.minScrollExtent;
+            position.jumpTo(edge);
+            await tester.pump(const Duration(milliseconds: 150));
+            final viewport = tester.getRect(list);
+            final gesture = await tester.startGesture(Offset(viewport.left + 6, viewport.center.dy));
+            for (var step = 0; step < 6; step++) {
+              await gesture.moveBy(Offset(0, bottom ? -20 : 20));
+              await tester.pump(const Duration(milliseconds: 16));
+            }
+            final held = position.pixels;
+            expect((held - edge).abs(), greaterThan(20));
+            final activity = position.activity;
+            for (var frame = 0; frame < 120; frame++) {
+              await tester.pump(const Duration(milliseconds: 16));
+              expect(
+                position.pixels,
+                closeTo(held, .01),
+                reason: 'entry reveal frame $frame must not reset held offset',
+              );
+              expect(position.activity, same(activity));
+            }
+            await gesture.up();
+            await tester.pumpAndSettle();
+            expect(position.pixels, closeTo(edge, .01));
+            expect(tester.takeException(), isNull);
+            await _close(tester);
+          });
+        }
+
+        testWidgets('$platform native bounce survives a wallet filter changing content extent', (tester) async {
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            size: Size(platform == TargetPlatform.iOS ? 390 : 360, 800),
+            platform: platform,
+            screen:
+                (viewModel) =>
+                    ScrollConfiguration(behavior: const CupertinoScrollBehavior(), child: insights(viewModel)),
+          );
+          await tester.pumpAndSettle();
+          final list = find.byKey(const Key('hodl-insights-list'));
+          final state = tester.state<ScrollableState>(find.descendant(of: list, matching: find.byType(Scrollable)));
+          final position = state.position;
+          expect(state.widget.controller, same(PrimaryScrollController.maybeOf(tester.element(list))));
+          final viewModel = tester.element(list).read<HodlInsightsViewModel>();
+          final viewport = tester.getRect(list);
+          for (final ids in [
+            <int>[2],
+            <int>[1, 2],
+          ]) {
+            position.jumpTo(position.maxScrollExtent);
+            await tester.pumpAndSettle();
+            final oldExtent = position.maxScrollExtent;
+            final gesture = await tester.startGesture(Offset(viewport.left + 6, viewport.center.dy));
+            for (var step = 0; step < 6; step++) {
+              await gesture.moveBy(const Offset(0, -20));
+              await tester.pump(const Duration(milliseconds: 16));
+            }
+            expect(position.pixels, greaterThan(oldExtent));
+            viewModel.setWalletIds(ids);
+            await tester.pump();
+            expect(
+              position.maxScrollExtent,
+              isNot(oldExtent),
+              reason: 'fixture must exercise an actual content size change',
+            );
+            expect(state.position, same(position), reason: 'filter updates retain the scroll position object');
+            await gesture.up();
+            await tester.pumpAndSettle();
+            expect(position.pixels, inInclusiveRange(position.minScrollExtent, position.maxScrollExtent));
+            position.jumpTo(position.maxScrollExtent);
+            await tester.pumpAndSettle();
+            final card = tester.getRect(find.byKey(const Key('transaction-activity-summary')));
+            expect(card.bottom, lessThanOrEqualTo(viewport.bottom));
+          }
+          expect(tester.takeException(), isNull);
+          await _close(tester);
+        });
+
+        testWidgets('$platform initial section positioning remains visible with native bounce', (tester) async {
           for (final section in HodlInsightsSection.values) {
             await _openWidgetsTab(
               tester,
@@ -1500,6 +1657,21 @@ void main() {
             final card = tester.getRect(find.byKey(ValueKey('hodl-insights-highlight-${section.name}')));
             expect(card.top, greaterThanOrEqualTo(viewport.top - .01));
             expect(card.bottom, lessThanOrEqualTo(viewport.bottom + .01));
+            final position =
+                tester
+                    .state<ScrollableState>(
+                      find.descendant(
+                        of: find.byKey(const Key('hodl-insights-list')),
+                        matching: find.byType(Scrollable),
+                      ),
+                    )
+                    .position;
+            position.jumpTo(position.maxScrollExtent);
+            await tester.pumpAndSettle();
+            final manuallySelectedOffset = position.pixels;
+            _widgetsViewModel!.refresh();
+            await tester.pumpAndSettle();
+            expect(position.pixels, manuallySelectedOffset, reason: 'refresh must not rerun initial ensureVisible');
             expect(tester.takeException(), isNull);
             await _close(tester);
           }
