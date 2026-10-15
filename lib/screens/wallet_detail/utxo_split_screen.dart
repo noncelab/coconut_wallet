@@ -138,7 +138,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             context.read<WalletProvider>(),
             context.read<AddressRepository>(),
             context.read<SendInfoProvider>(),
-            (outputCount) => _showUsePreviewConfirmDialog(context, outputCount),
+            () => _showUsePreviewConfirmDialog(context),
           ),
       child: Builder(
         builder: (context) {
@@ -160,7 +160,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     );
   }
 
-  Future<bool> _showUsePreviewConfirmDialog(BuildContext context, int outputCount) async {
+  Future<bool> _showUsePreviewConfirmDialog(BuildContext context) async {
     final result = await showDialog<bool>(
       barrierDismissible: false,
       context: context,
@@ -181,6 +181,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       },
     );
 
+    /// 다이얼로그가 닫히면 포커스가 입력 필드로 복귀하는데, 포커스 상태에선
+    /// 결과 박스(isFocused 체크)가 숨겨져 빌드/프리뷰 진행이 보이지 않는다
+    FocusManager.instance.primaryFocus?.unfocus();
     return result ?? false;
   }
 
@@ -672,7 +675,12 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
         if (isSelected) {
           final utxoTagProvider = context.read<UtxoTagProvider>();
-          final tags = utxoTagProvider.getUtxoTagsByUtxoId(widget.id, selectedUtxoList.first.utxoId);
+          final seenTagIds = <String>{};
+          final tags =
+              selectedUtxoList
+                  .expand((utxo) => utxoTagProvider.getUtxoTagsByUtxoId(widget.id, utxo.utxoId))
+                  .where((tag) => seenTagIds.add(tag.id))
+                  .toList();
 
           if (tags.isNotEmpty) {
             final firstTag = tags.first;
@@ -1231,7 +1239,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 walletId: widget.id,
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
-                isSplitMode: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),

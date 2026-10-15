@@ -42,7 +42,12 @@ class UtxoSelectionScreen extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
   final bool showSkipButton;
-  final bool isSplitMode;
+
+  /// UTXO를 1개만 선택할 수 있는 모드입니다. 현재 사용처는 없습니다.
+  final bool isSingleUtxoSelectionMode;
+
+  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
+  final int? minimumSelectableUtxoAmount;
   final Color? backgroundColor;
 
   const UtxoSelectionScreen({
@@ -52,7 +57,8 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.walletId,
     this.scrollController,
     this.showSkipButton = false,
-    this.isSplitMode = false,
+    this.isSingleUtxoSelectionMode = false,
+    this.minimumSelectableUtxoAmount,
     this.backgroundColor,
   });
 
@@ -83,7 +89,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     Color resolvedBackgroundColor = widget.backgroundColor ?? context.coconutColors.background;
-    String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
+    String titleText = widget.isSingleUtxoSelectionMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
@@ -109,7 +115,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
                         titleText,
-                        style: (widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14)
+                        style: (widget.isSingleUtxoSelectionMode
+                                ? CoconutTypography.body2_14_Bold
+                                : CoconutTypography.body2_14)
                             .setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -149,7 +157,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                   ),
                                 ),
                               ),
-                              if (!widget.isSplitMode)
+                              if (!widget.isSingleUtxoSelectionMode)
                                 SelectedUtxoAmountHeader(
                                   orderDropdownButtonKey: _orderDropdownButtonKey,
                                   orderText: _viewModel.utxoOrder.text,
@@ -276,7 +284,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-      )..isSplitMode = widget.isSplitMode;
+      )..isSingleUtxoSelectionMode = widget.isSingleUtxoSelectionMode;
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -287,7 +295,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           _viewModel.initialize(widget.selectedUtxoList);
-          if (widget.isSplitMode) {
+          if (widget.isSingleUtxoSelectionMode) {
             _viewModel.changeUtxoOrder(UtxoOrder.byAmountDesc);
           }
         }
@@ -446,14 +454,15 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           );
         }
 
-        final bool isDisabledForSplit = widget.isSplitMode && utxo.amount < 1000;
+        final bool isDisabledByMinAmount =
+            widget.minimumSelectableUtxoAmount != null && utxo.amount < widget.minimumSelectableUtxoAmount!;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: IgnorePointer(
-            ignoring: isDisabledForSplit,
+            ignoring: isDisabledByMinAmount,
             child: Opacity(
-              opacity: isDisabledForSplit ? 0.4 : 1.0,
+              opacity: isDisabledByMinAmount ? 0.4 : 1.0,
               child: UtxoSelectionCard(
                 key: ValueKey(utxo.utxoId),
                 currentUnit: widget.currentUnit,

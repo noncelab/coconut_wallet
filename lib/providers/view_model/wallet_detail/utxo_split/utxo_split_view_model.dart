@@ -19,7 +19,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
 
-typedef UsePreviewConfirmPrompt = Future<bool> Function(int outputCount);
+typedef UsePreviewConfirmPrompt = Future<bool> Function();
 
 enum SplitErrorType { none, feeExceedsAmount, dust }
 
@@ -90,8 +90,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   String _unexpectedErrorMessage = "";
   bool _isPreparingNextStep = false;
 
-  /// Output 개수가 많을 때 트랜잭션 생성 시 1분 이상 걸릴 수 있으므로 컨펌 필요
-  final int _bigTxOutputThreshold = 1000;
+  /// Input + Output 개수가 많을 때 트랜잭션 생성 시 1분 이상 걸릴 수 있으므로 컨펌 필요
+  final int _bigTxIoThreshold = 1000;
   bool? _usePreview;
 
   // --- UI Getter ---
@@ -104,7 +104,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   bool get hasFeeRate => feeRateController.text.isNotEmpty;
   BitcoinUnit get currentUnit => _preferenceProvider.currentUnit;
 
-  int get _selectedUtxoAmount => _selectedUtxoList.isNotEmpty ? _selectedUtxoList.first.amount : 0;
+  int get _selectedUtxoAmount => _selectedUtxoList.fold<int>(0, (sum, utxo) => sum + utxo.amount);
   String get _splitAmountInput => amountController.text.trim();
 
   int get splitCount {
@@ -114,7 +114,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool get usePreview =>
       _splitPreview != null &&
-      _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) > _bigTxOutputThreshold &&
+      _selectedUtxoList.length + _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) >
+          _bigTxIoThreshold &&
       _usePreview == true;
 
   bool get showSkeletonResultBox => _isCalculating || _activeBuildTask != null;
@@ -331,8 +332,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
       final outputCount = preview.amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
       bool isBuildTx = true;
-      if (outputCount > _bigTxOutputThreshold) {
-        _usePreview ??= await _showUsePreviewConfirmPrompt(outputCount);
+      if (_selectedUtxoList.length + outputCount > _bigTxIoThreshold) {
+        _usePreview ??= await _showUsePreviewConfirmPrompt();
         if (requestId != _buildRequestId) {
           return;
         }
@@ -477,7 +478,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   // --- Validation ---
   bool get hasSelectedUtxoAmountError {
     if (_selectedUtxoList.isEmpty) return false;
-    return _selectedUtxoAmount >= 1000 && _selectedUtxoAmount < 20000;
+    return _selectedUtxoAmount < 20000;
   }
 
   bool get hasSelectedUtxoAmountWarning {
@@ -516,25 +517,25 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void setSelectedUtxoList(List<UtxoState> utxoList) {
-    final isChanged =
-        _selectedUtxoList.isEmpty != utxoList.isEmpty ||
-        (_selectedUtxoList.isNotEmpty &&
-            utxoList.isNotEmpty &&
-            _selectedUtxoList.first.utxoId != utxoList.first.utxoId);
+    final oldIds = _selectedUtxoList.map((u) => u.utxoId).toSet();
+    final newIds = utxoList.map((u) => u.utxoId).toSet();
+    final isChanged = !oldIds.containsAll(newIds) || !newIds.containsAll(oldIds);
 
     _selectedUtxoList = utxoList;
 
-    if (_selectedUtxoList.isEmpty) {
+    if (_selectedUtxoList.isEmpty || hasSelectedUtxoAmountError) {
       _selectedMethod = null;
-      _splitBuilder.setUtxo(null);
+      _splitBuilder.setUtxos([]);
     } else {
-      _splitBuilder.setUtxo(_selectedUtxoList.first);
-      if (hasSelectedUtxoAmountError) {
-        _selectedMethod = null;
-      }
+      _splitBuilder.setUtxos(_selectedUtxoList);
     }
 
     if (isChanged) {
+      /// 선택이 바뀌면 진행 중인 빌드를 즉시 무효화한다.
+      /// (requestId 증가는 디바운스 내부에서 일어나므로 여기서 올려주지 않으면
+      ///  stale한 빌드 결과가 _splitResult에 할당될 수 있다)
+      ++_buildRequestId;
+      _cancelActiveBuild();
       _clearResult();
     }
 
@@ -683,9 +684,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   // --- UI Presentation Helpers ---
   String getSelectedUtxoAmountText(Translations t) {
-    return isUtxoSelected
-        ? currentUnit.displayBitcoinAmount(_selectedUtxoAmount, withUnit: true)
-        : t.split_utxo_screen.placeholder_utxo;
+    if (!isUtxoSelected) {
+      return t.split_utxo_screen.placeholder_utxo;
+    }
+    final amountText = currentUnit.displayBitcoinAmount(_selectedUtxoAmount, withUnit: true);
+    final countText = t.split_utxo_screen.selected_utxo_count(count: _selectedUtxoList.length);
+    return '$amountText ($countText)';
   }
 
   CoconutOptionStateEnum get utxoOptionState {
@@ -860,7 +864,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   Future<void> _updateRecommendedSplitCounts() async {
-    if (_selectedUtxoList.isEmpty) {
+    if (_selectedUtxoList.isEmpty || hasSelectedUtxoAmountError) {
       _recommendedSplitCounts = [];
       notifyIfNotDisposed();
       return;

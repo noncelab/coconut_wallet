@@ -332,9 +332,6 @@ class CommonBottomSheets {
                           onVerticalDragEnd: (details) {
                             handleDrag();
                           },
-                          onVerticalDragCancel: () {
-                            handleDrag();
-                          },
                           child: Container(
                             color: resolvedBackgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -359,9 +356,6 @@ class CommonBottomSheets {
                             draggableController.jumpTo(draggableController.size + delta);
                           },
                           onVerticalDragEnd: (details) {
-                            handleDrag();
-                          },
-                          onVerticalDragCancel: () {
                             handleDrag();
                           },
                           child: CoconutAppBar.build(
@@ -391,7 +385,12 @@ class CommonBottomSheets {
                           padding: EdgeInsets.only(
                             bottom: adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0,
                           ),
-                          child: childBuilder(scrollController),
+                          child: _SheetDragForwarder(
+                            controller: draggableController,
+                            minChildSize: minChildSize,
+                            maxChildSize: maxChildSize,
+                            child: childBuilder(scrollController),
+                          ),
                         ),
                       ),
                     ],
@@ -742,6 +741,62 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
           ),
         ),
       ),
+    );
+  }
+}
+
+/// [CommonBottomSheets.showDraggableBottomSheet]의 스크롤되지 않는 영역(헤더 등)에서
+/// 시작된 수직 드래그를 시트 크기 변경으로 전달한다.
+/// 자식 중 스크롤 가능한 영역의 드래그 recognizer가 gesture arena에서 우선권을 가지므로,
+/// 이 GestureDetector는 드래그를 받는 자식이 없는 영역에서만 동작한다.
+class _SheetDragForwarder extends StatefulWidget {
+  const _SheetDragForwarder({
+    required this.controller,
+    required this.minChildSize,
+    required this.maxChildSize,
+    required this.child,
+  });
+
+  final DraggableScrollableController controller;
+  final double minChildSize;
+  final double maxChildSize;
+  final Widget child;
+
+  @override
+  State<_SheetDragForwarder> createState() => _SheetDragForwarderState();
+}
+
+class _SheetDragForwarderState extends State<_SheetDragForwarder> {
+  bool _isAnimating = false;
+
+  void _handleDragEnd() {
+    if (_isAnimating || !widget.controller.isAttached) return;
+
+    final extent = widget.controller.size;
+    final target =
+        (extent - widget.minChildSize).abs() < (extent - widget.maxChildSize).abs()
+            ? widget.minChildSize + 0.01
+            : widget.maxChildSize;
+
+    _isAnimating = true;
+    widget.controller.animateTo(target, duration: const Duration(milliseconds: 50), curve: Curves.easeOut).whenComplete(
+      () {
+        _isAnimating = false;
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: (details) {
+        if (!widget.controller.isAttached) return;
+        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+        widget.controller.jumpTo(widget.controller.size + delta);
+      },
+      onVerticalDragEnd: (_) => _handleDragEnd(),
+      child: widget.child,
     );
   }
 }

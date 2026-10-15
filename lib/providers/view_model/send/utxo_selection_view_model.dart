@@ -21,7 +21,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   late final int _walletId;
   bool _isInitialized = false;
-  bool isSplitMode = false;
+
+  /// UTXO를 1개만 선택할 수 있는 모드입니다. 현재 사용처는 없습니다.
+  bool isSingleUtxoSelectionMode = false;
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -182,7 +184,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
 
-    if (isSplitMode) {
+    if (isSingleUtxoSelectionMode) {
       if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
         _selectedUtxoList.removeWhere((e) => e.utxoId == utxo.utxoId);
         _selectedUtxoIdSet.remove(utxo.utxoId);
