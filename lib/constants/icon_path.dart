@@ -110,6 +110,7 @@ abstract final class CommonStateIconPath {
   static const String statusLoading = 'assets/svg/common/state/status-loading.svg';
   static const String stopSign = 'assets/svg/common/state/stop-sign.svg';
   static const String triangleWarning = 'assets/svg/common/state/triangle-warning.svg';
+  static const String bulb = 'assets/svg/brand/motifs/bulb.svg';
 }
 
 abstract final class CommonVisibilityIconPath {
@@ -180,6 +181,7 @@ abstract final class FeatureWalletIconPath {
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
+  static const String vault = 'assets/svg/features/wallet/vault.svg'; // 코코넛 볼트 아이콘이 아님. 금고 아이콘
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

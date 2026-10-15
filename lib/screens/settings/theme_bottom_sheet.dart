@@ -154,37 +154,54 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
           _ThemeOption(variant: CoconutThemeVariant.light, title: t.theme_light),
           if (isCcosThemeSelectable) _ThemeOption(variant: CoconutThemeVariant.coconutTheme, title: t.theme_coconut),
         ];
-        return Scaffold(
-          backgroundColor: colors.background,
-          appBar: CoconutAppBar.build(
-            title: t.theme_bottom_sheet.title,
-            context: context,
-            onBackPressed: null,
-            isBottom: true,
-            actionButtonList: [
-              CoconutAppBarActionButton(
-                onPressed: () => openCoconutOpenStoreIntroScreen(context),
-                icon: SvgPicture.asset(
-                  BrandIconPath.coconutPlanet,
-                  width: Sizes.size24,
-                  height: Sizes.size24,
-                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+        final appBar = CoconutAppBar.build(
+          title: t.theme_bottom_sheet.title,
+          context: context,
+          onBackPressed: null,
+          isBottom: true,
+          actionButtonList: [
+            CoconutAppBarActionButton(
+              onPressed: () => openCoconutOpenStoreIntroScreen(context),
+              icon: SvgPicture.asset(
+                BrandIconPath.coconutPlanet,
+                width: Sizes.size24,
+                height: Sizes.size24,
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              ),
+            ),
+          ],
+        );
+        return Material(
+          color: colors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: appBar.preferredSize.height, child: appBar),
+              Flexible(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_swipedVariant != null) setState(() => _swipedVariant = null);
+                  },
+                  child: ListView(
+                    shrinkWrap: true,
+                    primary: false,
+                    padding: EdgeInsets.fromLTRB(
+                      Sizes.size16,
+                      0,
+                      Sizes.size16,
+                      MediaQuery.paddingOf(context).bottom + Sizes.size16,
+                    ),
+                    children: [
+                      const SizedBox(height: Sizes.size8),
+                      _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
+                      ..._buildThemeRows(context, provider, builtInThemes),
+                    ],
+                  ),
                 ),
               ),
             ],
-          ),
-          body: GestureDetector(
-            onTap: () {
-              if (_swipedVariant != null) setState(() => _swipedVariant = null);
-            },
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-              children: [
-                const SizedBox(height: Sizes.size8),
-                _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
-                ..._buildThemeRows(context, provider, builtInThemes),
-              ],
-            ),
           ),
         );
       },

@@ -69,8 +69,9 @@ class UtxoSummaryChart extends StatelessWidget {
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 16, 16, 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

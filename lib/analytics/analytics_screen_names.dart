@@ -61,6 +61,11 @@ class AnalyticsScreenNames {
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';
   static const String walletDetailFaucetSheet = 'wallet-detail-faucet-sheet';
   static const String walletDetailAppSettingsSheet = 'wallet-detail-app-settings-sheet';
+  static const String walletDetailMoveToVaultNoBalanceSheet = 'wallet-detail-move-to-vault-noBalance-sheet';
+  static const String walletDetailMoveToVaultNoWatchOnlyWalletSheet =
+      'wallet-detail-move-to-vault-noWatchOnlyWallet-sheet';
+  static const String walletDetailMoveToVaultSelectWalletSheet =
+      'wallet-detail-move-to-vault-selectWatchOnlyWallet-sheet';
   static const String walletInfoAuthSheet = 'wallet-info-auth-sheet';
   static const String walletInfoXpubSheet = 'wallet-info-xpub-sheet';
   static const String walletInfoMfpSheet = 'wallet-info-mfp-sheet';

@@ -161,12 +161,17 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
                             CommonStateIconPath.triangleWarning,
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(
+                              context.coconutColors.appLockWarningBackground,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           CoconutLayout.spacing_50w,
                           Text(
                             t.wallet_info_screen.backup_required,
-                            style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
+                            style: CoconutTypography.body2_14_Bold.setColor(
+                              context.coconutColors.appLockWarningBackground,
+                            ),
                             textAlign: TextAlign.end,
                           ),
                           CoconutLayout.spacing_100w,
@@ -853,6 +858,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       child: QrWithCopyTextScreen(
         qrData: extendedPublicKey,
         title: t.extended_public_key,
+        isBottom: true,
         showPulldownMenu: false,
         backgroundColor: context.coconutColors.background,
       ),
@@ -933,13 +939,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(title, style: resolvedTitleStyle)),
+            Text(title, style: resolvedTitleStyle),
             CoconutLayout.spacing_200w,
-            Flexible(
+            Expanded(
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (subWidget != null) ...[Flexible(child: subWidget), CoconutLayout.spacing_100w],
+                  if (subWidget != null) ...[
+                    Flexible(
+                      child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: subWidget),
+                    ),
+                    CoconutLayout.spacing_100w,
+                  ],
                   if (rightWidget != null) rightWidget,
                   if (showArrowRight)
                     Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),

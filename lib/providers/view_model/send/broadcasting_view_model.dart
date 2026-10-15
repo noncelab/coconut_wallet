@@ -304,13 +304,18 @@ class BroadcastingViewModel extends ChangeNotifier {
     _externalOutputAmounts.clear();
     _changeOutputAmounts.clear();
     _outputDetailItems.clear();
-    for (final output in outputs) {
+    for (final (outputIndex, output) in outputs.indexed) {
       final amount = output.outAmount;
       if (amount == null) {
         continue;
       }
       _outputDetailItems.add(
-        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange(_wallet)),
+        BroadcastingOutputDetailItem(
+          outputIndex: outputIndex,
+          address: output.outAddress,
+          amount: amount,
+          isChange: output.isChange(_wallet),
+        ),
       );
       if (output.isChange(_wallet)) {
         _changeOutputAmounts.add(amount);
@@ -548,9 +553,15 @@ class BroadcastingViewModel extends ChangeNotifier {
 }
 
 class BroadcastingOutputDetailItem {
+  final int outputIndex;
   final String address;
   final int amount;
   final bool isChange;
 
-  const BroadcastingOutputDetailItem({required this.address, required this.amount, required this.isChange});
+  const BroadcastingOutputDetailItem({
+    required this.outputIndex,
+    required this.address,
+    required this.amount,
+    required this.isChange,
+  });
 }

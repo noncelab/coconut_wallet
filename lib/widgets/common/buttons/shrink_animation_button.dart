@@ -17,6 +17,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Gradient? borderGradient;
   final double? animationEndValue;
   final bool isActive;
+  final bool shrinkContentOnly;
 
   const ShrinkAnimationButton({
     super.key,
@@ -35,6 +36,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderGradient,
     this.animationEndValue = 0.97,
     this.isActive = true,
+    this.shrinkContentOnly = false,
   }) : assert(child != null || childBuilder != null, 'Either child or childBuilder must be provided.');
 
   @override
@@ -125,34 +127,33 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     final bool useGradientBorder = widget.borderGradient != null;
     final child = widget.childBuilder != null ? widget.childBuilder!(context, _isPressed) : widget.child!;
 
+    final background = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.borderRadius + 2),
+        gradient: useGradientBorder ? widget.borderGradient : null,
+        border: useGradientBorder ? null : widget.border ?? Border.all(color: Colors.transparent),
+      ),
+      child: AnimatedContainer(
+        margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
+        duration: const Duration(milliseconds: 100),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color:
+              widget.isActive && _isPressed
+                  ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
+                  : baseColor,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+        ),
+        child: widget.shrinkContentOnly ? ScaleTransition(scale: _animation, child: child) : child,
+      ),
+    );
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       onLongPress: widget.onLongPress != null ? _onLongPress : null,
-      child: ScaleTransition(
-        scale: _animation,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius + 2),
-            gradient: useGradientBorder ? widget.borderGradient : null,
-            border: useGradientBorder ? null : widget.border ?? Border.all(color: Colors.transparent),
-          ),
-          child: AnimatedContainer(
-            margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
-            duration: const Duration(milliseconds: 100),
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color:
-                  widget.isActive && _isPressed
-                      ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
-                      : baseColor,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+      child: widget.shrinkContentOnly ? background : ScaleTransition(scale: _animation, child: background),
     );
   }
 }

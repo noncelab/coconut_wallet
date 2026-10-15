@@ -19,6 +19,7 @@ class TooltipButton extends StatefulWidget {
   final String text;
   final TextStyle? textStyle;
   final TextStyle? pressedTextStyle;
+  final Widget Function(String text, TextStyle style)? textBuilder;
   final VoidCallback onTap;
   final GlobalKey? iconKey;
   final EdgeInsets containerMargin;
@@ -34,6 +35,7 @@ class TooltipButton extends StatefulWidget {
     required this.text,
     this.textStyle,
     this.pressedTextStyle,
+    this.textBuilder,
     required this.onTap,
     this.iconKey,
     this.containerMargin = const EdgeInsets.all(4),
@@ -76,7 +78,14 @@ class _TooltipButtonState extends State<TooltipButton> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(widget.text, style: _isPressed ? (widget.pressedTextStyle ?? defaultTextStyle) : defaultTextStyle),
+              widget.textBuilder?.call(
+                    widget.text,
+                    _isPressed ? (widget.pressedTextStyle ?? defaultTextStyle) : defaultTextStyle,
+                  ) ??
+                  Text(
+                    widget.text,
+                    style: _isPressed ? (widget.pressedTextStyle ?? defaultTextStyle) : defaultTextStyle,
+                  ),
               Container(
                 key: widget.iconKey,
                 margin: widget.iconMargin,

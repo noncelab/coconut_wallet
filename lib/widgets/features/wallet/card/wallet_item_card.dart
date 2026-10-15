@@ -18,13 +18,14 @@ class WalletItemCard extends StatelessWidget {
   final WalletItemBase walletItem;
   final AnimatedBalanceData animatedBalanceData;
   final bool isLastItem;
+  final bool shrinkContentOnly;
   final bool isBalanceHidden;
   final int? fakeBalance;
   final BitcoinUnit currentUnit;
   final Color? backgroundColor;
+  final EdgeInsetsGeometry? contentPadding;
   final Color? pressedOverlayColor;
   final double? pressedOverlayOpacity;
-  final bool? isPrimaryWallet;
   final bool? isExcludeFromTotalBalance;
   final bool shouldWarnUnbackedHotWallet;
   final bool isEditMode;
@@ -44,12 +45,13 @@ class WalletItemCard extends StatelessWidget {
     required this.currentUnit,
     required this.isLastItem,
     this.isBalanceHidden = false,
+    this.shrinkContentOnly = false,
     this.fakeBalance,
     this.backgroundColor,
+    this.contentPadding,
     this.pressedOverlayColor,
     this.pressedOverlayOpacity,
     this.shouldWarnUnbackedHotWallet = false,
-    this.isPrimaryWallet,
     this.isExcludeFromTotalBalance,
     this.isEditMode = false,
     this.isFavorite = false,
@@ -80,15 +82,14 @@ class WalletItemCard extends StatelessWidget {
         displayedFakeBalance,
         isEditMode: true,
         onTapStar: (pair) {
-          if (isPrimaryWallet != null) {
-            onTapStar?.call(pair);
-          }
+          onTapStar?.call(pair);
         },
         index: index,
         iconGradientColors: iconGradientColors,
       );
     }
     final row = ShrinkAnimationButton(
+      shrinkContentOnly: shrinkContentOnly,
       defaultColor: backgroundColor ?? colors.surface,
       pressedOverlayColor: pressedOverlayColor ?? colors.surfacePressOverlay,
       pressedOverlayOpacity: pressedOverlayOpacity ?? colors.surfacePressOverlayOpacity,
@@ -120,13 +121,12 @@ class WalletItemCard extends StatelessWidget {
   }) {
     final walletDescriptionParts = <String>[
       walletItem.name,
-      if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
       if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
     ];
     final hasStarButton = isStarVisible && onTapStar != null;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
+      padding: contentPadding ?? EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
       child: Row(
         children: [
           if (hasStarButton)

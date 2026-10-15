@@ -208,10 +208,11 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.theme,
                             subtitle: currentLabel,
                             onPressed: () {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
+                              CommonBottomSheets.showBottomSheet_100(
                                 context: context,
                                 screenName: AnalyticsScreenNames.appSettingsThemeSheet,
-                                heightRatio: 0.4,
+                                isDismissible: true,
+                                backgroundColor: Colors.transparent,
                                 child: const ThemeBottomSheet(),
                               );
                             },

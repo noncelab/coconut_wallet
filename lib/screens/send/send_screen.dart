@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -26,6 +27,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/widgets/features/send/vault_receiving_address_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
@@ -37,6 +39,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -85,6 +88,8 @@ enum _SendHotWalletSigningStage { idle, authentication, signing, completed, fina
 
 class SendScreen extends StatefulWidget {
   final int? walletId;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -94,6 +99,8 @@ class SendScreen extends StatefulWidget {
   const SendScreen({
     super.key,
     this.walletId,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,
@@ -110,6 +117,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final GlobalKey _addressInputFieldKey = GlobalKey();
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
 
+  final LayerLink _vaultInfoLink = LayerLink();
+  Timer? _vaultInfoTimer;
+  bool _isVaultInfoVisible = false;
+
+  void _hideVaultInfo() {
+    _vaultInfoTimer?.cancel();
+    if (_isVaultInfoVisible && mounted) setState(() => _isVaultInfoVisible = false);
+  }
+
+  void _toggleVaultInfo() {
+    if (_isVaultInfoVisible) {
+      _hideVaultInfo();
+      return;
+    }
+    setState(() => _isVaultInfoVisible = true);
+    _vaultInfoTimer?.cancel();
+    _vaultInfoTimer = Timer(const Duration(seconds: 5), _hideVaultInfo);
+  }
+
   bool _isDropdownMenuVisible = false;
   bool _hasRetriedRecommendedFees = false;
   bool _isHotWalletSigning = false;
@@ -121,7 +147,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
-  final double kPageViewHeight = 226;
+  // 삭제 버튼이 없는 금고 보내기에서는 하단 예약 공간을 20px 줄입니다.
+  double get kPageViewHeight => widget.isMoveToVault && !_viewModel.isBatchMode ? 206 : 226;
   final double kAddressBoardPosition = 186;
   final double kTooltipHeight = 43;
   final double kTooltipPadding = 5;
@@ -141,6 +168,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final ScrollController _addressListScrollController = ScrollController();
 
   final List<TextEditingController> _addressControllerList = [];
+  List<WalletAddress> _vaultReceivingAddresses = [];
+  String _receivingVaultName = '';
   final List<FocusNode> _addressFocusNodeList = [];
   final List<VoidCallback> _addressTextListenerList = [];
   // 주소 입력란이 focus된 시점의 텍스트 기록, focus out 시점 텍스트와 비교하기 위함
@@ -190,6 +219,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.transactionDraftId,
       widget.selectedUtxoList,
     );
+    if (widget.isMoveToVault && widget.receivingVaultWalletId != null) {
+      final walletProvider = context.read<WalletProvider>();
+      final vault = walletProvider.getWalletById(widget.receivingVaultWalletId!);
+      _receivingVaultName = vault.name;
+      final firstAddress = walletProvider.getReceiveAddress(vault.id);
+      _vaultReceivingAddresses = [firstAddress];
+      _addressControllerList.first.text = firstAddress.address;
+      _loadVaultReceivingAddresses(walletProvider, vault, firstAddress.index);
+    }
     if (widget.initialSatsFromP2P != null) {
       // initialSatsFromP2P가 있는 경우, 계산기에서 '보내기'를 실행한 경우이므로, UTXO 자동 선택 모드로 기본 설정합니다.
       _viewModel.setIsUtxoSelectionAuto(true);
@@ -212,7 +250,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       });
     }
 
-    if (widget.initialBitcoinUri != null && widget.initialBitcoinUri!.isNotEmpty) {
+    if (!widget.isMoveToVault && widget.initialBitcoinUri != null && widget.initialBitcoinUri!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _applyIncomingBitcoinUri(widget.initialBitcoinUri!, 0);
@@ -340,6 +378,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _vaultInfoTimer?.cancel();
     _ownAddressCheckTimer?.cancel();
     _hotWalletSignatureController.dispose();
 
@@ -483,6 +522,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           ),
           body: GestureDetector(
             onTap: _clearFocus,
+            onTapDown: (_) => _hideVaultInfo(),
             behavior: HitTestBehavior.translucent,
             child: SizedBox(
               height: MediaQuery.sizeOf(context).height,
@@ -497,24 +537,30 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         children: [
                           SingleChildScrollView(
                             controller: _screenScrollController,
-                            child: Selector<SendViewModel, (bool, bool)>(
+                            child: Selector<SendViewModel, (bool, bool, bool)>(
                               selector:
                                   (_, viewModel) => (
                                     viewModel.showAddressBoard,
                                     viewModel.currentUnit.isBasedOnSatoshi,
+                                    viewModel.isBatchMode,
                                   ),
                               builder: (context, data, child) {
                                 return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
                               },
-                              child: Stack(
-                                children: [
-                                  _buildInvisibleAmountField(),
-                                  _buildCounter(context),
-                                  _buildPageView(context),
-                                  _buildBoard(context),
-                                  if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
-                                    _buildKeyboardToolbar(context),
-                                ],
+                              child: Selector<SendViewModel, bool>(
+                                selector: (_, viewModel) => viewModel.isBatchMode,
+                                builder:
+                                    (context, isBatchMode, child) => Stack(
+                                      children: [
+                                        _buildInvisibleAmountField(),
+                                        _buildCounter(context),
+                                        _buildPageView(context),
+                                        _buildBoard(context),
+                                        if (widget.isMoveToVault) _buildVaultInfoLabel(context),
+                                        if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                                          _buildKeyboardToolbar(context),
+                                      ],
+                                    ),
                               ),
                             ),
                           ),
@@ -541,6 +587,36 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
+                  if (widget.isMoveToVault && _isVaultInfoVisible)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      top: 0,
+                      child: CompositedTransformFollower(
+                        link: _vaultInfoLink,
+                        showWhenUnlinked: false,
+                        targetAnchor: Alignment.bottomRight,
+                        followerAnchor: Alignment.topRight,
+                        offset: Offset.zero,
+                        child: CoconutToolTip(
+                          width: MediaQuery.sizeOf(context).width - 32,
+                          isBubbleClipperSideLeft: false,
+                          bubbleArrowPosition: MediaQuery.sizeOf(context).width - 32 - 15,
+                          tooltipType: CoconutTooltipType.placement,
+                          backgroundColor: context.coconutColors.popoverBackground,
+                          isPlacementTooltipVisible: true,
+                          onTapRemove: _hideVaultInfo,
+                          richText: RichText(
+                            text: TextSpan(
+                              text: t.send_screen.vault_transfer_description,
+                              style: CoconutTypography.body3_12
+                                  .setColor(context.coconutColors.popoverText)
+                                  .copyWith(height: 1.3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (_hotWalletSigningStage == _SendHotWalletSigningStage.idle) _buildFinalButton(context),
                   if (_hotWalletSigningStage != _SendHotWalletSigningStage.idle) _buildHotWalletSigningOverlay(),
                 ],
@@ -1323,13 +1399,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       ? Padding(
                         key: const ValueKey('batch_tooltip'),
                         padding: EdgeInsets.only(bottom: kTooltipPadding),
-                        child: _buildTooltip(
-                          iconPath: FeatureTransactionIconPath.receipt,
-                          text: t.send_screen.tooltip_text(
-                            count: _viewModel.recipientList.length,
-                            amount: _viewModel.amountSumText,
-                          ),
-                        ),
+                        child:
+                            widget.isMoveToVault
+                                ? _buildVaultRecipientSummary(context)
+                                : _buildTooltip(
+                                  iconPath: FeatureTransactionIconPath.receipt,
+                                  text: t.send_screen.tooltip_text(
+                                    count: _viewModel.recipientList.length,
+                                    amount: _viewModel.amountSumText,
+                                  ),
+                                ),
                       )
                       : const SizedBox.shrink(key: ValueKey('batch_empty')),
             ),
@@ -1348,6 +1427,56 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       : const SizedBox.shrink(key: ValueKey('max_empty')),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildVaultRecipientSummary(BuildContext context) {
+    return Consumer<SendViewModel>(
+      builder: (context, model, _) {
+        final color = context.coconutColors.secondaryText;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 20,
+                child: Row(
+                  children: [
+                    SvgPicture.asset(
+                      FeatureTransactionIconPath.receipt,
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _receivingVaultName,
+                              style: CoconutTypography.body2_14_Bold.setColor(color),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            ' ${t.send_screen.vault_recipient_summary(count: model.recipientList.length, amount: model.amountSumText)}',
+                            style: CoconutTypography.body2_14_Bold.setColor(color),
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -1591,6 +1720,41 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
   }
 
+  Widget _buildVaultInfoLabel(BuildContext context) {
+    return Positioned(
+      top: 4,
+      left: 16,
+      right: 16,
+      child: CompositedTransformTarget(
+        link: _vaultInfoLink,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _toggleVaultInfo,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 7),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  t.wallet_detail_screen.move_to_vault,
+                  style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.secondaryText),
+                ),
+                const SizedBox(width: 2),
+                SvgPicture.asset(
+                  CommonStateIconPath.circleInfo,
+                  width: 16,
+                  height: 16,
+                  colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPageView(BuildContext context) {
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -1602,6 +1766,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         }
       },
       onPointerMove: (_) {
+        _hideVaultInfo();
         if (_isLeftDragGuideViewVisible) {
           setState(() {
             _isLeftDragGuideViewVisible = false;
@@ -1684,7 +1849,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildAddRecipientCard() {
     return Padding(
-      padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
+      // 줄어든 페이지 높이는 하단 여백에서 빼서 버튼 높이는 동일하게 유지합니다.
+      padding: EdgeInsets.only(
+        top: 40,
+        left: 16,
+        right: 16,
+        bottom: widget.isMoveToVault && !_viewModel.isBatchMode ? 5 : 25,
+      ),
       child: ShrinkAnimationButton(
         defaultColor: context.coconutColors.surface,
         onPressed: () {
@@ -1910,7 +2081,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 builder: (context, data, child) {
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
-                  return CoconutTextField(
+                  if (widget.isMoveToVault) {
+                    return VaultReceivingAddressField(
+                      key: index == 0 ? _addressInputFieldKey : null,
+                      address: controller.text,
+                      placeholder: t.send_screen.vault_address_placeholder,
+                      isError: isAddressError,
+                      onTap: () {
+                        _clearFocus();
+                        _setDropdownMenuVisiblility(false);
+                        _viewModel.setShowAddressBoard(true);
+                      },
+                    );
+                  }
+                  final field = CoconutTextField(
+                    readOnly: widget.isMoveToVault,
                     key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
@@ -1918,7 +2103,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
                     maxLines: 1,
-                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    clearButtonVisibility:
+                        widget.isMoveToVault
+                            ? CoconutTextFieldClearButtonVisibility.never
+                            : CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
                       controller.clear();
                       _viewModel.validateAllFieldsOnFocusLost();
@@ -1930,12 +2118,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _applyIncomingBitcoinUri(scannedData, index);
                       }
                     },
-                    suffixIconAsset: CommonActionIconPath.scan,
+                    suffixIconAsset: widget.isMoveToVault ? null : CommonActionIconPath.scan,
                     suffixIconColor: context.coconutColors.primaryText,
                     suffixIconSize: 18,
-                    placeholderText: t.send_screen.address_placeholder,
+                    placeholderText:
+                        widget.isMoveToVault
+                            ? t.send_screen.vault_address_placeholder
+                            : t.send_screen.address_placeholder,
                     isError: isAddressError,
                   );
+                  return field;
                 },
               ),
               // CoconutLayout.spacing_100h,
@@ -1984,7 +2176,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           return const SizedBox();
         }
         return Positioned(
-          right: 16,
+          left: 16,
+          top: widget.isMoveToVault ? 4 : null,
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -2032,10 +2225,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               _addressControllerList[currentIndex].addListener(_addressTextListenerList[currentIndex]);
               // ViewModel에 직접 설정 (이미 텍스트가 같으면 notifyListeners 호출 안 함)
               _viewModel.setAddressText(address, currentIndex);
+              // The read-only vault field does not lose focus after selection.
+              // Validate and rebuild explicitly instead of relying on focus listeners.
+              _viewModel.validateAllFieldsOnFocusLost();
             }
           });
         }
-        _viewModel.markWalletAddressForUpdate(index);
+        if (widget.isMoveToVault) {
+          _viewModel.setShowAddressBoard(false);
+        } else {
+          _viewModel.markWalletAddressForUpdate(index);
+        }
         vibrateLight();
 
         // _clearFocus는 한 프레임 더 지연
@@ -2060,7 +2260,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 shortenAddress(address, head: 12, tail: 14),
                 style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               ),
-              _buildAddressRowSubtitle(context, walletName, derivationPath, isCurrentWallet),
+              _buildAddressRowSubtitle(
+                context,
+                walletName,
+                derivationPath,
+                isCurrentWallet,
+                addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
+              ),
               CoconutLayout.spacing_100h,
             ],
           ),
@@ -2074,9 +2280,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     BuildContext context,
     String walletName,
     String derivationPath,
-    bool isCurrentWallet,
-  ) {
+    bool isCurrentWallet, {
+    int? addressNumber,
+  }) {
     final fontStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
+    if (widget.isMoveToVault && addressNumber != null) {
+      return Text(t.send_screen.vault_nth_address(n: addressNumber), style: fontStyle);
+    }
     return Text.rich(
       TextSpan(
         children: [
@@ -2095,7 +2305,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildAddressBoard(BuildContext context) {
     return SizedBox(
-      height: addressBoardHeight + (_viewModel.orderedRegisteredWallets.length <= 2 ? 0 : 30),
+      height: addressBoardHeight + (widget.isMoveToVault || _viewModel.orderedRegisteredWallets.length <= 2 ? 0 : 30),
       child: Column(
         children: [
           CoconutLayout.spacing_50h,
@@ -2112,20 +2322,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 14, top: 14),
+                      padding: const EdgeInsets.only(left: 14, right: 14, top: 14),
                       child: Container(
                         constraints: const BoxConstraints(maxHeight: 20),
                         child: Row(
                           children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                t.send_screen.my_address,
-                                style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  widget.isMoveToVault
+                                      ? t.send_screen.vault_addresses(name: _receivingVaultName)
+                                      : t.send_screen.my_address,
+                                  style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                                ),
                               ),
                             ),
-                            const Spacer(),
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
@@ -2133,52 +2346,86 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                 text: t.close,
                                 onTap: () => _viewModel.setShowAddressBoard(false),
                                 textStyle: CoconutTypography.body3_12,
-                                padding: const EdgeInsets.only(right: 14, left: 24),
+                                padding: const EdgeInsets.only(left: 24),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    _buildWalletAddressList(),
+                    if (widget.isMoveToVault)
+                      Expanded(
+                        child: Selector<SendViewModel, Tuple2<int, List<String>>>(
+                          selector:
+                              (_, model) =>
+                                  Tuple2(model.currentIndex, model.recipientList.map((item) => item.address).toList()),
+                          builder: (context, selection, _) {
+                            final selected = {
+                              for (var i = 0; i < selection.item2.length; i++)
+                                if (i != selection.item1) selection.item2[i],
+                            };
+                            final available =
+                                _vaultReceivingAddresses.where((item) => !selected.contains(item.address)).toList();
+                            return ListView.builder(
+                              controller: _addressListScrollController,
+                              padding: const EdgeInsets.only(top: 16, bottom: 16),
+                              itemCount: available.length,
+                              itemBuilder: (context, index) {
+                                final address = available[index];
+                                return _buildAddressRow(
+                                  context,
+                                  _vaultReceivingAddresses.indexOf(address),
+                                  address.address,
+                                  _receivingVaultName,
+                                  address.derivationPath,
+                                  isCurrentWallet: false,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      _buildWalletAddressList(),
                     CoconutLayout.spacing_200h,
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 14, bottom: 14),
-                          child: CoconutUnderlinedButton(
-                            key: _viewMoreButtonKey,
-                            text: t.view_more,
-                            onTap: () {
-                              _clearFocus();
-                              if (_viewModel.orderedRegisteredWallets.length == 1) {
-                                _showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
-                                return;
-                              }
-                              CommonBottomSheets.showDraggableBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.sendSelectWalletSheet,
-                                childBuilder:
-                                    (scrollController) => SelectWalletBottomSheet(
-                                      showOnlyMfpWallets: false,
-                                      scrollController: scrollController,
-                                      currentUnit: _viewModel.currentUnit,
-                                      walletId: _viewModel.selectedWalletId,
-                                      onWalletChanged: (id) {
-                                        Navigator.pop(context);
-                                        _showAddressListBottomSheet(id);
-                                      },
-                                    ),
-                              );
-                            },
-                            textStyle: CoconutTypography.body3_12,
-                            padding: EdgeInsets.zero,
+                    if (!widget.isMoveToVault)
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 14, bottom: 14),
+                            child: CoconutUnderlinedButton(
+                              key: _viewMoreButtonKey,
+                              text: t.view_more,
+                              onTap: () {
+                                _clearFocus();
+                                if (_viewModel.orderedRegisteredWallets.length == 1) {
+                                  _showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
+                                  return;
+                                }
+                                CommonBottomSheets.showDraggableBottomSheet(
+                                  context: context,
+                                  screenName: AnalyticsScreenNames.sendSelectWalletSheet,
+                                  childBuilder:
+                                      (scrollController) => SelectWalletBottomSheet(
+                                        showOnlyMfpWallets: false,
+                                        scrollController: scrollController,
+                                        currentUnit: _viewModel.currentUnit,
+                                        walletId: _viewModel.selectedWalletId,
+                                        onWalletChanged: (id) {
+                                          Navigator.pop(context);
+                                          _showAddressListBottomSheet(id);
+                                        },
+                                      ),
+                                );
+                              },
+                              textStyle: CoconutTypography.body3_12,
+                              padding: EdgeInsets.zero,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -2187,6 +2434,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  Future<void> _loadVaultReceivingAddresses(WalletProvider walletProvider, WalletItemBase vault, int firstIndex) async {
+    try {
+      final addresses = await walletProvider.getWalletAddressList(
+        vault,
+        firstIndex - 1,
+        kSubscriptionGapLimit,
+        false,
+        true,
+      );
+      if (!mounted) return;
+      setState(() {
+        _vaultReceivingAddresses = addresses.where((address) => !address.isUsed && !address.isChange).toList();
+      });
+    } catch (error) {
+      // Keep the already loaded first receive address available if loading fails.
+      Logger.error('Failed to load receiving vault addresses: $error');
+    }
   }
 
   Widget _buildWalletAddressList() {
@@ -2309,7 +2575,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           left: 16,
           right: 16,
           top: !showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
-          child: !showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
+          child: !showAddressBoard ? Column(children: [_buildFeeBoard(context)]) : _buildAddressBoard(context),
         );
       },
     );
@@ -2339,6 +2605,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       if (tooltipCount > 1) bottomPos += kTooltipPadding * (tooltipCount - 1);
       // 툴팁 개수에 따른 높이 계산
       bottomPos += tooltipCount * kTooltipHeight;
+      if (widget.isMoveToVault && _viewModel.isBatchMode) {
+        bottomPos += 56 + 48 * _viewModel.recipientList.length - kTooltipHeight;
+      }
 
       final keyboardGap = usableHeight - keyboardHeight - bottomPos;
       if (keyboardGap < 0) {

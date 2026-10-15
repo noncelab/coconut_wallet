@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -648,9 +649,15 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
               const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
             ] else if (_scannedMasterFingerprint != null) ...[
               CoconutLayout.spacing_50h,
-              Text(
-                'MFP $_scannedMasterFingerprint',
-                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('MFP ', style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
+                  MfpText(
+                    mfp: _scannedMasterFingerprint!,
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+                  ),
+                ],
               ),
               CoconutLayout.spacing_300h,
             ],

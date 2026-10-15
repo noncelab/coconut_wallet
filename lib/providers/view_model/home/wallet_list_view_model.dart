@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/wallet_section_order.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:flutter/material.dart';
@@ -54,6 +55,7 @@ class WalletListViewModel extends ChangeNotifier {
   List<int> get walletOrder => _walletOrder;
   // 임시 지갑 순서 ID 목록(편집용)
   List<int> tempWalletOrder = [];
+  List<int> _walletOrderAtEditStart = [];
 
   late List<int> _favoriteWalletIds = [];
   List<int> get favoriteWalletIds => _favoriteWalletIds;
@@ -215,6 +217,7 @@ class WalletListViewModel extends ChangeNotifier {
     _isEditMode = isEditMode;
     if (isEditMode) {
       tempWalletOrder = walletItemList.map((w) => w.id).toList();
+      _walletOrderAtEditStart = List<int>.from(tempWalletOrder);
     }
     notifyListeners();
   }
@@ -416,12 +419,12 @@ class WalletListViewModel extends ChangeNotifier {
   Future<void> applyTempDatasToWallets() async {
     if (!hasWalletOrderChanged) return;
 
-    final deletedWalletIds = _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+    final deletedWalletIds = _walletOrderAtEditStart.where((id) => !tempWalletOrder.contains(id)).toList();
     await _handleAuthFlow(
       onComplete: () async {
         if (hasWalletOrderChanged) {
           // 삭제 여부 판단
-          if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
+          if (deletedWalletIds.isNotEmpty) {
             setLoadingNotifier(true);
 
             await _deleteWallets(deletedWalletIds);
@@ -486,11 +489,11 @@ class WalletListViewModel extends ChangeNotifier {
     }
   }
 
-  bool get hasWalletOrderChanged => !const ListEquality().equals(tempWalletOrder, _preferenceProvider.walletOrder);
+  bool get hasWalletOrderChanged =>
+      _isEditMode && !const ListEquality().equals(tempWalletOrder, _walletOrderAtEditStart);
 
-  void reorderTempWalletOrder(int oldIndex, int newIndex) {
-    final item = tempWalletOrder.removeAt(oldIndex);
-    tempWalletOrder.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+  void reorderTempWalletOrder(List<int> sectionIds, int oldIndex, int newIndex) {
+    tempWalletOrder = reorderWalletSection(tempWalletOrder, sectionIds, oldIndex, newIndex);
     notifyListeners();
   }
 

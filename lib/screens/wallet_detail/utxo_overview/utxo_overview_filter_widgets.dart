@@ -86,6 +86,8 @@ class UtxoListFilterHeader extends StatelessWidget {
 class UtxoGroupingTabBar extends StatelessWidget {
   const UtxoGroupingTabBar({super.key, required this.isByAmount, required this.onSelected});
 
+  static const double _tabWidth = 96;
+
   final bool isByAmount;
   final ValueChanged<int> onSelected;
 
@@ -100,7 +102,7 @@ class UtxoGroupingTabBar extends StatelessWidget {
             color: context.coconutColors.background,
             padding: const EdgeInsets.fromLTRB(4, 12, 0, 0),
             child: SizedBox(
-              width: 132,
+              width: _tabWidth * 2,
               height: 40,
               child: Stack(
                 children: [
@@ -121,10 +123,10 @@ class UtxoGroupingTabBar extends StatelessWidget {
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
-                    left: isByAmount ? 0 : 66,
+                    left: isByAmount ? 0 : _tabWidth,
                     bottom: 0,
                     child: Container(
-                      width: 66,
+                      width: _tabWidth,
                       height: 2,
                       decoration: BoxDecoration(
                         color: context.coconutColors.primaryText,

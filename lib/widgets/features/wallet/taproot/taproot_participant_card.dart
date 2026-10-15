@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -129,9 +130,15 @@ class TaprootParticipantCard extends StatelessWidget {
                     if (_lockStatusIcon != null) ...[CoconutLayout.spacing_100w, _lockStatusIcon!],
                   ],
                 ),
-                Text(
-                  '$mfp · $derivationPath',
-                  style: CoconutTypography.caption_10.setColor(context.coconutColors.tertiaryText),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    MfpText(mfp: mfp, style: CoconutTypography.caption_10.setColor(context.coconutColors.tertiaryText)),
+                    Text(
+                      ' · $derivationPath',
+                      style: CoconutTypography.caption_10.setColor(context.coconutColors.tertiaryText),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -155,6 +155,8 @@ class CommonBottomSheets {
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
+    final isResizable = childBuilder != null && enableDragToResize;
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
@@ -212,21 +214,35 @@ class CommonBottomSheets {
                                   });
                                 }
 
-                                return NotificationListener<ScrollNotification>(
-                                  onNotification: (notification) {
-                                    if (notification is ScrollEndNotification) {
-                                      handleDragEnd();
-                                    }
-                                    return false;
-                                  },
-                                  child: childBuilder(scrollController),
+                                return Material(
+                                  color: resolvedBackgroundColor,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: NotificationListener<ScrollNotification>(
+                                    onNotification: (notification) {
+                                      if (notification is ScrollEndNotification) {
+                                        handleDragEnd();
+                                      }
+                                      return false;
+                                    },
+                                    // Keep the content layout stable while the sheet shrinks.
+                                    // Material clips it to the current draggable height.
+                                    child: OverflowBox(
+                                      alignment: Alignment.topCenter,
+                                      minHeight: sheetHeight,
+                                      maxHeight: sheetHeight,
+                                      child: childBuilder(scrollController),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                   ),
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor: isResizable ? Colors.transparent : resolvedBackgroundColor,
       elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       clipBehavior: Clip.antiAlias,

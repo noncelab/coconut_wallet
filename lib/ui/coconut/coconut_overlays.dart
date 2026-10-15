@@ -417,6 +417,8 @@ class CoconutToolTip extends StatefulWidget {
     this.onTapRemove,
     this.padding,
     this.isBubbleClipperSideLeft = true,
+    this.isBubbleClipperCentered = false,
+    this.bubbleArrowPosition,
     this.isPlacementTooltipVisible = false,
     this.animateOnBuild = false,
     this.width,
@@ -444,6 +446,9 @@ class CoconutToolTip extends StatefulWidget {
   final Size iconSize;
   final bool? isAvailableTapToClose;
   final bool isBubbleClipperSideLeft;
+  final bool isBubbleClipperCentered;
+
+  final double? bubbleArrowPosition;
   final bool isPlacementTooltipVisible;
   final bool animateOnBuild;
   final TextStyle titleStyle;
@@ -561,7 +566,12 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
             child: GestureDetector(
               onTap: widget.onTapRemove,
               child: ClipPath(
-                clipper: widget.isBubbleClipperSideLeft ? LeftTriangleBubbleClipper() : RightTriangleBubbleClipper(),
+                clipper:
+                    widget.isBubbleClipperCentered
+                        ? CenterTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition)
+                        : widget.isBubbleClipperSideLeft
+                        ? LeftTriangleBubbleClipper()
+                        : RightTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition),
                 child: Container(
                   padding: _padding,
                   color: _backgroundColor,
