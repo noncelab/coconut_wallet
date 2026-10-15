@@ -59,6 +59,8 @@
 	<true/>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
+	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+	<false/>
 	<!-- 외부 URL 스킴 접근 허용 -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>

@@ -6,6 +6,7 @@ import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -28,6 +29,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
+  static late AnalyticsService kAnalyticsService;
 
   const CoconutWalletApp({super.key});
 
@@ -58,8 +60,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   }
 
   void _logScreenView(String screenName) {
-    if (!CoconutWalletApp.kIsFirebaseAnalyticsUsed) return;
-    FirebaseAnalytics.instance.logScreenView(screenName: screenName);
+    CoconutWalletApp.kAnalyticsService.logScreenView(screenName: screenName);
   }
 
   String? _extractAnalyticsScreenName(RouteSettings settings) {
@@ -95,8 +96,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
       providers: buildAppProviders(
         realmManager: _realmManager,
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
-        isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        analyticsService: CoconutWalletApp.kAnalyticsService,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(
@@ -123,6 +124,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   FirebaseAnalyticsObserver(
                     analytics: FirebaseAnalytics.instance,
                     nameExtractor: _extractAnalyticsScreenName,
+                    routeFilter: (route) => route is PageRoute && CoconutWalletApp.kAnalyticsService.canCollect,
                   ),
               ],
               localizationsDelegates: const [

@@ -48,8 +48,14 @@ class SharedPrefsRepository {
     return _sharedPrefs.getBool(key) ?? false;
   }
 
-  Future setBool(String key, bool value) async {
+  Future<void> setBool(String key, bool value) async {
     await _sharedPrefs.setBool(key, value);
+  }
+
+  Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
+    if (!await _sharedPrefs.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, enabled)) {
+      throw StateError('Failed to persist ${SharedPrefKeys.kAnalyticsCollectionEnabled}');
+    }
   }
 
   int getInt(String key) {
