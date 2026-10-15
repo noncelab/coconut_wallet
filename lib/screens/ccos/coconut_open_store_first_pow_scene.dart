@@ -15,6 +15,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -1576,7 +1577,10 @@ class _DeliveryStepCard extends StatelessWidget {
                       child: Text(title, style: CoconutTypography.heading3_21_Bold.setColor(Colors.white)),
                     ),
                     const SizedBox(height: 2),
-                    Text(body, style: CoconutTypography.body3_12.setColor(_textPrimary)),
+                    Text(
+                      LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(body) : body,
+                      style: CoconutTypography.body3_12.setColor(_textPrimary),
+                    ),
                   ],
                 ),
               ),
