@@ -12,9 +12,15 @@ class AppRouteNames {
   static const String labelExport = '/label-export';
   static const String labelImport = '/label-import';
   static const String labelManagement = '/label-management';
-  static const String logViewer = '/log-viewer';
+  static const String hotWalletCreate = '/hot-wallet-create';
+  static const String hotWalletMnemonicBackup = '/hot-wallet-mnemonic-backup';
+  static const String hotWalletMnemonicBackupGuide = '/hot-wallet-mnemonic-backup-guide';
+  static const String hotWalletPassphraseCheck = '/hot-wallet-passphrase-check';
+  static const String hotWalletRestore = '/hot-wallet-restore';
   static const String mergeUtxos = '/merge-utxos';
   static const String mnemonicWordList = '/mnemonic-word-list';
+  static const String mnemonicBackupComplete = '/mnemonic-backup-complete';
+  static const String mnemonicBackupConfirm = '/mnemonic-backup-confirm';
   static const String negativeFeedback = '/negative-feedback';
   static const String p2pCalculator = '/p2p-calculator';
   static const String positiveFeedback = '/positive-feedback';
@@ -25,6 +31,7 @@ class AppRouteNames {
   static const String splitUtxo = '/split-utxo';
   static const String taprootWalletBackupData = '/taproot-wallet-backup-data';
   static const String transactionDetail = '/transaction-detail';
+  static const String transactionList = '/transaction-list';
   static const String transactionDraft = '/transaction-draft';
   static const String transactionFeeBumping = '/transaction-fee-bumping';
   static const String trezorBleConnect = '/trezor-ble-connect';
@@ -35,6 +42,7 @@ class AppRouteNames {
   static const String utxoDetail = '/utxo-detail';
   static const String utxoList = '/utxo-list';
   static const String utxoOverview = '/utxo-overview';
+  static const String utxoOrganizer = '/utxo-organizer';
   static const String utxoSelection = '/utxo-selection';
   static const String utxoTag = '/utxo-tag';
   static const String walletAddScanner = '/wallet-add-scanner';

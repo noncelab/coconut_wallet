@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/price/historical_bitcoin_prices.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -11,6 +14,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/wallet_section_order.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +25,8 @@ import 'package:collection/collection.dart';
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
 typedef FakeBalanceGetter = int? Function(int id);
+
+enum FavoriteToggleResult { updated, watchOnlyLimitReached, hotWalletLimitReached }
 
 class WalletListViewModel extends ChangeNotifier {
   final ValueNotifier<bool> loadingNotifier = ValueNotifier(false);
@@ -30,6 +38,7 @@ class WalletListViewModel extends ChangeNotifier {
   late final AuthProvider _authProvider;
   late final NodeProvider _nodeProvider;
   late final PriceProvider _priceProvider;
+  final HistoricalBitcoinPriceService _historicalBitcoinPriceService;
   late Stream<NodeSyncState> _syncNodeStateStream;
   late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
@@ -39,17 +48,17 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+  bool _isDisposed = false;
 
   // late final StreamSubscription _preferenceSubscription;
   late List<int> _walletOrder = [];
   List<int> get walletOrder => _walletOrder;
   // 임시 지갑 순서 ID 목록(편집용)
   List<int> tempWalletOrder = [];
+  List<int> _walletOrderAtEditStart = [];
 
   late List<int> _favoriteWalletIds = [];
   List<int> get favoriteWalletIds => _favoriteWalletIds;
-  // 임시 즐겨찾기 지갑 ID 목록(편집용)
-  List<int> tempFavoriteWalletIds = [];
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
@@ -57,8 +66,22 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isEditMode = false;
   bool get isEditMode => _isEditMode;
 
+  HistoricalBitcoinPrices? _historicalBitcoinPrices;
+  HistoricalBitcoinPrices? get historicalBitcoinPrices => _historicalBitcoinPrices;
+  bool _isHistoricalBitcoinPricesLoading = false;
+  bool get isHistoricalBitcoinPricesLoading => _isHistoricalBitcoinPricesLoading;
+  bool get supportsHistoricalBitcoinPrices => selectedFiat != FiatCode.JPY;
+  FiatCode? _historicalBitcoinPriceFiat;
+
   bool get hasEnglishWordOrder => AppLanguage.fromCode(_preferenceProvider.language).hasEnglishWordOrder;
 
+  bool get isWalletListFiatVisible => _preferenceProvider.isWalletListFiatVisible;
+  bool get isWalletListBalanceChartVisible => _preferenceProvider.isWalletListBalanceChartVisible;
+
+  List<WalletBalanceHistoryPoint> _walletBalanceHistory = const [];
+  List<WalletBalanceHistoryPoint> get walletBalanceHistory => _walletBalanceHistory;
+  int _walletBalanceHistoryRevision = 0;
+  int get walletBalanceHistoryRevision => _walletBalanceHistoryRevision;
   Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
       sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate();
 
@@ -69,12 +92,11 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
-
   late List<FiatCode> _visibleFiats;
   List<FiatCode> get visibleFiats => _visibleFiats;
 
   List<FiatCode> get orderedFiats => _preferenceProvider.orderedFiats;
+  FiatCode get selectedFiat => _preferenceProvider.selectedFiat;
 
   WalletListViewModel(
     this._walletProvider,
@@ -82,8 +104,9 @@ class WalletListViewModel extends ChangeNotifier {
     this._authProvider,
     this._nodeProvider,
     this._preferenceProvider,
-    this._priceProvider,
-  ) {
+    this._priceProvider, {
+    HistoricalBitcoinPriceService? historicalBitcoinPriceService,
+  }) : _historicalBitcoinPriceService = historicalBitcoinPriceService ?? HistoricalBitcoinPriceService() {
     _isNetworkOn = _connectivityProvider.isInternetOn;
     _walletOrder = _preferenceProvider.walletOrder;
     _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
@@ -95,9 +118,11 @@ class WalletListViewModel extends ChangeNotifier {
     _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
       (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
     );
+    _updateWalletBalanceHistory();
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
     _preferenceProvider.addListener(_onPreferenceChanged);
     _priceProvider.addListener(_updateBitcoinPrice);
+    unawaited(loadHistoricalBitcoinPrices());
   }
 
   void _updateBitcoinPrice() {
@@ -108,8 +133,43 @@ class WalletListViewModel extends ChangeNotifier {
     return _priceProvider.getFiatPrice(satoshiAmount, fiatCode: fiatCode);
   }
 
+  int? get currentSelectedFiatBitcoinPrice => _priceProvider.getBitcoinPriceForFiat(selectedFiat);
+
   void _onPreferenceChanged() {
     onPreferenceProviderUpdated();
+    if (_historicalBitcoinPriceFiat != selectedFiat) {
+      unawaited(loadHistoricalBitcoinPrices());
+    }
+  }
+
+  Future<void> loadHistoricalBitcoinPrices() async {
+    if (_isDisposed) return;
+    final fiatCode = selectedFiat;
+    _historicalBitcoinPriceFiat = fiatCode;
+    _historicalBitcoinPrices = null;
+
+    if (fiatCode == FiatCode.JPY) {
+      _isHistoricalBitcoinPricesLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    _isHistoricalBitcoinPricesLoading = true;
+    notifyListeners();
+    try {
+      final prices = await _historicalBitcoinPriceService.fetch(fiatCode);
+      if (_isDisposed || _historicalBitcoinPriceFiat != fiatCode) return;
+      _historicalBitcoinPrices = prices;
+    } catch (e) {
+      if (_isDisposed || _historicalBitcoinPriceFiat != fiatCode) return;
+      Logger.error('과거 BTC 종가 조회 실패 ($fiatCode): $e');
+      _historicalBitcoinPrices = null;
+    } finally {
+      if (!_isDisposed && _historicalBitcoinPriceFiat == fiatCode) {
+        _isHistoricalBitcoinPricesLoading = false;
+        notifyListeners();
+      }
+    }
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
@@ -156,18 +216,19 @@ class WalletListViewModel extends ChangeNotifier {
   void setEditMode(bool isEditMode) {
     _isEditMode = isEditMode;
     if (isEditMode) {
-      // 최신 favoriteWalletIds를 PreferenceProvider에서 다시 읽어옴
-      _favoriteWalletIds = List.from(_preferenceProvider.favoriteWalletIds);
-
-      tempFavoriteWalletIds = walletItemList.where((w) => _favoriteWalletIds.contains(w.id)).map((w) => w.id).toList();
-
       tempWalletOrder = walletItemList.map((w) => w.id).toList();
+      _walletOrderAtEditStart = List<int>.from(tempWalletOrder);
     }
     notifyListeners();
   }
 
   void onPreferenceProviderUpdated() {
     var didChange = false;
+
+    if (!const ListEquality().equals(_favoriteWalletIds, _preferenceProvider.favoriteWalletIds)) {
+      _favoriteWalletIds = List.from(_preferenceProvider.favoriteWalletIds);
+      didChange = true;
+    }
 
     /// 지갑 순서 변경 체크
     if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
@@ -196,8 +257,10 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> updateWalletBalances() async {
+    if (_isDisposed) return;
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
+    _updateWalletBalanceHistory();
 
     for (final wallet in walletItemList) {
       unawaited(_nodeProvider.syncDormantAddresses(wallet));
@@ -205,6 +268,74 @@ class WalletListViewModel extends ChangeNotifier {
     _nodeProvider.reconnectIfNeeded();
 
     notifyListeners();
+  }
+
+  void _updateWalletBalanceHistory() {
+    final transactions =
+        _walletProvider.walletItemList.expand((wallet) => _walletProvider.getTransactionRecordList(wallet.id)).toList()
+          ..sort((a, b) {
+            final timestampComparison = a.timestamp.compareTo(b.timestamp);
+            if (timestampComparison != 0) return timestampComparison;
+            return a.createdAt.compareTo(b.createdAt);
+          });
+
+    final updatedHistory = <WalletBalanceHistoryPoint>[];
+    var runningBalance = 0;
+    if (transactions.isNotEmpty) {
+      updatedHistory.add(
+        WalletBalanceHistoryPoint(
+          timestamp: transactions.first.timestamp.subtract(const Duration(seconds: 1)),
+          balance: 0,
+        ),
+      );
+    }
+    for (final transaction in transactions) {
+      runningBalance += transaction.amount;
+      updatedHistory.add(WalletBalanceHistoryPoint(timestamp: transaction.timestamp, balance: runningBalance));
+    }
+
+    final currentBalance = _walletBalance.values.fold<int>(0, (sum, balance) => sum + balance.current);
+    if (updatedHistory.isEmpty) {
+      updatedHistory.addAll([
+        WalletBalanceHistoryPoint(timestamp: DateTime.fromMillisecondsSinceEpoch(0), balance: currentBalance),
+        WalletBalanceHistoryPoint(timestamp: DateTime.fromMillisecondsSinceEpoch(1), balance: currentBalance),
+      ]);
+    } else if (updatedHistory.last.balance != currentBalance) {
+      updatedHistory.add(
+        WalletBalanceHistoryPoint(
+          timestamp: updatedHistory.last.timestamp.add(const Duration(seconds: 1)),
+          balance: currentBalance,
+        ),
+      );
+    }
+
+    final sampledHistory = _sampleBalanceHistory(updatedHistory);
+    final hasChanged =
+        sampledHistory.length != _walletBalanceHistory.length ||
+        List.generate(sampledHistory.length, (index) {
+          if (index >= _walletBalanceHistory.length) return true;
+          final previous = _walletBalanceHistory[index];
+          final current = sampledHistory[index];
+          return previous.timestamp != current.timestamp || previous.balance != current.balance;
+        }).any((isDifferent) => isDifferent);
+    if (!hasChanged) return;
+
+    _walletBalanceHistory = sampledHistory;
+    _walletBalanceHistoryRevision++;
+  }
+
+  List<WalletBalanceHistoryPoint> _sampleBalanceHistory(List<WalletBalanceHistoryPoint> history) {
+    const maximumPointCount = 120;
+    if (history.length <= maximumPointCount) return history;
+
+    final interval = (history.length / maximumPointCount).ceil();
+    final sampled = <WalletBalanceHistoryPoint>[
+      for (var index = 0; index < history.length; index += interval) history[index],
+    ];
+    if (sampled.last != history.last) {
+      sampled.add(history.last);
+    }
+    return sampled;
   }
 
   Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
@@ -219,6 +350,7 @@ class WalletListViewModel extends ChangeNotifier {
     _walletProvider = walletProvider;
 
     if (_updateWalletItemListSnapshot() || didProviderChange) {
+      _updateWalletBalanceHistory();
       notifyListeners();
     }
   }
@@ -252,33 +384,47 @@ class WalletListViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  void toggleTempFavorite(int walletId) {
-    if (tempFavoriteWalletIds.contains(walletId)) {
-      tempFavoriteWalletIds = List.from(tempFavoriteWalletIds)..remove(walletId);
+  Future<FavoriteToggleResult> toggleFavorite(int walletId) async {
+    final updatedFavoriteWalletIds = List<int>.from(_favoriteWalletIds);
+    if (updatedFavoriteWalletIds.contains(walletId)) {
+      updatedFavoriteWalletIds.remove(walletId);
     } else {
-      if (tempFavoriteWalletIds.length < 5) {
-        tempFavoriteWalletIds = List.from(tempFavoriteWalletIds)..add(walletId);
+      final wallet = walletItemList.firstWhereOrNull((wallet) => wallet.id == walletId);
+      if (wallet == null) return FavoriteToggleResult.updated;
+
+      final walletMap = {for (final wallet in walletItemList) wallet.id: wallet};
+      final favoriteWallets = updatedFavoriteWalletIds.map((id) => walletMap[id]).whereType<WalletItemBase>();
+      final sameTypeFavoriteCount =
+          favoriteWallets.where((favorite) => favorite.hasLocalKey == wallet.hasLocalKey).length;
+      if (sameTypeFavoriteCount >= kMaxFavoriteWalletCountPerType) {
+        return wallet.hasLocalKey
+            ? FavoriteToggleResult.hotWalletLimitReached
+            : FavoriteToggleResult.watchOnlyLimitReached;
       }
+      updatedFavoriteWalletIds.add(walletId);
     }
+
+    _favoriteWalletIds = updatedFavoriteWalletIds;
     notifyListeners();
+    await _preferenceProvider.setFavoriteWalletIds(updatedFavoriteWalletIds);
+    return FavoriteToggleResult.updated;
   }
 
   void clearTempDatas() {
-    tempFavoriteWalletIds.clear();
     tempWalletOrder.clear();
     notifyListeners();
   }
 
   /// 임시값을 실제 walletList에 반영
   Future<void> applyTempDatasToWallets() async {
-    if (!hasWalletOrderChanged && !hasFavoriteChanged) return;
+    if (!hasWalletOrderChanged) return;
 
-    final deletedWalletIds = _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+    final deletedWalletIds = _walletOrderAtEditStart.where((id) => !tempWalletOrder.contains(id)).toList();
     await _handleAuthFlow(
       onComplete: () async {
         if (hasWalletOrderChanged) {
           // 삭제 여부 판단
-          if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
+          if (deletedWalletIds.isNotEmpty) {
             setLoadingNotifier(true);
 
             await _deleteWallets(deletedWalletIds);
@@ -289,10 +435,13 @@ class WalletListViewModel extends ChangeNotifier {
           final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
           _walletProvider.walletItemListNotifier.value =
               tempWalletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
-        }
-        if (hasFavoriteChanged) {
-          await _preferenceProvider.setFavoriteWalletIds(tempFavoriteWalletIds);
-          _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
+
+          // 최종 지갑 목록 갱신까지 끝낸 후 백그라운드에서 노드 구독을 재구성한다.
+          // 삭제 완료 UI가 전체 지갑 재구독을 기다리지 않게 하면서, 재연결 중
+          // notifier가 다시 변경되어 isolate 명령이 충돌하는 것도 방지한다.
+          if (deletedWalletIds.isNotEmpty) {
+            unawaited(_nodeProvider.reconnect());
+          }
         }
         setEditMode(false);
         notifyListeners();
@@ -338,29 +487,20 @@ class WalletListViewModel extends ChangeNotifier {
       await sharedPrefs.removeWalletTargetSats(walletId);
       await _walletProvider.deleteWallet(walletId);
     }
-    _nodeProvider.reconnect();
-    _walletProvider.notifyListeners();
   }
 
-  bool get hasFavoriteChanged =>
-      !const SetEquality().equals(tempFavoriteWalletIds.toSet(), _preferenceProvider.favoriteWalletIds.toSet());
+  bool get hasWalletOrderChanged =>
+      _isEditMode && !const ListEquality().equals(tempWalletOrder, _walletOrderAtEditStart);
 
-  bool get hasWalletOrderChanged => !const ListEquality().equals(tempWalletOrder, _preferenceProvider.walletOrder);
-
-  void reorderTempWalletOrder(int oldIndex, int newIndex) {
-    final item = tempWalletOrder.removeAt(oldIndex);
-    tempWalletOrder.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+  void reorderTempWalletOrder(List<int> sectionIds, int oldIndex, int newIndex) {
+    tempWalletOrder = reorderWalletSection(tempWalletOrder, sectionIds, oldIndex, newIndex);
     notifyListeners();
   }
 
   void removeTempWalletOrderByWalletId(int walletId) async {
     final orderIndex = tempWalletOrder.indexOf(walletId);
-    final starIndex = tempFavoriteWalletIds.indexOf(walletId);
     if (orderIndex != -1) {
       tempWalletOrder.removeAt(orderIndex);
-    }
-    if (starIndex != -1) {
-      tempFavoriteWalletIds.removeAt(starIndex);
     }
     notifyListeners();
   }
@@ -392,17 +532,35 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleWalletListFiatHidden() {
-    _preferenceProvider.setWalletListFiatHidden(!_preferenceProvider.isWalletListFiatHidden);
+  void toggleWalletListFiatVisible() {
+    _preferenceProvider.setWalletListFiatVisible(!_preferenceProvider.isWalletListFiatVisible);
     notifyListeners();
   }
 
-  void setWalletListFiatHidden(bool isHidden) {
-    if (_preferenceProvider.isWalletListFiatHidden == isHidden) {
+  void setWalletListFiatVisible(bool isVisible) {
+    if (_preferenceProvider.isWalletListFiatVisible == isVisible) {
       return;
     }
 
-    _preferenceProvider.setWalletListFiatHidden(isHidden);
+    _preferenceProvider.setWalletListFiatVisible(isVisible);
+    notifyListeners();
+  }
+
+  void setWalletListBitcoinPriceVisible(bool isVisible) {
+    if (_preferenceProvider.isWalletListBitcoinPriceVisible == isVisible) {
+      return;
+    }
+
+    _preferenceProvider.setWalletListBitcoinPriceVisible(isVisible);
+    notifyListeners();
+  }
+
+  void setWalletListBalanceChartVisible(bool isVisible) {
+    if (_preferenceProvider.isWalletListBalanceChartVisible == isVisible) {
+      return;
+    }
+
+    _preferenceProvider.setWalletListBalanceChartVisible(isVisible);
     notifyListeners();
   }
 
@@ -432,9 +590,13 @@ class WalletListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _syncNodeStateSubscription?.cancel();
+    _walletProvider.walletLoadStateNotifier.removeListener(updateWalletBalances);
     _preferenceProvider.removeListener(_onPreferenceChanged);
     _priceProvider.removeListener(_updateBitcoinPrice);
+    loadingNotifier.dispose();
+    pinCheckNotifier.dispose();
     super.dispose();
   }
 }

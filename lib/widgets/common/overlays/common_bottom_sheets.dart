@@ -3,44 +3,46 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_list_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CommonBottomSheets {
   static Future<T?> showBottomSheet<T>({
     required String title,
+    String? subtitle,
     required BuildContext context,
     required Widget child,
     required String screenName,
     List<Widget>? actionList,
     TextStyle? titleTextStyle,
+    TextStyle? subtitleTextStyle,
     bool isDismissible = true,
     bool enableDrag = true,
     bool showCloseButton = false,
     bool showDragHandle = false,
+    bool ignoreTextScaling = false,
     bool adjustForKeyboardInset = true,
     double keyboardBottomPadding = 20,
+    Duration keyboardInsetAnimationDuration = const Duration(milliseconds: 280),
     Color? backgroundColor,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
       builder: (context) {
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 280),
+        final sheet = AnimatedPadding(
+          duration: keyboardInsetAnimationDuration,
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + keyboardBottomPadding : 0),
           child: Column(
@@ -70,14 +72,29 @@ class CommonBottomSheets {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Center(
-                          child: Text(
-                            title,
-                            style: (titleTextStyle ?? CoconutTypography.body2_14_Bold).setColor(
-                              context.coconutColors.primaryText,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: (titleTextStyle ?? CoconutTypography.body2_14_Bold).setColor(
+                                  context.coconutColors.primaryText,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: Sizes.size4),
+                                Text(
+                                  subtitle,
+                                  style: (subtitleTextStyle ?? CoconutTypography.body2_14).setColor(
+                                    context.coconutColors.secondaryText,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -111,6 +128,8 @@ class CommonBottomSheets {
             ],
           ),
         );
+        if (!ignoreTextScaling) return sheet;
+        return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)), child: sheet);
       },
       backgroundColor: resolvedBackgroundColor,
       isDismissible: isDismissible,
@@ -136,13 +155,14 @@ class CommonBottomSheets {
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
+    final isResizable = childBuilder != null && enableDragToResize;
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
-
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -194,21 +214,35 @@ class CommonBottomSheets {
                                   });
                                 }
 
-                                return NotificationListener<ScrollNotification>(
-                                  onNotification: (notification) {
-                                    if (notification is ScrollEndNotification) {
-                                      handleDragEnd();
-                                    }
-                                    return false;
-                                  },
-                                  child: childBuilder(scrollController),
+                                return Material(
+                                  color: resolvedBackgroundColor,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: NotificationListener<ScrollNotification>(
+                                    onNotification: (notification) {
+                                      if (notification is ScrollEndNotification) {
+                                        handleDragEnd();
+                                      }
+                                      return false;
+                                    },
+                                    // Keep the content layout stable while the sheet shrinks.
+                                    // Material clips it to the current draggable height.
+                                    child: OverflowBox(
+                                      alignment: Alignment.topCenter,
+                                      minHeight: sheetHeight,
+                                      maxHeight: sheetHeight,
+                                      child: childBuilder(scrollController),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                   ),
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor: isResizable ? Colors.transparent : resolvedBackgroundColor,
       elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       clipBehavior: Clip.antiAlias,
@@ -230,9 +264,9 @@ class CommonBottomSheets {
     AnimationController? animationController,
     ShapeBorder? shape,
   }) async {
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return child; // child screen에서 type <T>를 반환하면 반환됩니다.
       },
@@ -276,10 +310,9 @@ class CommonBottomSheets {
     // initialChildSize가 maxChildSize를 초과하지 않도록 보장
     final finalInitialSize = calculatedInitialSize > maxChildSize ? maxChildSize : calculatedInitialSize;
 
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
-
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
@@ -482,9 +515,9 @@ class CommonBottomSheets {
     if (maxHeight >= adjustedMinChildSize) {
       adjustedMinChildSize = maxHeight + 0.0001;
     }
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: expand,

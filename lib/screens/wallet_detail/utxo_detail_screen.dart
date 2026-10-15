@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
@@ -71,7 +72,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
   late Stream<WalletUpdateInfo> _walletSyncStateStream;
-  late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
+  StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _walletSyncStateStream = Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateSubscription?.cancel();
     _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -116,6 +118,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {
+    if (!mounted) return;
     final updatedUtxo = _walletProvider.getUtxoState(widget.id, widget.utxo.utxoId);
     if (updatedUtxo != null) {
       setState(() {
@@ -358,7 +361,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               context,
               _viewModel.explorerUrlFor(BlockExplorerPathType.address, widget.utxo.to),
               openInApp: true,
-              analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.address),
+              destination: ExternalLinkDestination.explorerAddress,
             );
           },
           child: Column(
@@ -424,7 +427,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             context,
             _viewModel.explorerUrlFor(BlockExplorerPathType.block, widget.utxo.blockHeight.toString()),
             openInApp: true,
-            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
+            destination: ExternalLinkDestination.explorerBlock,
           );
         }
       },

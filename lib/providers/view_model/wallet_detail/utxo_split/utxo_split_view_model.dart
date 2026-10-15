@@ -15,6 +15,7 @@ import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final PreferenceProvider _preferenceProvider;
   final WalletProvider _walletProvider;
   final AddressRepository _addressRepository;
+  final UtxoRepository _utxoRepository;
   final SendInfoProvider _sendInfoProvider;
   final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
 
@@ -155,6 +157,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._preferenceProvider,
     this._walletProvider,
     this._addressRepository,
+    this._utxoRepository,
     this._sendInfoProvider,
     this._showUsePreviewConfirmPrompt,
   ) {
@@ -540,6 +543,30 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     _updateRecommendedSplitCountsIfNeeded();
     _onInputChanged();
+  }
+
+  void revalidateSelectedUtxo() {
+    if (_selectedUtxoList.isEmpty) return;
+
+    final selected = _selectedUtxoList.first;
+    final latest = _utxoRepository
+        .getUtxoStateList(walletId)
+        .cast<UtxoState?>()
+        .firstWhere((utxo) => utxo?.utxoId == selected.utxoId, orElse: () => null);
+
+    if (latest == null || latest.status != UtxoStatus.unspent) {
+      setSelectedUtxoList(const []);
+      notifyIfNotDisposed();
+      return;
+    }
+
+    if (latest.amount != selected.amount || latest.to != selected.to || latest.blockHeight != selected.blockHeight) {
+      _selectedUtxoList = [latest];
+      _splitBuilder.setUtxo(latest);
+      _clearResult();
+      _updateRecommendedSplitCountsIfNeeded();
+      _onInputChanged();
+    }
   }
 
   void setSplitMethod(SplitMethod method) {

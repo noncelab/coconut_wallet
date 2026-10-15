@@ -31,6 +31,8 @@ class UtxoSummaryChart extends StatelessWidget {
   final VoidCallback? onBalanceTap;
   final VoidCallback? onThemeSettingTap;
   final bool hasReusedAddresses;
+  final bool showBalanceHeader;
+  final double? height;
 
   const UtxoSummaryChart({
     super.key,
@@ -46,6 +48,8 @@ class UtxoSummaryChart extends StatelessWidget {
     this.onBalanceTap,
     this.onThemeSettingTap,
     this.hasReusedAddresses = false,
+    this.showBalanceHeader = true,
+    this.height,
   });
 
   static const double estimatedHeight = 350;
@@ -55,6 +59,7 @@ class UtxoSummaryChart extends StatelessWidget {
     final colors = context.coconutColors;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     return Container(
+      height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -64,18 +69,22 @@ class UtxoSummaryChart extends StatelessWidget {
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 16, 16, 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UtxoTotalBalanceHeader(
-              coinCount: coinCount,
-              totalSats: totalSats,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onBalanceTap: onBalanceTap,
-            ),
-            const SizedBox(height: 12),
+            if (showBalanceHeader) ...[
+              UtxoTotalBalanceHeader(
+                coinCount: coinCount,
+                totalSats: totalSats,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onBalanceTap: onBalanceTap,
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(

@@ -1495,29 +1495,46 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               '${t.utility.p2p_calculator.premium} ',
               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
-            IntrinsicWidth(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 10),
-                child: Transform.translate(
-                  offset: const Offset(0, -1.5),
-                  child: CoconutTextField(
-                    activeColor: context.coconutColors.primaryText,
-                    cursorColor: context.coconutColors.primaryText,
-                    enabled: _viewModel.isNetworkOn,
-                    controller: premiumController,
-                    focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
-                    padding: EdgeInsets.zero,
-                    maxLines: 1,
-                    height: 24,
-                    textInputAction: TextInputAction.done,
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
-                    onChanged: _handlePremiumInputChanged,
-                    textAlign: TextAlign.end,
-                    isVisibleBorder: false,
+            Builder(
+              builder: (context) {
+                final textPainter = TextPainter(
+                  text: TextSpan(
+                    text: '99${NumberFormatConfig.instance.decimalSeparator}9',
+                    style: CoconutTypography.body2_14.copyWith(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.normal,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ),
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                // Reserve the full allowed rate and caret even when the field is empty.
+                final inputWidth = textPainter.width.ceilToDouble() + 4;
+                textPainter.dispose();
+                return SizedBox(
+                  width: inputWidth,
+                  child: Transform.translate(
+                    offset: const Offset(0, -1.5),
+                    child: CoconutTextField(
+                      activeColor: context.coconutColors.primaryText,
+                      cursorColor: context.coconutColors.primaryText,
+                      enabled: _viewModel.isNetworkOn,
+                      controller: premiumController,
+                      focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
+                      padding: EdgeInsets.zero,
+                      maxLines: 1,
+                      height: 24,
+                      textInputAction: TextInputAction.done,
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
+                      onChanged: _handlePremiumInputChanged,
+                      textAlign: TextAlign.end,
+                      isVisibleBorder: false,
+                    ),
+                  ),
+                );
+              },
             ),
             Text('%', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
           ],

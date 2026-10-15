@@ -7,23 +7,27 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
+  final HotWalletSigningService _hotWalletSigningService;
   late WalletItemBase _walletListItemBase;
   Psbt? _unsignedPsbt;
   int? _totalUsedAmount;
   late final double _totalSendAmount;
 
-  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
+  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider, {HotWalletSigningService? hotWalletSigningService})
+    : _hotWalletSigningService = hotWalletSigningService ?? HotWalletSigningService() {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _setTotalSendAmount();
   }
 
   int? get estimatedFee => _unsignedPsbt?.fee;
+  bool get isTransactionReady => _unsignedPsbt != null;
   int get walletId => _walletListItemBase.id;
   String get walletName => _walletListItemBase.name;
   String? get txWaitingForSign => _sendInfoProvider.txWaitingForSign;
@@ -40,10 +44,14 @@ class SendConfirmViewModel extends ChangeNotifier {
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
   WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
-
+  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.hotWalletMetadata != null;
+  bool get shouldEnterPassphraseWhenSigning =>
+      _walletListItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false;
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.masterFingerprint;
+    }
     return '';
   }
 
@@ -51,7 +59,9 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   String? get walletExtendedPublicKey {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.extendedPublicKey.serialize();
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.extendedPublicKey.serialize();
+    }
     return null;
   }
 
@@ -105,5 +115,41 @@ class SendConfirmViewModel extends ChangeNotifier {
   void setTxWaitingForSign() {
     assert(_unsignedPsbt != null);
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
+  }
+
+  Future<void> signHotWallet({Uint8List? passphrase}) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final watchOnlyWallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
+      throw StateError('Local signer is not available');
+    }
+
+    final unsignedPsbt = _unsignedPsbt!.serialize();
+    _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
+    final signedPsbt = await _hotWalletSigningService.sign((
+      storageKey: metadata.secureStorageKey,
+      passphrase: passphrase,
+      addressTypeName: watchOnlyWallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
+      unsignedPsbt: unsignedPsbt,
+    ));
+    _sendInfoProvider.setSignedResult(signedPsbt);
+  }
+
+  Future<bool> validateHotWalletPassphrase(Uint8List passphrase) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final wallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
+      return false;
+    }
+
+    return _hotWalletSigningService.validatePassphrase(
+      storageKey: metadata.secureStorageKey,
+      passphrase: passphrase,
+      addressTypeName: wallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
+    );
   }
 }

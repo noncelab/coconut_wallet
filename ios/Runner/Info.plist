@@ -77,23 +77,6 @@
 		<true/>
 	</dict>
 	
-	<!-- 대체 앱 아이콘 설정 -->
-	<key>CFBundleIcons</key>
-	<dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconName</key>
-			<string>AppIcon</string>
-		</dict>
-		<key>CFBundleAlternateIcons</key>
-		<dict>
-			<key>birthday</key>
-			<dict>
-				<key>CFBundleIconName</key>
-				<string>AppIconBirthDay</string>
-			</dict>
-		</dict>
-	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -70,7 +70,9 @@ void main() {
 
       final electrumService = ScriptSyncServiceMock.electrumService;
       final subscribedAddresses = <String>[];
-      when(electrumService.subscribeScript(any, any, onUpdate: anyNamed('onUpdate'))).thenAnswer((invocation) async {
+      when(
+        electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),
+      ).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
         subscribedAddresses.add(address);
         return null;
@@ -87,7 +89,8 @@ void main() {
       );
 
       // When
-      await subscriptionService.subscribeWallet(wallet);
+      final result = await subscriptionService.subscribeWallet(wallet);
+      expect(result.isSuccess, true);
 
       // Then
       final dormantAddress = wallet.walletBase.getAddress(0, isChange: false);

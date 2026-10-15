@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -25,6 +27,11 @@ class WalletDetailRouteArgs {
   final int id;
   final String entryPoint;
   const WalletDetailRouteArgs({required this.id, required this.entryPoint});
+}
+
+class UtxoOrganizerRouteArgs {
+  final int id;
+  const UtxoOrganizerRouteArgs({required this.id});
 }
 
 class WalletBackupDataRouteArgs {
@@ -70,6 +77,8 @@ class UnsignedTransactionQrRouteArgs {
 
 class SendRouteArgs {
   final int? id;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -77,6 +86,8 @@ class SendRouteArgs {
   final String? initialBitcoinUri;
   const SendRouteArgs({
     this.id,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,
@@ -87,12 +98,14 @@ class SendRouteArgs {
 
 class UtxoMergeRouteArgs {
   final int id;
-  const UtxoMergeRouteArgs({required this.id});
+  final bool isActive;
+  const UtxoMergeRouteArgs({required this.id, required this.isActive});
 }
 
 class UtxoSplitRouteArgs {
   final int id;
-  const UtxoSplitRouteArgs({required this.id});
+  final bool isActive;
+  const UtxoSplitRouteArgs({required this.id, required this.isActive});
 }
 
 class UtxoTagCrudRouteArgs {
@@ -115,7 +128,74 @@ class WalletInfoRouteArgs {
   final WalletType walletType;
   final String entryPoint;
   final bool? showMfpInput;
-  const WalletInfoRouteArgs({required this.id, required this.walletType, required this.entryPoint, this.showMfpInput});
+  final bool? highlightMnemonicBackup;
+  final bool? showTargetSetting;
+  const WalletInfoRouteArgs({
+    required this.id,
+    required this.walletType,
+    required this.entryPoint,
+    this.showMfpInput,
+    this.highlightMnemonicBackup,
+    this.showTargetSetting,
+  });
+}
+
+class HotWalletMnemonicBackupGuideRouteArgs {
+  final int walletId;
+  final Uint8List? mnemonic;
+  final Uint8List? passphrase;
+  final String? secureStorageKey;
+  final bool enterPassphraseWhenSigning;
+  final bool showWalletCreatedIntro;
+  final bool continueToAppLockGuide;
+  final bool returnToPreviousOnExit;
+
+  const HotWalletMnemonicBackupGuideRouteArgs({
+    required this.walletId,
+    this.mnemonic,
+    this.passphrase,
+    this.secureStorageKey,
+    required this.enterPassphraseWhenSigning,
+    this.showWalletCreatedIntro = true,
+    this.continueToAppLockGuide = true,
+    this.returnToPreviousOnExit = false,
+  });
+}
+
+class HotWalletMnemonicBackupRouteArgs {
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
+  final bool enterPassphraseWhenSigning;
+  final int? walletId;
+  final bool continueToAppLockGuide;
+
+  const HotWalletMnemonicBackupRouteArgs({
+    required this.mnemonic,
+    required this.passphrase,
+    this.enterPassphraseWhenSigning = false,
+    this.walletId,
+    this.continueToAppLockGuide = false,
+  });
+}
+
+class MnemonicBackupConfirmRouteArgs {
+  final Uint8List mnemonic;
+  final int? walletId;
+  final bool continueToAppLockGuide;
+
+  const MnemonicBackupConfirmRouteArgs({required this.mnemonic, this.walletId, this.continueToAppLockGuide = false});
+}
+
+class MnemonicBackupCompleteRouteArgs {
+  final int? walletId;
+  final bool continueToAppLockGuide;
+  const MnemonicBackupCompleteRouteArgs({this.walletId, this.continueToAppLockGuide = false});
+}
+
+class HotWalletPassphraseCheckRouteArgs {
+  final Uint8List mnemonic;
+  final String descriptor;
+  const HotWalletPassphraseCheckRouteArgs({required this.mnemonic, required this.descriptor});
 }
 
 class BroadcastingCompleteRouteArgs {

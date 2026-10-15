@@ -326,8 +326,16 @@ class UtxoRepository extends BaseRepository {
     return handleAsyncRealm<bool>(() async {
       final existingUtxos = realm.query<RealmUtxo>(r'walletId == $0', [walletId]);
 
+      // v9 개발 과정에서 outpoint만 primary key로 저장된 데이터도 정리한다.
+      // 배포 사용자는 v9 마이그레이션에서 초기화되지만, 이미 v9 DB를 사용 중인
+      // 개발 기기는 마이그레이션이 다시 실행되지 않으므로 동기화 시 복구가 필요하다.
+      final legacyUtxos =
+          existingUtxos.where((utxo) => utxo.id != getRealmUtxoId(walletId, utxo.transactionHash, utxo.index)).toList();
+
       final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
-        existingUtxos.map((realmUtxo) => MapEntry(realmUtxo.id, realmUtxo)),
+        existingUtxos
+            .where((utxo) => !legacyUtxos.contains(utxo))
+            .map((realmUtxo) => MapEntry(getUtxoId(realmUtxo.transactionHash, realmUtxo.index), realmUtxo)),
       );
       final newUtxos =
           utxos
@@ -342,8 +350,9 @@ class UtxoRepository extends BaseRepository {
               .toList();
 
       await realm.writeAsync(() {
+        realm.deleteMany(legacyUtxos);
         for (final toUpdateUtxo in toUpdateUtxos) {
-          final existingUtxo = existingUtxoMap[toUpdateUtxo.id];
+          final existingUtxo = existingUtxoMap[getUtxoId(toUpdateUtxo.transactionHash, toUpdateUtxo.index)];
           if (existingUtxo != null && !existingUtxo.isDeleted) {
             existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
             existingUtxo.timestamp = toUpdateUtxo.timestamp;
@@ -359,7 +368,7 @@ class UtxoRepository extends BaseRepository {
 
   // UTXO 상태를 "출금 중(outgoing)"으로 표시
   Future<void> _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) async {
-    final utxoToMark = realm.find<RealmUtxo>(utxoId);
+    final utxoToMark = realm.find<RealmUtxo>('$walletId:$utxoId');
 
     if (utxoToMark == null) return;
     if (utxoToMark.isDeleted) return;
@@ -391,7 +400,10 @@ class UtxoRepository extends BaseRepository {
   UtxoState? getUtxoState(int walletId, String utxoId) {
     realm.refresh();
     final realmUtxo =
-        realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [walletId, utxoId]).firstOrNull;
+        realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [
+          walletId,
+          '$walletId:$utxoId',
+        ]).firstOrNull;
 
     if (realmUtxo == null) {
       return null;
@@ -403,7 +415,10 @@ class UtxoRepository extends BaseRepository {
   Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {
     return handleAsyncRealm(() async {
       final utxo =
-          realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [walletId, utxoId]).firstOrNull;
+          realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [
+            walletId,
+            '$walletId:$utxoId',
+          ]).firstOrNull;
 
       if (utxo == null) return;
 
@@ -420,9 +435,10 @@ class UtxoRepository extends BaseRepository {
   Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) async {
     if (utxoIds.isEmpty) return Result.success(null);
     return handleAsyncRealm(() async {
+      final realmUtxoIds = utxoIds.map((utxoId) => '$walletId:$utxoId').toList();
       final utxosToLock =
           realm
-              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, utxoIds])
+              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, realmUtxoIds])
               .where((u) => u.status != utxoStatusToString(UtxoStatus.locked))
               .toList();
 
@@ -447,9 +463,10 @@ class UtxoRepository extends BaseRepository {
   Future<void> restoreLockedUtxos(int walletId, Set<String> lockedUtxoIdsSnapshot) async {
     if (lockedUtxoIdsSnapshot.isEmpty) return;
 
+    final realmUtxoIds = lockedUtxoIdsSnapshot.map((utxoId) => '$walletId:$utxoId').toList();
     final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
       walletId,
-      lockedUtxoIdsSnapshot.toList(),
+      realmUtxoIds,
       utxoStatusToString(UtxoStatus.unspent),
     ]);
 
@@ -462,11 +479,31 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  /// 앱 업데이트 마이그레이션에서 보관한 잠금 설정을 최신 UTXO 동기화 결과에 적용한다.
+  /// 잠금 복원이 확인된 항목만 제거하고, 미조회·미확정 항목은 다음 동기화를 위해 유지한다.
+  Future<void> restorePendingUtxoLocks(int walletId) async {
+    await realm.writeAsync(() {
+      final pendingLocks = realm.query<RealmPendingUtxoLock>(r'walletId == $0', [walletId]).toList();
+      for (final pendingLock in pendingLocks) {
+        final utxo = realm.find<RealmUtxo>(pendingLock.id);
+        if (utxo == null || utxo.walletId != walletId || utxo.isDeleted) continue;
+
+        if (utxo.status == utxoStatusToString(UtxoStatus.unspent)) {
+          utxo.status = utxoStatusToString(UtxoStatus.locked);
+        }
+        if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
+          realm.delete(pendingLock);
+        }
+      }
+    });
+  }
+
   Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
     final statusStr = utxoStatusToString(status);
+    final realmUtxoIds = utxoList.map((utxoId) => '$walletId:$utxoId').toList();
     final utxosToUpdate = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
       walletId,
-      utxoList,
+      realmUtxoIds,
     ]);
 
     if (utxosToUpdate.isEmpty) return;
@@ -479,14 +516,15 @@ class UtxoRepository extends BaseRepository {
   }
 
   Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
+    final realmUtxoIds = utxoIds.map((utxoId) => '$walletId:$utxoId').toList();
     final utxosToDelete = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
       walletId,
-      utxoIds,
+      realmUtxoIds,
     ]);
 
     if (utxosToDelete.isEmpty) return;
 
-    final deletedIds = utxosToDelete.map((e) => e.id).toList();
+    final deletedIds = utxosToDelete.map((e) => getUtxoId(e.transactionHash, e.index)).toList();
 
     await realm.writeAsync(() {
       for (var utxo in utxosToDelete) {
@@ -509,7 +547,7 @@ class UtxoRepository extends BaseRepository {
 
     if (utxosToDelete.isEmpty) return;
 
-    final deletedIds = utxosToDelete.map((e) => e.id).toList();
+    final deletedIds = utxosToDelete.map((e) => getUtxoId(e.transactionHash, e.index)).toList();
 
     await realm.writeAsync(() {
       for (var utxo in utxosToDelete) {

@@ -18,11 +18,13 @@ class WalletInfoEditBottomSheet extends StatelessWidget {
   final int id;
   final WalletImportSource walletImportSource;
   final bool isCustomAccount;
+  final bool isHotWallet;
   const WalletInfoEditBottomSheet({
     super.key,
     required this.id,
     required this.walletImportSource,
     required this.isCustomAccount,
+    required this.isHotWallet,
   });
 
   @override
@@ -33,6 +35,7 @@ class WalletInfoEditBottomSheet extends StatelessWidget {
         id: id,
         walletImportSource: walletImportSource,
         isCustomAccount: isCustomAccount,
+        isHotWallet: isHotWallet,
       ),
     );
   }
@@ -42,11 +45,13 @@ class _WalletInfoEditBottomSheetContent extends StatefulWidget {
   final int id;
   final WalletImportSource walletImportSource;
   final bool isCustomAccount;
+  final bool isHotWallet;
 
   const _WalletInfoEditBottomSheetContent({
     required this.id,
     required this.walletImportSource,
     required this.isCustomAccount,
+    required this.isHotWallet,
   });
 
   @override
@@ -64,7 +69,8 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
 
   int get _colorCount => CoconutColors.colorPalette.length;
 
-  bool get _canEditPalette => widget.isCustomAccount && widget.walletImportSource == WalletImportSource.coconutVault;
+  bool get _canEditPalette =>
+      (widget.isCustomAccount || widget.isHotWallet) && widget.walletImportSource == WalletImportSource.coconutVault;
 
   @override
   void initState() {

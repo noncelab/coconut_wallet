@@ -100,6 +100,11 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isFromSignedDraft => _signedDraftId != null;
   bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
+  bool get canUseTransactionDrafts {
+    final walletId = _walletId ?? _sendInfoProvider.walletId;
+    return walletId != null && !_walletProvider.getWalletById(walletId).hasLocalKey;
+  }
+
   bool get tagInheritanceFailed => _tagInheritanceFailed;
 
   List<UtxoTag> prepareTagInheritance() {
@@ -155,7 +160,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1300` [ErrorCodes.nodeUnknown]: 메인 isolate 브리지의 기타 예외, 또는 isolate가 `Result`가 아닌 `Exception`을 보낸 경우(`IsolateController` 최상위 catch 등)
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
-  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
+  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
   Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
@@ -299,13 +304,18 @@ class BroadcastingViewModel extends ChangeNotifier {
     _externalOutputAmounts.clear();
     _changeOutputAmounts.clear();
     _outputDetailItems.clear();
-    for (final output in outputs) {
+    for (final (outputIndex, output) in outputs.indexed) {
       final amount = output.outAmount;
       if (amount == null) {
         continue;
       }
       _outputDetailItems.add(
-        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange(_wallet)),
+        BroadcastingOutputDetailItem(
+          outputIndex: outputIndex,
+          address: output.outAddress,
+          amount: amount,
+          isChange: output.isChange(_wallet),
+        ),
       );
       if (output.isChange(_wallet)) {
         _changeOutputAmounts.add(amount);
@@ -382,8 +392,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     _fee = psbt.fee;
     _totalAmount = psbt.sendingAmount(_wallet) + psbt.fee;
 
-    _setSignedTransaction(psbt);
-
     if (excludedUtxoStatus == null) {
       _isInitDone = true;
     }
@@ -414,8 +422,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     return false;
   }
-
-  void _setSignedTransaction(Psbt psbt) {}
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
@@ -464,6 +470,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     assert(result.value.isSigned);
     final TransactionDraft draft = result.value;
+    if (_walletProvider.getWalletById(draft.walletId).hasLocalKey) {
+      throw StateError('Transaction drafts are not supported for hot wallets');
+    }
     clearSendInfo();
     _sendInfoProvider.setWalletId(draft.walletId);
     _sendInfoProvider.setFeeRate(draft.feeRate);
@@ -473,6 +482,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<Result<TransactionDraft>> saveTransactionDraft() async {
+    if (!canUseTransactionDrafts) {
+      throw StateError('Transaction drafts are not supported for this wallet');
+    }
     final result = await _txDraftRepository.saveSignedDraft(
       walletId: walletId!,
       recipients:
@@ -541,9 +553,15 @@ class BroadcastingViewModel extends ChangeNotifier {
 }
 
 class BroadcastingOutputDetailItem {
+  final int outputIndex;
   final String address;
   final int amount;
   final bool isChange;
 
-  const BroadcastingOutputDetailItem({required this.address, required this.amount, required this.isChange});
+  const BroadcastingOutputDetailItem({
+    required this.outputIndex,
+    required this.address,
+    required this.amount,
+    required this.isChange,
+  });
 }

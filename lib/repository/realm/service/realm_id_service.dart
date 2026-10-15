@@ -31,6 +31,14 @@ String getUtxoId(String transactionHash, int index) {
   return '$transactionHash$index';
 }
 
+/// Realm 안에서 동일 outpoint를 여러 지갑이 각각 소유할 수 있도록 사용하는 저장용 ID.
+///
+/// [getUtxoId]는 PSBT 및 UTXO 태그 등 도메인 영역에서 사용하는 outpoint ID이므로
+/// 변경하지 않고, Realm의 primary key에만 walletId를 포함한다.
+String getRealmUtxoId(int walletId, String transactionHash, int index) {
+  return '$walletId:${getUtxoId(transactionHash, index)}';
+}
+
 int getCpfpHistoryId(int walletId, String parentTransactionHash, String childTransactionHash) {
   return generateHashInt([walletId, parentTransactionHash, childTransactionHash]);
 }

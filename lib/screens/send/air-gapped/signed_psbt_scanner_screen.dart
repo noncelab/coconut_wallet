@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -193,24 +192,25 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   Future<void> _showErrorDialog(String errorMessage) async {
     if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.alert.scan_failed,
-          description: errorMessage,
-          onTapRight: () {
-            if (!mounted) return;
-
-            _isProcessing = false;
-            _controller?.start();
-            Navigator.pop(context);
-          },
-          rightButtonText: t.OK,
-        );
-      },
-    );
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.alert.scan_failed,
+            description: errorMessage,
+            onTapRight: () => Navigator.pop(context),
+            rightButtonText: t.OK,
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        _isProcessing = false;
+        await _controller?.start();
+      }
+    }
   }
 
   Future<void> _stopCamera() async {

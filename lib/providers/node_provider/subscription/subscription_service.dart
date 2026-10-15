@@ -168,6 +168,7 @@ class SubscriptionService {
 
     // 사용 이력이 없는 지갑
     if (fetchedScriptStatuses.isEmpty) {
+      await _scriptSyncService.restorePendingUtxoLocks(walletItem.id);
       _stateManager.addWalletCompletedAllStates(walletItem.id);
       return Result.success(true);
     }
@@ -178,6 +179,7 @@ class SubscriptionService {
     );
 
     if (updatedScriptStatuses.isEmpty) {
+      await _scriptSyncService.restorePendingUtxoLocks(walletItem.id);
       _stateManager.addWalletCompletedAllStates(walletItem.id);
       return Result.success(true);
     }
@@ -400,9 +402,10 @@ class SubscriptionService {
       _handleScriptUpdate(reversedScriptHash, scriptStatus, walletItem, scriptStatusController);
     }
 
-    final status = await _electrumService.subscribeScript(
+    final status = await _electrumService.subscribeScriptForWallet(
       walletItem.walletBase.addressType,
       address,
+      walletId: walletItem.id,
       onUpdate: onUpdate,
     );
 
