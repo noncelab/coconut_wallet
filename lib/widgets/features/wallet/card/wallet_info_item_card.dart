@@ -1,8 +1,9 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -13,6 +14,8 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/tooltip_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/badge/wallet_type_badge.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -156,11 +159,6 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             ? WalletVisualStyleUtil.getGradientColors(signers!, lighten: true)
             : taprootStyle?.iconGradientColors;
     final bool hasGradient = gradientColors != null;
-    final bool isMfpDisplayed =
-        walletItem is! TaprootWalletItem &&
-        walletItem is! MultisigWalletItem &&
-        !_isWithoutMfp() &&
-        !_isExtendedPublicKey();
 
     return Container(
       decoration: BoxDecoration(
@@ -182,7 +180,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         decoration:
             hasGradient
                 ? BoxDecoration(
-                  color: context.coconutColors.surface,
+                  color: context.coconutColors.background,
                   borderRadius: BorderRadius.circular(23), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
@@ -220,7 +218,11 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildWalletTypeBadge(),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: WalletTypeBadge(isHotWallet: walletItem.hasLocalKey),
+                          ),
                           CoconutLayout.spacing_50h,
                           Text(
                             nameText,
@@ -253,6 +255,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: TooltipButton(
+                                textBuilder:
+                                    walletItem is SinglesigWalletItem
+                                        ? (text, style) => MfpText(mfp: text, style: style)
+                                        : null,
                                 textStyle: (walletItem is TaprootWalletItem
                                         ? CoconutTypography.body3_12_Bold
                                         : CoconutTypography.body2_14_NumberBold)
@@ -341,21 +347,24 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   void _onTap(BuildContext context, WalletImportSource? walletImportSource) {
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+    final bool isHotWallet = walletItem.hasLocalKey;
 
-    if (!isExternalWallet && !isCustomAccount) {
+    if (!isExternalWallet && !isCustomAccount && !isHotWallet) {
       return;
     }
 
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100<String>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.walletInfoEditSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => WalletInfoEditBottomSheet(
-            id: widget.id,
-            walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
-            isCustomAccount: isCustomAccount,
-          ),
+      child: WalletInfoEditBottomSheet(
+        id: widget.id,
+        walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+        isCustomAccount: isCustomAccount,
+        isHotWallet: isHotWallet,
+      ),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;
@@ -371,43 +380,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     widget.onShowMfpInputBottomSheet();
   }
 
-  Widget _buildWalletTypeBadge() {
-    final isHotWallet = walletItem.hasLocalKey;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: context.coconutColors.chipUnselectedBackground,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: Center(
-              child: SvgPicture.asset(
-                isHotWallet ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
-                width: isHotWallet ? 10 : 14,
-                height: isHotWallet ? 10 : 14,
-                colorFilter: isHotWallet ? null : ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-              ),
-            ),
-          ),
-          CoconutLayout.spacing_100w,
-          Text(
-            isHotWallet ? t.wallet_home_screen.wallet_filter.hot : t.wallet_home_screen.wallet_filter.watch_only,
-            style: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildIcon({required bool hasGradient}) {
     final colors = context.coconutColors;
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
-    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount || walletItem.hasLocalKey;
     final cardBackgroundColor = hasGradient ? colors.surface : colors.background;
     final pressedIconBackgroundSubtle = Color.alphaBlend(
       colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),

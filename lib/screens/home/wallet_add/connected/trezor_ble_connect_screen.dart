@@ -1,14 +1,18 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_ble_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
@@ -20,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TrezorBleConnectScreen extends StatefulWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
@@ -27,6 +32,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 
   const TrezorBleConnectScreen({
     super.key,
+    this.walletId,
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
@@ -180,9 +186,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     _showFullScreenLoading();
 
     final stopwatch = Stopwatch()..start();
-    ResultOfSyncFromVault result;
+    ResultOfSyncFromVault initialResult;
     try {
-      result = await vm.addToWalletList();
+      initialResult = await vm.addToWalletList();
     } catch (e) {
       if (!mounted) return;
       _hideFullScreenLoading();
@@ -206,12 +212,21 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
 
     if (!mounted) return;
 
+    _loadingOverlayEntry?.remove();
+    _loadingOverlayEntry = null;
+    final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _isAddingWallet = false);
+      return;
+    }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
+      context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();
       Navigator.pushReplacementNamed(
         context,
-        '/wallet-detail',
-        arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        AppRouteNames.walletDetail,
+        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }
@@ -543,14 +558,15 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
         Navigator.pop(context);
         Navigator.pushNamed(
           context,
-          '/trezor-sign',
-          arguments: {
-            'psbtBase64': widget.psbtBase64,
-            'walletName': widget.walletName ?? '',
-            'walletFingerprint': widget.walletFingerprint ?? '',
-            'isFromSendFlow': true,
-            'transport': 'ble',
-          },
+          AppRouteNames.trezorSign,
+          arguments: TrezorSignRouteArgs(
+            walletId: widget.walletId!,
+            psbtBase64: widget.psbtBase64!,
+            walletName: widget.walletName ?? '',
+            walletFingerprint: widget.walletFingerprint ?? '',
+            isFromSendFlow: true,
+            transport: 'ble',
+          ),
         );
       };
     } else if (!isSignFlow && isPaired && hasXpub) {

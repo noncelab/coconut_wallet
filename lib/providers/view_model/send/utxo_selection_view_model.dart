@@ -129,17 +129,6 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool hasTaggedUtxo() {
-    return _selectedUtxoList.any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
-  }
-
-  void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
-    _tagProvider.cacheUsedUtxoIds(
-      _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
-      isTagsMoveAllowed: isTagsMoveAllowed,
-    );
-  }
-
   void selectAllUtxo() {
     // locked 상태가 아닌 UTXO만 선택
     setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());

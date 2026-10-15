@@ -97,6 +97,10 @@ class TaprootCardStyle {
 }
 
 class WalletVisualStyleUtil {
+  static int normalizePaletteIndex(int index) {
+    return index.clamp(0, colorPalette.length - 1);
+  }
+
   static WalletVisualColorSet getColor(int index) {
     if (index < 0 || index >= colorPalette.length) {
       return const WalletVisualColorSet(color: defaultIconColor, backgroundColor: defaultBackgroundColor);

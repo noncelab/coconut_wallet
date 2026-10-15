@@ -1,20 +1,23 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
-import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/core/transaction/unsigned_psbt_summary.dart';
+import 'package:coconut_wallet/widgets/features/send/unsigned_psbt_summary_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -22,19 +25,19 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class BitBox02SignScreen extends StatefulWidget {
+  final int walletId;
   final String psbtBase64;
   final String walletName;
   final String walletFingerprint;
   final bool isFromSendFlow;
-  final String transport;
 
   const BitBox02SignScreen({
     super.key,
+    required this.walletId,
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
     this.isFromSendFlow = false,
-    this.transport = 'usb',
   });
 
   @override
@@ -55,7 +58,6 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       psbtBase64: widget.psbtBase64,
       walletName: widget.walletName,
       walletFingerprint: widget.walletFingerprint,
-      transport: widget.transport,
       walletProvider: context.read<WalletProvider>(),
     );
     _viewModel.addListener(_onStateChanged);
@@ -77,7 +79,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -130,97 +132,17 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
   }
 
   Widget _buildTransactionSummaryCard() {
-    final summary = _parsePsbtSummary();
+    final wallet = context.read<WalletProvider>().getWalletById(widget.walletId).walletBase;
+    final summary = UnsignedPsbtSummary.tryParse(psbtBase64: widget.psbtBase64, wallet: wallet);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0),
-          child: Text(
-            t.bitbox02_sign_screen.tx_card.title,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.left,
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.coconutColors.surface,
-            borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          ),
-          child: Column(
-            children: [
-              if (summary != null) ...[
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.send,
-                  _currentUnit.displayBitcoinAmount(summary.amount, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                if (summary.recipientAddresses.isNotEmpty)
-                  _buildDetailRow(t.bitbox02_sign_screen.tx_card.to, summary.recipientAddresses.join('\n')),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.fee,
-                  _currentUnit.displayBitcoinAmount(summary.fee, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.total_cost,
-                  _currentUnit.displayBitcoinAmount(summary.amount + summary.fee, withUnit: true),
-                ),
-              ] else ...[
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.send,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.fee,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-              ],
-            ],
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-      ],
-    );
-  }
-
-  _PsbtSummary? _parsePsbtSummary() {
-    try {
-      final psbt = Psbt.parse(widget.psbtBase64);
-
-      int amount = (psbt.outputs).where((o) => o.isChange != true).fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
-      int fee = psbt.fee;
-
-      final outputs = psbt.outputs;
-
-      final addresses = outputs.where((o) => o.isChange != true).map((o) => o.outAddress).whereType<String>().toList();
-
-      return _PsbtSummary(amount: amount, fee: fee, recipientAddresses: addresses);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
+    return UnsignedPsbtSummaryCard(
+      summary: summary,
+      currentUnit: _currentUnit,
+      title: t.bitbox02_sign_screen.tx_card.title,
+      sendLabel: t.bitbox02_sign_screen.tx_card.send,
+      toLabel: t.bitbox02_sign_screen.tx_card.to,
+      feeLabel: t.bitbox02_sign_screen.tx_card.fee,
+      totalCostLabel: t.bitbox02_sign_screen.tx_card.total_cost,
     );
   }
 
@@ -265,7 +187,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
         child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: color, radius: 6),
       );
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
-      detailText = _subStatusText(vm.subStatus);
+      detailText = _subStatusText(vm, vm.subStatus);
     } else if (isDone) {
       final color = context.coconutColors.success;
       stateColor = color;
@@ -315,8 +237,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
                   if (vm.fingerprint != null) ...[
                     Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
                     CoconutLayout.spacing_100w,
-                    Text(
-                      vm.fingerprint!.toUpperCase(),
+                    MfpText(
+                      mfp: vm.fingerprint!.toUpperCase(),
                       style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                     ),
                     const Spacer(),
@@ -343,16 +265,14 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     );
   }
 
-  String _subStatusText(BitBox02SignSubStatus subStatus) {
+  String _subStatusText(BitBox02SignViewModel vm, BitBox02SignSubStatus subStatus) {
     switch (subStatus) {
       case BitBox02SignSubStatus.waiting:
         return t.bitbox02_sign_screen.idle.waiting;
       case BitBox02SignSubStatus.connectingDevice:
-        return widget.transport == 'ble'
+        return vm.device?.transport == 'ble'
             ? t.bitbox02_sign_screen.status.connecting_device_ble
             : t.bitbox02_sign_screen.status.connecting_device;
-      case BitBox02SignSubStatus.checkPairing:
-        return t.bitbox02_sign_screen.status.check_pairing;
       case BitBox02SignSubStatus.preparingData:
         return t.bitbox02_sign_screen.status.preparing_data;
       case BitBox02SignSubStatus.confirmOnDevice:
@@ -364,22 +284,25 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     final bool isError = vm.step == BitBox02SignStep.error;
     final bool isBusy = vm.step == BitBox02SignStep.signing;
 
+    Future<void> showConnectScreen() async {
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      navigator.pop();
+      await BitBox02Navigator.showConnectScreen(
+        context: navigator.context,
+        screenName: AnalyticsScreenNames.bitbox02SignReconnectDeviceSheet,
+        walletId: widget.walletId,
+        psbtBase64: widget.psbtBase64,
+        walletName: widget.walletName,
+        walletFingerprint: widget.walletFingerprint,
+      );
+    }
+
     if (vm.isWalletMismatch) {
       return FixedBottomButton(
         onButtonClicked: () async {
           await vm.disconnectForReconnect();
-          if (!mounted) return;
-          Navigator.pop(context);
-          CommonBottomSheets.showCustomHeightBottomSheet(
-            context: context,
-            child: BitBox02ConnectScreen(
-              importSource: WalletImportSource.bitbox02,
-              psbtBase64: widget.psbtBase64,
-              walletName: widget.walletName,
-              walletFingerprint: widget.walletFingerprint,
-            ),
-            heightRatio: 0.9,
-          );
+          await showConnectScreen();
         },
         text: t.bitbox02_sign_screen.btn.connect_other_bitbox02,
         isActive: !isBusy,
@@ -391,10 +314,20 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     final VoidCallback onPressed =
         isError
             ? () {
+              if (vm.isConnectionError) {
+                showConnectScreen();
+                return;
+              }
               vm.reset();
               vm.signTransaction();
             }
-            : () => vm.signTransaction();
+            : () async {
+              if (!await vm.isDeviceConnected()) {
+                await showConnectScreen();
+                return;
+              }
+              vm.signTransaction();
+            };
 
     return FixedBottomButton(
       onButtonClicked: onPressed,
@@ -413,11 +346,4 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
               : null,
     );
   }
-}
-
-class _PsbtSummary {
-  final int amount;
-  final int fee;
-  final List<String> recipientAddresses;
-  const _PsbtSummary({required this.amount, required this.fee, required this.recipientAddresses});
 }

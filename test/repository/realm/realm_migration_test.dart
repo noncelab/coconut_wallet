@@ -1,5 +1,10 @@
+import 'dart:convert';
+
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:realm/realm.dart';
@@ -78,7 +83,92 @@ void main() {
   });
 
   group('Realm migration test', () {
+    // Migration O: migration callback이 실행되는 경우
+    // Migration X: 현재 버전과 동일하여 migration callback이 실행되지 않는 경우
     group("[Migration O]", () {
+      test('[8 -> 9] [Taproot Wallet] older backup data is migrated', () {
+        realmSetup(initialVersion: 8);
+        const descriptor =
+            "tr([9B1441E4/86'/1'/0']tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN/<0;1>/*,{and_v(v:pk([70C4E9DE/86'/1'/0']tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8/<0;1>/*),older(500000000))})#w0hf4lu5";
+        const miniscript =
+            "and_v(v:pk([70C4E9DE/86'/1'/0']tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8/<0;1>/*),older(500000000))";
+        final walletBase = RealmWalletBase(101, 0, 0, descriptor, 'Legacy Taproot', 'taproot');
+        final taprootWallet = RealmTaprootWallet(
+          101,
+          jsonEncode([
+            'tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN',
+          ]),
+          jsonEncode([
+            {
+              'miniscript': miniscript,
+              'extendedPublicKeys': [
+                'tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHXCfHqFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8',
+              ],
+            },
+          ]),
+          walletBase: walletBase,
+        );
+        realm.write(() {
+          realm.add(walletBase);
+          realm.add(taprootWallet);
+        });
+        realm.close();
+
+        final migratedWalletIds = <int>{};
+        final migratedConfig = Configuration.local(
+          realmAllSchemas,
+          schemaVersion: 9,
+          migrationCallback:
+              (migration, oldVersion) => defaultMigration(migration, oldVersion, migratedWalletIds: migratedWalletIds),
+          path: testPath,
+        );
+        realm = Realm(migratedConfig);
+
+        final migratedWalletBase = realm.find<RealmWalletBase>(101)!;
+        final migratedTaprootWallet = realm.find<RealmTaprootWallet>(101)!;
+        expect(migratedWalletIds, contains(101));
+        expect(migratedWalletBase.descriptor, contains('after(500000000)'));
+        expect(migratedWalletBase.descriptor, isNot(contains('older(')));
+        expect(DescriptorUtil.hasDescriptorChecksum(migratedWalletBase.descriptor), isTrue);
+
+        final restoredWallet = TaprootWallet.fromDescriptor(migratedWalletBase.descriptor);
+        expect(restoredWallet.policyList.length, 1);
+        expect(
+          () => InheritancePolicy.fromMiniscript(Descriptor.parse(migratedWalletBase.descriptor).miniscriptList.single),
+          returnsNormally,
+        );
+
+        final migratedSeedInfo =
+            (jsonDecode(migratedTaprootWallet.scriptPathSeedInfosInJsonSerialization) as List).single
+                as Map<String, dynamic>;
+        expect(migratedSeedInfo['miniscript'], contains('after(500000000)'));
+        expect(migratedSeedInfo['miniscript'], isNot(contains('older(')));
+        expect(() => InheritancePolicy.fromMiniscript(migratedSeedInfo['miniscript'] as String), returnsNormally);
+      });
+
+      test('[9 -> 10] sync data is cleared while locked UTXOs are migrated to wallet-scoped IDs', () {
+        realmSetup(initialVersion: 9);
+        final now = DateTime.now();
+        realm.write(() {
+          realm.add(RealmScriptStatus('1:0014script', '0014script', 'status', 1, now));
+          realm.add(RealmUtxo('unspent-txid0', 1, 'address', 1000, now, 'unspent-txid', 0, 'm/0/0', 1, 'unspent'));
+          realm.add(RealmUtxo('locked-txid1', 1, 'address', 2000, now, 'locked-txid', 1, 'm/0/1', 2, 'locked'));
+        });
+        realm.close();
+
+        realm = Realm(
+          Configuration.local(realmAllSchemas, schemaVersion: 10, migrationCallback: defaultMigration, path: testPath),
+        );
+
+        expect(realm.all<RealmScriptStatus>(), isEmpty);
+        expect(realm.all<RealmUtxo>(), isEmpty);
+        expect(realm.all<RealmPendingUtxoLock>(), hasLength(1));
+        final pendingLock = realm.all<RealmPendingUtxoLock>().single;
+        expect(pendingLock.id, '1:locked-txid1');
+        expect(pendingLock.walletId, 1);
+        expect(pendingLock.utxoId, 'locked-txid1');
+      });
+
       test("[0 -> kRealmVersion]", () {
         realmSetup(initialVersion: 0);
         migrationFrom0ToLatest(realm, kRealmVersion, testPath!);
@@ -114,6 +204,29 @@ void main() {
         realmSetup(initialVersion: 2);
         migrationFrom2toLatest(realm, 2, testPath!);
       });
+    });
+
+    test('기존 hot wallet metadata를 active lifecycle로 초기화함', () {
+      realmSetup(initialVersion: kRealmVersion);
+      realm.write(() {
+        realm.add(
+          RealmHotWalletMetadata(
+            1,
+            'hot_wallet_secret_1',
+            'D45AA182',
+            "m/84'/1'/0'",
+            0,
+            true,
+            false,
+            DateTime.utc(2026, 7, 20),
+            '',
+          ),
+        );
+      });
+
+      realm.write(() => addHotWalletLifecycleState(realm));
+
+      expect(realm.all<RealmHotWalletMetadata>().single.lifecycleStateName, HotWalletLifecycleState.active.name);
     });
   });
 }

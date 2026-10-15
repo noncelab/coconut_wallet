@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/features/qr/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -25,6 +26,7 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
 
   final scannedData = await CommonBottomSheets.showBottomSheet_100<String?>(
     context: context,
+    screenName: AnalyticsScreenNames.addressScanQrSheet,
     backgroundColor: Colors.transparent,
     child: Builder(
       builder:

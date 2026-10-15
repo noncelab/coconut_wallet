@@ -324,7 +324,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return RbfBuilder(
       preparer: preparer,
       walletItemBase: _walletListItemBase,
-      nextChangeAddress: _addressRepository.getChangeAddress(walletId),
+      nextChangeAddress: _addressRepository.getChangeAddress(walletId, wallet: _walletListItemBase.walletBase),
       additionalSpendable: _isUtxoSelectionAuto ? _availableUtxos : [],
     );
   }
@@ -341,7 +341,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return CpfpBuilder(
       preparer: preparer,
       walletItemBase: _walletListItemBase,
-      nextReceiveAddress: _addressRepository.getReceiveAddress(_walletId),
+      nextReceiveAddress: _addressRepository.getReceiveAddress(_walletId, wallet: _walletListItemBase.walletBase),
       minimumFeeRate: slowFeeRate,
       additionalSpendable: _isUtxoSelectionAuto ? _availableUtxos : [],
     );
@@ -430,6 +430,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       'cpfpBuildResult=${_cpfpBuildResult != null} cpfpSuccess=${_cpfpBuildResult?.isSuccess}',
     );
     _sendInfoProvider.setWalletId(_walletId);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.transactionDetail);
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
     _sendInfoProvider.setTransaction(transaction);

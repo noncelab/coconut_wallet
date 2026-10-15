@@ -188,7 +188,8 @@ class _SelectableTagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = tagColorPalette[tag.colorIndex];
+    final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(tag.colorIndex);
+    final foregroundColor = tagColorPalette[colorIndex];
     final backgroundColor = foregroundColor.withValues(alpha: 0.18);
     final style = _styleFor(foregroundColor);
 

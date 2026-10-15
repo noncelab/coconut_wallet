@@ -6,7 +6,8 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:flutter/cupertino.dart';
 
-class WalletDetailStickyHeader extends StatefulWidget {
+/// TODO: WalletDetailScreen에서 TransactionListHeader를 사용하도록 변경 후 삭제 예정
+class TransactionDetailStickyHeader extends StatefulWidget {
   final Key widgetKey;
   final double height;
   final bool isVisible;
@@ -14,7 +15,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
   final String fiatPrice;
 
-  const WalletDetailStickyHeader({
+  const TransactionDetailStickyHeader({
     required this.widgetKey,
     required this.height,
     required this.isVisible,
@@ -24,10 +25,10 @@ class WalletDetailStickyHeader extends StatefulWidget {
   }) : super(key: widgetKey);
 
   @override
-  State<WalletDetailStickyHeader> createState() => _WalletDetailStickyHeaderState();
+  State<TransactionDetailStickyHeader> createState() => _TransactionDetailStickyHeaderState();
 }
 
-class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
+class _TransactionDetailStickyHeaderState extends State<TransactionDetailStickyHeader> {
   @override
   Widget build(BuildContext context) {
     return Positioned(

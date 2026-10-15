@@ -10,11 +10,10 @@ const Gradient kCoconutMainnetLogoGradient = LinearGradient(
   colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
 );
 
-/// 성공 / 경고 / 실패(또는 위험)을 나타내는 공통 시맨틱 색상입니다.
+/// 경고 / 실패(또는 위험)을 나타내는 공통 시맨틱 색상입니다.
 ///
 /// 특정 배경 위에서 가독성이 떨어지는 경우에만 테마별로 다른 값으로 조정하고,
 /// 그 외에는 이 기본값을 그대로 사용합니다.
-const Color kCoconutSuccess = ds.CoconutColors.green;
 const Color kCoconutWarning = ds.CoconutColors.warningYellow;
 const Color kCoconutDanger = ds.CoconutColors.hotPink;
 const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
@@ -30,6 +29,9 @@ const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
 @immutable
 class CoconutColors {
+  /// 코코넛 테마의 lagoon에 흰색을 약 20% 섞은 옅은 색상입니다.
+  static const Color lagoonLight = Color(0xFF8ED9EE);
+
   /// 코코넛 고유 메인넷 로고 그라디언트
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
@@ -121,6 +123,11 @@ class CoconutColors {
 
   /// 구분선
   final Color divider;
+  final Color dividerStrong;
+
+  /// 목표 진행 그래프의 시작/끝 그라디언트 색상
+  final Color targetProgressGradientStart;
+  final Color targetProgressGradientEnd;
 
   /// 2. 공통 위젯별 정의
   ///
@@ -183,6 +190,9 @@ class CoconutColors {
   /// 바텀시트
   /// 바텀시트 컨테이너의 기본 표면색
   final Color surfaceBottomSheet;
+
+  /// 바텀시트 기본 표면보다 한 단계 밝은 강조 영역의 표면색
+  final Color surfaceBottomSheetElevated;
 
   /// 바텀시트 상단 드래그 핸들 바
   final Color bottomSheetHandle;
@@ -261,6 +271,8 @@ class CoconutColors {
   final Color utxoOverviewSelectedCoinBorder;
   final Color utxoOverviewBillSurface;
   final Color utxoOverviewUnselectedOverlay;
+  final Color utxoOverviewGroupingTabSelectedText;
+  final Color utxoOverviewGroupingTabUnselectedText;
   final double utxoOverviewCoinTintStrength;
   final double utxoOverviewCoinIconOpacity;
   final double utxoOverviewCoinInnerStrokeOpacity;
@@ -346,6 +358,9 @@ class CoconutColors {
     required this.appLockWarningForeground,
     required this.unbackedWarningForeground,
     required this.divider,
+    required this.dividerStrong,
+    required this.targetProgressGradientStart,
+    required this.targetProgressGradientEnd,
     required this.brandAccentBackground,
     required this.brandAccentForeground,
     required this.surfaceButton,
@@ -380,6 +395,7 @@ class CoconutColors {
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
     required this.surfaceBottomSheet,
+    required this.surfaceBottomSheetElevated,
     required this.bottomSheetHandle,
     required this.bottomSheetKeyboardToolbar,
     required this.bottomSheetExtensionFieldBackground,
@@ -420,6 +436,8 @@ class CoconutColors {
     required this.utxoOverviewSelectedCoinBorder,
     required this.utxoOverviewBillSurface,
     required this.utxoOverviewUnselectedOverlay,
+    required this.utxoOverviewGroupingTabSelectedText,
+    required this.utxoOverviewGroupingTabUnselectedText,
     required this.utxoOverviewCoinTintStrength,
     required this.utxoOverviewCoinIconOpacity,
     required this.utxoOverviewCoinInnerStrokeOpacity,
@@ -482,11 +500,14 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray850,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: kCoconutSuccess,
+      success: ds.CoconutColors.successOnDark,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray800,
+      dividerStrong: ds.CoconutColors.gray700,
+      targetProgressGradientStart: const Color(0xFF8CD5FF),
+      targetProgressGradientEnd: const Color(0xFF7775FF),
 
       brandAccentBackground: ds.CoconutColors.primary,
       brandAccentForeground: ds.CoconutColors.black,
@@ -522,6 +543,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
       surfaceBottomSheet: ds.CoconutColors.gray900,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray850,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: const Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
@@ -563,6 +585,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.gray150,
       utxoOverviewBillSurface: ds.CoconutColors.gray900,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.white,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray500,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -626,11 +650,14 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray400,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: kCoconutSuccess,
+      success: ds.CoconutColors.successOnLight,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray200,
+      dividerStrong: ds.CoconutColors.gray300,
+      targetProgressGradientStart: const Color(0xFF329DDA),
+      targetProgressGradientEnd: ds.CoconutColors.purple,
 
       brandAccentBackground: ds.CoconutColors.purple,
       brandAccentForeground: ds.CoconutColors.black,
@@ -667,6 +694,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
       surfaceBottomSheet: ds.CoconutColors.white,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray150,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),
@@ -708,6 +736,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.black,
       utxoOverviewBillSurface: ds.CoconutColors.white,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.black,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray400,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -750,6 +780,7 @@ class CoconutColors {
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonLight = Color(0xFF8ED9EE);
     const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
@@ -788,11 +819,14 @@ class CoconutColors {
       iconButtonHighlight: dim,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: palmGreen, // 코코넛 과육 테마 배경에서 기본 success 색보다 잘 보이는 조정값
-      appLockWarningBackground: kCoconutWarningCard,
+      success: ds.CoconutColors.successOnLight,
+      appLockWarningBackground: kCoconutWarning,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
+      dividerStrong: lagoon.withAlpha(60),
+      targetProgressGradientStart: lagoonDeep,
+      targetProgressGradientEnd: palmGreen,
 
       brandAccentBackground: lagoon,
       brandAccentForeground: huskDeep,
@@ -828,6 +862,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: huskSoft,
       surfaceBottomSheet: shell,
+      surfaceBottomSheetElevated: Color.lerp(shell, caramel, 0.15)!,
       bottomSheetHandle: caramel,
       bottomSheetKeyboardToolbar: dim,
       bottomSheetExtensionFieldBackground: shell,
@@ -845,8 +880,8 @@ class CoconutColors {
       tooltipBackground: dim,
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
-      popoverBackground: huskDeep,
-      popoverText: ds.CoconutColors.white,
+      popoverBackground: lagoonLight,
+      popoverText: huskDeep,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       loadingIndicatorColor: huskDeep,
@@ -869,6 +904,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: huskDeep,
       utxoOverviewBillSurface: shell,
       utxoOverviewUnselectedOverlay: sand,
+      utxoOverviewGroupingTabSelectedText: huskDeep,
+      utxoOverviewGroupingTabUnselectedText: huskSoft,
       utxoOverviewCoinTintStrength: 1,
       utxoOverviewCoinIconOpacity: 0.06,
       utxoOverviewCoinInnerStrokeOpacity: 0.06,

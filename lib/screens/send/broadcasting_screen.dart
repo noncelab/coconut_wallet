@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -29,6 +31,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -39,6 +42,7 @@ import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.d
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/features/send/tag_inheritance_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -96,7 +100,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     setState(() => _isOverlayLoading = value);
   }
 
-  Future<void> broadcast() async {
+  Future<void> broadcast({required List<String> inheritedTagIds}) async {
     if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading) {
       return;
     }
@@ -109,7 +113,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
     try {
-      Result<String> result = await _viewModel.broadcast();
+      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
 
       if (result.isFailure) {
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
@@ -132,15 +136,27 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       }
 
       if (result.isSuccess) {
-        await _viewModel.updateTagsOfUsedUtxos();
-        await _viewModel.deleteDraftsIfNeeded();
+        try {
+          await _viewModel.deleteDraftsIfNeeded();
+        } catch (e) {
+          Logger.error('Transaction sent, but draft cleanup failed: $e');
+        }
         if (!mounted) return;
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.succeeded;
         await lottieAnimation;
         if (!mounted) return;
+        if (_viewModel.tagInheritanceFailed) {
+          await showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_complete_screen.complete,
+            t.broadcasting_screen.dialog.tag_apply_failed,
+          );
+          if (!mounted) return;
+        }
         Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder<void>(
-            settings: const RouteSettings(name: '/broadcasting-complete'),
+            settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
             transitionDuration: const Duration(milliseconds: 280),
             reverseTransitionDuration: const Duration(milliseconds: 200),
             pageBuilder:
@@ -155,9 +171,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                   child: child,
                 ),
           ),
-          _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
-              ? ModalRoute.withName('/wallet-detail')
-              : (route) => route.isFirst,
+          switch (_viewModel.sendEntryPoint) {
+            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
+            SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
+            SendEntryPoint.home || null => (route) => route.isFirst,
+          },
         );
       }
     } catch (e) {
@@ -360,7 +378,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                               ),
                             ),
                           ),
-                        if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                        if (viewModel.canUseTransactionDrafts &&
+                            viewModel.feeBumpingType == null &&
+                            widget.signedTransactionDraftId == null) ...{
                           _BroadcastEntryTransition(
                             visible: _showBottomButton,
                             child: FixedBottomTweenButton(
@@ -433,9 +453,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
             _viewModel.clearSendInfo();
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/transaction-draft',
+              AppRouteNames.transactionDraft,
               (route) => route.isFirst,
-              arguments: {'isSignedTabActive': true},
+              arguments: const TransactionDraftRouteArgs(isSignedTabActive: true),
             );
           },
           onTapLeft: () {
@@ -463,23 +483,50 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     );
   }
 
-  void _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
-    if (viewModel.isNetworkOn == false) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: CommonStateIconPath.triangleWarning,
-        text: ErrorCodes.networkError.message,
-        level: CoconutToastLevel.warning,
+  Future<void> _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
+    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading || !viewModel.isInitDone) return;
+    _isPreparingBroadcast = true;
+    try {
+      if (viewModel.isNetworkOn == false) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: CommonStateIconPath.triangleWarning,
+          text: ErrorCodes.networkError.message,
+          level: CoconutToastLevel.warning,
+        );
+        return;
+      }
+      if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+        await TransactionUtil.showTransactionConfirmedDialog(context);
+        return;
+      }
+      final candidates = viewModel.prepareTagInheritance();
+      final inheritedTagIds =
+          candidates.isEmpty
+              ? <String>[]
+              : await showDialog<List<String>>(
+                context: context,
+                builder:
+                    (_) => TagInheritanceDialog(
+                      tags: candidates,
+                      languageCode: context.read<PreferenceProvider>().language,
+                    ),
+              );
+      if (!mounted || inheritedTagIds == null) return;
+      _isPreparingBroadcast = false;
+      await broadcast(inheritedTagIds: inheritedTagIds);
+    } catch (e) {
+      Logger.error('Preparing tag inheritance failed: $e');
+      if (!mounted) return;
+      showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.broadcasting_screen.error_popup_title,
+        e.toString(),
       );
-      return;
-    }
-    if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-      await TransactionUtil.showTransactionConfirmedDialog(context);
-      return;
-    }
-    if (viewModel.isInitDone) {
-      broadcast();
+    } finally {
+      _isPreparingBroadcast = false;
     }
   }
 
@@ -554,6 +601,20 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
             },
           );
         }
+      } on TransactionIntentMismatchException {
+        vibrateMedium();
+        if (!mounted) return;
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          '',
+          t.alert.signed_psbt.wrong_send_info,
+          barrierDismissible: false,
+          onTapButton: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+        );
       } catch (e) {
         vibrateMedium();
         if (!mounted) return;
@@ -670,6 +731,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
       externalOutputAmounts: viewModel.externalOutputAmounts,
+      externalOutputTapTargets: [
+        for (final item in viewModel.outputDetailItems)
+          if (!item.isChange)
+            FlowOutputTapTarget(address: item.address, amount: item.amount, outputIndex: item.outputIndex),
+      ],
       changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.fee,
       currentUnit: _currentUnit,
@@ -682,14 +748,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       return const SizedBox.shrink();
     }
 
-    int outputIndex = 0;
     final uiItems =
         detailItems.map((item) {
-          if (!item.isChange) {
-            outputIndex += 1;
-          }
           return OutputDetailItem(
-            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
+            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: item.outputIndex),
             address: item.address,
             amountSats: item.amount,
             isChange: item.isChange,

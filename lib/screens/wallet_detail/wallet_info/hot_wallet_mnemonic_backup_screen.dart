@@ -1,3 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
@@ -15,17 +19,15 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
   const HotWalletMnemonicBackupScreen({
     super.key,
     required this.mnemonic,
-    this.passphrase = '',
+    required this.passphrase,
     this.enterPassphraseWhenSigning = false,
-    this.descriptor = '',
     this.walletId,
     this.continueToAppLockGuide = false,
   });
 
-  final String mnemonic;
-  final String passphrase;
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
-  final String descriptor;
   final int? walletId;
   final bool continueToAppLockGuide;
 
@@ -35,13 +37,21 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
 
 class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupScreen> {
   late final List<String> _words;
+  late final String _passphraseDisplay;
   bool _isWarningVisible = true;
   bool _isPassphraseVisible = false;
+  bool _isStartingConfirmation = false;
 
   @override
   void initState() {
     super.initState();
-    _words = widget.mnemonic.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList(growable: false);
+    _words = utf8
+        .decode(widget.mnemonic)
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList(growable: false);
+    _passphraseDisplay = utf8.decode(widget.passphrase);
   }
 
   @override
@@ -51,8 +61,12 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
     return Scaffold(
       backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
-        title: strings.backup_title,
         context: context,
+        customTitle: Text(
+          strings.backup_title,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textScaler: const TextScaler.linear(1),
+        ),
         backgroundColor: context.coconutColors.background,
       ),
       body: SafeArea(
@@ -67,7 +81,7 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: _PassphraseCard(
-                        passphrase: widget.passphrase,
+                        passphrase: _passphraseDisplay,
                         isVisible: _isPassphraseVisible,
                         onPressed: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
                       ),
@@ -80,6 +94,7 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
                       strings.mnemonic_backup_guide,
                       style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
                       textAlign: TextAlign.center,
+                      textScaler: const TextScaler.linear(1),
                     ),
                   ),
                   CoconutLayout.spacing_600h,
@@ -134,20 +149,24 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
   }
 
   Future<void> _startBackupConfirmation() async {
-    final isConfirmed = await Navigator.pushNamed(
-      context,
-      '/mnemonic-backup-confirm',
-      arguments: {
-        'mnemonic': widget.mnemonic,
-        'passphrase': widget.passphrase,
-        'descriptor': widget.descriptor,
-        'confirmPassphrase': widget.enterPassphraseWhenSigning || widget.passphrase.isNotEmpty,
-        'walletId': widget.walletId,
-        'continueToAppLockGuide': widget.continueToAppLockGuide,
-      },
-    );
-    if (!mounted || isConfirmed != true) return;
-    Navigator.pop(context, true);
+    if (_isStartingConfirmation) return;
+    _isStartingConfirmation = true;
+    try {
+      if (!mounted) return;
+      final isConfirmed = await Navigator.pushNamed(
+        context,
+        AppRouteNames.mnemonicBackupConfirm,
+        arguments: MnemonicBackupConfirmRouteArgs(
+          mnemonic: widget.mnemonic,
+          walletId: widget.walletId,
+          continueToAppLockGuide: widget.continueToAppLockGuide,
+        ),
+      );
+      if (!mounted || isConfirmed != true) return;
+      Navigator.pop(context, true);
+    } finally {
+      _isStartingConfirmation = false;
+    }
   }
 }
 

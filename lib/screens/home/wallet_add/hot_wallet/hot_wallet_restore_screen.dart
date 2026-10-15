@@ -1,6 +1,11 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -24,7 +29,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/mnemonic_input_section.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/passphrase_options_section.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/seed_qr_input_section.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
@@ -35,6 +44,7 @@ import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
@@ -116,7 +126,7 @@ class _HotWalletRestoreView extends StatefulWidget {
   State<_HotWalletRestoreView> createState() => _HotWalletRestoreViewState();
 }
 
-class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
+class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with WidgetsBindingObserver {
   final List<WordSuggestableController> _wordControllers = List.generate(24, (_) => WordSuggestableController());
   final List<FocusNode> _wordFocusNodes = List.generate(24, (_) => FocusNode());
   final List<GlobalKey> _mnemonicRowKeys = List.generate(8, (_) => GlobalKey());
@@ -137,6 +147,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   bool _isWordCountDropdownVisible = false;
   bool _canPop = false;
   bool _isCheckingDuplicate = false;
+  bool _isSubmitting = false;
+  bool _isLeavingScreen = false;
   _RestoreInputMode _inputMode = _RestoreInputMode.mnemonic;
   final GlobalKey _seedQrKey = GlobalKey(debugLabel: 'SeedQR');
   QRViewController? _seedQrScannerController;
@@ -150,10 +162,20 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   int _masterFingerprintRequestId = 0;
   int _fieldScrollRequestId = 0;
   late final String _suggestedName;
+  late final AnalyticsService _analyticsService;
+
+  String get _walletName => _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
+
+  bool get _isWalletNameDuplicated =>
+      !_isSubmitting &&
+      !_isLeavingScreen &&
+      context.read<HotWalletRestoreViewModel>().hasWalletNameConflict(context.read<WalletProvider>(), _walletName);
 
   @override
   void initState() {
     super.initState();
+    _analyticsService = context.read<AnalyticsService>();
+    WidgetsBinding.instance.addObserver(this);
     _suggestedName = _generateSuggestedName();
     for (var index = 0; index < _wordFocusNodes.length; index++) {
       _wordFocusNodes[index].addListener(() {
@@ -192,6 +214,17 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       _seedQrScannerController?.pauseCamera();
     }
     _seedQrScannerController?.resumeCamera();
+  }
+
+  @override
+  void didChangeMetrics() {
+    // Focus can arrive before the keyboard resizes the viewport. Recalculate
+    // after each metrics update; request IDs cancel stale scroll requests.
+    if (_nameFocusNode.hasFocus) {
+      _scrollToFocusedField(_nameFieldKey, _nameFocusNode, delay: const Duration(milliseconds: 150));
+    } else if (_passphraseFocusNode.hasFocus) {
+      _scrollToFocusedField(_passphraseFieldKey, _passphraseFocusNode, delay: const Duration(milliseconds: 150));
+    }
   }
 
   void _scrollToMnemonicRowIfNeeded(int index) {
@@ -285,6 +318,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final controller in _wordControllers) {
       controller.dispose();
     }
@@ -329,7 +363,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   Widget build(BuildContext context) {
     final viewModel = context.watch<HotWalletRestoreViewModel>();
     return PopScope(
-      canPop: _canPop,
+      canPop: _canPop && !_isSubmitting,
       child: Stack(
         children: [
           Listener(
@@ -351,7 +385,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                         _inputMode == _RestoreInputMode.mnemonic
                             ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr
                             : t.wallet_home_screen.hot_wallet_restore.enter_mnemonic,
-                    onPressed: _toggleInputMode,
+                    onPressed: _isSubmitting ? null : _toggleInputMode,
                     icon: SvgPicture.asset(
                       _inputMode == _RestoreInputMode.mnemonic ? CommonActionIconPath.scan : CommonActionIconPath.paste,
                       width: 22,
@@ -389,7 +423,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                         FixedBottomButton(
                           buttonKey: _bottomButtonKey,
                           text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
-                          isActive: viewModel.canRestore,
+                          isActive:
+                              viewModel.canRestore && !_isSubmitting && !_isLeavingScreen && !_isWalletNameDuplicated,
                           subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
                           surroundingsColor: context.coconutColors.background,
                           onButtonClicked: _restore,
@@ -407,6 +442,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _handleAppBarBackPressed() async {
+    if (_isSubmitting) return;
     final viewModel = context.read<HotWalletRestoreViewModel>();
     final hasMnemonic = viewModel.hasScannedMnemonic || viewModel.words.any((word) => word.isNotEmpty);
     if (!hasMnemonic) {
@@ -466,6 +502,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _toggleInputMode() async {
+    if (_isSubmitting) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final viewModel = context.read<HotWalletRestoreViewModel>();
     if (_inputMode == _RestoreInputMode.mnemonic) {
@@ -537,119 +574,117 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               : screenSize.width > 600
               ? 500.0
               : screenSize.width * 0.85;
-      return Stack(
-        children: [
-          if (_hasCameraPermission)
-            QRView(
-              key: _seedQrKey,
-              onQRViewCreated: _onSeedQrViewCreated,
-              overlay: QrScannerOverlayShape(
-                overlayColor: CoconutColors.black.withValues(alpha: 0.45),
-                borderColor: CoconutColors.white,
-                borderRadius: 10,
-                borderLength: scanSize * 0.5,
-                borderWidth: 10,
-                cutOutSize: scanSize,
-              ),
-            )
-          else
-            const Center(child: CoconutCircularIndicator()),
-          Positioned(
-            top: 20,
-            left: 16,
-            right: 16,
-            child: CoconutToolTip(
-              backgroundColor: context.coconutColors.surface,
-              borderColor: context.coconutColors.surface,
-              tooltipType: CoconutTooltipType.fixed,
-              icon: SvgPicture.asset(
-                CommonStateIconPath.circleInfo,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-              ),
-              richText: RichText(
-                text: TextSpan(
-                  text: t.wallet_home_screen.hot_wallet_restore.seed_qr_guide,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+      return SeedQrInputSection.scanner(
+        scanner: Stack(
+          children: [
+            if (_hasCameraPermission)
+              QRView(
+                key: _seedQrKey,
+                onQRViewCreated: _onSeedQrViewCreated,
+                overlay: QrScannerOverlayShape(
+                  overlayColor: CoconutColors.black.withValues(alpha: 0.45),
+                  borderColor: CoconutColors.white,
+                  borderRadius: 10,
+                  borderLength: scanSize * 0.5,
+                  borderWidth: 10,
+                  cutOutSize: scanSize,
+                ),
+              )
+            else
+              const Center(child: CoconutCircularIndicator()),
+            Positioned(
+              top: 20,
+              left: 16,
+              right: 16,
+              child: CoconutToolTip(
+                backgroundColor: context.coconutColors.surface,
+                borderColor: context.coconutColors.surface,
+                tooltipType: CoconutTooltipType.fixed,
+                icon: SvgPicture.asset(
+                  CommonStateIconPath.circleInfo,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
+                richText: RichText(
+                  text: TextSpan(
+                    text: t.wallet_home_screen.hot_wallet_restore.seed_qr_guide,
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 150),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: context.coconutColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.coconutColors.border),
+    return SeedQrInputSection.scanned(
+      scrollController: _scrollController,
+      scannedResult: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: context.coconutColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.coconutColors.border),
+        ),
+        child: Column(
+          children: [
+            SvgPicture.asset(
+              CommonFormIconPath.circleCheck,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
-            child: Column(
-              children: [
-                SvgPicture.asset(
-                  CommonFormIconPath.circleCheck,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                ),
-                CoconutLayout.spacing_300h,
-                Text(
-                  t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
-                  style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                ),
-                CoconutLayout.spacing_100h,
-                Text(
-                  t.wallet_home_screen.hot_wallet_restore.seed_qr_word_count(
-                    count: viewModel.scannedMnemonicWordCount!,
-                  ),
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                ),
-                if (_isMasterFingerprintLoading) ...[
-                  CoconutLayout.spacing_50h,
-                  const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
-                ] else if (_scannedMasterFingerprint != null) ...[
-                  CoconutLayout.spacing_50h,
-                  Text(
-                    'MFP $_scannedMasterFingerprint',
+            CoconutLayout.spacing_300h,
+            Text(
+              t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
+              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            ),
+            CoconutLayout.spacing_100h,
+            Text(
+              t.wallet_home_screen.hot_wallet_restore.seed_qr_word_count(count: viewModel.scannedMnemonicWordCount!),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            ),
+            if (_isMasterFingerprintLoading) ...[
+              CoconutLayout.spacing_50h,
+              const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
+            ] else if (_scannedMasterFingerprint != null) ...[
+              CoconutLayout.spacing_50h,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('MFP ', style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
+                  MfpText(
+                    mfp: _scannedMasterFingerprint!,
                     style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
                   ),
-                  CoconutLayout.spacing_300h,
                 ],
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (_) => setState(() => _isRescanButtonPressed = true),
-                  onTapUp: (_) => setState(() => _isRescanButtonPressed = false),
-                  onTapCancel: () => setState(() => _isRescanButtonPressed = false),
-                  onTap: _rescanSeedQr,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 100),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 100),
-                      style: CoconutTypography.body2_14_Bold.setColor(
-                        _isRescanButtonPressed ? context.coconutColors.mutedText : context.coconutColors.primaryText,
-                      ),
-                      child: Text(t.wallet_home_screen.hot_wallet_restore.rescan_seed_qr),
-                    ),
+              ),
+              CoconutLayout.spacing_300h,
+            ],
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (_) => setState(() => _isRescanButtonPressed = true),
+              onTapUp: (_) => setState(() => _isRescanButtonPressed = false),
+              onTapCancel: () => setState(() => _isRescanButtonPressed = false),
+              onTap: _rescanSeedQr,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 100),
+                  style: CoconutTypography.body2_14_Bold.setColor(
+                    _isRescanButtonPressed ? context.coconutColors.mutedText : context.coconutColors.primaryText,
                   ),
+                  child: Text(t.wallet_home_screen.hot_wallet_restore.rescan_seed_qr),
                 ),
-              ],
+              ),
             ),
-          ),
-          CoconutLayout.spacing_700h,
-          _buildPassphraseSection(viewModel),
-          CoconutLayout.spacing_700h,
-          _buildWalletNameField(),
-        ],
+          ],
+        ),
       ),
+      passphraseOptions: _buildPassphraseSection(viewModel),
+      walletNameField: _buildWalletNameField(),
     );
   }
 
@@ -666,13 +701,13 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
     if (mnemonic == null) {
       await _seedQrScannerController?.pauseCamera();
       if (mounted) {
-        await showConfirmDialog(
+        await showInfoDialog(
           context,
           context.read<PreferenceProvider>().language,
           t.wallet_home_screen.hot_wallet_restore.seed_qr_invalid_title,
           t.wallet_home_screen.hot_wallet_restore.seed_qr_invalid,
-          rightButtonText: t.close,
-          onTapRight: () => Navigator.of(context).pop(),
+          buttonText: t.confirm,
+          onTapButton: () => Navigator.of(context).pop(),
         );
       }
       if (mounted && _inputMode == _RestoreInputMode.seedQr) {
@@ -759,9 +794,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         children: [
           CupertinoButton(
             key: _wordCountSelectorKey,
-            minSize: 0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             onPressed: canClear ? _showClearAllDialog : null,
+            minimumSize: const Size(0, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -789,9 +824,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             ),
           ),
           CupertinoButton(
-            minSize: 0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             onPressed: () => setState(() => _isWordCountDropdownVisible = !_isWordCountDropdownVisible),
+            minimumSize: const Size(0, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -817,25 +852,12 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Widget _buildMnemonicInputSection(HotWalletRestoreViewModel viewModel) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildMnemonicGrid(viewModel),
-              CoconutLayout.spacing_700h,
-              _buildPassphraseSection(viewModel),
-              CoconutLayout.spacing_700h,
-              _buildWalletNameField(),
-            ],
-          ),
-        ),
-        if (_isWordCountDropdownVisible) _buildWordCountDropdown(),
-      ],
+    return MnemonicInputSection(
+      scrollController: _scrollController,
+      mnemonicInput: _buildMnemonicGrid(viewModel),
+      passphraseOptions: _buildPassphraseSection(viewModel),
+      walletNameField: _buildWalletNameField(),
+      overlay: _isWordCountDropdownVisible ? _buildWordCountDropdown() : null,
     );
   }
 
@@ -1067,39 +1089,22 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Widget _buildPassphraseSection(HotWalletRestoreViewModel viewModel) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                t.wallet_home_screen.hot_wallet_create.use_passphrase,
-                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-              ),
-            ),
-            CoconutSwitch(
-              isOn: viewModel.usePassphrase,
-              scale: 0.75,
-              activeTrackColor: context.coconutColors.switchActiveTrack,
-              activeThumbColor: context.coconutColors.switchActiveThumb,
-              inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-              inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-              onChanged: (value) {
-                if (!value) {
-                  _passphraseFocusNode.unfocus();
-                  _passphraseController.clear();
-                  _passphraseVisible = false;
-                }
-                viewModel.setUsePassphrase(value);
-                _scheduleMasterFingerprintUpdate(immediate: !value);
-              },
-            ),
-          ],
-        ),
-        if (viewModel.usePassphrase) ...[
-          CoconutLayout.spacing_200h,
+    return PassphraseOptionsSection(
+      isEnabled: viewModel.usePassphrase,
+      onEnabledChanged: (value) {
+        if (!value) {
+          _passphraseFocusNode.unfocus();
+          _passphraseController.clear();
+          _passphraseVisible = false;
+        }
+        viewModel.setUsePassphrase(value);
+        _scheduleMasterFingerprintUpdate(immediate: !value);
+      },
+      options: Column(
+        children: [
           CoconutTextField(
             key: _passphraseFieldKey,
+            padding: const EdgeInsets.only(left: 16),
             controller: _passphraseController,
             focusNode: _passphraseFocusNode,
             maxLength: 100,
@@ -1128,55 +1133,35 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             },
           ),
           CoconutLayout.spacing_200h,
-          Row(
-            children: [
-              CoconutCheckbox(
-                isSelected: viewModel.enterPassphraseWhenSigning,
-                onChanged: _setEnterPassphraseWhenSigning,
-                disabledColor: context.coconutColors.chipSelectedBackground,
-                color: context.coconutColors.chipSelectedBackground,
-              ),
-              CoconutLayout.spacing_200w,
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _setEnterPassphraseWhenSigning(!viewModel.enterPassphraseWhenSigning),
-                  child: Text(
-                    t.wallet_home_screen.hot_wallet_create.enter_passphrase_when_signing,
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                  ),
-                ),
-              ),
-            ],
+          SingleButton(
+            key: const ValueKey('hot-wallet-store-passphrase'),
+            title: t.wallet_home_screen.hot_wallet_create.store_passphrase,
+            subtitle:
+                viewModel.enterPassphraseWhenSigning
+                    ? t.wallet_home_screen.hot_wallet_create.store_passphrase_off_description
+                    : t.wallet_home_screen.hot_wallet_create.store_passphrase_on_description,
+            isVerticalSubtitle: true,
+            subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+            customPadding: EdgeInsets.zero,
+            backgroundColor: Colors.transparent,
+            onPressed: () => _setStorePassphrase(viewModel.enterPassphraseWhenSigning),
+            rightElement: CoconutSwitch(
+              isOn: !viewModel.enterPassphraseWhenSigning,
+              scale: 0.75,
+              activeTrackColor: context.coconutColors.switchActiveTrack,
+              activeThumbColor: context.coconutColors.switchActiveThumb,
+              inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+              inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+              onChanged: _setStorePassphrase,
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 
-  Future<void> _setEnterPassphraseWhenSigning(bool value) async {
-    final viewModel = context.read<HotWalletRestoreViewModel>();
-    if (!value) {
-      viewModel.setEnterPassphraseWhenSigning(false);
-      return;
-    }
-
-    FocusManager.instance.primaryFocus?.unfocus();
-    var confirmed = false;
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
-      leftButtonText: t.cancel,
-      rightButtonText: t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_confirm,
-      onTapRight: () {
-        confirmed = true;
-        Navigator.of(context).pop();
-      },
-    );
-    if (!mounted) return;
-    _unfocusAfterDialogDismissed();
-    if (confirmed) viewModel.setEnterPassphraseWhenSigning(true);
+  void _setStorePassphrase(bool value) {
+    context.read<HotWalletRestoreViewModel>().setEnterPassphraseWhenSigning(!value);
   }
 
   Widget _buildWalletNameField() {
@@ -1199,6 +1184,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
           backgroundColor: context.coconutColors.inputSurface,
           activeColor: context.coconutColors.primaryText,
           cursorColor: context.coconutColors.primaryText,
+          isError: _isWalletNameDuplicated,
+          errorText: _isWalletNameDuplicated ? t.wallet_home_screen.hot_wallet_create.duplicate_name_description : null,
           onChanged: (_) => setState(() {}),
         ),
       ],
@@ -1247,13 +1234,46 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _restore() async {
+    if (_isSubmitting || _isLeavingScreen || _isWalletNameDuplicated) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await _performRestore();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _isCheckingDuplicate = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _performRestore() async {
     FocusManager.instance.primaryFocus?.unfocus();
     FocusScope.of(context).requestFocus(_screenFocusNode);
     await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
     if (!mounted) return;
     final walletProvider = context.read<WalletProvider>();
     final viewModel = context.read<HotWalletRestoreViewModel>();
-    final walletName = _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
+    if (viewModel.usePassphrase && viewModel.enterPassphraseWhenSigning) {
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
+        buttonText: t.confirm,
+        barrierDismissible: false,
+        wrapTitleByWords: LocaleSettings.currentLocale == AppLocale.ko,
+        wrapDescriptionByWords: LocaleSettings.currentLocale == AppLocale.ko,
+      );
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      FocusScope.of(context).requestFocus(_screenFocusNode);
+      await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+    final walletName = _walletName;
     String descriptor;
     try {
       setState(() => _isCheckingDuplicate = true);
@@ -1296,17 +1316,11 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       if (!mounted) return;
     }
 
-    final hasNameConflict = walletProvider.walletItemList.any(
-      (wallet) => wallet.name == walletName && (!removeWatchOnly || wallet.id != duplicateWatchOnly?.id),
-    );
+    // 기존 Watch-only를 핫월렛으로 전환할 때는 기존 지갑의 이름·아이콘·색상을 그대로 유지한다.
+    // 따라서 복원 화면의 입력 이름은 신규 지갑을 만들 때에만 충돌을 검사한다.
+    final hasNameConflict = !removeWatchOnly && viewModel.hasWalletNameConflict(walletProvider, walletName);
     if (hasNameConflict) {
       setState(() => _isCheckingDuplicate = false);
-      await showInfoDialog(
-        context,
-        context.read<PreferenceProvider>().language,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_title,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_description,
-      );
       return;
     }
 
@@ -1317,26 +1331,27 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         walletProvider: walletProvider,
         walletName: walletName,
         derivedDescriptor: descriptor,
-        replacingWatchOnlyWalletId: removeWatchOnly ? duplicateWatchOnly?.id : null,
+        watchOnlyWalletIdToConvert: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
-      if (removeWatchOnly && duplicateWatchOnly != null) {
-        await walletProvider.deleteWallet(duplicateWatchOnly.id);
-      }
+      _analyticsService.logHotWalletAddCompleted(isRestore: true);
       if (!mounted) return;
+      vibrateMedium();
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {
+        setState(() => _isLeavingScreen = true);
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/wallet-detail',
+          AppRouteNames.walletDetail,
           (route) => route.isFirst,
-          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
+          arguments: WalletDetailRouteArgs(id: restoredWallet.id, entryPoint: kEntryPointWalletHome),
         );
       } else {
         await showHotWalletAppLockGuideBottomSheet(context);
         if (!mounted) return;
+        setState(() => _isLeavingScreen = true);
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/wallet-detail',
+          AppRouteNames.walletDetail,
           (route) => route.isFirst,
-          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
+          arguments: WalletDetailRouteArgs(id: restoredWallet.id, entryPoint: kEntryPointWalletHome),
         );
       }
     } catch (_) {

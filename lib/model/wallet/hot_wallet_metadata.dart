@@ -1,3 +1,17 @@
+enum HotWalletLifecycleState {
+  creating,
+  active,
+  deleting,
+  recoveryRequired;
+
+  static HotWalletLifecycleState fromName(String name) {
+    return HotWalletLifecycleState.values.firstWhere(
+      (state) => state.name == name,
+      orElse: () => HotWalletLifecycleState.recoveryRequired,
+    );
+  }
+}
+
 class HotWalletMetadata {
   const HotWalletMetadata({
     required this.walletId,
@@ -8,6 +22,8 @@ class HotWalletMetadata {
     required this.backupVerified,
     required this.enterPassphraseWhenSigning,
     required this.createdAt,
+    this.backupVerifiedAt,
+    this.lifecycleState = HotWalletLifecycleState.active,
   });
 
   final int walletId;
@@ -18,4 +34,6 @@ class HotWalletMetadata {
   final bool backupVerified;
   final bool enterPassphraseWhenSigning;
   final DateTime createdAt;
+  final DateTime? backupVerifiedAt;
+  final HotWalletLifecycleState lifecycleState;
 }

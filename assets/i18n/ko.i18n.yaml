@@ -23,6 +23,7 @@ receive: "받기"
 show: "보기"
 hide: "숨기기"
 paste: "붙여넣기"
+import: "가져오기"
 export: "내보내기"
 edit: "편집"
 max: "최대"
@@ -103,13 +104,14 @@ view: "보기"
 network: "네트워크"
 electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
-log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
 name: "이름"
 account: "계정"
 merge_utxos: "합치기"
 split_utxo: "나누기"
 apply: "정리하기"
+retry: "재시도"
+share: "공유하기"
 
 relative_time:
   just_now: "방금 전"
@@ -119,6 +121,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1시간 전"
     other: "${n}시간 전"
+  days_ago(cardinal):
+    one: "1일 전"
+    other: "${n}일 전"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -139,6 +144,7 @@ sign_multisig: "다중 서명하기"
 
 forgot_password: "비밀번호가 기억나지 않나요?"
 tx_not_found: "거래 내역이 없어요"
+tx_loading: "거래내역을 불러오는 중이에요"
 utxo_not_found: "UTXO가 없어요"
 utxo_loading: "UTXO를 확인하는 중이에요"
 faucet_request: "테스트 비트코인을 요청했어요. 잠시만 기다려 주세요."
@@ -243,13 +249,13 @@ wallet_home_screen:
       description: "키를 보관하지 않아요"
     hot_wallet:
       title: "핫월렛 추가하기"
-      description: "이 기기에 키를 보관해요"
+      description: "기기에 키를 보관해요"
   hot_wallet_add:
     create:
-      title: "새 지갑 생성하기"
+      title: "새 지갑 만들기"
       description: "자동으로 안전하게"
     restore:
-      title: "니모닉으로 복원하기"
+      title: "지갑 복원하기"
       description: "기존 지갑을 그대로"
     device_passcode_required:
       title: "기기 비밀번호 설정이 필요해요"
@@ -268,7 +274,7 @@ wallet_home_screen:
     passphrase_unused: "패스프레이즈 미사용"
     create_wallet: "지갑 생성하기"
     mnemonic_backup_guide: "생성된 니모닉은 다음 백업 화면에서 확인할 수 있어요"
-    mnemonic_length: "니모닉 문구 수"
+    mnemonic_length: "단어 수"
     word_count(count): "${count}단어"
     use_passphrase: "패스프레이즈 사용"
     passphrase_description: "니모닉에 추가 보안 단어를 적용해요"
@@ -278,12 +284,15 @@ wallet_home_screen:
     show_passphrase: "패스프레이즈 보기"
     hide_passphrase: "패스프레이즈 숨기기"
     enter_passphrase_when_signing: "서명할 때마다 패스프레이즈를 입력할게요"
+    store_passphrase: "패스프레이즈 저장"
+    store_passphrase_off_description: "서명할 때마다 패스프레이즈를 직접 입력합니다"
+    store_passphrase_on_description: "편리하지만 패스프레이즈의 보안 효과가 상쇄됩니다"
     passphrase_not_stored_title: "패스프레이즈를 꼭 기억해 주세요"
-    passphrase_not_stored_description: "이 옵션을 선택하면 패스프레이즈를 기기에 저장하지 않아요. 잊어버리면 지갑을 복구하거나 송금할 수 없어요."
+    passphrase_not_stored_description: "패스프레이즈는 기기에 저장되지 않아요. 잊어버리면 지갑을 복구하거나 송금할 수 없으니 꼭 기억해 주세요."
     passphrase_not_stored_confirm: "기억할게요"
     creation_failed: "지갑을 생성하지 못했어요. 다시 시도해 주세요."
     duplicate_name_title: "지갑 이름 중복"
-    duplicate_name_description: "이미 같은 이름의 지갑이 있어요."
+    duplicate_name_description: "이미 같은 이름의 지갑이 있어요"
   hot_wallet_restore:
     title: "니모닉으로 복원하기"
     seed_qr_title: "Seed QR로 복원하기"
@@ -318,13 +327,14 @@ wallet_home_screen:
     title: "새 지갑 생성하기"
     wallet_created_title: "새로운 핫월렛을\n만들었어요!"
     backup_title: "니모닉 백업하기"
-    backup_intro_title: "지갑을 복구할 수 있도록\n니모닉 문구를 백업해 주세요"
-    backup_preparation_title: "니모닉 문구를\n안전하게 백업해 주세요"
-    backup_preparation_description: "니모닉 문구는 지갑을 복구할 수 있는 유일한 방법이에요.\n안전한 곳에 정확하게 백업해 두세요."
-    backup_tips_1: "종이나 금속 백업 도구에 적어 보관하세요."
-    backup_tips_2: "사진, 메모 앱, 클라우드에 저장하지 마세요."
-    backup_tips_3: "다른 사람이 볼 수 없는 안전한 장소에 보관하세요."
-    backup_start: "백업하러 가기"
+    backup_preparation_title: "니모닉을\n안전하게 보관하세요"
+    backup_preparation_description: "지갑을 복구하려면 니모닉이 필요합니다. 잃어버리거나 다른 사람에게 노출되지 않도록 안전하게 보관하세요."
+    backup_tips_1: "종이나 금속에 정확하게 기록하세요."
+    backup_tips_2: "사진이나 디지털 파일로 저장하지 마세요."
+    backup_tips_3: "다른 사람이 접근할 수 없는 곳에 보관하세요."
+    backup_start: "백업 시작하기"
+    backup_later_title: "니모닉 백업은 나중에 할 수 있어요"
+    backup_later_description: "나중에 지갑 설정 > 니모닉 백업에서 다시 백업할 수 있어요."
     mnemonic_backup_guide: "안전한 장소에서 니모닉 문구를 백업해 주세요"
     mnemonic_warning_title: "니모닉 문구는 지갑의 열쇠입니다"
     mnemonic_warning_description: "이 단어를 알면 누구든 비트코인을 가져갈 수 있습니다. 주변에 다른 사람이나 카메라가 없는지 꼭 확인하세요."
@@ -333,16 +343,16 @@ wallet_home_screen:
     pin_action: "앱 잠금 설정하기"
     pin_description: "앱을 안전하게 보호하기 위해\n비밀번호를 설정해 주세요"
     passphrase_title: "패스프레이즈"
-    backup_check_button: "백업 확인하기"
-    backup_confirm_title: "니모닉 백업 확인"
+    backup_check_button: "확인하기"
+    backup_confirm_title: "니모닉 확인하기"
     backup_question(position): "${position}번째 단어를 입력하세요"
     backup_incorrect: "입력한 단어가 올바르지 않아요"
     passphrase_check_title: "패스프레이즈 확인하기"
     passphrase_confirm_question: "패스프레이즈를 입력해 주세요"
     passphrase_incorrect: "패스프레이즈가 일치하지 않아요"
     passphrase_correct: "패스프레이즈가 일치해요"
-    backup_complete_title: "백업 확인 완료!"
-    backup_complete_description: "선택된 단어 확인을 모두 통과했어요\n니모닉 문구를 백업한 것으로 확인했어요"
+    backup_complete_title: "니모닉 백업을 확인했어요"
+    backup_complete_description: "선택한 단어를 모두 정확하게 확인했어요. 앞으로 니모닉 백업 안내가 표시되지 않습니다."
     set: "설정됨"
     skip: "나중에 할게요"
   add_wallet: "지갑 추가"
@@ -355,6 +365,11 @@ wallet_home_screen:
     remove_from_home: "홈에서 제거"
     delete: "지갑 삭제"
   edit_home_screen: "홈 화면 편집하기"
+  backup_update_notice_action: "자세히 보기"
+  backup_update_notice:
+    title: "상속 지갑 백업 업데이트 알림"
+    description: "상속 지갑의 백업 문구가 일부 변경되었어요.\n코코넛 볼트도 최신 버전으로 업데이트해 주세요.\n볼트를 업데이트하면 변경 사항이 자동으로 반영돼요.\n이후 구성 정보를 다시 백업해 주세요."
+    action: "자세히 보기"
   edit:
     title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
     hide_balance: "잔액 숨기기"
@@ -489,16 +504,13 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR 코드"
     select: "선택"
   guide_passport:
-    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
-    step0: "연동할 계정을 열어 주세요."
-    step1: "1. "
-    step1_em: "Account Details"
-    step2: "2. "
-    step2_em: "… 아이콘 누른 후 Connect Wallet"
+    note: "이 가이드는 Passport Prime(KeyOS 1.4.0) 기준으로 작성되었습니다."
+    step1: "1. 홈 화면의 비트코인 지갑 아이콘을 눌러 주세요."
+    step2: "2. 연동할 계정을 열어 주세요."
     step3: "3. "
-    step3_em: "Sparrow"
+    step3_em: "Connect Wallet"
     step4: "4. "
-    step4_em: "Connect as Single Sig"
+    step4_em: "Coconut Wallet"
     select: "선택"
   paste:
     paste_button: "붙여넣기로 가져오기"
@@ -545,10 +557,16 @@ wallet_connect_screen:
       ble_step1: "블루투스를 켜고 BitBox02 Nova를 가까이 두세요."
       ble_step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       ble_step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
-    connecting: 
+    connecting:
       title: "기기 연결 중"
       step1: "기기의 잠금을 해제해 주세요."
       step2: "기기 화면에 Pairing code가 표시되면 확인(✓)을 눌러주세요."
+    pairing:
+      title: "페어링 코드 확인"
+      description: "BitBox02 화면에 표시된 코드와\n아래 코드가 같은지 확인해 주세요."
+      cancel: "취소"
+      wait_for_device: "기기에서 확인(✓)을 눌러주세요."
+      rejected: "페어링이 거부되어 연결할 수 없어요."
     paired:
       title: "BitBox02 연결이 완료되었습니다."
       device_name: "기기 이름"
@@ -655,8 +673,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   header:
-    total_amount: "총 보유 수량"
-    balance_history: "보유 수량 변화"
+    total_amount: "총 잔액"
+    balance_history: "잔액 변화"
+    bitcoin_price: "BTC 시세"
     converted_amount: "환산 금액"
     than_yesterday: "어제보다"
     than_a_week_ago: "일주일 전보다"
@@ -676,6 +695,8 @@ wallet_list:
   wallet_count: "$count개"
   empty_watch_only: "보기 전용 지갑이 없어요"
   empty_hot_wallet: "핫월렛이 없어요"
+  favorite_watch_only_limit: "보기 전용 지갑은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
+  favorite_hot_wallet_limit: "핫월렛은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
@@ -737,6 +758,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도 기기에서 관리하고, 잔액은 앱에서 확인할 수 있어요."
   utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
   n_utxos(param=count):
@@ -754,6 +776,10 @@ send_screen:
   use_btc_unit: "BTC 단위 사용"
   input_maximum_amount: "모두 보내기"
   address_placeholder: "받을 주소를 입력해 주세요"
+  vault_address_placeholder: "받을 주소를 선택해 주세요"
+  vault_addresses: "$name의 주소"
+  vault_nth_address: "${n}번째 받기 주소"
+  vault_recipient_summary: "수신 주소 ${count}개 • 총 $amount"
   recommended_fee_unavailable: "추천 수수료 조회 실패"
   recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
@@ -798,6 +824,7 @@ broadcasting_screen:
     already_saved_draft: "이미 추가한 트랜잭션이에요."
   dialog:
     send_unavailable: "전송 불가"
+    tag_apply_failed: "전송은 완료되었지만 태그를 적용하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"
@@ -805,7 +832,7 @@ send_address_screen:
   address_placeholder: "받을 주소를 입력해 주세요"
   amount_placeholder: "수량을 입력해 주세요"
 send_confirm_screen:
-  title: "거래 정보 확인"
+  title: "트랜잭션 확인"
   total_required_amount: "총 $n가 소요됩니다"
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
@@ -833,22 +860,14 @@ bitbox02_sign_screen:
     title: "기기 상태"
   idle:
     waiting: "서명 대기 중"
-    not_connected: "연결 안 됨"
-    tap_sign_to_connect: "서명 버튼을 눌러 연결하세요"
-    locked: "잠금 상태"
-    device_found_pin: "기기 발견 — PIN 입력 필요"
-    device_found: "기기 발견: $fingerprint"
-    ready: "준비 완료"
   status:
     connecting_device: "USB로 BitBox02를 연결 중..."
     connecting_device_ble: "블루투스로 BitBox02를 찾는 중..."
-    check_pairing: "기기 화면에서 Pairing code를 확인해 주세요"
     preparing_data: "서명 데이터를 준비하고 있어요"
     confirm_on_device: "기기 화면에서 금액, 주소, 수수료를 확인해 주세요"
   done:
     title: "서명 완료"
     description: "BitBox02가 트랜잭션에 서명했습니다."
-    ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
   wrong_wallet_title: "잘못된 지갑이 연결됨"
   device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
@@ -966,7 +985,6 @@ app_info_screen:
   terms_of_service: "이용 약관"
   privacy_policy: "개인정보 처리방침"
   license: "오픈소스 라이선스"
-  data_collection: "데이터 수집 안내"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "문의 내용"
 bip39_list_screen:
@@ -978,6 +996,9 @@ pin_setting_screen:
   set_to_6_digit: "6자리 비밀번호로 설정하기"
   set_to_4_digit: "4자리 비밀번호로 설정하기"
 settings_screen:
+  disable_app_lock_title: "앱 잠금을 해제할까요?"
+  disable_app_lock_description: "잔액이 있는 핫월렛을 보유하고 있어요. 앱 잠금을 해제하면 핫월렛 송금과 니모닉 조회 시 앱 비밀번호나 생체인증을 요청하지 않아요."
+  disable_app_lock_confirm: "잠금 해제"
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
@@ -985,6 +1006,11 @@ settings_screen:
   language: "언어"
   utxo_manual_selection: "UTXO 수동 선택"
   utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
+  import_labels: "메모 가져오기"
+  import_all_labels_description: "다른 기기에서 기록한 메모들을\n코코넛 월렛에 적용합니다.\n\n가져오기를 진행하시겠습니까?"
+  export_labels: "메모 내보내기"
+  export_all_labels_description: "코코넛 월렛에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
+  export_labels_failed: "메모 내보내기 실패"
   utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"
@@ -1005,13 +1031,18 @@ settings_screen:
     error_msg:
       invalid_domain_format: "도메인 형식이 아니에요"
       port_out_of_range: "유효한 포트를 입력해주세요 (1~65535)"
-    alert: 
+    alert:
       connection_failed: "연결할 수 없습니다!"
+      network_mismatch: "네트워크가 달라 연결할 수 없어요"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"
+      untrusted_certificate: "신뢰할 수 없는 인증서예요"
     popup:
       delete_server_info: "서버 정보 삭제"
       delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
+      untrusted_certificate_title: "인증서를 신뢰할 수 없어요"
+      untrusted_certificate_description: "이 서버는 신뢰할 수 있는 인증기관(CA)의 인증서를 사용하지 않아요. 본인이 직접 운영하는 서버가 맞고 아래 지문이 정확하다면 신뢰하고 계속할 수 있어요. 그렇지 않다면 연결하지 마세요.\n\n인증서 지문 (SHA-256)\n$fingerprint"
+      trust_and_continue: "신뢰하고 계속"
   block_explorer:
     default_explorer: "기본 익스플로러"
     custom_explorer: "직접 입력"
@@ -1022,22 +1053,6 @@ settings_screen:
       connecting: "주소를 확인 중입니다..."
       connected: "주소가 확인되었습니다."
       failed: "주소를 확인할 수 없습니다!"
-  log_viewer_screen:
-    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드로 문의해 주세요."
-    log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
-    log_target: "[로깅 대상]"
-    log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
-    log_target_description_2: "브로드캐스트 실패 구간 원인을 로깅합니다."
-    clear_log: "로그 지우기"
-    clear_log_description: "로그를 지우시겠어요?"
-    email_subject: "[코코넛 월렛] Debug Log"
-    email_body: "상황: (여기에 어떤 상황에서 발생한 문제인지 간략히 적어주세요)"
-    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널에 올려주세요."
-    buttons:
-      discord: "디스코드 가기"
-      copy: "로그 복사"
-      toast:
-        copy_success: "로그가 복사되었어요."
 
 address_list_screen:
   wallet_name: "$name의 주소"
@@ -1045,10 +1060,15 @@ address_list_screen:
   receiving: "입금"
   change: "잔돈"
   show_only_unused_address: "사용 전 주소만 보기"
+  show_only_watched_address: "모니터링 중인 주소만 보기"
+  show_only_watched_address_count: "모니터링 중인 주소만 보기 ($count개)"
   set_amount: "금액 입력하기"
   share: "공유하기"
   enter_receive_amount: "받을 금액을 입력해 주세요"
+  discovered_new_balance_address: "잔액이 있는 주소 $count개를 발견했어요"
 utxo_overview_screen:
+  overview: "개요"
+  list: "목록"
   by_amount: "금액별"
   by_tag: "태그별"
   interval_info_title: "구간 안내"
@@ -1056,6 +1076,9 @@ utxo_overview_screen:
   view_mode_grid: "그리드"
   no_tag_applied: "적용된 태그가 없어요"
   no_tag_applied_desc: "UTXO에 태그를 적용하면 태그별 구성을 확인할 수 있어요"
+  no_available_utxos: "사용 가능한 UTXO가 없어요"
+  no_locked_utxos: "사용 잠금 처리한 UTXO가 없어요"
+  no_change_utxos: "잔돈 UTXO가 없어요"
   total: "총액"
   untagged: "미분류"
   tagged: "태그 적용"
@@ -1117,24 +1140,81 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
+wallet_detail_screen:
+  vault_select_receiving_wallet_description: "비트코인을 받을 보기 전용 지갑을 선택해 주세요."
+  vault_select_receiving_wallet: "받을 금고 선택"
+  vault_connect_watch_only_wallet: "금고 확인용 지갑 연결하기"
+  vault_watch_only_description: "앱에 ‘금고 확인용(보기 전용) 지갑’을 등록해 보세요. 전용 기기를 매번 켜지 않아도, 비트코인이 잘 있는지 앱에서 실시간으로 안전하게 볼 수 있습니다."
+  vault_watch_only_title: "기기는 오프라인에 두고, 자산은 앱에서 편하게 확인하세요!"
+  vault_no_balance_title: "지금은 보낼 수 있는 비트코인이 없어요"
+  vault_no_balance_description: "비트코인을 받은 뒤 다시 이용해 주세요"
+  vault_description: "지금 쓰고 계신 지갑은 입출금이 편리한 대신, 큰돈을 오래 넣어두기엔 불안할 수 있어요.\n‘금고’는 인터넷이 연결되지 않는 별도의 전용 기기에 비트코인을 보관하는 것을 말해요. 은행에서도 큰 자산은 따로 금고에 보관하는 것과 비슷해요. 이 방법은 외부 해킹 위협으로부터 자산을 격리해 주기 때문에 가장 안전합니다."
+  vault_intro: "내 비트코인을 안전하게 지키는 방법, ‘금고’"
+  move_to_vault: "금고에 넣기"
+  recent_transactions: "최근 트랜잭션"
+  view_all: "모두 보기"
+  never_used_wallet: "사용한 적 없는 지갑이에요"
+  utxo_count(count): "UTXO · ${count}개"
+  utxo_overview: "한눈에 보기"
+  utxo_overview_description: "개요 • 목록"
+  utxo_organize: "정리하기"
+  utxo_organize_description: "나누기 • 합치기"
+
 wallet_info_screen:
   title: "$name 정보"
   transaction: "트랜잭션"
   utxo: "UTXO"
+  target: "목표"
+  watched_addresses: "모니터링 중인 주소"
+  watched_addresses_count: "${count}개 모니터링 중"
   target_quantity: "목표 수량"
+  target_enabled: "목표 수량 사용"
+  target_enabled_description: "목표 수량을 설정하면 달성 현황을 확인할 수 있어요"
+  target_disabled: "사용 안 함"
+  target_progress_title: "목표를 향해 쌓고 있어요"
+  target_exceeded_title: "축하해요! 목표를 달성했어요"
+  target_exceeded_secondary(amount): "목표보다 $amount 더 모았어요"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
+  target_not_set_secondary: "목표 수량을 설정해 보세요"
   target_set_title: "목표 설정"
   target_set_placeholder: "BTC 단위로 입력해 주세요"
   target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"
+  target_set_zero_error: "0보다 큰 수량을 입력해 주세요"
   target_set_21m: "지분 전쟁이다!!!"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  import_labels: "메모 가져오기"
+  import_labels_description: "다른 기기에서 기록한 메모들을\n이 지갑에도 적용할 수 있습니다.\n\n가져오기를 진행하시겠습니까?"
+  import_labels_success: "메모 가져오기 성공"
+  import_labels_fail: "메모 가져오기 실패"
+  export_labels: "메모 내보내기"
+  export_labels_fail: "메모 내보내기 실패"
+  export_labels_description: "지갑에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
   view_descriptor: "디스크립터 보기"
   view_wallet_backup_data: "지갑 백업 데이터 보기"
+  backup_update_dialog:
+    title: "상속 지갑 백업 업데이트 알림"
+    step1_title: "1. 기존 상속 지갑의 백업 데이터를 다른 곳에 저장하신 경우 새로운 백업 데이터로 업데이트해주세요."
+    step1_description: "'지갑 백업 데이터 보기' 메뉴 선택 > 업데이트 된 백업 데이터 확인 및 복사 > 안전한 곳에 저장"
+    step2_title: "2. 볼트를 $version 이상으로 업데이트 해주세요."
+    step2_description: "볼트를 업데이트 하지 않으면 지갑 추가는 가능하지만 서명이 안돼요. 볼트를 최신 버전으로 설치하면 변경 사항이 자동으로 반영돼요."
+    why_title: "Q. 왜 변경되었나요?"
+    why_description: "백업 데이터는 약속된 규칙(Miniscript)에 따라 만들어진 정보입니다. 상속자가 비트코인을 사용할 수 있는 시점을 'after'로 표시해야 하는데 'older'로 잘못 표시하고 있었습니다.\n\n이는 백업 데이터 표현의 문제로, 현재 지갑의 주소, 자산 및 설정한 상속 조건에는 영향을 주지 않습니다. 지갑은 처음 설정한 그대로 사용하실 수 있으며, 새로 만드실 필요가 없습니다."
+    confirm: "이해했습니다"
   wallet_backup_data: "지갑 백업 데이터"
   confirm_backup_data: "백업 데이터 확인"
   no_info: "정보 없음"
+  memo_management: "메모 관리"
+  tag_count(count): "${count}개"
+  backup_required: "백업 필요"
+  backup_completed: "완료"
+  backup_date(year, month, day): "$year년 $month월 $day일"
+  delete_wallet: "지갑 삭제하기"
+  mnemonic_backup: "니모닉 백업"
+  all_addresses: "전체 주소"
+  extended_public_key: "확장 공개키"
+  tag_management: "태그 관리"
+  resync_label: "지갑 재동기화"
   tooltip:
     mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
     wallet_backup_data: "이 지갑의 BSMS(BIP-129) 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 다중 서명 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
@@ -1150,6 +1230,8 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
+    no_memos: "지갑에 기록한 메모가 없어요"
+    invalid_file_type: "잘 못된 파일 형식입니다. jsonl 파일을 선택해주세요."
   connected_hardware_wallet:
     title: "기기 정보"
     connection_status: "연결 상태"
@@ -1158,8 +1240,38 @@ wallet_info_screen:
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
     disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
+wallet_resync_screen:
+  title: "지갑 재동기화"
+  exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"
+  confirm:
+    title: "앱에 저장된 지갑 데이터를 지우고\n처음부터 다시 불러와요"
+    description: "트랜잭션 메모, UTXO 태그, 잠금 상태는 그대로 보존돼요"
+    connection_alert:
+      connecting: "서버 연결을 확인하고 있어요"
+      connected: "서버에 정상적으로 연결됐어요"
+      failed: "서버에 연결할 수 없어요"
+      network_mismatch: "네트워크가 달라 연결할 수 없어요"
+    warning:
+      title: "문제 해결용 기능이에요"
+      description: "잔액이나 거래 내역이 잘못 보이거나 동기화가 되지 않을 때만 사용해 주세요"
+    syncing_notice:
+      title: "동기화가 진행 중이에요"
+      description: "재동기화를 시작하면 지금 하고 있는 동기화가 끝난 뒤 자동으로 진행돼요"
+    last_resync_hint: "마지막 재동기화: $time"
+    cta: "재동기화 시작"
+  progress:
+    phase_wiping: "기존 지갑 데이터를 삭제할게요"
+    phase_scanning: "지갑 데이터를 다시 불러오고 있어요"
+    scanning_hint: "데이터가 많으면 완료까지 시간이 더 걸릴 수 있어요\n완료될 때까지 잠시만 기다려 주세요"
+    phase_restoring_metadata: "기존 트랜잭션 메모, UTXO 태그, 잠금 정보를 복원하고 있어요"
+    success_title: "지갑 데이터를 다시 불러왔어요"
+    success_cta: "지갑으로 이동"
+    error_title: "지갑 데이터를 다시 불러올 수 없어요"
+    error_cta: "다시 시도"
 wallet_signer_section:
   title: "서명 방식"
+  view_details: "자세히 보기"
+  collapse: "접기"
   segmented_control:
     parent_key: "부모 키로"
     child_key: "자식 키로"
@@ -1309,9 +1421,78 @@ split_utxo_screen:
     preview: "예상 보기"
     description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
 
+label_management_screen:
+  title: "메모 관리하기"
+  subtitle: "기록한 메모들을 가져오거나 내보냅니다"
+  description: "BIP-329는 지갑 간에 메모를 주고받을 수 있도록 만든 공개 표준이에요. 메모를 내보내 두면 기기를 바꾸거나 앱을 다시 설치한 뒤에도 다시 가져와 그대로 복원할 수 있어요."
+  import_title: "가져오기"
+  import_description: "저장해 둔 메모 파일을 불러옵니다"
+  export_title: "내보내기"
+  export_description: "메모를 백업하거나 다른 지갑으로 공유합니다"
+  tooltip:
+    title: "코코넛의 메모"
+    description: "거래와 UTXO를 더 쉽게 구분할 수 있도록 나만의 정보를 기록할 수 있어요."
+    supported_title: "지원하는 메모"
+    supported_list: "• 거래 메모\n• UTXO 태그(이름/색상)\n• UTXO 사용 잠금"
+    import: "BIP-329 메모 파일(.jsonl)을 가져와 코코넛 월렛에 적용합니다."
+  file:
+    select: "다른 파일 선택"
+    select_button: "선택하기"
+    apply: "적용하기"
+    apply_description: "$fileName\n파일을 적용할까요?"
+    delete: "파일 삭제"
+    delete_description: "$fileName\n파일을 삭제하시겠어요?"
+    delete_multiple_description: "선택한 $count개의 파일을 삭제하시겠어요?"
+    delete_success: "파일 삭제 성공"
+    delete_failed: "파일 삭제 실패"
+    invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
+label_import_screen:
+  loading_title: "메모를 적용하고 있어요"
+  success_title: "메모를 가져왔어요"
+  no_applied_memo: "메모 파일을 적용할 수 있는 지갑이 없어요"
+  delete_file: "완료 버튼을 누르면 파일을 삭제합니다"
+  error_title: "메모를 가져올 수 없어요"
+  result:
+    step1: "지갑 이름"
+    step2: "거래 메모"
+    step3: "UTXO 태그"
+    step4: "잠금 UTXO"
+  option_selection:
+    title: "메모를 적용할까요?"
+    description_1: '파일에 저장된 메모를 코코넛 월렛에 적용해요.'
+    description_2: '기존 메모가 있으면 가져온 메모를 추가해요.'
+    add_memo_to_existing: 
+      title: '기존 메모 덮어쓰기'
+      subtitle: '기존 메모는 지워지고 가져온 메모가 적용돼요'
+    import_memos_from_other_wallets:
+      title: '다른 지갑의 메모도 가져오기'
+      subtitle: '선택한 지갑에 해당하지 않는 메모도 함께 가져와요'
+  widget:
+    count_unit(cardinal):
+      zero: " 개"
+      one: " 개"
+      other: " 개"
+label_export_screen:
+  info_tooltip: 메모를 BIP-329 파일(.jsonl)로 저장하거나 다른 지갑과 공유할 수 있어요.
+  all_wallets: "모든 지갑"
+  create_file: "파일 만들기"
+  view_list: "목록 보기"
+  no_wallet: "지갑을 찾을 수 없어요."
+  no_file: "파일을 찾을 수 없어요.\n먼저 [파일 만들기]에서 파일을 생성해 주세요."
+  loading_title: "파일을 만들고 있어요"
+  success_title: "파일을 공유할까요?"
+  error_title: "파일을 만들 수 없어요"
+  no_labels_to_export: "메모가 없어요"
+  no_labels_to_share: "공유할 메모가 없어요."
+  result:
+    step1: "파일 이름"
+    step2: "생성 일시"
+    step3: "적용 지갑"
+    step4: "거래 메모"
+    step5: "UTXO 태그"
+    step6: "잠금 UTXO"
+
 # lib/widgets/card
-wallet_list_add_guide_card:
-  add_watch_only: "보기 전용 지갑을 추가해 보세요!"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "모르는 용어가 있으신가요?"
   top_right: "오른쪽 위 "
@@ -1374,6 +1555,7 @@ errors:
   storage_write_error: "저장소에 데이터를 저장하는데 실패했습니다."
   network_error: "네트워크에 연결할 수 없어요. 연결 상태를 확인해 주세요."
   node_connection_error: "비트코인 노드와 연결하는데 실패했습니다."
+  untrusted_certificate_error: "서버 인증서를 신뢰할 수 없습니다."
   fetch_wallet_error: "지갑을 가져오는데 실패했습니다."
   wallet_sync_failed_error: "네트워크에서 지갑 정보 불러오기 실패"
   fetch_balance_error: "잔액 조회를 실패했습니다."
@@ -1386,10 +1568,12 @@ errors:
   realm_exception: "Realm 작업 중 오류가 발생했습니다."
   node_unknown: "노드 연결 중 알 수 없는 오류가 발생했습니다."
   broadcast_error: "트랜잭션 전송에 실패했습니다."
+  chain_mismatch_error: "네트워크가 달라 연결할 수 없어요"
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
   network_disconnected: "네트워크 끊김"
   electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요"
+  electrum_connection_restored: "일렉트럼 서버에 연결되었어요"
   vpn_connected: "VPN 연결 상태를 확인해 주세요"
   insufficient_balance: "잔액이 부족해요"
   fee_selection_error:
@@ -1511,6 +1695,10 @@ alert:
   wallet_delete:
     confirm_delete: "지갑 삭제"
     confirm_delete_description: "지갑을 정말 삭제하시겠어요?"
+    confirm_backup: "니모닉을 백업하셨나요?"
+    confirm_backup_description: "백업하지 않고 지갑을 삭제하면 자산을 복구할 수 없어요."
+    backup_now: "백업하기"
+    backup_and_delete: "네, 삭제할게요"
   update:
     title: "업데이트 알림"
     description: "안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요."
@@ -1521,7 +1709,9 @@ alert:
   tag_apply:
     title: "태그 적용"
     description: "기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?"
+    selection_count: "$count개 선택 (최대 5개)"
     btn_apply: "적용하기"
+    btn_without_tags: "건너뛰기"
   tx_detail:
     fetch_failed: "트랜잭션 가져오기 실패"
     fetch_failed_description: "잠시 후 다시 시도해 주세요"
@@ -1697,11 +1887,11 @@ ccos:
     delivery_detail:
       panel_label: "DELIVERY"
       propose_title: "제안"
-      propose_body: "누구나 제작 의도를 담아 기능을 제안할 수 있어요\n무료로 나눌 수도, 지속한 가능한 방식으로 전달할 수도 있어요\n전달 방식은 제작자가 결정해요"
+      propose_body: "누구나 제작 의도를 담아 기능을 제안할 수 있어요.\n무료로 나눌 수도, 지속 가능한 방식으로 전달할 수도 있어요.\n전달 방식은 제작자가 결정해요."
       review_title: "검토"
-      review_body: "코코넛 팀과 정책과 품질을 함께 논의해요\n피드백을 주고 받으며 안전한 경계 안에서 기존 UI/UX와 어울어져 개발자의 PoW가 실현되어가요"
+      review_body: "코코넛 팀과 정책과 품질을 함께 논의해요.\n피드백을 주고 받으며 안전한 경계 안에서 기존 UI/UX와 어우러져 개발자의 PoW가 실현되어가요."
       intro_title: "소개"
-      intro_body: "최종 승인된 PoW가 앱에 포함되어\n사용자와 만나요"
+      intro_body: "최종 승인된 PoW가 앱에 포함되어\n사용자와 만나요."
   discover_scene:
     line1: "사용자는\n새로운 기능을 발견하고"
     line2: "사용하는 순간에도\n만든 사람을 다시 만나요"
@@ -1720,3 +1910,6 @@ ccos:
   feature_status:
     activated: "활성화됨"
     purchased: "구매 완료"
+utxo_organizer_screen:
+  merge: "합치기"
+  split: "나누기"

@@ -1,6 +1,10 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -43,8 +47,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -68,7 +72,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
   late Stream<WalletUpdateInfo> _walletSyncStateStream;
-  late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
+  StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
 
   @override
   void initState() {
@@ -92,6 +96,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _walletSyncStateStream = Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateSubscription?.cancel();
     _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -113,6 +118,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {
+    if (!mounted) return;
     final updatedUtxo = _walletProvider.getUtxoState(widget.id, widget.utxo.utxoId);
     if (updatedUtxo != null) {
       setState(() {
@@ -350,7 +356,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         UnderlineButtonItemCard(
           label: t.utxo_detail_screen.address,
           underlineButtonLabel: t.view_mempool,
-          onTapUnderlineButton: () => launchUrl(Uri.parse("${_viewModel.mempoolHost}/address/${widget.utxo.to}")),
+          onTapUnderlineButton: () {
+            launchURL(
+              context,
+              _viewModel.explorerUrlFor(BlockExplorerPathType.address, widget.utxo.to),
+              openInApp: true,
+              destination: ExternalLinkDestination.explorerAddress,
+            );
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -384,8 +397,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       onTapUnderlineButton: () async {
         await Navigator.pushNamed(
           context,
-          '/transaction-detail',
-          arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash},
+          AppRouteNames.transactionDetail,
+          arguments: TransactionDetailRouteArgs(id: widget.id, txHash: widget.utxo.transactionHash),
         );
         if (!context.mounted) return;
         context.read<UtxoDetailViewModel>().refreshTransaction();
@@ -409,9 +422,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
       showDivider: false,
       onTapUnderlineButton: () {
-        widget.utxo.status == UtxoStatus.unspent
-            ? launchUrl(Uri.parse("${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}"))
-            : ();
+        if (widget.utxo.status == UtxoStatus.unspent) {
+          launchURL(
+            context,
+            _viewModel.explorerUrlFor(BlockExplorerPathType.block, widget.utxo.blockHeight.toString()),
+            openInApp: true,
+            destination: ExternalLinkDestination.explorerBlock,
+          );
+        }
       },
       child: Text(
         widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
@@ -450,13 +468,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               spacing: 4,
               runSpacing: 4,
               children: List.generate(selectedTags.length, (index) {
+                final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
                 Color foregroundColor =
-                    tagColorPalette[selectedTags[index]
-                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                    tagColorPalette[colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                 return IntrinsicWidth(
                   child: CoconutChip(
                     minWidth: 40,
-                    color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                    color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                     borderColor: foregroundColor,
                     label: '#${selectedTags[index].name}',
                     labelSize: 12,
@@ -474,11 +492,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Future<void> showTagBottomSheet() async {
     final List<String> currentUtxoIds = [widget.utxo.utxoId];
 
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
+      screenName: AnalyticsScreenNames.utxoDetailTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
     );
 
     if (result == null) return;

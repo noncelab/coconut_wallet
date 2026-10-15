@@ -36,7 +36,8 @@ class WalletBackupDataScreen extends StatelessWidget {
             textDataMap: textDataMap,
             showPulldownMenu: true,
             qrInternalPadding: 24,
-
+            qrPadding: EdgeInsets.zero,
+            textStyle: CoconutTypography.body3_12_Number,
             tooltipDescription: Container(
               margin: const EdgeInsets.only(top: 4, bottom: 16),
               child: CoconutToolTip(

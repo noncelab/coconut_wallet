@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 class EncryptedValue {
   const EncryptedValue({required this.nonce, required this.cipherText, required this.mac});
@@ -84,8 +85,13 @@ class HotWalletSecret {
 }
 
 class HotWalletPlaintext {
-  const HotWalletPlaintext({required this.mnemonic, required this.passphrase});
+  HotWalletPlaintext({required this.mnemonic, required this.passphrase});
 
-  final String mnemonic;
-  final String passphrase;
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
+
+  void wipe() {
+    mnemonic.fillRange(0, mnemonic.length, 0);
+    passphrase.fillRange(0, passphrase.length, 0);
+  }
 }

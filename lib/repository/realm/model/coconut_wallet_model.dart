@@ -24,6 +24,7 @@ final realmAllSchemas = [
   RealmScriptStatus.schema,
   RealmBlockTimestamp.schema,
   RealmUtxo.schema,
+  RealmPendingUtxoLock.schema,
   RealmRbfHistory.schema,
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
@@ -90,6 +91,8 @@ class _RealmHotWalletMetadata {
   late bool backupVerified;
   late bool enterPassphraseWhenSigning;
   late DateTime createdAt;
+  late String lifecycleStateName;
+  late DateTime? backupVerifiedAt;
 }
 
 @RealmModel()
@@ -219,6 +222,17 @@ class _RealmUtxo {
   bool isDeleted = false;
 }
 
+/// 앱 업데이트 중 UTXO를 다시 동기화할 때 복원해야 할 잠금 설정.
+/// 실제 UTXO 데이터와 분리해 보관하고 동기화가 완료되면 삭제한다.
+@RealmModel()
+class _RealmPendingUtxoLock {
+  @PrimaryKey()
+  late String id;
+  @Indexed()
+  late int walletId;
+  late String utxoId;
+}
+
 @RealmModel()
 class _RealmRbfHistory {
   @PrimaryKey()
@@ -254,7 +268,7 @@ class _RealmWalletPreferences {
   late int id;
   // UI에서 표시되는 지갑 순서를 저장
   late List<int> walletOrder;
-  // 즐겨찾기된 지갑 ID 목록 (최대 5개까지 사용).
+  // 즐겨찾기된 지갑 ID 목록 (보기 전용/핫월렛 각각 최대 5개까지 사용).
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;

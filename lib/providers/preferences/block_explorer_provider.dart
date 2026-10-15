@@ -7,10 +7,10 @@ import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/url_normalize_util.dart';
 import 'package:flutter/widgets.dart';
 
+enum BlockExplorerPathType { tx, block, address }
+
 class BlockExplorerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-
-  static const String _mempoolUrlMain = 'https://mempool.space';
 
   BlockExplorerProvider();
 
@@ -23,13 +23,18 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String get customExplorerUrl => _sharedPrefs.getString(SharedPrefKeys.kCustomExplorerUrl);
 
+  bool get isCustomExplorerEnabled =>
+      NetworkType.currentNetworkType == NetworkType.mainnet && !useDefaultExplorer && customExplorerUrl.isNotEmpty;
+
+  String explorerUrlFor(BlockExplorerPathType pathType, String value) => '$blockExplorerUrl/${pathType.name}/$value';
+
   String get blockExplorerUrl {
     if (NetworkType.currentNetworkType == NetworkType.regtest) {
-      return BLOCK_EXPLORER_URL_REGTEST;
+      return DEFAULT_EXPLORER_URL_REGTEST;
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      return BLOCK_EXPLORER_URL_TESTNET;
+      return DEFAULT_EXPLORER_URL_TESTNET;
     }
 
     if (useDefaultExplorer) {
@@ -41,10 +46,16 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String _getDefaultMempoolUrl() {
     // 언어 설정은 SharedPrefs에서 직접 가져옴
+    // mempool.space는 en 전용 경로(/en) 없음. en은 bare 도메인을 사용하고, 나머지 언어만 경로 적용
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
+    final appLanguage = AppLanguage.fromCode(effectiveLanguage);
 
-    return '$_mempoolUrlMain/${AppLanguage.fromCode(effectiveLanguage).code}';
+    if (appLanguage == AppLanguage.en) {
+      return DEFAULT_EXPLORER_URL_MAINNET;
+    }
+
+    return '$DEFAULT_EXPLORER_URL_MAINNET/${appLanguage.code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {

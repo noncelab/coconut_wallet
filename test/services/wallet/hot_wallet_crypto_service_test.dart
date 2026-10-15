@@ -34,8 +34,8 @@ void main() {
     final plaintext = await service.decryptPayload(secret, result.dek);
 
     expect(result.dek, hasLength(32));
-    expect(plaintext.mnemonic, utf8.decode(mnemonic));
-    expect(plaintext.passphrase, 'secret');
+    expect(utf8.decode(plaintext.mnemonic), utf8.decode(mnemonic));
+    expect(utf8.decode(plaintext.passphrase), 'secret');
     expect(result.encryptedPayload.nonce, isNotEmpty);
     result.dek.fillRange(0, result.dek.length, 0);
   });
@@ -49,6 +49,23 @@ void main() {
     first.dek.fillRange(0, first.dek.length, 0);
     second.dek.fillRange(0, second.dek.length, 0);
   });
+
+  for (final field in ['nonce', 'cipherText', 'mac']) {
+    test('유효한 Base64의 $field 변조도 인증 실패로 거부한다', () async {
+      final encrypted = await service.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
+      final payload = encrypted.encryptedPayload.toJson();
+      final tampered = base64Decode(payload[field]! as String)..[0] ^= 1;
+      payload[field] = base64Encode(tampered);
+      try {
+        await expectLater(
+          service.decryptPayload(_secretWith(EncryptedValue.fromJson(payload)), encrypted.dek),
+          throwsA(isA<SecretBoxAuthenticationError>()),
+        );
+      } finally {
+        encrypted.dek.fillRange(0, encrypted.dek.length, 0);
+      }
+    });
+  }
 
   test('잘못된 DEK로 payload를 복호화할 수 없다', () async {
     final result = await service.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
@@ -83,7 +100,7 @@ void main() {
 
     expect(decoded.deviceWrappedDek.protection, DeviceKeyProtection.androidStrongBox);
     expect(decoded.deviceWrappedDek.alias, 'strongbox-key');
-    expect(plaintext.mnemonic, utf8.decode(mnemonic));
+    expect(utf8.decode(plaintext.mnemonic), utf8.decode(mnemonic));
     result.dek.fillRange(0, result.dek.length, 0);
   });
 
@@ -100,4 +117,58 @@ void main() {
     deviceKek.fillRange(0, deviceKek.length, 0);
     unwrapped.fillRange(0, unwrapped.length, 0);
   });
+
+  test('빈 패스프레이즈(서명 시 직접 입력하는 경우)도 왕복 복호화된다', () async {
+    final emptyPassphrase = Uint8List(0);
+    final result = await service.encryptPayload(mnemonic: mnemonic, passphrase: emptyPassphrase);
+    final secret = _secretWith(result.encryptedPayload);
+    final plaintext = await service.decryptPayload(secret, result.dek);
+
+    expect(plaintext.mnemonic, mnemonic);
+    expect(plaintext.passphrase, isEmpty);
+    result.dek.fillRange(0, result.dek.length, 0);
+  });
+
+  test('평문 payload가 최소 길이보다 짧으면 거부한다', () async {
+    final dek = service.randomBytes(HotWalletCryptoService.keyLength);
+    final corrupted = await service.encrypt(Uint8List(4), dek);
+    final secret = _secretWith(corrupted);
+
+    // decryptPayload가 dek를 실제로 다 사용한 뒤에 wipe하도록 await로 완료를 기다린다.
+    // (await 없이 dek.fillRange를 바로 호출하면 진행 중인 복호화가 잘못된 키로
+    //  실패해 의도한 FormatException 대신 인증 오류가 발생한다.)
+    await expectLater(() => service.decryptPayload(secret, dek), throwsA(isA<FormatException>()));
+    dek.fillRange(0, dek.length, 0);
+  });
+
+  test('mnemonic 길이 필드가 실제 payload보다 크면 거부한다', () async {
+    final dek = service.randomBytes(HotWalletCryptoService.keyLength);
+    final malformed = Uint8List(8)..buffer.asByteData().setUint32(0, 999, Endian.big);
+    final corrupted = await service.encrypt(malformed, dek);
+    final secret = _secretWith(corrupted);
+
+    await expectLater(() => service.decryptPayload(secret, dek), throwsA(isA<FormatException>()));
+    dek.fillRange(0, dek.length, 0);
+  });
+
+  test('passphrase 길이 필드가 남은 바이트 수와 다르면 거부한다', () async {
+    final dek = service.randomBytes(HotWalletCryptoService.keyLength);
+    final malformed = Uint8List(9); // mnemonicLength=0, passphraseLength=0 이지만 뒤에 1바이트가 더 있음
+    malformed.buffer.asByteData().setUint32(4, 0, Endian.big);
+    final corrupted = await service.encrypt(malformed, dek);
+    final secret = _secretWith(corrupted);
+
+    await expectLater(() => service.decryptPayload(secret, dek), throwsA(isA<FormatException>()));
+    dek.fillRange(0, dek.length, 0);
+  });
 }
+
+HotWalletSecret _secretWith(EncryptedValue encryptedPayload) => HotWalletSecret(
+  version: HotWalletSecret.currentVersion,
+  encryptedPayload: encryptedPayload,
+  deviceWrappedDek: const DeviceWrappedDek(
+    protection: DeviceKeyProtection.androidTee,
+    alias: 'device-key',
+    encryptedDek: EncryptedValue(nonce: '', cipherText: 'native-ciphertext', mac: ''),
+  ),
+);

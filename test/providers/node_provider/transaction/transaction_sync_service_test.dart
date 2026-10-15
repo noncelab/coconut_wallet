@@ -100,7 +100,10 @@ void main() {
       final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
 
       // 모의 historyList 설정
-      final historyList = [GetTxHistoryRes(height: 100, txHash: 'tx1'), GetTxHistoryRes(height: 0, txHash: 'tx2')];
+      final historyList = [
+        GetTxHistoryRes(height: 100, txHash: '0000000000000000000000000000000000000000000000000000000000000001'),
+        GetTxHistoryRes(height: 0, txHash: '0000000000000000000000000000000000000000000000000000000000000002'),
+      ];
 
       // mock 동작 설정
       when(electrumService.getHistory(AddressType.p2wpkh, scriptStatus.address)).thenAnswer((_) async => historyList);
@@ -114,9 +117,9 @@ void main() {
 
       // 검증
       expect(result.length, 2);
-      expect(result[0].transactionHash, 'tx1');
+      expect(result[0].transactionHash, '0000000000000000000000000000000000000000000000000000000000000001');
       expect(result[0].height, 100);
-      expect(result[1].transactionHash, 'tx2');
+      expect(result[1].transactionHash, '0000000000000000000000000000000000000000000000000000000000000002');
       expect(result[1].height, 0);
     });
   });
@@ -298,7 +301,7 @@ void main() {
       final originalTx = TransactionMock.createMockTransaction(
         toAddress: testWalletItem.walletBase.getAddress(0),
         amount: 1000000,
-        inputTransactionHash: Hash.sha256('original_tx_hash_input').toString(),
+        inputTransactionHash: '1111111111111111111111111111111111111111111111111111111111111111',
       );
 
       // 대체될 트랜잭션
@@ -361,5 +364,103 @@ void main() {
       expect(rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
       expect(rbfHistories.last.originalTransactionHash, prevTx.transactionHash);
     });
+
+    test('outgoing RBF cleanup removes the immediate predecessor and keeps replacement outputs', () async {
+      final recordingUtxoRepository = _RecordingUtxoRepository(realmManager);
+      final syncService = TransactionSyncService(
+        electrumService,
+        transactionRepository,
+        transactionRecordService,
+        stateManager,
+        recordingUtxoRepository,
+        scriptCallbackService,
+      );
+      final fundingTx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 1000000);
+      final replacements = [
+        for (final amount in [990000, 980000, 970000])
+          TransactionMock.createMockTransaction(
+            toAddress: testAddress,
+            amount: amount,
+            inputTransactionHash: fundingTx.transactionHash,
+          ),
+      ];
+      final originalTx = replacements.first;
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createConfirmedTransactionRecord(transactionHash: fundingTx.transactionHash),
+        TransactionMock.createUnconfirmedTransactionRecord(transactionHash: originalTx.transactionHash),
+      ]);
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          UtxoMock.createRbfableUtxo(
+            walletId: testWalletId,
+            address: testAddress,
+            transactionHash: fundingTx.transactionHash,
+            spentByTransactionHash: originalTx.transactionHash,
+          ),
+        );
+        realmManager.realm.add(
+          UtxoMock.createIncomingRealmUtxo(
+            walletId: testWalletId,
+            address: testAddress,
+            transactionHash: originalTx.transactionHash,
+            amount: originalTx.outputs.first.amount,
+          ),
+        );
+      });
+      for (final tx in replacements) {
+        when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+      }
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [fundingTx]);
+
+      for (var index = 1; index < replacements.length; index++) {
+        final replacement = replacements[index];
+        final predecessor = replacements[index - 1];
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createIncomingRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: replacement.transactionHash,
+              amount: replacement.outputs.first.amount,
+            ),
+          );
+        });
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: replacement.transactionHash)]);
+        recordingUtxoRepository.deletedTransactionHashSets.clear();
+
+        await syncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+        expect(
+          recordingUtxoRepository.getUtxoStateList(testWalletId).map((utxo) => utxo.transactionHash).toSet(),
+          {fundingTx.transactionHash, replacement.transactionHash},
+          reason: 'RBF must remove the predecessor output and retain the replacement output',
+        );
+        // Incoming RBF cleanup also removes the predecessor; check the outgoing branch independently.
+        expect(recordingUtxoRepository.deletedTransactionHashSets.first, {predecessor.transactionHash});
+        expect(
+          transactionRepository
+              .getRbfHistoryList(testWalletId, replacement.transactionHash)
+              .map((history) => history.originalTransactionHash)
+              .toSet(),
+          {originalTx.transactionHash},
+        );
+      }
+    });
   });
+}
+
+class _RecordingUtxoRepository extends UtxoRepository {
+  final deletedTransactionHashSets = <Set<String>>[];
+
+  _RecordingUtxoRepository(super.realmManager);
+
+  @override
+  Future<void> deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashSet) {
+    deletedTransactionHashSets.add(Set.of(replacedTxHashSet));
+    return super.deleteUtxosByReplacedTransactionHashSet(walletId, replacedTxHashSet);
+  }
 }

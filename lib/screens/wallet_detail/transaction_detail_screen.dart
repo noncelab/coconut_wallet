@@ -1,6 +1,9 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -29,7 +32,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -49,9 +52,10 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final int id;
@@ -65,12 +69,14 @@ class TransactionDetailScreen extends StatefulWidget {
 }
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> with TickerProviderStateMixin {
+  static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   Timer? _timer; // timeGap을 최신화 하기 위한 타이머
   late TransactionDetailViewModel _viewModel;
   late AnimationController _animationController;
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
+  bool _isPullToRefreshing = false;
   late BitcoinUnit _currentUnit;
 
   void _toggleUnit() {
@@ -117,13 +123,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
           return Scaffold(
             backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(title: t.view_tx_details, context: context),
+            appBar: CoconutAppBar.build(
+              title: t.view_tx_details,
+              context: context,
+              backgroundColor: context.coconutColors.background,
+              actionButtonList: [WalletRefreshIndicator(isRefreshing: _isPullToRefreshing)],
+            ),
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 CupertinoSliverRefreshControl(
-                  onRefresh: () async => viewModel.onRefresh(),
-                  refreshTriggerPullDistance: 100,
+                  onRefresh: () => _onRefresh(viewModel),
+                  refreshTriggerPullDistance: 80,
+                  refreshIndicatorExtent: 0,
+                  builder: (_, _, _, _, _) => const SizedBox.shrink(),
                 ),
                 SliverToBoxAdapter(
                   child: Container(
@@ -144,7 +157,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           _buildTransactionFlowCard(context, tx, viewModel),
                         ],
                         CoconutLayout.spacing_300h,
-
                         _buildTxInputOutputDetail(context, tx, viewModel),
                         CoconutLayout.spacing_800h,
                         _buildTxId(tx, viewModel),
@@ -163,6 +175,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         },
       ),
     );
+  }
+
+  Future<void> _onRefresh(TransactionDetailViewModel viewModel) async {
+    if (_isPullToRefreshing) return;
+
+    setState(() => _isPullToRefreshing = true);
+    final stopwatch = Stopwatch()..start();
+    try {
+      await viewModel.onRefresh();
+    } finally {
+      final remaining = _minimumRefreshIndicatorDuration - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+      if (mounted) setState(() => _isPullToRefreshing = false);
+    }
   }
 
   @override
@@ -459,13 +487,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                         await Navigator.pushNamed(
                           context,
-                          '/wallet-info',
-                          arguments: {
-                            'id': widget.id,
-                            'walletType': _viewModel.walletType,
-                            'entryPoint': kEntryPointWalletHome,
-                            'showMfpInput': true,
-                          },
+                          AppRouteNames.walletInfo,
+                          arguments: WalletInfoRouteArgs(
+                            id: widget.id,
+                            walletType: _viewModel.walletType,
+                            entryPoint: kEntryPointWalletHome,
+                            showMfpInput: true,
+                          ),
                         );
                         _viewModel.setNeedsMfp();
                         return;
@@ -473,13 +501,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                       Navigator.pushNamed(
                         context,
-                        '/transaction-fee-bumping',
-                        arguments: {
-                          'transaction': tx,
-                          'feeBumpingType': _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                          'walletId': widget.id,
-                          'walletName': _viewModel.getWalletName(),
-                        },
+                        AppRouteNames.transactionFeeBumping,
+                        arguments: TransactionFeeBumpingRouteArgs(
+                          transaction: tx,
+                          feeBumpingType: _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                          id: widget.id,
+                          walletName: _viewModel.getWalletName(),
+                        ),
                       );
                     },
                     child: Padding(
@@ -677,11 +705,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                 spacing: 4,
                 runSpacing: 4,
                 children: List.generate(selectedTags.length, (index) {
-                  final foregroundColor = tagColorPalette[selectedTags[index].colorIndex];
+                  final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
+                  final foregroundColor = tagColorPalette[colorIndex];
                   return IntrinsicWidth(
                     child: CoconutChip(
                       minWidth: 40,
-                      color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                      color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                       borderColor: foregroundColor,
                       label: '#${selectedTags[index].name}',
                       labelSize: 12,
@@ -706,6 +735,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             SingleTextFieldBottomSheet.show(
               context: context,
               title: t.tx_memo,
+              screenName: AnalyticsScreenNames.transactionDetailEditMemoSheet,
               originalText: txMemo ?? '',
               completeButtonText: t.done,
               collapsedHeight: 300,
@@ -736,7 +766,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.tx_id,
       underlineButtonLabel: t.view_mempool,
       onTapUnderlineButton: () {
-        launchUrl(Uri.parse('${viewModel.mempoolHost}/tx/${tx.transactionHash}'));
+        launchURL(
+          context,
+          viewModel.explorerUrlFor(BlockExplorerPathType.tx, tx.transactionHash),
+          openInApp: true,
+          destination: ExternalLinkDestination.explorerTx,
+        );
       },
       child: CopyTextContainer(
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
@@ -763,7 +798,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.block_num,
       underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
       onTapUnderlineButton: () {
-        tx.blockHeight != 0 ? launchUrl(Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}')) : ();
+        if (tx.blockHeight != 0) {
+          launchURL(
+            context,
+            _viewModel.explorerUrlFor(BlockExplorerPathType.block, tx.blockHeight.toString()),
+            openInApp: true,
+            destination: ExternalLinkDestination.explorerBlock,
+          );
+        }
       },
 
       child: Text(
@@ -899,7 +941,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       status: status,
     );
 
-    Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': walletId});
+    Navigator.pushNamed(context, AppRouteNames.utxoDetail, arguments: UtxoDetailRouteArgs(utxo: utxo, id: walletId));
   }
 
   String _getPrefix(TransactionRecord tx) {

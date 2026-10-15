@@ -17,6 +17,6 @@ void main() {
   tearDown(() {
     // 테스트 후 정리
     realmManager.reset();
-    realmManager.realm.close();
+    realmManager.dispose();
   });
 }

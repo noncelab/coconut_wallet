@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -27,6 +28,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
+  late final NodeProvider _nodeProvider;
   late final WalletItemBase _walletListBaseItem;
 
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
@@ -35,6 +37,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   // State Variables
   WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
+  WalletUpdateInfo? _prevWalletUpdateInfo;
 
   List<UtxoState> _utxoList = [];
   List<UtxoState> _confirmedUtxoList = [];
@@ -62,6 +65,7 @@ class UtxoListViewModel extends ChangeNotifier {
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
   int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
+  String get fiatPriceString => _priceProvider.getFiatPrice(balance);
   bool? get isNetworkOn => _connectProvider.isInternetOn;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
@@ -96,6 +100,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._preferenceProvider,
+    this._nodeProvider,
     this._syncWalletStateStream,
   ) {
     _initializeProperties();
@@ -133,11 +138,23 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
+
+    // balance/transaction 중 하나라도 completed로 바뀌면 재조회
+    final prev = _prevWalletUpdateInfo;
+    final utxoCompleted = _prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed;
+    final balanceCompleted =
+        prev != null && prev.balance != WalletSyncState.completed && updateInfo.balance == WalletSyncState.completed;
+    final txCompleted =
+        prev != null &&
+        prev.transaction != WalletSyncState.completed &&
+        updateInfo.transaction == WalletSyncState.completed;
+
+    if (utxoCompleted || balanceCompleted || txCompleted) {
       _getUtxoAndTagList();
     }
 
     _prevUpdateStatus = updateInfo.utxo;
+    _prevWalletUpdateInfo = updateInfo;
     notifyListeners();
   }
 
@@ -148,7 +165,7 @@ class UtxoListViewModel extends ChangeNotifier {
   void setActiveUtxoTagName(String value) {
     _activeUtxoTagName = value;
     for (var utxo in _confirmedUtxoList) {
-      _utxoTagMap[utxo.utxoId] = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
+      _utxoTagMap[utxo.utxoId] = _getCachedTagsForUtxo(utxo.utxoId);
     }
     _updateFilteredUtxoList();
     notifyListeners();
@@ -225,9 +242,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
     for (var utxo in _utxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
-
-      utxo.tags = tags;
+      utxo.tags = _getCachedTagsForUtxo(utxo.utxoId);
     }
     UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
     _isUtxoListLoadComplete = true;
@@ -236,13 +251,14 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void refetchFromDB() {
     _getUtxoAndTagList();
+    unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
+    _nodeProvider.reconnectIfNeeded();
     notifyListeners();
   }
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, element.utxoId);
-      _utxoTagMap[element.utxoId] = tags;
+      _utxoTagMap[element.utxoId] = _getCachedTagsForUtxo(element.utxoId);
     }
   }
 
@@ -283,12 +299,14 @@ class UtxoListViewModel extends ChangeNotifier {
     _activeUtxoOrder = _preferenceProvider.utxoSortOrder;
 
     for (var utxo in _utxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
-
-      utxo.tags = tags;
+      utxo.tags = _getCachedTagsForUtxo(utxo.utxoId);
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
+  }
+
+  List<UtxoTag> _getCachedTagsForUtxo(String utxoId) {
+    return _utxoTagList.where((tag) => tag.utxoIdList?.contains(utxoId) ?? false).toList(growable: false);
   }
 
   List<String> getTimeString(int utxoIndex) {

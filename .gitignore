@@ -205,3 +205,7 @@ rust/trezor-bridge/target/
 rust/trezor-connect-rs/target/
 
 /META-INF
+
+# Local agent work and uncommitted growth/QA reports
+/.omo/
+/docs/growth/

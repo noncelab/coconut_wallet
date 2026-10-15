@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -10,8 +11,10 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const Color kNativeSplashBackgroundColor = Color(0xFF121416);
@@ -63,6 +66,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
     _viewModel = StartViewModel(
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<AuthProvider>(context, listen: false),
+      Provider.of<AnalyticsService>(context, listen: false),
     );
 
     _initialize();
@@ -76,7 +80,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
   }
 
   void _initialize() async {
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.wait([Future.delayed(const Duration(seconds: 3)), _viewModel.ensureVersionChecked()]);
     if (_viewModel.canUpdate) {
       bool finishDialogValue = await _showUpdateDialog();
       if (!finishDialogValue) {
@@ -109,7 +113,12 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                 leftButtonText: t.alert.update.btn_do_later,
                 rightButtonText: t.alert.update.btn_update,
                 onTapRight: () async {
-                  await _viewModel.launchUpdate();
+                  await launchURL(
+                    context,
+                    _viewModel.storeUrl,
+                    destination: ExternalLinkDestination.appStore,
+                    openInApp: true,
+                  );
                   if (!context.mounted) return;
                   Navigator.pop(context, true);
                 },

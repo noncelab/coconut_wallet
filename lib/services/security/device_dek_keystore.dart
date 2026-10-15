@@ -46,4 +46,9 @@ class DeviceDekKeystore {
   }
 
   Future<void> delete(String alias) => _channel.invokeMethod<void>('delete', <String, dynamic>{'alias': alias});
+
+  Future<List<String>> getAliases() async {
+    final aliases = await _channel.invokeListMethod<String>('getAliases');
+    return aliases ?? const [];
+  }
 }

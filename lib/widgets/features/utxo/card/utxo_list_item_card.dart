@@ -51,9 +51,10 @@ class UtxoListItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelectionMode
-                ? (isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40))
-                : Colors.transparent,
+            color:
+                isSelectionMode
+                    ? (isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40))
+                    : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -175,7 +176,10 @@ class UtxoListItemCard extends StatelessWidget {
                               return Container();
                             }
                           }
-                          Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
+                          final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(
+                            utxo.tags?[index - 1].colorIndex ?? 0,
+                          );
+                          Color foregroundColor = tagColorPalette[colorIndex];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: chipMinWidth,

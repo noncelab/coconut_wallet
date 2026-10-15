@@ -9,11 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsRepository {
   late SharedPreferences _sharedPrefs;
+  bool _isInitialized = false;
   SharedPreferences get sharedPrefs => _sharedPrefs;
+  bool get isInitialized => _isInitialized;
 
   @Deprecated('Test code에서만 사용합니다')
   void setSharedPreferencesForTest(SharedPreferences sp) {
     _sharedPrefs = sp;
+    _isInitialized = true;
   }
 
   static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
@@ -25,6 +28,7 @@ class SharedPrefsRepository {
   Future<void> init() async {
     // init in main.dart
     _sharedPrefs = await SharedPreferences.getInstance();
+    _isInitialized = true;
   }
 
   /// Common--------------------------------------------------------------------
@@ -145,7 +149,7 @@ class SharedPrefsRepository {
             )
             : {};
     map[walletId.toString()] = targetSats;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
   Future<void> removeWalletTargetSats(int walletId) async {
@@ -155,7 +159,54 @@ class SharedPrefsRepository {
       (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
     );
     map.remove(walletId.toString());
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
+  }
+
+  bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
+
+  Future<void> setWalletTargetDisabled(int walletId, bool disabled) async {
+    await _persistTargetPreference(() => _sharedPrefs.setBool(SharedPrefKeys.walletTargetDisabled(walletId), disabled));
+  }
+
+  Future<void> _persistTargetPreference(Future<bool> Function() write) async {
+    try {
+      if (!await write()) throw StateError('Failed to save wallet target');
+    } catch (_) {
+      // SharedPreferences updates its cache before the platform confirms persistence.
+      await _sharedPrefs.reload();
+      rethrow;
+    }
+  }
+
+  Future<void> removeWalletTargetDisabled(int walletId) async {
+    await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
+  }
+
+  /// 지갑별 마지막 재동기화 완료 시각------------------------------------------------
+  DateTime? getWalletLastResyncTimestamp(int walletId) {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);
+    if (encodedData == null || encodedData.isEmpty) return null;
+    try {
+      final Map<String, dynamic> decoded = json.decode(encodedData);
+      final value = decoded[walletId.toString()];
+      if (value == null) return null;
+      final epochMillis = value is int ? value : int.tryParse(value.toString());
+      return epochMillis != null ? DateTime.fromMillisecondsSinceEpoch(epochMillis) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setWalletLastResyncTimestamp(int walletId, DateTime timestamp) async {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);
+    final Map<String, int> map =
+        encodedData != null && encodedData.isNotEmpty
+            ? (json.decode(encodedData) as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
+            )
+            : {};
+    map[walletId.toString()] = timestamp.millisecondsSinceEpoch;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletLastResyncMap, json.encode(map));
   }
 
   /// 사용자 서버 정보-------------------------------------------------------------
@@ -175,6 +226,7 @@ class SharedPrefsRepository {
               server.value['host'] as String,
               server.value['port'] as int,
               server.value['ssl'] as bool,
+              pinnedCertFingerprint: server.value['pinnedCertFingerprint'] as String?,
             ),
           );
         }
@@ -187,22 +239,16 @@ class SharedPrefsRepository {
     return null;
   }
 
-  /// 사용자 서버 추가 (키 기반으로 중복 확인)
+  /// 사용자 서버 추가 (키 기반으로 중복 확인, 이미 있으면 정보 갱신 - 인증서 지문 재승인 등)
   Future<void> addUserServer(ElectrumServer server) async {
-    final existingServers = await getUserServers();
+    final existingServers = await getUserServers() ?? [];
     final serverKey = '${server.host}:${server.port}';
 
-    // 중복 확인
-    final isDuplicate = existingServers?.any((existing) => '${existing.host}:${existing.port}' == serverKey);
+    existingServers.removeWhere((existing) => '${existing.host}:${existing.port}' == serverKey);
+    existingServers.add(server);
 
-    if (isDuplicate ?? false) {
-      Logger.log('User server already exists: $serverKey');
-      return;
-    }
-
-    existingServers?.add(server);
-    await saveUserServers(existingServers ?? []);
-    Logger.log('User server added: $serverKey');
+    await saveUserServers(existingServers);
+    Logger.log('User server added/updated: $serverKey');
   }
 
   /// 사용자 서버 목록 저장 (host:port를 키로 사용)
@@ -212,7 +258,12 @@ class SharedPrefsRepository {
 
     for (final server in servers) {
       final key = '${server.host}:${server.port}';
-      serversMap[key] = {'host': server.host, 'port': server.port, 'ssl': server.ssl};
+      serversMap[key] = {
+        'host': server.host,
+        'port': server.port,
+        'ssl': server.ssl,
+        'pinnedCertFingerprint': server.pinnedCertFingerprint,
+      };
     }
 
     await prefs.setString(SharedPrefKeys.kUserServers, jsonEncode(serversMap));
@@ -230,5 +281,46 @@ class SharedPrefsRepository {
   Future<void> clearUserServer() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(SharedPrefKeys.kUserServers);
+  }
+
+  /// coconut_lib의 older -> after 변환으로 백업 정보가 변경된 지갑 ID 관리
+  Set<int> getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate() {
+    final ids =
+        _sharedPrefs.getStringList(SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate) ??
+        const <String>[];
+    return ids.map(int.tryParse).whereType<int>().toSet();
+  }
+
+  Future<void> addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(Iterable<int> walletIds) async {
+    final ids = getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate()..addAll(walletIds);
+    await _sharedPrefs.setStringList(
+      SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+      ids.map((id) => id.toString()).toList(),
+    );
+  }
+
+  Future<void> addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    await addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate([walletId]);
+  }
+
+  Future<void> removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    final ids = getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate()..remove(walletId);
+    await _sharedPrefs.setStringList(
+      SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+      ids.map((id) => id.toString()).toList(),
+    );
+  }
+
+  bool hasUnacknowledgedOlderToAfterBackupUpdate(int walletId) {
+    return getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate().contains(walletId);
+  }
+
+  /// 최초 연결 시 확립되어 이후 고정되는 genesis hash 기준값
+  String? getBaselineGenesisHash() {
+    return getStringOrNull(SharedPrefKeys.kBaselineGenesisHash);
+  }
+
+  Future<void> setBaselineGenesisHash(String genesisHash) async {
+    await setString(SharedPrefKeys.kBaselineGenesisHash, genesisHash);
   }
 }

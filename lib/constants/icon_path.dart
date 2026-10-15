@@ -24,6 +24,7 @@ abstract final class CommonActionIconPath {
   static const String check = 'assets/svg/common/actions/check.svg';
   static const String close = 'assets/svg/common/actions/close.svg';
   static const String closeBold = 'assets/svg/common/actions/close-bold.svg';
+  static const String closeSmall = 'assets/svg/common/actions/close-small.svg';
   static const String copy = 'assets/svg/common/actions/copy.svg';
   static const String delete = 'assets/svg/common/actions/delete.svg';
   static const String download = 'assets/svg/common/actions/download.svg';
@@ -38,6 +39,7 @@ abstract final class CommonActionIconPath {
   static const String removeMinus = 'assets/svg/common/actions/remove-minus.svg';
   static const String scan = 'assets/svg/common/actions/scan.svg';
   static const String trash = 'assets/svg/common/actions/trash.svg';
+  static const String rotate = 'assets/svg/common/actions/rotate.svg';
 }
 
 abstract final class CommonCommunicationIconPath {
@@ -66,6 +68,7 @@ abstract final class CommonFormIconPath {
 abstract final class CommonMenuIconPath {
   static const String hamburger = 'assets/svg/common/menu/hamburger.svg';
   static const String kebab = 'assets/svg/common/menu/kebab.svg';
+  static const String grid = 'assets/svg/common/menu/grid.svg';
 }
 
 abstract final class CommonNavigationIconPath {
@@ -92,6 +95,7 @@ abstract final class CommonStateIconPath {
   static const String circleInfo = 'assets/svg/common/state/circle-info.svg';
   static const String circleWarning = 'assets/svg/common/state/circle-warning.svg';
   static const String completionCheck = 'assets/svg/common/state/completion-check.svg';
+  static const String leafFall = 'assets/svg/common/state/leaf-fall.svg';
   static const String questionMark = 'assets/svg/common/state/question-mark.svg';
   static const String searchNotFound = 'assets/svg/common/state/search-not-found.svg';
   static const String shieldWarning = 'assets/svg/common/state/shield-warning.svg';
@@ -106,6 +110,7 @@ abstract final class CommonStateIconPath {
   static const String statusLoading = 'assets/svg/common/state/status-loading.svg';
   static const String stopSign = 'assets/svg/common/state/stop-sign.svg';
   static const String triangleWarning = 'assets/svg/common/state/triangle-warning.svg';
+  static const String bulb = 'assets/svg/brand/motifs/bulb.svg';
 }
 
 abstract final class CommonVisibilityIconPath {
@@ -176,6 +181,7 @@ abstract final class FeatureWalletIconPath {
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
+  static const String vault = 'assets/svg/features/wallet/vault.svg'; // 코코넛 볼트 아이콘이 아님. 금고 아이콘
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

@@ -1,24 +1,32 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../mock/realm/realm_transaction_mock.dart';
+import '../../mock/realm/realm_utxo_mock.dart';
+import '../../mock/utxo_mock.dart';
 import 'test_realm_manager.dart';
 
 const _parentTaprootXpub =
     "tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN";
 const _childTaprootXpub =
     "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
-const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),older(500000000))";
-const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#w0hf4lu5";
+const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),after(500000000))";
+
+const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#652j50l8";
+
 const _singlesigDescriptor =
     "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
 
@@ -28,7 +36,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    // ignore: deprecated_member_use
+    // ignore: deprecated_member_use_from_same_package
     SharedPrefsRepository().setSharedPreferencesForTest(await SharedPreferences.getInstance());
     realmManager = await setupTestRealmManager();
     walletRepository = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
@@ -36,7 +44,7 @@ void main() {
 
   tearDown(() {
     realmManager.reset();
-    realmManager.realm.close();
+    realmManager.dispose();
   });
 
   group('WalletRepository - 싱글시그', () {
@@ -46,6 +54,22 @@ void main() {
     }) {
       return WatchOnlyWallet(name, 0, 0, _singlesigDescriptor, null, null, source.name);
     }
+
+    test('DB 이름 검사는 같은 주소의 보기 전용만 예외로 허용한다', () async {
+      final watchOnly = await walletRepository.addSinglesigWallet(createSinglesigWallet(name: 'Shared'));
+      expect(walletRepository.containsWalletName('Shared'), isTrue);
+      expect(walletRepository.containsWalletName('Shared', matchingWatchOnlyDescriptor: _singlesigDescriptor), isFalse);
+      expect(walletRepository.containsWalletName('Shared', excludeWalletId: watchOnly.id), isFalse);
+      await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Shared'),
+        secureStorageKey: 'test-key',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026),
+        lifecycleState: HotWalletLifecycleState.creating,
+      );
+      expect(walletRepository.containsWalletName('Shared', matchingWatchOnlyDescriptor: _singlesigDescriptor), isTrue);
+    });
 
     test('지갑 삭제 테스트', () async {
       final walletBase = RealmWalletBase(
@@ -96,6 +120,7 @@ void main() {
         backupVerified: true,
         enterPassphraseWhenSigning: true,
         createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
       );
 
       final wallet = (await walletRepository.getWalletItemList()).single;
@@ -105,6 +130,30 @@ void main() {
       expect(wallet.hotWalletMetadata?.secureStorageKey, 'local_wallet_seed_regtest_1');
       expect(wallet.hotWalletMetadata?.masterFingerprint, 'D45AA182');
       expect(wallet.hotWalletMetadata?.enterPassphraseWhenSigning, isTrue);
+      expect(wallet.hotWalletMetadata?.backupVerifiedAt, DateTime.utc(2026, 7, 20));
+    });
+
+    test('니모닉 백업 확인 시 완료 일시를 저장함', () async {
+      final created = await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'local_wallet_seed_regtest_1',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
+      );
+      expect(created.hotWalletMetadata?.backupVerifiedAt, isNull);
+
+      final verifiedAt = DateTime.utc(2026, 9, 22, 6, 30);
+      await walletRepository.updateHotWalletBackupVerified(
+        created.id,
+        backupVerified: true,
+        backupVerifiedAt: verifiedAt,
+      );
+
+      final wallet = (await walletRepository.getWalletItemList()).single;
+      expect(wallet.hotWalletMetadata?.backupVerified, isTrue);
+      expect(wallet.hotWalletMetadata?.backupVerifiedAt, verifiedAt);
     });
 
     test('외부 출처 싱글시그는 핫월렛 생성 경로로 저장할 수 없음', () async {
@@ -130,12 +179,214 @@ void main() {
         backupVerified: true,
         enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
       );
 
       final wallets = await walletRepository.getWalletItemList();
       expect(wallets, hasLength(2));
       expect(wallets.where((wallet) => wallet.hasLocalKey), hasLength(1));
       expect(wallets.where((wallet) => !wallet.hasLocalKey), hasLength(1));
+    });
+
+    test('Watch-only를 같은 ID의 핫월렛으로 전환하면 캐시와 지갑 정보가 유지됨', () async {
+      final watchOnly = await walletRepository.addSinglesigWallet(
+        createSinglesigWallet(name: 'Existing Watch-only', source: WalletImportSource.extendedPublicKey),
+      );
+      final walletBase = realmManager.realm.find<RealmWalletBase>(watchOnly.id)!;
+      final createdAt = DateTime.utc(2026, 9, 9);
+      realmManager.realm.write(() {
+        walletBase.generatedReceiveIndex = 30;
+        walletBase.usedReceiveIndex = 12;
+        realmManager.realm.add(
+          RealmWalletAddress(
+            1001,
+            watchOnly.id,
+            'tb1qcachedaddress',
+            12,
+            false,
+            'm/84\'/1\'/0\'/0/12',
+            true,
+            100,
+            0,
+            100,
+          ),
+        );
+        realmManager.realm.add(RealmWalletBalance(1002, watchOnly.id, 100, 100, 0));
+        realmManager.realm.add(
+          RealmTransactionMock.getMock(id: 1003, walletId: watchOnly.id, transactionHash: 'preserved-tx'),
+        );
+        realmManager.realm.add(
+          RealmUtxoMock.getMock(id: 'preserved-tx:0', walletId: watchOnly.id, transactionHash: 'preserved-tx'),
+        );
+        realmManager.realm.add(
+          RealmUtxoTag('tag-1', watchOnly.id, 'Preserved tag', 2, createdAt, utxoIdList: const ['preserved-tx:0']),
+        );
+        realmManager.realm.add(
+          RealmScriptStatus('${watchOnly.id}:script', '0014script', 'status', watchOnly.id, createdAt),
+        );
+      });
+
+      final converted = await walletRepository.convertWatchOnlyToHotWallet(
+        watchOnly.id,
+        expectedDescriptor: _singlesigDescriptor,
+        secureStorageKey: 'hot_wallet_secret_converted',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: createdAt,
+      );
+
+      expect(converted.id, watchOnly.id);
+      expect(converted.name, 'Existing Watch-only');
+      expect(converted.hasLocalKey, isTrue);
+      expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)?.generatedReceiveIndex, 30);
+      expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)?.usedReceiveIndex, 12);
+      expect(realmManager.realm.query<RealmWalletAddress>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.query<RealmWalletBalance>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.query<RealmTransaction>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.query<RealmUtxo>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.query<RealmScriptStatus>('walletId == ${watchOnly.id}'), hasLength(1));
+      expect(realmManager.realm.find<RealmExternalWallet>(watchOnly.id), isNull);
+      expect(
+        realmManager.realm.find<RealmHotWalletMetadata>(watchOnly.id)?.lifecycleStateName,
+        HotWalletLifecycleState.active.name,
+      );
+      expect((await walletRepository.getWalletItemList()).single.id, watchOnly.id);
+    });
+
+    test('MFP 없는 Watch-only 전환 시 저장된 descriptor와 반환 객체의 MFP를 함께 갱신함', () async {
+      final expected = SingleSignatureWallet.fromDescriptor(_singlesigDescriptor);
+      final placeholder = SingleSignatureWallet.fromExtendedPublicKey(
+        expected.addressType,
+        expected.keyStore.extendedPublicKey.serialize(),
+        '00000000',
+      );
+      final watchOnly = await walletRepository.addSinglesigWallet(
+        WatchOnlyWallet('No MFP', 0, 0, placeholder.descriptor, null, null, WalletImportSource.extendedPublicKey.name),
+      );
+      final converted = await walletRepository.convertWatchOnlyToHotWallet(
+        watchOnly.id,
+        expectedDescriptor: _singlesigDescriptor,
+        secureStorageKey: 'converted_no_mfp',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 26),
+      );
+      expect(converted.id, watchOnly.id);
+      expect(converted.walletBase.getAddress(0), placeholder.getAddress(0));
+      expect(converted.walletBase.getAddress(0, isChange: true), placeholder.getAddress(0, isChange: true));
+      expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)!.descriptor, _singlesigDescriptor);
+      final returnedWallet = converted.walletBase as SingleSignatureWallet;
+      expect(returnedWallet.keyStore.masterFingerprint, expected.keyStore.masterFingerprint);
+      expect(converted.hotWalletMetadata!.masterFingerprint, returnedWallet.keyStore.masterFingerprint);
+      final reloaded = (await walletRepository.getWalletItemList()).single.walletBase as SingleSignatureWallet;
+      expect(reloaded.keyStore.masterFingerprint, expected.keyStore.masterFingerprint);
+    });
+
+    test('Watch-only 전환 검증이 실패하면 기존 지갑을 변경하지 않음', () async {
+      final watchOnly = await walletRepository.addSinglesigWallet(
+        createSinglesigWallet(name: 'Existing Watch-only', source: WalletImportSource.extendedPublicKey),
+      );
+      final differentDescriptor = SingleSignatureVault.random().descriptor;
+
+      await expectLater(
+        walletRepository.convertWatchOnlyToHotWallet(
+          watchOnly.id,
+          expectedDescriptor: differentDescriptor,
+          secureStorageKey: 'hot_wallet_secret_invalid',
+          backupVerified: true,
+          enterPassphraseWhenSigning: false,
+          createdAt: DateTime.utc(2026, 9, 9),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id), isNotNull);
+      expect(realmManager.realm.find<RealmExternalWallet>(watchOnly.id), isNotNull);
+      expect(realmManager.realm.find<RealmHotWalletMetadata>(watchOnly.id), isNull);
+      expect((await walletRepository.getWalletItemList()).single.hasLocalKey, isFalse);
+    });
+
+    test('active가 아닌 핫월렛은 지갑 목록에 포함하지 않음', () async {
+      final creating = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Creating Wallet'),
+        secureStorageKey: 'hot_wallet_secret_creating',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+      );
+      final deleting = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Deleting Wallet'),
+        secureStorageKey: 'hot_wallet_secret_deleting',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.deleting,
+      );
+      final recoveryRequired = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Recovery Wallet'),
+        secureStorageKey: 'hot_wallet_secret_recovery',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.recoveryRequired,
+      );
+      final active = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Active Wallet'),
+        secureStorageKey: 'hot_wallet_secret_active',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.active,
+      );
+
+      final wallets = await walletRepository.getWalletItemList();
+
+      expect(wallets.map((wallet) => wallet.id), [active.id]);
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(creating.id)));
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(deleting.id)));
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(recoveryRequired.id)));
+    });
+
+    test('lifecycle 상태를 active로 변경하면 지갑 목록에 포함됨', () async {
+      final wallet = await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'hot_wallet_secret_pending',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+      );
+      expect(await walletRepository.getWalletItemList(), isEmpty);
+
+      await walletRepository.updateHotWalletLifecycleState(wallet.id, HotWalletLifecycleState.active);
+
+      expect((await walletRepository.getWalletItemList()).single.id, wallet.id);
+    });
+
+    test('deleteWallet: RealmUtxoTag도 함께 삭제', () async {
+      final walletBase = RealmWalletBase(
+        1,
+        0,
+        0,
+        'encrypted_descriptor',
+        'Test Wallet',
+        WalletType.singleSignature.name,
+      );
+
+      realmManager.realm.write(() {
+        realmManager.realm.add(walletBase);
+        realmManager.realm.add(
+          RealmUtxoTag('tag-id-1', 1, '삭제 대상 태그', 0, DateTime.utc(2026, 8, 28))..utxoIdList.add('utxo-id-1'),
+        );
+        realmManager.realm.add(
+          RealmUtxoTag('tag-id-2', 2, '다른 지갑 태그', 0, DateTime.utc(2026, 8, 28))..utxoIdList.add('utxo-id-2'),
+        );
+      });
+
+      await walletRepository.deleteWallet(1);
+
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 1').length, 0);
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 2').length, 1);
     });
   });
 
@@ -231,6 +482,7 @@ void main() {
             true,
             false,
             DateTime.utc(2026, 7, 20),
+            HotWalletLifecycleState.active.name,
           ),
         );
       });
@@ -238,6 +490,136 @@ void main() {
       await walletRepository.deleteWallet(1);
 
       expect(realmManager.realm.all<RealmHotWalletMetadata>(), isEmpty);
+    });
+  });
+
+  group('WalletRepository - 재동기화', () {
+    void seedWalletData(int walletId, {int usedReceiveIndex = 5, int usedChangeIndex = 3}) {
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          RealmWalletBase(
+            walletId,
+            0,
+            0,
+            'encrypted_descriptor_$walletId',
+            'Test Wallet $walletId',
+            WalletType.singleSignature.name,
+            usedReceiveIndex: usedReceiveIndex,
+            usedChangeIndex: usedChangeIndex,
+            generatedReceiveIndex: usedReceiveIndex + 10,
+            generatedChangeIndex: usedChangeIndex + 10,
+          ),
+        );
+        realmManager.realm.add(
+          RealmTransaction(
+            walletId * 1000 + 1,
+            'tx_hash_$walletId',
+            walletId,
+            DateTime.now(),
+            100,
+            'received',
+            10000,
+            500,
+            140.5,
+            DateTime.now(),
+          ),
+        );
+        realmManager.realm.add(RealmWalletBalance(walletId, walletId, 10000, 10000, 0));
+        realmManager.realm.add(
+          RealmWalletAddress(
+            walletId * 1000 + 1,
+            walletId,
+            'address_$walletId',
+            0,
+            false,
+            "m/0/0",
+            true,
+            10000,
+            0,
+            10000,
+          ),
+        );
+        realmManager.realm.add(
+          UtxoMock.createMockUtxo(
+            walletId: walletId,
+            address: 'address_$walletId',
+            transactionHash: 'utxo_tx_hash_$walletId',
+          ),
+        );
+        realmManager.realm.add(
+          RealmScriptStatus(
+            '$walletId:script_pub_key_$walletId',
+            'script_pub_key_$walletId',
+            'status_$walletId',
+            walletId,
+            DateTime.now(),
+          ),
+        );
+        realmManager.realm.add(
+          RealmUtxoTag(
+            'tag_id_$walletId',
+            walletId,
+            'tag_name_$walletId',
+            0,
+            DateTime.now(),
+            utxoIdList: [getUtxoId('utxo_tx_hash_$walletId', 0)],
+          ),
+        );
+        realmManager.realm.add(
+          RealmTransactionMemo(
+            getTransactionMemoId('tx_hash_$walletId', walletId),
+            'tx_hash_$walletId',
+            walletId,
+            'memo_$walletId',
+            DateTime.now(),
+          ),
+        );
+      });
+    }
+
+    test('트랜잭션/잔액/주소/UTXO/스크립트상태 삭제, 지갑 row는 유지하고 인덱스만 리셋', () async {
+      seedWalletData(1);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmTransaction>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmWalletBalance>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmWalletAddress>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmUtxo>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmScriptStatus>('walletId == 1').isEmpty, isTrue);
+
+      final walletBase = realmManager.realm.find<RealmWalletBase>(1);
+      expect(walletBase, isNotNull);
+      expect(walletBase!.usedReceiveIndex, -1);
+      expect(walletBase.usedChangeIndex, -1);
+      expect(walletBase.generatedReceiveIndex, -1);
+      expect(walletBase.generatedChangeIndex, -1);
+    });
+
+    test('UTXO 태그와 트랜잭션 메모는 건드리지 않음', () async {
+      seedWalletData(1);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 1').length, 1);
+      expect(realmManager.realm.query<RealmTransactionMemo>('walletId == 1').length, 1);
+    });
+
+    test('다른 지갑의 데이터는 영향받지 않음', () async {
+      seedWalletData(1);
+      seedWalletData(2, usedReceiveIndex: 7, usedChangeIndex: 4);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmTransaction>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmWalletBalance>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmWalletAddress>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmUtxo>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmScriptStatus>('walletId == 2').length, 1);
+
+      final wallet2Base = realmManager.realm.find<RealmWalletBase>(2);
+      expect(wallet2Base!.usedReceiveIndex, 7);
+      expect(wallet2Base.usedChangeIndex, 4);
     });
   });
 }

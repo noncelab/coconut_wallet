@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,9 +15,11 @@ Future<bool?> showHotWalletAppLockGuideBottomSheet(BuildContext context) async {
   final sheetKey = GlobalKey();
   final result = await CommonBottomSheets.showBottomSheet<bool>(
     context: context,
+    screenName: AnalyticsScreenNames.hotWalletAppLockGuideSheet,
     title: t.wallet_home_screen.hot_wallet_setup.pin_title,
     showDragHandle: true,
     showCloseButton: true,
+    ignoreTextScaling: true,
     adjustForKeyboardInset: false,
     child: HotWalletAppLockGuideScreen(key: sheetKey),
   );
@@ -134,6 +137,7 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
   Future<void> _openAppLockSetting() async {
     await CommonBottomSheets.showCustomHeightBottomSheet<void>(
       context: context,
+      screenName: AnalyticsScreenNames.appSettingsPinSetSheet,
       heightRatio: 0.9,
       child: const PinSettingScreen(useBiometrics: true, popParentOnComplete: false),
     );

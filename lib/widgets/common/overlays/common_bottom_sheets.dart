@@ -17,6 +17,7 @@ class CommonBottomSheets {
     String? subtitle,
     required BuildContext context,
     required Widget child,
+    required String screenName,
     List<Widget>? actionList,
     TextStyle? titleTextStyle,
     TextStyle? subtitleTextStyle,
@@ -24,21 +25,24 @@ class CommonBottomSheets {
     bool enableDrag = true,
     bool showCloseButton = false,
     bool showDragHandle = false,
+    bool ignoreTextScaling = false,
     bool adjustForKeyboardInset = true,
     double keyboardBottomPadding = 20,
+    Duration keyboardInsetAnimationDuration = const Duration(milliseconds: 280),
     Color? backgroundColor,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
       builder: (context) {
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 280),
+        final sheet = AnimatedPadding(
+          duration: keyboardInsetAnimationDuration,
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + keyboardBottomPadding : 0),
           child: Column(
@@ -124,6 +128,8 @@ class CommonBottomSheets {
             ],
           ),
         );
+        if (!ignoreTextScaling) return sheet;
+        return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)), child: sheet);
       },
       backgroundColor: resolvedBackgroundColor,
       isDismissible: isDismissible,
@@ -135,6 +141,7 @@ class CommonBottomSheets {
 
   static Future<T?> showCustomHeightBottomSheet<T>({
     required BuildContext context,
+    required String screenName,
     Widget? child,
     Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
@@ -148,12 +155,14 @@ class CommonBottomSheets {
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
+    final isResizable = childBuilder != null && enableDragToResize;
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
-
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -175,7 +184,9 @@ class CommonBottomSheets {
                               shouldCloseOnMinExtent: true,
                               builder: (context, scrollController) {
                                 void handleDragEnd() {
-                                  if (isAnimating || !draggableController.isAttached) return;
+                                  if (isAnimating || !draggableController.isAttached) {
+                                    return;
+                                  }
 
                                   final extent = draggableController.size;
                                   const closeThreshold = 0.7;
@@ -203,21 +214,35 @@ class CommonBottomSheets {
                                   });
                                 }
 
-                                return NotificationListener<ScrollNotification>(
-                                  onNotification: (notification) {
-                                    if (notification is ScrollEndNotification) {
-                                      handleDragEnd();
-                                    }
-                                    return false;
-                                  },
-                                  child: childBuilder(scrollController),
+                                return Material(
+                                  color: resolvedBackgroundColor,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: NotificationListener<ScrollNotification>(
+                                    onNotification: (notification) {
+                                      if (notification is ScrollEndNotification) {
+                                        handleDragEnd();
+                                      }
+                                      return false;
+                                    },
+                                    // Keep the content layout stable while the sheet shrinks.
+                                    // Material clips it to the current draggable height.
+                                    child: OverflowBox(
+                                      alignment: Alignment.topCenter,
+                                      minHeight: sheetHeight,
+                                      maxHeight: sheetHeight,
+                                      child: childBuilder(scrollController),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                   ),
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor: isResizable ? Colors.transparent : resolvedBackgroundColor,
       elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       clipBehavior: Clip.antiAlias,
@@ -230,15 +255,18 @@ class CommonBottomSheets {
   static Future<T?> showBottomSheet_100<T>({
     required BuildContext context,
     required Widget child,
+    required String screenName,
     bool enableDrag = true,
     Color? backgroundColor,
     bool isDismissible = false,
     bool isScrollControlled = true,
     bool useSafeArea = true,
     AnimationController? animationController,
+    ShapeBorder? shape,
   }) async {
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return child; // child screen에서 type <T>를 반환하면 반환됩니다.
       },
@@ -247,6 +275,7 @@ class CommonBottomSheets {
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
+      shape: shape,
       useSafeArea: useSafeArea,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height),
     );
@@ -257,6 +286,7 @@ class CommonBottomSheets {
   static Future<T?> showDraggableBottomSheet<T>({
     required BuildContext context,
     required Widget Function(ScrollController) childBuilder,
+    required String screenName,
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
     double? initialChildSize,
@@ -282,6 +312,7 @@ class CommonBottomSheets {
 
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
@@ -413,6 +444,7 @@ class CommonBottomSheets {
   static Future<T?> showSelectableDraggableSheet<T>({
     required BuildContext context,
     required String title,
+    required String screenName,
     List<T>? items,
     Object Function(T item)? getItemId,
     SelectableItemBuilder<T>? itemBuilder,
@@ -437,6 +469,7 @@ class CommonBottomSheets {
     return showDraggableBottomSheet<T>(
       context: context,
       title: title,
+      screenName: screenName,
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
@@ -465,6 +498,7 @@ class CommonBottomSheets {
   static Future<T?> showDraggableScrollableSheet<T>({
     required BuildContext context,
     required Widget child,
+    required String screenName,
     bool enableDrag = true,
     Color? backgroundColor,
     bool isDismissible = true,
@@ -478,9 +512,12 @@ class CommonBottomSheets {
     double maxHeight = 0.9,
   }) async {
     var adjustedMinChildSize = minChildSize;
-    if (maxHeight >= adjustedMinChildSize) adjustedMinChildSize = maxHeight + 0.0001;
+    if (maxHeight >= adjustedMinChildSize) {
+      adjustedMinChildSize = maxHeight + 0.0001;
+    }
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: expand,

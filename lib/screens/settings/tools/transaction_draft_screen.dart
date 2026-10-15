@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -14,6 +16,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -48,7 +51,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     return ChangeNotifierProvider<TransactionDraftViewModel>(
       create:
           (_) =>
-              TransactionDraftViewModel(Provider.of<TransactionDraftRepository>(context, listen: false))
+              TransactionDraftViewModel(context.read<TransactionDraftRepository>(), context.read<WalletProvider>())
                 ..initializeDraftList(),
       child: Consumer<TransactionDraftViewModel>(
         builder: (context, viewModel, child) {
@@ -237,20 +240,20 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     if (transactionDraft.isSigned) {
       await Navigator.pushReplacementNamed(
         context,
-        '/broadcasting',
-        arguments: {'signedTransactionDraftId': transactionDraft.id},
+        AppRouteNames.broadcasting,
+        arguments: BroadcastingRouteArgs(signedTransactionDraftId: transactionDraft.id),
       );
     } else {
       // INFO: 보내기 - 임시 저장 - 임시 저장 완료 다이얼로그 '이동하기'를 통해 이 화면 진입 시 항목 선택으로 send_screen이
       // 중복으로 스택에 쌓이는 것을 방지하기 위해 pushNamedAndRemoveUntil을 사용합니다.
       await Navigator.of(context).pushNamedAndRemoveUntil(
-        '/send',
+        AppRouteNames.send,
         (route) => route.isFirst,
-        arguments: {
-          'walletId': transactionDraft.walletId,
-          'sendEntryPoint': SendEntryPoint.home,
-          'transactionDraftId': transactionDraft.id,
-        },
+        arguments: SendRouteArgs(
+          id: transactionDraft.walletId,
+          sendEntryPoint: SendEntryPoint.home,
+          transactionDraftId: transactionDraft.id,
+        ),
       );
     }
   }

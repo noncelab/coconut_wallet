@@ -9,10 +9,12 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -94,6 +96,14 @@ _FirstPowCardDetail _firstPowCardDetailForKind(_FirstPowCardKind kind) {
       heroTag: _deliveryHeroTag,
       panelLabel: t.ccos.first_pow_scene.delivery_detail.panel_label,
     ),
+  };
+}
+
+String _analyticsScreenNameForFirstPowCardKind(_FirstPowCardKind kind) {
+  return switch (kind) {
+    _FirstPowCardKind.creator => AnalyticsScreenNames.ccosOpenStoreFirstPowCreatorDetail,
+    _FirstPowCardKind.feature => AnalyticsScreenNames.ccosOpenStoreFirstPowFeatureDetail,
+    _FirstPowCardKind.delivery => AnalyticsScreenNames.ccosOpenStoreFirstPowDeliveryDetail,
   };
 }
 
@@ -736,6 +746,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
   @override
   void initState() {
     super.initState();
+    _logScreenView(widget.detail.kind);
     Future.delayed(_heroFlightDuration + _postFlightPause, () {
       if (!mounted) return;
       _entranceController.forward();
@@ -770,12 +781,18 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
   }
 
   void _handleDetailPageChanged(int index) {
+    final kind = _firstPowDetailOrder[index];
     setState(() {
-      _detail = _firstPowCardDetailForKind(_firstPowDetailOrder[index]);
+      _detail = _firstPowCardDetailForKind(kind);
     });
+    _logScreenView(kind);
     _entranceController.duration = Duration(milliseconds: _totalEntranceMs);
     _entranceController.forward(from: 0);
     _addButtonController.reset();
+  }
+
+  void _logScreenView(_FirstPowCardKind kind) {
+    context.read<AnalyticsService>().logScreenView(screenName: _analyticsScreenNameForFirstPowCardKind(kind));
   }
 
   @override

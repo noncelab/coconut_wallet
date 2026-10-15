@@ -12,6 +12,7 @@ class AnimatedQrView extends StatefulWidget {
   final QrScanDensity qrScanDensity;
   final IQrViewDataHandler qrViewDataHandler;
   final double qrSize;
+  final EdgeInsets qrPadding;
 
   const AnimatedQrView({
     super.key,
@@ -19,6 +20,7 @@ class AnimatedQrView extends StatefulWidget {
     required this.qrScanDensity,
     required this.qrSize,
     this.milliSeconds = 600,
+    this.qrPadding = const EdgeInsets.all(10),
   });
 
   @override
@@ -71,7 +73,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
       // QR 전환이 바로 안될 때를 대비한 위젯 - 실제로는 렌더링 되지 않을 가능성 높음
       return Stack(
         children: [
-          QrImageView(data: _qrData, version: _qrVersion, size: widget.qrSize),
+          QrImageView(data: _qrData, version: _qrVersion, size: widget.qrSize, padding: widget.qrPadding),
           Positioned(
             left: 70,
             right: 70,
@@ -95,7 +97,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
     // 시드사이너가 QR version 10 인 경우 빠르게 인식이 안되어 9로 설정합니다.
     // 아래 QrImageView의 maxInputLength는 2192bits(274bytes)
 
-    return QrImageView(data: _qrData, version: _qrVersion, size: widget.qrSize);
+    return QrImageView(data: _qrData, version: _qrVersion, size: widget.qrSize, padding: widget.qrPadding);
   }
 
   @override

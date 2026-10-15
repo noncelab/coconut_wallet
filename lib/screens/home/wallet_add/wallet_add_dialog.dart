@@ -1,14 +1,20 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -30,12 +36,32 @@ final topSheetWalletOptions = [
 class WalletAddDialog extends StatelessWidget {
   final Animation<double> animation;
   final WalletAddDialogMode mode;
+  final bool isBottomSheet;
+  final bool replaceCurrentRouteOnWalletSelected;
 
-  const WalletAddDialog({super.key, required this.animation, required this.mode});
+  const WalletAddDialog({
+    super.key,
+    required this.animation,
+    required this.mode,
+    this.isBottomSheet = false,
+    this.replaceCurrentRouteOnWalletSelected = false,
+  });
 
-  static Future<void> show(BuildContext context, WalletAddDialogMode mode) async {
+  static Future<void> showTopSheet(BuildContext context, WalletAddDialogMode mode) async {
+    if (mode != WalletAddDialogMode.walletType) {
+      context.read<AnalyticsService>().logWalletAddMenuEntered(
+        isHotWallet: mode == WalletAddDialogMode.hotWalletAction,
+      );
+    }
     await showGeneralDialog<void>(
       context: context,
+      routeSettings: RouteSettings(
+        name: switch (mode) {
+          WalletAddDialogMode.walletType => AnalyticsScreenNames.walletHomeAddWalletTypeSheet,
+          WalletAddDialogMode.watchOnlySource => AnalyticsScreenNames.walletHomeAddWatchOnlySourceSheet,
+          WalletAddDialogMode.hotWalletAction => AnalyticsScreenNames.walletHomeAddHotWalletActionSheet,
+        },
+      ),
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
@@ -45,14 +71,47 @@ class WalletAddDialog extends StatelessWidget {
     );
   }
 
+  static Future<void> showBottomSheet(
+    BuildContext context,
+    WalletAddDialogMode mode, {
+    bool replaceCurrentRouteOnWalletSelected = false,
+  }) async {
+    if (mode != WalletAddDialogMode.walletType) {
+      context.read<AnalyticsService>().logWalletAddMenuEntered(
+        isHotWallet: mode == WalletAddDialogMode.hotWalletAction,
+      );
+    }
+    await CommonBottomSheets.showBottomSheet<void>(
+      context: context,
+      title: t.wallet_add_scanner_screen.add_wallet,
+      screenName: switch (mode) {
+        WalletAddDialogMode.walletType => AnalyticsScreenNames.walletHomeAddWalletTypeSheet,
+        WalletAddDialogMode.watchOnlySource => AnalyticsScreenNames.walletHomeAddWatchOnlySourceSheet,
+        WalletAddDialogMode.hotWalletAction => AnalyticsScreenNames.walletHomeAddHotWalletActionSheet,
+      },
+      showCloseButton: true,
+      showDragHandle: true,
+      backgroundColor: context.coconutColors.homeBackground,
+      child: WalletAddDialog(
+        animation: const AlwaysStoppedAnimation<double>(1),
+        mode: mode,
+        isBottomSheet: true,
+        replaceCurrentRouteOnWalletSelected: replaceCurrentRouteOnWalletSelected,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (isBottomSheet) {
+      return Padding(padding: const EdgeInsets.fromLTRB(8, 0, 8, 100), child: _buildContent(context));
+    }
     final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
 
     return Stack(
       children: [
         Positioned(
-          top: kToolbarHeight + MediaQuery.paddingOf(context).top,
+          top: kToolbarHeight + MediaQuery.paddingOf(context).top - 15,
           left: 0,
           right: 0,
           child: SlideTransition(
@@ -213,14 +272,12 @@ class WalletAddDialog extends StatelessWidget {
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletAddHot,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
-            description: t.wallet_home_screen.hot_wallet_add.create.description,
-            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-create'),
+            onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletCreate),
           ),
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletImportHot,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
-            description: t.wallet_home_screen.hot_wallet_add.restore.description,
-            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-restore'),
+            onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletRestore),
           ),
         ],
       },
@@ -229,15 +286,26 @@ class WalletAddDialog extends StatelessWidget {
 
   void _showMode(BuildContext context, WalletAddDialogMode nextMode) {
     final navigator = Navigator.of(context);
-    navigator.pop();
+    // pop보다 먼저 등록한다. pop이 등록하는 화면 기록 콜백(AnalyticsScreenObserver)이 다음 시트를 보고,
+    // 두 시트 사이에 wallet-home이 기록되지 않는다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (navigator.mounted) {
-        WalletAddDialog.show(navigator.context, nextMode);
+        if (isBottomSheet) {
+          WalletAddDialog.showBottomSheet(
+            navigator.context,
+            nextMode,
+            replaceCurrentRouteOnWalletSelected: replaceCurrentRouteOnWalletSelected,
+          );
+        } else {
+          WalletAddDialog.showTopSheet(navigator.context, nextMode);
+        }
       }
     });
+    navigator.pop();
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
+    context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: routeName == AppRouteNames.hotWalletRestore);
     if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
 
     final navigator = Navigator.of(context);
@@ -268,21 +336,36 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(walletImportSource);
     final navigator = Navigator.of(context);
     navigator.pop();
 
+    void openAddScreen(String routeName, {Object? arguments}) {
+      if (replaceCurrentRouteOnWalletSelected) {
+        navigator.pushReplacementNamed(routeName, arguments: arguments);
+      } else {
+        navigator.pushNamed(routeName, arguments: arguments);
+      }
+    }
+
     switch (walletImportSource) {
       case WalletImportSource.bitbox02:
-        navigator.pushNamed('/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
+        openAddScreen(
+          AppRouteNames.bitbox02Connect,
+          arguments: const BitBox02ConnectRouteArgs(importSource: WalletImportSource.bitbox02),
+        );
         return;
       case WalletImportSource.trezor:
-        navigator.pushNamed(
-          Platform.isAndroid ? '/trezor-transport-select' : '/trezor-ble-connect',
-          arguments: const <String, dynamic>{},
+        openAddScreen(
+          Platform.isAndroid ? AppRouteNames.trezorTransportSelect : AppRouteNames.trezorBleConnect,
+          arguments: Platform.isAndroid ? const TrezorTransportSelectRouteArgs() : const TrezorBleConnectRouteArgs(),
         );
         return;
       default:
-        navigator.pushNamed('/wallet-add-scanner', arguments: {'walletImportSource': walletImportSource});
+        openAddScreen(
+          AppRouteNames.walletAddScanner,
+          arguments: WalletAddScannerRouteArgs(walletImportSource: walletImportSource),
+        );
         return;
     }
   }
@@ -330,16 +413,11 @@ class WalletAddDialog extends StatelessWidget {
 }
 
 class _WalletActionButton extends StatelessWidget {
-  const _WalletActionButton({
-    required this.iconPath,
-    required this.title,
-    required this.description,
-    required this.onPressed,
-  });
+  const _WalletActionButton({required this.iconPath, required this.title, this.description, required this.onPressed});
 
   final String iconPath;
   final String title;
-  final String description;
+  final String? description;
   final VoidCallback onPressed;
 
   @override
@@ -364,13 +442,15 @@ class _WalletActionButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    description,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  CoconutLayout.spacing_50h,
+                  if (description != null) ...[
+                    Text(
+                      description!,
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    CoconutLayout.spacing_50h,
+                  ],
                   Text(
                     title,
                     style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),

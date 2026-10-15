@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
@@ -76,8 +78,8 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
 
     unawaited(
       navigator.pushNamed(
-        '/send',
-        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+        AppRouteNames.send,
+        arguments: SendRouteArgs(id: targetId, sendEntryPoint: SendEntryPoint.home, initialBitcoinUri: bitcoinUri),
       ),
     );
 

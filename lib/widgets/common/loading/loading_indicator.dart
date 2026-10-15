@@ -6,8 +6,15 @@ class FullscreenLoadingIndicator extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Color? color;
   final double? size;
+  final double? strokeWidth;
 
-  const FullscreenLoadingIndicator({super.key, this.padding = EdgeInsets.zero, this.color, this.size});
+  const FullscreenLoadingIndicator({
+    super.key,
+    this.padding = EdgeInsets.zero,
+    this.color,
+    this.size,
+    this.strokeWidth,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,7 @@ class FullscreenLoadingIndicator extends StatelessWidget {
           child: CircularProgressIndicator(
             color: resolvedColor,
             backgroundColor: resolvedColor.withValues(alpha: 0.15),
-            strokeWidth: resolvedSize / 5.5,
+            strokeWidth: strokeWidth ?? resolvedSize / 5.5,
             strokeCap: StrokeCap.round,
           ),
         ),

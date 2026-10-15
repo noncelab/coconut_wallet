@@ -9,9 +9,8 @@ const GITHUB_URL_VAULT = 'https://github.com/noncelab/coconut_vault';
 const GITHUB_URL_COCONUT_LIBRARY = 'https://github.com/noncelab/coconut_lib';
 
 /// Terms of service, Policy
-const TERMS_OF_SERVICE_URL = "https://www.noncelab.com/coconut/tos";
-const PRIVACY_POLICY_URL = "https://www.noncelab.com/coconut/privacy";
-const DATA_COLLECTION_URL = "https://www.noncelab.com/coconut/data-collection";
+const TERMS_OF_SERVICE_URL = "https://www.coconut.onl/tos";
+const PRIVACY_POLICY_URL = "https://www.coconut.onl/privacy";
 
 /// Email To Address
 const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';
@@ -20,16 +19,17 @@ const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';
 const DISCORD_COCONUT = 'https://discord.gg/YHxGQRxa7R';
 
 /// X
-const X_POW = 'https://x.com/POWbitcoiner';
+const X_COCONUT = 'https://x.com/CoconutWallet';
 
 /// Tutorial
 const TUTORIAL_URL = 'https://tutorial.coconut.onl';
 
 /// Block explorer
-const BLOCK_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
-const BLOCK_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet4';
+const DEFAULT_EXPLORER_URL_MAINNET = 'https://mempool.space';
+const DEFAULT_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
+const DEFAULT_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet';
 
 /// Fee Service
 const FEE_SERVICE_URL_MAINNET = 'https://mempool.space/api/v1/fees/precise';
-const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet4/api/v1/fees/precise';
 const FEE_SERVICE_URL_REGTEST = 'https://regtest-mempool.coconut.onl/api/v1/fees/recommended';
+const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet/api/v1/fees/precise';

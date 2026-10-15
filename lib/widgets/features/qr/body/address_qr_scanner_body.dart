@@ -1,12 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/utils/app_settings_util.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
-import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/camera_permission_dialog.dart';
+import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:provider/provider.dart';
 
 class AddressQrScannerBody extends StatefulWidget {
   final Key qrKey;
@@ -42,69 +39,36 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final isFoldScreen = MediaQuery.of(context).size.width > 600;
     final topMargin = statusBarHeight + (isFoldScreen ? 0 : 100.0);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final Size layoutSize = constraints.biggest;
-
-        // ScannerOverlay와 동일한 크기의 정사각형 스캔 영역 계산
-        final scanAreaSize = ScannerOverlay.calculateScanAreaSize(context);
-
-        final Rect scanWindow = Rect.fromCenter(
-          center: layoutSize.center(Offset.zero),
-          width: scanAreaSize,
-          height: scanAreaSize,
-        );
-
-        return Stack(
-          children: [
-            MobileScanner(
-              key: widget.qrKey,
-              controller: _controller,
-              onDetect: widget.onDetect,
-              scanWindow: scanWindow,
-              errorBuilder: (context, error) {
-                if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
-                  _isShowedCameraPermissionDialog = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (!mounted) return;
-                    await _showCameraPermissionDialog(context);
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  });
-                }
-                return Center(child: Text(error.errorCode.message));
-              },
-            ),
-            const ScannerOverlay(),
-            Positioned(
-              top: topMargin,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.only(top: 32),
-                child: Text(
-                  t.send_address_screen.text2,
-                  textAlign: TextAlign.center,
-                  style: CoconutTypography.body1_16.setColor(CoconutColors.white),
-                ),
+    return QrScannerView(
+      scannerKey: widget.qrKey,
+      controller: _controller,
+      onDetect: widget.onDetect,
+      errorBuilder: (_, error) {
+        if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+          _isShowedCameraPermissionDialog = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            await showCameraPermissionDialog(this.context);
+            if (!mounted) return;
+            Navigator.pop(this.context);
+          });
+        }
+        return Center(child: Text(error.errorCode.message));
+      },
+      overlayBuilder:
+          (context, scanWindow) => Positioned(
+            top: topMargin,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.only(top: 32),
+              child: Text(
+                t.send_address_screen.text2,
+                textAlign: TextAlign.center,
+                style: CoconutTypography.body1_16.setColor(CoconutColors.white),
               ),
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _showCameraPermissionDialog(BuildContext context) async {
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.coconut_qr_scanner.camera_error.title,
-      t.coconut_qr_scanner.camera_error.need_camera_permission,
-      rightButtonText: t.go_to_settings,
-      onTapRight: () {
-        openAppSettings();
-      },
+          ),
     );
   }
 

@@ -9,12 +9,14 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -131,56 +133,58 @@ class UtxoTagCrudScreen extends StatelessWidget {
   }
 
   void _handleEditTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoTagEditTagSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => TagEditBottomSheet(
-            walletId: id,
-            existingTags: model.utxoTagList,
-            updateUtxoTag: model.selectedUtxoTag,
-            onTagCreated: (tag) {
-              if (!model.updateUtxoTag(tag)) {
-                CoconutToast.showToast(
-                  context: context,
-                  isVisibleIcon: true,
-                  iconPath: CommonStateIconPath.triangleWarning,
-                  text: t.toast.tag_update_failed,
-                  level: CoconutToastLevel.warning,
-                );
-              }
-            },
-          ),
+      child: TagEditBottomSheet(
+        walletId: id,
+        existingTags: model.utxoTagList,
+        updateUtxoTag: model.selectedUtxoTag,
+        onTagCreated: (tag) {
+          if (!model.updateUtxoTag(tag)) {
+            CoconutToast.showToast(
+              context: context,
+              isVisibleIcon: true,
+              iconPath: CommonStateIconPath.triangleWarning,
+              text: t.toast.tag_update_failed,
+              level: CoconutToastLevel.warning,
+            );
+          }
+        },
+      ),
     );
   }
 
   void _handleAddTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
     model.deselectUtxoTag();
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoTagAddTagSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => TagEditBottomSheet(
-            walletId: id,
-            existingTags: model.utxoTagList,
-            onTagCreated: (tag) {
-              if (model.selectedUtxoTag == null) {
-                final newTag = tag;
-                if (!model.addUtxoTag(newTag)) {
-                  CoconutToast.showToast(
-                    context: context,
-                    isVisibleIcon: true,
-                    iconPath: CommonStateIconPath.triangleWarning,
-                    text: t.toast.tag_add_failed,
-                    level: CoconutToastLevel.warning,
-                  );
-                }
-                return;
-              }
-            },
-          ),
+      child: TagEditBottomSheet(
+        walletId: id,
+        existingTags: model.utxoTagList,
+        onTagCreated: (tag) {
+          if (model.selectedUtxoTag == null) {
+            final newTag = tag;
+            if (!model.addUtxoTag(newTag)) {
+              CoconutToast.showToast(
+                context: context,
+                isVisibleIcon: true,
+                iconPath: CommonStateIconPath.triangleWarning,
+                text: t.toast.tag_add_failed,
+                level: CoconutToastLevel.warning,
+              );
+            }
+            return;
+          }
+        },
+      ),
     );
   }
 }

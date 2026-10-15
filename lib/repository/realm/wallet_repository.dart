@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:collection/collection.dart';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -46,6 +47,10 @@ class WalletRepository extends BaseRepository {
     };
 
     for (var i = 0; i < walletBases.length; i++) {
+      final hotWalletMetadata = hotWalletMetadataMap[walletBases[i].id];
+      if (hotWalletMetadata != null && hotWalletMetadata.lifecycleState != HotWalletLifecycleState.active) {
+        continue;
+      }
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         // 외부 지갑인 경우 WalletImportSource 데이터 추가
         if (externalWalletIndex < externalWallets.length &&
@@ -61,12 +66,7 @@ class WalletRepository extends BaseRepository {
           );
         } else {
           walletList.add(
-            mapRealmToSingleSigWalletItem(
-              walletBases[i],
-              walletBases[i].descriptor,
-              null,
-              hotWalletMetadataMap[walletBases[i].id],
-            ),
+            mapRealmToSingleSigWalletItem(walletBases[i], walletBases[i].descriptor, null, hotWalletMetadata),
           );
         }
       } else if (walletBases[i].walletType == WalletType.taproot.name) {
@@ -124,6 +124,7 @@ class WalletRepository extends BaseRepository {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
+    HotWalletLifecycleState lifecycleState = HotWalletLifecycleState.creating,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
       throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
@@ -156,6 +157,8 @@ class WalletRepository extends BaseRepository {
       backupVerified: backupVerified,
       enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
+      backupVerifiedAt: backupVerified ? createdAt : null,
+      lifecycleState: lifecycleState,
     );
     final realmMetadata = RealmHotWalletMetadata(
       id,
@@ -166,6 +169,8 @@ class WalletRepository extends BaseRepository {
       metadata.backupVerified,
       metadata.enterPassphraseWhenSigning,
       metadata.createdAt,
+      metadata.lifecycleState.name,
+      backupVerifiedAt: metadata.backupVerifiedAt,
     );
 
     realm.write(() {
@@ -177,6 +182,186 @@ class WalletRepository extends BaseRepository {
     return mapRealmToSingleSigWalletItem(realmWalletBase, wallet.descriptor, WalletImportSource.coconutVault, metadata);
   }
 
+  /// 기존 Watch-only 지갑의 ID와 연결된 데이터를 유지한 채 로컬 서명 메타데이터를 연결한다.
+  ///
+  /// Secret은 이 메서드 호출 전에 이미 저장되어 있어야 한다. Realm 변경은 하나의
+  /// transaction으로 처리하므로 실패하면 Watch-only 상태가 그대로 유지된다.
+  Future<SinglesigWalletItem> convertWatchOnlyToHotWallet(
+    int walletId, {
+    required String expectedDescriptor,
+    required String secureStorageKey,
+    required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
+    required DateTime createdAt,
+  }) async {
+    final walletBase = realm.find<RealmWalletBase>(walletId);
+    if (walletBase == null) {
+      throw StateError('Watch-only wallet not found: $walletId');
+    }
+    if (walletBase.walletType != WalletType.singleSignature.name) {
+      throw StateError('Only a single-signature watch-only wallet can be converted to a hot wallet');
+    }
+    if (realm.find<RealmHotWalletMetadata>(walletId) != null) {
+      throw StateError('The wallet already has a local key');
+    }
+
+    final expectedWallet = SingleSignatureWallet.fromDescriptor(expectedDescriptor);
+    final existingWallet = SingleSignatureWallet.fromDescriptor(walletBase.descriptor);
+    if (expectedWallet.addressType != existingWallet.addressType ||
+        expectedWallet.derivationPath != existingWallet.derivationPath ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.publicKey,
+          existingWallet.keyStore.extendedPublicKey.publicKey,
+        ) ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.chainCode,
+          existingWallet.keyStore.extendedPublicKey.chainCode,
+        ) ||
+        expectedWallet.getAddress(0) != existingWallet.getAddress(0)) {
+      throw StateError('The watch-only wallet descriptor does not match');
+    }
+
+    final derivationPath = expectedWallet.derivationPath;
+    final metadata = HotWalletMetadata(
+      walletId: walletId,
+      secureStorageKey: secureStorageKey,
+      masterFingerprint: expectedWallet.keyStore.masterFingerprint,
+      derivationPath: derivationPath,
+      accountIndex: _getAccountIndex(derivationPath),
+      backupVerified: backupVerified,
+      enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+      createdAt: createdAt,
+      backupVerifiedAt: backupVerified ? createdAt : null,
+      lifecycleState: HotWalletLifecycleState.active,
+    );
+    final realmMetadata = RealmHotWalletMetadata(
+      walletId,
+      metadata.secureStorageKey,
+      metadata.masterFingerprint,
+      metadata.derivationPath,
+      metadata.accountIndex,
+      metadata.backupVerified,
+      metadata.enterPassphraseWhenSigning,
+      metadata.createdAt,
+      metadata.lifecycleState.name,
+      backupVerifiedAt: metadata.backupVerifiedAt,
+    );
+    final externalWallet = realm.find<RealmExternalWallet>(walletId);
+
+    await realm.writeAsync(() {
+      // 시드에서 확인한 key origin으로 교체하여 placeholder MFP가 PSBT에 남지 않게 한다.
+      walletBase.descriptor = expectedDescriptor;
+      if (externalWallet != null) {
+        realm.delete(externalWallet);
+      }
+      realm.add(realmMetadata);
+    });
+
+    return mapRealmToSingleSigWalletItem(walletBase, walletBase.descriptor, WalletImportSource.coconutVault, metadata);
+  }
+
+  /// 기존 Hot wallet의 ID와 온체인 데이터를 유지한 채 Watch-only 지갑으로 전환한다.
+  ///
+  /// Realm 변경은 하나의 transaction으로 처리한다. 호출자는 전환이 완료된 뒤
+  /// 더 이상 사용하지 않는 Hot wallet secret을 SecureStorage에서 제거해야 한다.
+  Future<SinglesigWalletItem> convertHotWalletToWatchOnly(int walletId, WatchOnlyWallet watchOnlyWallet) async {
+    final walletBase = realm.find<RealmWalletBase>(walletId);
+    if (walletBase == null) {
+      throw StateError('Hot wallet not found: $walletId');
+    }
+    if (walletBase.walletType != WalletType.singleSignature.name ||
+        watchOnlyWallet.walletType != WalletType.singleSignature) {
+      throw StateError('Only a single-signature hot wallet can be converted to a watch-only wallet');
+    }
+
+    final hotWalletMetadata = realm.find<RealmHotWalletMetadata>(walletId);
+    if (hotWalletMetadata == null) {
+      throw StateError('Hot wallet metadata not found: $walletId');
+    }
+
+    final expectedWallet = SingleSignatureWallet.fromDescriptor(watchOnlyWallet.descriptor);
+    final existingWallet = SingleSignatureWallet.fromDescriptor(walletBase.descriptor);
+    if (expectedWallet.addressType != existingWallet.addressType ||
+        expectedWallet.derivationPath != existingWallet.derivationPath ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.publicKey,
+          existingWallet.keyStore.extendedPublicKey.publicKey,
+        ) ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.chainCode,
+          existingWallet.keyStore.extendedPublicKey.chainCode,
+        ) ||
+        expectedWallet.getAddress(0) != existingWallet.getAddress(0)) {
+      throw StateError('The hot wallet descriptor does not match');
+    }
+
+    final existingExternalWallet = realm.find<RealmExternalWallet>(walletId);
+    await realm.writeAsync(() {
+      walletBase
+        ..name = watchOnlyWallet.name
+        ..colorIndex = watchOnlyWallet.colorIndex
+        ..iconIndex = watchOnlyWallet.iconIndex
+        ..descriptor = watchOnlyWallet.descriptor;
+
+      realm.delete(hotWalletMetadata);
+      if (existingExternalWallet != null) {
+        realm.delete(existingExternalWallet);
+      }
+      if (watchOnlyWallet.walletImportSource != WalletImportSource.coconutVault) {
+        realm.add(RealmExternalWallet(walletId, watchOnlyWallet.walletImportSource.name, walletBase: walletBase));
+      }
+    });
+
+    return mapRealmToSingleSigWalletItem(walletBase, walletBase.descriptor, watchOnlyWallet.walletImportSource);
+  }
+
+  List<HotWalletMetadata> getHotWalletMetadataList() {
+    return realm.all<RealmHotWalletMetadata>().map(mapRealmToHotWalletMetadata).toList(growable: false);
+  }
+
+  HotWalletMetadata? getHotWalletMetadata(int walletId) {
+    final metadata = realm.find<RealmHotWalletMetadata>(walletId);
+    return metadata == null ? null : mapRealmToHotWalletMetadata(metadata);
+  }
+
+  Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
+    final metadata = realm.find<RealmHotWalletMetadata>(walletId);
+    if (metadata == null) {
+      throw StateError('Hot wallet metadata not found: $walletId');
+    }
+    await realm.writeAsync(() {
+      metadata.lifecycleStateName = state.name;
+    });
+  }
+
+  /// A hot wallet may reuse the name of its matching watch-only wallet.
+  /// Other database entries, including inactive hot wallets, remain conflicts.
+  bool containsWalletName(String name, {int? excludeWalletId, String? matchingWatchOnlyDescriptor}) {
+    final matchingAddress =
+        matchingWatchOnlyDescriptor == null
+            ? null
+            : SingleSignatureWallet.fromDescriptor(matchingWatchOnlyDescriptor).getAddress(0);
+    return realm.all<RealmWalletBase>().any((wallet) {
+      if (wallet.id == excludeWalletId || wallet.name != name) return false;
+      if (matchingAddress != null &&
+          wallet.walletType == WalletType.singleSignature.name &&
+          realm.find<RealmHotWalletMetadata>(wallet.id) == null &&
+          SingleSignatureWallet.fromDescriptor(wallet.descriptor).getAddress(0) == matchingAddress) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  bool containsHotWalletDescriptor(String descriptor) {
+    final address = SingleSignatureWallet.fromDescriptor(descriptor).getAddress(0);
+    final hotWalletIds = realm.all<RealmHotWalletMetadata>().map((metadata) => metadata.walletId).toSet();
+    return realm
+        .all<RealmWalletBase>()
+        .where((wallet) => hotWalletIds.contains(wallet.id))
+        .any((wallet) => SingleSignatureWallet.fromDescriptor(wallet.descriptor).getAddress(0) == address);
+  }
+
   int _getAccountIndex(String derivationPath) {
     final segments = derivationPath.split('/');
     if (segments.length < 4 || segments.first != 'm') {
@@ -185,13 +370,18 @@ class WalletRepository extends BaseRepository {
     return int.parse(segments[3].replaceAll(RegExp(r"['hH]"), ''));
   }
 
-  Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
+  Future<void> updateHotWalletBackupVerified(
+    int walletId, {
+    required bool backupVerified,
+    DateTime? backupVerifiedAt,
+  }) async {
     final metadata = realm.find<RealmHotWalletMetadata>(walletId);
     if (metadata == null) {
       throw StateError('Hot wallet metadata not found');
     }
     await realm.writeAsync(() {
       metadata.backupVerified = backupVerified;
+      metadata.backupVerifiedAt = backupVerified ? (backupVerifiedAt ?? DateTime.now()) : null;
     });
   }
 
@@ -301,6 +491,7 @@ class WalletRepository extends BaseRepository {
     final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
     final utxos = realm.query<RealmUtxo>('walletId == $walletId');
+    final pendingUtxoLocks = realm.query<RealmPendingUtxoLock>('walletId == $walletId');
     final utxoTags = realm.query<RealmUtxoTag>('walletId == $walletId');
     final scriptStatuses = realm.query<RealmScriptStatus>('walletId == $walletId');
 
@@ -347,12 +538,55 @@ class WalletRepository extends BaseRepository {
       if (utxos.isNotEmpty) {
         realm.deleteMany(utxos);
       }
+      if (pendingUtxoLocks.isNotEmpty) {
+        realm.deleteMany(pendingUtxoLocks);
+      }
       if (utxoTags.isNotEmpty) {
         realm.deleteMany(utxoTags);
       }
       if (scriptStatuses.isNotEmpty) {
         realm.deleteMany(scriptStatuses);
       }
+    });
+  }
+
+  /// 지갑 재동기화를 위해 온체인 데이터를 초기화한다.
+  /// deleteWallet과 달리 지갑 row 자체와 RealmUtxoTag/RealmTransactionMemo는 남겨둔다.
+  Future<void> resetWalletForResync(int walletId) async {
+    final walletBase = realm.find<RealmWalletBase>(walletId);
+    if (walletBase == null) {
+      throw StateError('[resetWalletForResync] Wallet not found: $walletId');
+    }
+
+    await _transactionDraftRepository.deleteAllByWalletId(walletId);
+
+    final transactions = realm.query<RealmTransaction>('walletId == $walletId');
+    final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
+    final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
+    final utxos = realm.query<RealmUtxo>('walletId == $walletId');
+    final scriptStatuses = realm.query<RealmScriptStatus>('walletId == $walletId');
+
+    await realm.writeAsync(() {
+      if (transactions.isNotEmpty) {
+        realm.deleteMany(transactions);
+      }
+      if (walletBalance.isNotEmpty) {
+        realm.deleteMany(walletBalance);
+      }
+      if (walletAddress.isNotEmpty) {
+        realm.deleteMany(walletAddress);
+      }
+      if (utxos.isNotEmpty) {
+        realm.deleteMany(utxos);
+      }
+      if (scriptStatuses.isNotEmpty) {
+        realm.deleteMany(scriptStatuses);
+      }
+
+      walletBase.usedReceiveIndex = -1;
+      walletBase.usedChangeIndex = -1;
+      walletBase.generatedReceiveIndex = -1;
+      walletBase.generatedChangeIndex = -1;
     });
   }
 

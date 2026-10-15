@@ -1,5 +1,9 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -29,6 +33,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -106,6 +111,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       context.read<ConnectivityProvider>(),
       context.read<PriceProvider>(),
       context.read<PreferenceProvider>(),
+      context.read<NodeProvider>(),
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 
@@ -169,6 +175,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
+                    refreshTriggerPullDistance: 80,
                   ),
                   SliverToBoxAdapter(child: _buildHeader(context)),
                   UtxoList(
@@ -410,12 +417,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
                         Navigator.pushNamed(
                           context,
-                          '/send',
-                          arguments: {
-                            'walletId': widget.id,
-                            'sendEntryPoint': SendEntryPoint.walletDetail,
-                            'selectedUtxoList': currentSelectedUtxos,
-                          },
+                          AppRouteNames.send,
+                          arguments: SendRouteArgs(
+                            id: widget.id,
+                            sendEntryPoint: SendEntryPoint.walletDetail,
+                            selectedUtxoList: currentSelectedUtxos,
+                          ),
                         );
                       }),
                 ),
@@ -483,11 +490,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Future<void> showTagBottomSheet() async {
     final selectedUtxoIds = _utxoListKey.currentState?._selectedUtxoIds.toList() ?? [];
 
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoListTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;
@@ -674,6 +683,9 @@ class UtxoList extends StatefulWidget {
     required this.onFirstBuildCompleted,
     required this.isSelectionMode,
     this.onSettingLockChanged,
+    this.emptyStateText,
+    this.emptyStateTextStyle,
+    this.viewModel,
   });
 
   final int walletId;
@@ -682,6 +694,9 @@ class UtxoList extends StatefulWidget {
   final VoidCallback onFirstBuildCompleted;
   final bool isSelectionMode;
   final ValueChanged<bool>? onSettingLockChanged;
+  final String? emptyStateText;
+  final TextStyle? emptyStateTextStyle;
+  final UtxoOverviewViewModel? viewModel;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -709,26 +724,37 @@ class _UtxoListState extends State<UtxoList> {
   Widget build(BuildContext context) {
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      return ListenableBuilder(
+        listenable: viewModel,
+        builder: (_, __) => _buildList(viewModel.utxoList, viewModel.activeUtxoTagName, bottomInset),
+      );
+    }
+
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
       selector: (_, vm) => Tuple3(vm.utxoList, vm.activeUtxoTagName, vm.activeUtxoOrder),
       shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2 || prev.item3 != next.item3,
       builder: (_, data, __) {
-        final utxoList = data.item1;
-        final activeTag = data.item2;
-
-        if (utxoList.isEmpty) return _buildEmptyState();
-
-        if (_isListChanged(_displayedUtxoList, utxoList)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleUtxoListChange(utxoList);
-          });
-        }
-
-        return SliverPadding(
-          padding: EdgeInsets.only(bottom: bottomInset + 70),
-          sliver: _buildSliverAnimatedList(utxoList, activeTag),
-        );
+        return _buildList(data.item1, data.item2, bottomInset);
       },
+    );
+  }
+
+  Widget _buildList(List<UtxoState> utxoList, String activeTag, double bottomInset) {
+    if (utxoList.isEmpty || !utxoList.any((utxo) => _belongsToTag(utxo, activeTag))) {
+      return _buildEmptyState();
+    }
+
+    if (_isListChanged(_displayedUtxoList, utxoList)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleUtxoListChange(utxoList);
+      });
+    }
+
+    return SliverPadding(
+      padding: EdgeInsets.only(bottom: bottomInset + 70),
+      sliver: _buildSliverAnimatedList(utxoList, activeTag),
     );
   }
 
@@ -769,7 +795,10 @@ class _UtxoListState extends State<UtxoList> {
         padding: const EdgeInsets.only(top: 80),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(t.utxo_not_found, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          child: Text(
+            widget.emptyStateText ?? t.utxo_not_found,
+            style: widget.emptyStateTextStyle ?? CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          ),
         ),
       ),
     );
@@ -801,11 +830,10 @@ class _UtxoListState extends State<UtxoList> {
   Future<void> _updateSelectedUtxos({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
 
-    final viewModel = context.read<UtxoListViewModel>();
     final selectedCount = _selectedUtxoIds.length;
 
     try {
-      final changedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
+      final changedCount = await _setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
@@ -860,7 +888,6 @@ class _UtxoListState extends State<UtxoList> {
   // Item Builders
   // --------------------
   Widget _buildUtxoItem(UtxoState utxo, Animation<Offset> offsetAnimation) {
-    final viewModel = context.read<UtxoListViewModel>();
     final isSelectionMode = widget.isSelectionMode;
     final isSelected = _selectedUtxoIds.contains(utxo.utxoId);
 
@@ -884,14 +911,14 @@ class _UtxoListState extends State<UtxoList> {
               setState(() {
                 if (_selectedUtxoIds.contains(utxo.utxoId)) {
                   _selectedUtxoIds.remove(utxo.utxoId);
-                  viewModel.removeSelectUtxo(utxo);
+                  _removeSelectUtxo(utxo);
                 } else {
                   _selectedUtxoIds.add(utxo.utxoId);
-                  viewModel.addSelectUtxo(utxo);
+                  _addSelectUtxo(utxo);
                 }
               });
             } else {
-              _openDetailPage(utxo, viewModel);
+              _openDetailPage(utxo);
             }
           },
           // 요소 중 하나를 Long Press 하면 선택 모드로 진입
@@ -903,7 +930,7 @@ class _UtxoListState extends State<UtxoList> {
             }
             setState(() {
               _selectedUtxoIds.add(utxo.utxoId);
-              viewModel.addSelectUtxo(utxo);
+              _addSelectUtxo(utxo);
             });
             widget.onSettingLockChanged?.call(true);
           },
@@ -912,10 +939,46 @@ class _UtxoListState extends State<UtxoList> {
     );
   }
 
-  void _openDetailPage(UtxoState utxo, UtxoListViewModel viewModel) async {
+  Future<int> _setUtxoLockStatus(List<String> ids, bool lock) {
+    return widget.viewModel?.setUtxoLockStatus(ids, lock) ??
+        context.read<UtxoListViewModel>().setUtxoLockStatus(ids, lock);
+  }
+
+  void _addSelectUtxo(UtxoState utxo) {
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.addSelectUtxo(utxo);
+      return;
+    }
+    context.read<UtxoListViewModel>().addSelectUtxo(utxo);
+  }
+
+  void _removeSelectUtxo(UtxoState utxo) {
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.removeSelectUtxo(utxo);
+      return;
+    }
+    context.read<UtxoListViewModel>().removeSelectUtxo(utxo);
+  }
+
+  void _refetchFromDB() {
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.refetchFromDB();
+      return;
+    }
+    context.read<UtxoListViewModel>().refetchFromDB();
+  }
+
+  void _openDetailPage(UtxoState utxo) async {
     widget.onRemoveDropdown();
-    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.walletId});
-    viewModel.refetchFromDB();
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.utxoDetail,
+      arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.walletId),
+    );
+    _refetchFromDB();
   }
 
   Animation<Offset> _buildSlideAnimation(Animation<double> animation) {
@@ -938,7 +1001,11 @@ class _UtxoListState extends State<UtxoList> {
             utxo: utxo,
             onPressed: () async {
               widget.onRemoveDropdown();
-              await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.walletId});
+              await Navigator.pushNamed(
+                context,
+                AppRouteNames.utxoDetail,
+                arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.walletId),
+              );
             },
           ),
         ),

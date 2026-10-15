@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -21,6 +22,8 @@ class HotWalletSecretRepository {
   static const String _secretPrefix = 'hot_wallet_secret_';
   static const String _hardwareKeyPrefix = 'hot_wallet_device_key_';
   static const String _fallbackKeySuffix = '_fallback_kek';
+  static const String _secretIndexKey = 'hot_wallet_secret_index_v1';
+  static Future<void> _indexMutationTail = Future<void>.value();
 
   final SecureStorageRepository _secureStorage;
   final HotWalletCryptoService _cryptoService;
@@ -30,7 +33,19 @@ class HotWalletSecretRepository {
   String newSecretStorageKey() => '$_secretPrefix${_randomId()}';
 
   Future<void> create({required String storageKey, required Uint8List mnemonic, required Uint8List passphrase}) async {
-    final result = await _cryptoService.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
+    _validateSecretStorageKey(storageKey);
+    if (await _secureStorage.read(key: storageKey) != null ||
+        await _secureStorage.read(key: _fallbackStorageKey(storageKey)) != null) {
+      throw StateError('Hot wallet secret storage key already exists');
+    }
+    await _addToSecretIndex(storageKey);
+    late final ({EncryptedValue encryptedPayload, Uint8List dek}) result;
+    try {
+      result = await _cryptoService.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
+    } catch (_) {
+      await _removeFromSecretIndex(storageKey);
+      rethrow;
+    }
     String? hardwareAlias;
     String? fallbackKey;
 
@@ -54,6 +69,8 @@ class HotWalletSecretRepository {
       if (fallbackKey != null) {
         await _secureStorage.delete(key: fallbackKey!);
       }
+      await _secureStorage.delete(key: storageKey);
+      await _removeFromSecretIndex(storageKey);
       rethrow;
     } finally {
       result.dek.fillRange(0, result.dek.length, 0);
@@ -82,20 +99,60 @@ class HotWalletSecretRepository {
       secret = await _readSecret(storageKey);
     } on StateError {
       // 생성 도중 실패해 secret 레코드가 아직 없는 경우도 정리한다.
+    } on FormatException {
+      // 생성 도중 실패했거나 레코드가 손상된 경우에도 나머지 저장소를 정리한다.
     }
-
-    await _secureStorage.delete(key: storageKey);
-    await _secureStorage.delete(key: _fallbackStorageKey(storageKey));
 
     final wrapped = secret?.deviceWrappedDek;
     if (wrapped != null && wrapped.protection != DeviceKeyProtection.secureStorage && wrapped.alias != null) {
-      await _deleteHardwareKeyIgnoringFailure(wrapped.alias!);
+      // secret 레코드를 마지막까지 남겨 두어 중간 실패/강제 종료 후에도
+      // OS key alias를 다시 찾아 삭제를 재시도할 수 있게 한다.
+      await _deviceKeystore.delete(wrapped.alias!);
     }
+
+    await _secureStorage.delete(key: _fallbackStorageKey(storageKey));
+    await _secureStorage.delete(key: storageKey);
+    await _removeFromSecretIndex(storageKey);
   }
 
   Future<List<String>> getSecretStorageKeys() async {
-    final keys = await _secureStorage.getAllKeys();
-    return keys.where((key) => key.startsWith(_secretPrefix) && !key.endsWith(_fallbackKeySuffix)).toList();
+    final keys = await _withSecretIndexLock(_readOrCreateSecretIndex);
+    return keys.toList();
+  }
+
+  Future<void> cleanupOrphanHardwareAliases(Set<String> referencedStorageKeys) async {
+    final referencedAliases = <String>{};
+    for (final storageKey in referencedStorageKeys) {
+      try {
+        final secret = await _readSecret(storageKey);
+        final wrapped = secret.deviceWrappedDek;
+        if (wrapped.protection != DeviceKeyProtection.secureStorage && wrapped.alias != null) {
+          referencedAliases.add(wrapped.alias!);
+        }
+      } on StateError {
+        // secret 레코드가 없다면 연결된 alias도 없다고 간주한다.
+      } on FormatException {
+        // Secret이 없거나 손상된 지갑은 보존할 hardware alias를 확인할 수 없다.
+      }
+    }
+
+    List<String> hardwareAliases;
+    try {
+      hardwareAliases = await _deviceKeystore.getAliases();
+    } on MissingPluginException {
+      return;
+    } on PlatformException {
+      return;
+    }
+    for (final alias in hardwareAliases.where((alias) => alias.startsWith(_hardwareKeyPrefix))) {
+      if (!referencedAliases.contains(alias)) {
+        await _deleteHardwareKeyIgnoringFailure(alias);
+      }
+    }
+  }
+
+  Future<bool> contains(String storageKey) async {
+    return await _secureStorage.read(key: storageKey) != null;
   }
 
   Future<DeviceWrappedDek> _wrapDekWithBestAvailableProtection(
@@ -115,8 +172,15 @@ class HotWalletSecretRepository {
       );
     } on MissingPluginException {
       // 시뮬레이터 또는 지원하지 않는 플랫폼은 SecureStorage로 폴백한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
     } on PlatformException catch (error) {
+      // 네이티브 wrap 도중 OS 키만 생성된 뒤 실패했을 수 있다.
+      // 키 생성 여부와 관계없이 삭제를 시도해 고아 alias가 남지 않게 한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
       if (error.code != 'HARDWARE_UNAVAILABLE') rethrow;
+    } catch (_) {
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
+      rethrow;
     }
 
     final fallbackKeyStorageKey = _fallbackStorageKey(storageKey);
@@ -183,6 +247,68 @@ class HotWalletSecretRepository {
   }
 
   String _fallbackStorageKey(String storageKey) => '$storageKey$_fallbackKeySuffix';
+
+  void _validateSecretStorageKey(String storageKey) {
+    if (!storageKey.startsWith(_secretPrefix) || storageKey.endsWith(_fallbackKeySuffix)) {
+      throw ArgumentError.value(storageKey, 'storageKey', 'Invalid hot wallet secret storage key');
+    }
+  }
+
+  Future<void> _addToSecretIndex(String storageKey) => _withSecretIndexLock(() async {
+    final keys = await _readOrCreateSecretIndex();
+    if (keys.contains(storageKey)) return;
+    await _writeSecretIndex({...keys, storageKey});
+  });
+
+  Future<void> _removeFromSecretIndex(String storageKey) => _withSecretIndexLock(() async {
+    final keys = await _readOrCreateSecretIndex();
+    if (!keys.remove(storageKey)) return;
+    await _writeSecretIndex(keys);
+  });
+
+  Future<Set<String>> _readOrCreateSecretIndex() async {
+    final encodedIndex = await _secureStorage.read(key: _secretIndexKey);
+    if (encodedIndex != null) {
+      try {
+        final decoded = jsonDecode(encodedIndex) as List<dynamic>;
+        return decoded
+            .whereType<String>()
+            .where(
+              (key) => key.startsWith(_secretPrefix) && key != _secretIndexKey && !key.endsWith(_fallbackKeySuffix),
+            )
+            .toSet();
+      } catch (_) {
+        // 손상된 인덱스는 기존 Secure Storage를 한 번 스캔해 복구한다.
+      }
+    }
+
+    final allKeys = await _secureStorage.getAllKeys();
+    final migratedKeys =
+        allKeys
+            .where(
+              (key) => key.startsWith(_secretPrefix) && key != _secretIndexKey && !key.endsWith(_fallbackKeySuffix),
+            )
+            .toSet();
+    await _writeSecretIndex(migratedKeys);
+    return migratedKeys;
+  }
+
+  Future<void> _writeSecretIndex(Set<String> keys) async {
+    final sortedKeys = keys.toList()..sort();
+    await _secureStorage.write(key: _secretIndexKey, value: jsonEncode(sortedKeys));
+  }
+
+  Future<T> _withSecretIndexLock<T>(Future<T> Function() operation) async {
+    final previous = _indexMutationTail;
+    final release = Completer<void>();
+    _indexMutationTail = release.future;
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release.complete();
+    }
+  }
 
   String _randomId() =>
       List<int>.generate(

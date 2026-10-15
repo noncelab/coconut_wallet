@@ -63,7 +63,7 @@ void main() {
   group('cleanupOrphanedUtxos 테스트', () {
     test('컨펌된 트랜잭션에 연결된 outgoing UTXO가 정리되는지 확인', () async {
       // Given: 컨펌된 트랜잭션과 연결된 outgoing UTXO 생성
-      const String confirmedTxHash = 'confirmed_tx_hash_123';
+      const String confirmedTxHash = '0000000000000000000000000000000000000000000000000000000000000123';
 
       // 트랜잭션 레코드 생성 (컨펌됨 - blockHeight > 0)
       final confirmedTx = TransactionMock.createConfirmedTransactionRecord(
@@ -109,7 +109,7 @@ void main() {
 
     test('컨펌된 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {
       // Given: 컨펌된 트랜잭션과 연결된 incoming UTXO 생성
-      const String confirmedTxHash = 'confirmed_tx_hash_123';
+      const String confirmedTxHash = '0000000000000000000000000000000000000000000000000000000000000123';
 
       // 트랜잭션 레코드 생성 (컨펌됨 - blockHeight > 0)
       final confirmedTx = TransactionMock.createConfirmedTransactionRecord(
@@ -155,7 +155,7 @@ void main() {
 
     test('존재하지 않는 트랜잭션에 연결된 outgoing UTXO가 정리되는지 확인', () async {
       // Given: 존재하지 않는 트랜잭션에 연결된 outgoing UTXO 생성
-      const String nonExistentTxHash = 'non_existent_tx_hash';
+      const String nonExistentTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
       final outgoingUtxo = UtxoState(
         transactionHash: nonExistentTxHash,
@@ -183,7 +183,7 @@ void main() {
 
     test('존재하지 않는 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {
       // Given: 존재하지 않는 트랜잭션에 연결된 incoming UTXO 생성
-      const String nonExistentTxHash = 'non_existent_tx_hash';
+      const String nonExistentTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
       final incomingUtxo = UtxoState(
         transactionHash: nonExistentTxHash,
@@ -210,7 +210,7 @@ void main() {
 
     test('정상적인 pending UTXO가 남아있는지 확인', () async {
       // Given: 펜딩 트랜잭션과 연결된 outgoing, incoming UTXO 생성
-      const String pendingTxHash = 'unconfirmed_tx_hash_789';
+      const String pendingTxHash = '0000000000000000000000000000000000000000000000000000000000000789';
 
       final unconfirmedTx = TransactionMock.createMockTransactionRecord(
         transactionHash: pendingTxHash,
@@ -258,8 +258,9 @@ void main() {
       final orphanedUtxos = <UtxoState>[];
 
       for (int i = 0; i < 3; i++) {
+        final confirmedTxHash = '${List.filled(63, '0').join()}$i';
         final confirmedTx = TransactionMock.createConfirmedTransactionRecord(
-          transactionHash: 'confirmed_tx_$i',
+          transactionHash: confirmedTxHash,
           blockHeight: 100 + i,
         );
         await transactionRepository.addAllTransactions(testWalletId, [confirmedTx]);
@@ -274,7 +275,7 @@ void main() {
             to: testWalletItem.walletBase.getAddress(0),
             timestamp: DateTime.now(),
             status: UtxoStatus.outgoing,
-            spentByTransactionHash: 'confirmed_tx_$i',
+            spentByTransactionHash: confirmedTxHash,
           ),
         );
       }
@@ -295,7 +296,7 @@ void main() {
   group('fetchUtxoStateList 테스트', () {
     test('같은 트랜잭션의 다른 output이 잠겨 있어도 잠근 적 없는 output은 unspent로 유지되는지 확인', () async {
       // Given: 하나의 트랜잭션이 지갑 소유 output을 2개 생성 (수신 output index 0, 잔돈 output index 1)
-      const String sharedTxHash = 'shared_tx_hash_receive_and_change';
+      const String sharedTxHash = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
       final confirmedTx = TransactionMock.createConfirmedTransactionRecord(
         transactionHash: sharedTxHash,
@@ -339,6 +340,36 @@ void main() {
       expect(result.length, 1);
       expect(result.first.transactionHash, sharedTxHash);
       expect(result.first.index, 1);
+      expect(result.first.status, UtxoStatus.unspent);
+    });
+
+    test('전체 재동기화처럼 대량 콜드 스캔 도중, UTXO를 만든 트랜잭션이 아직 RealmTransaction에 없어도 '
+        'UTXO 자체는 유실되지 않고 반환된다(예전 버그: null check로 전체 리스트가 빈 리스트로 대체됨)', () async {
+      // Given: RealmTransaction에는 아무 것도 저장하지 않은 상태(트랜잭션 fetch가 아직 안 됐거나
+      // 늦게 반영된 상황을 재현)
+      const String unknownTxHash = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+      final scriptStatus = ScriptStatus(
+        derivationPath: "m/84'/0'/0'/0/0",
+        address: testWalletItem.walletBase.getAddress(0),
+        index: 0,
+        isChange: false,
+        scriptPubKey: 'receive_script_pub_key',
+        status: 'receive_status_hash',
+        timestamp: DateTime.now(),
+      );
+
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+        return [ListUnspentRes(height: 100, txHash: unknownTxHash, txPos: 0, value: 700000)];
+      });
+
+      // When
+      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus);
+
+      // Then: 예외로 인해 빈 리스트가 아니라, UTXO가 그대로(타임스탬프만 대체돼서) 반환돼야 함
+      expect(result.length, 1);
+      expect(result.first.transactionHash, unknownTxHash);
+      expect(result.first.amount, 700000);
       expect(result.first.status, UtxoStatus.unspent);
     });
   });

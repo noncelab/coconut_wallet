@@ -13,20 +13,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-typedef _PassphraseCheckArguments = ({String mnemonic, String passphrase, String descriptor});
-
-bool _checkPassphraseInBackground(_PassphraseCheckArguments arguments) {
-  return doesPassphraseMatchDescriptor(
-    mnemonic: arguments.mnemonic,
-    passphrase: arguments.passphrase,
-    descriptor: arguments.descriptor,
-  );
-}
-
 class HotWalletPassphraseCheckScreen extends StatefulWidget {
   const HotWalletPassphraseCheckScreen({super.key, required this.mnemonic, required this.descriptor});
 
-  final String mnemonic;
+  final Uint8List mnemonic;
   final String descriptor;
 
   @override
@@ -59,6 +49,7 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
     _controller.clear();
     _controller.dispose();
     _focusNode.dispose();
+    widget.mnemonic.fillRange(0, widget.mnemonic.length, 0);
     super.dispose();
   }
 
@@ -192,11 +183,13 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
       _isChecking = true;
     });
 
-    final isCorrect = await compute(_checkPassphraseInBackground, (
+    // doesPassphraseMatchDescriptorBytes는 전달받은 mnemonic을 내부에서 복사해서만 사용하므로
+    // widget.mnemonic 원본은 그대로 남아 있어 오답 시 재입력해도 다시 검증할 수 있다.
+    final isCorrect = await doesPassphraseMatchDescriptorAsync(
       mnemonic: mnemonic,
       passphrase: passphrase,
       descriptor: descriptor,
-    ));
+    );
     if (!mounted) return;
 
     if (!isCorrect) {

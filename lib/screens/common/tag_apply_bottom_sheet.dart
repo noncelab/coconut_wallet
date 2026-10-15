@@ -17,9 +17,10 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -295,31 +296,32 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
   }
 
   void _handleTagChipLongPress(BuildContext context, UtxoTag selectedUtxoTag) {
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.tagApplyEditTagSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => TagEditBottomSheet(
-            walletId: widget.walletId,
-            existingTags: _utxoTags,
-            updateUtxoTag: selectedUtxoTag,
-            onTagCreated: (updatedTag) {
-              _viewModel.toggleUtxoTag(selectedUtxoTag);
-              _viewModel.updateUtxoTag(updatedTag);
-              setState(() {
-                _utxoTags = List.from(_viewModel.utxoTagList);
+      child: TagEditBottomSheet(
+        walletId: widget.walletId,
+        existingTags: _utxoTags,
+        updateUtxoTag: selectedUtxoTag,
+        onTagCreated: (updatedTag) {
+          _viewModel.toggleUtxoTag(selectedUtxoTag);
+          _viewModel.updateUtxoTag(updatedTag);
+          setState(() {
+            _utxoTags = List.from(_viewModel.utxoTagList);
 
-                if (selectedUtxoTag.name != updatedTag.name) {
-                  final previousState = _tagStates.remove(selectedUtxoTag.name);
-                  if (previousState != null) {
-                    _tagStates[updatedTag.name] = previousState;
-                  }
-                }
-                _isTagListModified = true;
-              });
-            },
-          ),
+            if (selectedUtxoTag.name != updatedTag.name) {
+              final previousState = _tagStates.remove(selectedUtxoTag.name);
+              if (previousState != null) {
+                _tagStates[updatedTag.name] = previousState;
+              }
+            }
+            _isTagListModified = true;
+          });
+        },
+      ),
     );
   }
 
@@ -338,24 +340,25 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
   }
 
   void _showTagAdditionBottomSheet() {
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.tagApplyAddTagSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
-      builder:
-          (context) => TagEditBottomSheet(
-            walletId: widget.walletId,
-            existingTags: _utxoTags,
-            onTagCreated: (newTag) async {
-              _viewModel.addUtxoTag(newTag);
+      child: TagEditBottomSheet(
+        walletId: widget.walletId,
+        existingTags: _utxoTags,
+        onTagCreated: (newTag) async {
+          _viewModel.addUtxoTag(newTag);
 
-              setState(() {
-                _utxoTags = List.from(_viewModel.utxoTagList);
-                _tagStates[newTag.name] = TagApplyState.checked;
-                _isTagListModified = true;
-              });
-            },
-          ),
+          setState(() {
+            _utxoTags = List.from(_viewModel.utxoTagList);
+            _tagStates[newTag.name] = TagApplyState.checked;
+            _isTagListModified = true;
+          });
+        },
+      ),
     );
   }
 
@@ -411,9 +414,10 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = tagColorPalette[tag.colorIndex];
+    final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(tag.colorIndex);
+    final foregroundColor = tagColorPalette[colorIndex];
     final backgroundColor = foregroundColor.withValues(alpha: 0.18);
-    final style = _getStyle(context, foregroundColor);
+    final style = _getStyle(context, foregroundColor, colorIndex);
 
     Widget innerContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -460,7 +464,7 @@ class TagChip extends StatelessWidget {
     );
   }
 
-  _ChipStyle _getStyle(BuildContext context, Color foregroundColor) {
+  _ChipStyle _getStyle(BuildContext context, Color foregroundColor, int colorIndex) {
     if (isDeletionMode) {
       return _ChipStyle(
         borderColor: foregroundColor,

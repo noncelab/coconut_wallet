@@ -5,5 +5,9 @@ class SubscribeScriptStreamDto {
   final WalletItemBase walletItem;
   final ScriptStatus scriptStatus;
 
-  SubscribeScriptStreamDto({required this.walletItem, required this.scriptStatus});
+  /// [updateUsedIndex] false면 usedIndex를 갱신하지 않음.
+  /// 예: gap window 밖에서 발견된 개별 주소인 경우
+  final bool updateUsedIndex;
+
+  SubscribeScriptStreamDto({required this.walletItem, required this.scriptStatus, this.updateUsedIndex = true});
 }

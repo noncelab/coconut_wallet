@@ -112,6 +112,8 @@ class CoconutPulldownMenu extends StatelessWidget {
         margin: margin,
         constraints: const BoxConstraints(minWidth: 152),
         decoration: BoxDecoration(
+          color: backgroundColor ?? colors.pulldownMenuBackground,
+          borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
               color: shadowColor ?? colors.shadowDefault,

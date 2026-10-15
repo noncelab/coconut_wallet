@@ -80,20 +80,22 @@ class SocketManager {
   }
 
   // .onion 주소인 경우 타임아웃을 길게 설정
-  Duration getConnectionTimeout(bool isOnionHost, bool isTailscale) {
+  Duration getConnectionTimeout(bool isOnionHost) {
     if (isOnionHost) {
       return kIsolateInitTimeoutForOnion;
-    } else if (isTailscale) {
-      return kIsolateInitTimeout;
     } else {
       return kIsolateInitTimeout;
     }
   }
 
-  Future<bool> connect(String host, int port, {bool ssl = true}) async {
+  bool _lastConnectionFailedDueToUntrustedCertificate = false;
+  bool get lastConnectionFailedDueToUntrustedCertificate => _lastConnectionFailedDueToUntrustedCertificate;
+
+  Future<bool> connect(String host, int port, {bool ssl = true, String? pinnedCertFingerprint}) async {
     _host = host;
     _port = port;
     _ssl = ssl;
+    _lastConnectionFailedDueToUntrustedCertificate = false;
 
     final isOnionHost = _isOnionAddress(host);
     _ssl = isOnionHost ? false : ssl;
@@ -113,18 +115,16 @@ class SocketManager {
 
     _connectionStatus = SocketConnectionStatus.connecting;
 
-    final isTailscale = await _detectTailscaleNetwork();
-
-    final connectionTimeout = getConnectionTimeout(isOnionHost, isTailscale);
+    final connectionTimeout = getConnectionTimeout(isOnionHost);
 
     try {
-      // ssl false이거나 tailscale이 감지되는 경우, 일반 연결 사용
-      if (!_ssl || isTailscale || isOnionHost) {
+      // ssl false인 경우 일반 연결 사용
+      if (!_ssl || isOnionHost) {
         Logger.log('Socket connection: $_host:$_port');
         _socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
       } else {
-        Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl, Tailscale: $isTailscale)');
-        _socket = await socketFactory.createSecureSocket(_host, _port);
+        Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl)');
+        _socket = await socketFactory.createSecureSocket(_host, _port, pinnedFingerprint: pinnedCertFingerprint);
       }
 
       _connectionStatus = SocketConnectionStatus.connected;
@@ -132,8 +132,8 @@ class SocketManager {
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
       Logger.error('Socket connection failed: $e');
-      _connectionStatus = SocketConnectionStatus.terminated;
-      onConnectionLost?.call();
+      _lastConnectionFailedDueToUntrustedCertificate = e is HandshakeException;
+      markConnectionLost();
       return false;
     }
     return true;
@@ -141,45 +141,6 @@ class SocketManager {
 
   bool _isOnionAddress(String host) {
     return host.trim().toLowerCase().endsWith('.onion');
-  }
-
-  Future<bool> _detectTailscaleNetwork() async {
-    try {
-      final interfaces = await NetworkInterface.list();
-      final tailscaleIps = <String>[];
-
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          if (_isTailscaleIP(addr.address)) {
-            tailscaleIps.add(addr.address);
-            Logger.log('🌐 Tailscale IP Detected: ${addr.address} (${interface.name})');
-            return true;
-          }
-        }
-      }
-    } catch (e) {
-      Logger.log('❌ Tailscale IP Not Detected');
-      return false;
-    }
-    return false;
-  }
-
-  /// Tailscale IP 범위 확인
-  bool _isTailscaleIP(String ip) {
-    try {
-      final parts = ip.split('.');
-      if (parts.length != 4) return false;
-
-      final firstOctet = int.tryParse(parts[0]);
-      final secondOctet = int.tryParse(parts[1]);
-
-      if (firstOctet == null || secondOctet == null) return false;
-
-      // 100.64.0.0/10 범위: 100.64.x.x ~ 100.127.x.x
-      return firstOctet == 100 && secondOctet >= 64 && secondOctet <= 127;
-    } catch (e) {
-      return false;
-    }
   }
 
   Future<void> disconnect() async {
@@ -193,12 +154,17 @@ class SocketManager {
 
   void _onDone() {
     Logger.log('Socket connection closed');
-    _connectionStatus = SocketConnectionStatus.terminated;
-    onConnectionLost?.call();
+    markConnectionLost();
   }
 
   void _onError(error) {
     Logger.error('Socket connection error: $error');
+    markConnectionLost();
+  }
+
+  /// 소켓이 죽었다고 확정하고(FIN/RST 등 실제 에러 이벤트뿐 아니라, ping이 응답 없이 실패하는
+  /// blackhole 상태 등 외부에서 감지한 경우도 포함) 연결 상태를 갱신 + 리스너에 알린다.
+  void markConnectionLost() {
     _connectionStatus = SocketConnectionStatus.terminated;
     onConnectionLost?.call();
   }

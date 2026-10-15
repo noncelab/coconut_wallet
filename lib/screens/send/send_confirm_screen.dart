@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -9,8 +12,8 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -23,24 +26,23 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
+import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
-import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
-import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -250,7 +252,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                                   ? t.send_confirm_screen.passphrase_input_title
                                   : t.sign
                               : t.next,
-                      isActive: !_isLocalSigning,
+                      isActive: viewModel.isTransactionReady && !_isLocalSigning,
                       onButtonClicked: () => _onButtonClicked(viewModel),
                     ),
                   ),
@@ -346,6 +348,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _enterAuthenticationStage({required bool requiresAuthentication}) async {
+    if (!mounted) return;
     setState(() {
       _isLocalSigning = true;
       _signingStage = requiresAuthentication ? _HotWalletSigningStage.authentication : _HotWalletSigningStage.signing;
@@ -359,10 +362,17 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     if (requiresAuthentication) {
       _signatureController.value = 1;
     }
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) setState(() => _showOutputDetail = false);
-    await Future.delayed(const Duration(milliseconds: 220));
-    if (mounted) setState(() => _showSigningStatus = true);
+    if (!mounted) return;
+    setState(() {
+      _showOutputDetail = false;
+      _showSigningStatus = true;
+    });
+    if (!requiresAuthentication) {
+      await WidgetsBinding.instance.endOfFrame;
+      await _signatureCompositionLoaded.future;
+      if (!mounted || _signingStage != _HotWalletSigningStage.signing) return;
+      _signatureController.repeat();
+    }
   }
 
   void _resumePassphraseInput() {
@@ -391,6 +401,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
+    if (!viewModel.isTransactionReady) return;
+
     if (viewModel.isHotWallet) {
       await _signHotWallet(viewModel);
       return;
@@ -436,8 +448,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
 
   Future<void> _signHotWallet(SendConfirmViewModel viewModel) async {
     if (_isLocalSigning) return;
-    final storageKey = viewModel.hotWalletSecretStorageKey;
-    if (storageKey == null) {
+    if (!viewModel.isHotWallet) {
       await _showLocalSignFailure();
       return;
     }
@@ -451,45 +462,50 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     }
     if (!mounted) return;
     var shouldRestore = true;
+    Uint8List? passphrase;
     try {
-      _HotWalletSigningCredentials? credentials;
       if (requiresPassphrase) {
-        credentials = await CommonBottomSheets.showBottomSheet<_HotWalletSigningCredentials>(
-          context: context,
-          title: t.send_confirm_screen.passphrase_input_title,
-          showCloseButton: true,
-          backgroundColor: context.coconutColors.surfaceBottomSheet,
-          showDragHandle: true,
-          titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: _HotWalletPassphraseInputSheet(
-            storageKey: storageKey,
-            requiresAuthentication: requiresAuthentication,
-            validatePassphrase:
-                (mnemonic, passphrase) =>
-                    viewModel.validateHotWalletPassphrase(mnemonic: mnemonic, passphrase: passphrase),
-            onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
-            onPassphraseInputResumed: _resumePassphraseInput,
-          ),
-        );
-        if (!mounted || credentials == null) return;
-        if (!requiresAuthentication) {
+        var showIncorrectError = false;
+        while (mounted) {
+          passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
+            context: context,
+            screenName: AnalyticsScreenNames.sendHotWalletPassphraseSheet,
+            title: t.send_confirm_screen.passphrase_input_title,
+            showCloseButton: true,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
+            showDragHandle: true,
+            titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            keyboardInsetAnimationDuration: Duration.zero,
+            child: HotWalletPassphraseInputSheet(
+              requiresAuthentication: requiresAuthentication,
+              showIncorrectError: showIncorrectError,
+              onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
+              onPassphraseInputResumed: _resumePassphraseInput,
+            ),
+          );
+          if (!mounted || passphrase == null) return;
+
           await _enterAuthenticationStage(requiresAuthentication: false);
           if (!mounted) return;
+          final isMatchingWallet = await AppGuard.runWithoutPrivacyScreen(
+            () => viewModel.validateHotWalletPassphrase(passphrase!),
+          );
+          if (!mounted) return;
+          if (isMatchingWallet) {
+            break;
+          }
+
+          passphrase.fillRange(0, passphrase.length, 0);
+          passphrase = null;
+          showIncorrectError = true;
+          _resumePassphraseInput();
         }
       } else {
-        final plaintext = await AppGuard.runWithoutPrivacyScreen(
-          () => HotWalletUnlockService().unlockPreferBiometrics(
-            context: context,
-            storageKey: storageKey,
-            onDecrypting: () {
-              if (mounted) context.loaderOverlay.show();
-            },
-          ),
+        final authenticated = await AppGuard.runWithoutPrivacyScreen(
+          () => FlutterHotWalletAuthenticator(context).authenticate(),
         );
         if (!mounted) return;
-        context.loaderOverlay.hide();
-
-        if (plaintext == null) {
+        if (!authenticated) {
           await showInfoDialog(
             context,
             context.read<PreferenceProvider>().language,
@@ -498,7 +514,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           );
           return;
         }
-        credentials = _HotWalletSigningCredentials(mnemonic: plaintext.mnemonic, passphrase: plaintext.passphrase);
       }
 
       setState(() => _signingStage = _HotWalletSigningStage.signing);
@@ -507,7 +522,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       if (!mounted) return;
       final signingAnimationStartedAt = DateTime.now();
       _signatureController.repeat();
-      await viewModel.signHotWallet(mnemonic: credentials.mnemonic, passphrase: credentials.passphrase);
+      await AppGuard.runWithoutPrivacyScreen(() => viewModel.signHotWallet(passphrase: passphrase));
       if (!mounted) return;
       final signingAnimationElapsed = DateTime.now().difference(signingAnimationStartedAt);
       const minimumSigningAnimationDuration = Duration(milliseconds: 1500);
@@ -528,7 +543,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       shouldRestore = false;
       Navigator.of(context).pushReplacement(
         PageRouteBuilder<void>(
-          settings: const RouteSettings(name: '/broadcasting'),
+          settings: const RouteSettings(name: AppRouteNames.broadcasting),
           transitionDuration: const Duration(milliseconds: 280),
           reverseTransitionDuration: const Duration(milliseconds: 200),
           pageBuilder:
@@ -547,6 +562,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       context.loaderOverlay.hide();
       await _showLocalSignFailure();
     } finally {
+      passphrase?.fillRange(0, passphrase.length, 0);
       if (mounted && shouldRestore) {
         context.loaderOverlay.hide();
         _restoreConfirmationContent();
@@ -577,21 +593,25 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           _navigateToTrezorConnectIfNeeded(viewModel);
         }
       default:
-        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
+        Navigator.pushNamed(
+          context,
+          AppRouteNames.unsignedTransactionQr,
+          arguments: UnsignedTransactionQrRouteArgs(walletName: viewModel.walletName),
+        );
     }
   }
 
   void _pushBitBox02SignScreen(SendConfirmViewModel viewModel) {
     Navigator.pushNamed(
       context,
-      '/bitbox02-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': BitBox02Transport.resolveForSign(),
-      },
+      AppRouteNames.bitbox02Sign,
+      arguments: BitBox02SignRouteArgs(
+        walletId: viewModel.walletId,
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+      ),
     );
   }
 
@@ -605,16 +625,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     if (isConnected && hasSession && isMatchingWallet) {
       _pushBitBox02SignScreen(viewModel);
     } else {
-      CommonBottomSheets.showCustomHeightBottomSheet(
+      BitBox02Navigator.showConnectScreen(
         context: context,
-        child: BitBox02ConnectScreen(
-          importSource: WalletImportSource.bitbox02,
-          psbtBase64: viewModel.txWaitingForSign,
-          walletName: viewModel.walletName,
-          walletFingerprint: viewModel.walletFingerprint,
-          resumeFromExistingSession: isConnected && hasSession,
-        ),
-        heightRatio: 0.9,
+        screenName: AnalyticsScreenNames.sendConfirmConnectBitbox02Sheet,
+        walletId: viewModel.walletId,
+        psbtBase64: viewModel.txWaitingForSign,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        resumeFromExistingSession: isConnected && hasSession,
       );
     }
   }
@@ -623,20 +641,21 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     final lastConnected = TrezorDevice.lastConnected!;
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': lastConnected.transport.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        walletId: viewModel.walletId,
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+        transport: lastConnected.transport.name,
+      ),
     );
   }
 
   Future<void> _navigateToTrezorConnectIfNeeded(SendConfirmViewModel viewModel) async {
     final lastConnected = TrezorDevice.lastConnected;
-    final isConnected = await TrezorBleConnectivityService.isDeviceConnected(
+    final isConnected = await TrezorConnectivityService.isDeviceConnected(
       lastConnected?.transport ?? TrezorTransport.ble,
     );
     final hasSession = lastConnected != null;
@@ -648,6 +667,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     } else {
       TrezorNavigator.showConnectScreen(
         context: context,
+        walletId: viewModel.walletId,
         psbtBase64: viewModel.txWaitingForSign,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
@@ -679,6 +699,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
       externalOutputAmounts: viewModel.externalOutputAmounts,
+      externalOutputTapTargets: [
+        for (final (index, output) in transaction.outputs.indexed)
+          if (output.isChangeOutput != true)
+            FlowOutputTapTarget(address: output.getAddress(), amount: output.amount, outputIndex: index),
+      ],
       changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.estimatedFee,
       currentUnit: _currentUnit,
@@ -692,12 +717,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     }
 
     final detailItems = <OutputDetailItem>[];
-    int outputIndex = 0;
-    for (final output in transaction.outputs) {
+    for (final (outputIndex, output) in transaction.outputs.indexed) {
       final isChange = output.isChangeOutput == true;
-      if (!isChange) {
-        outputIndex += 1;
-      }
       detailItems.add(
         OutputDetailItem(
           label: isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
@@ -728,176 +749,4 @@ class _SigningContentTransition extends StatelessWidget {
       child: AnimatedOpacity(opacity: visible ? 1 : 0, duration: const Duration(milliseconds: 220), child: child),
     ),
   );
-}
-
-class _HotWalletSigningCredentials {
-  const _HotWalletSigningCredentials({required this.mnemonic, required this.passphrase});
-
-  final String mnemonic;
-  final String passphrase;
-}
-
-class _HotWalletPassphraseInputSheet extends StatefulWidget {
-  const _HotWalletPassphraseInputSheet({
-    required this.storageKey,
-    required this.requiresAuthentication,
-    required this.validatePassphrase,
-    required this.onAuthenticationStarted,
-    required this.onPassphraseInputResumed,
-  });
-
-  final String storageKey;
-  final bool requiresAuthentication;
-  final Future<bool> Function(String mnemonic, String passphrase) validatePassphrase;
-  final Future<void> Function() onAuthenticationStarted;
-  final VoidCallback onPassphraseInputResumed;
-
-  @override
-  State<_HotWalletPassphraseInputSheet> createState() => _HotWalletPassphraseInputSheetState();
-}
-
-class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInputSheet> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isSubmitting = false;
-  bool _isIncorrect = false;
-  bool _isPassphraseVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_handleChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
-  }
-
-  void _handleChanged() {
-    if (mounted) {
-      setState(() => _isIncorrect = false);
-    }
-  }
-
-  Future<void> _complete() async {
-    if (_controller.text.isEmpty || _isSubmitting) return;
-    _focusNode.unfocus();
-    setState(() => _isSubmitting = true);
-    if (widget.requiresAuthentication) {
-      await widget.onAuthenticationStarted();
-      if (!mounted) return;
-    }
-
-    try {
-      final plaintext = await AppGuard.runWithoutPrivacyScreen(
-        () => HotWalletUnlockService().unlockPreferBiometrics(
-          context: context,
-          storageKey: widget.storageKey,
-          onDecrypting: () {
-            if (mounted) context.loaderOverlay.show();
-          },
-        ),
-      );
-      if (!mounted) return;
-
-      if (plaintext == null) {
-        context.loaderOverlay.hide();
-        setState(() => _isSubmitting = false);
-        await showInfoDialog(
-          context,
-          context.read<PreferenceProvider>().language,
-          t.send_confirm_screen.authentication_failed_title,
-          t.send_confirm_screen.authentication_failed_description,
-        );
-        widget.onPassphraseInputResumed();
-        return;
-      }
-
-      final enteredPassphrase = _controller.text;
-      final isMatchingWallet = await widget.validatePassphrase(plaintext.mnemonic, enteredPassphrase);
-      if (!mounted) return;
-      context.loaderOverlay.hide();
-      if (!isMatchingWallet) {
-        setState(() {
-          _isSubmitting = false;
-          _isIncorrect = true;
-        });
-        widget.onPassphraseInputResumed();
-        _focusNode.requestFocus();
-        return;
-      }
-
-      Navigator.pop(context, _HotWalletSigningCredentials(mnemonic: plaintext.mnemonic, passphrase: enteredPassphrase));
-    } catch (_) {
-      if (!mounted) return;
-      context.loaderOverlay.hide();
-      setState(() => _isSubmitting = false);
-      widget.onPassphraseInputResumed();
-      await showInfoDialog(
-        context,
-        context.read<PreferenceProvider>().language,
-        t.send_confirm_screen.signing_failed_title,
-        t.send_confirm_screen.signing_failed_description,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_handleChanged);
-    _controller.clear();
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: _focusNode.unfocus,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CoconutTextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                onChanged: (_) {},
-                isError: _isIncorrect,
-                errorText: _isIncorrect ? t.wallet_home_screen.hot_wallet_setup.passphrase_incorrect : null,
-                obscureText: !_isPassphraseVisible,
-                autocorrect: false,
-                enableSuggestions: false,
-                maxLines: 1,
-                textInputAction: TextInputAction.done,
-                placeholderText: t.passphrase_input_text_field.placeholder,
-                suffix: IconButton(
-                  iconSize: 16,
-                  padding: EdgeInsets.zero,
-                  onPressed: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
-                  icon: SvgPicture.asset(
-                    _isPassphraseVisible ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
-                    width: 16,
-                    height: 16,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-                  ),
-                ),
-                onEditingComplete: _complete,
-              ),
-              CoconutLayout.spacing_500h,
-              InlineActionButton(
-                text: t.sign,
-                isActive: _controller.text.isNotEmpty && !_isSubmitting,
-                onPressed: _complete,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

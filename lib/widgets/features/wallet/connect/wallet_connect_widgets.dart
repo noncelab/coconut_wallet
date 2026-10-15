@@ -1,8 +1,10 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/common/animation/success_check_lottie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -14,21 +16,30 @@ class WalletConnectInfoRow extends StatelessWidget {
   final String label;
   final String value;
   final Axis direction;
+  final bool isMfp;
 
-  const WalletConnectInfoRow({super.key, required this.label, required this.value, this.direction = Axis.horizontal});
+  const WalletConnectInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.direction = Axis.horizontal,
+    this.isMfp = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
     final valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
 
+    final valueWidget = isMfp ? MfpText(mfp: value, style: valueStyle) : Text(value, style: valueStyle);
+
     if (direction == Axis.horizontal) {
-      return Row(children: [Text(label, style: labelStyle), const Spacer(), Text(value, style: valueStyle)]);
+      return Row(children: [Text(label, style: labelStyle), const Spacer(), valueWidget]);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, Text(value, style: valueStyle)],
+      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, valueWidget],
     );
   }
 }
@@ -193,7 +204,7 @@ class WalletConnectProgressCard extends StatelessWidget {
             height: 40,
             child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_200h,
           Text(
             title,
             style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
@@ -283,12 +294,7 @@ class WalletConnectSuccessCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          SvgPicture.asset(
-            CommonFormIconPath.circleCheck,
-            colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
+          SuccessCheckLottie(size: 40, color: context.coconutColors.success),
           CoconutLayout.spacing_200h,
           Text(
             title,
@@ -414,13 +420,86 @@ class FingerprintCompareCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.expected,
           value: expectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.connected,
           value: connectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
       ],
+    );
+  }
+}
+
+/// Pairing code display card used by BitBox02.
+/// The pairing code is shown in a read-only format; the user must compare it
+/// with the code displayed on the BitBox02 device before confirming.
+class BitBox02PairingCodeCard extends StatelessWidget {
+  final String pairingCode;
+  final String title;
+  final String description;
+  final String? status;
+
+  const BitBox02PairingCodeCard({
+    super.key,
+    required this.pairingCode,
+    required this.title,
+    required this.description,
+    this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: context.coconutColors.surface,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: context.coconutColors.background,
+              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+            ),
+            child: Text(
+              pairingCode,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.heading3_21_Number.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.coconutColors.primaryText,
+              ),
+            ),
+          ),
+          if (status != null && status!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              status!,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.success), // TODO: ccos랑 머지 후 색상은 primary
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -460,6 +539,7 @@ class HardwareWalletInfoCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: fingerprintLabel ?? t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
           value: fingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(

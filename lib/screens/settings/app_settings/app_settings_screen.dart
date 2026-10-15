@@ -1,8 +1,14 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -15,7 +21,6 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
@@ -34,6 +39,8 @@ class AppSettingsScreen extends StatefulWidget {
 }
 
 class _AppSettingsScreen extends State<AppSettingsScreen> {
+  bool _isDisablingAppLock = false;
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
@@ -70,15 +77,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               return;
                             }
 
-                            final authProvider = viewModel.authProvider;
-                            if (await authProvider.isBiometricsAuthValid()) {
-                              viewModel.deletePin();
-                              return;
-                            }
-
-                            if (await _requestPin()) {
-                              viewModel.deletePin();
-                            }
+                            await _disableAppLock();
                           },
                         ),
                       ),
@@ -129,6 +128,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
+                                screenName: AnalyticsScreenNames.appSettingsUnitSheet,
                                 heightRatio: 0.5,
                                 child: const UnitBottomSheet(),
                               );
@@ -163,6 +163,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
+                                screenName: AnalyticsScreenNames.appSettingsFiatSheet,
                                 heightRatio: 0.5,
                                 child: const FiatBottomSheet(),
                               );
@@ -187,6 +188,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
+                                screenName: AnalyticsScreenNames.appSettingsLanguageSheet,
                                 heightRatio: 0.6,
                                 child: LanguageBottomSheet(),
                               );
@@ -206,9 +208,11 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.theme,
                             subtitle: currentLabel,
                             onPressed: () {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
+                              CommonBottomSheets.showBottomSheet_100(
                                 context: context,
-                                heightRatio: 0.7,
+                                screenName: AnalyticsScreenNames.appSettingsThemeSheet,
+                                isDismissible: true,
+                                backgroundColor: Colors.transparent,
                                 child: const ThemeBottomSheet(),
                               );
                             },
@@ -228,13 +232,13 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           _buildAnimatedButton(
                             title: t.electrum_server,
                             onPressed: () async {
-                              Navigator.pushNamed(context, '/electrum-server');
+                              Navigator.pushNamed(context, AppRouteNames.electrumServer);
                             },
                           ),
                           _buildAnimatedButton(
                             title: t.block_explorer,
                             onPressed: () async {
-                              Navigator.pushNamed(context, '/block-explorer');
+                              Navigator.pushNamed(context, AppRouteNames.blockExplorer);
                             },
                           ),
                         ],
@@ -242,7 +246,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                       : _buildAnimatedButton(
                         title: t.electrum_server,
                         onPressed: () async {
-                          Navigator.pushNamed(context, '/electrum-server');
+                          Navigator.pushNamed(context, AppRouteNames.electrumServer);
                         },
                       ),
 
@@ -265,10 +269,10 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         ),
                       ),
                       _buildAnimatedButton(
-                        title: t.log_viewer,
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/log-viewer');
-                        },
+                        title: t.label_management_screen.title,
+                        subtitle: t.label_management_screen.subtitle,
+                        isVerticalSubtitle: true,
+                        onPressed: () => _showLabelsManagementScreen(context),
                       ),
                     ],
                   ),
@@ -294,7 +298,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   _category(t.app_info),
                   _buildAnimatedButton(
                     title: t.view_app_info,
-                    onPressed: () => Navigator.pushNamed(context, '/app-info'),
+                    onPressed: () => Navigator.pushNamed(context, AppRouteNames.appInfo),
                   ),
 
                   const SizedBox(height: 100),
@@ -327,9 +331,15 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
   );
 
-  Widget _buildAnimatedButton({required String title, required VoidCallback onPressed, String? subtitle}) {
+  Widget _buildAnimatedButton({
+    required String title,
+    required VoidCallback onPressed,
+    String? subtitle,
+    bool isVerticalSubtitle = false,
+  }) {
     return SingleButton(
       enableShrinkAnim: true,
+      isVerticalSubtitle: isVerticalSubtitle,
       animationEndValue: 0.97,
       title: title,
       subtitle: subtitle,
@@ -340,14 +350,50 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   void _showPinSettingScreen({required bool useBiometrics}) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.appSettingsPinSetSheet,
       heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: useBiometrics)),
     );
   }
 
+  Future<void> _disableAppLock() async {
+    if (_isDisablingAppLock) return;
+    _isDisablingAppLock = true;
+    try {
+      final authProvider = context.read<AuthProvider>();
+      if (context.read<WalletProvider>().hasHotWalletWithBalance) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder:
+              (dialogContext) => CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.settings_screen.disable_app_lock_title,
+                description: t.settings_screen.disable_app_lock_description,
+                leftButtonText: t.cancel,
+                rightButtonText: t.settings_screen.disable_app_lock_confirm,
+                onTapLeft: () => Navigator.of(dialogContext).pop(false),
+                onTapRight: () => Navigator.of(dialogContext).pop(true),
+              ),
+        );
+        if (!mounted || confirmed != true) return;
+      }
+
+      final biometricVerified = await authProvider.isBiometricsAuthValid();
+      if (!mounted) return;
+      if (!biometricVerified) {
+        final pinVerified = await _requestPin();
+        if (!mounted || !pinVerified) return;
+      }
+      await authProvider.deletePin();
+    } finally {
+      _isDisablingAppLock = false;
+    }
+  }
+
   Future<bool> _requestPin() async {
     return await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
           context: context,
+          screenName: AnalyticsScreenNames.appSettingsPinCheckSheet,
           heightRatio: 0.9,
           child: const CustomLoadingOverlay(child: PinCheckScreen(allowBiometrics: false)),
         ) ??
@@ -367,5 +413,13 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       case AppLanguage.de:
         return t.settings_screen.locales.german;
     }
+  }
+
+  void _showLabelsManagementScreen(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.labelManagement,
+      arguments: const LabelManagementRouteArgs(showImportMemosFromOtherWalletsOption: false),
+    );
   }
 }
