@@ -13,7 +13,7 @@ class AllFeaturesScreen extends StatefulWidget {
   final FeatureRegistry registry;
   final bool Function(FeatureItem feature)? isAvailable;
 
-  /// 흐리게 보여 줄 기능(예: 지갑이 없을 때 지갑이 필요한 기능). 누르면 [onLaunch]가 안내한다.
+  /// 지갑이 필요하다고 표시할 기능. 누르면 [onLaunch]가 기존 안내를 제공한다.
   final bool Function(FeatureItem feature)? isDimmed;
   final void Function(BuildContext context, FeatureItem feature) onLaunch;
   final Future<void> Function(BuildContext context)? onFakeBalanceTap;
@@ -246,10 +246,16 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
     );
   }
 
-  Widget _dimmed(FeatureItem feature, Widget child) =>
-      widget.isDimmed?.call(feature) ?? false ? Opacity(opacity: 0.35, child: child) : child;
+  bool _requiresWallet(FeatureItem feature) => widget.isDimmed?.call(feature) ?? false;
 
-  Widget _buildRecentTile(FeatureItem feature) => _dimmed(feature, _recentTile(feature));
+  Widget _walletRequirement(FeatureItem feature, {bool recent = false}) => Text(
+    t.all_features.wallet_required,
+    key: ValueKey('all-features-${recent ? 'recent-' : ''}wallet-required-${feature.id}'),
+    textAlign: recent ? TextAlign.center : TextAlign.start,
+    style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.secondaryText),
+  );
+
+  Widget _buildRecentTile(FeatureItem feature) => _recentTile(feature);
 
   Widget _recentTile(FeatureItem feature) {
     final colors = context.coconutColors;
@@ -278,17 +284,16 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
           const SizedBox(height: 6),
           Text(
             feature.shortcutLabel(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+            style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
           ),
+          if (_requiresWallet(feature)) _walletRequirement(feature, recent: true),
         ],
       ),
     );
   }
 
-  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.launchItem, _row(entry));
+  Widget _buildRow(AllFeaturesEntry entry) => _row(entry);
 
   Widget _row(AllFeaturesEntry entry) {
     final colors = context.coconutColors;
@@ -326,6 +331,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(feature.label(), style: CoconutTypography.body1_16.copyWith(color: colors.primaryText)),
+                  if (_requiresWallet(entry.launchItem)) _walletRequirement(entry.launchItem),
                   if (entry.path.isNotEmpty)
                     Text(
                       entry.path.join(' › '),

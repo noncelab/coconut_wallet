@@ -416,6 +416,7 @@ home_presets:
   applied: "Voreinstellung „$name“ angewendet"
   undo: "Rückgängig"
 all_features:
+  wallet_required: "Wallet erforderlich"
   search_placeholder: "Funktionen suchen"
   no_results: "Keine passenden Funktionen"
   recent: "Zuletzt verwendet"

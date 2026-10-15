@@ -416,6 +416,7 @@ home_presets:
   applied: "Applied the '$name' preset"
   undo: "Undo"
 all_features:
+  wallet_required: "Wallet required"
   search_placeholder: "Search features"
   no_results: "No matching features"
   recent: "Recently Used"

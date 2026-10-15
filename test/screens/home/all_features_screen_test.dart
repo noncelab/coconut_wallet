@@ -201,7 +201,7 @@ void main() {
     expect(find.text(t.all_features.recent), findsNothing);
   });
 
-  testWidgets('dimmed features stay tappable and are drawn faded', (tester) async {
+  testWidgets('wallet-required features keep readable labels and explain availability on tap', (tester) async {
     final launched = <String>[];
     await tester.pumpWidget(
       MaterialApp(
@@ -216,11 +216,37 @@ void main() {
       ),
     );
 
-    final send = find.ancestor(of: find.text('Send'), matching: find.byType(Opacity));
-    expect(tester.widget<Opacity>(send.first).opacity, lessThan(1));
+    expect(find.ancestor(of: find.text('Send'), matching: find.byType(Opacity)), findsNothing);
+    expect(find.byKey(const ValueKey('all-features-wallet-required-send')), findsOneWidget);
     expect(find.ancestor(of: find.text('Settings'), matching: find.byType(Opacity)), findsNothing);
 
     await tester.tap(find.text('Send'));
     expect(launched, ['send']);
+  });
+  testWidgets('wallet requirements remain visible in recent use and search at large text', (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: AllFeaturesScreen(
+            registry: registry,
+            recentIds: const ['send'],
+            isDimmed: (feature) => feature.id == 'send',
+            onLaunch: (_, __) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('all-features-recent-wallet-required-send')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.enterText(find.byKey(const Key('all-features-search')), 'send');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('all-features-wallet-required-send')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
