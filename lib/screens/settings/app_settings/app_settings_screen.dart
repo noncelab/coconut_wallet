@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/screens/common/feature_search_focus.dart';
@@ -39,7 +41,100 @@ class AppSettingsScreen extends StatefulWidget {
 
   const AppSettingsScreen({super.key, this.initialTarget});
 
+  static final _pendingSelectionSheets = <BuildContext>{};
+
   static Future<void> open(
+    BuildContext context,
+    AppSettingsTarget target, {
+    CoconutThemeVariant? highlightTheme,
+  }) async {
+    final selectionSheet = switch (target) {
+      AppSettingsTarget.unit || AppSettingsTarget.fiat || AppSettingsTarget.language || AppSettingsTarget.theme => true,
+      _ => false,
+    };
+    if (!selectionSheet) return _openTarget(context, target, highlightTheme: highlightTheme);
+    if (!_pendingSelectionSheets.add(context)) return;
+    final releasePending = () => _pendingSelectionSheets.remove(context);
+    final bool ready;
+    try {
+      ready = await _waitForSourceKeyboard(context);
+    } finally {
+      releasePending();
+    }
+    if (ready && context.mounted && ModalRoute.of(context)?.isCurrent != false) {
+      await _openTarget(context, target, highlightTheme: highlightTheme);
+    }
+  }
+
+  static Future<bool> _waitForSourceKeyboard(BuildContext context) {
+    final view = View.of(context);
+    if (view.viewInsets.bottom == 0 && MediaQuery.viewInsetsOf(context).bottom == 0) {
+      return Future.value(context.mounted);
+    }
+    final completed = Completer<bool>();
+    final initialFocus = FocusManager.instance.primaryFocus;
+    var focusReleased = initialFocus == null || initialFocus is FocusScopeNode;
+    var entryFocusChecked = false;
+    void focusChanged() {
+      final primary = FocusManager.instance.primaryFocus;
+      if (primary != initialFocus) focusReleased = true;
+      if (focusReleased && primary != null && primary is! FocusScopeNode && !completed.isCompleted) {
+        completed.complete(false);
+      }
+    }
+
+    FocusManager.instance.addListener(focusChanged);
+    final route = ModalRoute.of(context);
+    final focusOwner = Focus.maybeOf(context);
+    final sourceBox = context.findRenderObject();
+    final box = sourceBox is RenderBox && sourceBox.hasSize ? sourceBox : null;
+    final origin = box?.localToGlobal(Offset.zero);
+    final horizontalEnd = box?.localToGlobal(Offset(box.size.width, 0));
+    final lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        if (state != AppLifecycleState.resumed && !completed.isCompleted) completed.complete(false);
+      },
+    );
+    // Stale IME metrics cancel this request instead of retaining its source indefinitely.
+    final watchdog = Timer(const Duration(seconds: 2), () {
+      if (!completed.isCompleted) completed.complete(false);
+    });
+    void afterFrame(Duration _) {
+      if (completed.isCompleted) return;
+      final focusExcluded =
+          focusOwner != null &&
+          (!focusOwner.descendantsAreFocusable || focusOwner.ancestors.any((node) => !node.descendantsAreFocusable));
+      // A retained pager face can leave the foreground without changing routes.
+      final sourceMoved =
+          box != null &&
+          (!box.attached ||
+              (box.localToGlobal(Offset.zero) - origin!).distance > 0.5 ||
+              (box.localToGlobal(Offset(box.size.width, 0)) - horizontalEnd!).distance > 0.5);
+      if (!context.mounted || (route != null && !route.isCurrent) || focusExcluded || sourceMoved) {
+        completed.complete(false);
+      } else {
+        if (!entryFocusChecked) {
+          entryFocusChecked = true;
+          if (initialFocus is! FocusScopeNode && initialFocus?.hasPrimaryFocus == true) initialFocus!.unfocus();
+        }
+        if (view.viewInsets.bottom == 0) {
+          completed.complete(true);
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback(afterFrame);
+        }
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback(afterFrame);
+    WidgetsBinding.instance.scheduleFrame();
+    return completed.future.whenComplete(() {
+      watchdog.cancel();
+      lifecycle.dispose();
+      FocusManager.instance.removeListener(focusChanged);
+    });
+  }
+
+  static Future<void> _openTarget(
     BuildContext context,
     AppSettingsTarget target, {
     CoconutThemeVariant? highlightTheme,
