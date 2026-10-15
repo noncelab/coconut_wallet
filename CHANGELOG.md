@@ -1,3 +1,16 @@
+## mainnet 0.19.0, regtest 3.19.0 - 26/10/02
+### Enhanced
+1. QR 가이드 박스 안 QR만 인식하도록 제한
+2. 홈 화면 일렉트럼 서버 연결 안내 메시지 추가
+3. Keystone BSMS animated QR로 보여주도록 수정 (Mainnet에서만 Keystone read 유효)
+
+### Fixed
+1. Trezor/BitBox 보내기 잔액 표기 수정
+2. UTXO 태그 상속 기능 누락 수정
+
+### Refactor
+1. QR 스캐너 카메라 권한 처리 코드 공통화
+
 ## mainnet 0.18.0, regtest 3.18.0 - 26/09/16
 ### Added
 1. CCOS 소개 + 코코넛 테마

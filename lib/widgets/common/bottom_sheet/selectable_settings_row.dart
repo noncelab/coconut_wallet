@@ -14,6 +14,7 @@ class SelectableSettingsRow extends StatelessWidget {
   const SelectableSettingsRow({
     super.key,
     required this.title,
+    this.titleStyle,
     this.subtitle,
     this.subtitleStyle,
     required this.isSelected,
@@ -21,6 +22,7 @@ class SelectableSettingsRow extends StatelessWidget {
   });
 
   final String title;
+  final TextStyle? titleStyle;
   final String? subtitle;
   final TextStyle? subtitleStyle;
   final bool isSelected;
@@ -40,6 +42,7 @@ class SelectableSettingsRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
         child: SelectableSettingsRowContent(
           title: title,
+          titleStyle: titleStyle,
           subtitle: subtitle,
           subtitleStyle: subtitleStyle,
           isSelected: isSelected,
@@ -57,12 +60,14 @@ class SelectableSettingsRowContent extends StatelessWidget {
   const SelectableSettingsRowContent({
     super.key,
     required this.title,
+    this.titleStyle,
     this.subtitle,
     this.subtitleStyle,
     required this.isSelected,
   });
 
   final String title;
+  final TextStyle? titleStyle;
   final String? subtitle;
 
   // 지정하지 않으면 기본값(body3_12_Number/primaryText Color)을 쓴다.
@@ -81,7 +86,7 @@ class SelectableSettingsRowContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText).merge(titleStyle)),
                 if (subtitle != null)
                   Text(
                     subtitle!,
