@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
+import 'package:coconut_wallet/model/home/home_item_definition.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -169,6 +171,7 @@ Future<void> _openWidgetsTab(
   NavigatorObserver? routeObserver,
   bool disableAnimations = false,
   TargetPlatform? platform,
+  List<HomeItemDefinition>? widgetDefinitions,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -208,7 +211,12 @@ Future<void> _openWidgetsTab(
       now,
     ),
   ];
-  final homeViewModel = HomeViewModel(repository: repository, wallets: () => wallets, onShortcutTap: (_, __) {});
+  final homeViewModel = HomeViewModel(
+    repository: repository,
+    wallets: () => wallets,
+    onShortcutTap: (_, __) {},
+    widgetDefinitions: widgetDefinitions,
+  );
   final widgetsViewModel =
       _widgetsViewModel = HomeWidgetsViewModel(
         walletProvider: _Wallets(wallets, transactions, loadState: loadState),
@@ -239,6 +247,23 @@ Future<void> _openWidgetsTab(
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    for (final entry
+        in {
+          'Pretendard': ['Regular', 'Bold'],
+          'SpaceGrotesk': ['Light', 'Regular', 'Medium', 'Bold'],
+        }.entries) {
+      final loader = FontLoader(entry.key);
+      for (final weight in entry.value) {
+        loader.addFont(
+          Future.value(ByteData.sublistView(File('assets/fonts/${entry.key}-$weight.ttf').readAsBytesSync())),
+        );
+      }
+      await loader.load();
+    }
+  });
+
   testWidgets('a recent transaction row opens wallet detail with the same fade duration', (tester) async {
     final routeObserver = _RouteObserver();
     await _openWidgetsTab(
@@ -300,8 +325,27 @@ void main() {
       expect(find.text(t.home_widgets.recent_transactions), findsOneWidget);
       for (final definition in builtinHomeWidgets()) {
         final name = find.byKey(ValueKey('home-edit-widget-name-${definition.id}'));
-        expect(tester.widget<Text>(name).maxLines, 1, reason: definition.id);
-        expect(tester.renderObject<RenderParagraph>(name).didExceedMaxLines, isFalse, reason: definition.id);
+        final title = tester.widget<Text>(name);
+        final paragraph = tester.renderObject<RenderParagraph>(name);
+        expect(title.data, definition.displayName(), reason: definition.id);
+        expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize, reason: definition.id);
+        expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily, reason: definition.id);
+        expect(title.maxLines, isNull, reason: definition.id);
+        expect(title.overflow, isNot(TextOverflow.ellipsis), reason: definition.id);
+        expect(find.ancestor(of: name, matching: find.byType(FittedBox)), findsNothing, reason: definition.id);
+        expect(paragraph.didExceedMaxLines, isFalse, reason: definition.id);
+        for (final box in paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: title.data!.length),
+        )) {
+          final titleRect = tester.getRect(name);
+          final cardRect = tester.getRect(find.byKey(ValueKey('home-edit-widget-${definition.id}')));
+          expect(titleRect.left + box.left, greaterThanOrEqualTo(cardRect.left), reason: definition.id);
+          expect(titleRect.left + box.right, lessThanOrEqualTo(cardRect.right), reason: definition.id);
+          expect(box.bottom, lessThanOrEqualTo(paragraph.size.height + 0.1), reason: definition.id);
+        }
+        final add = find.byKey(ValueKey('home-edit-add-${definition.id}'));
+        expect(tester.getRect(add).top, greaterThanOrEqualTo(tester.getRect(name).bottom), reason: definition.id);
+        expect(tester.getSize(add).shortestSide, greaterThanOrEqualTo(48), reason: definition.id);
       }
       await _close(tester);
     });
@@ -373,18 +417,84 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('an added widget keeps a gap between its name and "added", which ignores the system text size', (
-    tester,
-  ) async {
-    await _openWidgetsTab(tester, fake: false);
+  testWidgets('an added built-in widget wraps its title above a scaled, tappable status footer', (tester) async {
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _openWidgetsTab(
+      tester,
+      fake: false,
+      size: const Size(320, 6000),
+      widgetDefinitions: [builtinHomeWidgets().singleWhere((definition) => definition.id == HomeItemIds.fiatValues)],
+    );
     final viewModel = tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
-    viewModel.addItem(viewModel.registry.byId(HomeItemIds.bitcoinBalanceTrend)!);
-    await tester.pump();
+    final definition = viewModel.registry.byId(HomeItemIds.fiatValues)!;
+    final add = find.byKey(const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
+    final name = find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.fiatValues}'));
+    final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.fiatValues}'));
+    final remove = find.byKey(const ValueKey('home-edit-remove-${HomeItemIds.fiatValues}'));
 
-    final name = tester.getRect(find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.bitcoinBalanceTrend}')));
-    final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.bitcoinBalanceTrend}'));
-    expect(tester.getRect(added).left - name.right, greaterThanOrEqualTo(8));
-    expect(tester.widget<Text>(added).textScaler, TextScaler.noScaling);
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('widget-configure-submit')), findsOneWidget);
+    for (final fiat in [FiatCode.USD, FiatCode.JPY, FiatCode.EUR]) {
+      await tester.tap(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')));
+      await tester.pump();
+    }
+    await tester.tap(find.byKey(const Key('widget-configure-submit')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(viewModel.isOnHome(definition), isTrue);
+    expect(viewModel.itemOf(definition)!.configuration['fiats'], ['KRW']);
+
+    for (final scale in [1.3, 2.0]) {
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.ensureVisible(remove);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      final title = tester.widget<Text>(name);
+      final status = tester.widget<Text>(added);
+      final titleParagraph = tester.renderObject<RenderParagraph>(name);
+      final statusParagraph = tester.renderObject<RenderParagraph>(added);
+      final footerRect = tester.getRect(remove).expandToInclude(tester.getRect(added));
+      final cardRect = tester.getRect(find.byKey(const ValueKey('home-edit-widget-${HomeItemIds.fiatValues}')));
+
+      expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize);
+      expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily);
+      expect(status.style!.fontSize, CoconutTypography.body3_12.fontSize);
+      expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
+      expect(titleParagraph.textScaler.scale(14), closeTo(14 * scale, 0.01));
+      expect(statusParagraph.textScaler.scale(12), closeTo(12 * scale, 0.01));
+      expect(titleParagraph.text.toPlainText(), definition.displayName());
+      expect(titleParagraph.didExceedMaxLines, isFalse);
+      expect(statusParagraph.didExceedMaxLines, isFalse);
+      expect(footerRect.top, greaterThanOrEqualTo(tester.getRect(name).bottom));
+      expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
+      expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
+      expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
+      if (scale == 2) {
+        expect(
+          titleParagraph
+              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: definition.displayName().length))
+              .length,
+          greaterThan(1),
+          reason: 'the narrow catalog wraps the complete title instead of shrinking it',
+        );
+      }
+      expect(tester.takeException(), isNull, reason: 'scale $scale');
+    }
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(remove);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(viewModel.isOnHome(definition), isFalse);
+    expect(added, findsNothing);
+    expect(add, findsOneWidget);
+    expect(tester.takeException(), isNull);
     await _close(tester);
   });
 
@@ -1391,18 +1501,6 @@ void main() {
     });
 
     group('HODL real-font edge contract', () {
-      setUpAll(() async {
-        for (final family in ['Pretendard', 'SpaceGrotesk']) {
-          final loader = FontLoader(family);
-          for (final weight in ['Regular', 'Bold']) {
-            loader.addFont(
-              Future.value(ByteData.sublistView(File('assets/fonts/$family-$weight.ttf').readAsBytesSync())),
-            );
-          }
-          await loader.load();
-        }
-      });
-
       for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
         for (final shortContent in [false, true]) {
           testWidgets(
