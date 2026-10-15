@@ -17,16 +17,12 @@ class WalletItemSettingBottomSheet extends StatefulWidget {
 
 class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSheet> {
   late final PreferenceProvider _preferenceProvider;
-  late bool _isPrimaryWallet;
   late bool _isExcludedFromTotalAmount;
-
-  final GlobalKey<CoconutShakeAnimationState> _primaryWalletShakeKey = GlobalKey<CoconutShakeAnimationState>();
 
   @override
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    _isPrimaryWallet = _preferenceProvider.walletOrder.first == widget.id;
     _isExcludedFromTotalAmount = _preferenceProvider.excludedFromTotalBalanceWalletIds.contains(widget.id);
   }
 
@@ -40,32 +36,9 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
       child: Column(
         children: [
           _buildToggleWidget(
-            t.wallet_list.settings.primary_wallet,
-            _isPrimaryWallet
-                ? t.wallet_list.settings.primary_wallet_abled_description
-                : t.wallet_list.settings.primary_wallet_disabled_description,
-            _isPrimaryWallet,
-            true,
-            (bool value) {
-              if (!value) {
-                _primaryWalletShakeKey.currentState?.shake();
-                return;
-              }
-              setState(() {
-                _isPrimaryWallet = value;
-              });
-              final updatedOrder = [widget.id, ..._preferenceProvider.walletOrder.where((id) => id != widget.id)];
-              _preferenceProvider.setWalletOrder(updatedOrder);
-            },
-          ),
-          CoconutLayout.spacing_400h,
-          Divider(color: context.coconutColors.divider, height: 1),
-          CoconutLayout.spacing_400h,
-          _buildToggleWidget(
             t.wallet_list.settings.exclude_from_total_amount,
             t.wallet_list.settings.exclude_from_total_amount_description,
             _isExcludedFromTotalAmount,
-            false,
             (bool value) {
               setState(() {
                 _isExcludedFromTotalAmount = value;
@@ -83,13 +56,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
     );
   }
 
-  Widget _buildToggleWidget(
-    String title,
-    String description,
-    bool value,
-    bool shouldHideWhenOn,
-    ValueChanged<bool> onChanged,
-  ) {
+  Widget _buildToggleWidget(String title, String description, bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -108,25 +75,19 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
           ),
         ),
         CoconutLayout.spacing_200w,
-        Visibility(
-          visible: shouldHideWhenOn ? !value : true,
-          maintainSize: true,
-          maintainAnimation: true,
-          maintainState: true,
-          child: CoconutSwitch(
-            isOn: value,
-            activeTrackColor: context.coconutColors.switchActiveTrack,
-            activeThumbColor: context.coconutColors.switchActiveThumb,
-            inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-            inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-            scale: 0.8,
-            onChanged: (bool newValue) {
-              vibrateExtraLight();
-              setState(() {
-                onChanged(newValue);
-              });
-            },
-          ),
+        CoconutSwitch(
+          isOn: value,
+          activeTrackColor: context.coconutColors.switchActiveTrack,
+          activeThumbColor: context.coconutColors.switchActiveThumb,
+          inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+          inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+          scale: 0.8,
+          onChanged: (bool newValue) {
+            vibrateExtraLight();
+            setState(() {
+              onChanged(newValue);
+            });
+          },
         ),
       ],
     );

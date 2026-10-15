@@ -26,7 +26,7 @@ class UtxoMock {
     UtxoStatus status = UtxoStatus.unspent,
     String? spentByTransactionHash,
   }) {
-    final utxoId = id ?? getUtxoId(transactionHash, index);
+    final utxoId = id ?? getRealmUtxoId(walletId, transactionHash, index);
     final derivationPath = _buildDerivationPath(addressIndex);
 
     return RealmUtxo(

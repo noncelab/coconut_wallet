@@ -1,0 +1,318 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/services/security/device_dek_keystore.dart';
+import 'package:coconut_wallet/services/wallet/hot_wallet_crypto_service.dart';
+import 'package:flutter/services.dart';
+
+class HotWalletSecretRepository {
+  HotWalletSecretRepository({
+    SecureStorageRepository? secureStorage,
+    HotWalletCryptoService? cryptoService,
+    DeviceDekKeystore? deviceKeystore,
+    Random? random,
+  }) : _secureStorage = secureStorage ?? SecureStorageRepository(),
+       _cryptoService = cryptoService ?? HotWalletCryptoService(),
+       _deviceKeystore = deviceKeystore ?? DeviceDekKeystore(),
+       _random = random ?? Random.secure();
+
+  static const String _secretPrefix = 'hot_wallet_secret_';
+  static const String _hardwareKeyPrefix = 'hot_wallet_device_key_';
+  static const String _fallbackKeySuffix = '_fallback_kek';
+  static const String _secretIndexKey = 'hot_wallet_secret_index_v1';
+  static Future<void> _indexMutationTail = Future<void>.value();
+
+  final SecureStorageRepository _secureStorage;
+  final HotWalletCryptoService _cryptoService;
+  final DeviceDekKeystore _deviceKeystore;
+  final Random _random;
+
+  String newSecretStorageKey() => '$_secretPrefix${_randomId()}';
+
+  Future<void> create({required String storageKey, required Uint8List mnemonic, required Uint8List passphrase}) async {
+    _validateSecretStorageKey(storageKey);
+    if (await _secureStorage.read(key: storageKey) != null ||
+        await _secureStorage.read(key: _fallbackStorageKey(storageKey)) != null) {
+      throw StateError('Hot wallet secret storage key already exists');
+    }
+    await _addToSecretIndex(storageKey);
+    late final ({EncryptedValue encryptedPayload, Uint8List dek}) result;
+    try {
+      result = await _cryptoService.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
+    } catch (_) {
+      await _removeFromSecretIndex(storageKey);
+      rethrow;
+    }
+    String? hardwareAlias;
+    String? fallbackKey;
+
+    try {
+      final wrappedDek = await _wrapDekWithBestAvailableProtection(
+        storageKey,
+        result.dek,
+        onHardwareAliasCreated: (alias) => hardwareAlias = alias,
+        onFallbackKeyStored: (key) => fallbackKey = key,
+      );
+      final secret = HotWalletSecret(
+        version: HotWalletSecret.currentVersion,
+        encryptedPayload: result.encryptedPayload,
+        deviceWrappedDek: wrappedDek,
+      );
+      await _secureStorage.write(key: storageKey, value: secret.encode());
+    } catch (_) {
+      if (hardwareAlias != null) {
+        await _deleteHardwareKeyIgnoringFailure(hardwareAlias!);
+      }
+      if (fallbackKey != null) {
+        await _secureStorage.delete(key: fallbackKey!);
+      }
+      await _secureStorage.delete(key: storageKey);
+      await _removeFromSecretIndex(storageKey);
+      rethrow;
+    } finally {
+      result.dek.fillRange(0, result.dek.length, 0);
+    }
+  }
+
+  /// 앱 PIN/생체인증은 호출 전에 완료되어야 한다.
+  ///
+  /// 이 메서드는 인증 상태를 판단하지 않고, 저장된 기기 키 경로로 DEK와
+  /// payload를 복호화한다.
+  /// 사용자 인증 정책은 HotWalletUnlockService에서 처리한다.
+  /// 프로덕션 UI에서는 이 메서드를 직접 호출하지 않는다.
+  Future<HotWalletPlaintext> unlockAfterAuthentication(String storageKey) async {
+    final secret = await _readSecret(storageKey);
+    final dek = await _unwrapDek(secret.deviceWrappedDek);
+    try {
+      return await _cryptoService.decryptPayload(secret, dek);
+    } finally {
+      dek.fillRange(0, dek.length, 0);
+    }
+  }
+
+  Future<void> delete(String storageKey) async {
+    HotWalletSecret? secret;
+    try {
+      secret = await _readSecret(storageKey);
+    } on StateError {
+      // 생성 도중 실패해 secret 레코드가 아직 없는 경우도 정리한다.
+    } on FormatException {
+      // 생성 도중 실패했거나 레코드가 손상된 경우에도 나머지 저장소를 정리한다.
+    }
+
+    final wrapped = secret?.deviceWrappedDek;
+    if (wrapped != null && wrapped.protection != DeviceKeyProtection.secureStorage && wrapped.alias != null) {
+      // secret 레코드를 마지막까지 남겨 두어 중간 실패/강제 종료 후에도
+      // OS key alias를 다시 찾아 삭제를 재시도할 수 있게 한다.
+      await _deviceKeystore.delete(wrapped.alias!);
+    }
+
+    await _secureStorage.delete(key: _fallbackStorageKey(storageKey));
+    await _secureStorage.delete(key: storageKey);
+    await _removeFromSecretIndex(storageKey);
+  }
+
+  Future<List<String>> getSecretStorageKeys() async {
+    final keys = await _withSecretIndexLock(_readOrCreateSecretIndex);
+    return keys.toList();
+  }
+
+  Future<void> cleanupOrphanHardwareAliases(Set<String> referencedStorageKeys) async {
+    final referencedAliases = <String>{};
+    for (final storageKey in referencedStorageKeys) {
+      try {
+        final secret = await _readSecret(storageKey);
+        final wrapped = secret.deviceWrappedDek;
+        if (wrapped.protection != DeviceKeyProtection.secureStorage && wrapped.alias != null) {
+          referencedAliases.add(wrapped.alias!);
+        }
+      } on StateError {
+        // secret 레코드가 없다면 연결된 alias도 없다고 간주한다.
+      } on FormatException {
+        // Secret이 없거나 손상된 지갑은 보존할 hardware alias를 확인할 수 없다.
+      }
+    }
+
+    List<String> hardwareAliases;
+    try {
+      hardwareAliases = await _deviceKeystore.getAliases();
+    } on MissingPluginException {
+      return;
+    } on PlatformException {
+      return;
+    }
+    for (final alias in hardwareAliases.where((alias) => alias.startsWith(_hardwareKeyPrefix))) {
+      if (!referencedAliases.contains(alias)) {
+        await _deleteHardwareKeyIgnoringFailure(alias);
+      }
+    }
+  }
+
+  Future<bool> contains(String storageKey) async {
+    return await _secureStorage.read(key: storageKey) != null;
+  }
+
+  Future<DeviceWrappedDek> _wrapDekWithBestAvailableProtection(
+    String storageKey,
+    Uint8List dek, {
+    required void Function(String alias) onHardwareAliasCreated,
+    required void Function(String storageKey) onFallbackKeyStored,
+  }) async {
+    final hardwareAlias = '$_hardwareKeyPrefix${_randomId()}';
+    try {
+      final wrapped = await _deviceKeystore.wrap(alias: hardwareAlias, dek: dek);
+      onHardwareAliasCreated(hardwareAlias);
+      return DeviceWrappedDek(
+        protection: wrapped.protection,
+        alias: wrapped.alias,
+        encryptedDek: EncryptedValue(nonce: '', cipherText: base64Encode(wrapped.ciphertext), mac: ''),
+      );
+    } on MissingPluginException {
+      // 시뮬레이터 또는 지원하지 않는 플랫폼은 SecureStorage로 폴백한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
+    } on PlatformException catch (error) {
+      // 네이티브 wrap 도중 OS 키만 생성된 뒤 실패했을 수 있다.
+      // 키 생성 여부와 관계없이 삭제를 시도해 고아 alias가 남지 않게 한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
+      if (error.code != 'HARDWARE_UNAVAILABLE') rethrow;
+    } catch (_) {
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
+      rethrow;
+    }
+
+    final fallbackKeyStorageKey = _fallbackStorageKey(storageKey);
+    final fallbackKey = _cryptoService.randomBytes(HotWalletCryptoService.keyLength);
+    try {
+      await _secureStorage.write(key: fallbackKeyStorageKey, value: base64Encode(fallbackKey));
+      onFallbackKeyStored(fallbackKeyStorageKey);
+      return DeviceWrappedDek(
+        protection: DeviceKeyProtection.secureStorage,
+        alias: fallbackKeyStorageKey,
+        encryptedDek: await _cryptoService.encrypt(dek, fallbackKey),
+      );
+    } finally {
+      fallbackKey.fillRange(0, fallbackKey.length, 0);
+    }
+  }
+
+  Future<Uint8List> _unwrapDek(DeviceWrappedDek wrapped) async {
+    if (wrapped.protection != DeviceKeyProtection.secureStorage) {
+      final alias = wrapped.alias;
+      if (alias == null || alias.isEmpty) {
+        throw const FormatException('Hardware key alias is missing');
+      }
+      final dek = await _deviceKeystore.unwrap(
+        alias: alias,
+        ciphertext: Uint8List.fromList(base64Decode(wrapped.encryptedDek.cipherText)),
+      );
+      // MethodChannel이 반환하는 TypedData는 플랫폼에 따라 수정 불가능한
+      // view일 수 있다. 사용 후 메모리를 0으로 덮어쓸 수 있도록 앱이 소유한
+      // mutable buffer로 즉시 복사한다.
+      return Uint8List.fromList(dek);
+    }
+
+    final fallbackStorageKey = wrapped.alias;
+    if (fallbackStorageKey == null || fallbackStorageKey.isEmpty) {
+      throw const FormatException('Fallback key storage key is missing');
+    }
+    final encodedKey = await _secureStorage.read(key: fallbackStorageKey);
+    if (encodedKey == null) {
+      throw StateError('Hot wallet fallback key not found');
+    }
+    final fallbackKey = Uint8List.fromList(base64Decode(encodedKey));
+    try {
+      return await _cryptoService.decrypt(wrapped.encryptedDek, fallbackKey);
+    } finally {
+      fallbackKey.fillRange(0, fallbackKey.length, 0);
+    }
+  }
+
+  Future<HotWalletSecret> _readSecret(String storageKey) async {
+    final encoded = await _secureStorage.read(key: storageKey);
+    if (encoded == null) throw StateError('Hot wallet secret not found');
+    return HotWalletSecret.decode(encoded);
+  }
+
+  Future<void> _deleteHardwareKeyIgnoringFailure(String alias) async {
+    try {
+      await _deviceKeystore.delete(alias);
+    } on PlatformException {
+      // Secret 삭제가 OS 키 정리 실패로 취소되지 않도록 한다.
+    } on MissingPluginException {
+      // 지원하지 않는 플랫폼에서는 정리할 네이티브 키가 없다.
+    }
+  }
+
+  String _fallbackStorageKey(String storageKey) => '$storageKey$_fallbackKeySuffix';
+
+  void _validateSecretStorageKey(String storageKey) {
+    if (!storageKey.startsWith(_secretPrefix) || storageKey.endsWith(_fallbackKeySuffix)) {
+      throw ArgumentError.value(storageKey, 'storageKey', 'Invalid hot wallet secret storage key');
+    }
+  }
+
+  Future<void> _addToSecretIndex(String storageKey) => _withSecretIndexLock(() async {
+    final keys = await _readOrCreateSecretIndex();
+    if (keys.contains(storageKey)) return;
+    await _writeSecretIndex({...keys, storageKey});
+  });
+
+  Future<void> _removeFromSecretIndex(String storageKey) => _withSecretIndexLock(() async {
+    final keys = await _readOrCreateSecretIndex();
+    if (!keys.remove(storageKey)) return;
+    await _writeSecretIndex(keys);
+  });
+
+  Future<Set<String>> _readOrCreateSecretIndex() async {
+    final encodedIndex = await _secureStorage.read(key: _secretIndexKey);
+    if (encodedIndex != null) {
+      try {
+        final decoded = jsonDecode(encodedIndex) as List<dynamic>;
+        return decoded
+            .whereType<String>()
+            .where(
+              (key) => key.startsWith(_secretPrefix) && key != _secretIndexKey && !key.endsWith(_fallbackKeySuffix),
+            )
+            .toSet();
+      } catch (_) {
+        // 손상된 인덱스는 기존 Secure Storage를 한 번 스캔해 복구한다.
+      }
+    }
+
+    final allKeys = await _secureStorage.getAllKeys();
+    final migratedKeys =
+        allKeys
+            .where(
+              (key) => key.startsWith(_secretPrefix) && key != _secretIndexKey && !key.endsWith(_fallbackKeySuffix),
+            )
+            .toSet();
+    await _writeSecretIndex(migratedKeys);
+    return migratedKeys;
+  }
+
+  Future<void> _writeSecretIndex(Set<String> keys) async {
+    final sortedKeys = keys.toList()..sort();
+    await _secureStorage.write(key: _secretIndexKey, value: jsonEncode(sortedKeys));
+  }
+
+  Future<T> _withSecretIndexLock<T>(Future<T> Function() operation) async {
+    final previous = _indexMutationTail;
+    final release = Completer<void>();
+    _indexMutationTail = release.future;
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release.complete();
+    }
+  }
+
+  String _randomId() =>
+      List<int>.generate(
+        16,
+        (_) => _random.nextInt(256),
+      ).map((value) => value.toRadixString(16).padLeft(2, '0')).join();
+}

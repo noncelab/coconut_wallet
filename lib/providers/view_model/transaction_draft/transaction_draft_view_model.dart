@@ -1,20 +1,29 @@
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDraftViewModel extends ChangeNotifier {
   final TransactionDraftRepository _transactionDraftRepository;
+  final WalletProvider _walletProvider;
 
   /// Wallet variables ---------------------------------------------------------
   List<TransactionDraft> _unsignedTransactionDraftList = [];
   List<TransactionDraft> _signedTransactionDraftList = [];
   bool _isInitialized = false;
 
-  TransactionDraftViewModel(this._transactionDraftRepository);
+  TransactionDraftViewModel(this._transactionDraftRepository, this._walletProvider);
 
-  List<TransactionDraft> get signedTransactionDraftList => _signedTransactionDraftList;
-  List<TransactionDraft> get unsignedTransactionDraftList => _unsignedTransactionDraftList;
+  List<TransactionDraft> get signedTransactionDraftList => _withoutHotWalletDrafts(_signedTransactionDraftList);
+  List<TransactionDraft> get unsignedTransactionDraftList => _withoutHotWalletDrafts(_unsignedTransactionDraftList);
+
+  List<TransactionDraft> _withoutHotWalletDrafts(List<TransactionDraft> drafts) {
+    final hotWalletIds =
+        _walletProvider.walletItemList.where((wallet) => wallet.hasLocalKey).map((wallet) => wallet.id).toSet();
+    return drafts.where((draft) => !hotWalletIds.contains(draft.walletId)).toList();
+  }
+
   bool get isInitialized => _isInitialized;
 
   Future<void> initializeDraftList() async {

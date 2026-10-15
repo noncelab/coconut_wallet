@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
@@ -186,9 +186,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     _showFullScreenLoading();
 
     final stopwatch = Stopwatch()..start();
-    ResultOfSyncFromVault result;
+    ResultOfSyncFromVault initialResult;
     try {
-      result = await vm.addToWalletList();
+      initialResult = await vm.addToWalletList();
     } catch (e) {
       if (!mounted) return;
       _hideFullScreenLoading();
@@ -212,6 +212,14 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
 
     if (!mounted) return;
 
+    _loadingOverlayEntry?.remove();
+    _loadingOverlayEntry = null;
+    final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _isAddingWallet = false);
+      return;
+    }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();

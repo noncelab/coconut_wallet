@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -18,16 +19,20 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/screens/settings/home_settings/home_add_wallet_option_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -299,6 +304,21 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         },
                                       ),
                                     ),
+                                    SingleButton(
+                                      enableShrinkAnim: true,
+                                      isVerticalSubtitle: true,
+                                      title: t.wallet_home_screen.edit.home_add_wallet_button.title,
+                                      subtitle: _getHomeAddWalletOptionDescription(viewModel.tempHomeAddWalletOption),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
+                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                      onPressed: () => _showHomeAddWalletOptionBottomSheet(viewModel),
+                                      backgroundColor: colors.background,
+                                      rightElement: _buildHomeAddWalletOptionRightElement(
+                                        viewModel.tempHomeAddWalletOption,
+                                      ),
+                                    ),
                                   ],
                                 );
                               },
@@ -378,6 +398,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         _viewModel.tempIsFakeBalanceActive != _viewModel.isFakeBalanceActive || // 가짜잔액표시 변동
         _viewModel.tempIsBalanceHidden != _viewModel.isBalanceHidden || // 잔액숨기기 변동
         _viewModel.tempIsFiatBalanceHidden != _viewModel.isFiatBalanceHidden || // 법정화폐잔액숨기기 변동
+        _viewModel.tempHomeAddWalletOption != _viewModel.homeAddWalletOption || // 홈 상단 버튼 변동
         !_viewModel.tempHomeFeatures.every((tempFeature) {
           // 홈 화면 기능 변동
           final original = _viewModel.homeFeatures.firstWhere(
@@ -403,6 +424,58 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   void _onComplete() async {
     if (_fakeBalanceController.text.isEmpty) {}
     await _viewModel.onComplete();
+  }
+
+  Future<void> _showHomeAddWalletOptionBottomSheet(WalletHomeEditViewModel viewModel) async {
+    final selectedOption = await CommonBottomSheets.showBottomSheet_100<HomeAddWalletOption>(
+      context: context,
+      screenName: AnalyticsScreenNames.walletHomeEditAddWalletOptionSheet,
+      isDismissible: true,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
+      child: HomeAddWalletOptionBottomSheet(initialOption: viewModel.tempHomeAddWalletOption),
+    );
+    if (selectedOption != null && mounted) {
+      viewModel.setTempHomeAddWalletOption(selectedOption);
+    }
+  }
+
+  String _getHomeAddWalletOptionDescription(HomeAddWalletOption option) {
+    switch (option) {
+      case HomeAddWalletOption.all:
+        return t.wallet_home_screen.edit.home_add_wallet_button.all.description;
+      case HomeAddWalletOption.watchOnly:
+        return t.wallet_home_screen.edit.home_add_wallet_button.watch_only.description;
+      case HomeAddWalletOption.hotWallet:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hot_wallet.description;
+      case HomeAddWalletOption.hidden:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hidden.description;
+    }
+  }
+
+  Widget _buildHomeAddWalletOptionRightElement(HomeAddWalletOption option) {
+    final iconPath = switch (option) {
+      HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,
+      HomeAddWalletOption.watchOnly => FeatureWalletIconPath.walletEyes,
+      HomeAddWalletOption.hotWallet => FeatureWalletIconPath.walletAddHot,
+      HomeAddWalletOption.hidden => null,
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (iconPath != null) ...[
+          SvgPicture.asset(
+            iconPath,
+            width: 20,
+            height: 16,
+            fit: BoxFit.contain,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_200w,
+        ],
+        Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
+      ],
+    );
   }
 
   Widget _buildHomeWidgetSelector() {
@@ -451,6 +524,67 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     // 각 아이템의 너비 계산 (spacing과 패딩을 제외하고 가득 차도록 설정)
                     double itemWidth = (constraints.maxWidth - spacing * (itemsPerRow - 1)) / itemsPerRow;
 
+                    const tilePadding = EdgeInsets.all(14);
+                    final tileBorder = Border.all(color: Colors.transparent);
+                    const checkSize = 16.0;
+                    const inlineGap = 8.0;
+                    const titleIconGap = 12.0;
+                    const iconSize = 32.0;
+                    // Measure the same inherited style and fixed scale rendered inside each tile.
+                    final defaults = DefaultTextStyle.of(context);
+                    var labelStyle = defaults.style.merge(
+                      CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    );
+                    if (MediaQuery.boldTextOf(context)) {
+                      labelStyle = labelStyle.merge(const TextStyle(fontWeight: FontWeight.bold));
+                    }
+                    final locale = Localizations.maybeLocaleOf(context);
+                    final direction = Directionality.of(context);
+                    final contentWidth = itemWidth - tilePadding.horizontal - tileBorder.dimensions.horizontal;
+                    final inlineWidth = math.max(0.0, contentWidth - checkSize - inlineGap);
+                    final wrappedLabels = <String, String>{};
+                    final painter = TextPainter(
+                      textDirection: direction,
+                      locale: locale,
+                      textScaler: TextScaler.noScaling,
+                      textHeightBehavior: defaults.textHeightBehavior,
+                    );
+                    var titleHeight = 0.0;
+                    try {
+                      for (final widget in displayHomeWidgets) {
+                        final type = widget['homeFeatureTypeString'].toString();
+                        final lines = <String>[];
+                        // Preserve explicit breaks; prefer spaces before splitting a long word.
+                        for (final paragraph in _getHomeFeatureLabel(type).split('\n')) {
+                          var line = '';
+                          for (final word in paragraph.split(' ')) {
+                            final candidate = line.isEmpty ? word : '$line $word';
+                            painter.text = TextSpan(text: candidate, style: labelStyle);
+                            painter.layout();
+                            if (line.isNotEmpty && painter.width > inlineWidth) {
+                              lines.add(line);
+                              line = word;
+                            } else {
+                              line = candidate;
+                            }
+                          }
+                          lines.add(line);
+                        }
+                        final label = lines.join('\n');
+                        wrappedLabels[type] = label;
+                        painter.text = TextSpan(text: label, style: labelStyle);
+                        painter.layout(maxWidth: inlineWidth);
+                        titleHeight = math.max(titleHeight, painter.height);
+                      }
+                    } finally {
+                      painter.dispose();
+                    }
+                    final headerHeight = math.max(checkSize, titleHeight);
+                    final itemHeight = math.max(
+                      itemWidth,
+                      tilePadding.vertical + tileBorder.dimensions.vertical + headerHeight + titleIconGap + iconSize,
+                    );
+
                     return Wrap(
                       spacing: spacing,
                       runSpacing: 14,
@@ -458,7 +592,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                           displayHomeWidgets.map((widget) {
                             return SizedBox(
                               width: itemWidth,
-                              height: itemWidth,
+                              height: itemHeight,
                               child: ShrinkAnimationButton(
                                 onPressed: () {
                                   FocusScope.of(context).unfocus();
@@ -476,6 +610,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                   // homeFeatureTypeString을 통해 토글
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
+                                border: tileBorder,
                                 defaultColor: context.coconutColors.surface,
                                 pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                                 child: FixedTextScale(
@@ -483,66 +618,72 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                     child: Container(
                                       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
                                       child: Padding(
-                                        padding: const EdgeInsets.all(14),
+                                        padding: tilePadding,
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            Stack(
-                                              children: [
-                                                Align(
-                                                  alignment: Alignment.topLeft,
-                                                  child: FixedTextScale(
-                                                    child: FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      alignment: Alignment.centerLeft,
-                                                      child: Text(
-                                                        _getHomeFeatureLabel(
-                                                          widget['homeFeatureTypeString'].toString(),
+                                            SizedBox(
+                                              height: headerHeight,
+                                              child: Stack(
+                                                children: [
+                                                  Positioned(
+                                                    left: 0,
+                                                    right: checkSize + inlineGap,
+                                                    top: 0,
+                                                    child: Text(
+                                                      wrappedLabels[widget['homeFeatureTypeString'].toString()]!,
+                                                      semanticsLabel: _getHomeFeatureLabel(
+                                                        widget['homeFeatureTypeString'].toString(),
+                                                      ),
+                                                      style: labelStyle,
+                                                      locale: locale,
+                                                      textDirection: direction,
+                                                      textHeightBehavior: defaults.textHeightBehavior,
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    right: 0,
+                                                    top: 0,
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(milliseconds: 100),
+                                                      width: checkSize,
+                                                      height: checkSize,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color:
+                                                            (widget['isEnabled'] as bool)
+                                                                ? context.coconutColors.checkIconBackground
+                                                                : context.coconutColors.checkIconBackgroundDisabled,
+                                                        border: Border.all(
+                                                          width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                          color: context.coconutColors.switchInactiveTrack,
                                                         ),
-                                                        maxLines: 2,
-                                                        style: CoconutTypography.body2_14.setColor(
-                                                          context.coconutColors.primaryText,
+                                                      ),
+                                                      child: Center(
+                                                        child: SvgPicture.asset(
+                                                          CommonActionIconPath.check,
+                                                          width: 6,
+                                                          height: 6,
+                                                          colorFilter: ColorFilter.mode(
+                                                            (widget['isEnabled'] as bool)
+                                                                ? context.coconutColors.checkIconForeground
+                                                                : context.coconutColors.checkIconForegroundDisabled,
+                                                            BlendMode.srcIn,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                                Align(
-                                                  alignment: Alignment.topRight,
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(milliseconds: 100),
-                                                    width: 16,
-                                                    height: 16,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color:
-                                                          (widget['isEnabled'] as bool)
-                                                              ? context.coconutColors.checkIconBackground
-                                                              : context.coconutColors.checkIconBackgroundDisabled,
-                                                      border: Border.all(
-                                                        width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                        color: context.coconutColors.switchInactiveTrack,
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: SvgPicture.asset(
-                                                        CommonActionIconPath.check,
-                                                        width: 6,
-                                                        height: 6,
-                                                        colorFilter: ColorFilter.mode(
-                                                          (widget['isEnabled'] as bool)
-                                                              ? context.coconutColors.checkIconForeground
-                                                              : context.coconutColors.checkIconForegroundDisabled,
-                                                          BlendMode.srcIn,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
+                                            const SizedBox(height: titleIconGap),
                                             const Spacer(),
-                                            SvgPicture.asset(widget['icon']!.toString(), width: 32),
+                                            SvgPicture.asset(
+                                              widget['icon']!.toString(),
+                                              width: iconSize,
+                                              height: iconSize,
+                                            ),
                                           ],
                                         ),
                                       ),

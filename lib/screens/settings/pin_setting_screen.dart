@@ -3,17 +3,18 @@ import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/animated_dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/pin_length_toggle_button.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
   final bool useBiometrics;
-  const PinSettingScreen({super.key, this.useBiometrics = false});
+  final bool popParentOnComplete;
+  const PinSettingScreen({super.key, this.useBiometrics = false, this.popParentOnComplete = true});
 
   @override
   State<PinSettingScreen> createState() => _PinSettingScreenState();
@@ -27,6 +28,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late int _pinLength;
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -80,6 +82,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     return isSamePin;
   }
 
+  void _setLoading(bool value) {
+    if (!mounted || _isLoading == value) return;
+    setState(() => _isLoading = value);
+  }
+
   void returnToBackSequence(String message, {bool isError = false, bool firstSequence = false}) {
     setState(() {
       errorMessage = message;
@@ -114,6 +121,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       }
 
       if (_authProvider.isSetPin && pin.length == _pinLength) {
+        _setLoading(true);
         try {
           bool isSameAsOldPin = await _comparePin(pin);
 
@@ -124,6 +132,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         } catch (error) {
           returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
           return;
+        } finally {
+          _setLoading(false);
         }
       }
 
@@ -150,9 +160,9 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           return;
         }
 
+        _setLoading(true);
         try {
           var hashedPin = generateHashString(pin);
-          Logger.log('hashedPin: $hashedPin');
           await _authProvider.savePinSet(hashedPin, pin.length);
 
           if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
@@ -161,13 +171,18 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           }
 
           vibrateLight();
+          _setLoading(false);
           await _showPinSetSuccessLottie();
 
           if (mounted) {
-            Navigator.pop(context); // Close success dialog
-            Navigator.pop(context); // Close PIN setting screen
+            final navigator = Navigator.of(context);
+            navigator.pop();
+            if (widget.popParentOnComplete) {
+              navigator.pop();
+            }
           }
         } catch (e) {
+          _setLoading(false);
           returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true, firstSequence: true);
         }
       }
@@ -191,28 +206,33 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       );
     }
 
-    return Scaffold(
-      body: PinInputPad(
-        title: title,
-        pin: step == 0 ? pin : pinConfirm,
-        errorMessage: errorMessage,
-        onKeyTap: _onKeyTap,
-        pinShuffleNumbers: _shuffledPinNumbers,
-        onClosePressed: () => Navigator.pop(context),
-        onBackPressed: () {
-          setState(() {
-            step = 0;
-            pin = '';
-            pinConfirm = '';
-            errorMessage = '';
-          });
-        },
-        step: step,
-        pinLength: _pinLength,
-        appBarVisible: true,
-        initOptionVisible: false,
-        centerWidget: centerWidget,
-      ),
+    return Stack(
+      children: [
+        Scaffold(
+          body: PinInputPad(
+            title: title,
+            pin: step == 0 ? pin : pinConfirm,
+            errorMessage: errorMessage,
+            onKeyTap: _onKeyTap,
+            pinShuffleNumbers: _shuffledPinNumbers,
+            onClosePressed: () => Navigator.pop(context),
+            onBackPressed: () {
+              setState(() {
+                step = 0;
+                pin = '';
+                pinConfirm = '';
+                errorMessage = '';
+              });
+            },
+            step: step,
+            pinLength: _pinLength,
+            appBarVisible: true,
+            initOptionVisible: false,
+            centerWidget: centerWidget,
+          ),
+        ),
+        if (_isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+      ],
     );
   }
 }

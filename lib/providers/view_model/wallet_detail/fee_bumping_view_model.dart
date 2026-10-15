@@ -430,6 +430,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       'cpfpBuildResult=${_cpfpBuildResult != null} cpfpSuccess=${_cpfpBuildResult?.isSuccess}',
     );
     _sendInfoProvider.setWalletId(_walletId);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.transactionDetail);
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
     _sendInfoProvider.setTransaction(transaction);

@@ -22,6 +22,7 @@ class AddressListViewModel extends ChangeNotifier {
   List<WalletAddress> _changeAddressList = [];
   late final WalletBase _walletBase;
   bool _showOnlyUnusedAddresses = false;
+  bool _isDisposed = false;
   late final StreamSubscription<WalletUpdateInfo> _walletStateSubscription;
 
   /// gap window 밖에서 스크롤 중 새로 발견된(잔액이 생긴) 주소를 화면에 알리기 위한 스트림
@@ -35,6 +36,7 @@ class AddressListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _walletStateSubscription.cancel();
     _discoveredAddressesController.close();
     super.dispose();
@@ -89,40 +91,61 @@ class AddressListViewModel extends ChangeNotifier {
 
   /// AddressList 초기화 함수(showOnlyUnusedAddresses 변경시 호출)
   Future<void> initializeAddressList(int firstCount, bool showOnlyUnusedAddresses) async {
+    if (_isDisposed) return;
+
     Logger.log(
       "[address_list_view_model.initializeAddressList] firstCount = $firstCount, showOnlyUnusedAddresses = $showOnlyUnusedAddresses",
     );
     _showOnlyUnusedAddresses = showOnlyUnusedAddresses;
-    _receivingAddressList = await getWalletAddressList(walletBaseItem, -1, firstCount, false, showOnlyUnusedAddresses);
-    _changeAddressList = await getWalletAddressList(walletBaseItem, -1, firstCount, true, showOnlyUnusedAddresses);
+    final receivingAddressList = await getWalletAddressList(
+      walletBaseItem,
+      -1,
+      firstCount,
+      false,
+      showOnlyUnusedAddresses,
+    );
+    if (_isDisposed) return;
+
+    final changeAddressList = await getWalletAddressList(walletBaseItem, -1, firstCount, true, showOnlyUnusedAddresses);
+    if (_isDisposed) return;
+
+    _receivingAddressList = receivingAddressList;
+    _changeAddressList = changeAddressList;
     notifyListeners();
   }
 
   /// 라이브 구독 이벤트 등으로 지갑 상태가 바뀌었을 때, 이미 화면에 로드된 주소 범위를
   /// DB에서 다시 읽어와 잔액/사용 여부를 최신화한다. 새 주소를 추가로 불러오진 않는다.
   Future<void> _refreshLoadedAddresses() async {
+    if (_isDisposed) return;
+
     final walletBaseItem = this.walletBaseItem;
 
     if (_receivingAddressList.isNotEmpty) {
-      _receivingAddressList = await _walletProvider.getWalletAddressList(
+      final receivingAddressList = await _walletProvider.getWalletAddressList(
         walletBaseItem,
         -1,
         _receivingAddressList.length,
         false,
         _showOnlyUnusedAddresses,
       );
+      if (_isDisposed) return;
+      _receivingAddressList = receivingAddressList;
     }
 
     if (_changeAddressList.isNotEmpty) {
-      _changeAddressList = await _walletProvider.getWalletAddressList(
+      final changeAddressList = await _walletProvider.getWalletAddressList(
         walletBaseItem,
         -1,
         _changeAddressList.length,
         true,
         _showOnlyUnusedAddresses,
       );
+      if (_isDisposed) return;
+      _changeAddressList = changeAddressList;
     }
 
+    if (_isDisposed) return;
     notifyListeners();
   }
 

@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -28,14 +27,6 @@ class BlockExplorerProvider extends ChangeNotifier {
       NetworkType.currentNetworkType == NetworkType.mainnet && !useDefaultExplorer && customExplorerUrl.isNotEmpty;
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) => '$blockExplorerUrl/${pathType.name}/$value';
-
-  String sanitizedExplorerAnalyticsDestination(BlockExplorerPathType pathType) {
-    final path = pathType.name;
-    if (isCustomExplorerEnabled) {
-      return '${AnalyticsParameterValues.customExplorer}/${path.toUpperCase()}';
-    }
-    return '$blockExplorerUrl/$path';
-  }
 
   String get blockExplorerUrl {
     if (NetworkType.currentNetworkType == NetworkType.regtest) {

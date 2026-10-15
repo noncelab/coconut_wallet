@@ -15,7 +15,6 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -379,22 +378,6 @@ class IsolateManager {
     } else {
       Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage');
     }
-    // [FileLogger]에 브로드캐스트 실패 로그 추가
-    if (command == IsolateControllerCommand.broadcast) {
-      _logBroadcastFailureToFile(failureStage, detail);
-    }
-  }
-
-  void _logBroadcastFailureToFile(String failureStage, Object? detail) {
-    if (detail == null) {
-      FileLogger.logBroadcast('isolate failureStage=$failureStage');
-      return;
-    }
-    if (detail is AppError) {
-      FileLogger.logBroadcast('isolate failureStage=$failureStage code=${detail.code}');
-      return;
-    }
-    FileLogger.logBroadcast('isolate failureStage=$failureStage type=${detail.runtimeType}');
   }
 
   /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.

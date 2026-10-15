@@ -29,9 +29,19 @@ enum WalletSyncResult {
   existingWalletNoUpdate,
   existingName, // fail sync
   existingWalletUpdateImpossible, // 이미 추가된 descriptor를 서드파티 방법으로 또 추가한 경우
+  existingWalletDifferentType, // 동일 싱글시그 지갑이 핫월렛/보기 전용의 다른 형태로 존재
 }
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }
+
+/// 지갑이 트랜잭션에 서명하는 방식
+enum WalletSigningMethod { externalQr, connectedHardware, localSigner }
+
+/// 홈 화면 상단 지갑 추가 버튼의 동작 방식
+enum HomeAddWalletOption { all, watchOnly, hotWallet, hidden }
+
+/// 홈과 지갑 목록 화면에서 사용하는 지갑 필터
+enum WalletFilter { all, watchOnly, hot }
 
 enum WalletImportSource {
   coconutVault,

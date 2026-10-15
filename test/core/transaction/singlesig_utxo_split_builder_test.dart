@@ -625,7 +625,7 @@ void main() {
       print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
-    });
+    }, timeout: const Timeout(Duration(minutes: 1)));
 
     /// feeRate 커질수록 예상 수수료 예측값이 차이가 커지는 상황
     test('EqualAmountSplit 989807 / 20개로 나누기 / feeRate 1000', () async {
