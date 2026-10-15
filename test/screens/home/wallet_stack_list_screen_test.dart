@@ -1,3 +1,9 @@
+import 'dart:ui' as ui;
+
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,7 +20,9 @@ import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -124,7 +132,220 @@ Future<void> _open(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 50));
 }
 
+const _paintBoundaryKey = ValueKey('wallet-stack-paint-boundary');
+const _detailKey = ValueKey('wallet-stack-detail-destination');
+
+Future<_Wallets> _pumpCupertinoHome(
+  WidgetTester tester, {
+  WalletCardSize size = WalletCardSize.small,
+  bool reducedMotion = false,
+  List<WalletItemBase>? items,
+}) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final wallets = _Wallets(items ?? _wallets);
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<WalletProvider>.value(value: wallets),
+        ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
+      ],
+      child: CupertinoApp(
+        theme: buildAppCupertinoTheme(),
+        localizationsDelegates: const [
+          DefaultMaterialLocalizations.delegate,
+          DefaultWidgetsLocalizations.delegate,
+          DefaultCupertinoLocalizations.delegate,
+        ],
+        builder:
+            (context, child) => Theme(
+              data: buildCoconutThemeData(),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: reducedMotion),
+                child: RepaintBoundary(key: _paintBoundaryKey, child: child),
+              ),
+            ),
+        routes: {
+          AppRouteNames.walletDetail:
+              (_) => const Scaffold(key: _detailKey, body: Center(child: Text('Synthetic detail destination'))),
+        },
+        home: Builder(
+          builder:
+              (context) => Scaffold(
+                body: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: size == WalletCardSize.wide ? 352 : 172,
+                      height: 172,
+                      child: WalletStackView(
+                        keyPrefix: 'stack',
+                        wallets: wallets.wallets,
+                        size: size,
+                        emptyText: 'empty',
+                        onOpen:
+                            (request) =>
+                                WalletStackListScreen.open(context, kind: WalletStackKind.all, request: request),
+                      ),
+                    ),
+                    TextButton(
+                      key: const Key('open-list-without-hero'),
+                      onPressed: () => WalletStackListScreen.open(context, kind: WalletStackKind.all),
+                      child: const Text('Open list'),
+                    ),
+                  ],
+                ),
+              ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return wallets;
+}
+
+Future<double> _paintedCardFraction(WidgetTester tester, Key key, {required String phase}) async {
+  final card = find.byKey(key);
+  expect(card, findsOneWidget, reason: phase);
+  final rect = tester.getRect(card);
+  expect(rect.isFinite, isTrue, reason: phase);
+  expect(rect.width, greaterThan(100), reason: phase);
+  final background = tester.element(card).coconutColors.background;
+  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(_paintBoundaryKey));
+  final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 1)))!;
+  try {
+    final pixels = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+    final sample = Rect.fromLTRB(
+      rect.left + rect.width * 0.2,
+      rect.top + rect.height * 0.25,
+      rect.right - rect.width * 0.2,
+      rect.bottom - rect.height * 0.25,
+    ).intersect(Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()));
+    var painted = 0;
+    var sampled = 0;
+    for (var y = sample.top.ceil(); y < sample.bottom.floor(); y++) {
+      for (var x = sample.left.ceil(); x < sample.right.floor(); x++) {
+        final offset = (y * image.width + x) * 4;
+        final distance =
+            (pixels.getUint8(offset) - (background.r * 255).round()).abs() +
+            (pixels.getUint8(offset + 1) - (background.g * 255).round()).abs() +
+            (pixels.getUint8(offset + 2) - (background.b * 255).round()).abs();
+        if (distance > 6) painted++;
+        sampled++;
+      }
+    }
+    expect(sampled, greaterThan(1000), reason: '$phase must sample an on-screen card body.');
+    return painted / sampled;
+  } finally {
+    image.dispose();
+  }
+}
+
+Future<void> _expectCardPainted(WidgetTester tester, Key key, {required String phase}) async {
+  expect(
+    await _paintedCardFraction(tester, key, phase: phase),
+    greaterThan(0.85),
+    reason: '$phase must paint its card body before any scroll, not just retain a Widget or Rect.',
+  );
+}
+
 void main() {
+  for (final size in WalletCardSize.values) {
+    for (final initialPage in [0, 1, 2]) {
+      for (final reducedMotion in [false, true]) {
+        testWidgets(
+          'Cupertino entry paints its selected card ($size, page=$initialPage, reducedMotion=$reducedMotion)',
+          (tester) async {
+            await _pumpCupertinoHome(tester, size: size, reducedMotion: reducedMotion);
+            final homePager = tester.widget<PageView>(find.byKey(const Key('stack-pager')));
+            homePager.controller!.jumpToPage(initialPage);
+            await tester.pumpAndSettle();
+            final walletId = _wallets[initialPage].id;
+            await _expectCardPainted(tester, ValueKey('stack-card-$walletId'), phase: 'source');
+
+            await _open(tester);
+            expect(find.byKey(ValueKey('wallet-stack-list-facts-$walletId')), findsOneWidget);
+            await _expectCardPainted(tester, ValueKey('wallet-stack-list-card-$walletId'), phase: 'entry complete');
+            await tester.pump(const Duration(seconds: 3));
+            await _expectCardPainted(
+              tester,
+              ValueKey('wallet-stack-list-card-$walletId'),
+              phase: 'idle without scrolling',
+            );
+
+            // The transparent PageView receives input over the painted card.
+            await tester.tapAt(tester.getCenter(find.byKey(ValueKey('wallet-stack-list-card-$walletId'))));
+            await tester.pumpAndSettle();
+            final detail = tester.element(find.byKey(_detailKey));
+            expect((ModalRoute.of(detail)!.settings.arguments! as WalletDetailRouteArgs).id, walletId);
+            Navigator.of(detail).pop();
+            await tester.pumpAndSettle();
+            await _expectCardPainted(
+              tester,
+              ValueKey('wallet-stack-list-card-$walletId'),
+              phase: 'detail route return',
+            );
+
+            Navigator.of(tester.element(find.byKey(const Key('wallet-stack-list-wheel')))).pop();
+            await tester.pumpAndSettle();
+            await _expectCardPainted(tester, ValueKey('stack-card-$walletId'), phase: 'source return');
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('the pixel oracle detects a hidden middle card even while its Widget and Rect remain', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    const key = ValueKey('wallet-stack-list-card-1');
+    final rect = tester.getRect(find.byKey(key));
+    final opacity = tester.renderObject<RenderOpacity>(
+      find.descendant(of: find.byKey(const ValueKey('wallet-stack-list-slot-0')), matching: find.byType(Opacity)).first,
+    );
+    await _expectCardPainted(tester, key, phase: 'negative control before hiding');
+    try {
+      opacity.opacity = 0;
+      await tester.pump();
+      expect(find.byKey(key), findsOneWidget);
+      expect(tester.getRect(find.byKey(key)), rect);
+      expect(await _paintedCardFraction(tester, key, phase: 'negative control hidden'), lessThan(0.5));
+    } finally {
+      opacity.opacity = 1;
+      await tester.pump();
+    }
+    await _expectCardPainted(tester, key, phase: 'negative control restored');
+  });
+
+  for (final elapsed in [16, 80, 240]) {
+    testWidgets('Cupertino fast Back after ${elapsed}ms paints the source and reentered card', (tester) async {
+      await _pumpCupertinoHome(tester);
+      await tester.tap(find.byKey(const Key('stack-pager')));
+      await tester.pump();
+      await tester.pump(Duration(milliseconds: elapsed));
+      Navigator.of(tester.element(find.byKey(const Key('wallet-stack-list-wheel')))).pop();
+      await tester.pumpAndSettle();
+      await _expectCardPainted(tester, const ValueKey('stack-card-1'), phase: 'fast Back source');
+      await _open(tester);
+      await _expectCardPainted(tester, const ValueKey('wallet-stack-list-card-1'), phase: 'fast reentry');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final count in [1, 3]) {
+    testWidgets('Cupertino menu entry paints the first card with $count wallets and no Hero source', (tester) async {
+      final wallets = await _pumpCupertinoHome(tester, items: _wallets.take(count).toList());
+      await tester.tap(find.byKey(const Key('open-list-without-hero')));
+      await tester.pumpAndSettle();
+      await _expectCardPainted(tester, const ValueKey('wallet-stack-list-card-1'), phase: 'menu entry');
+      wallets.notifyListeners();
+      await tester.pumpAndSettle();
+      await _expectCardPainted(tester, const ValueKey('wallet-stack-list-card-1'), phase: 'provider update');
+    });
+  }
+
   testWidgets('tapping the stack flies its front card into the middle of the wheel and fans out the rest', (
     tester,
   ) async {

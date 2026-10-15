@@ -22,6 +22,8 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -237,9 +239,15 @@ void main() {
     expect(model.targetSats, isNull);
   });
 
-  Future<_Analytics> openTargetSheet(WidgetTester tester, {WalletInfoTarget? focus}) async {
+  Future<_Analytics> openTargetSheet(
+    WidgetTester tester, {
+    WalletInfoTarget? focus,
+    Size viewport = const Size(430, 932),
+    double bottomInset = 0,
+    double textScale = 1,
+  }) async {
     final analytics = _Analytics();
-    tester.view.physicalSize = const Size(430, 932);
+    tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -255,6 +263,16 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
+          scrollBehavior: const CupertinoScrollBehavior(),
+          builder:
+              (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  viewPadding: EdgeInsets.only(bottom: bottomInset),
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: child!,
+              ),
           home: LoaderOverlay(
             child: WalletInfoScreen(
               id: 1,
@@ -271,6 +289,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SingleTextFieldBottomSheet), focus == null ? findsOneWidget : findsNothing);
     return analytics;
+  }
+
+  for (final viewport in [const Size(360, 640), const Size(430, 932)]) {
+    for (final bottomInset in [0.0, 24.0, 34.0]) {
+      testWidgets('wallet info last row remains above bottom inset $bottomInset in $viewport', (tester) async {
+        final analytics = await openTargetSheet(
+          tester,
+          focus: WalletInfoTarget.appearance,
+          viewport: viewport,
+          bottomInset: bottomInset,
+          textScale: 1.3,
+        );
+        final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
+        for (var attempt = 0; attempt < 12; attempt++) {
+          await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
+          await tester.pumpAndSettle();
+          if ((scrollable.position.pixels - scrollable.position.maxScrollExtent).abs() < 0.1) break;
+        }
+        expect(scrollable.position.pixels, closeTo(scrollable.position.maxScrollExtent, 0.1));
+        final lastRow = tester.getRect(
+          find.ancestor(
+            of: find.text(t.wallet_info_screen.delete_wallet),
+            matching: find.byType(ShrinkAnimationButton),
+          ),
+        );
+        expect(lastRow.top, greaterThanOrEqualTo(0));
+        expect(lastRow.height, greaterThan(0));
+        expect(lastRow.bottom, lessThanOrEqualTo(viewport.height - bottomInset));
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(analytics.events, isEmpty);
+        expect(walletProvider.walletItemList, hasLength(1));
+      });
+    }
   }
 
   for (final focus in [WalletInfoTarget.extendedPublicKey, WalletInfoTarget.delete]) {
