@@ -1,5 +1,7 @@
 desc "배포 전에 실행하는 공통 함수"
 lane :pre_deploy do
+    check_electrum_cert_fingerprints_date
+
     # 현재 디렉토리 확인
     sh "echo '=== Current Directory ==='; pwd"
 
@@ -16,5 +18,27 @@ lane :pre_deploy do
         sh "fvm dart run realm generate"
         sh "fvm flutter pub run slang"
         sh "fvm dart format . --line-length=120"
+    end
+end
+
+private_lane :check_electrum_cert_fingerprints_date do
+    last_run_file = "../.agents/skills/check-electrum-cert-fingerprints/last_run.txt"
+    today = Time.now.strftime("%Y-%m-%d")
+
+    if File.exist?(last_run_file)
+        last_run = File.read(last_run_file).strip
+        if last_run != today
+            UI.user_error!(
+                "Electrum certificate fingerprint check was last run on #{last_run}. " \
+                "Please run '/check-electrum-cert-fingerprints' today before deploying."
+            )
+        else
+            UI.success("Electrum certificate fingerprint check was run today (#{today}).")
+        end
+    else
+        UI.user_error!(
+            "Electrum certificate fingerprint check has never been recorded. " \
+            "Please run '/check-electrum-cert-fingerprints' before deploying."
+        )
     end
 end

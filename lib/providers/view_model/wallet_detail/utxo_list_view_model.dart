@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -27,6 +28,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
+  late final NodeProvider _nodeProvider;
   late final WalletItemBase _walletListBaseItem;
 
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
@@ -35,6 +37,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   // State Variables
   WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
+  WalletUpdateInfo? _prevWalletUpdateInfo;
 
   List<UtxoState> _utxoList = [];
   List<UtxoState> _confirmedUtxoList = [];
@@ -96,6 +99,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._preferenceProvider,
+    this._nodeProvider,
     this._syncWalletStateStream,
   ) {
     _initializeProperties();
@@ -133,11 +137,23 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
+
+    // balance/transaction 중 하나라도 completed로 바뀌면 재조회
+    final prev = _prevWalletUpdateInfo;
+    final utxoCompleted = _prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed;
+    final balanceCompleted =
+        prev != null && prev.balance != WalletSyncState.completed && updateInfo.balance == WalletSyncState.completed;
+    final txCompleted =
+        prev != null &&
+        prev.transaction != WalletSyncState.completed &&
+        updateInfo.transaction == WalletSyncState.completed;
+
+    if (utxoCompleted || balanceCompleted || txCompleted) {
       _getUtxoAndTagList();
     }
 
     _prevUpdateStatus = updateInfo.utxo;
+    _prevWalletUpdateInfo = updateInfo;
     notifyListeners();
   }
 
@@ -236,6 +252,8 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void refetchFromDB() {
     _getUtxoAndTagList();
+    unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
+    _nodeProvider.reconnectIfNeeded();
     notifyListeners();
   }
 

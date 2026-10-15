@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -6,19 +9,21 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_usb_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
-import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/card/expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/connect/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TrezorUsbConnectScreen extends StatefulWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
@@ -26,6 +31,7 @@ class TrezorUsbConnectScreen extends StatefulWidget {
 
   const TrezorUsbConnectScreen({
     super.key,
+    this.walletId,
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
@@ -146,10 +152,11 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       final result = await _viewModel.addToWalletList();
       if (!mounted) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
+        context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
         Navigator.pushReplacementNamed(
           context,
-          '/wallet-detail',
-          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+          AppRouteNames.walletDetail,
+          arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
         );
         return;
       }
@@ -225,14 +232,15 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': widget.psbtBase64,
-        'walletName': widget.walletName ?? '',
-        'walletFingerprint': widget.walletFingerprint ?? '',
-        'isFromSendFlow': true,
-        'transport': TrezorTransport.usb.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        walletId: widget.walletId!,
+        psbtBase64: widget.psbtBase64!,
+        walletName: widget.walletName ?? '',
+        walletFingerprint: widget.walletFingerprint ?? '',
+        isFromSendFlow: true,
+        transport: TrezorTransport.usb.name,
+      ),
     );
   }
 

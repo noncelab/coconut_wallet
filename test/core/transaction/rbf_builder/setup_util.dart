@@ -8,7 +8,7 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
+import 'package:ur/utils.dart';
 
 import '../../../mock/transaction_record_mock.dart';
 
@@ -153,7 +153,7 @@ class RbfBuilderCreator {
       pendingTx,
       RbfBuilder(
         preparer: preparer,
-        walletListItemBase: _walletListItemBase,
+        walletItemBase: _walletListItemBase,
         nextChangeAddress: WalletAddress(changeAddressList[1], "$derivationPathPrefix/1/1", 1, true, false, 0, 0, 0),
         additionalSpendable: additionalUtxos,
       ),

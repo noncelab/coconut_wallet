@@ -53,5 +53,19 @@ void main() {
 
       expect(result, true);
     });
+
+    test('older to after backup update wallet IDs are deduplicated and removable', () async {
+      const key = SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate;
+      when(mockPrefs.getStringList(key)).thenReturn(['1', '1', 'invalid']);
+      when(mockPrefs.setStringList(key, ['1', '2'])).thenAnswer((_) async => true);
+      when(mockPrefs.setStringList(key, ['1'])).thenAnswer((_) async => true);
+
+      await sharedPrefs.addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate([1, 2]);
+      verify(mockPrefs.setStringList(key, ['1', '2'])).called(1);
+
+      when(mockPrefs.getStringList(key)).thenReturn(['1', '2']);
+      await sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(2);
+      verify(mockPrefs.setStringList(key, ['1'])).called(1);
+    });
   });
 }

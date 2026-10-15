@@ -1,4 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +13,6 @@ class CoconutFullScreenDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -19,10 +20,10 @@ class CoconutFullScreenDialog extends StatelessWidget {
         title: Text(title),
         centerTitle: true,
         backgroundColor: colors.background,
-        titleTextStyle: typography.title.copyWith(fontSize: 16, fontWeight: FontWeight.w400),
-        toolbarTextStyle: typography.title,
+        titleTextStyle: CoconutTypography.body1_16.setColor(colors.primaryText),
+        toolbarTextStyle: CoconutTypography.body1_16.setColor(colors.primaryText),
         actions: [
-          IconButton(
+          CoconutIconButton(
             color: colors.primaryText,
             focusColor: colors.surface,
             icon: const Icon(CupertinoIcons.xmark, size: 18),

@@ -1,0 +1,201 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+
+class UtxoListStickyHeader extends StatelessWidget {
+  final GlobalKey stickyHeaderGlobalKey;
+  final GlobalKey dropdownGlobalKey;
+  final GlobalKey orderDropdownButtonKey;
+
+  final double height;
+  final bool isVisible;
+  final bool isLoadComplete;
+  final bool enableDropdown;
+
+  final AnimatedBalanceData animatedBalanceData;
+  final int? totalCount;
+  final String activeOption;
+  final Function onTapDropdown;
+  final Function removePopup;
+  final BitcoinUnit currentUnit;
+  final VoidCallback onPressedUnitToggle;
+
+  final bool isSelectionMode;
+  final int selectedUtxoCount;
+  final int selectedUtxoAmountSum;
+  final String orderText;
+  final VoidCallback onSelectAll;
+  final VoidCallback onUnselectAll;
+  final VoidCallback onToggleOrderDropdown;
+  final Widget tagListWidget;
+
+  const UtxoListStickyHeader({
+    super.key,
+    required this.stickyHeaderGlobalKey,
+    required this.dropdownGlobalKey,
+    required this.orderDropdownButtonKey,
+    required this.height,
+    required this.isVisible,
+    required this.isLoadComplete,
+    required this.enableDropdown,
+    required this.animatedBalanceData,
+    required this.totalCount,
+    required this.activeOption,
+    required this.onTapDropdown,
+    required this.removePopup,
+    required this.currentUnit,
+    required this.onPressedUnitToggle,
+    required this.isSelectionMode,
+    required this.selectedUtxoCount,
+    required this.selectedUtxoAmountSum,
+    required this.orderText,
+    required this.onSelectAll,
+    required this.onUnselectAll,
+    required this.onToggleOrderDropdown,
+    required this.tagListWidget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final totalCount = this.totalCount ?? 0;
+    final colors = context.coconutColors;
+
+    return Consumer<UtxoListViewModel>(
+      builder: (context, viewModel, _) {
+        return Positioned(
+          top: height,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            ignoring: !isVisible,
+            child: AnimatedOpacity(
+              key: stickyHeaderGlobalKey,
+              opacity: isVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Stack(
+                children: [
+                  // 그림자
+                  Positioned(
+                    bottom: 0,
+                    child: Container(
+                      width: MediaQuery.sizeOf(context).width,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: colors.background,
+                        boxShadow: [BoxShadow(color: colors.shadowSubtle, offset: const Offset(0, 3), blurRadius: 4)],
+                      ),
+                    ),
+                  ),
+
+                  // 본문 영역
+                  Container(
+                    color: colors.background,
+                    child: Column(
+                      children: [
+                        isSelectionMode ? _buildSelectionModeStickyHeader() : _buildStickyHeader(context, totalCount),
+                        CoconutLayout.spacing_50h,
+                        tagListWidget,
+                        CoconutLayout.spacing_300h,
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --------------------
+  // 일반 모드 헤더
+  // --------------------
+  Widget _buildStickyHeader(BuildContext context, int totalCount) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onPressedUnitToggle,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 16, top: 20),
+            child: Row(
+              crossAxisAlignment: currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.end,
+              children: [
+                if (currentUnit.isPrefixSymbol) ...[
+                  Text(
+                    currentUnit.symbol,
+                    style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                  CoconutLayout.spacing_50w,
+                ],
+                AnimatedBalance(
+                  prevValue: animatedBalanceData.previous,
+                  value: animatedBalanceData.current,
+                  currentUnit: currentUnit,
+                  textStyle: CoconutTypography.heading4_18_NumberBold,
+                ),
+                CoconutLayout.spacing_100w,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        if (!currentUnit.isPrefixSymbol) ...[
+                          Text(
+                            currentUnit.symbol,
+                            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                          ),
+                          CoconutLayout.spacing_50w,
+                        ],
+                        Text(
+                          t.total_item_count(count: totalCount),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 드롭다운 행
+        Padding(
+          padding: const EdgeInsets.only(right: 20.0),
+          child: UtxoListDropdownButton(
+            dropdownGlobalKey: dropdownGlobalKey,
+            activeOption: activeOption,
+            isEnabled: enableDropdown,
+            onTapDropdown: () => onTapDropdown(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --------------------
+  // 선택 모드 헤더
+  // --------------------
+  Widget _buildSelectionModeStickyHeader() {
+    return SelectedUtxoAmountHeader(
+      orderDropdownButtonKey: orderDropdownButtonKey,
+      orderText: orderText,
+      selectedUtxoCount: selectedUtxoCount,
+      selectedUtxoAmountSum: selectedUtxoAmountSum,
+      currentUnit: currentUnit,
+      onSelectAll: onSelectAll,
+      onUnselectAll: onUnselectAll,
+      onToggleOrderDropdown: onToggleOrderDropdown,
+    );
+  }
+}

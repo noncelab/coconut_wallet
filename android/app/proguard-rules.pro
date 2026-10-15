@@ -16,3 +16,7 @@
 # App package
 -keep class onl.coconut.wallet.** { *; }
 -keep class uniffi.** { *; }
+
+# Advertising ID is intentionally not used by this app.
+-dontwarn com.google.android.gms.ads.identifier.AdvertisingIdClient
+-dontwarn com.google.android.gms.ads.identifier.AdvertisingIdClient$Info

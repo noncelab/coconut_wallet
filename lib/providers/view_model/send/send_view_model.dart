@@ -344,7 +344,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       return walletList;
     }
 
-    return order.map((id) => walletList.firstWhere((e) => e.id == id)).toList();
+    final validOrder = order.where((id) => walletList.any((e) => e.id == id)).toList();
+    final ordered = validOrder.map((id) => walletList.firstWhere((e) => e.id == id)).toList();
+    final remaining = walletList.where((e) => !validOrder.contains(e.id)).toList();
+    return [...ordered, ...remaining];
   }
 
   void _initRegisteredWalletsAddress() {
@@ -534,7 +537,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
-      walletListItemBase: _selectedWalletItem!,
+      walletItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
       isUtxoFixed: !_isUtxoSelectionAuto,
       scriptPathPolicy:
@@ -871,6 +874,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void validateAllFieldsOnFocusLost() {
+    // debugPrint('validateAllFieldsOnFocusLost called');
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: i);

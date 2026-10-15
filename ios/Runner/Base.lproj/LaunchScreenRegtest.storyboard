@@ -23,10 +23,10 @@
                                 <rect key="frame" x="177" y="338" width="90" height="90"/>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.078431372549019607" green="0.074509803921568626" blue="0.094117647058823528" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.070588235294117646" green="0.078431372549019607" blue="0.086274509803921567" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="1a2-6s-vTC"/>
-                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="4X2-HB-R7a"/>
+                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-21" id="4X2-HB-R7a"/>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="width" constant="60" id="width-constraint"/>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="height" secondItem="YRO-k0-Ey4" secondAttribute="width" multiplier="1:1" id="aspect-ratio"/>
                         </constraints>

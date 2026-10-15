@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
@@ -62,12 +63,7 @@ class _PassphraseTextFieldState extends State<PassphraseTextField> {
           obscureText: _obscured,
           onChanged: (value) => widget.onChanged?.call(value),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          backgroundColor: context.coconutColors.inputSurface,
-          activeColor: context.coconutColors.primaryText,
-          cursorColor: context.coconutColors.primaryText,
           placeholderText: strings.placeholder,
-          placeholderColor: context.coconutColors.inputPlaceholder,
-          borderColor: context.coconutColors.inputBorder,
           fontSize: 16,
           fontFamily: 'SpaceGrotesk',
           maxLines: 1,
@@ -91,7 +87,7 @@ class _PassphraseTextFieldState extends State<PassphraseTextField> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   child: SvgPicture.asset(
-                    'assets/svg/text-field-clear.svg',
+                    CommonFormIconPath.textFieldClear,
                     width: 15,
                     height: 15,
                     colorFilter: ColorFilter.mode(context.coconutColors.tertiaryText, BlendMode.srcIn),

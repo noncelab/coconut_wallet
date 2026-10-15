@@ -4,7 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -39,12 +39,12 @@ class _TrezorSectionState extends State<TrezorSection> {
 
   Future<void> _checkAndSubscribe() async {
     final transport = TrezorDevice.lastConnected?.transport ?? TrezorTransport.ble;
-    final physicallyConnected = await TrezorBleConnectivityService.isDeviceConnected(transport);
+    final physicallyConnected = await TrezorConnectivityService.isDeviceConnected(transport);
     if (!mounted) return;
     setState(() {
       _isConnected = physicallyConnected && _isWalletMatch();
     });
-    _sub = TrezorBleConnectivityService.onConnectionChanged.listen((connected) {
+    _sub = TrezorConnectivityService.onConnectionChanged.listen((connected) {
       if (!mounted) return;
       setState(() {
         _isConnected = connected && _isWalletMatch();
@@ -84,7 +84,7 @@ class _TrezorSectionState extends State<TrezorSection> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -105,7 +105,7 @@ class _TrezorSectionState extends State<TrezorSection> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.textHighlight : context.coconutColors.surfaceDisabled,
+                    color: _isConnected ? context.coconutColors.primaryText : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,
@@ -114,7 +114,7 @@ class _TrezorSectionState extends State<TrezorSection> {
                       ? t.wallet_info_screen.connected_hardware_wallet.connected
                       : t.wallet_info_screen.connected_hardware_wallet.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    _isConnected ? context.coconutColors.primaryText : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[

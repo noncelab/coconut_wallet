@@ -7,7 +7,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_chart_bubble.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_balance_header.dart';
@@ -151,7 +151,7 @@ class UtxoTagChart extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [colors.background, colors.surfaceSectionBreak],
+          colors: [colors.background, colors.divider],
         ),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
@@ -190,7 +190,7 @@ class UtxoTagChart extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [colors.background, colors.surfaceSectionBreak],
+          colors: [colors.background, colors.divider],
         ),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
@@ -418,9 +418,9 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
-                        untaggedColor: colors.chartSurface,
-                        overlayBlendColor: colors.surfaceSectionBreak,
-                        multiTagFallbackColor: colors.tertiaryText,
+                        untaggedColor: colors.utxoOverviewChartSurface,
+                        overlayBlendColor: colors.divider,
+                        multiTagFallbackColor: colors.iconSecondary,
                         tagBlendColor: colors.secondaryText,
                       ),
                     ),
@@ -627,7 +627,7 @@ class _TagSectionChip extends StatelessWidget {
     return IntrinsicWidth(
       child: CoconutChip(
         minWidth: 44,
-        color: colors.infoChipBackground,
+        color: colors.surfaceInfoChip,
         label: name,
         labelSize: 11,
         labelColor: colors.primaryText,
@@ -686,7 +686,9 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
   /// UTXO 정렬: 1. pending 2. unspent 3. locked 마지막, 동일 상태 내 큰 금액 순
   static void _sortUtxosForTagGrid(List<UtxoState> utxos) {
     int statusOrder(UtxoState u) {
-      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) return 0;
+      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+        return 0;
+      }
       if (u.status == UtxoStatus.unspent) return 1;
       return 2; // locked
     }
@@ -872,7 +874,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                               key: ValueKey(isExpanded),
                               isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
                               size: 24,
-                              color: colors.iconSubDefault,
+                              color: colors.iconSecondary,
                             ),
                           ),
                         ],

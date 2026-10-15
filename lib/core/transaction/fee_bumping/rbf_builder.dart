@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_preparer.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
+import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -12,7 +13,6 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
     as tx_creation_exception;
@@ -68,9 +68,9 @@ class RbfBuildResult {
 class RbfBuilder {
   static const double incrementalRelayFeeRate = 1.0; // 1 sat/vB (Bitcoin Core 기본값)
 
-  final WalletItemBase walletListItemBase;
+  final WalletItemBase walletItemBase;
   final WalletAddress nextChangeAddress;
-  int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
+  int get _dustThreshold => walletItemBase.walletType.addressType.dustThreshold;
 
   late final TransactionRecord _pendingTx;
   late final List<UtxoState> _inputUtxos;
@@ -109,7 +109,7 @@ class RbfBuilder {
 
   RbfBuilder({
     required RbfPreparer preparer,
-    required this.walletListItemBase,
+    required this.walletItemBase,
     required this.nextChangeAddress,
     List<UtxoState> additionalSpendable = const [],
   }) {
@@ -117,8 +117,8 @@ class RbfBuilder {
     _outputAnalysis = preparer.outputAnalysis;
     _inputUtxos = preparer.inputUtxos;
 
-    _vSizeIncreasePerInput = walletListItemBase.inputVSize;
-    _vSizeChangeOutput = walletListItemBase.walletType == WalletType.singleSignature ? 31 : 43;
+    _vSizeIncreasePerInput = walletItemBase.inputVSize;
+    _vSizeChangeOutput = walletItemBase.walletType == WalletType.singleSignature ? 31 : 43;
     _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
   }
@@ -171,8 +171,8 @@ class RbfBuilder {
         result: RbfBuildResult(
           transaction: txBuildResult.transaction!,
           isSelfOutputsUsed: true,
-          estimatedVSize: txBuildResult.transaction!.estimateVirtualByteForWallet(walletListItemBase),
-          minimumFeeRate: txBuildResult.getFeeRate(walletListItemBase)!,
+          estimatedVSize: txBuildResult.transaction!.estimateVirtualByteForWallet(walletItemBase),
+          minimumFeeRate: txBuildResult.getFeeRate(walletItemBase)!,
         ),
         recipients: recipients,
       );
@@ -246,8 +246,8 @@ class RbfBuilder {
           final rbfBuildResult = RbfBuildResult(
             transaction: result.transaction!,
             isSelfOutputsUsed: true,
-            estimatedVSize: result.transaction!.estimateVirtualByteForWallet(walletListItemBase),
-            minimumFeeRate: result.getFeeRate(walletListItemBase)!,
+            estimatedVSize: result.transaction!.estimateVirtualByteForWallet(walletItemBase),
+            minimumFeeRate: result.getFeeRate(walletItemBase)!,
           );
           return (
             result: rbfBuildResult,
@@ -266,7 +266,7 @@ class RbfBuilder {
   double? _getAdjustedRbfFeeRateIfNeeded(TransactionBuildResult txBuildResult) {
     assert(txBuildResult.isSuccess);
     final tx = txBuildResult.transaction!;
-    final actualVSize = tx.estimateVirtualByteForWallet(walletListItemBase);
+    final actualVSize = tx.estimateVirtualByteForWallet(walletItemBase);
     final actualFee = tx.totalInputAmount - tx.outputs.fold(0, (sum, output) => sum + output.amount);
     final minimumRequiredFee = _pendingTx.fee + actualVSize;
     if (actualFee >= minimumRequiredFee) return null;
@@ -351,9 +351,8 @@ class RbfBuilder {
         if (txBuildResult?.isSuccess == true) {
           final rbfBuildResult = RbfBuildResult(
             transaction: txBuildResult!.transaction,
-            minimumFeeRate:
-                isBaseline ? txBuildResult.getFeeRate(walletListItemBase)! : _cachedBaseline!.minimumFeeRate,
-            estimatedVSize: txBuildResult.transaction!.estimateVirtualByteForWallet(walletListItemBase),
+            minimumFeeRate: isBaseline ? txBuildResult.getFeeRate(walletItemBase)! : _cachedBaseline!.minimumFeeRate,
+            estimatedVSize: txBuildResult.transaction!.estimateVirtualByteForWallet(walletItemBase),
             isSelfOutputsUsed: selfOutputs != null,
             addedInputs: addedUtxos,
           );
@@ -408,8 +407,8 @@ class RbfBuilder {
         final result = RbfBuildResult(
           transaction: tx,
           isOnlyChangeOutputUsed: true,
-          minimumFeeRate: txBuildResult.getFeeRate(walletListItemBase)!,
-          estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
+          minimumFeeRate: txBuildResult.getFeeRate(walletItemBase)!,
+          estimatedVSize: tx.estimateVirtualByteForWallet(walletItemBase),
         );
         return (result: result, remainingDeficit: null);
       } else {
@@ -636,13 +635,13 @@ class RbfBuilder {
           recipients: recipients,
           feeRate: newFeeRate,
           changeDerivationPath: changeDerivationPath,
-          walletListItemBase: walletListItemBase,
+          walletItemBase: walletItemBase,
           isFeeSubtractedFromAmount: isSweep,
           isUtxoFixed: true,
           scriptPathPolicy:
-              walletListItemBase is TaprootWalletItem
-                  ? ((walletListItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
-                      ? (walletListItemBase as TaprootWalletItem).defaultPolicy
+              walletItemBase is TaprootWalletItem
+                  ? ((walletItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
+                      ? (walletItemBase as TaprootWalletItem).defaultPolicy
                       : null)
                   : null,
         ).build();

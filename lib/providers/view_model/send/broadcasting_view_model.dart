@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -18,6 +20,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/material.dart';
 
 class InvalidTransactionException implements Exception {
@@ -54,6 +57,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<int> _changeOutputAmounts = [];
   final List<BroadcastingOutputDetailItem> _outputDetailItems = [];
   final List<int> _outputIndexesToMyAddress = [];
+  final List<String> _tagSourceUtxoIds = [];
+  List<UtxoTag>? _inheritanceTags;
+  bool _tagInheritanceFailed = false;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -85,6 +91,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<int> get changeOutputAmounts => UnmodifiableListView(_changeOutputAmounts);
   List<BroadcastingOutputDetailItem> get outputDetailItems => UnmodifiableListView(_outputDetailItems);
   AddressType? get walletAddressType => _walletBase?.addressType;
+  WalletBase get _wallet => _walletBase!;
   int? get walletId => _walletId;
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
@@ -93,6 +100,43 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isFromSignedDraft => _signedDraftId != null;
   bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
+  bool get tagInheritanceFailed => _tagInheritanceFailed;
+
+  List<UtxoTag> prepareTagInheritance() {
+    if (!_isInitDone) throw StateError('Transaction is not ready');
+    if (_inheritanceTags != null) return _inheritanceTags!;
+
+    final sourceIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toSet();
+    final replacedHashes = <String>{};
+    for (final sourceId in sourceIds) {
+      final input = _utxoRepository.getUtxoState(_walletId!, sourceId);
+      final spentBy = input?.spentByTransactionHash;
+      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == _signedTx!.transactionHash) continue;
+      final previous = _txProvider.getTransactionRecord(_walletId!, spentBy);
+      if (previous != null && previous.blockHeight < 1) replacedHashes.add(spentBy);
+    }
+
+    final result = _utxoRepository.getUtxoTags(_walletId!);
+    if (result.isFailure) throw result.error;
+    final tags = result.value;
+    // A broadcast can have tag links before sync creates the predecessor's output rows.
+    for (final tag in tags) {
+      for (final id in tag.utxoIdList ?? <String>[]) {
+        if (id.length > 64 &&
+            replacedHashes.contains(id.substring(0, 64)) &&
+            RegExp(r'^\d+$').hasMatch(id.substring(64))) {
+          sourceIds.add(id);
+        }
+      }
+    }
+    _tagSourceUtxoIds.addAll(sourceIds);
+    _inheritanceTags = List.unmodifiable(
+      _outputIndexesToMyAddress.isEmpty
+          ? <UtxoTag>[]
+          : tags.where((tag) => tag.utxoIdList?.any(sourceIds.contains) == true),
+    );
+    return _inheritanceTags!;
+  }
 
   bool get isTaprootScriptPathWallet {
     final walletId = _sendInfoProvider.walletId;
@@ -112,13 +156,36 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
-  Future<Result<String>> broadcast() async {
+  Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
+    final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
+    final selectedIds = inheritedTagIds.toSet();
+    if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
+      throw ArgumentError('Invalid inherited tag selection');
+    }
+    _tagInheritanceFailed = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    return _nodeProvider.broadcast(_signedTx!);
+    final result = await _nodeProvider.broadcast(_signedTx!);
+    if (result.isFailure) return result;
+
+    try {
+      final applied = await _utxoRepository.applyInheritedTags(
+        _walletId!,
+        sourceUtxoIds: _tagSourceUtxoIds,
+        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(_signedTx!.transactionHash, index)).toList(),
+        tagIds: selectedIds.toList(),
+      );
+      if (applied.isFailure) throw applied.error;
+      _tagProvider.notifyTagsChanged();
+    } catch (e) {
+      // The node already accepted this transaction; a local tag error must not invite a resend.
+      _tagInheritanceFailed = true;
+      Logger.error('Transaction sent, but tag inheritance failed: $e');
+    }
+    return result;
   }
 
   Future<bool> isElectrumServerConnected() async {
@@ -175,30 +242,36 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
 
-    Psbt signedPsbt;
+    final originalPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+    final expectedTransaction = originalPsbt.unsignedTransaction;
+    late final Psbt signedPsbt;
     if (isPsbt(_sendInfoProvider.signedResult!)) {
       signedPsbt = Psbt.parse(_sendInfoProvider.signedResult!);
-      _signedTx = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, signedPsbt.unsignedTransaction);
+
+      final finalizedTransaction = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, finalizedTransaction);
+      _signedTx = finalizedTransaction;
     } else {
       try {
-        signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+        signedPsbt = originalPsbt;
 
         // raw transaction 데이터 처리 (hex 또는 base64)
-        String hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
+        final hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
         final signedTx = Transaction.parse(hexTransaction);
-        final unSingedTx = signedPsbt.unsignedTransaction;
+        TransactionIntentValidator.ensureMatches(expectedTransaction, signedTx);
 
-        // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
-        bool isContentEqual = isTxContentEqual(signedTx, unSingedTx);
-
-        if (!isContentEqual) {
-          throw InvalidTransactionException();
-        }
-
-        _signedTx = Transaction.parse(hexTransaction);
+        _signedTx = signedTx;
       } catch (e) {
         Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
         rethrow;
+      }
+    }
+    _outputIndexesToMyAddress.clear();
+    for (var i = 0; i < _signedTx!.outputs.length; i++) {
+      if (originalPsbt.outputs[i].isOwnedBy(_wallet) ||
+          _walletProvider.containsAddress(_walletId!, _signedTx!.outputs[i].getAddress())) {
+        _outputIndexesToMyAddress.add(i);
       }
     }
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
@@ -232,9 +305,9 @@ class BroadcastingViewModel extends ChangeNotifier {
         continue;
       }
       _outputDetailItems.add(
-        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange),
+        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange(_wallet)),
       );
-      if (output.isChange) {
+      if (output.isChange(_wallet)) {
         _changeOutputAmounts.add(amount);
       } else {
         _externalOutputAmounts.add(amount);
@@ -250,14 +323,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     List<PsbtOutput> outputToMyChangeAddress = [];
     List<PsbtOutput> outputsToOther = [];
     for (int i = 0; i < outputs.length; i++) {
-      if (outputs[i].bip32Derivation == null) {
+      if (!outputs[i].isOwnedBy(_wallet)) {
         outputsToOther.add(outputs[i]);
-      } else if (outputs[i].isChange) {
+      } else if (outputs[i].isChange(_wallet)) {
         outputToMyChangeAddress.add(outputs[i]);
-        _outputIndexesToMyAddress.add(i);
       } else {
         outputToMyReceivingAddress.add(outputs[i]);
-        _outputIndexesToMyAddress.add(i);
       }
     }
 
@@ -280,7 +351,7 @@ class BroadcastingViewModel extends ChangeNotifier {
           recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
@@ -303,13 +374,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         _isSendingToMyAddress = true;
       }
 
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       if (output != null) {
         _recipientAddresses.add(output.outAddress);
       }
     }
     _fee = psbt.fee;
-    _totalAmount = psbt.sendingAmount + psbt.fee;
+    _totalAmount = psbt.sendingAmount(_wallet) + psbt.fee;
 
     _setSignedTransaction(psbt);
 
@@ -322,34 +393,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void clearSendInfo() {
     _sendInfoProvider.clear();
-  }
-
-  bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
-    if (unSignedTx == null) return false;
-
-    debugPrint('unsignedPsbt:: $unSignedTx');
-
-    // inputs, outputs 길이가 같은지 비교
-    if (signedTx.inputs.length != unSignedTx.inputs.length) return false;
-    if (signedTx.outputs.length != unSignedTx.outputs.length) return false;
-
-    // outputs에서 각 output의 amount가 같은지 비교
-    for (int i = 0; i < signedTx.outputs.length; i++) {
-      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) {
-        return false;
-      }
-    }
-
-    // totalInputAmount 비교
-    if (signedTx.totalInputAmount != unSignedTx.totalInputAmount) return false;
-
-    // 트랜잭션 버전 비교
-    if (signedTx.version != unSignedTx.version) return false;
-
-    // lockTime 비교 - 추후 필요시 구현, 현재는 다르기 때문에 사용안함
-    // if (tx.lockTime != unSignedTx.lockTime) return false;
-
-    return true;
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
@@ -377,15 +420,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
     return _txProvider.hasTransactionConfirmed(walletId!, _txProvider.transaction!.transactionHash);
-  }
-
-  Future<void> updateTagsOfUsedUtxos() async {
-    try {
-      await _tagProvider.applyTagsToNewUtxos(_walletId!, _signedTx!.transactionHash, _outputIndexesToMyAddress);
-    } catch (e) {
-      Logger.error(e.toString());
-      // ignore
-    }
   }
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {

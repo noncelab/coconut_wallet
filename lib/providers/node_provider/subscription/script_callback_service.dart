@@ -145,4 +145,12 @@ class ScriptCallbackService {
       return _processingTransactions[txHashKey]?.isCompleted ?? false;
     });
   }
+
+  /// 해당 지갑의 트랜잭션 처리 상태 캐시를 모두 지웁니다.
+  void clearWalletState(int walletId) {
+    final prefix = '$walletId:';
+    _processingTransactions.removeWhere((key, _) => key.startsWith(prefix));
+    _scriptDependency.removeWhere((key, _) => key.startsWith(prefix));
+    _fetchUtxosCallback.removeWhere((key, _) => key.startsWith(prefix));
+  }
 }

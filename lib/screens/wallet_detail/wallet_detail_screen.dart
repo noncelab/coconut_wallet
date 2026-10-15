@@ -1,6 +1,20 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -23,20 +37,21 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
-import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
+import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/wallet/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:lottie/lottie.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
@@ -135,41 +150,60 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final hasUnacknowledgedBackupUpdate = context.select<WalletProvider, bool>(
+      (walletProvider) => walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.contains(widget.id),
+    );
+
     return CoconutAppBar.build(
       // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
-      // 예: iconColor: context.coconutColors.iconDefault,
+      // 예: iconColor: context.coconutColors.iconPrimary,
       entireWidgetKey: _appBarKey,
       backgroundColor: context.coconutColors.background,
       title: '',
       context: context,
       actionButtonList: [
         if (NetworkType.currentNetworkType.isTestnet)
-          IconButton(
-            key: _faucetIconKey,
-            onPressed: () => _onFaucetIconPressed(),
+          CoconutAppBarActionButton(
+            buttonKey: _faucetIconKey,
+            onPressed: _onFaucetIconPressed,
             icon: SvgPicture.asset(
-              'assets/svg/faucet.svg',
+              FeatureUtxoIconPath.faucet,
               width: 18,
               height: 18,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () => _navigateToUtxoList(context),
           icon: SvgPicture.asset(
-            'assets/svg/coins.svg',
+            FeatureWalletIconPath.coins,
             width: 18,
             height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () => _navigateToWalletInfo(context),
-          icon: SvgPicture.asset(
-            'assets/svg/wallet-outlined.svg',
-            width: 18,
-            height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SvgPicture.asset(
+                FeatureWalletIconPath.walletOutlined,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+              ),
+              if (hasUnacknowledgedBackupUpdate)
+                Positioned(
+                  top: -2,
+                  right: -6,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -177,14 +211,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _navigateToUtxoList(BuildContext context) {
-    Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, AppRouteNames.utxoList, arguments: UtxoListRouteArgs(id: widget.id));
   }
 
   void _navigateToWalletInfo(BuildContext context) async {
     await Navigator.pushNamed(
       context,
-      '/wallet-info',
-      arguments: {'id': widget.id, 'walletType': _viewModel.walletType, 'entryPoint': widget.entryPoint},
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(id: widget.id, walletType: _viewModel.walletType, entryPoint: widget.entryPoint),
     );
 
     _viewModel.updateWalletName();
@@ -269,14 +303,19 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: InlineLoadingIndicator(
+                            padding: EdgeInsets.zero,
+                            color: context.coconutColors.primary,
+                            radius: 8,
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
                         Text(
                           t.status_updating,
                           style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
-                        ),
-                        CoconutLayout.spacing_100w,
-                        ColorFiltered(
-                          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcATop),
-                          child: LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
                         ),
                       ],
                     ),
@@ -412,7 +451,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: ErrorCodes.networkError.message,
         level: CoconutToastLevel.warning,
       );
@@ -420,10 +459,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
+      _viewModel.reconnectIfNeeded();
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.errors.electrum_connection_failed,
         level: CoconutToastLevel.warning,
       );
@@ -448,13 +488,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Navigator.of(context).pop();
         Navigator.pushNamed(
           context,
-          '/wallet-info',
-          arguments: {
-            'id': widget.id,
-            'walletType': _viewModel.walletType,
-            'entryPoint': widget.entryPoint,
-            'showMfpInput': true,
-          },
+          AppRouteNames.walletInfo,
+          arguments: WalletInfoRouteArgs(
+            id: widget.id,
+            walletType: _viewModel.walletType,
+            entryPoint: widget.entryPoint,
+            showMfpInput: true,
+          ),
         );
       });
       return true;
@@ -463,17 +503,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
-    // if (!canMerge) {
-    //   _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
-    //   return;
-    // }
-    // if (availableUtxoCount < 2) {
-    //   _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-    //   return;
-    // }
-    // if (_showNoMfpDialogIfNeeded()) return;
-    // if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+    if (!canMerge) {
+      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
+      return;
+    }
+    if (availableUtxoCount < 2) {
+      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+      return;
+    }
+    if (_showNoMfpDialogIfNeeded()) return;
+    if (!_checkStateAndShowToast()) return;
+    Navigator.pushNamed(context, AppRouteNames.mergeUtxos, arguments: UtxoMergeRouteArgs(id: widget.id));
   }
 
   void _onTapSplit({required bool canSplit, required int availableUtxoCount}) {
@@ -487,11 +527,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, AppRouteNames.splitUtxo, arguments: UtxoSplitRouteArgs(id: widget.id));
   }
 
   void _onTapReceive() {
-    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
+    Navigator.of(context).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.id));
   }
 
   Future<void> _onTapSend() async {
@@ -503,14 +543,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (!isManualUtxoSelection) {
       Navigator.pushNamed(
         context,
-        '/send',
-        arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.walletDetail},
+        AppRouteNames.send,
+        arguments: SendRouteArgs(id: _viewModel.walletId, sendEntryPoint: SendEntryPoint.walletDetail),
       );
       return;
     }
 
     final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailSelectUtxoSheet,
       minChildSize: 0.6,
       maxChildSize: 0.9,
       initialChildSize: 0.9,
@@ -528,12 +569,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': _viewModel.walletId,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': List<UtxoState>.from(result),
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: _viewModel.walletId,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: List<UtxoState>.from(result),
+      ),
     );
   }
 
@@ -577,7 +618,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       child: Opacity(
                         opacity: canMerge ? 1.0 : 0.3,
                         child: _buildBottomActionBarButton(
-                          iconPath: 'assets/svg/merge-utxos.svg',
+                          iconPath: FeatureUtxoIconPath.mergeUtxos,
                           label: t.merge_utxos,
                           onTap: () => _onTapMerge(canMerge: canMerge, availableUtxoCount: availableUtxoCount),
                         ),
@@ -587,7 +628,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       child: Opacity(
                         opacity: canSplit ? 1.0 : 0.3,
                         child: _buildBottomActionBarButton(
-                          iconPath: 'assets/svg/split-utxo.svg',
+                          iconPath: FeatureUtxoIconPath.splitUtxo,
                           label: t.split_utxo,
                           onTap: () => _onTapSplit(canSplit: canSplit, availableUtxoCount: availableUtxoCount),
                         ),
@@ -595,14 +636,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ),
                     Expanded(
                       child: _buildBottomActionBarButton(
-                        iconPath: 'assets/svg/receive-plane.svg',
+                        iconPath: FeatureTransactionIconPath.receivePlane,
                         label: t.receive,
                         onTap: _onTapReceive,
                       ),
                     ),
                     Expanded(
                       child: _buildBottomActionBarButton(
-                        iconPath: 'assets/svg/send-plane.svg',
+                        iconPath: FeatureTransactionIconPath.sendPlane,
                         label: t.send,
                         onTap: _onTapSend,
                       ),
@@ -621,7 +662,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     CoconutToast.showToast(
       context: context,
       isVisibleIcon: true,
-      iconPath: 'assets/svg/circle-info.svg',
+      iconPath: CommonStateIconPath.circleInfo,
       text: text,
       level: CoconutToastLevel.info,
     );
@@ -646,6 +687,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailFaucetSheet,
       heightRatio: 0.5,
       child: FaucetRequestBottomSheet(
         walletData: {
@@ -668,7 +710,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               CoconutToast.showToast(
                 context: context,
                 isVisibleIcon: true,
-                iconPath: 'assets/svg/triangle-warning.svg',
+                iconPath: CommonStateIconPath.triangleWarning,
                 text: message,
                 level: CoconutToastLevel.warning,
               );
@@ -694,9 +736,11 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
-  late List<TransactionRecord> _displayedTxList = [];
+  final List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
+  bool _isUpdatingTxList = false;
+  List<TransactionRecord>? _pendingTxList;
 
   @override
   void initState() {
@@ -710,7 +754,7 @@ class _TransactionListState extends State<TransactionList> {
       builder: (_, txList, __) {
         if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleTransactionListUpdate(txList);
+            _scheduleTransactionListUpdate(txList);
           });
         }
         return txList.isNotEmpty ? _buildSliverAnimatedList(_displayedTxList) : _buildEmptyState();
@@ -727,6 +771,22 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
     return true;
+  }
+
+  void _scheduleTransactionListUpdate(List<TransactionRecord> txList) {
+    _pendingTxList = txList;
+    if (_isUpdatingTxList) return;
+    _runPendingTxListUpdates();
+  }
+
+  Future<void> _runPendingTxListUpdates() async {
+    _isUpdatingTxList = true;
+    while (_pendingTxList != null) {
+      final next = _pendingTxList!;
+      _pendingTxList = null;
+      await _handleTransactionListUpdate(next);
+    }
+    _isUpdatingTxList = false;
   }
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
@@ -751,16 +811,35 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
 
-    setState(() {
-      _displayedTxList = List.from(txList);
-    });
+    // 동일 트랜잭션의 내용만 바뀐 경우(예: 컨펌으로 blockHeight 변경) 감지 후 교체
+    final List<String> updatedHashes = [];
+    for (final tx in txList) {
+      final oldTx = oldTxMap[tx.transactionHash];
+      if (oldTx != null && oldTx.contentHashCode != tx.contentHashCode) {
+        updatedHashes.add(tx.transactionHash);
+      }
+    }
+    if (updatedHashes.isNotEmpty) {
+      setState(() {
+        for (final hash in updatedHashes) {
+          final index = _displayedTxList.indexWhere((tx) => tx.transactionHash == hash);
+          if (index != -1) {
+            _displayedTxList[index] = newTxMap[hash]!;
+          }
+        }
+      });
+    }
+
+    // insertItem/removeItem 호출 한 건마다 _displayedTxList도 그 한 건만 반영한다.
+    // 한 번에 통째로 교체하면 SliverAnimatedList가 추적하는 개수와 어긋나 assertion 발생
 
     // 마지막 인덱스부터 삭제 (index shift 문제 방지)
     for (var index in removedIndexes.reversed) {
       await Future.delayed(animationDuration);
+      final removedTx = _displayedTxList.removeAt(index);
       _txListKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildRemoveTransactionItem(_displayedTxList[index], animation),
+        (context, animation) => _buildRemoveTransactionItem(removedTx, animation),
         duration: _duration,
       );
     }
@@ -770,6 +849,7 @@ class _TransactionListState extends State<TransactionList> {
       if (isFirstLoad) {
         await Future.delayed(animationDuration);
       }
+      _displayedTxList.insert(index, txList[index]);
       _txListKey.currentState?.insertItem(index, duration: _duration);
     }
   }
@@ -801,8 +881,8 @@ class _TransactionListState extends State<TransactionList> {
               onPressed: () {
                 Navigator.pushNamed(
                   context,
-                  '/transaction-detail',
-                  arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash},
+                  AppRouteNames.transactionDetail,
+                  arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
                 );
               },
             ),
@@ -830,8 +910,8 @@ class _TransactionListState extends State<TransactionList> {
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/transaction-detail',
-                arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash},
+                AppRouteNames.transactionDetail,
+                arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
               );
             },
           ),

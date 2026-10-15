@@ -1,20 +1,27 @@
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutAppBar, CoconutPulldownMenu, CoconutPulldownMenuItem, CoconutPulldownMenuGroup;
+import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -45,6 +52,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final bool showQrEmbedImage;
   final Color? backgroundColor;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
+  final TextStyle? textStyle;
 
   const QrWithCopyTextScreen({
     super.key,
@@ -66,6 +75,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.showQrEmbedImage = false,
     this.backgroundColor,
     this.qrInternalPadding,
+    this.qrPadding = const EdgeInsets.all(10),
+    this.textStyle,
   });
 
   @override
@@ -185,7 +196,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                           Navigator.pop(context);
                         },
                         backgroundColor: context.coconutColors.pulldownMenuBackground,
-                        shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+                        shadowColor: context.coconutColors.shadowDefault,
                         dividerColor: context.coconutColors.pulldownMenuDividerColor,
                         splashColor: context.coconutColors.pulldownMenuPressedColor,
                         borderRadius: 8,
@@ -212,19 +223,41 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final displayTextData = _currentTextData;
     final currentUnit = context.read<PreferenceProvider>().currentUnit;
     final backgroundColor = widget.backgroundColor ?? context.coconutColors.background;
+    final colors = context.coconutColors;
+    final brightness = Theme.of(context).brightness;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       resizeToAvoidBottomInset: false,
-      appBar: CoconutAppBar.build(
-        title: widget.title,
-        context: context,
-        backgroundColor: widget.backgroundColor,
-        isBottom: widget.isBottom,
-        onBackPressed: () {
-          Navigator.pop(context);
-        },
-        actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: brightness == Brightness.light ? Brightness.dark : Brightness.light,
+          statusBarBrightness: brightness == Brightness.light ? Brightness.light : Brightness.dark,
+        ),
+        leading:
+            Navigator.canPop(context)
+                ? IconButton(
+                  icon: SvgPicture.asset(
+                    widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+                : null,
+        title:
+            widget.title.isEmpty
+                ? null
+                : Text(widget.title, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
+        actions: [if (widget.actionButton != null) widget.actionButton!, CoconutLayout.spacing_300w],
       ),
       body: InputAndShareOverlay(
         scrollController: widget.scrollController,
@@ -235,6 +268,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
             context: context,
             currentUnit: currentUnit,
             initialAmountSats: _amountInSats,
+            screenName: AnalyticsScreenNames.qrDetailSetAmountSheet,
           );
           if (!mounted || result == null || !result.didEdit) return;
           setState(() {
@@ -311,8 +345,13 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   qrcodeTopWidget: widget.qrcodeTopWidget,
                   qrData: displayQrData,
                   displayText: displayTextData,
+                  embedWidget: widget.showQrEmbedImage ? const CoconutLogoIcon(size: 16) : null,
                   isAddress: widget.isAddress,
                   qrInternalPadding: widget.qrInternalPadding,
+                  qrPadding: widget.qrPadding,
+                  textStyle: widget.textStyle,
+                  qrViewDataHandler:
+                      _selectedKey == 'Keystone Multisig' ? Utf8BcUrQrViewHandler(displayTextData) : null,
                 ),
               ),
               if (widget.footer != null) widget.footer!,

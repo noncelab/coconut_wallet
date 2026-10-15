@@ -3,7 +3,7 @@ module coconut_wallet/go
 go 1.26
 
 require (
-	github.com/BitBoxSwiss/bitbox02-api-go v0.0.0
+	github.com/BitBoxSwiss/bitbox02-api-go v0.0.0-00010101000000-000000000000
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.10
 	github.com/flynn/noise v1.1.0
@@ -26,6 +26,6 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 )
 
-replace github.com/BitBoxSwiss/bitbox02-api-go => ../../bitbox02-api-go
+replace github.com/BitBoxSwiss/bitbox02-api-go => github.com/noncelab/bitbox02-api-go v0.0.0-20260624061356-44800a030415
 
 tool golang.org/x/mobile/cmd/gobind

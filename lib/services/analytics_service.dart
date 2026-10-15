@@ -44,6 +44,16 @@ class AnalyticsService {
     );
   }
 
+  Future<void> logScreenView({required String screenName}) async {
+    if (_isAnalyticsDisabled) return;
+
+    try {
+      await _analytics?.logScreenView(screenName: screenName);
+    } catch (e) {
+      Logger.error('Analytics screen_view error: $e');
+    }
+  }
+
   /// 커스텀 이벤트 로깅
   Future<void> logEvent({required String eventName, Map<String, Object>? parameters}) async {
     if (_isAnalyticsDisabled) return;

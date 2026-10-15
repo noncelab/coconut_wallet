@@ -76,7 +76,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -95,7 +95,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -115,7 +115,7 @@ void main() {
             recipients: mSingleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -135,7 +135,7 @@ void main() {
             recipients: singleRecipientEdgeBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -155,7 +155,7 @@ void main() {
             recipients: mSingleRecipientEdgeBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -175,7 +175,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -195,7 +195,7 @@ void main() {
             recipients: singleRecipientNearBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -215,7 +215,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -247,7 +247,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -271,7 +271,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1800.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -295,7 +295,7 @@ void main() {
             recipients: singleRecipientEdgeBalance2,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -331,7 +331,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -350,7 +350,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -370,7 +370,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -378,7 +378,7 @@ void main() {
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
       expect(result.exception, isA<InsufficientBalanceException>());
-      expect(result.estimatedFee, 141 + 68);
+      expect(result.estimatedFee, 209);
       expect(result.selectedUtxos, isNotNull);
       expect(result.unintendedDustFee, isNull);
     });
@@ -390,7 +390,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -414,7 +414,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -440,7 +440,7 @@ void main() {
             recipients: singleRecipientNearBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -462,7 +462,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1800.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -492,7 +492,7 @@ void main() {
             recipients: {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 99999999},
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -513,7 +513,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -532,7 +532,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1800.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -552,7 +552,7 @@ void main() {
             recipients: batchRecipientsSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -588,7 +588,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -607,7 +607,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -634,7 +634,7 @@ void main() {
             recipients: batchRecipientsSameBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -668,7 +668,7 @@ void main() {
             recipients: batchRecipientsOverBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -690,7 +690,7 @@ void main() {
             recipients: batchRecipientsEdgeBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -726,7 +726,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -751,7 +751,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -774,7 +774,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 160.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -794,7 +794,7 @@ void main() {
             recipients: batchRecipientsEdgeBalance,
             feeRate: 1.0,
             changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: wallet,
+            walletItemBase: wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -819,7 +819,7 @@ void main() {
         recipients: singleRecipient,
         feeRate: 1.0,
         changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
+        walletItemBase: wallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
       );
@@ -862,8 +862,8 @@ void main() {
             availableUtxos: [],
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -881,8 +881,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -901,8 +901,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: mSingleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -921,8 +921,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientEdgeBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -941,8 +941,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: mSingleRecipientEdgeBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -961,8 +961,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -981,8 +981,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientNearBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -1001,8 +1001,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1027,8 +1027,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1052,8 +1052,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1800.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1074,8 +1074,8 @@ void main() {
             availableUtxos: [mAvailableUtxos[0]],
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -1093,8 +1093,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -1113,8 +1113,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -1133,8 +1133,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipient,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -1159,8 +1159,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -1185,8 +1185,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: singleRecipientSameBalance,
             feeRate: 1800.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -1207,8 +1207,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipients,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -1226,8 +1226,8 @@ void main() {
             availableUtxos: availableUtxos,
             recipients: batchRecipients,
             feeRate: 1800.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -1246,8 +1246,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipientsSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -1266,8 +1266,8 @@ void main() {
             availableUtxos: availableUtxos,
             recipients: batchRecipients,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1293,8 +1293,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipientsSameBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1327,8 +1327,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipientsOverBalance,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -1349,8 +1349,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipients,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -1374,8 +1374,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipients,
             feeRate: 1.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -1400,8 +1400,8 @@ void main() {
             availableUtxos: mAvailableUtxos,
             recipients: batchRecipients,
             feeRate: 160.0,
-            changeDerivationPath: "m/84'/1'/0'/0/0",
-            walletListItemBase: multisigWallet,
+            changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+            walletItemBase: multisigWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -1421,8 +1421,8 @@ void main() {
         availableUtxos: mAvailableUtxos,
         recipients: singleRecipient,
         feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
+        changeDerivationPath: "m/48'/1'/0'/2'/1/0",
+        walletItemBase: multisigWallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
       );

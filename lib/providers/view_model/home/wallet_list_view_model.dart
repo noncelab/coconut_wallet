@@ -59,6 +59,16 @@ class WalletListViewModel extends ChangeNotifier {
 
   bool get hasEnglishWordOrder => AppLanguage.fromCode(_preferenceProvider.language).hasEnglishWordOrder;
 
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate();
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.isNotEmpty;
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) async {
+    await sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    notifyListeners();
+  }
+
   bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
 
   late List<FiatCode> _visibleFiats;
@@ -103,6 +113,8 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
+
+  int watchedAddressCount(int walletId) => _walletProvider.getWatchedAddressCount(walletId);
   List<WalletItemBase> get walletItemList {
     final walletList = _walletProvider.walletItemListNotifier.value;
     final order = _preferenceProvider.walletOrder;
@@ -186,6 +198,12 @@ class WalletListViewModel extends ChangeNotifier {
   Future<void> updateWalletBalances() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
+
+    for (final wallet in walletItemList) {
+      unawaited(_nodeProvider.syncDormantAddresses(wallet));
+    }
+    _nodeProvider.reconnectIfNeeded();
+
     notifyListeners();
   }
 

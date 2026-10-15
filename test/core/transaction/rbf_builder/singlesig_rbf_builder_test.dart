@@ -5,7 +5,7 @@ import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
+import 'package:ur/utils.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/constants/icon_path.dart';
+
 // 내용 변경시 RealmHomeFeature도 수정 필요
 class HomeFeature {
   final String homeFeatureTypeString;
@@ -20,13 +22,13 @@ enum HomeFeatureType {
   String get assetPath {
     switch (this) {
       case HomeFeatureType.totalBalance:
-        return 'assets/svg/piggy-bank.svg';
+        return FeatureWalletIconPath.piggyBank;
       case HomeFeatureType.walletList:
-        return 'assets/svg/wallet.svg';
+        return FeatureWalletIconPath.wallet;
       case HomeFeatureType.recentTransaction:
-        return 'assets/svg/transaction.svg';
+        return FeatureTransactionIconPath.transaction;
       case HomeFeatureType.analysis:
-        return 'assets/svg/analysis.svg';
+        return FeatureSettingsIconPath.analysis;
     }
   }
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
@@ -23,6 +25,8 @@ import '../repository/realm/test_realm_manager.dart';
 
 class ScriptSyncServiceMock {
   static int callSubscribeWalletCount = 0;
+  static List<String> unsubscribedAddresses = [];
+  static List<String> subscribedAddresses = [];
   static late MockElectrumService electrumService;
   static late NodeStateManager stateManager;
   static TestRealmManager? realmManager;
@@ -41,6 +45,14 @@ class ScriptSyncServiceMock {
     return Result.success(true);
   }
 
+  static Future<void> unsubscribeAddress(WalletItemBase walletItem, String address) async {
+    unsubscribedAddresses.add(address);
+  }
+
+  static Future<void> subscribeAddress(WalletItemBase walletItem, int index, String address, bool isChange) async {
+    subscribedAddresses.add(address);
+  }
+
   static ScriptSyncService createMockScriptSyncService() {
     return ScriptSyncService(
       stateManager,
@@ -55,11 +67,15 @@ class ScriptSyncServiceMock {
   static void init() {
     NetworkType.setNetworkType(NetworkType.regtest);
     callSubscribeWalletCount = 0;
+    unsubscribedAddresses = [];
+    subscribedAddresses = [];
     electrumService = MockElectrumService();
     stateManager = NodeStateManager(
       () {},
       StreamController<NodeSyncState>.broadcast(),
       StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
+      StreamController<Map<int, ResyncProgress>>.broadcast(),
+      StreamController<Map<int, WalletFetchProgress>>.broadcast(),
     );
     if (realmManager == null) {
       realmManager = TestRealmManager();

@@ -14,6 +14,11 @@ void main() {
   late UtxoRepository utxoRepository;
   SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
   const int testWalletId = 1;
+  const lockedTxHash = '0000000000000000000000000000000000000000000000000000000000000031';
+  const unspentTxHash = '0000000000000000000000000000000000000000000000000000000000000032';
+  const reappearedUnspentTxHash = '0000000000000000000000000000000000000000000000000000000000000033';
+  const notReappearedTxHash = '0000000000000000000000000000000000000000000000000000000000000034';
+  const nowOutgoingTxHash = '0000000000000000000000000000000000000000000000000000000000000035';
 
   setUp(() async {
     realmManager = await setupTestRealmManager();
@@ -28,6 +33,63 @@ void main() {
   group('UtxoRepository 기능 테스트', () {
     final testAddress = testWalletItem.walletBase.getAddress(0);
     final toAddress = testWalletItem.walletBase.getAddress(9999);
+    group('UTXO 태그 제한 테스트', () {
+      test('단건 태그 추가는 UTXO당 최대 5개까지만 허용한다', () async {
+        const utxoId = 'tx_hash_0';
+
+        for (var i = 0; i < 5; i++) {
+          final result = await utxoRepository.addUtxoToTag(testWalletId, 'tag-$i', utxoId, colorIndex: i);
+          expect(result.isSuccess, isTrue);
+        }
+
+        final overflowResult = await utxoRepository.addUtxoToTag(testWalletId, 'tag-overflow', utxoId, colorIndex: 6);
+
+        expect(overflowResult.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.length, 5);
+        expect(tags.value.map((tag) => tag.name), isNot(contains('tag-overflow')));
+      });
+
+      test('batch 태그 추가도 UTXO당 최대 5개까지만 허용한다', () async {
+        const utxoId = 'tx_hash_1';
+
+        for (var i = 0; i < 4; i++) {
+          final result = await utxoRepository.addUtxoToTag(testWalletId, 'existing-tag-$i', utxoId, colorIndex: i);
+          expect(result.isSuccess, isTrue);
+        }
+
+        final result = await utxoRepository.addUtxosToTags(testWalletId, {
+          utxoId: {
+            (tag: 'imported-tag-1', colorIndex: 4),
+            (tag: 'imported-tag-2', colorIndex: 5),
+            (tag: 'imported-tag-3', colorIndex: 6),
+          },
+        });
+
+        expect(result.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.length, 5);
+        expect(tags.value.map((tag) => tag.name), contains('imported-tag-1'));
+        expect(tags.value.map((tag) => tag.name), isNot(contains('imported-tag-2')));
+        expect(tags.value.map((tag) => tag.name), isNot(contains('imported-tag-3')));
+      });
+
+      test('가져온 태그 colorIndex는 앱 팔레트 범위로 정규화한다', () async {
+        const utxoId = 'tx_hash_2';
+
+        final result = await utxoRepository.addUtxosToTags(testWalletId, {
+          utxoId: {(tag: 'invalid-high-color', colorIndex: 11), (tag: 'invalid-low-color', colorIndex: -1)},
+        });
+
+        expect(result.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.map((tag) => tag.colorIndex), everyElement(inInclusiveRange(0, 9)));
+      });
+    });
+
     group('updateUtxoStatusToOutgoingByTransaction 테스트', () {
       test('기본 UTXO 상태 업데이트가 정상적으로 이루어지는지 확인', () async {
         // Given
@@ -115,6 +177,89 @@ void main() {
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
         expect(updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
+      });
+    });
+
+    group('snapshotLockedUtxoIds / restoreLockedUtxos 테스트', () {
+      test('잠긴 UTXO id만 정확히 스냅샷됨', () async {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createMockUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: lockedTxHash,
+              status: UtxoStatus.locked,
+            ),
+          );
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: unspentTxHash,
+            ),
+          );
+        });
+
+        final snapshot = utxoRepository.snapshotLockedUtxoIds(testWalletId);
+
+        expect(snapshot, {getUtxoId(lockedTxHash, 0)});
+      });
+
+      test('스냅샷 후 재발견된(unspent) UTXO만 다시 locked로 복원됨', () async {
+        final lockedUtxoIds = {getUtxoId(reappearedUnspentTxHash, 0), getUtxoId(notReappearedTxHash, 0)};
+
+        realmManager.realm.write(() {
+          // resync 이후 재동기화로 다시 unspent로 발견된 UTXO
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: reappearedUnspentTxHash,
+            ),
+          );
+          // not_reappeared_tx_hash는 재동기화로 아예 재발견되지 않았다고 가정(row 없음)
+        });
+
+        await utxoRepository.restoreLockedUtxos(testWalletId, lockedUtxoIds);
+
+        final restored = utxoRepository.getUtxoState(testWalletId, getUtxoId(reappearedUnspentTxHash, 0));
+        expect(restored!.status, UtxoStatus.locked);
+      });
+
+      test('스냅샷에 있어도 outgoing/incoming으로 재동기화된 UTXO는 강제로 잠그지 않음', () async {
+        final lockedUtxoIds = {getUtxoId(nowOutgoingTxHash, 0)};
+
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createOutgoingRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: nowOutgoingTxHash,
+            ),
+          );
+        });
+
+        await utxoRepository.restoreLockedUtxos(testWalletId, lockedUtxoIds);
+
+        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId(nowOutgoingTxHash, 0));
+        expect(utxo!.status, UtxoStatus.outgoing);
+      });
+
+      test('빈 스냅샷은 아무 것도 하지 않음', () async {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: unspentTxHash,
+            ),
+          );
+        });
+
+        await utxoRepository.restoreLockedUtxos(testWalletId, {});
+
+        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId(unspentTxHash, 0));
+        expect(utxo!.status, UtxoStatus.unspent);
       });
     });
   });

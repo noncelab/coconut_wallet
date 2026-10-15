@@ -5,7 +5,20 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -28,9 +41,11 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Future<void> _loadLogContent() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     final content = await FileLogger.getLogContent();
+    if (!mounted) return;
     setState(() {
       _logContent = content ?? 'No log content available';
       _isLoading = false;
@@ -72,8 +87,8 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
         context: context,
         backgroundColor: colors.background.withValues(alpha: 0.95),
         actionButtonList: [
-          IconButton(
-            icon: Icon(Icons.share, color: colors.iconDefault),
+          CoconutAppBarActionButton(
+            icon: Icon(Icons.share, color: colors.iconPrimary),
             onPressed: () async {
               try {
                 final logContent = await FileLogger.getLogContent();
@@ -86,7 +101,8 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                       'subject=${t.settings_screen.log_viewer_screen.email_subject}&body=${t.settings_screen.log_viewer_screen.email_body}\n\n$logText',
                 );
 
-                await launchURL(emailUri.toString());
+                if (!context.mounted) return;
+                await launchURL(context, emailUri.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
               } catch (e) {
                 if (context.mounted) {
                   CoconutToast.showToast(
@@ -99,11 +115,11 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
               }
             },
           ),
-          IconButton(
+          CoconutAppBarActionButton(
             icon: SvgPicture.asset(
-              'assets/svg/trash.svg',
+              CommonActionIconPath.trash,
               width: 20,
-              colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
             ),
             onPressed: _clearLog,
           ),
@@ -111,7 +127,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
       ),
       body:
           _isLoading
-              ? const Center(child: CoconutCircularIndicator())
+              ? const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 18))
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -119,7 +135,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                     // 로그 설명 표시 영역
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: colors.surfaceCard, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(10)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -157,8 +173,8 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                       width: MediaQuery.of(context).size.width,
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: colors.surfaceCard, borderRadius: BorderRadius.circular(10)),
-                        child: SelectableText(
+                        decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(10)),
+                        child: Text(
                           _logContent,
                           style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: colors.primaryText),
                         ),
@@ -194,7 +210,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Row(
       children: [
         _buildButton(t.settings_screen.log_viewer_screen.buttons.discord, () {
-          launchURL(DISCORD_COCONUT);
+          launchURL(context, DISCORD_COCONUT);
         }),
         CoconutLayout.spacing_100w,
         _buildButton(t.settings_screen.log_viewer_screen.buttons.copy, () {

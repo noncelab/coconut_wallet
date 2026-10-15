@@ -1,5 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/core/transaction/hardware_wallet_psbt_summary.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -7,16 +10,17 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/trezor_sign_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class TrezorSignScreen extends StatefulWidget {
+  final int walletId;
   final String psbtBase64;
   final String walletName;
   final String walletFingerprint;
@@ -25,6 +29,7 @@ class TrezorSignScreen extends StatefulWidget {
 
   const TrezorSignScreen({
     super.key,
+    required this.walletId,
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
@@ -86,7 +91,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -179,7 +184,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 CoconutLayout.spacing_300h,
                 _buildDetailRow(
                   t.trezor_sign_screen.tx_card.total_cost,
-                  _currentUnit.displayBitcoinAmount(summary.amount + summary.fee, withUnit: true),
+                  _currentUnit.displayBitcoinAmount(summary.totalCost, withUnit: true),
                 ),
               ] else ...[
                 _buildDetailRow(
@@ -199,18 +204,10 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     );
   }
 
-  _PsbtSummary? _parsePsbtSummary() {
+  HardwareWalletPsbtSummary? _parsePsbtSummary() {
     try {
-      final psbt = Psbt.parse(widget.psbtBase64);
-
-      int amount = (psbt.outputs).where((o) => o.isChange != true).fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
-      int fee = psbt.fee;
-
-      final outputs = psbt.outputs;
-
-      final addresses = outputs.where((o) => o.isChange != true).map((o) => o.outAddress).whereType<String>().toList();
-
-      return _PsbtSummary(amount: amount, fee: fee, recipientAddresses: addresses);
+      final wallet = context.read<WalletProvider>().getWalletById(widget.walletId).walletBase;
+      return HardwareWalletPsbtSummary.parse(psbtBase64: widget.psbtBase64, wallet: wallet);
     } catch (_) {
       return null;
     }
@@ -277,7 +274,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/circle-check-outline.svg',
+        CommonFormIconPath.circleCheckOutline,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -288,7 +285,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.danger;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/triangle-warning.svg',
+        CommonStateIconPath.triangleWarning,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -374,6 +371,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
           navigator.pop();
           await TrezorNavigator.showConnectScreen(
             context: navigator.context,
+            walletId: widget.walletId,
             psbtBase64: widget.psbtBase64,
             walletName: widget.walletName,
             walletFingerprint: widget.walletFingerprint,
@@ -393,6 +391,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 navigator.pop();
                 TrezorNavigator.showConnectScreen(
                   context: navigator.context,
+                  walletId: widget.walletId,
                   psbtBase64: widget.psbtBase64,
                   walletName: widget.walletName,
                   walletFingerprint: widget.walletFingerprint,
@@ -402,7 +401,22 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 vm.signTransaction();
               }
             }
-            : () => vm.signTransaction();
+            : () async {
+              if (!await vm.isDeviceConnected()) {
+                if (!mounted) return;
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                await TrezorNavigator.showConnectScreen(
+                  context: navigator.context,
+                  walletId: widget.walletId,
+                  psbtBase64: widget.psbtBase64,
+                  walletName: widget.walletName,
+                  walletFingerprint: widget.walletFingerprint,
+                );
+                return;
+              }
+              vm.signTransaction();
+            };
 
     return FixedBottomButton(
       onButtonClicked: onPressed,
@@ -421,11 +435,4 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
               : null,
     );
   }
-}
-
-class _PsbtSummary {
-  final int amount;
-  final int fee;
-  final List<String> recipientAddresses;
-  const _PsbtSummary({required this.amount, required this.fee, required this.recipientAddresses});
 }
