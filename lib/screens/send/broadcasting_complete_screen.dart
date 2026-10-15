@@ -236,7 +236,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             children: [
               SvgPicture.asset(
                 CommonActionIconPath.editOutlined,
-                colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
               CoconutLayout.spacing_100w,
@@ -275,7 +275,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             children: [
               SvgPicture.asset(
                 CommonActionIconPath.editOutlined,
-                colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
               CoconutLayout.spacing_100w,
@@ -297,7 +297,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
-                      hintStyle: CoconutTypography.body2_14.setColor(context.coconutColors.inputPlaceholder),
+                      hintStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                     ),
                   ),
                 ),
