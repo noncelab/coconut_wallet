@@ -424,6 +424,7 @@ class _DonutPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final stroke = size.shortestSide * strokeRatio;
     final rect = (Offset.zero & size).deflate(stroke / 2);
+    final radius = rect.width / 2;
     final paint =
         Paint()
           ..style = PaintingStyle.stroke
@@ -443,19 +444,24 @@ class _DonutPainter extends CustomPainter {
       if (shown >= 1) {
         canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
       } else if (shown > 0) {
+        paint.strokeCap = StrokeCap.round;
         canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * shown, false, paint..color = colors[visible.single]);
       }
       return;
     }
+    paint.strokeCap = StrokeCap.round;
+    final capAngle = (stroke / 2) / radius;
+    final gapAngle = (stroke * 0.35) / radius;
     final limit = math.pi * 2 * shown;
     var start = 0.0;
     for (final i in visible) {
       final sweep = math.pi * 2 * values[i] / total;
-      // Butt caps keep every share inside its actual angle, including a tiny
-      // final segment. Rounded caps would turn short arcs into oversized dots.
-      final drawn = math.min(sweep, limit - start);
+      final drawn = math.min(
+        math.max(0.0001, sweep - capAngle * 2 - gapAngle),
+        limit - start - capAngle - gapAngle / 2,
+      );
       if (drawn > 0) {
-        canvas.drawArc(rect, -math.pi / 2 + start, drawn, false, paint..color = colors[i]);
+        canvas.drawArc(rect, -math.pi / 2 + start + capAngle + gapAngle / 2, drawn, false, paint..color = colors[i]);
       }
       start += sweep;
     }
