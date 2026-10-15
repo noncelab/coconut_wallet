@@ -109,6 +109,7 @@ class WalletStackDefinition extends HomeItemDefinition {
         WalletStackKind.all => t.home_widgets.add_wallet,
       },
       onEmptyPressed: () => openWalletAddFor(context, stackKind),
+      onAddPressed: stackKind == WalletStackKind.all ? () => openWalletAddFor(context, stackKind) : null,
     );
   }
 }

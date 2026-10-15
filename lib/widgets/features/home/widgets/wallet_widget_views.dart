@@ -44,6 +44,9 @@ class WalletStackView extends StatefulWidget {
   final String? emptyActionText;
   final VoidCallback? onEmptyPressed;
 
+  /// 있으면 실제 지갑 뒤에 추가 페이지를 보여 준다.
+  final VoidCallback? onAddPressed;
+
   const WalletStackView({
     super.key,
     required this.keyPrefix,
@@ -56,6 +59,7 @@ class WalletStackView extends StatefulWidget {
     this.onOpen,
     this.emptyActionText,
     this.onEmptyPressed,
+    this.onAddPressed,
   });
 
   @override
@@ -68,6 +72,8 @@ class _WalletStackViewState extends State<WalletStackView> {
   final PageController _controller = PageController();
   bool _indicatorVisible = false;
   Timer? _hideIndicator;
+
+  int get _pageCount => widget.wallets.length + (widget.onAddPressed == null ? 0 : 1);
 
   @override
   void dispose() {
@@ -98,7 +104,7 @@ class _WalletStackViewState extends State<WalletStackView> {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (var i = 0; i < widget.wallets.length; i++)
+            for (var i = 0; i < _pageCount; i++)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -129,6 +135,10 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   void _onTap() {
+    if (widget.onAddPressed != null && _page.round() >= widget.wallets.length) {
+      widget.onAddPressed!();
+      return;
+    }
     final onOpen = widget.onOpen;
     if (onOpen == null) {
       widget.onPressed?.call();
@@ -149,45 +159,54 @@ class _WalletStackViewState extends State<WalletStackView> {
     );
   }
 
+  Widget _emptyCard(BuildContext context, {bool addPage = false}) {
+    final colors = context.coconutColors;
+    final actionText = widget.emptyActionText;
+    return HomeWidgetCard(
+      key: Key('${widget.keyPrefix}-${addPage ? 'add' : 'empty'}'),
+      onPressed: addPage ? null : widget.onEmptyPressed ?? widget.onPressed,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (actionText != null) ...[
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
+                child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text(
+              actionText ?? widget.emptyText,
+              key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
+              textAlign: TextAlign.center,
+              style:
+                  actionText == null
+                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
+                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pageCard(BuildContext context, int index, {bool hero = false}) {
+    if (index == widget.wallets.length) return _emptyCard(context, addPage: true);
+    final wallet = widget.wallets[index];
+    final card = _card(wallet);
+    return hero && widget.onOpen != null ? Hero(tag: _heroTagOf(wallet.id), child: card) : card;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     final wallets = widget.wallets;
-    if (wallets.isEmpty) {
-      final actionText = widget.emptyActionText;
-      return HomeWidgetCard(
-        key: Key('${widget.keyPrefix}-empty'),
-        onPressed: widget.onEmptyPressed ?? widget.onPressed,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (actionText != null) ...[
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                  child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
-                ),
-                const SizedBox(height: 8),
-              ],
-              Text(
-                actionText ?? widget.emptyText,
-                key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
-                textAlign: TextAlign.center,
-                style:
-                    actionText == null
-                        ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
-                        : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    if (wallets.isEmpty) return _emptyCard(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.onOpen == null && widget.onPressed == null ? null : _onTap,
+      onTap: widget.onOpen == null && widget.onPressed == null && widget.onAddPressed == null ? null : _onTap,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
@@ -199,13 +218,13 @@ class _WalletStackViewState extends State<WalletStackView> {
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, _) {
-                      final page = _page.clamp(0.0, (wallets.length - 1).toDouble());
+                      final page = _page.clamp(0.0, (_pageCount - 1).toDouble());
                       final front = page.floor();
                       final progress = page - front;
                       final back = front + 1;
                       return Stack(
                         children: [
-                          if (back < wallets.length)
+                          if (back < _pageCount)
                             Opacity(
                               key: ValueKey('${widget.keyPrefix}-back'),
                               opacity: progress,
@@ -214,7 +233,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                                 child: Transform.scale(
                                   scale:
                                       WalletStackView.backStartScale + (1 - WalletStackView.backStartScale) * progress,
-                                  child: _card(wallets[back]),
+                                  child: _pageCard(context, back),
                                 ),
                               ),
                             ),
@@ -225,10 +244,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                               offset: Offset(-width * progress, 0),
                               child: Transform.scale(
                                 scale: 1 - (1 - WalletStackView.frontEndScale) * progress,
-                                child:
-                                    widget.onOpen == null
-                                        ? _card(wallets[front])
-                                        : Hero(tag: _heroTagOf(wallets[front].id), child: _card(wallets[front])),
+                                child: _pageCard(context, front, hero: true),
                               ),
                             ),
                           ),
@@ -243,12 +259,12 @@ class _WalletStackViewState extends State<WalletStackView> {
                     child: PageView.builder(
                       key: Key('${widget.keyPrefix}-pager'),
                       controller: _controller,
-                      itemCount: wallets.length,
+                      itemCount: _pageCount,
                       itemBuilder: (context, index) => const SizedBox.expand(),
                     ),
                   ),
                 ),
-                if (wallets.length > 1)
+                if (_pageCount > 1)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -258,7 +274,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                         key: Key('${widget.keyPrefix}-indicator'),
                         opacity: _indicatorVisible ? 1 : 0,
                         duration: const Duration(milliseconds: 200),
-                        child: Center(child: _indicator(context)),
+                        child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: _indicator(context))),
                       ),
                     ),
                   ),
