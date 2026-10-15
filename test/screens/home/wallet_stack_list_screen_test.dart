@@ -251,6 +251,54 @@ Future<void> _expectCardPainted(WidgetTester tester, Key key, {required String p
 }
 
 void main() {
+  for (final back in ['header', 'system', 'navigator']) {
+    testWidgets('add card closes without a wallet Hero flight via $back Back', (tester) async {
+      await _pumpCupertinoHome(tester);
+      await _open(tester);
+      final pager = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager')));
+      pager.controller!.jumpToPage(2);
+      await tester.pumpAndSettle();
+      pager.controller!.jumpToPage(3);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('wallet-stack-list-add-card')), findsOneWidget);
+      if (back == 'header') {
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        await tester.tap(find.byWidget(appBar.leading!));
+      } else if (back == 'system') {
+        await tester.binding.handlePopRoute();
+      } else {
+        Navigator.of(tester.element(find.byKey(const Key('wallet-stack-list-wheel')))).pop();
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      final flyingCards = find.byType(WalletCard).evaluate().where((element) => ModalRoute.of(element) == null);
+      expect(flyingCards, isEmpty, reason: 'The add card has no wallet counterpart on Home.');
+      expect(find.byKey(const Key('wallet-stack-list-add-card')), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('wallet-stack-list-wheel')), findsNothing);
+      expect(find.byKey(const ValueKey('stack-card-3')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('returning from the add card to a wallet restores its normal Hero flight', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    final pager = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager')));
+    pager.controller!.jumpToPage(3);
+    await tester.pumpAndSettle();
+    pager.controller!.jumpToPage(1);
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byKey(const Key('wallet-stack-list-wheel')))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final flyingCards = find.byType(WalletCard).evaluate().where((element) => ModalRoute.of(element) == null);
+    expect(flyingCards, isNotEmpty, reason: 'The selected real wallet must still fly back to Home.');
+    await tester.pumpAndSettle();
+    await _expectCardPainted(tester, const ValueKey('stack-card-2'), phase: 'real wallet return after add');
+    expect(tester.takeException(), isNull);
+  });
+
   for (final walletCount in [9, 40]) {
     testWidgets('bounded indicator follows first middle and add pages with $walletCount wallets', (tester) async {
       await _pumpCupertinoHome(

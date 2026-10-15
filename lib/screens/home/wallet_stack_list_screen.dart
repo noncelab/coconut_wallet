@@ -280,7 +280,10 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     );
     final tagOf = widget.heroTagOf;
     if (tagOf == null) return card;
-    return Hero(tag: tagOf(wallet.id), flightShuttleBuilder: _shuttle, child: card);
+    return HeroMode(
+      enabled: _focused < viewModel.wallets.length,
+      child: Hero(tag: tagOf(wallet.id), flightShuttleBuilder: _shuttle, child: card),
+    );
   }
 
   /// 스택 카드에서 휠 카드로 내용이 겹쳐 바뀐다. 4×2 스택이면 날아가는 동안 정사각형으로 줄어든다.
