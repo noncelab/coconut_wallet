@@ -155,13 +155,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _openAddWallet(
-    BuildContext context, {
-    WalletAddEntrySource entrySource = WalletAddEntrySource.appBar,
-  }) async {
-    context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: entrySource);
+  void _openAddWallet(BuildContext context) {
+    context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.appBar);
     _viewModel.dismissAddWalletHint();
-    await WalletAddScreen.openByWalletCount(context);
+    WalletAddScreen.openByWalletCount(context);
   }
 
   Future<void> _openHomeEdit(BuildContext context) async {
@@ -293,8 +290,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAllFeaturesScreen(bool noWallets) => AllFeaturesScreen(
     registry: _viewModel.features,
-    noWallets: noWallets,
-    onAddWallet: (context) => _openAddWallet(context, entrySource: WalletAddEntrySource.feature),
     isAvailable:
         (feature) =>
             (feature.isAvailable?.call(context) ?? true) &&

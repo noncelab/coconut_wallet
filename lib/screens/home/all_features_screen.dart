@@ -13,10 +13,8 @@ class AllFeaturesScreen extends StatefulWidget {
   final FeatureRegistry registry;
   final bool Function(FeatureItem feature)? isAvailable;
 
-  /// 지갑이 필요해 흐리게 표시할 기능. 누르면 [onLaunch]가 기존 안내를 제공한다.
+  /// 흐리게 보여 줄 기능(예: 지갑이 없을 때 지갑이 필요한 기능). 누르면 [onLaunch]가 안내한다.
   final bool Function(FeatureItem feature)? isDimmed;
-  final bool noWallets;
-  final Future<void> Function(BuildContext context)? onAddWallet;
   final void Function(BuildContext context, FeatureItem feature) onLaunch;
   final Future<void> Function(BuildContext context)? onFakeBalanceTap;
   final List<String> recentIds;
@@ -29,8 +27,6 @@ class AllFeaturesScreen extends StatefulWidget {
     this.onFakeBalanceTap,
     this.isAvailable,
     this.isDimmed,
-    this.noWallets = false,
-    this.onAddWallet,
     this.recentIds = const [],
     this.saveRecentIds,
   });
@@ -64,7 +60,6 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
     extraFeature: widget.onFakeBalanceTap == null ? null : _fakeBalanceFeature,
   );
   final TextEditingController _controller = TextEditingController();
-  bool _addingWallet = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -93,18 +88,6 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
       widget.onFakeBalanceTap?.call(context);
     } else {
       widget.onLaunch(context, feature);
-    }
-  }
-
-  Future<void> _addWallet() async {
-    final onAddWallet = widget.onAddWallet;
-    if (_addingWallet || onAddWallet == null) return;
-    _addingWallet = true;
-    FocusScope.of(context).unfocus();
-    try {
-      await onAddWallet(context);
-    } finally {
-      _addingWallet = false;
     }
   }
 
@@ -224,7 +207,6 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
             child: Container(key: const Key('all-features-recent-divider'), height: 1, color: colors.divider),
           ),
         ],
-        if (widget.noWallets) _walletBanner(),
         for (final (index, (category, entries)) in viewModel.sections.indexed) ...[
           Padding(
             key: ValueKey('all-features-category-${category?.name ?? 'added'}'),
@@ -260,87 +242,17 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
       key: const Key('all-features-results'),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 32),
-      children: [if (widget.noWallets) _walletBanner(), for (final entry in results) _buildRow(entry)],
+      children: [for (final entry in results) _buildRow(entry)],
     );
   }
 
-  bool _requiresWallet(FeatureItem feature) => widget.isDimmed?.call(feature) ?? false;
+  Widget _dimmed(FeatureItem feature, Widget child) =>
+      widget.isDimmed?.call(feature) ?? false ? Opacity(opacity: 0.35, child: child) : child;
 
-  Widget _walletBanner() {
-    final colors = context.coconutColors;
-    final message = t.all_features.wallet_required_description;
-    final label = t.home_widgets.add_wallet;
-    final messageStyle = CoconutTypography.body2_14.copyWith(color: colors.primaryText);
-    final buttonStyle = CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        key: const Key('all-features-wallet-banner'),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(12)),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            double textWidth(String text, TextStyle style) {
-              final painter = TextPainter(
-                text: TextSpan(text: text, style: style),
-                textDirection: Directionality.of(context),
-                textScaler: MediaQuery.textScalerOf(context),
-              )..layout();
-              final width = painter.width;
-              painter.dispose();
-              return width;
-            }
-
-            final buttonWidth = (textWidth(label, buttonStyle) + 32).clamp(48.0, double.infinity);
-            final messageWidth = constraints.maxWidth - 20 - 12 - 12 - buttonWidth;
-            var inline = false;
-            if (messageWidth > 0) {
-              final painter = TextPainter(
-                text: TextSpan(text: message, style: messageStyle),
-                textDirection: Directionality.of(context),
-                textScaler: MediaQuery.textScalerOf(context),
-                maxLines: 2,
-              )..layout(maxWidth: messageWidth);
-              inline = !painter.didExceedMaxLines;
-              painter.dispose();
-            }
-            final icon = Icon(CupertinoIcons.info_circle, size: 20, color: colors.secondaryText);
-            final text = Text(message, style: messageStyle);
-            final button = ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: CupertinoButton(
-                key: const Key('all-features-add-wallet'),
-                minimumSize: const Size(48, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                borderRadius: BorderRadius.circular(24),
-                color: colors.divider,
-                onPressed: widget.onAddWallet == null ? null : _addWallet,
-                child: Text(label, textAlign: TextAlign.center, style: buttonStyle),
-              ),
-            );
-            return inline
-                ? Row(
-                  children: [icon, const SizedBox(width: 12), Expanded(child: text), const SizedBox(width: 12), button],
-                )
-                : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(children: [icon, const SizedBox(width: 12), Expanded(child: text)]),
-                    const SizedBox(height: 8),
-                    Align(alignment: AlignmentDirectional.centerEnd, child: button),
-                  ],
-                );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentTile(FeatureItem feature) => _recentTile(feature);
+  Widget _buildRecentTile(FeatureItem feature) => _dimmed(feature, _recentTile(feature));
 
   Widget _recentTile(FeatureItem feature) {
     final colors = context.coconutColors;
-    final foreground = _requiresWallet(feature) ? colors.secondaryText : colors.primaryText;
     final iconPath = feature.iconPath;
     return GestureDetector(
       key: ValueKey('all-features-recent-${feature.id}'),
@@ -360,25 +272,26 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
                       iconPath,
                       width: 24 * feature.iconScale,
                       height: 24 * feature.iconScale,
-                      colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                     ),
           ),
           const SizedBox(height: 6),
           Text(
             feature.shortcutLabel(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: CoconutTypography.body3_12.copyWith(color: foreground),
+            style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(AllFeaturesEntry entry) => _row(entry);
+  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.launchItem, _row(entry));
 
   Widget _row(AllFeaturesEntry entry) {
     final colors = context.coconutColors;
-    final foreground = _requiresWallet(entry.launchItem) ? colors.secondaryText : colors.primaryText;
     final feature = entry.item;
     final iconPath = feature.iconPath;
     return GestureDetector(
@@ -404,7 +317,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
                         iconPath,
                         width: 20 * feature.iconScale,
                         height: 20 * feature.iconScale,
-                        colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                       ),
             ),
             CoconutLayout.spacing_300w,
@@ -412,7 +325,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(feature.label(), style: CoconutTypography.body1_16.copyWith(color: foreground)),
+                  Text(feature.label(), style: CoconutTypography.body1_16.copyWith(color: colors.primaryText)),
                   if (entry.path.isNotEmpty)
                     Text(
                       entry.path.join(' › '),

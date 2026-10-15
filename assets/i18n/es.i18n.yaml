@@ -417,8 +417,6 @@ home_presets:
   applied: "Se aplicó el ajuste predefinido «$name»"
   undo: "Deshacer"
 all_features:
-  wallet_required_description: "¡Añade una billetera para activar todas las funciones!"
-  wallet_required: "Se requiere billetera"
   search_placeholder: "Buscar funciones"
   no_results: "No hay funciones que coincidan"
   recent: "Usados recientemente"
