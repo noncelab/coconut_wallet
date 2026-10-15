@@ -225,6 +225,8 @@ String homePeriodLabel(HomeWidgetPeriod period) => switch (period) {
 };
 
 String formatHomeDateTime(DateTime time, DateTime now) {
+  time = time.toLocal();
+  now = now.toLocal();
   final hhmm = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   final isToday = time.year == now.year && time.month == now.month && time.day == now.day;
   return isToday ? '${t.home_widgets.today} $hhmm' : '${formatHomeShortDate(time)} $hhmm';
