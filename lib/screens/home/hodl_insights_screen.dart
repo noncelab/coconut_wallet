@@ -184,78 +184,82 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : viewModel.hasNoWallets
                 ? const _NoWalletsView()
-                : SingleChildScrollView(
-                  key: const Key('hodl-insights-list'),
-                  padding: EdgeInsets.fromLTRB(0, 8 + _leadingSpace, 0, 96),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _section(HodlInsightsSection.balance, child: _BalanceCard(viewModel: viewModel)),
-                            CoconutLayout.spacing_400h,
-                            _section(
-                              HodlInsightsSection.goal,
-                              child: _GoalCard(
-                                viewModel: viewModel,
-                                onSetGoal: () => _openSettings(context, viewModel),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _LowerBand(
-                        children: [
-                          _section(
-                            HodlInsightsSection.balanceByWallet,
-                            title: _SectionTitle(t.home_widgets.balance_by_wallet, top: 10),
-                            child: SizedBox(
-                              height: 200,
-                              child: _OpenProgress(
-                                progress: 1,
-                                builder:
-                                    (context, reveal) => BalanceByWalletView(
-                                      key: const Key('hodl-insights-balance-by-wallet'),
-                                      shares: viewModel.balanceShares(t.home_widgets.others),
-                                      total: _btcAmount(viewModel, viewModel.balance),
-                                      amountText: (sats) => _btcNumber(viewModel, sats),
-                                      reveal: reveal,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _section(
-                              HodlInsightsSection.utxo,
-                              title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
-                              child: _UtxoSummaryCard(viewModel: viewModel),
-                            ),
-                            _section(
-                              HodlInsightsSection.activity,
-                              title: _SectionTitle(
-                                t.hodl_insights.transaction_activity,
-                                top: _sectionGap,
-                                trailing: _PeriodChips(
-                                  key: const Key('hodl-insights-activity-periods'),
-                                  selected: viewModel.activityPeriod,
-                                  onSelected: viewModel.selectActivityPeriod,
+                : ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    key: const Key('hodl-insights-list'),
+                    padding: EdgeInsets.fromLTRB(0, 8 + _leadingSpace, 0, 96),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _section(HodlInsightsSection.balance, child: _BalanceCard(viewModel: viewModel)),
+                              CoconutLayout.spacing_400h,
+                              _section(
+                                HodlInsightsSection.goal,
+                                child: _GoalCard(
+                                  viewModel: viewModel,
+                                  onSetGoal: () => _openSettings(context, viewModel),
                                 ),
                               ),
-                              child: _ActivityCard(viewModel: viewModel),
+                            ],
+                          ),
+                        ),
+                        _LowerBand(
+                          children: [
+                            _section(
+                              HodlInsightsSection.balanceByWallet,
+                              title: _SectionTitle(t.home_widgets.balance_by_wallet, top: 10),
+                              child: SizedBox(
+                                height: 200,
+                                child: _OpenProgress(
+                                  progress: 1,
+                                  builder:
+                                      (context, reveal) => BalanceByWalletView(
+                                        key: const Key('hodl-insights-balance-by-wallet'),
+                                        shares: viewModel.balanceShares(t.home_widgets.others),
+                                        total: _btcAmount(viewModel, viewModel.balance),
+                                        amountText: (sats) => _btcNumber(viewModel, sats),
+                                        reveal: reveal,
+                                      ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _section(
+                                HodlInsightsSection.utxo,
+                                title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
+                                child: _UtxoSummaryCard(viewModel: viewModel),
+                              ),
+                              _section(
+                                HodlInsightsSection.activity,
+                                title: _SectionTitle(
+                                  t.hodl_insights.transaction_activity,
+                                  top: _sectionGap,
+                                  trailing: _PeriodChips(
+                                    key: const Key('hodl-insights-activity-periods'),
+                                    selected: viewModel.activityPeriod,
+                                    onSelected: viewModel.selectActivityPeriod,
+                                  ),
+                                ),
+                                child: _ActivityCard(viewModel: viewModel),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
       ),

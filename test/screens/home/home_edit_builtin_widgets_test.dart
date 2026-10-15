@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:io';
 
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -45,6 +46,7 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart' show CupertinoScrollBehavior;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -166,6 +168,7 @@ Future<void> _openWidgetsTab(
   List<WalletItemBase>? walletList,
   NavigatorObserver? routeObserver,
   bool disableAnimations = false,
+  TargetPlatform? platform,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -222,7 +225,7 @@ Future<void> _openWidgetsTab(
         ChangeNotifierProvider.value(value: widgetsViewModel),
       ],
       child: MaterialApp(
-        theme: buildCoconutThemeData(),
+        theme: buildCoconutThemeData().copyWith(platform: platform),
         navigatorObservers: [if (routeObserver != null) routeObserver],
         builder:
             (context, child) =>
@@ -1185,7 +1188,7 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('repeated scroll and bounce reuse settled section paint layers', (tester) async {
+    testWidgets('repeated scroll and edge pulls reuse settled section paint layers', (tester) async {
       await _openWidgetsTab(
         tester,
         fake: false,
@@ -1204,11 +1207,13 @@ void main() {
         boundary.debugResetMetrics();
       }
       for (var attempt = 0; attempt < 3; attempt++) {
+        await tester.drag(list, const Offset(0, -100));
+        await tester.pumpAndSettle();
         await tester.drag(list, const Offset(0, 240));
         await tester.pumpAndSettle();
       }
       expect(boundaries.first.debugAsymmetricPaintCount, greaterThan(0));
-      expect(boundaries.first.debugSymmetricPaintCount, 0, reason: 'bounce moves the cached layer without repainting');
+      expect(boundaries.first.debugSymmetricPaintCount, 0, reason: 'scroll moves the cached layer without repainting');
       for (final boundary in boundaries) {
         expect(boundary.debugNeedsPaint, isFalse);
       }
@@ -1369,6 +1374,137 @@ void main() {
       expect(sampled.length, HodlInsightsViewModel.maxChartPoints);
       expect(sampled.first, 0);
       expect(sampled.last, 399);
+    });
+
+    group('HODL real-font edge contract', () {
+      setUpAll(() async {
+        for (final family in ['Pretendard', 'SpaceGrotesk']) {
+          final loader = FontLoader(family);
+          for (final weight in ['Regular', 'Bold']) {
+            loader.addFont(
+              Future.value(ByteData.sublistView(File('assets/fonts/$family-$weight.ttf').readAsBytesSync())),
+            );
+          }
+          await loader.load();
+        }
+      });
+
+      for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+        for (final shortContent in [false, true]) {
+          testWidgets(
+            '$platform ${shortContent ? "short" : "long"} content stays fixed on held edge pulls, up and cancel',
+            (tester) async {
+              final size = Size(platform == TargetPlatform.iOS ? 390 : 360, shortContent ? 4000 : 800);
+              const bottomInset = 34.0;
+              tester.view.padding = const FakeViewPadding(bottom: bottomInset);
+              tester.view.viewPadding = const FakeViewPadding(bottom: bottomInset);
+              await _openWidgetsTab(
+                tester,
+                fake: false,
+                size: size,
+                platform: platform,
+                screen:
+                    (viewModel) =>
+                        ScrollConfiguration(behavior: const CupertinoScrollBehavior(), child: insights(viewModel)),
+              );
+              await tester.pumpAndSettle();
+              final list = find.byKey(const Key('hodl-insights-list'));
+              final scrollable = find.descendant(of: list, matching: find.byType(Scrollable));
+              final position = tester.state<ScrollableState>(scrollable).position;
+              expect(position.maxScrollExtent, shortContent ? 0 : greaterThan(0));
+              final viewport = tester.getRect(list);
+              expect(
+                viewport.bottom,
+                shortContent ? lessThanOrEqualTo(size.height - bottomInset) : closeTo(size.height - bottomInset, .01),
+              );
+              for (final bottom in [false, true]) {
+                final edge = bottom ? position.maxScrollExtent : position.minScrollExtent;
+                position.jumpTo(edge);
+                await tester.pumpAndSettle();
+                final card = find.byKey(const Key('transaction-activity-summary'));
+                if (bottom) {
+                  final bounds = tester.getRect(card);
+                  expect(bounds.top, greaterThanOrEqualTo(viewport.top));
+                  expect(bounds.bottom, lessThanOrEqualTo(size.height - bottomInset));
+                }
+                for (final cancel in [false, true]) {
+                  final origin = Offset(viewport.left + 6, viewport.center.dy);
+                  final gesture = await tester.startGesture(origin);
+                  for (var step = 0; step < 6; step++) {
+                    await gesture.moveBy(Offset(0, bottom ? -20 : 20));
+                    await tester.pump(const Duration(milliseconds: 16));
+                    expect(
+                      position.pixels,
+                      closeTo(edge, .01),
+                      reason: 'held pull: bottom=$bottom cancel=$cancel step=$step physics=${position.physics}',
+                    );
+                  }
+                  final fixedCard = tester.getRect(card);
+                  await tester.pump(const Duration(milliseconds: 250));
+                  expect(position.pixels, closeTo(edge, .01), reason: 'stationary pointer must not spring back');
+                  expect(tester.getRect(card), fixedCard);
+                  if (cancel) {
+                    await gesture.cancel();
+                  } else {
+                    await gesture.up();
+                  }
+                  for (var frame = 0; frame < 20; frame++) {
+                    await tester.pump(const Duration(milliseconds: 16));
+                    expect(position.pixels, closeTo(edge, .01), reason: 'release frame $frame');
+                    expect(tester.getRect(card), fixedCard);
+                  }
+                  if (!shortContent) {
+                    final regrab = await tester.startGesture(origin);
+                    await regrab.moveBy(Offset(0, bottom ? 60 : -60));
+                    await tester.pump(const Duration(milliseconds: 16));
+                    await regrab.moveBy(Offset(0, bottom ? 60 : -60));
+                    await tester.pump(const Duration(milliseconds: 16));
+                    expect(
+                      position.pixels,
+                      bottom ? lessThan(edge) : greaterThan(edge),
+                      reason: 'reverse regrab must scroll immediately',
+                    );
+                    await regrab.cancel();
+                    await tester.pumpAndSettle();
+                    position.jumpTo(edge);
+                    await tester.pumpAndSettle();
+                  }
+                }
+              }
+              expect(find.descendant(of: list, matching: find.byType(StretchingOverscrollIndicator)), findsNothing);
+              expect(find.descendant(of: list, matching: find.byType(GlowingOverscrollIndicator)), findsNothing);
+              expect(tester.takeException(), isNull);
+              await _close(tester);
+            },
+          );
+        }
+
+        testWidgets('$platform initial section positioning remains visible with fixed edges', (tester) async {
+          for (final section in HodlInsightsSection.values) {
+            await _openWidgetsTab(
+              tester,
+              fake: false,
+              size: Size(platform == TargetPlatform.iOS ? 390 : 360, 800),
+              platform: platform,
+              screen:
+                  (_) => ScrollConfiguration(
+                    behavior: const CupertinoScrollBehavior(),
+                    child: ChangeNotifierProvider(
+                      create: (_) => HodlInsightsViewModel(_widgetsViewModel!, initialSection: section),
+                      child: const HodlInsightsScreen(),
+                    ),
+                  ),
+            );
+            await tester.pumpAndSettle();
+            final viewport = tester.getRect(find.byKey(const Key('hodl-insights-list')));
+            final card = tester.getRect(find.byKey(ValueKey('hodl-insights-highlight-${section.name}')));
+            expect(card.top, greaterThanOrEqualTo(viewport.top - .01));
+            expect(card.bottom, lessThanOrEqualTo(viewport.bottom + .01));
+            expect(tester.takeException(), isNull);
+            await _close(tester);
+          }
+        });
+      }
     });
   });
 }
