@@ -251,6 +251,50 @@ Future<void> _expectCardPainted(WidgetTester tester, Key key, {required String p
 }
 
 void main() {
+  for (final walletCount in [9, 40]) {
+    testWidgets('bounded indicator follows first middle and add pages with $walletCount wallets', (tester) async {
+      await _pumpCupertinoHome(
+        tester,
+        items: [for (var id = 1; id <= walletCount; id++) WalletMock.createSingleSigWalletItem(id: id)],
+      );
+      await _open(tester);
+      expect(tester.takeException(), isNull);
+      final pager = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager')));
+      for (final page in [0, walletCount ~/ 2, walletCount]) {
+        pager.controller!.jumpToPage(page);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'page $page of ${walletCount + 1}');
+        final indicator = find.byKey(const Key('wallet-stack-list-indicator'));
+        expect(find.byKey(ValueKey('wallet-stack-list-indicator-dot-$page')), findsOneWidget);
+        final selected = tester.widget<Container>(find.byKey(ValueKey('wallet-stack-list-indicator-dot-$page')));
+        expect(selected.constraints!.maxHeight, 20);
+        final bounds = tester.getRect(indicator);
+        expect(bounds.height, lessThanOrEqualTo(120));
+        final dots = find.descendant(
+          of: indicator,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith('wallet-stack-list-indicator-dot-'),
+          ),
+        );
+        expect(dots.evaluate().length, lessThanOrEqualTo(9));
+        final rects = [for (final dot in dots.evaluate()) tester.getRect(find.byWidget(dot.widget))];
+        expect(rects.where((rect) => rect.height > 20).length, 1);
+        for (final rect in rects) {
+          expect(rect.top, greaterThanOrEqualTo(bounds.top));
+          expect(rect.bottom, lessThanOrEqualTo(bounds.bottom));
+          expect(rect.width, 6);
+        }
+        if (page < walletCount) {
+          expect(find.byKey(ValueKey('wallet-stack-list-facts-${page + 1}')), findsOneWidget);
+        } else {
+          expect(find.byKey(const Key('wallet-stack-list-add-card')), findsOneWidget);
+        }
+      }
+    });
+  }
+
   for (final size in WalletCardSize.values) {
     for (final initialPage in [0, 1, 2]) {
       for (final reducedMotion in [false, true]) {

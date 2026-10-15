@@ -310,23 +310,30 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   Widget _indicator(BuildContext context, int count) {
     final colors = context.coconutColors;
+    // Nine markers occupy at most 113 px inside the 120 px indicator area.
+    // Keep the current page visible without shrinking markers as wallets grow.
+    final visibleCount = math.min(count, 9);
+    final first = (_focused - visibleCount ~/ 2).clamp(0, count - visibleCount);
     return Center(
-      child: Column(
-        key: const Key('wallet-stack-list-indicator'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < count; i++)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              margin: const EdgeInsets.symmetric(vertical: 2.5),
-              width: 6,
-              height: i == _focused ? 20 : 6,
-              decoration: BoxDecoration(
-                color: i == _focused ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
-                borderRadius: BorderRadius.circular(3),
+      child: Semantics(
+        value: '${_focused + 1}/$count',
+        child: Column(
+          key: const Key('wallet-stack-list-indicator'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = first; i < first + visibleCount; i++)
+              Container(
+                key: ValueKey('wallet-stack-list-indicator-dot-$i'),
+                margin: const EdgeInsets.symmetric(vertical: 2.5),
+                width: 6,
+                height: i == _focused ? 20 : 6,
+                decoration: BoxDecoration(
+                  color: i == _focused ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
