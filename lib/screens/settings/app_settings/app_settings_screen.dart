@@ -103,9 +103,13 @@ class AppSettingsScreen extends StatefulWidget {
 class _AppSettingsScreen extends State<AppSettingsScreen> {
   bool _isDisablingAppLock = false;
 
-  Widget _focus(AppSettingsTarget target, Widget child) =>
+  Widget _focus(AppSettingsTarget target, SingleButton child) =>
       widget.initialTarget == target
-          ? FeatureSearchFocus(key: ValueKey('app-settings-focus-${target.name}'), child: child)
+          ? FeatureSearchFocus(
+            key: ValueKey('app-settings-focus-${target.name}'),
+            borderRadius: child.buttonPosition.radius,
+            child: child,
+          )
           : child;
 
   @override

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -17,7 +19,9 @@ import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -71,6 +75,7 @@ void main() {
   late List<List<int>> choices;
   late List<String> recents;
   final navigator = GlobalKey<NavigatorState>();
+  const captureKey = ValueKey('search-destination-capture');
 
   setUp(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
@@ -83,7 +88,12 @@ void main() {
     recents = [];
   });
 
-  Future<void> pump(WidgetTester tester, {int? selectedWallet = 2}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    int? selectedWallet = 2,
+    CoconutThemeVariant variant = CoconutThemeVariant.dark,
+    bool capture = false,
+  }) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -93,7 +103,8 @@ void main() {
         ],
         child: MaterialApp(
           navigatorKey: navigator,
-          theme: buildCoconutThemeData(),
+          theme: buildCoconutThemeData(variant: variant),
+          builder: capture ? (_, child) => RepaintBoundary(key: captureKey, child: child!) : null,
           onGenerateRoute: (settings) {
             routes.add(settings);
             return MaterialPageRoute<void>(
@@ -132,6 +143,71 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(ValueKey('all-features-item-$parentId')));
     await tester.pumpAndSettle();
+  }
+
+  Future<ByteData> pixels(WidgetTester tester) async {
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
+    return (await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 1);
+      try {
+        return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      } finally {
+        image.dispose();
+      }
+    }))!;
+  }
+
+  for (final variant in CoconutThemeVariant.values) {
+    for (final pinEnabled in [false, true]) {
+      testWidgets('PIN search highlight stays inside its settings card ($variant, PIN=$pinEnabled)', (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(414, 896);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPhysicalSize);
+        auth.pin = pinEnabled;
+        auth.biometrics = true;
+        await pump(tester, variant: variant, capture: true);
+        await searchTap(tester, 'PIN', FeatureIds.appSettings);
+
+        final target = find.byKey(const ValueKey('app-settings-focus-pin'));
+        final opacity = find.descendant(of: target, matching: find.byType(AnimatedOpacity));
+        expect(tester.widget<AnimatedOpacity>(opacity).opacity, 1);
+        final card = find.ancestor(of: target, matching: find.byType(ButtonGroup));
+        final cardContainer = find.descendant(of: card, matching: find.byType(Container)).first;
+        final decoration = tester.widget<Container>(cardContainer).decoration! as BoxDecoration;
+        final cardRect = tester.getRect(cardContainer);
+        final cardShape = (decoration.borderRadius! as BorderRadius).toRRect(cardRect);
+        final targetRect = tester.getRect(target);
+        final highlighted = await pixels(tester);
+
+        await tester.pump(const Duration(milliseconds: 1300));
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(tester.widget<AnimatedOpacity>(opacity).opacity, 0);
+        expect(tester.getRect(target), targetRect);
+        final normal = await pixels(tester);
+        var outsideSamples = 0;
+        var changedOutside = 0;
+        var changedInside = 0;
+        for (var y = targetRect.top.ceil(); y < targetRect.bottom.floor(); y++) {
+          for (var x = targetRect.left.ceil(); x < targetRect.right.floor(); x++) {
+            final point = Offset(x + 0.5, y + 0.5);
+            final changed = highlighted.getUint32((y * 414 + x) * 4) != normal.getUint32((y * 414 + x) * 4);
+            // Exclude the actual card's antialiased edge, not the highlight's own shape.
+            if (!cardShape.inflate(1).contains(point)) {
+              outsideSamples++;
+              if (changed) changedOutside++;
+            } else if (cardShape.deflate(2).contains(point) && changed) {
+              changedInside++;
+            }
+          }
+        }
+        expect(outsideSamples, greaterThan(20));
+        expect(changedOutside, 0, reason: 'Highlight must not paint into the background outside the card.');
+        expect(changedInside, greaterThan(100), reason: 'The target must actually be highlighted.');
+        expect(auth.pin, pinEnabled);
+        expect(preferences.writes, 0);
+      });
+    }
   }
 
   testWidgets('unit search opens the actual sheet directly without changing the setting', (tester) async {

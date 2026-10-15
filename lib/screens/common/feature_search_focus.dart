@@ -6,8 +6,13 @@ import 'package:flutter/material.dart';
 /// Reveals a search destination without invoking its action or changing its value.
 class FeatureSearchFocus extends StatefulWidget {
   final Widget child;
+  final BorderRadius borderRadius;
 
-  const FeatureSearchFocus({super.key, required this.child});
+  const FeatureSearchFocus({
+    super.key,
+    required this.child,
+    this.borderRadius = const BorderRadius.all(Radius.circular(12)),
+  });
 
   @override
   State<FeatureSearchFocus> createState() => _FeatureSearchFocusState();
@@ -72,7 +77,7 @@ class _FeatureSearchFocusState extends State<FeatureSearchFocus> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: context.coconutColors.primaryText.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: widget.borderRadius,
               ),
             ),
           ),
