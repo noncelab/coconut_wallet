@@ -121,12 +121,9 @@ bool _matchesPixel(ByteData pixels, int pixelSide, int x, int y, Color color) {
   return true;
 }
 
-/// Pixel-distance oracle for the rounded, separated style from e64dc8db^.
-/// The normalized ring has radius .4 and half-width .1. Its rounded ends
-/// consume .25 radians and the visible gap consumes .175 radians.
-/// Classifying distances to arc interiors and endpoint circles also checks
-/// tiny shares without treating them as proportional butt-ended sectors.
-void _expectRoundedStyle(ByteData pixels, _DonutScene scene, double reveal, {int pixelSide = _size}) {
+/// Independent angular ownership oracle at radii away from the rounded corners.
+/// Gaps follow the approved B specification; no slice may paint outside its share.
+void _expectSeparatedStyle(ByteData pixels, _DonutScene scene, double reveal, {int pixelSide = _size}) {
   final total = scene.values.fold<int>(0, (sum, value) => sum + value);
   final shown = reveal.clamp(0.0, 1.0);
   final visible = [
@@ -135,16 +132,19 @@ void _expectRoundedStyle(ByteData pixels, _DonutScene scene, double reveal, {int
   ];
   final arcs = <({double start, double end, Color color})>[];
   var cumulative = 0;
-  for (final i in visible) {
+  for (var n = 0; n < visible.length; n++) {
+    final i = visible[n];
     final from = cumulative / total * 2 * math.pi;
     cumulative += scene.values[i];
     final until = cumulative / total * 2 * math.pi;
-    final start = visible.length == 1 ? 0.0 : from + .3375;
-    final naturalEnd = visible.length == 1 ? until : math.max(start + .0001, until - .3375);
-    final end = math.min(naturalEnd, shown * 2 * math.pi);
-    // Flutter's host rasterizer drops the baseline's .0001-radian arc.
-    // Archived baseline goldens below independently cover these tiny cases.
-    if (visible.length > 1 && naturalEnd - start < .00011) continue;
+    final sweep = until - from;
+    double halfGap(int neighbor) =>
+        math.min(.035, math.min(sweep, scene.values[neighbor] / total * 2 * math.pi) * .08) / 2;
+    final start = from + (visible.length == 1 ? 0 : halfGap(visible[(n + visible.length - 1) % visible.length]));
+    final end = math.min(
+      until - (visible.length == 1 ? 0 : halfGap(visible[(n + 1) % visible.length])),
+      shown * 2 * math.pi,
+    );
     if (end > start) arcs.add((start: start, end: end, color: scene.colors[i]));
   }
   final failures = <String>[];
@@ -159,16 +159,13 @@ void _expectRoundedStyle(ByteData pixels, _DonutScene scene, double reveal, {int
       var expected = total <= 0 || shown < 1 ? scene.emptyColor : Colors.transparent;
       var ambiguous = false;
       for (final arc in arcs) {
-        Offset endpoint(double a) => Offset(math.sin(a) * .4, -math.cos(a) * .4);
-        final distance =
-            theta >= arc.start && theta <= arc.end
-                ? (point.distance - .4).abs()
-                : math.min((point - endpoint(arc.start)).distance, (point - endpoint(arc.end)).distance);
-        if ((distance - .1).abs() * pixelSide < 2) {
+        // Exclude antialiased boundaries and tiny reveal-front corners, not interiors.
+        final boundaryDistance = math.min((theta - arc.start).abs(), (theta - arc.end).abs()) * point.distance;
+        if (boundaryDistance * pixelSide < 2) {
           ambiguous = true;
           break;
         }
-        if (distance < .1) expected = Color.alphaBlend(arc.color, expected);
+        if (theta >= arc.start && theta <= arc.end) expected = Color.alphaBlend(arc.color, expected);
       }
       if (ambiguous) continue;
       checked++;
@@ -178,7 +175,7 @@ void _expectRoundedStyle(ByteData pixels, _DonutScene scene, double reveal, {int
     }
   }
   expect(checked, greaterThan(100));
-  expect(failures, isEmpty, reason: 'rounded arcs, visible gaps and tiny-share behavior match e64dc8db^');
+  expect(failures, isEmpty, reason: 'B sectors retain share angles, adaptive gaps, actual colors and reveal');
   expect(_matchesPixel(pixels, pixelSide, pixelSide ~/ 2, pixelSide ~/ 2, Colors.transparent), isTrue);
 }
 
@@ -229,17 +226,19 @@ void main() {
     [0, 100, 0],
   ]) {
     for (final reveal in [0.0, 0.5, 1.0]) {
-      testWidgets('donut restores rounded separated shares $values at reveal $reveal', (tester) async {
+      testWidgets('B donut paints rounded separated shares $values at reveal $reveal', (tester) async {
         final scene = await _painter(tester, values, reveal: reveal);
         final pixels = await _raster(tester, scene.painter, '${values.join('-')}-reveal-$reveal');
-        _expectRoundedStyle(pixels, scene, reveal);
+        _expectSeparatedStyle(pixels, scene, reveal);
         _expectColor(_atAngle(pixels, 0.25, radius: 80), Colors.transparent, 'the donut hole stays empty');
       });
     }
   }
 
-  testWidgets('rounded style matches archived baseline images including tiny-share limitations', (tester) async {
+  testWidgets('B style golden images include visible tiny shares', (tester) async {
     for (final values in [
+      [35, 15, 22, 28],
+      [868, 79, 50, 3],
       [90, 10],
       [1, 99],
       [99, 1],
@@ -248,10 +247,25 @@ void main() {
       await _raster(
         tester,
         scene.painter,
-        'baseline-golden-${values.join("-")}',
-        goldenPath: 'goldens/donut-rounded-${values.join("-")}.png',
+        'B-golden-${values.join("-")}',
+        goldenPath: 'goldens/donut-B-${values.join("-")}.png',
       );
     }
+  });
+
+  testWidgets('B corners are rounded within the sector instead of butt ends or full round caps', (tester) async {
+    final scene = await _painter(tester, [1, 1, 1, 1]);
+    final pixels = await _raster(tester, scene.painter, 'B-corner-detail');
+    // First sector starts at .0175 rad. At .025 rad the middle of its
+    // radial edge is filled, while its outer corner is cut away by rounding.
+    _expectColor(_atAngle(pixels, .025 / (2 * math.pi), radius: 160), scene.colors.first, 'radial edge interior');
+    _expectColor(_atAngle(pixels, .025 / (2 * math.pi), radius: 198), Colors.transparent, 'rounded outer corner');
+    _expectColor(_atAngle(pixels, .08 / (2 * math.pi), radius: 196), scene.colors.first, 'outer arc beyond corner');
+    _expectColor(
+      _atAngle(pixels, .005 / (2 * math.pi), radius: 160),
+      Colors.transparent,
+      'gap stays inside original boundary',
+    );
   });
 
   testWidgets('zero shares draw only the empty ring', (tester) async {
@@ -289,11 +303,11 @@ void main() {
     ('one-sat-last', [2100000000000000, 1]),
     ('one-sat-middle', [1050000000000000, 1, 1050000000000000]),
   ]) {
-    testWidgets('rounded baseline handles ${fixture.$1} including its original minimum arc', (tester) async {
+    testWidgets('B sector handles ${fixture.$1} without a minimum angle', (tester) async {
       for (final reveal in [0.0, 0.07, 0.31, 0.5, 0.73, 0.999, 1.0]) {
         final scene = await _painter(tester, fixture.$2, reveal: reveal);
         final pixels = await _raster(tester, scene.painter, '${fixture.$1}-reveal-$reveal');
-        _expectRoundedStyle(pixels, scene, reveal);
+        _expectSeparatedStyle(pixels, scene, reveal);
       }
     });
   }
@@ -302,14 +316,12 @@ void main() {
     [999, 1],
     [1, 999],
   ]) {
-    testWidgets('rounded baseline retains original 0.1 percent visibility for $values', (tester) async {
+    testWidgets('B sector renders true 0.1 percent visibility for $values', (tester) async {
       final scene = await _painter(tester, values);
       final pixels = await _raster(tester, scene.painter, '${values.join('-')}-high-resolution', pixelRatio: 4);
-      _expectRoundedStyle(pixels, scene, 1, pixelSide: 1600);
+      _expectSeparatedStyle(pixels, scene, 1, pixelSide: 1600);
       final smallIndex = values.indexOf(1);
-      // Style restoration keeps the baseline's tiny-share limitation. A later
-      // design change must address visibility without removing rounded ends.
-      expect(_hasOpaqueColor(pixels, scene.colors[smallIndex]), isFalse);
+      expect(_hasOpaqueColor(pixels, scene.colors[smallIndex]), isTrue);
     });
   }
 
@@ -317,7 +329,7 @@ void main() {
     for (final reveal in [-0.5, 0.0, 0.001, 0.37, 0.999, 1.0, 1.5]) {
       final scene = await _painter(tester, [0, 0], reveal: reveal);
       final pixels = await _raster(tester, scene.painter, 'zero-reveal-$reveal');
-      _expectRoundedStyle(pixels, scene, reveal);
+      _expectSeparatedStyle(pixels, scene, reveal);
     }
   });
 
@@ -334,7 +346,7 @@ void main() {
       );
       final scene = await _painter(tester, const [], sharesOverride: shares);
       final pixels = await _raster(tester, scene.painter, 'filtered-${values.first}');
-      _expectRoundedStyle(pixels, scene, 1);
+      _expectSeparatedStyle(pixels, scene, 1);
     }
   });
 
@@ -351,14 +363,16 @@ void main() {
     final scene = await _painter(tester, const [], sharesOverride: shares);
     expect(scene.colors.last, scene.emptyColor);
     final pixels = await _raster(tester, scene.painter, 'twenty-wallets-grouped');
-    _expectRoundedStyle(pixels, scene, 1);
+    _expectSeparatedStyle(pixels, scene, 1);
     expect(find.byKey(const ValueKey('balance-by-wallet-entry-others')), findsOneWidget);
     expect(find.text('72.9%'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   for (final variant in [(64.0, 1.0), (96.0, 1.0), (148.0, 1.0), (148.0, 3.0), (200.0, 2.0), (328.0, 2.0)]) {
-    testWidgets('rounded donut matches baseline at ${variant.$1} logical pixels and DPR ${variant.$2}', (tester) async {
+    testWidgets('B donut preserves angular ownership at ${variant.$1} logical pixels and DPR ${variant.$2}', (
+      tester,
+    ) async {
       final scene = await _painter(tester, [97, 2, 1], reveal: 0.986);
       final pixels = await _raster(
         tester,
@@ -367,7 +381,7 @@ void main() {
         logicalSide: variant.$1,
         pixelRatio: variant.$2,
       );
-      _expectRoundedStyle(pixels, scene, 0.986, pixelSide: (variant.$1 * variant.$2).round());
+      _expectSeparatedStyle(pixels, scene, 0.986, pixelSide: (variant.$1 * variant.$2).round());
     });
   }
 
@@ -375,7 +389,7 @@ void main() {
     testWidgets('donut uses actual share and empty-track colors in ${theme.name}', (tester) async {
       final scene = await _painter(tester, [80, 10, 10], reveal: 0.94, theme: theme);
       final pixels = await _raster(tester, scene.painter, 'theme-${theme.name}');
-      _expectRoundedStyle(pixels, scene, 0.94);
+      _expectSeparatedStyle(pixels, scene, 0.94);
     });
   }
 
@@ -392,7 +406,7 @@ void main() {
         'actual-${widgetSize.width}-${widgetSize.height}',
         logicalSide: side,
       );
-      _expectRoundedStyle(pixels, scene, 1, pixelSide: side.toInt());
+      _expectSeparatedStyle(pixels, scene, 1, pixelSide: side.toInt());
       expect(tester.takeException(), isNull);
     });
   }
@@ -419,7 +433,7 @@ void main() {
       );
       if (previous != null) expect(scene.painter.shouldRepaint(previous), isTrue);
       final pixels = await _raster(tester, scene.painter, 'rapid-frame-$frame');
-      _expectRoundedStyle(pixels, scene, reveal);
+      _expectSeparatedStyle(pixels, scene, reveal);
       for (var absent = values.length + 1; absent <= 4; absent++) {
         expect(find.byKey(ValueKey('balance-by-wallet-entry-$absent')), findsNothing);
       }
@@ -434,10 +448,10 @@ void main() {
     final reduced = await _painter(tester, [99, 1], reveal: 0.994, reducedMotion: true);
     final reducedPixels = await _raster(tester, reduced.painter, 'motion-reduced');
     expect(listEquals(normalPixels.buffer.asUint8List(), reducedPixels.buffer.asUint8List()), isTrue);
-    _expectRoundedStyle(reducedPixels, reduced, 0.994);
+    _expectSeparatedStyle(reducedPixels, reduced, 0.994);
   });
 
-  testWidgets('seeded donut updates preserve rounded baseline across 32 real provider distributions', (tester) async {
+  testWidgets('seeded donut updates preserve B sectors across 32 real provider distributions', (tester) async {
     final random = math.Random(3292026);
     for (var frame = 0; frame < 32; frame++) {
       final values = [for (var i = 0, count = 1 + random.nextInt(24); i < count; i++) random.nextInt(100000)];
@@ -454,7 +468,7 @@ void main() {
       );
       final side = [96.0, 148.0, 200.0][frame % 3];
       final pixels = await _raster(tester, scene.painter, 'seeded-frame-$frame', logicalSide: side, pixelRatio: 2);
-      _expectRoundedStyle(pixels, scene, reveal, pixelSide: (side * 2).round());
+      _expectSeparatedStyle(pixels, scene, reveal, pixelSide: (side * 2).round());
       expect(tester.takeException(), isNull);
     }
   });

@@ -444,27 +444,70 @@ class _DonutPainter extends CustomPainter {
       if (shown >= 1) {
         canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
       } else if (shown > 0) {
-        paint.strokeCap = StrokeCap.round;
-        canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * shown, false, paint..color = colors[visible.single]);
+        canvas.drawPath(
+          _roundedSector(
+            size.center(Offset.zero),
+            radius - stroke / 2,
+            radius + stroke / 2,
+            -math.pi / 2,
+            math.pi * 2 * shown,
+            stroke * 0.1,
+          ),
+          Paint()..color = colors[visible.single],
+        );
       }
       return;
     }
-    paint.strokeCap = StrokeCap.round;
-    final capAngle = (stroke / 2) / radius;
-    final gapAngle = (stroke * 0.35) / radius;
+    final gap = size.shortestSide * 0.014 / radius;
+    final sweeps = [for (final i in visible) math.pi * 2 * values[i] / total];
     final limit = math.pi * 2 * shown;
     var start = 0.0;
-    for (final i in visible) {
-      final sweep = math.pi * 2 * values[i] / total;
-      final drawn = math.min(
-        math.max(0.0001, sweep - capAngle * 2 - gapAngle),
-        limit - start - capAngle - gapAngle / 2,
-      );
-      if (drawn > 0) {
-        canvas.drawArc(rect, -math.pi / 2 + start + capAngle + gapAngle / 2, drawn, false, paint..color = colors[i]);
+    for (var n = 0; n < visible.length; n++) {
+      final sweep = sweeps[n];
+      final before = math.min(gap, math.min(sweep, sweeps[(n + sweeps.length - 1) % sweeps.length]) * 0.08) / 2;
+      final after = math.min(gap, math.min(sweep, sweeps[(n + 1) % sweeps.length]) * 0.08) / 2;
+      final from = start + before;
+      final until = math.min(start + sweep - after, limit);
+      if (until > from) {
+        canvas.drawPath(
+          _roundedSector(
+            size.center(Offset.zero),
+            radius - stroke / 2,
+            radius + stroke / 2,
+            from - math.pi / 2,
+            until - from,
+            stroke * 0.1,
+          ),
+          Paint()..color = colors[visible[n]],
+        );
       }
       start += sweep;
     }
+  }
+
+  /// Fillet circles tangent to both the radial edge and the concentric arc.
+  /// Limit their radius so neighboring corners stay inside the true slice angle.
+  Path _roundedSector(Offset center, double inner, double outer, double start, double sweep, double corner) {
+    final halfSine = math.sin(math.min(sweep, math.pi) / 2);
+    final radius =
+        math.min(corner, math.min(outer * halfSine / (1 + halfSine), inner * halfSine / (1 - halfSine))) * (1 - 1e-9);
+    final outerInset = math.asin((radius / (outer - radius)).clamp(0.0, 1.0));
+    final innerInset = math.asin((radius / (inner + radius)).clamp(0.0, 1.0));
+    final outerTangent = math.sqrt(outer * (outer - 2 * radius));
+    final innerTangent = math.sqrt(inner * (inner + 2 * radius));
+    Offset point(double angle, double r) => center + Offset(math.cos(angle), math.sin(angle)) * r;
+    final end = start + sweep;
+    final p = point(start, outerTangent);
+    return Path()
+      ..moveTo(p.dx, p.dy)
+      ..arcToPoint(point(start + outerInset, outer), radius: Radius.circular(radius))
+      ..arcTo(Rect.fromCircle(center: center, radius: outer), start + outerInset, sweep - 2 * outerInset, false)
+      ..arcToPoint(point(end, outerTangent), radius: Radius.circular(radius))
+      ..lineTo(point(end, innerTangent).dx, point(end, innerTangent).dy)
+      ..arcToPoint(point(end - innerInset, inner), radius: Radius.circular(radius))
+      ..arcTo(Rect.fromCircle(center: center, radius: inner), end - innerInset, -sweep + 2 * innerInset, false)
+      ..arcToPoint(point(start, innerTangent), radius: Radius.circular(radius))
+      ..close();
   }
 
   @override
