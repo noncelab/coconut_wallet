@@ -13,6 +13,11 @@
 .history
 .svn/
 .claude/
+!.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/generate-store-release-notes
 .local/
 .zed/*
 CLAUDE.md
@@ -205,3 +210,7 @@ rust/trezor-bridge/target/
 rust/trezor-connect-rs/target/
 
 /META-INF
+
+# Local agent work and uncommitted growth/QA reports
+/.omo/
+/docs/growth/

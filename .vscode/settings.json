@@ -1,6 +1,6 @@
 {
   "java.configuration.updateBuildConfiguration": "interactive",
-  "dart.flutterSdkPath": ".fvm/versions/3.29.1",
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
   "todo-tree.general.tags": [
     "TODO",
     "FIXME",

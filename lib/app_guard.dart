@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +37,20 @@ class AppGuard extends StatefulWidget {
   /// 화면보호기를 비활성화합니다.
   static void disablePrivacyScreen() {
     _isPrivacyEnabled = false;
+  }
+
+  /// 생체인증처럼 앱이 일시적으로 inactive 상태가 되는 작업 동안 화면보호기를
+  /// 비활성화하고, 성공·취소·예외 여부와 관계없이 이전 상태로 복원합니다.
+  static Future<T> runWithoutPrivacyScreen<T>(Future<T> Function() action) async {
+    final wasPrivacyEnabled = _isPrivacyEnabled;
+    disablePrivacyScreen();
+    try {
+      return await action();
+    } finally {
+      if (wasPrivacyEnabled) {
+        enablePrivacyScreen();
+      }
+    }
   }
 
   final Widget child;
@@ -113,7 +126,7 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
-        FileLogger.dispose();
+        break;
       case AppLifecycleState.paused:
         _pausedAt = DateTime.now();
         if (_isPaused) break;

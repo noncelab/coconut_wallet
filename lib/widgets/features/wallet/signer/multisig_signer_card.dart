@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -99,8 +100,8 @@ class MultisigSignerCard extends StatelessWidget {
                   // MFP, Derivation Path
                   Column(
                     children: [
-                      Text(
-                        masterFingerprint,
+                      MfpText(
+                        mfp: masterFingerprint,
                         style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                       ),
                       CoconutLayout.spacing_50h,

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_security_warning_policy.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -42,6 +43,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
 
   final Stream<NodeSyncState> _syncNodeStateStream;
+  final HomeSecurityWarningPolicy _securityWarningPolicy;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
@@ -112,8 +114,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, List<TransactionRecord>> _recentTransactions = {};
   Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
   List<Tuple2<int, TransactionRecord>> get orderedRecentTransactions {
+    final walletIds = _walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
     final flatTxs =
-        _recentTransactions.entries.expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx))).toList();
+        _recentTransactions.entries
+            .where((entry) => walletIds.contains(entry.key))
+            .expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx)))
+            .toList();
 
     final pendingStatuses = {TransactionStatus.receiving, TransactionStatus.sending, TransactionStatus.selfsending};
     final confirmedStatuses = {TransactionStatus.received, TransactionStatus.sent, TransactionStatus.self};
@@ -151,8 +157,14 @@ class WalletHomeViewModel extends ChangeNotifier {
     return _preferenceProvider.isHomeFeatureEnabled(type);
   }
 
-  WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._connectivityProvider, this._nodeProvider)
-    : _syncNodeStateStream = _nodeProvider.syncStateStream {
+  WalletHomeViewModel(
+    this._walletProvider,
+    this._preferenceProvider,
+    this._connectivityProvider,
+    this._nodeProvider, {
+    HomeSecurityWarningPolicy? securityWarningPolicy,
+  }) : _syncNodeStateStream = _nodeProvider.syncStateStream,
+       _securityWarningPolicy = securityWarningPolicy ?? HomeSecurityWarningPolicy() {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _nodeProvider.currentBlockNotifier.addListener(_onCurrentBlockChanged);
@@ -174,6 +186,38 @@ class WalletHomeViewModel extends ChangeNotifier {
     _analysisPeriod = _preferenceProvider.analysisPeriod;
     _selectedAnalysisTransactionType = _preferenceProvider.selectedAnalysisTransactionType;
     _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
+  }
+
+  HomeSecurityWarningState securityWarningState({
+    required bool isAppLockEnabled,
+    required bool shouldShowOpenStoreIntro,
+  }) {
+    final unbackedWallet =
+        _walletProvider.walletItemList.where((wallet) {
+          final balance = _walletBalance[wallet.id]?.current ?? 0;
+          return wallet.hasLocalKey && !(wallet.hotWalletMetadata?.backupVerified ?? false) && balance > 0;
+        }).firstOrNull;
+    final hasHotWalletWithBalance = _walletProvider.walletItemList.any(
+      (wallet) => wallet.hasLocalKey && (_walletBalance[wallet.id]?.current ?? 0) > 0,
+    );
+    return _securityWarningPolicy.resolve(
+      unbackedHotWalletId: unbackedWallet?.id,
+      hasHotWalletWithBalance: hasHotWalletWithBalance,
+      isAppLockEnabled: isAppLockEnabled,
+      shouldShowOpenStoreIntro: shouldShowOpenStoreIntro,
+    );
+  }
+
+  Future<void> dismissSecurityWarning(HomeSecurityWarningType type, {required bool isAppLockEnabled}) async {
+    final hasHotWalletWithBalance = _walletProvider.walletItemList.any(
+      (wallet) => wallet.hasLocalKey && (_walletBalance[wallet.id]?.current ?? 0) > 0,
+    );
+    await _securityWarningPolicy.dismiss(
+      type,
+      hasHotWalletWithBalance: hasHotWalletWithBalance,
+      isAppLockEnabled: isAppLockEnabled,
+    );
+    notifyListeners();
   }
 
   void _onNodeProviderChanged() {
@@ -391,6 +435,10 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
+    // deleting 상태에서 먼저 목록에서 빠지므로 DB 거래 삭제를 기다리지 않습니다.
+    final walletIds = walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
+    _recentTransactions.removeWhere((walletId, _) => !walletIds.contains(walletId));
+    loadFavoriteWallets(notify: false);
     notifyListeners();
   }
 
@@ -418,7 +466,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (_favoriteWallets.map((w) => w.id).toList().toString() != _preferenceProvider.favoriteWalletIds.toString() &&
+    if (!const ListEquality<int>().equals(
+          _favoriteWallets.map((wallet) => wallet.id).toList(),
+          _getOrderedFavoriteWalletIds(),
+        ) &&
         walletItemList.isNotEmpty) {
       loadFavoriteWallets();
     }
@@ -527,10 +578,8 @@ class WalletHomeViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  Future<void> loadFavoriteWallets() async {
-    if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
-
-    final ids = _preferenceProvider.favoriteWalletIds;
+  void loadFavoriteWallets({bool notify = true}) {
+    final ids = _getOrderedFavoriteWalletIds();
 
     final wallets =
         ids
@@ -538,11 +587,29 @@ class WalletHomeViewModel extends ChangeNotifier {
             .whereType<WalletItemBase>()
             .toList();
 
+    final hasChanged =
+        !const ListEquality<int>().equals(
+          _favoriteWallets.map((wallet) => wallet.id).toList(),
+          wallets.map((wallet) => wallet.id).toList(),
+        );
     _favoriteWallets = wallets;
-
     _isEmptyFavoriteWallet = wallets.isEmpty;
 
-    notifyListeners();
+    if (notify && hasChanged) {
+      notifyListeners();
+    }
+  }
+
+  List<int> _getOrderedFavoriteWalletIds() {
+    final favoriteIds = _preferenceProvider.favoriteWalletIds;
+    final favoriteIdSet = favoriteIds.toSet();
+    final walletOrder = _preferenceProvider.walletOrder;
+
+    if (walletOrder.isEmpty) {
+      return List<int>.from(favoriteIds);
+    }
+
+    return [...walletOrder.where(favoriteIdSet.contains), ...favoriteIds.where((id) => !walletOrder.contains(id))];
   }
 
   void setReceiveAddress(int walletId) {

@@ -16,7 +16,7 @@ This document has two parts:
 
 ## 1. Purpose
 
-Coconut Wallet is a watch-only Bitcoin wallet. New features should improve the user experience, but they must not weaken core wallet behavior or safety.
+Coconut Wallet is a Bitcoin wallet focused on the watch-only experience. New features should improve the user experience, but they must not weaken core wallet behavior or safety.
 
 This document answers:
 

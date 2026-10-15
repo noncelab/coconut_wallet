@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'dart:io';
 
@@ -18,7 +19,6 @@ import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -292,7 +292,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Image.asset('assets/images/discord-full-logo.png', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
-                  launchURL(context, DISCORD_COCONUT);
+                  launchURL(context, DISCORD_COCONUT, destination: ExternalLinkDestination.supportChat);
                 },
               ),
               SingleButton(
@@ -304,7 +304,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Image.asset('assets/images/x-logo.jpg', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
-                  launchURL(context, X_COCONUT);
+                  launchURL(context, X_COCONUT, destination: ExternalLinkDestination.x);
                 },
               ),
               SingleButton(
@@ -324,7 +324,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   );
 
                   if (!mounted) return;
-                  launchURL(context, params.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
+                  launchURL(context, params.toString(), destination: ExternalLinkDestination.supportEmail);
                 },
               ),
             ],
@@ -357,7 +357,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_lib,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(context, GITHUB_URL_COCONUT_LIBRARY);
+                  launchURL(context, GITHUB_URL_COCONUT_LIBRARY, destination: ExternalLinkDestination.github);
                 },
               ),
               SingleButton(
@@ -366,7 +366,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_wallet,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(context, GITHUB_URL_WALLET);
+                  launchURL(context, GITHUB_URL_WALLET, destination: ExternalLinkDestination.github);
                 },
               ),
               SingleButton(
@@ -375,7 +375,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_vault,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(context, GITHUB_URL_VAULT);
+                  launchURL(context, GITHUB_URL_VAULT, destination: ExternalLinkDestination.github);
                 },
               ),
               SingleButton(
@@ -383,7 +383,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.bottom,
                 title: t.app_info_screen.contribution,
                 onPressed: () {
-                  launchURL(context, CONTRIBUTING_URL);
+                  launchURL(context, CONTRIBUTING_URL, destination: ExternalLinkDestination.contributing);
                 },
               ),
             ],
@@ -408,7 +408,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.top,
                 title: t.app_info_screen.terms_of_service,
                 onPressed: () {
-                  launchURL(context, TERMS_OF_SERVICE_URL);
+                  launchURL(context, TERMS_OF_SERVICE_URL, destination: ExternalLinkDestination.termsOfService);
                 },
               ),
               SingleButton(
@@ -416,7 +416,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.middle,
                 title: t.app_info_screen.privacy_policy,
                 onPressed: () {
-                  launchURL(context, PRIVACY_POLICY_URL);
+                  launchURL(context, PRIVACY_POLICY_URL, destination: ExternalLinkDestination.privacyPolicy);
                 },
               ),
               SingleButton(
@@ -432,14 +432,6 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   );
                 },
               ),
-              if (appFlavor == "mainnet")
-                SingleButton(
-                  buttonPosition: SingleButtonPosition.bottom,
-                  title: t.app_info_screen.data_collection,
-                  onPressed: () {
-                    launchURL(context, DATA_COLLECTION_URL);
-                  },
-                ),
             ],
           ),
         ],
@@ -483,7 +475,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: InkWell(
-                  onTap: () => launchURL(context, LICENSE_URL, openInApp: true),
+                  onTap:
+                      () => launchURL(
+                        context,
+                        LICENSE_URL,
+                        destination: ExternalLinkDestination.license,
+                        openInApp: true,
+                      ),
                   child: Text(
                     COPYRIGHT_TEXT,
                     style: CoconutTypography.body2_14.merge(

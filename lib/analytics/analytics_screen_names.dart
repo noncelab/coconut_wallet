@@ -17,6 +17,13 @@ class AnalyticsScreenNames {
   static const String walletHomeSelectUtxoSheet = 'wallet-home-select-utxo-sheet';
   static const String walletHomeAnalysisFilterSheet = 'wallet-home-analysis-filter-sheet';
   static const String walletHomeGlossaryTermDetailSheet = 'wallet-home-glossary-term-detail-sheet';
+  static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
+  static const String walletHomeEditWalletSheet = 'wallet-home-edit-wallet-sheet';
+  static const String walletHomeEditAddWalletOptionSheet = 'wallet-home-edit-add-wallet-option-sheet';
+  // 홈 지갑 추가 탑시트 (wallet_add_dialog.dart, WalletAddDialogMode별)
+  static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
+  static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
+  static const String walletHomeAddHotWalletActionSheet = 'wallet-home-add-hot-wallet-action-sheet';
   static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
   static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
   static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
@@ -26,11 +33,13 @@ class AnalyticsScreenNames {
   static const String sendSelectWalletSheet = 'send-select-wallet-sheet';
   static const String sendAddressListSheet = 'send-address-list-sheet';
   static const String sendLoadDraftSheet = 'send-load-draft-sheet';
+  static const String sendHotWalletPassphraseSheet = 'send-hot-wallet-passphrase-sheet';
   static const String broadcastingCompleteReviewSurveySheet = 'broadcasting-complete-review-survey-sheet';
   static const String appInfoLicenseSheet = 'app-info-license-sheet';
   static const String appSettingsUnitSheet = 'app-settings-unit-sheet';
   static const String appSettingsFiatSheet = 'app-settings-fiat-sheet';
   static const String appSettingsLanguageSheet = 'app-settings-language-sheet';
+  static const String appSettingsNumberFormatSheet = 'app-settings-number-format-sheet';
   static const String appSettingsThemeSheet = 'app-settings-theme-sheet';
   static const String appSettingsPinSetSheet = 'app-settings-pin-set-sheet';
   static const String appSettingsPinCheckSheet = 'app-settings-pin-check-sheet';
@@ -52,12 +61,21 @@ class AnalyticsScreenNames {
   static const String qrDetailSetAmountSheet = 'qr-detail-set-amount-sheet';
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';
   static const String walletDetailFaucetSheet = 'wallet-detail-faucet-sheet';
+  static const String walletDetailAppSettingsSheet = 'wallet-detail-app-settings-sheet';
+  static const String walletDetailMoveToVaultNoBalanceSheet = 'wallet-detail-move-to-vault-noBalance-sheet';
+  static const String walletDetailMoveToVaultNoWatchOnlyWalletSheet =
+      'wallet-detail-move-to-vault-noWatchOnlyWallet-sheet';
+  static const String walletDetailMoveToVaultSelectWalletSheet =
+      'wallet-detail-move-to-vault-selectWatchOnlyWallet-sheet';
   static const String walletInfoAuthSheet = 'wallet-info-auth-sheet';
   static const String walletInfoXpubSheet = 'wallet-info-xpub-sheet';
   static const String walletInfoMfpSheet = 'wallet-info-mfp-sheet';
   static const String walletInfoEditTargetAmountSheet = 'wallet-info-edit-target-amount-sheet';
   static const String walletInfoEditSheet = 'wallet-info-edit-sheet';
   static const String walletResyncAuthSheet = 'wallet-resync-auth-sheet';
+  static const String hotWalletAuthSheet = 'hot-wallet-auth-sheet';
+  static const String hotWalletAppLockGuideSheet = 'hot-wallet-app-lock-guide-sheet';
+  static const String hotWalletAppearanceSettingsSheet = 'hot-wallet-appearance-settings-sheet';
   static const String trezorBleConnectResumeSheet = 'trezor-ble-connect-resume-sheet';
   static const String trezorUsbConnectResumeSheet = 'trezor-usb-connect-resume-sheet';
   static const String trezorBleConnectSheet = 'trezor-ble-connect-sheet';

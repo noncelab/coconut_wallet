@@ -662,6 +662,7 @@ class UtxoSplitTransactionBuilder {
             changeDerivationPath: changeDerivationPath,
             walletItemBase: walletListItemBase,
             scriptPathPolicy: _scriptPathPolicy,
+            networkType: NetworkType.currentNetworkType.toString(),
           ),
         );
 
@@ -714,6 +715,7 @@ class UtxoSplitTransactionBuilder {
 
   static void _splitBuildIsolateEntry(_SplitBuildIsolateRequest request) {
     try {
+      NetworkType.setNetworkType(NetworkType.getNetworkType(request.networkType));
       final result =
           TransactionBuilder(
             availableUtxos: [request.utxo],
@@ -780,6 +782,7 @@ class _SplitBuildIsolateRequest {
   final String changeDerivationPath;
   final WalletItemBase walletItemBase;
   final Policy? scriptPathPolicy;
+  final String networkType;
 
   const _SplitBuildIsolateRequest({
     required this.sendPort,
@@ -789,5 +792,6 @@ class _SplitBuildIsolateRequest {
     required this.changeDerivationPath,
     required this.walletItemBase,
     required this.scriptPathPolicy,
+    required this.networkType,
   });
 }

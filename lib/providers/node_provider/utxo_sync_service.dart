@@ -27,6 +27,10 @@ class UtxoSyncService {
     this._addressRepository,
   );
 
+  Future<void> restorePendingUtxoLocks(int walletId) {
+    return _utxoRepository.restorePendingUtxoLocks(walletId);
+  }
+
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
   Future<void> fetchScriptUtxo(
@@ -40,6 +44,7 @@ class UtxoSyncService {
     await _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     if (!inBatchProcess) {
+      await restorePendingUtxoLocks(walletItem.id);
       // UTXO 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     }

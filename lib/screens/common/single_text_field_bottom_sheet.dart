@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField;
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -31,6 +32,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     this.prefix,
     this.suffix,
     this.resultBuilder,
+    this.toggleLabel,
+    this.toggleDescription,
+    this.initiallyEnabled = true,
+    this.submitValidator,
   });
 
   final String? originalText;
@@ -66,6 +71,14 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
 
   /// Done을 눌렀을 때 반환할 결과 빌더.
   final Object? Function(String currentText)? resultBuilder;
+
+  /// 입력 필드 사용 여부를 변경하는 토글의 라벨. null이면 토글을 표시하지 않습니다.
+  final String? toggleLabel;
+  final String? toggleDescription;
+  final bool initiallyEnabled;
+
+  /// 완료 버튼을 눌렀을 때 실행할 검증 함수. 오류 문구를 반환하면 시트를 닫지 않고 입력창 아래에 표시합니다.
+  final String? Function(String text)? submitValidator;
 
   /// 커스텀 child를 그대로 감싸 시트 띄우기(필요 시).
   static Future<T?> showBottomSheet<T>({
@@ -105,6 +118,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     bool unfocusOnTapOutside = true,
     Widget? prefix,
     Widget? suffix,
+    String? toggleLabel,
+    String? toggleDescription,
+    bool initiallyEnabled = true,
+    String? Function(String text)? submitValidator,
     required R Function(String currentText, String originalText) resultBuilder,
   }) {
     final original = originalText ?? '';
@@ -132,6 +149,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         unfocusOnTapOutside: unfocusOnTapOutside,
         prefix: prefix,
         suffix: suffix,
+        toggleLabel: toggleLabel,
+        toggleDescription: toggleDescription,
+        initiallyEnabled: initiallyEnabled,
+        submitValidator: submitValidator,
         resultBuilder: (currentText) => resultBuilder(currentText, original),
       ),
     );
@@ -157,6 +178,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     bool unfocusOnTapOutside = true,
     Widget? prefix,
     Widget? suffix,
+    String? toggleLabel,
+    String? toggleDescription,
+    bool initiallyEnabled = true,
+    String? Function(String text)? submitValidator,
   }) {
     return CommonBottomSheets.showBottomSheet<void>(
       context: context,
@@ -182,6 +207,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         unfocusOnTapOutside: unfocusOnTapOutside,
         prefix: prefix,
         suffix: suffix,
+        toggleLabel: toggleLabel,
+        toggleDescription: toggleDescription,
+        initiallyEnabled: initiallyEnabled,
+        submitValidator: submitValidator,
       ),
     );
   }
@@ -195,9 +224,15 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
   final FocusNode _focusNode = FocusNode();
 
   String _updateText = '';
+  late bool _isEnabled;
+  String? _errorText;
 
   bool get _isCompleteButtonEnabled {
+    if (_errorText != null) return false;
     final original = widget.originalText ?? '';
+    if (widget.toggleLabel != null && !_isEnabled) {
+      return widget.initiallyEnabled;
+    }
     if (widget.completeEnabledWhen != null) {
       return widget.completeEnabledWhen!(_controller.text, original);
     }
@@ -212,6 +247,19 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
     _controller.clear();
     setState(() {
       _updateText = '';
+      _errorText = null;
+    });
+  }
+
+  void _setEnabled(bool value) {
+    if (value) {
+      _focusNode.requestFocus();
+    } else {
+      _focusNode.unfocus();
+    }
+    setState(() {
+      _isEnabled = value;
+      _errorText = null;
     });
   }
 
@@ -219,6 +267,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
   void initState() {
     super.initState();
     _updateText = widget.originalText ?? '';
+    _isEnabled = widget.initiallyEnabled;
     _controller.text = _updateText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -241,8 +290,14 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
   }
 
   void _onComplete() {
+    final trimmed = _isEnabled ? _controller.text.trim() : '';
+    final errorText = widget.submitValidator?.call(trimmed);
+    if (errorText != null) {
+      setState(() => _errorText = errorText);
+      return;
+    }
+
     FocusScope.of(context).unfocus();
-    final trimmed = _controller.text.trim();
     widget.onComplete(trimmed);
     final result = widget.resultBuilder?.call(trimmed);
     Navigator.pop(context, result);
@@ -257,7 +312,11 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
     final field = CoconutTextField(
       controller: _controller,
       focusNode: _focusNode,
-      onChanged: (_) => setState(() => _updateText = _controller.text),
+      onChanged:
+          (_) => setState(() {
+            _updateText = _controller.text;
+            _errorText = null;
+          }),
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       textInputType: widget.keyboardType,
@@ -272,14 +331,72 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       onClear: _clearField,
       prefix: widget.prefix,
       suffix: widget.suffix,
+      isError: _errorText != null,
+      errorText: _errorText,
+      descriptionText: widget.submitValidator == null ? null : ' ',
+    );
+
+    final content = Column(
+      children: [
+        if (widget.toggleLabel != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.coconutColors.surfaceBottomSheetElevated,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.toggleLabel!,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                      ),
+                      if (widget.toggleDescription != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.toggleDescription!,
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                CoconutLayout.spacing_100w,
+                CoconutSwitch(
+                  isOn: _isEnabled,
+                  scale: 0.75,
+                  activeTrackColor: context.coconutColors.switchActiveTrack,
+                  activeThumbColor: context.coconutColors.switchActiveThumb,
+                  inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                  inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+                  onChanged: _setEnabled,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        IgnorePointer(ignoring: !_isEnabled, child: Opacity(opacity: _isEnabled ? 1 : 0.4, child: field)),
+      ],
     );
 
     final body = SingleFieldFixedBottomSheetBody(
       collapsedHeight: widget.collapsedHeight ?? 240,
+      keyboardContentHeight:
+          (widget.toggleLabel == null
+              ? 120
+              : widget.toggleDescription == null
+              ? 150
+              : 180) +
+          (widget.submitValidator == null ? 0 : 24),
       isCompleteEnabled: _isCompleteButtonEnabled,
       onComplete: _onComplete,
       completeLabel: widget.completeButtonText ?? t.done,
-      textField: field,
+      textField: content,
     );
 
     if (!widget.unfocusOnTapOutside) return body;

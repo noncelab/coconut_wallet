@@ -1,0 +1,350 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField;
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// 니모닉 바이트를 공백(0x20) 기준으로 잘라서 단어별 바이트 복사본 리스트를 만든다.
+/// 각 단어는 [Uint8List.sublistView]가 아닌 복사본이므로, 원본 니모닉 버퍼와
+/// 독립적으로 wipe할 수 있다.
+List<Uint8List> splitMnemonicWordBytes(Uint8List mnemonic) {
+  final words = <Uint8List>[];
+  int start = -1;
+  for (int i = 0; i < mnemonic.length; i++) {
+    if (mnemonic[i] == 0x20) {
+      if (start >= 0) {
+        words.add(mnemonic.sublist(start, i));
+        start = -1;
+      }
+    } else if (start < 0) {
+      start = i;
+    }
+  }
+  if (start >= 0) {
+    words.add(mnemonic.sublist(start));
+  }
+  return List<Uint8List>.unmodifiable(words);
+}
+
+List<int> selectMnemonicChallengeIndices({required int wordCount, int challengeCount = 3, Random? random}) {
+  if (wordCount < challengeCount) {
+    throw ArgumentError.value(wordCount, 'wordCount', 'Not enough mnemonic words for the requested challenges');
+  }
+  final indices = List<int>.generate(wordCount, (index) => index)..shuffle(random ?? Random.secure());
+  return List<int>.unmodifiable(indices.take(challengeCount));
+}
+
+String? uniqueMnemonicWordCompletion({required String input, int minimumLength = 4}) {
+  final normalized = input.trim().toLowerCase();
+  if (normalized.length < minimumLength) return null;
+
+  String? completion;
+  for (final word in wordList) {
+    if (word.startsWith(normalized)) {
+      if (completion != null) return null;
+      completion = word;
+    }
+  }
+  return completion;
+}
+
+String mnemonicGhostSuffix({required String input, int minimumLength = 4}) {
+  final normalized = input.trim().toLowerCase();
+  final completion = uniqueMnemonicWordCompletion(input: normalized, minimumLength: minimumLength);
+  if (completion == null || completion.length == normalized.length) return '';
+  return completion.substring(normalized.length);
+}
+
+String? completeMnemonicWordOnSpace({required String input}) {
+  if (!input.endsWith(' ')) return null;
+
+  final typedWord = input.substring(0, input.length - 1);
+  final suffix = mnemonicGhostSuffix(input: typedWord);
+  if (suffix.isEmpty) return null;
+
+  return '$typedWord$suffix';
+}
+
+class MnemonicBackupConfirmScreen extends StatefulWidget {
+  const MnemonicBackupConfirmScreen({
+    super.key,
+    required this.mnemonic,
+    this.walletId,
+    this.continueToAppLockGuide = false,
+  });
+
+  final Uint8List mnemonic;
+  final int? walletId;
+  final bool continueToAppLockGuide;
+
+  @override
+  State<MnemonicBackupConfirmScreen> createState() => _MnemonicBackupConfirmScreenState();
+}
+
+class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  late final List<Uint8List> _wordBytes;
+  late final List<int> _questionIndices;
+  int _questionIndex = 0;
+  double _progress = 0;
+  bool _isIncorrect = false;
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wordBytes = splitMnemonicWordBytes(widget.mnemonic);
+    _questionIndices = selectMnemonicChallengeIndices(wordCount: _wordBytes.length, challengeCount: 3);
+    _controller.addListener(_handleInputChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showKeyboard());
+  }
+
+  void _handleInputChanged() {
+    if (!mounted) return;
+    final completedWord = completeMnemonicWordOnSpace(input: _controller.text);
+    if (completedWord != null) {
+      final inputWithSpace = _controller.text;
+      scheduleMicrotask(() {
+        if (!mounted || _controller.text != inputWithSpace) return;
+        _controller.value = TextEditingValue(
+          text: completedWord,
+          selection: TextSelection.collapsed(offset: completedWord.length),
+        );
+      });
+      return;
+    }
+    setState(() => _isIncorrect = false);
+  }
+
+  void _showKeyboard() {
+    if (!mounted) return;
+    _focusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_focusNode.hasFocus) return;
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_handleInputChanged);
+    _controller.clear();
+    _controller.dispose();
+    _focusNode.dispose();
+    for (final word in _wordBytes) {
+      word.fillRange(0, word.length, 0);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = t.wallet_home_screen.hot_wallet_setup;
+    final wordPosition = _questionIndices[_questionIndex] + 1;
+    final isCursorAtEnd =
+        _controller.selection.isCollapsed && _controller.selection.baseOffset == _controller.text.length;
+    final normalizedInput = _controller.text.trim().toLowerCase();
+    final uniqueCompletion = uniqueMnemonicWordCompletion(input: normalizedInput);
+    final ghostText = isCursorAtEnd ? mnemonicGhostSuffix(input: _controller.text) : '';
+
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: context.coconutColors.background,
+      appBar: CoconutAppBar.build(
+        context: context,
+        customTitle: Text(
+          strings.backup_confirm_title,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textScaler: const TextScaler.linear(1),
+        ),
+        backgroundColor: context.coconutColors.background,
+      ),
+      body: SafeArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: _showKeyboard,
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  LayoutBuilder(
+                    builder:
+                        (context, constraints) => Align(
+                          alignment: Alignment.centerLeft,
+                          child: ClipRRect(
+                            borderRadius:
+                                _progress == 1 ? BorderRadius.zero : const BorderRadius.all(Radius.circular(6)),
+                            child: AnimatedContainer(
+                              width: constraints.maxWidth * _progress,
+                              height: 4,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              color: context.coconutColors.primaryText,
+                            ),
+                          ),
+                        ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.backup_question(position: wordPosition),
+                          style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                          textScaler: const TextScaler.linear(1),
+                        ),
+                        AnimatedOpacity(
+                          opacity: _isIncorrect ? 1 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              strings.backup_incorrect,
+                              style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: CoconutTextField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          onChanged: (_) {},
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          obscureText: false,
+                          ghostText: ghostText,
+                          ghostTextColor: context.coconutColors.tertiaryText,
+                          textAlign: TextAlign.center,
+                          textInputAction: TextInputAction.done,
+                          cursorColor: context.coconutColors.primaryText,
+                          activeColor: _isIncorrect ? context.coconutColors.danger : context.coconutColors.primaryText,
+                          backgroundColor: Colors.transparent,
+                          isVisibleBorder: false,
+                          isLengthVisible: false,
+                          maxLines: 1,
+                          height: 52,
+                          padding: EdgeInsets.zero,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          fontHeight: 1,
+                          onEditingComplete: _submitAnswer,
+                        ).shakeAnimation(
+                          duration: 500,
+                          shakeOffset: 3,
+                          shakeAmount: 3,
+                          autoStart: _isIncorrect,
+                          direction: Axis.horizontal,
+                          curve: Curves.easeInOut,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
+              FixedBottomButton(
+                text: t.complete,
+                isActive:
+                    normalizedInput.isNotEmpty &&
+                    !_isProcessing &&
+                    (wordList.contains(normalizedInput) || uniqueCompletion != null),
+                isVisibleAboveKeyboard: false,
+                showSurroundings: false,
+                onButtonClicked: _submitAnswer,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitAnswer() async {
+    if (_isProcessing || _controller.text.trim().isEmpty) return;
+    final completion = uniqueMnemonicWordCompletion(input: _controller.text);
+    if (completion != null && completion != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: completion,
+        selection: TextSelection.collapsed(offset: completion.length),
+      );
+    }
+    final answer = completion ?? _controller.text;
+    setState(() {
+      _isIncorrect = false;
+      _isProcessing = true;
+    });
+
+    final isCorrect = _isMnemonicWordCorrect(_questionIndices[_questionIndex], answer);
+    if (!mounted) return;
+    if (!isCorrect) {
+      setState(() {
+        _isIncorrect = true;
+        _isProcessing = false;
+      });
+      _showKeyboard();
+      return;
+    }
+
+    final completedCount = _questionIndex + 1;
+    final questionCount = _questionIndices.length;
+    setState(() {
+      _progress = completedCount / questionCount;
+    });
+
+    if (completedCount == questionCount) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      _focusNode.unfocus();
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!mounted) return;
+      final isComplete = await Navigator.pushNamed(
+        context,
+        AppRouteNames.mnemonicBackupComplete,
+        arguments: MnemonicBackupCompleteRouteArgs(
+          walletId: widget.walletId,
+          continueToAppLockGuide: widget.continueToAppLockGuide,
+        ),
+      );
+      if (!mounted || isComplete != true) return;
+      Navigator.pop(context, true);
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    _controller.clear();
+    setState(() {
+      _questionIndex++;
+      _isProcessing = false;
+    });
+    _showKeyboard();
+  }
+
+  bool _isMnemonicWordCorrect(int wordIndex, String input) {
+    // BIP-39 단어는 항상 소문자 ASCII이므로, 사용자 입력을 소문자로 변환해
+    // 바이트로 인코딩한 뒤 니모닉 단어 바이트와 직접 비교한다.
+    // 니모닉 자체는 String으로 변환하지 않는다.
+    final guess = Uint8List.fromList(utf8.encode(input.trim().toLowerCase()));
+    return listEquals(guess, _wordBytes[wordIndex]);
+  }
+}

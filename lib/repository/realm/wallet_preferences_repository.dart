@@ -4,6 +4,10 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 class WalletPreferencesRepository extends BaseRepository {
   WalletPreferencesRepository(super._realmManager);
 
+  bool hasWalletPreferences() {
+    return realm.query<RealmWalletPreferences>('TRUEPREDICATE').isNotEmpty;
+  }
+
   /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<int> getWalletOrder() {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;

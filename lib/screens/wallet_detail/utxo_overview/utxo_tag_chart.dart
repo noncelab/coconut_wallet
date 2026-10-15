@@ -39,6 +39,8 @@ class UtxoTagChart extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int dustThreshold;
   final VoidCallback? onBalanceTap;
+  final bool showBalanceHeader;
+  final double? height;
 
   const UtxoTagChart({
     super.key,
@@ -47,6 +49,8 @@ class UtxoTagChart extends StatelessWidget {
     required this.currentUnit,
     required this.dustThreshold,
     this.onBalanceTap,
+    this.showBalanceHeader = true,
+    this.height,
   });
 
   static ({List<_TagSegment> segments, int coinCount, int uniqueTaggedCount, int actualTotalSats})
@@ -147,6 +151,7 @@ class UtxoTagChart extends StatelessWidget {
     }
 
     return Container(
+      height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -158,16 +163,19 @@ class UtxoTagChart extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UtxoTotalBalanceHeader(
-              coinCount: coinCount,
-              totalSats: totalSats,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onBalanceTap: onBalanceTap,
-            ),
-            const SizedBox(height: 12),
+            if (showBalanceHeader) ...[
+              UtxoTotalBalanceHeader(
+                coinCount: coinCount,
+                totalSats: totalSats,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onBalanceTap: onBalanceTap,
+              ),
+              const SizedBox(height: 12),
+            ],
             Center(
               child: _DonutChart(
                 segments: segments,
@@ -186,6 +194,7 @@ class UtxoTagChart extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
+      height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -194,6 +203,7 @@ class UtxoTagChart extends StatelessWidget {
         ),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
         mainAxisSize: MainAxisSize.min,

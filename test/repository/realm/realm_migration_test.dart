@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -145,6 +146,29 @@ void main() {
         expect(() => InheritancePolicy.fromMiniscript(migratedSeedInfo['miniscript'] as String), returnsNormally);
       });
 
+      test('[9 -> 10] sync data is cleared while locked UTXOs are migrated to wallet-scoped IDs', () {
+        realmSetup(initialVersion: 9);
+        final now = DateTime.now();
+        realm.write(() {
+          realm.add(RealmScriptStatus('1:0014script', '0014script', 'status', 1, now));
+          realm.add(RealmUtxo('unspent-txid0', 1, 'address', 1000, now, 'unspent-txid', 0, 'm/0/0', 1, 'unspent'));
+          realm.add(RealmUtxo('locked-txid1', 1, 'address', 2000, now, 'locked-txid', 1, 'm/0/1', 2, 'locked'));
+        });
+        realm.close();
+
+        realm = Realm(
+          Configuration.local(realmAllSchemas, schemaVersion: 10, migrationCallback: defaultMigration, path: testPath),
+        );
+
+        expect(realm.all<RealmScriptStatus>(), isEmpty);
+        expect(realm.all<RealmUtxo>(), isEmpty);
+        expect(realm.all<RealmPendingUtxoLock>(), hasLength(1));
+        final pendingLock = realm.all<RealmPendingUtxoLock>().single;
+        expect(pendingLock.id, '1:locked-txid1');
+        expect(pendingLock.walletId, 1);
+        expect(pendingLock.utxoId, 'locked-txid1');
+      });
+
       test("[0 -> kRealmVersion]", () {
         realmSetup(initialVersion: 0);
         migrationFrom0ToLatest(realm, kRealmVersion, testPath!);
@@ -180,6 +204,29 @@ void main() {
         realmSetup(initialVersion: 2);
         migrationFrom2toLatest(realm, 2, testPath!);
       });
+    });
+
+    test('기존 hot wallet metadata를 active lifecycle로 초기화함', () {
+      realmSetup(initialVersion: kRealmVersion);
+      realm.write(() {
+        realm.add(
+          RealmHotWalletMetadata(
+            1,
+            'hot_wallet_secret_1',
+            'D45AA182',
+            "m/84'/1'/0'",
+            0,
+            true,
+            false,
+            DateTime.utc(2026, 7, 20),
+            '',
+          ),
+        );
+      });
+
+      realm.write(() => addHotWalletLifecycleState(realm));
+
+      expect(realm.all<RealmHotWalletMetadata>().single.lifecycleStateName, HotWalletLifecycleState.active.name);
     });
   });
 }

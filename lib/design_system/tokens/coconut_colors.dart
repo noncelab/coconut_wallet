@@ -16,6 +16,9 @@ const Gradient kCoconutMainnetLogoGradient = LinearGradient(
 /// 그 외에는 이 기본값을 그대로 사용합니다.
 const Color kCoconutWarning = ds.CoconutColors.warningYellow;
 const Color kCoconutDanger = ds.CoconutColors.hotPink;
+const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
+const Color kCoconutAppLockWarningForeground = ds.CoconutColors.black;
+const Color kCoconutUnbackedWarningForeground = ds.CoconutColors.white;
 
 /// 탭루트 지갑 정보 화면에서 부모 키/자식 키를 구분하는 고정 색상입니다.
 ///
@@ -26,6 +29,9 @@ const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
 @immutable
 class CoconutColors {
+  /// 코코넛 테마의 lagoon에 흰색을 약 20% 섞은 옅은 색상입니다.
+  static const Color lagoonLight = Color(0xFF8ED9EE);
+
   /// 코코넛 고유 메인넷 로고 그라디언트
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
@@ -66,10 +72,12 @@ class CoconutColors {
 
   /// 텍스트 색상
   /// primaryText: 기본 본문/제목 텍스트
+  /// secondaryTextStrong: primary보다 약하고 secondary보다 강한 보조 텍스트
   /// secondaryText: 보조 정보, 설명, 메타 텍스트
   /// tertiaryText: secondary보다 한 단계 더 약한 보조 정보 텍스트
   /// mutedText: 선택되지 않음, 입력 전, 비활성, 약한 상태 표현에 쓰는 subdued foreground
   final Color primaryText;
+  final Color secondaryTextStrong;
   final Color secondaryText;
   final Color tertiaryText;
   final Color mutedText;
@@ -109,9 +117,17 @@ class CoconutColors {
   final Color warning;
   final Color danger;
   final Color success;
+  final Color appLockWarningBackground;
+  final Color appLockWarningForeground;
+  final Color unbackedWarningForeground;
 
   /// 구분선
   final Color divider;
+  final Color dividerStrong;
+
+  /// 목표 진행 그래프의 시작/끝 그라디언트 색상
+  final Color targetProgressGradientStart;
+  final Color targetProgressGradientEnd;
 
   /// 2. 공통 위젯별 정의
   ///
@@ -147,6 +163,13 @@ class CoconutColors {
   final Color chipSelectedText;
   final Color chipOutlinedUnselectedBackground;
   final Color chipOutlinedUnselectedText;
+  final Color chipMovingBorder;
+  final Color chipMovingBackground;
+  final Color chipMovingText;
+  final Color chipEditModeBackground;
+  final Color chipEditModeText;
+  final Color chipDisabledText;
+  final Color chipDisabledBackground;
 
   /// 입력 필드 배경/placeholder/보더색
   final Color inputSurface;
@@ -167,6 +190,9 @@ class CoconutColors {
   /// 바텀시트
   /// 바텀시트 컨테이너의 기본 표면색
   final Color surfaceBottomSheet;
+
+  /// 바텀시트 기본 표면보다 한 단계 밝은 강조 영역의 표면색
+  final Color surfaceBottomSheetElevated;
 
   /// 바텀시트 상단 드래그 핸들 바
   final Color bottomSheetHandle;
@@ -245,6 +271,8 @@ class CoconutColors {
   final Color utxoOverviewSelectedCoinBorder;
   final Color utxoOverviewBillSurface;
   final Color utxoOverviewUnselectedOverlay;
+  final Color utxoOverviewGroupingTabSelectedText;
+  final Color utxoOverviewGroupingTabUnselectedText;
   final double utxoOverviewCoinTintStrength;
   final double utxoOverviewCoinIconOpacity;
   final double utxoOverviewCoinInnerStrokeOpacity;
@@ -307,6 +335,7 @@ class CoconutColors {
     required this.surfaceInfoChip,
     required this.primary,
     required this.primaryText,
+    required this.secondaryTextStrong,
     required this.secondaryText,
     required this.tertiaryText,
     required this.mutedText,
@@ -325,7 +354,13 @@ class CoconutColors {
     required this.warning,
     required this.danger,
     required this.success,
+    required this.appLockWarningBackground,
+    required this.appLockWarningForeground,
+    required this.unbackedWarningForeground,
     required this.divider,
+    required this.dividerStrong,
+    required this.targetProgressGradientStart,
+    required this.targetProgressGradientEnd,
     required this.brandAccentBackground,
     required this.brandAccentForeground,
     required this.surfaceButton,
@@ -344,6 +379,13 @@ class CoconutColors {
     required this.chipSelectedText,
     required this.chipOutlinedUnselectedBackground,
     required this.chipOutlinedUnselectedText,
+    required this.chipMovingBorder,
+    required this.chipMovingBackground,
+    required this.chipMovingText,
+    required this.chipEditModeBackground,
+    required this.chipEditModeText,
+    required this.chipDisabledText,
+    required this.chipDisabledBackground,
     required this.inputSurface,
     required this.inputPlaceholder,
     required this.inputBorderUnfocused,
@@ -353,6 +395,7 @@ class CoconutColors {
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
     required this.surfaceBottomSheet,
+    required this.surfaceBottomSheetElevated,
     required this.bottomSheetHandle,
     required this.bottomSheetKeyboardToolbar,
     required this.bottomSheetExtensionFieldBackground,
@@ -393,6 +436,8 @@ class CoconutColors {
     required this.utxoOverviewSelectedCoinBorder,
     required this.utxoOverviewBillSurface,
     required this.utxoOverviewUnselectedOverlay,
+    required this.utxoOverviewGroupingTabSelectedText,
+    required this.utxoOverviewGroupingTabUnselectedText,
     required this.utxoOverviewCoinTintStrength,
     required this.utxoOverviewCoinIconOpacity,
     required this.utxoOverviewCoinInnerStrokeOpacity,
@@ -437,6 +482,7 @@ class CoconutColors {
       surfaceInfoChip: ds.CoconutColors.gray750,
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
+      secondaryTextStrong: ds.CoconutColors.gray300,
       secondaryText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
@@ -455,7 +501,13 @@ class CoconutColors {
       warning: kCoconutWarning,
       danger: kCoconutDanger,
       success: ds.CoconutColors.successOnDark,
+      appLockWarningBackground: kCoconutWarningCard,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray800,
+      dividerStrong: ds.CoconutColors.gray700,
+      targetProgressGradientStart: const Color(0xFF8CD5FF),
+      targetProgressGradientEnd: const Color(0xFF7775FF),
 
       brandAccentBackground: ds.CoconutColors.primary,
       brandAccentForeground: ds.CoconutColors.black,
@@ -475,6 +527,13 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.black,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray800,
       chipOutlinedUnselectedText: ds.CoconutColors.gray700,
+      chipMovingBorder: ds.CoconutColors.gray350,
+      chipMovingBackground: ds.CoconutColors.gray750,
+      chipMovingText: ds.CoconutColors.white,
+      chipEditModeBackground: ds.CoconutColors.gray800,
+      chipEditModeText: ds.CoconutColors.gray300,
+      chipDisabledText: ds.CoconutColors.gray600,
+      chipDisabledBackground: ds.CoconutColors.gray850,
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
       inputBorderUnfocused: ds.CoconutColors.gray800,
@@ -484,6 +543,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
       surfaceBottomSheet: ds.CoconutColors.gray900,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray850,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: const Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
@@ -525,6 +585,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.gray150,
       utxoOverviewBillSurface: ds.CoconutColors.gray900,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.white,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray500,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -570,6 +632,7 @@ class CoconutColors {
       surfaceInfoChip: ds.CoconutColors.gray300,
       primary: ds.CoconutColors.purple,
       primaryText: ds.CoconutColors.black,
+      secondaryTextStrong: ds.CoconutColors.gray800,
       secondaryText: ds.CoconutColors.gray700,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
@@ -588,7 +651,13 @@ class CoconutColors {
       warning: kCoconutWarning,
       danger: kCoconutDanger,
       success: ds.CoconutColors.successOnLight,
+      appLockWarningBackground: kCoconutWarningCard,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray200,
+      dividerStrong: ds.CoconutColors.gray300,
+      targetProgressGradientStart: const Color(0xFF329DDA),
+      targetProgressGradientEnd: ds.CoconutColors.purple,
 
       brandAccentBackground: ds.CoconutColors.purple,
       brandAccentForeground: ds.CoconutColors.black,
@@ -608,6 +677,14 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray150,
       chipOutlinedUnselectedText: ds.CoconutColors.gray350,
+      chipMovingBorder: ds.CoconutColors.gray350,
+      chipMovingBackground: ds.CoconutColors.gray200,
+      chipMovingText: ds.CoconutColors.gray800,
+      chipEditModeBackground: ds.CoconutColors.gray150,
+      chipEditModeText: ds.CoconutColors.gray350,
+      chipDisabledText: ds.CoconutColors.gray300,
+      chipDisabledBackground: ds.CoconutColors.gray100,
+      //inputSurface: const Color(0xFFF1F2F5),
       inputSurface: ds.CoconutColors.white,
       inputPlaceholder: ds.CoconutColors.gray300,
       inputBorderUnfocused: ds.CoconutColors.gray200,
@@ -617,6 +694,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
       surfaceBottomSheet: ds.CoconutColors.white,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray150,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),
@@ -658,6 +736,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.black,
       utxoOverviewBillSurface: ds.CoconutColors.white,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.black,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray400,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -700,6 +780,7 @@ class CoconutColors {
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonLight = Color(0xFF8ED9EE);
     const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
@@ -720,6 +801,7 @@ class CoconutColors {
       surfaceInfoChip: sand.withAlpha(90),
       primary: palmGreen,
       primaryText: huskDeep,
+      secondaryTextStrong: huskDeep,
       secondaryText: husk,
       tertiaryText: toast,
       mutedText: huskSoft,
@@ -738,7 +820,13 @@ class CoconutColors {
       warning: kCoconutWarning,
       danger: kCoconutDanger,
       success: ds.CoconutColors.successOnLight,
+      appLockWarningBackground: kCoconutWarning,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
+      dividerStrong: lagoon.withAlpha(60),
+      targetProgressGradientStart: lagoonDeep,
+      targetProgressGradientEnd: palmGreen,
 
       brandAccentBackground: lagoon,
       brandAccentForeground: huskDeep,
@@ -758,6 +846,13 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: cream,
       chipOutlinedUnselectedText: line,
+      chipMovingBorder: huskSoft,
+      chipMovingBackground: sand,
+      chipMovingText: huskDeep,
+      chipEditModeBackground: cream,
+      chipEditModeText: husk,
+      chipDisabledText: line,
+      chipDisabledBackground: shell,
       inputSurface: ds.CoconutColors.white,
       inputPlaceholder: toast.withAlpha(140),
       inputBorderUnfocused: line,
@@ -767,6 +862,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: huskSoft,
       surfaceBottomSheet: shell,
+      surfaceBottomSheetElevated: Color.lerp(shell, caramel, 0.15)!,
       bottomSheetHandle: caramel,
       bottomSheetKeyboardToolbar: dim,
       bottomSheetExtensionFieldBackground: shell,
@@ -784,8 +880,8 @@ class CoconutColors {
       tooltipBackground: dim,
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
-      popoverBackground: huskDeep,
-      popoverText: ds.CoconutColors.white,
+      popoverBackground: lagoonLight,
+      popoverText: huskDeep,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       loadingIndicatorColor: huskDeep,
@@ -808,6 +904,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: huskDeep,
       utxoOverviewBillSurface: shell,
       utxoOverviewUnselectedOverlay: sand,
+      utxoOverviewGroupingTabSelectedText: huskDeep,
+      utxoOverviewGroupingTabUnselectedText: huskSoft,
       utxoOverviewCoinTintStrength: 1,
       utxoOverviewCoinIconOpacity: 0.06,
       utxoOverviewCoinInnerStrokeOpacity: 0.06,

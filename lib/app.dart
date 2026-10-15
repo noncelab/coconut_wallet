@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
@@ -11,7 +12,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
-//import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -41,6 +42,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   final RealmManager _realmManager = RealmManager();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  late final AnalyticsScreenObserver _analyticsScreenObserver = AnalyticsScreenObserver(
+    logScreenView: _logScreenView,
+    nameExtractor: _extractAnalyticsScreenName,
+  );
 
   @override
   void initState() {
@@ -57,10 +62,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     super.dispose();
   }
 
-  // void _logScreenView(String screenName) {
-  //   if (!CoconutWalletApp.kIsFirebaseAnalyticsUsed) return;
-  //   FirebaseAnalytics.instance.logScreenView(screenName: screenName);
-  // }
+  void _logScreenView(String screenName) {
+    if (!CoconutWalletApp.kIsFirebaseAnalyticsUsed) return;
+    final navigatorContext = _navigatorKey.currentContext;
+    if (navigatorContext == null || !navigatorContext.mounted) return;
+    navigatorContext.read<AnalyticsService>().logScreenView(screenName: screenName);
+  }
 
   String? _extractAnalyticsScreenName(RouteSettings settings) {
     if (settings.name == Navigator.defaultRouteName) {
@@ -70,7 +77,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         AppEntryFlow.main => AnalyticsScreenNames.walletHome,
       };
     }
-    return settings.name;
+    return analyticsRouteScreenName(settings);
   }
 
   Future<void> _saveMigratedWalletIds() async {
@@ -86,7 +93,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     setState(() {
       _appEntryFlow = appEntryFlow;
     });
-    //_logScreenView(appEntryFlow == AppEntryFlow.main ? AnalyticsScreenNames.walletHome : AnalyticsScreenNames.pinCheck);
+    _analyticsScreenObserver.refreshScreenName();
   }
 
   @override
@@ -119,8 +126,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               },
               navigatorObservers: [
                 routeObserver,
-                // if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
-                //  FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+                if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) _analyticsScreenObserver,
               ],
               localizationsDelegates: const [
                 DefaultMaterialLocalizations.delegate,
@@ -141,7 +147,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                             setState(() {
                               _appEntryFlow = AppEntryFlow.main;
                             });
-                            //_logScreenView(AnalyticsScreenNames.walletHome);
+                            _analyticsScreenObserver.refreshScreenName();
                           },
                         ),
                       ),

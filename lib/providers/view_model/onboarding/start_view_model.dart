@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:coconut_wallet/analytics/user_cohort_analytics.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -17,6 +19,7 @@ class StartViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
   late final VisibilityProvider _visibilityProvider;
   late final AuthProvider _authProvider;
+  final AnalyticsService _analyticsService;
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final AppVersion _appVersionRepository;
@@ -27,8 +30,12 @@ class StartViewModel extends ChangeNotifier {
   bool _canUpdate = false;
   bool _isLoading = true;
 
-  StartViewModel(this._visibilityProvider, this._authProvider, {AppVersion? appVersionRepository})
-    : _appVersionRepository = appVersionRepository ?? AppVersion() {
+  StartViewModel(
+    this._visibilityProvider,
+    this._authProvider,
+    this._analyticsService, {
+    AppVersion? appVersionRepository,
+  }) : _appVersionRepository = appVersionRepository ?? AppVersion() {
     _initialize();
   }
 
@@ -42,6 +49,7 @@ class StartViewModel extends ChangeNotifier {
   Future<AppEntryFlow> determineStartScreen() async {
     // Splash 보여주기 위한 딜레이
     await Future.delayed(const Duration(seconds: 1));
+    await _recordAppLaunch();
     if (!hasLaunchedBefore) {
       await _visibilityProvider.setHasLaunchedBefore();
     }
@@ -57,6 +65,22 @@ class StartViewModel extends ChangeNotifier {
       return AppEntryFlow.main;
     }
     return AppEntryFlow.pinCheck;
+  }
+
+  Future<void> _recordAppLaunch() async {
+    final currentVersion = _packageInfo.version;
+    final lastRunAppVersion = _visibilityProvider.lastRunAppVersion;
+    if (lastRunAppVersion == currentVersion) return;
+
+    final cohort = UserCohortAnalytics.resolve(
+      lastRunAppVersion: lastRunAppVersion,
+      hasLaunchedBefore: hasLaunchedBefore,
+      walletCount: walletCount,
+    );
+    if (cohort != null) {
+      await _analyticsService.setUserCohort(cohort);
+    }
+    await _visibilityProvider.setLastRunAppVersion(currentVersion);
   }
 
   /// 플랫폼별 앱스토어 URL
