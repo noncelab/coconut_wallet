@@ -418,7 +418,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
     _disposed = true;
     _cancelConnection();
     if (_step != TrezorUsbConnectStep.connected) {
-      _device?.disconnect().catchError((_) {});
+      _device?.cancelAndDisconnect().catchError((_) {});
     }
     _device = null;
     super.dispose();

@@ -440,7 +440,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     _cancelConnection();
     if (_step != TrezorBleConnectStep.paired) {
       if (_device != null) {
-        _device!.disconnect().catchError((_) {});
+        _device!.cancelAndDisconnect().catchError((_) {});
       }
     }
     _device = null;

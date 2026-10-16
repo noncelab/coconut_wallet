@@ -20,12 +20,16 @@ void main() {
   late List<Completer<String>> connections;
   late bool connected;
   late Map<String, Completer<dynamic>> operations;
+  // A prompt waiting on the device. Native disconnect queues behind it (Android executor, iOS Rust
+  // session lock) until cancel closes the transport.
+  Completer<void>? devicePrompt;
 
   setUp(() {
     calls = [];
     connections = [];
     connected = false;
     operations = {};
+    devicePrompt = null;
     NetworkType.setNetworkType(NetworkType.mainnet);
     messenger.setMockMethodCallHandler(channel, (call) async {
       calls.add(call);
@@ -37,18 +41,21 @@ void main() {
           connected = true;
           return result;
         case 'disconnect':
+          await devicePrompt?.future;
           connected = false;
           return null;
         case 'isConnected':
           return connected;
         case 'applySettings':
         case 'createSession':
+          await devicePrompt?.future;
           return operations[call.method]?.future;
         case 'getXPub':
           return operations[call.method]?.future ?? jsonEncode({'xpub': 'synthetic-cached-xpub'});
         case 'getFingerprint':
           return '00000000';
         case 'cancel':
+          if (devicePrompt?.isCompleted == false) devicePrompt!.complete();
           // A native response can race with cancellation, even after cancel succeeds.
           return null;
       }
@@ -199,6 +206,49 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('${transport.name}: leaving a pending device prompt cancels it so a retry connects', (tester) async {
+      final vm = createVm();
+      final Future<void> connecting = vm.connect();
+      await tester.pump();
+      connections.single.complete(response(transport));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await connecting;
+      final abandoned = TrezorDevice.lastConnected!;
+      final prompt = devicePrompt = Completer<void>();
+      final Future<void> enabling = vm.selectUsePassphrase();
+      await tester.pump();
+      final retryVm = createVm();
+      try {
+        vm.dispose();
+        final Future<void> retry = retryVm.connect();
+        await tester.pump();
+        await tester.pump();
+        expect(
+          calls.map((call) => call.method).skipWhile((method) => method != 'applySettings').toList(),
+          ['applySettings', 'cancel', 'disconnect', 'connect'],
+          reason: 'Disconnect cannot finish while the device prompt is pending.',
+        );
+        expect(connections, hasLength(2));
+
+        connections.last.complete(response(transport));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+        await retry;
+        await enabling;
+        expect(connected, isTrue);
+        expect(abandoned.passphraseProtection, isFalse);
+        // The abandoned device no longer owns the transport, so it cannot cancel the retry.
+        await abandoned.cancelAndDisconnect();
+        expect(calls.where((call) => call.method == 'cancel'), hasLength(1));
+        expect(connected, isTrue);
+        await retryVm.disconnect();
+      } finally {
+        if (!prompt.isCompleted) prompt.complete();
+        retryVm.dispose();
+      }
+    });
 
     testWidgets('${transport.name}: cached session survives successful resume and disposal', (tester) async {
       final pending = TrezorDevice.connect(transport: transport);

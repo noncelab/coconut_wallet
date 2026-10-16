@@ -311,6 +311,13 @@ class TrezorDevice {
 
   Future<void> disconnect() => _serializeConnection(_disconnect);
 
+  /// Leaves an unfinished flow. A pending device prompt holds Android's command executor and iOS's
+  /// Rust session lock, so cancel it before disconnect waits for them. Only the active device may cancel.
+  Future<void> cancelAndDisconnect() {
+    if (identical(_activeDevice, this)) cancel().catchError((_) {});
+    return disconnect();
+  }
+
   Future<void> _disconnect() async {
     if (!identical(_activeDevice, this)) return;
     try {
