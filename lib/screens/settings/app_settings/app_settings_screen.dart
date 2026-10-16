@@ -262,11 +262,23 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           ),
                         ],
                       )
-                      : _buildAnimatedButton(
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, AppRouteNames.electrumServer);
-                        },
+                      : ButtonGroup(
+                        buttons: [
+                          _buildAnimatedButton(
+                            title: t.electrum_server,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, AppRouteNames.electrumServer);
+                            },
+                          ),
+                          // 임베드 Floresta 노드는 regtest에서만 지원한다.
+                          if (NetworkType.currentNetworkType == NetworkType.regtest)
+                            _buildAnimatedButton(
+                              title: t.floresta_node.title,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, AppRouteNames.florestaNode);
+                              },
+                            ),
+                        ],
                       ),
 
                   CoconutLayout.spacing_400h,
