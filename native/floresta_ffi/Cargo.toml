@@ -1,0 +1,26 @@
+[package]
+name = "floresta_ffi"
+version = "0.1.0"
+edition = "2021"
+description = "C FFI bridge to embed a Floresta node (Electrum + JSON-RPC servers) in coconut_wallet"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+bitcoin = { version = "=0.32.8", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "=1.52.3", features = ["rt-multi-thread"] }
+
+# CI/배포는 getfloresta master를 rev로 고정해 사용한다(로컬 Floresta 클론 불필요).
+# 22afacd = PR #1395(rustls 0.23.46 / chacha20 0.10.2 cargo-audit) 머지 = 지갑 개발 포크
+#   feat/block-subscriber-stats의 merge-base. spin =0.10.1 포함, bitcoinkernel 0.3.0 → libbitcoinkernel-sys ^0.4.0.
+# 4xvgal fix/spin-yanked 브랜치는 bitcoinkernel 0.2.1(→ libbitcoinkernel-sys 0.3.0)이라 아래 iOS 패치가 적용되지 않는다.
+floresta-node = { git = "https://github.com/getfloresta/Floresta.git", rev = "22afacd19a211d6a8d4e919ede83ed77db4ebcbc" }
+
+# iOS 크로스컴파일을 지원하지 않는 libbitcoinkernel-sys 0.4.x를 별도 레포(4xvgal/libbitcoinkernel-sys)로 대체한다.
+# crates.io 0.4.1을 vendoring해 iOS용 cmake 크로스컴파일 패치를 넣은 레포이며, rev로 고정한다.
+# (crates.io 원본은 iOS를 macOS와 동일 취급해 macOS 오브젝트를 만들어 iOS 링크가 깨어짐)
+[patch.crates-io]
+libbitcoinkernel-sys = { git = "https://github.com/4xvgal/libbitcoinkernel-sys", rev = "0eb3f1f793881a27901349b2b73667ea3aa6680a" }
