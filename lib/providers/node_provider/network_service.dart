@@ -3,20 +3,20 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// NodeProvider의 네트워크 관련 기능을 담당하는 서비스 클래스
-/// ElectrumService의 네트워크 관련 기능을 직접 구현합니다.
+/// ChainSource의 네트워크 관련 기능을 직접 구현합니다.
 class NetworkService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
 
-  NetworkService(this._electrumService);
+  NetworkService(this._chainSource);
 
   /// 네트워크 최소 수수료율을 조회합니다.
   Future<Result<int>> getNetworkMinimumFeeRate() async {
     try {
-      final feeHistogram = await _electrumService.getMempoolFeeHistogram();
+      final feeHistogram = await _chainSource.getMempoolFeeHistogram();
       if (feeHistogram.isEmpty) {
         return Result.success(1);
       }
@@ -37,7 +37,7 @@ class NetworkService {
   /// 최신 블록 정보를 조회합니다.
   Future<Result<BlockTimestamp>> getLatestBlock() async {
     try {
-      var result = await _electrumService.getCurrentBlock();
+      var result = await _chainSource.getCurrentBlock();
       var blockHeader = BlockHeader.parse(result.height, result.hex);
       return Result.success(
         BlockTimestamp(
@@ -55,7 +55,7 @@ class NetworkService {
     try {
       // 1. mempool.get_fee_histogram 호출
       //    결과는 [[fee, vsize], [fee, vsize], ...] 형태이며 fee 단위는 sat/vB.
-      final dynamic histogramResult = await _electrumService.getMempoolFeeHistogram();
+      final dynamic histogramResult = await _chainSource.getMempoolFeeHistogram();
       List<List<dynamic>> histogram = [];
       if (histogramResult is List) {
         for (var entry in histogramResult) {
@@ -73,10 +73,10 @@ class NetworkService {
       const int economyTarget = 10; // 경제적 확인 (10블록)
 
       // 각 목표에 대해 fee 추정값 호출 (BTC/kB 단위)
-      final dynamic feeFastRaw = await _electrumService.estimateFee(fastestTarget);
-      final dynamic feeHalfHourRaw = await _electrumService.estimateFee(halfHourTarget);
-      final dynamic feeHourRaw = await _electrumService.estimateFee(hourTarget);
-      final dynamic feeEconomyRaw = await _electrumService.estimateFee(economyTarget);
+      final dynamic feeFastRaw = await _chainSource.estimateFee(fastestTarget);
+      final dynamic feeHalfHourRaw = await _chainSource.estimateFee(halfHourTarget);
+      final dynamic feeHourRaw = await _chainSource.estimateFee(hourTarget);
+      final dynamic feeEconomyRaw = await _chainSource.estimateFee(economyTarget);
 
       // 반환값이 -1이면 충분한 정보가 없다는 뜻이므로 0으로 처리 (추후 대체)
       double feeFast = (feeFastRaw is int ? feeFastRaw.toDouble() : feeFastRaw) as double;
@@ -122,7 +122,7 @@ class NetworkService {
   /// 트랜잭션을 브로드캐스트합니다.
   Future<Result<String>> broadcast(Transaction signedTx) async {
     try {
-      final txHash = await _electrumService.broadcast(signedTx.serialize());
+      final txHash = await _chainSource.broadcast(signedTx.serialize());
 
       return Result.success(txHash);
     } catch (e) {
@@ -133,7 +133,7 @@ class NetworkService {
   /// 특정 트랜잭션을 조회합니다.
   Future<Result<String>> getTransaction(String txHash) async {
     try {
-      final tx = await _electrumService.getTransaction(txHash);
+      final tx = await _chainSource.getTransaction(txHash);
       return Result.success(tx);
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);

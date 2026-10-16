@@ -11,7 +11,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_r
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -40,7 +40,7 @@ typedef FetchScriptTransactionResult = ({List<String> txHashes, Set<String> coSp
 
 /// 트랜잭션 조회를 담당하는 클래스
 class TransactionSyncService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final TransactionRepository _transactionRepository;
   final TransactionRecordService _transactionRecordService;
   final StateManagerInterface _stateManager;
@@ -50,14 +50,14 @@ class TransactionSyncService {
   final ScriptCallbackService _scriptCallbackService;
 
   TransactionSyncService(
-    this._electrumService,
+    this._chainSource,
     this._transactionRepository,
     this._transactionRecordService,
     this._stateManager,
     this._utxoRepository,
     this._scriptCallbackService,
-  ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
-      _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService);
+  ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _chainSource),
+      _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _chainSource);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<FetchScriptTransactionResult> fetchScriptTransaction(
@@ -106,7 +106,7 @@ class TransactionSyncService {
     final FetchedTransactionDetails fetchedTransactionDetails = await _fetchTransactionDetails(
       newTxHashes,
       txFetchResults,
-      _electrumService,
+      _chainSource,
     );
 
     // 4. 트랜잭션 레코드 생성 및 저장
@@ -173,7 +173,7 @@ class TransactionSyncService {
   Future<FetchedTransactionDetails> _fetchTransactionDetails(
     Set<String> newTxHashes,
     List<FetchTransactionResponse> allTxFetchResults,
-    ElectrumService electrumService,
+    ChainSource chainSource,
   ) async {
     final filteredTxFetchResults = allTxFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
 
@@ -184,7 +184,7 @@ class TransactionSyncService {
     final blockTimestampMap =
         txBlockHeightMap.isEmpty
             ? <int, BlockTimestamp>{}
-            : await electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
+            : await chainSource.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     final fetchedTransactions = await fetchTransactions(newTxHashes);
 
@@ -319,7 +319,7 @@ class TransactionSyncService {
       Transaction? unconfirmedTx;
       try {
         unconfirmedTx = Transaction.parse(
-          await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash),
+          await _chainSource.getTransaction(localUnconfirmedTxRecord.transactionHash),
         );
       } catch (e) {
         // 언컨펌 트랜잭션을 다시 조회해서 실패한 경우 대체된 것으로 간주
@@ -378,7 +378,7 @@ class TransactionSyncService {
     Set<String> knownTransactionHashes,
   ) async {
     try {
-      final historyList = await _electrumService.getHistory(addressType, scriptStatus.address);
+      final historyList = await _chainSource.getHistory(addressType, scriptStatus.address);
 
       if (historyList.isEmpty) {
         return [];
@@ -412,7 +412,7 @@ class TransactionSyncService {
 
     final futures = transactionHashes.map((txHash) async {
       try {
-        final txHex = await _electrumService.getTransaction(txHash);
+        final txHex = await _chainSource.getTransaction(txHash);
         return Transaction.parse(txHex);
       } catch (e) {
         Logger.error('Failed to fetch transaction $txHash: $e');

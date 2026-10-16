@@ -11,6 +11,8 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
+import 'package:coconut_wallet/services/electrum_chain_source.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -271,17 +273,17 @@ class IsolateManager {
     NetworkType.setNetworkType(data.networkType);
 
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      final isConnected = await electrumService.connect(
+      final isConnected = await chainSource.connect(
         data.host,
         data.port,
         ssl: data.ssl,
         pinnedCertFingerprint: data.pinnedCertFingerprint,
       );
 
-      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
+      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, chainSource);
 
       if (!isConnected) {
         Logger.error("Isolate: Failed to connect to Electrum server");

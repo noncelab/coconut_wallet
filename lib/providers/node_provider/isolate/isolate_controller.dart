@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -16,7 +16,7 @@ class IsolateController {
   final SubscriptionService _subscriptionService;
   final NetworkService _networkManager;
   final IsolateStateManager _isolateStateManager;
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final TransactionRecordService _transactionRecordService;
   final WalletResyncService _walletResyncService;
   final RealmManager _realmManager;
@@ -24,7 +24,7 @@ class IsolateController {
     this._subscriptionService,
     this._networkManager,
     this._isolateStateManager,
-    this._electrumService,
+    this._chainSource,
     this._transactionRecordService,
     this._walletResyncService,
     this._realmManager,
@@ -92,7 +92,7 @@ class IsolateController {
           isolateToMainSendPort.send(await _networkManager.getRecommendedFees());
           break;
         case IsolateControllerCommand.getSocketConnectionStatus:
-          isolateToMainSendPort.send(Result.success(_electrumService.connectionStatus));
+          isolateToMainSendPort.send(Result.success(_chainSource.connectionStatus));
           break;
         case IsolateControllerCommand.getTransactionRecord:
           final txHash = params[1] as String;
