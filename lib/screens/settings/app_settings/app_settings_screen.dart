@@ -260,13 +260,32 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               Navigator.pushNamed(context, AppRouteNames.blockExplorer);
                             },
                           ),
+                          // 메인넷에서도 임베드 Floresta 노드(로컬 노드 초기화 포함)를 노출한다.
+                          _buildAnimatedButton(
+                            title: t.floresta_node.title,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, AppRouteNames.florestaNode);
+                            },
+                          ),
                         ],
                       )
-                      : _buildAnimatedButton(
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, AppRouteNames.electrumServer);
-                        },
+                      : ButtonGroup(
+                        buttons: [
+                          _buildAnimatedButton(
+                            title: t.electrum_server,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, AppRouteNames.electrumServer);
+                            },
+                          ),
+                          // 임베드 Floresta 노드는 regtest에서만 지원한다.
+                          if (NetworkType.currentNetworkType == NetworkType.regtest)
+                            _buildAnimatedButton(
+                              title: t.floresta_node.title,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, AppRouteNames.florestaNode);
+                              },
+                            ),
+                        ],
                       ),
 
                   CoconutLayout.spacing_400h,

@@ -63,7 +63,41 @@ class AppBootstrap {
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
     CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
     NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
+    CoconutWalletApp.kFlorestaFixedPeers = _loadFlorestaFixedPeers();
+    CoconutWalletApp.kFlorestaFiltersStartHeight = _loadFlorestaFiltersStartHeight();
   }
+
+  /// Floresta 임베드 노드는 regtest처럼 DNS 시드가 없는 네트워크에서 명시 피어가 필요하다.
+  /// 피어 호스트 주소는 실행 플랫폼마다 다르므로(Android 에뮬레이터=10.0.2.2, iOS 시뮬레이터=127.0.0.1)
+  /// 플랫폼별 .env 키에서 읽는다. 값이 없으면 고정 피어 없이(florestad 기본 DNS 시드) 동작한다.
+  static List<String> _loadFlorestaFixedPeers() => parseFlorestaFixedPeers(dotenv.env, isAndroid: Platform.isAndroid);
+
+  /// [env]에서 플랫폼별 Floresta 고정 피어 목록을 해석한다. (플랫폼 분기 단위 테스트용)
+  @visibleForTesting
+  static List<String> parseFlorestaFixedPeers(Map<String, String> env, {required bool isAndroid}) {
+    final key = isAndroid ? DotenvKeys.florestaFixedPeersAndroid : DotenvKeys.florestaFixedPeersIos;
+    final raw = env[key];
+    if (raw == null || raw.isEmpty) return const [];
+    return raw.split(_kPeerListSeparator).map((peer) => peer.trim()).where((peer) => peer.isNotEmpty).toList(growable: false);
+  }
+
+  static const String _kPeerListSeparator = ',';
+
+  /// 컴팩트 필터 스캔 시작 높이. assume-utreexo가 건너뛴 구간의 필터를 다시 받지 않도록 한다.
+  static int? _loadFlorestaFiltersStartHeight() =>
+      parseFlorestaFiltersStartHeight(dotenv.env, networkType: CoconutWalletApp.kNetworkType);
+
+  /// mainnet 기본값은 Floresta assume-utreexo 체크포인트와 정렬한다. 체크포인트가 앞으로 가도
+  /// 이 값은 안전한 하한(더 많이 스캔할 뿐)이라 그대로 둬도 된다. 그 외 네트워크는 genesis.
+  @visibleForTesting
+  static int? parseFlorestaFiltersStartHeight(Map<String, String> env, {required NetworkType networkType}) {
+    final raw = env[DotenvKeys.florestaFiltersStartHeight];
+    final parsed = raw == null || raw.trim().isEmpty ? null : int.tryParse(raw.trim());
+    if (parsed != null) return parsed;
+    return networkType == NetworkType.mainnet ? _kMainnetAssumeUtreexoHeight : null;
+  }
+
+  static const int _kMainnetAssumeUtreexoHeight = 939969;
 
   static Future<void> _initializeFirebase() async {
     CoconutWalletApp.kIsFirebaseAnalyticsUsed = const bool.fromEnvironment('USE_FIREBASE', defaultValue: false);

@@ -150,6 +150,9 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 도메인 유효성 검사
   bool isValidDomain(String input) {
+    // 루프백 호스트(localhost)는 도메인이 아니다.
+    if (input.trim().toLowerCase() == 'localhost') return true;
+
     // IPv4 주소 패턴
     final ipv4Pattern = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
     if (ipv4Pattern.hasMatch(input)) {
