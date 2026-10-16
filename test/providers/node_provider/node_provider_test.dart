@@ -4,6 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/chain_backend_config.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -186,6 +188,50 @@ void main() {
       await future;
 
       expect(syncStateController.hasListener, false, reason: 'race가 끝나면 내부 구독도 정리되어야 leak이 없다.');
+    });
+  });
+
+  group('NodeProvider Floresta 백엔드 영속화 인코딩 테스트', () {
+    test('임베드 백엔드+서버를 인코딩/디코딩하면 그대로 복원된다', () {
+      const backend = ChainBackendConfig.embeddedFloresta(rpcPort: 8332);
+      const server = ElectrumServer('127.0.0.1', 50001, false);
+
+      final restored = NodeProvider.decodeFlorestaBackend(
+        NodeProvider.encodeFlorestaBackend(backend, server),
+      );
+
+      expect(restored, isNotNull);
+      expect(restored!.backend.type, ChainBackendType.embeddedFloresta);
+      expect(restored.backend.rpcPort, 8332);
+      expect(restored.server.host, '127.0.0.1');
+      expect(restored.server.port, 50001);
+      expect(restored.server.ssl, false);
+    });
+
+    test('외부 Floresta 백엔드도 rpcPort/ssl을 잃지 않고 복원된다', () {
+      const backend = ChainBackendConfig.externalFloresta(rpcPort: 18443);
+      const server = ElectrumServer('192.168.0.10', 50002, true);
+
+      final restored = NodeProvider.decodeFlorestaBackend(
+        NodeProvider.encodeFlorestaBackend(backend, server),
+      );
+
+      expect(restored!.backend.type, ChainBackendType.externalFloresta);
+      expect(restored.backend.rpcPort, 18443);
+      expect(restored.server.host, '192.168.0.10');
+      expect(restored.server.port, 50002);
+      expect(restored.server.ssl, true);
+    });
+
+    test('electrum 설정(또는 손상 JSON)은 복원하지 않는다', () {
+      const electrum = ChainBackendConfig.electrum();
+      const server = ElectrumServer('electrum.example', 50002, true);
+      expect(
+        NodeProvider.decodeFlorestaBackend(NodeProvider.encodeFlorestaBackend(electrum, server)),
+        isNull,
+      );
+      expect(NodeProvider.decodeFlorestaBackend('not json'), isNull);
+      expect(NodeProvider.decodeFlorestaBackend('{}'), isNull);
     });
   });
 }

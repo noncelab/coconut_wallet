@@ -81,6 +81,9 @@ class SharedPrefKeys {
   static const String kUserServers = 'USER_SERVERS';
   static const String kBaselineGenesisHash = 'BASELINE_GENESIS_HASH';
 
+  /// 마지막으로 적용한 Floresta(임베드/외부) 백엔드 설정 JSON. electrum이면 미설정.
+  static const String kFlorestaBackend = 'FLORESTA_BACKEND';
+
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
 

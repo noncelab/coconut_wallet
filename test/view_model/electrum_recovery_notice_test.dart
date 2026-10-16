@@ -143,7 +143,13 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Stream<IsolateStateMessage> get stateStream => states.stream;
 
   @override
-  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType, [String? fingerprint]) async {
+  Future<void> initialize(
+    String host,
+    int port,
+    bool ssl,
+    NetworkType networkType, {
+    String? pinnedCertFingerprint,
+  }) async {
     await initialization?.future;
   }
 
