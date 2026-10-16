@@ -567,11 +567,11 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
               onTap: widget.onTapRemove,
               child: ClipPath(
                 clipper:
-                    widget.isBubbleClipperCentered || widget.bubbleArrowPosition != null
+                    widget.isBubbleClipperCentered
                         ? CenterTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition)
                         : widget.isBubbleClipperSideLeft
                         ? LeftTriangleBubbleClipper()
-                        : RightTriangleBubbleClipper(),
+                        : RightTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition),
                 child: Container(
                   padding: _padding,
                   color: _backgroundColor,

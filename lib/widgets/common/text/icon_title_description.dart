@@ -20,7 +20,7 @@ class IconTitleDescription extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const iconSize = 18.0;
-    const iconTextGap = 8.0;
+    const iconTextGap = 4.0;
     final titleStyle = CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText);
     final titlePainter = TextPainter(
       text: TextSpan(text: title, style: DefaultTextStyle.of(context).style.merge(titleStyle)),
@@ -56,12 +56,9 @@ class IconTitleDescription extends StatelessWidget {
           ],
         ),
         CoconutLayout.spacing_200h,
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: iconSize + iconTextGap),
-          child: Text(
-            description,
-            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText).copyWith(height: 1.5),
-          ),
+        Text(
+          description,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText).copyWith(height: 1.5),
         ),
       ],
     );
