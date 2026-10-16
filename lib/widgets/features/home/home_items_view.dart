@@ -128,10 +128,9 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final pointer = _dragPointer;
     if (pointer == null) return false;
     _dragCanceled = true;
-    _dragPointer = null;
     GestureBinding.instance.cancelPointer(pointer);
-    _stopAutoScroll();
-    _clearPreview();
+    // A configuration swap can unmount the dragged child first, and Flutter skips onDragEnd for it.
+    _endDrag();
     return true;
   }
 

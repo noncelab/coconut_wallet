@@ -225,6 +225,40 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('restoring a layout without the dragged widget keeps later drags working', (tester) async {
+    await pumpGrid(tester);
+    final gesture = await dragOver(tester, '3', '1', hold: true);
+    // The preset toast's Undo restores widgets with other IDs while the first finger is still down.
+    model.restore(
+      HomeConfiguration(
+        items: [
+          for (final (index, id) in ['a', 'b'].indexed)
+            HomeItem(
+              id: id,
+              definitionId: '${index + 1}',
+              kind: HomeItemKind.widget,
+              span: HomeSpan.small,
+              order: index,
+            ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 400));
+    final restored = model.configuration;
+    expect(restored.items.map((item) => item.id), ['a', 'b']);
+    expect(find.byKey(const ValueKey('home-item-3')), findsNothing);
+
+    final next = await dragOver(tester, 'b', 'a');
+    await next.up();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(model.configuration, isNot(restored));
+    expect(repository.load(), model.configuration);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   for (final heldFor in [const Duration(milliseconds: 300), const Duration(milliseconds: 600)]) {
     testWidgets('interrupting a ${heldFor.inMilliseconds}ms hold cannot leave a menu on resume', (tester) async {
       await pumpGrid(tester);
