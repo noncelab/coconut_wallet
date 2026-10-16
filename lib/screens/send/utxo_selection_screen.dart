@@ -476,16 +476,18 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
               borderColor: context.coconutColors.borderStrong,
               backgroundColor: widget.backgroundColor ?? context.coconutColors.background,
               foregroundColor: context.coconutColors.primaryText,
-              onPressed: () {
+              onPressed: () async {
                 _removeUtxoOrderDropdown();
                 if (hasError) {
                   viewModel.initialize(widget.selectedUtxoList);
                 } else if (hasFilter) {
                   viewModel.setSelectedUtxoTagName(t.all);
                 } else {
-                  Navigator.of(
+                  await Navigator.of(
                     context,
                   ).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.walletId));
+                  // A deposit may have confirmed while receiving.
+                  if (mounted) viewModel.reload(widget.selectedUtxoList);
                 }
               },
             ),

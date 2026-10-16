@@ -96,6 +96,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     }
   }
 
+  /// Re-reads coins that arrived while another screen was open, keeping the tag filter.
+  void reload(List<UtxoState> selectedUtxoList) {
+    _isInitialized = false;
+    initialize(selectedUtxoList);
+  }
+
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;

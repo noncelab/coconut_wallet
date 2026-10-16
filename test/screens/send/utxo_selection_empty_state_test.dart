@@ -168,6 +168,20 @@ void main() {
     });
   }
 
+  testWidgets('a coin confirmed while receiving appears on return', (tester) async {
+    final wallets = _Wallets();
+    await pump(tester, wallets);
+    await tester.tap(find.text(t.receive));
+    await tester.pumpAndSettle();
+    wallets.utxos = [_utxo(UtxoStatus.unspent)];
+    Navigator.of(tester.element(find.text('receive fixture'))).pop();
+    await tester.pumpAndSettle();
+    expect(wallets.reads, 2);
+    expect(find.byType(UtxoSelectionCard), findsOneWidget);
+    expect(find.text(t.utxo_selection_screen.empty_title), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('pending-only wallet is empty, locked wallet remains visible and unselectable', (tester) async {
     await pump(tester, _Wallets()..utxos = [_utxo(UtxoStatus.incoming)]);
     expect(find.text(t.utxo_selection_screen.empty_description), findsOneWidget);
