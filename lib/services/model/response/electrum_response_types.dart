@@ -123,7 +123,11 @@ class GetBalanceRes {
   GetBalanceRes({required this.confirmed, required this.unconfirmed});
 
   factory GetBalanceRes.fromJson(Map<String, dynamic> json) {
-    return _$GetBalanceResFromJson(json);
+    // Floresta는 미추적 스크립트에 confirmed: null 을 돌려줄 수 있다.
+    return GetBalanceRes(
+      confirmed: (json['confirmed'] as num?)?.toInt() ?? 0,
+      unconfirmed: (json['unconfirmed'] as num?)?.toInt() ?? 0,
+    );
   }
 }
 

@@ -11,7 +11,6 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
-import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/electrum_chain_source.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
@@ -68,9 +67,9 @@ class IsolateManager {
     String host,
     int port,
     bool ssl,
-    NetworkType networkType, [
+    NetworkType networkType, {
     String? pinnedCertFingerprint,
-  ]) async {
+  }) async {
     // 이미 초기화 중인 경우 기존 작업 완료 대기
     if (_isInitializing) {
       Logger.log('IsolateManager: Already initializing, waiting for completion');
@@ -91,7 +90,14 @@ class IsolateManager {
       _createIsolateCompleter();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType, pinnedCertFingerprint);
+      final data = SpawnIsolateDto(
+        isolateToMainSendPort,
+        host,
+        port,
+        ssl,
+        networkType,
+        pinnedCertFingerprint: pinnedCertFingerprint,
+      );
 
       _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
       _setUpReceivePortListener();
@@ -283,13 +289,13 @@ class IsolateManager {
         pinnedCertFingerprint: data.pinnedCertFingerprint,
       );
 
-      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, chainSource);
-
       if (!isConnected) {
         Logger.error("Isolate: Failed to connect to Electrum server");
         data.isolateToMainSendPort.send([IsolateManagerCommand.initializationFailed]);
-        return; // throw 대신 return으로 변경
+        return;
       }
+
+      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, chainSource);
 
       // 모든 초기화 완료 후 메시지 전송
       data.isolateToMainSendPort.send([

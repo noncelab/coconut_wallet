@@ -55,7 +55,13 @@ class BalanceSyncService {
     );
 
     await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
+    // DEBUG: 잔액 검증용 (logcat)
+    Logger.log(
+      'BALANCE wallet=${walletItem.id} addr=${scriptStatusIndex(index, isChange)} diff=${balanceDiff.total} total=${_walletRepository.getWalletBalance(walletItem.id)?.total}',
+    );
   }
+
+  String scriptStatusIndex(int index, bool isChange) => '${isChange ? 'change' : 'recv'}/$index';
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
   /// [onBatchProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null).
@@ -134,6 +140,9 @@ class BalanceSyncService {
 
       // 지갑 잔액에 변화량 반영
       await _walletRepository.accumulateWalletBalance(walletItem.id, totalBalanceDiff);
+      Logger.log(
+        'BALANCE wallet=${walletItem.id} batch diff=${totalBalanceDiff.total} total=${_walletRepository.getWalletBalance(walletItem.id)?.total}',
+      );
 
       // 동기화 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
