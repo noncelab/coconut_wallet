@@ -4,6 +4,8 @@
 # Miscellaneous
 *.class
 *.lock
+# Rust 의존성 고정용: rev는 직접 의존만 고정하므로 전이 의존 재현성을 위해 추적한다.
+!/native/floresta_ffi/Cargo.lock
 *.log
 *.pyc
 *.swp
@@ -85,6 +87,7 @@ devtools_options.yaml
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 **/android/key_*.properties
+/key_*.properties
 *.jks
 # Android NDK build cache
 android/app/.cxx/
@@ -215,3 +218,14 @@ rust/trezor-connect-rs/target/
 # Local agent work and uncommitted growth/QA reports
 /.omo/
 /docs/growth/
+
+# Rust build artifacts (Floresta FFI)
+native/floresta_ffi/target/
+# 구 stash(bdk-floresta 기반) 잔여물 — 사용하지 않음
+native/bdk_floresta_ffi/
+
+# Android에 번들되는 Rust .so (make android-lib 산출물)
+android/app/src/main/jniLibs/
+# iOS Floresta MAKE artifacts
+native/third_party/libbitcoinkernel-sys
+.pi/*

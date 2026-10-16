@@ -53,6 +53,9 @@ class MainActivity : FlutterFragmentActivity() {
             } else if(call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri"){
                 result.success(pendingBitcoinUri)
                 pendingBitcoinUri = null
+            } else if(call.method == "nativeLibraryDir"){
+                // florestad 실행파일(libflorestad.so)이 추출되는 exec 가능 디렉터리.
+                result.success(applicationInfo.nativeLibraryDir)
             }
             else {
                 result.notImplemented()

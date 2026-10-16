@@ -1,3 +1,47 @@
+# ── Rust FFI (Floresta 임베딩) ────────────────────────────────────────────────
+.PHONY: rust-build rust-check rust-clean florestad-android android-lib ios-lib ios-lib-sim ios-lib-device
+
+RUST_DIR := native/floresta_ffi
+
+rust-check:
+	cargo check --manifest-path $(RUST_DIR)/Cargo.toml
+
+rust-build:
+	cargo build --release --manifest-path $(RUST_DIR)/Cargo.toml
+
+rust-clean:
+	cargo clean --manifest-path $(RUST_DIR)/Cargo.toml
+
+# ── 모바일 FFI 라이브러리 ──────────────────────────────────────────────────────
+# Android: florestad 실행파일을 jniLibs/<abi>/libflorestad.so 로 빌드/배치.
+#   사전: rustup target add aarch64-linux-android x86_64-linux-android
+#         cargo install cargo-ndk
+#
+#   주의: android-lib 은 반드시 API 24+ 로 빌드해야 한다. 자세한 이유는
+#   android/scripts/build_florestad.sh 참고(정적 libc 번들 → 시작 SIGSEGV).
+NDK_HOME ?= $(ANDROID_NDK_HOME)
+JNI_LIBS := android/app/src/main/jniLibs
+
+florestad-android:
+	bash android/scripts/build_florestad.sh $(if $(ABI),$(ABI),arm64-v8a x86_64)
+
+android-lib: florestad-android
+
+# iOS FFI 빌드. 시뮬레이터(Apple Silicon)와 실기기(arm64)를 모두 만든다.
+#   사전: rustup target add aarch64-apple-ios-sim aarch64-apple-ios
+#   IPHONEOS_DEPLOYMENT_TARGET: Rust 링크 최소버전 기본값(ios10)과 커널 오브젝트(14.0)가
+#   어긋나면 ___chkstk_darwin 미해결로 링크 실패하므로 앱 min(15.0)으로 맞춘다.
+IPHONEOS_DEPLOYMENT_TARGET ?= 15.0
+export IPHONEOS_DEPLOYMENT_TARGET
+
+ios-lib-sim:
+	cd $(RUST_DIR) && cargo build --release --target aarch64-apple-ios-sim
+
+ios-lib-device:
+	cd $(RUST_DIR) && cargo build --release --target aarch64-apple-ios
+
+ios-lib: ios-lib-sim ios-lib-device
+
 realm-clean:
 	rm -f ./*.realm.lock ./*.realm.note
 	rm -rf ./*.realm.management
