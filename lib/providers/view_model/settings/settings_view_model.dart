@@ -27,9 +27,7 @@ class SettingsViewModel extends ChangeNotifier {
     _preferenceProvider.changeIsBalanceHidden(value);
   }
 
-  void deletePin() {
-    _authProvider.deletePin();
-  }
+  Future<void> deletePin() => _authProvider.deletePin();
 
   void setManualUtxoSelectionMode(bool value) {
     _preferenceProvider.setManualUtxoSelectionMode(value);

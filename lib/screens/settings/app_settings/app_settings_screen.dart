@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -21,6 +23,7 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/number_format_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
@@ -219,6 +222,23 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           );
                         },
                       ),
+                      Selector<PreferenceProvider, NumberFormatPreset>(
+                        selector: (_, provider) => provider.numberFormatPreset,
+                        builder: (context, preset, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.number_format,
+                            subtitle: preset.displayLabel,
+                            onPressed: () {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
+                                heightRatio: 0.4,
+                                child: NumberFormatBottomSheet(),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                   CoconutLayout.spacing_400h,
@@ -385,6 +405,24 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
         if (!mounted || !pinVerified) return;
       }
       await authProvider.deletePin();
+    } catch (error) {
+      if (!mounted) return;
+      final message = switch (error) {
+        PinAuthException(code: PinAuthError.unauthorized) => t.errors.pin_setting_error.authentication_required,
+        PinAuthException(code: PinAuthError.stateUncertain) => t.errors.pin_setting_error.state_uncertain,
+        _ => t.errors.pin_setting_error.process_failed,
+      };
+      await showDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.settings_screen.disable_app_lock_title,
+              description: message,
+              rightButtonText: t.confirm,
+              onTapRight: () => Navigator.of(dialogContext).pop(),
+            ),
+      );
     } finally {
       _isDisablingAppLock = false;
     }

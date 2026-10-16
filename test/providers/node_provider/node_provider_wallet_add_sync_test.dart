@@ -485,4 +485,57 @@ void main() {
     await expectLater(provider!.initialize(), throwsStateError);
     expect(provider!.hasConnectionError, true);
   });
+
+  group('wallet_bulk_sync_completed counts only real bulk syncs', () {
+    int bulkCompleted() =>
+        analytics.events.where((event) => event.name == AnalyticsEventNames.walletBulkSyncCompleted).length;
+    int bulkFailed() =>
+        analytics.events.where((event) => event.name == AnalyticsEventNames.walletBulkSyncFailed).length;
+
+    test('is logged once when existing wallets are subscribed at startup', () async {
+      await loadExistingWallets();
+
+      expect(isolate.bulkSubscriptions, hasLength(1));
+      expect(bulkCompleted(), 1);
+    });
+
+    test('is not logged when there are no wallets to subscribe', () async {
+      createProvider();
+      load.value = WalletLoadState.loadCompleted;
+      await pumpEventQueue();
+
+      expect(isolate.bulkSubscriptions, isEmpty);
+      expect(bulkCompleted(), 0);
+      expect(bulkFailed(), 0);
+    });
+
+    test('is not logged when the internet drops right before the startup subscription', () async {
+      createProvider();
+      await pumpEventQueue();
+      // Dropped, but the connectivity listener has not run yet.
+      connectivity.online = false;
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await pumpEventQueue();
+
+      expect(isolate.bulkSubscriptions, isEmpty);
+      expect(bulkCompleted(), 0);
+      expect(bulkFailed(), 0);
+    });
+
+    test('is not logged when the internet drops while reconnecting', () async {
+      await loadExistingWallets();
+      expect(bulkCompleted(), 1);
+      isolate.onInitialize = () async {
+        connectivity.online = false;
+      };
+
+      final result = await provider!.reconnect();
+
+      expect(result.isSuccess, isTrue);
+      expect(isolate.bulkSubscriptions, hasLength(1));
+      expect(bulkCompleted(), 1);
+      expect(bulkFailed(), 0);
+    });
+  });
 }

@@ -1,16 +1,15 @@
+import 'package:coconut_wallet/services/security/app_reset_service.dart';
 import 'dart:math';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/hash_util.dart';
+import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-
-import '../constants/secure_keys.dart';
 
 class AuthProvider extends ChangeNotifier {
   static const MethodChannel _osChannel = MethodChannel('onl.coconut.wallet/os');
@@ -18,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final SecureStorageRepository _secureStorageService = SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
+  final PinAuthService _pinAuth;
 
   /// 사용자 생체인증 on/off 여부
   late bool _isSetBiometrics;
@@ -41,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
   /// 생체인식 인증 활성화 여부
   bool get isBiometricsAuthEnabled => _canCheckBiometrics && _isSetBiometrics;
 
-  AuthProvider() {
+  AuthProvider({PinAuthService? pinAuth}) : _pinAuth = pinAuth ?? PinAuthService() {
     _isSetBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kIsSetBiometrics);
     _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kCanCheckBiometrics);
     _isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
@@ -61,11 +61,11 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> isDevicePasscodeSet() async {
     try {
       return await _osChannel.invokeMethod<bool>('isDevicePasscodeSet') ?? false;
-    } on MissingPluginException catch (e) {
-      Logger.log(e);
+    } on MissingPluginException {
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
       return await _auth.isDeviceSupported();
-    } on PlatformException catch (e) {
-      Logger.log(e);
+    } on PlatformException {
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
       return false;
     }
   }
@@ -74,10 +74,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> openDeviceSecuritySettings() async {
     try {
       await _osChannel.invokeMethod<void>('openDeviceSecuritySettings');
-    } on MissingPluginException catch (e) {
-      Logger.log(e);
-    } on PlatformException catch (e) {
-      Logger.log(e);
+    } on MissingPluginException {
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
+    } on PlatformException {
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
     }
   }
 
@@ -95,9 +95,9 @@ class AuthProvider extends ChangeNotifier {
         _isSetBiometrics = false;
         _sharedPrefs.setBool(SharedPrefKeys.kIsSetBiometrics, false);
       }
-    } on PlatformException catch (e) {
+    } catch (_) {
       // 생체 인식 기능 비활성화, 사용자가 권한 거부, 기기 하드웨어에 문제가 있는 경우, 기기 호환성 문제, 플랫폼 제한
-      Logger.log(e);
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
       _canCheckBiometrics = false;
       _sharedPrefs.setBool(SharedPrefKeys.kCanCheckBiometrics, false);
       _isSetBiometrics = false;
@@ -116,13 +116,14 @@ class AuthProvider extends ChangeNotifier {
         options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
       );
 
+      if (authenticated) await _pinAuth.onBiometricAuthenticationSucceeded();
       if (isSave) {
-        saveIsSetBiometrics(authenticated);
+        await saveIsSetBiometrics(authenticated);
       }
 
       return authenticated;
-    } on PlatformException catch (e) {
-      Logger.log(e);
+    } catch (_) {
+      Logger.warning('AUTH_PLATFORM_OPERATION_FAILED');
     }
     return false;
   }
@@ -135,43 +136,54 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// 비밀번호 저장
-  Future<void> savePinSet(String hashedPin, int pinLength) async {
-    await _secureStorageService.write(key: kSecureStoragePinKey, value: hashedPin);
+  Future<void> savePin(String pin) async {
+    await _pinAuth.setPin(pin);
     _isSetPin = true;
-    _pinLength = pinLength;
-    _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
-    _sharedPrefs.setInt(SharedPrefKeys.kPinLength, pinLength);
+    _pinLength = pin.length;
+    try {
+      await _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
+      await _sharedPrefs.setInt(SharedPrefKeys.kPinLength, _pinLength);
+    } catch (_) {
+      // 보안 저장은 완료됐으므로 실패로 표시하지 않고 다음 시작 시 복구합니다.
+      Logger.warning('AUTH_METADATA_WRITE_FAILED');
+    }
     notifyListeners();
   }
 
   /// 비밀번호 삭제
   Future<void> deletePin() async {
-    await _secureStorageService.delete(key: kSecureStoragePinKey);
+    await _pinAuth.deletePin();
     _isSetPin = false;
     _isSetBiometrics = false;
     _pinLength = 0;
-    _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
-    _sharedPrefs.setBool(SharedPrefKeys.kIsSetBiometrics, _isSetBiometrics);
-    _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kPinLength);
+    try {
+      await _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
+      await _sharedPrefs.setBool(SharedPrefKeys.kIsSetBiometrics, _isSetBiometrics);
+      await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kPinLength);
+    } catch (_) {
+      Logger.warning('AUTH_METADATA_WRITE_FAILED');
+    }
     notifyListeners();
   }
 
   /// 비밀번호 검증
-  Future<bool> verifyPin(String inputPin) async {
-    String hashedInput = generateHashString(inputPin);
-    final savedPin = await _secureStorageService.read(key: kSecureStoragePinKey);
-    return savedPin == hashedInput;
-  }
+  Future<PinVerificationResult> verifyPinResult(String inputPin) => _pinAuth.verify(inputPin);
+
+  Future<bool> verifyPin(String inputPin) async =>
+      (await verifyPinResult(inputPin)).outcome == PinVerificationOutcome.success;
+
+  Future<PinAuthStatus> getPinAuthStatus() => _pinAuth.status();
 
   /// 비밀번호 분실
-  Future<void> resetPassword() async {
+  Future<void> resetPassword({required void Function() resetWallets}) async {
+    await AppResetService().perform(
+      resetSecureStorage: () => _pinAuth.resetStorage(_secureStorageService.deleteAll),
+      resetWallets: resetWallets,
+    );
     _isSetBiometrics = false;
     _canCheckBiometrics = false;
     _isSetPin = false;
     _pinLength = 0;
-
-    await _secureStorageService.deleteAll();
-    await _sharedPrefs.deleteMultipleKeys(SharedPrefKeys.keysToReset);
     await checkDeviceBiometrics();
   }
 

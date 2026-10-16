@@ -13,6 +13,12 @@
 .history
 .svn/
 .claude/
+!.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/generate-store-release-notes
+!.claude/skills/check-electrum-cert-fingerprints
 .local/
 .zed/*
 CLAUDE.md

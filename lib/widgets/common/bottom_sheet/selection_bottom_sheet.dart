@@ -6,11 +6,20 @@ import 'package:flutter/material.dart';
 
 class SelectionItem<T> {
   final String title;
+  final TextStyle? titleStyle;
   final String? subtitle;
+  final TextStyle? subtitleStyle;
   final T value;
   final VoidCallback onTap;
 
-  SelectionItem({required this.title, this.subtitle, required this.value, required this.onTap});
+  SelectionItem({
+    required this.title,
+    this.titleStyle,
+    this.subtitle,
+    this.subtitleStyle,
+    required this.value,
+    required this.onTap,
+  });
 }
 
 class SelectionBottomSheet<T> extends StatelessWidget {
@@ -58,7 +67,14 @@ class SelectionBottomSheet<T> extends StatelessWidget {
       final isSelected = item.value == selectedValue;
 
       widgets.add(
-        SelectableSettingsRow(title: item.title, subtitle: item.subtitle, isSelected: isSelected, onTap: item.onTap),
+        SelectableSettingsRow(
+          title: item.title,
+          titleStyle: item.titleStyle,
+          subtitle: item.subtitle,
+          subtitleStyle: item.subtitleStyle,
+          isSelected: isSelected,
+          onTap: item.onTap,
+        ),
       );
 
       if (i < items.length - 1) {

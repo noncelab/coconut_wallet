@@ -224,6 +224,12 @@ utxo_order_enums:
 
 # lib/screens/common
 pin_check_screen:
+  retry_after: "$time後に再試行可能"
+  time_hour: "時間"
+  time_minute: "分"
+  time_second: "秒"
+  authentication_unavailable: "認証情報を確認できません。しばらくしてから画面を開き直してください。"
+  authentication_busy: "認証中です。しばらくしてから再試行してください。"
   text: "パスワードを入力してください"
 
 # lib/screens/home
@@ -994,6 +1000,7 @@ settings_screen:
   change_password: "パスワード変更"
   fiat: "法定通貨"
   language: "言語"
+  number_format: "数値形式"
   utxo_manual_selection: "UTXO 数手動選択"
   utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   import_labels: "メモをインポート"
@@ -1577,6 +1584,8 @@ errors:
     already_in_use: "パスワードは既に使用されています"
     process_failed: "処理中に問題が発生しました"
     save_failed: "保存中に問題が発生しました"
+    authentication_required: "認証の有効期限が切れました。前の画面に戻って再認証してください。"
+    state_uncertain: "PINの保存状態を確認できません。アプリを開き直してPIN設定を確認してください。"
     incorrect: "パスワードが一致しません"
   data_loading_failed: "データ読み込み中にエラーが発生しました。"
   data_not_found: "データが見つかりません。"
@@ -1752,6 +1761,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "数値形式"
 
 estimated_fee_bottom_sheet:
     title: "予想手数料"

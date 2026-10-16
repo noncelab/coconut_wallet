@@ -1,5 +1,9 @@
+import 'package:coconut_wallet/services/security/app_reset_service.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'dart:io';
 
+import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/bootstrap/localization_bootstrap.dart';
@@ -23,6 +27,8 @@ class AppBootstrap {
   static Future<void> initialize() async {
     Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
+    await recoverPendingReset();
+    await restorePinMetadata();
     _applyPersistedTheme();
 
     await configureSystemUi();
@@ -36,6 +42,21 @@ class AppBootstrap {
     setupPluralResolvers();
   }
 
+  /// 앱 화면과 인증 메타데이터를 복구하기 전에 승인된 초기화를 마무리합니다.
+  static Future<void> recoverPendingReset() async {
+    final reset = AppResetService();
+    if (!reset.isPending) return;
+    final realm = RealmManager();
+    try {
+      await reset.recoverIfPending(
+        resetSecureStorage: () => PinAuthService().resetStorage(SecureStorageRepository().deleteAll),
+        resetWallets: realm.reset,
+      );
+    } finally {
+      realm.dispose();
+    }
+  }
+
   /// 로그 뷰어와 함께 없앤 디버그 로그(`debug_log.txt`)가 업데이트한 기기에 남아 있으면 지운다.
   @visibleForTesting
   static Future<void> deleteLegacyDebugLog() async {
@@ -44,6 +65,29 @@ class AppBootstrap {
       if (await file.exists()) await file.delete();
     } catch (e) {
       Logger.error('AppBootstrap: legacy debug log cleanup failed: ${e.runtimeType}');
+    }
+  }
+
+  /// PIN 저장 후 SharedPreferences 메타데이터 갱신 전에 작업이 중단되어도
+  /// Secure Storage를 기준으로 설정을 복구합니다. 오류 발생 시 앱 잠금을 유지합니다.
+  static Future<void> restorePinMetadata({PinAuthService? pinAuth}) async {
+    final prefs = SharedPrefsRepository();
+    // 신규 설치에서는 남아 있는 iOS Keychain 데이터를 정리하는 기존 온보딩을 유지합니다.
+    // 이전 설치에서 사용하던 PIN으로 앱 잠금을 다시 활성화하지 않습니다.
+    if (!prefs.getBool(SharedPrefKeys.kHasLaunchedBefore)) return;
+    try {
+      final configuration = await (pinAuth ?? PinAuthService()).configuration();
+      if (configuration.explicitlyDisabled) {
+        await prefs.setBool(SharedPrefKeys.kIsSetPin, false);
+        await prefs.setBool(SharedPrefKeys.kIsSetBiometrics, false);
+        await prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kPinLength);
+      } else if (configuration.configured) {
+        await prefs.setBool(SharedPrefKeys.kIsSetPin, true);
+        if (configuration.length != null) await prefs.setInt(SharedPrefKeys.kPinLength, configuration.length!);
+      }
+    } on PinAuthException {
+      await prefs.setBool(SharedPrefKeys.kIsSetPin, true);
+      Logger.warning('AUTH_STORAGE_UNAVAILABLE');
     }
   }
 

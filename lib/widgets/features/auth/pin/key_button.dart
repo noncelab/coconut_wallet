@@ -53,8 +53,8 @@ class _KeyButtonState extends State<KeyButton> {
           });
         }
       }
-    } catch (e) {
-      Logger.log('생체 인식 유형을 확인하는 중 오류 발생: $e');
+    } catch (_) {
+      Logger.warning('AUTH_BIOMETRIC_TYPE_UNAVAILABLE');
     }
   }
 

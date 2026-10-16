@@ -225,6 +225,12 @@ utxo_order_enums:
 
 # lib/screens/common
 pin_check_screen:
+  retry_after: "Erneut versuchen nach $time"
+  time_hour: " Std."
+  time_minute: " Min."
+  time_second: " Sek."
+  authentication_unavailable: "Authentifizierungsdaten sind nicht verfügbar. Öffne diese Ansicht erneut und versuche es noch einmal."
+  authentication_busy: "Die Authentifizierung läuft. Bitte versuche es gleich erneut."
   text: "Geben Sie Ihr Passwort ein"
 
 # lib/screens/home
@@ -940,6 +946,7 @@ settings_screen:
   change_password: "Passwort ändern"
   fiat: "Fiat"
   language: "Sprache"
+  number_format: "Zahlenformat"
   utxo_manual_selection: "Manuelle UTXO-Auswahl"
   utxo_manual_selection_description: "UTXOs manuell zum Senden auswählen"
   import_labels: "Notizen importieren"
@@ -1528,6 +1535,8 @@ errors:
     already_in_use: "Passwort bereits in Verwendung"
     process_failed: "Problem während der Verarbeitung aufgetreten"
     save_failed: "Problem beim Speichern aufgetreten"
+    authentication_required: "Die Authentifizierung ist abgelaufen. Kehren Sie zurück und authentifizieren Sie sich erneut."
+    state_uncertain: "Der gespeicherte PIN-Status ist unklar. Öffnen Sie die App erneut und prüfen Sie die PIN-Einstellungen."
     incorrect: "Passwort stimmt nicht überein"
   data_loading_failed: "Beim Laden der Daten ist ein Fehler aufgetreten."
   data_not_found: "Keine Daten gefunden."
@@ -1703,6 +1712,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "Zahlenformat"
 
 estimated_fee_bottom_sheet:
   title: "Geschätzte Gebühr"

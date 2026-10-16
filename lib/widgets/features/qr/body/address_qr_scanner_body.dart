@@ -61,7 +61,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.only(top: 32),
+              padding: const EdgeInsets.only(top: 16),
               child: Text(
                 t.send_address_screen.text2,
                 textAlign: TextAlign.center,
