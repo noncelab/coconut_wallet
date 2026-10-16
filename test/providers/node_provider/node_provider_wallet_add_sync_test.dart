@@ -83,9 +83,9 @@ class _Isolate extends Fake implements IsolateManager {
     String host,
     int port,
     bool ssl,
-    NetworkType networkType, [
+    NetworkType networkType, {
     String? pinnedCertFingerprint,
-  ]) async {
+  }) async {
     initializationCount++;
     if (onInitialize != null) await onInitialize!();
     initialized = true;
@@ -235,6 +235,8 @@ void main() {
     wallets.value = wallets.value.reversed.toList();
     wallets.value = wallets.value.map((wallet) => _Wallet(wallet.id, hasLocalKey: wallet.hasLocalKey)).toList();
 
+    // 구독은 descriptor 준비(no-op 포함) 이후 마이크로태스크에서 시작된다.
+    await pumpEventQueue();
     expect(isolate.individualSubscriptions, [4]);
     expect(analytics.addResults, isEmpty);
 

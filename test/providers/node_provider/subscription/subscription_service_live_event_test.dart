@@ -86,7 +86,7 @@ void main() {
         wallet.walletBase.getAddress(75, isChange: false),
       };
 
-      final electrumService = ScriptSyncServiceMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.chainSource;
       final address55 = wallet.walletBase.getAddress(55, isChange: false);
       final address75 = wallet.walletBase.getAddress(75, isChange: false);
       when(electrumService.getBalance(any, any)).thenAnswer((invocation) async {

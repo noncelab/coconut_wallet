@@ -1,0 +1,123 @@
+# Coconut Wallet 로컬 regtest 스택
+#
+#   bitcoind(regtest, 채굴/RPC)
+#        │ 127.0.0.1:18444  ← utreexod와 네트워크 네임스페이스 공유
+#        ▼
+#   utreexod(regtest, bridge 모드: --utreexoproofindex + --cfilters)
+#        └ utreexo proof(검증) + BIP158 compact filter(과거 rescan)를 모두 제공
+#        │ bitcoind:18333
+#        ▼
+#   florestad(regtest)
+#        ├ Electrum 50001  ← 앱의 ElectrumChainSource
+#        └ JSON-RPC 8332    ← loaddescriptor / getblockchaininfo
+#
+# 왜 네임스페이스를 공유하나:
+#   utreexod는 regtest에서 피어 주소가 127.0.0.1/localhost일 때만 동기화 피어로 인정한다
+#   (netsync/manager.go isSyncCandidate). Docker 브리지 IP로는 동기화를 거부하므로
+#   bitcoind와 같은 netns에서 127.0.0.1로 붙여야 한다. bitcoind는 그런 제약이 없어서
+#   florestad는 일반적으로 bitcoind 호스트명으로 utreexod에 접속한다.
+#
+# 사용:
+#   docker compose -f docker/regtest/docker-compose.yml up -d --build
+#   ./docker/regtest/regtest.sh status
+#
+# Android 에뮬레이터에서 호스트 접근 주소는 10.0.2.2, iOS 시뮬레이터는 127.0.0.1.
+
+services:
+  bitcoind:
+    # Floresta 테스트 프레임워크 기준 버전(30.2).
+    image: bitcoin/bitcoin:30.2
+    container_name: cw_bitcoind
+    command:
+      - -regtest=1
+      - -server=1
+      - -txindex=1
+      - -rpcuser=coconut
+      - -rpcpassword=coconut
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcport=18443
+      - -port=18444
+      - -fallbackfee=0.0001
+      - -printtoconsole=1
+    ports:
+      - "18443:18443" # JSON-RPC (호스트에서 bitcoin-cli)
+      - "18444:18444" # P2P
+      - "18333:18333" # utreexod P2P (같은 netns에서 utreexod가 바인딩)
+      - "18334:18334" # utreexod JSON-RPC (같은 netns)
+    volumes:
+      - bitcoind_data:/home/bitcoin/.bitcoin
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=coconut", "-rpcpassword=coconut", "getblockchaininfo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  utreexod:
+    build:
+      context: .
+      dockerfile: utreexod.Dockerfile
+    container_name: cw_utreexod
+    # bitcoind와 네트워크 네임스페이스 공유 → 127.0.0.1:18444로 bitcoind 접속.
+    # (utreexod의 regtest 동기화 피어 조건: 주소가 127.0.0.1/localhost)
+    network_mode: "service:bitcoind"
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    command:
+      - --regtest
+      - --datadir=/data
+      - --rpcuser=coconut
+      - --rpcpass=coconut
+      - --rpclisten=0.0.0.0:18334
+      # bridge 모드: proof 인덱스를 켜면 자동으로 --noutreexo가 설정된다.
+      - --utreexoproofindex
+      # BIP158 compact filter도 서빙 → florestad가 과거 지갑 rescan 가능
+      # (이 하나로 proof + filter를 모두 utreexod에서 제공).
+      - --cfilters
+      # 검증한 블록을 즉시 prune하지 않는다(florestad에 블록을 서빙해야 함).
+      - --prune=0
+      - --listen=0.0.0.0:18333
+      - --connect=127.0.0.1:18444
+      # utreexod로도 채굴 가능하게 하는 고정 regtest 주소.
+      - --miningaddr=bcrt1q427ze5mrzqupzyfmqsx9gxh7xav538yk2j4cft
+    volumes:
+      - utreexod_data:/data
+
+  florestad:
+    image: dlsz/floresta:latest
+    # dlsz/floresta는 amd64 매니페스트만 제공 → Apple Silicon에서는 에뮬레이션으로 실행.
+    platform: linux/amd64
+    container_name: cw_florestad
+    depends_on:
+      - utreexod
+    command:
+      - florestad
+      - -n
+      - regtest
+      - --data-dir
+      - /data
+      # proof를 제공하는 utreexod(bridge)에 접속 (v0.9.1의 --connect는 단일 값).
+      - --connect
+      - bitcoind:18333
+      - --electrum-address
+      - 0.0.0.0:50001
+      - --rpc-address
+      - 0.0.0.0:8332
+      # regtest는 체인이 작으므로 genesis부터 검증한다.
+      - --no-assume-utreexo
+      - --assume-valid
+      - "0"
+    ports:
+      - "50001:50001" # Electrum (앱 질의)
+      - "8332:8332"   # JSON-RPC (디스크립터/동기화)
+    volumes:
+      - floresta_data:/data
+
+volumes:
+  bitcoind_data:
+    name: cw_bitcoind_data
+  utreexod_data:
+    name: cw_utreexod_data
+  floresta_data:
+    name: cw_floresta_data

@@ -68,7 +68,7 @@ void main() {
 
       wallet.receiveUsedIndex = 1;
 
-      final electrumService = ScriptSyncServiceMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.chainSource;
       final subscribedAddresses = <String>[];
       when(
         electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),

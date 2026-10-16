@@ -132,4 +132,19 @@ void main() {
 
     verifyNever(nodeProvider.applyServerChange());
   });
+
+  group('isValidDomain', () {
+    test('localhost는 유효하다(Floresta 임베드 노드 루프백)', () async {
+      final viewModel = await createViewModel();
+      expect(viewModel.isValidDomain('localhost'), isTrue);
+      expect(viewModel.isValidDomain('  LocalHost '), isTrue);
+    });
+
+    test('일반 도메인/IPv4는 유효하고 잘못된 형식은 아니다', () async {
+      final viewModel = await createViewModel();
+      expect(viewModel.isValidDomain('example.com'), isTrue);
+      expect(viewModel.isValidDomain('127.0.0.1'), isTrue);
+      expect(viewModel.isValidDomain('not a domain'), isFalse);
+    });
+  });
 }

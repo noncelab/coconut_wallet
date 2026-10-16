@@ -11,6 +11,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/model/node/chain_backend_config.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/resync_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
@@ -19,11 +20,14 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/providers/node_provider/node_lifecycle.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
+import 'package:coconut_wallet/services/electrum_chain_source.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -67,6 +71,24 @@ class NodeProvider extends ChangeNotifier {
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
   Timer? _blockUpdateTimer;
   ValueNotifier<BlockTimestamp?> get currentBlockNotifier => _currentBlockNotifier;
+
+  /// 임베드 노드 생명주기 seam. 모드와 무관하게 항상 존재하고 무조건 호출된다.
+  late final NodeLifecycle _lifecycle;
+  StreamSubscription<void>? _lifecycleRefreshSub;
+
+  /// 노드 생명주기 seam의 공개 접근자.
+  NodeLifecycle get lifecycle => _lifecycle;
+
+  /// Floresta 상태 조회 전용. 코어 seam([NodeLifecycle])이 Floresta 타입을 노출하지 않도록 분리.
+  FlorestaNodeStatus? get florestaStatus =>
+      _lifecycle is FlorestaNodeStatus ? _lifecycle as FlorestaNodeStatus : null;
+
+  /// 현재 연결 대상 서버(모드/호스트/포트/ssl/rpcPort 포함).
+  ElectrumServer get currentElectrumServer => _electrumServer;
+
+  /// 현재 체인 백엔드(인메모리, 비영속). 기본값은 electrum.
+  ChainBackendConfig _backend = const ChainBackendConfig.electrum();
+  ChainBackendConfig get backend => _backend;
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
   Stream<NodeSyncState> get syncStateStream {
@@ -182,6 +204,7 @@ class NodeProvider extends ChangeNotifier {
         _setConnectionError(false);
       }
       if (_currentBlockNotifier.value?.height != result.value.height) {
+        Logger.log('NodeProvider: 새 블록 높이 반영: ${result.value.height}');
         _currentBlockNotifier.value = result.value;
         _currentBlockController.add(result.value);
       }
@@ -199,6 +222,18 @@ class NodeProvider extends ChangeNotifier {
       if (_connectivityProvider.isInternetOn && !isBootstrapping) {
         unawaited(reconnect());
       }
+    }
+  }
+
+
+  /// 노드가 IBD를 끝내 지갑 데이터를 처음부터 다시 가져와야 할 때.
+  void _refetchWalletsNow() {
+    if (_isDisposed || !_isNetworkInitialized) return;
+    final wallets = _walletItemListNotifier.value;
+    if (wallets.isEmpty) return;
+    Logger.log('NodeProvider: node out of IBD, refetching ${wallets.length} wallet(s)');
+    for (final wallet in wallets) {
+      unawaited(resyncWallet(wallet));
     }
   }
 
@@ -233,6 +268,7 @@ class NodeProvider extends ChangeNotifier {
     this._analyticsService, {
     IsolateManager? isolateManager,
     bool Function(int walletId)? hasTransactionHistory,
+    NodeLifecycle? lifecycle,
   }) : _isolateManager = isolateManager ?? IsolateManager(),
        _hasTransactionHistory = hasTransactionHistory {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
@@ -242,6 +278,9 @@ class NodeProvider extends ChangeNotifier {
     _connectivityProvider.addListener(_onConnectivityChanged);
     _walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.addListener(_onWalletItemListChanged);
+
+    _lifecycle = lifecycle ?? FlorestaNodeLifecycle(networkType: _networkType);
+    _lifecycleRefreshSub = _lifecycle.needsWalletRefresh.listen((_) => _refetchWalletsNow());
 
     _checkInitialNetworkState();
   }
@@ -269,7 +308,7 @@ class NodeProvider extends ChangeNotifier {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
         _isPendingInitialization = false;
         initialize().then((_) {
-          reconnect();
+          reconnectIfNeeded();
         });
       }
     } else {
@@ -299,6 +338,11 @@ class NodeProvider extends ChangeNotifier {
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
+    // 임베드 Floresta면 먼저 descriptor 등록 후 구독. Electrum/외부 모드에서는 no-op.
+    _lifecycle.prepareWallets(_walletItemListNotifier.value).then((_) => _runInitialWalletSubscription());
+  }
+
+  void _runInitialWalletSubscription() {
     subscribeWallets().then((result) async {
       if (_isDisposed) return;
       if (result.isFailure) {
@@ -348,9 +392,13 @@ class NodeProvider extends ChangeNotifier {
 
   Future<void> _subscribeNewWallet(WalletItemBase wallet) async {
     if (_newWalletSubscriptions.containsKey(wallet.id)) return;
+    // 마커는 await 이전에 동기적으로 세팅한다. 진행 중 리스트 변경/삭제가
+    // 중복 구독을 막고 늦은 결과를 무시할 수 있게 하기 위함.
     final subscription = Object();
     _newWalletSubscriptions[wallet.id] = subscription;
     final walletType = AnalyticsWalletType.of(wallet);
+    // 임베드 Floresta면 신규 지갑 descriptor를 먼저 등록. Electrum/외부 모드에서는 no-op.
+    await _lifecycle.prepareWallets([wallet]);
     final result = await subscribeWallet(wallet);
 
     // 삭제/동일 ID 재사용/종료 이후 이전 요청의 결과를 새 지갑 결과로 기록하지 않는다.
@@ -427,7 +475,14 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
+      await _lifecycle.ensureStartedFor(_electrumServer, _backend);
+      await _isolateManager.initialize(
+        host,
+        port,
+        ssl,
+        _networkType,
+        pinnedCertFingerprint: pinnedCertFingerprint,
+      );
       if (_isDisposed) {
         await _isolateManager.closeIsolate();
         return;
@@ -726,6 +781,9 @@ class NodeProvider extends ChangeNotifier {
       // Isolate 정리
       await _isolateManager.closeIsolate();
 
+      // 임베드 Floresta 노드 종료
+      await _lifecycle.stop();
+
       // Completer 안전하게 정리
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
@@ -750,7 +808,7 @@ class NodeProvider extends ChangeNotifier {
     final electrumService = ElectrumService();
 
     try {
-      await _establishSocketConnection(electrumService, electrumServer);
+      await _establishSocketConnection(ElectrumChainSource(electrumService), electrumServer);
       await _verifyProtocolCommunication(electrumService);
 
       Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
@@ -767,7 +825,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+  Future<void> _establishSocketConnection(ChainSource service, ElectrumServer server) async {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
     final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
@@ -806,12 +864,11 @@ class NodeProvider extends ChangeNotifier {
   /// 잔액이 0으로 조회되고, 그 결과가 기존 잔액에 그대로 diff 반영되어 덮어써지는 문제가 있어
   /// 전환 자체를 막습니다. 이전에 기록된 genesis hash가 없으면(최초 연결) 그대로 통과시킵니다.
   Future<Result<bool>> _verifyChainCompatibility(ElectrumServer electrumServer) async {
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      await _establishSocketConnection(electrumService, electrumServer);
-      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
-      final genesisHash = features.genesisHash;
+      await _establishSocketConnection(chainSource, electrumServer);
+      final genesisHash = await chainSource.getGenesisHash().timeout(const Duration(seconds: 5));
 
       if (isBuildNetworkGenesisMismatch(buildNetworkType: _networkType, genesisHash: genesisHash)) {
         Logger.error(
@@ -839,7 +896,7 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 체인 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       return Result.failure(ErrorCodes.networkError);
     } finally {
-      await electrumService.close();
+      await chainSource.close();
     }
   }
 
@@ -879,25 +936,30 @@ class NodeProvider extends ChangeNotifier {
     }
 
     final trustedServer = DefaultElectrumServer.regtestServers.first;
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      await _establishSocketConnection(electrumService, trustedServer);
-      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
-      await _sharedPrefs.setBaselineGenesisHash(features.genesisHash);
+      await _establishSocketConnection(chainSource, trustedServer);
+      final genesisHash = await chainSource.getGenesisHash().timeout(const Duration(seconds: 5));
+      await _sharedPrefs.setBaselineGenesisHash(genesisHash);
     } catch (e) {
       Logger.error('NodeProvider: 기본 서버 genesis hash 기록 실패 - ${trustedServer.host}:${trustedServer.port}: $e');
     } finally {
-      await electrumService.close();
+      await chainSource.close();
     }
   }
 
   /// 사용할 엔드포인트만 교체하고, 실제 소켓은 건드리지 않는다.
   /// 일렉트럼 서버 설정 화면에서 사용자가 후보를 고르는 동안 연결/해제가 반복되지 않도록,
   /// 실제 반영은 화면을 벗어나는 시점에 [applyServerChange]로 한 번만 수행한다.
-  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+  Future<Result<bool>> changeServer(
+    ElectrumServer electrumServer, {
+    ChainBackendConfig backend = const ChainBackendConfig.electrum(),
+  }) async {
     if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     try {
+      _backend = backend;
+      await _lifecycle.ensureStartedFor(electrumServer, _backend);
       final chainCheckResult = await _verifyChainCompatibility(electrumServer);
       if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       if (chainCheckResult.isFailure) {
@@ -948,6 +1010,10 @@ class NodeProvider extends ChangeNotifier {
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.removeListener(_onWalletItemListChanged);
+
+    _lifecycleRefreshSub?.cancel();
+    _lifecycleRefreshSub = null;
+    _lifecycle.dispose();
 
     closeConnection();
 

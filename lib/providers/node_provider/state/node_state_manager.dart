@@ -18,7 +18,10 @@ class NodeStateManager implements StateManagerInterface {
   final StreamController<Map<int, ResyncProgress>> _resyncProgressController;
   final StreamController<Map<int, WalletFetchProgress>> _fetchProgressController;
 
-  NodeProviderState _state = const NodeProviderState(nodeSyncState: NodeSyncState.init, registeredWallets: {});
+  NodeProviderState _state = const NodeProviderState(
+    nodeSyncState: NodeSyncState.init,
+    registeredWallets: {},
+  );
   NodeProviderState get state => _state;
 
   Map<int, ResyncProgress> _resyncProgressByWallet = {};
@@ -47,7 +50,10 @@ class NodeStateManager implements StateManagerInterface {
     final prevState = _state;
 
     // 새 상태 생성
-    final newState = _state.copyWith(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
+    final newState = _state.copyWith(
+      newConnectionState: newConnectionState,
+      newUpdatedWallets: newUpdatedWallets,
+    );
 
     // 상태 업데이트
     _state = newState;
@@ -106,7 +112,10 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    _setState(newUpdatedWallets: {..._state.registeredWallets, walletId: WalletUpdateInfo(walletId)}, notify: false);
+    _setState(
+      newUpdatedWallets: {..._state.registeredWallets, walletId: WalletUpdateInfo(walletId)},
+      notify: false,
+    );
   }
 
   /// 지갑의 동기화 상태 증가 및 상태 업데이트
@@ -172,7 +181,10 @@ class NodeStateManager implements StateManagerInterface {
         break;
     }
 
-    final Map<int, WalletUpdateInfo> newUpdatedWallets = {..._state.registeredWallets, walletId: walletUpdateInfo};
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
+      ..._state.registeredWallets,
+      walletId: walletUpdateInfo,
+    };
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
       newConnectionState = NodeSyncState.completed;
@@ -207,7 +219,10 @@ class NodeStateManager implements StateManagerInterface {
       );
     }
 
-    final Map<int, WalletUpdateInfo> newUpdatedWallets = {..._state.registeredWallets, walletId: updateInfo};
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
+      ..._state.registeredWallets,
+      walletId: updateInfo,
+    };
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
       newConnectionState = NodeSyncState.completed;

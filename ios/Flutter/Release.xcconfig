@@ -1,2 +1,8 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Floresta 임베드 FFI. DynamicLibrary.process()가 심볼을 찾으므로 -force_load 필수.
+// 시뮬레이터=apple-ios-sim, 실기기=apple-ios(arm64). 둘 다 `make ios-lib`로 빌드한다.
+// 네이티브 의존성: libc++/libiconv (System/libm/libc 는 기본 링크).
+OTHER_LDFLAGS[sdk=iphonesimulator*] = $(inherited) -force_load "$(SRCROOT)/../native/floresta_ffi/target/aarch64-apple-ios-sim/release/libfloresta_ffi.a" -lc++ -liconv
+OTHER_LDFLAGS[sdk=iphoneos*] = $(inherited) -force_load "$(SRCROOT)/../native/floresta_ffi/target/aarch64-apple-ios/release/libfloresta_ffi.a" -lc++ -liconv
