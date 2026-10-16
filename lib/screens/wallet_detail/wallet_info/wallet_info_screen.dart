@@ -206,7 +206,12 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
 class _WalletInfoScreenState extends State<WalletInfoScreen> {
   Widget _focus(WalletInfoTarget target, Widget child) =>
       widget.initialTarget == target
-          ? FeatureSearchFocus(key: ValueKey('wallet-info-focus-${target.name}'), child: child)
+          ? FeatureSearchFocus(
+            key: ValueKey('wallet-info-focus-${target.name}'),
+            // WalletInfoItemCard is rounder than the menu rows.
+            borderRadius: BorderRadius.circular(target == WalletInfoTarget.appearance ? 24 : 12),
+            child: child,
+          )
           : child;
   final GlobalKey _walletTooltipKey = GlobalKey();
   final GlobalKey<_MnemonicBackupButtonState> _mnemonicBackupButtonKey = GlobalKey<_MnemonicBackupButtonState>();

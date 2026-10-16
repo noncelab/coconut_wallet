@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -23,8 +25,10 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_info_item_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -239,6 +243,8 @@ void main() {
     expect(model.targetSats, isNull);
   });
 
+  const captureKey = ValueKey('wallet-info-capture');
+
   Future<_Analytics> openTargetSheet(
     WidgetTester tester, {
     WalletInfoTarget? focus,
@@ -265,13 +271,16 @@ void main() {
           theme: buildCoconutThemeData(),
           scrollBehavior: const CupertinoScrollBehavior(),
           builder:
-              (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  padding: EdgeInsets.only(bottom: bottomInset),
-                  viewPadding: EdgeInsets.only(bottom: bottomInset),
-                  textScaler: TextScaler.linear(textScale),
+              (context, child) => RepaintBoundary(
+                key: captureKey,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    padding: EdgeInsets.only(bottom: bottomInset),
+                    viewPadding: EdgeInsets.only(bottom: bottomInset),
+                    textScaler: TextScaler.linear(textScale),
+                  ),
+                  child: child!,
                 ),
-                child: child!,
               ),
           home: LoaderOverlay(
             child: WalletInfoScreen(
@@ -337,6 +346,56 @@ void main() {
       expect(walletProvider.walletItemList, hasLength(1));
     });
   }
+
+  testWidgets('wallet name search highlight stays inside the rounded wallet card', (tester) async {
+    await openTargetSheet(tester, focus: WalletInfoTarget.appearance);
+    Future<ByteData> pixels() async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
+      return (await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 1);
+        try {
+          return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        } finally {
+          image.dispose();
+        }
+      }))!;
+    }
+
+    final target = find.byKey(const ValueKey('wallet-info-focus-appearance'));
+    final opacity = find.descendant(of: target, matching: find.byType(AnimatedOpacity));
+    expect(tester.widget<AnimatedOpacity>(opacity).opacity, 1);
+    final card = find.descendant(of: find.byType(WalletInfoItemCard), matching: find.byType(Container)).first;
+    final decoration = tester.widget<Container>(card).decoration! as BoxDecoration;
+    final cardShape = (decoration.borderRadius! as BorderRadius).toRRect(tester.getRect(card));
+    final targetRect = tester.getRect(target);
+    final highlighted = await pixels();
+
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.widget<AnimatedOpacity>(opacity).opacity, 0);
+    expect(tester.getRect(target), targetRect);
+    final normal = await pixels();
+    final width = tester.view.physicalSize.width.toInt();
+    var outsideSamples = 0;
+    var changedOutside = 0;
+    var changedInside = 0;
+    for (var y = targetRect.top.ceil(); y < targetRect.bottom.floor(); y++) {
+      for (var x = targetRect.left.ceil(); x < targetRect.right.floor(); x++) {
+        final point = Offset(x + 0.5, y + 0.5);
+        final changed = highlighted.getUint32((y * width + x) * 4) != normal.getUint32((y * width + x) * 4);
+        // Exclude the card's antialiased edge, not the highlight's own shape.
+        if (!cardShape.inflate(1).contains(point)) {
+          outsideSamples++;
+          if (changed) changedOutside++;
+        } else if (cardShape.deflate(2).contains(point) && changed) {
+          changedInside++;
+        }
+      }
+    }
+    expect(outsideSamples, greaterThan(20));
+    expect(changedOutside, 0, reason: 'Highlight must not paint outside the rounded card corners.');
+    expect(changedInside, greaterThan(100), reason: 'The card must actually be highlighted.');
+  });
 
   testWidgets('saved event follows persistence and contains no amount', (tester) async {
     final analytics = await openTargetSheet(tester);
