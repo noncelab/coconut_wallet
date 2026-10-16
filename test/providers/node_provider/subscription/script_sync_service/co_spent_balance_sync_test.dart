@@ -114,7 +114,7 @@ void main() {
       final dtoReceive = SubscribeScriptStreamDto(walletItem: wallet, scriptStatus: scriptStatusReceive);
       final dtoChange = SubscribeScriptStreamDto(walletItem: wallet, scriptStatus: scriptStatusChange);
 
-      final electrumService = ScriptSyncServiceMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.chainSource;
 
       when(
         electrumService.getHistory(any, addressReceive),

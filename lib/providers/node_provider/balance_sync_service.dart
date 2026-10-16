@@ -4,19 +4,19 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 
 /// NodeProvider의 잔액 관련 기능을 담당하는 매니저 클래스
 class BalanceSyncService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final StateManagerInterface _stateManager;
   final AddressRepository _addressRepository;
   final WalletRepository _walletRepository;
 
-  BalanceSyncService(this._electrumService, this._stateManager, this._addressRepository, this._walletRepository);
+  BalanceSyncService(this._chainSource, this._stateManager, this._addressRepository, this._walletRepository);
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
@@ -42,7 +42,7 @@ class BalanceSyncService {
     required int index,
     required bool isChange,
   }) async {
-    final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, address);
+    final balanceResponse = await _chainSource.getBalance(walletItem.walletBase.addressType, address);
 
     // GetBalanceRes에서 Balance 객체로 변환
     final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
@@ -90,7 +90,7 @@ class BalanceSyncService {
         // 배치 내에서 병렬 처리
         final batchFutures = batch.map((script) async {
           try {
-            final balanceResponse = await _electrumService.getBalance(
+            final balanceResponse = await _chainSource.getBalance(
               walletItem.walletBase.addressType,
               script.address,
             );
@@ -121,7 +121,7 @@ class BalanceSyncService {
       // 기존 방식
       // for (var script in scriptStatuses) {
       //   final balanceResponse =
-      //       await _electrumService.getBalance(walletItem.walletBase.addressType, script.address);
+      //       await _chainSource.getBalance(walletItem.walletBase.addressType, script.address);
 
       //   balanceUpdates.add(UpdateAddressBalanceDto(
       //     scriptStatus: script,

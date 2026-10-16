@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/state/state_manager_inter
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -20,7 +20,7 @@ import '../../../utils/electrum_utils.dart';
 
 /// 스크립트 구독 처리를 담당하는 클래스
 class SubscriptionService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final StateManagerInterface _stateManager;
   final AddressRepository _addressRepository;
   final SubscriptionRepository _subscriptionRepository;
@@ -33,7 +33,7 @@ class SubscriptionService {
   final Map<int, Completer<Result<bool>>> _subscriptionCompleters = {};
 
   SubscriptionService(
-    this._electrumService,
+    this._chainSource,
     this._stateManager,
     this._addressRepository,
     this._subscriptionRepository,
@@ -214,7 +214,7 @@ class SubscriptionService {
       return;
     }
 
-    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+    await _chainSource.unsubscribeScript(walletItem.walletBase.addressType, address);
     walletItem.subscribedScriptMap.remove(script);
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
@@ -402,7 +402,7 @@ class SubscriptionService {
       _handleScriptUpdate(reversedScriptHash, scriptStatus, walletItem, scriptStatusController);
     }
 
-    final status = await _electrumService.subscribeScriptForWallet(
+    final status = await _chainSource.subscribeScriptForWallet(
       walletItem.walletBase.addressType,
       address,
       walletId: walletItem.id,
@@ -528,7 +528,7 @@ class SubscriptionService {
 
     await Future.wait(
       addressesToUnsubscribe.map((address) {
-        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+        return _chainSource.unsubscribeScript(walletItem.walletBase.addressType, address);
       }),
     );
   }

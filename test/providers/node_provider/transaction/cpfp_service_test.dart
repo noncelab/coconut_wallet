@@ -9,7 +9,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -21,14 +21,14 @@ import '../../../repository/realm/test_realm_manager.dart';
 import '../../../services/shared_prefs_service_test.mocks.dart';
 import 'rbf_service_test.mocks.dart';
 
-@GenerateMocks([ElectrumService])
+@GenerateMocks([ChainSource])
 void main() {
   group('CpfpService', () {
     TestRealmManager? realmManager;
     late TransactionRepository transactionRepository;
     late WalletRepository walletRepository;
     late UtxoRepository utxoRepository;
-    late MockElectrumService electrumService;
+    late MockChainSource electrumService;
     late CpfpService cpfpService;
 
     const int walletId = 1;
@@ -56,7 +56,7 @@ void main() {
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
-      electrumService = MockElectrumService();
+      electrumService = MockChainSource();
       cpfpService = CpfpService(transactionRepository, utxoRepository, electrumService);
       walletRepository.addSinglesigWallet(
         WatchOnlyWallet(

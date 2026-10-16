@@ -27,7 +27,7 @@ class ScriptSyncServiceMock {
   static int callSubscribeWalletCount = 0;
   static List<String> unsubscribedAddresses = [];
   static List<String> subscribedAddresses = [];
-  static late MockElectrumService electrumService;
+  static late MockChainSource chainSource;
   static late NodeStateManager stateManager;
   static TestRealmManager? realmManager;
   static late UtxoRepository utxoRepository;
@@ -69,7 +69,7 @@ class ScriptSyncServiceMock {
     callSubscribeWalletCount = 0;
     unsubscribedAddresses = [];
     subscribedAddresses = [];
-    electrumService = MockElectrumService();
+    chainSource = MockChainSource();
     stateManager = NodeStateManager(
       () {},
       StreamController<NodeSyncState>.broadcast(),
@@ -95,19 +95,19 @@ class ScriptSyncServiceMock {
 
     // 의존성 순서를 고려한 매니저 초기화
     utxoSyncService = UtxoSyncService(
-      electrumService,
+      chainSource,
       stateManager,
       utxoRepository,
       transactionRepository,
       addressRepository,
     );
 
-    transactionRecordService = TransactionRecordService(electrumService, addressRepository);
+    transactionRecordService = TransactionRecordService(chainSource, addressRepository);
 
-    balanceSyncService = BalanceSyncService(electrumService, stateManager, addressRepository, walletRepository);
+    balanceSyncService = BalanceSyncService(chainSource, stateManager, addressRepository, walletRepository);
 
     transactionSyncService = TransactionSyncService(
-      electrumService,
+      chainSource,
       transactionRepository,
       transactionRecordService,
       stateManager,

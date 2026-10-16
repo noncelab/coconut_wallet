@@ -52,7 +52,7 @@ void main() {
       );
       await ScriptSyncServiceMock.addressRepository.ensureAddressesInit(walletItemBase: wallet);
 
-      final electrumService = ScriptSyncServiceMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.chainSource;
       when(
         electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),
       ).thenAnswer((_) async => null);

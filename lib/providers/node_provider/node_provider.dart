@@ -24,6 +24,8 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.d
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
+import 'package:coconut_wallet/services/electrum_chain_source.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -750,7 +752,7 @@ class NodeProvider extends ChangeNotifier {
     final electrumService = ElectrumService();
 
     try {
-      await _establishSocketConnection(electrumService, electrumServer);
+      await _establishSocketConnection(ElectrumChainSource(electrumService), electrumServer);
       await _verifyProtocolCommunication(electrumService);
 
       Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
@@ -767,7 +769,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+  Future<void> _establishSocketConnection(ChainSource service, ElectrumServer server) async {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
     final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
@@ -806,12 +808,11 @@ class NodeProvider extends ChangeNotifier {
   /// 잔액이 0으로 조회되고, 그 결과가 기존 잔액에 그대로 diff 반영되어 덮어써지는 문제가 있어
   /// 전환 자체를 막습니다. 이전에 기록된 genesis hash가 없으면(최초 연결) 그대로 통과시킵니다.
   Future<Result<bool>> _verifyChainCompatibility(ElectrumServer electrumServer) async {
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      await _establishSocketConnection(electrumService, electrumServer);
-      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
-      final genesisHash = features.genesisHash;
+      await _establishSocketConnection(chainSource, electrumServer);
+      final genesisHash = await chainSource.getGenesisHash().timeout(const Duration(seconds: 5));
 
       if (isBuildNetworkGenesisMismatch(buildNetworkType: _networkType, genesisHash: genesisHash)) {
         Logger.error(
@@ -839,7 +840,7 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 체인 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       return Result.failure(ErrorCodes.networkError);
     } finally {
-      await electrumService.close();
+      await chainSource.close();
     }
   }
 
@@ -879,16 +880,16 @@ class NodeProvider extends ChangeNotifier {
     }
 
     final trustedServer = DefaultElectrumServer.regtestServers.first;
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      await _establishSocketConnection(electrumService, trustedServer);
-      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
-      await _sharedPrefs.setBaselineGenesisHash(features.genesisHash);
+      await _establishSocketConnection(chainSource, trustedServer);
+      final genesisHash = await chainSource.getGenesisHash().timeout(const Duration(seconds: 5));
+      await _sharedPrefs.setBaselineGenesisHash(genesisHash);
     } catch (e) {
       Logger.error('NodeProvider: 기본 서버 genesis hash 기록 실패 - ${trustedServer.host}:${trustedServer.port}: $e');
     } finally {
-      await electrumService.close();
+      await chainSource.close();
     }
   }
 
