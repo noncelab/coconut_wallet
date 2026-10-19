@@ -48,7 +48,7 @@ void main() {
         ),
       ];
 
-      for (final width in [320.0, 375.0, 430.0]) {
+      for (final width in [320.0, 375.0, 390.0, 430.0]) {
         tester.view.physicalSize = Size(width, 800);
         List<Rect>? baseline;
 
@@ -56,6 +56,11 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: buildCoconutThemeData(),
+              builder:
+                  (context, child) => MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+                    child: child!,
+                  ),
               home: Scaffold(
                 body: CustomScrollView(
                   slivers: [
@@ -101,7 +106,7 @@ void main() {
           for (var i = 0; i < actions.length; i++) {
             expect(actions[i].left, closeTo(baseline[i].left, 0.01), reason: label);
             expect(actions[i].right, lessThanOrEqualTo(width), reason: label);
-            expect(actions[i].width, 40, reason: label);
+            expect(actions[i].width, 48, reason: label);
           }
           expect(
             tester.getRect(find.byType(HomeConnectionStatusIndicator)).right,
@@ -125,6 +130,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: buildCoconutThemeData(),
+          builder:
+              (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+                child: child!,
+              ),
           home: Scaffold(
             body: CustomScrollView(
               slivers: [

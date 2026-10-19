@@ -107,7 +107,6 @@ view: "보기"
 network: "네트워크"
 electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
-log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
 name: "이름"
 account: "계정"
@@ -611,13 +610,14 @@ wallet_home_screen:
     title: "새 지갑 생성하기"
     wallet_created_title: "새로운 핫월렛을\n만들었어요!"
     backup_title: "니모닉 백업하기"
-    backup_intro_title: "지갑을 복구할 수 있도록\n니모닉 문구를 백업해 주세요"
     backup_preparation_title: "니모닉을\n안전하게 보관하세요"
     backup_preparation_description: "지갑을 복구하려면 니모닉이 필요합니다. 잃어버리거나 다른 사람에게 노출되지 않도록 안전하게 보관하세요."
     backup_tips_1: "종이나 금속에 정확하게 기록하세요."
     backup_tips_2: "사진이나 디지털 파일로 저장하지 마세요."
     backup_tips_3: "다른 사람이 접근할 수 없는 곳에 보관하세요."
     backup_start: "백업 시작하기"
+    backup_later_title: "니모닉 백업은 나중에 할 수 있어요"
+    backup_later_description: "나중에 지갑 설정 > 니모닉 백업에서 다시 백업할 수 있어요."
     mnemonic_backup_guide: "안전한 장소에서 니모닉 문구를 백업해 주세요"
     mnemonic_warning_title: "니모닉 문구는 지갑의 열쇠입니다"
     mnemonic_warning_description: "이 단어를 알면 누구든 비트코인을 가져갈 수 있습니다. 주변에 다른 사람이나 카메라가 없는지 꼭 확인하세요."
@@ -1048,6 +1048,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도 기기에서 관리하고, 잔액은 앱에서 확인할 수 있어요."
   utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
   n_utxos(param=count):
@@ -1065,6 +1066,10 @@ send_screen:
   use_btc_unit: "BTC 단위 사용"
   input_maximum_amount: "모두 보내기"
   address_placeholder: "받을 주소를 입력해 주세요"
+  vault_address_placeholder: "받을 주소를 선택해 주세요"
+  vault_addresses: "$name의 주소"
+  vault_nth_address: "${n}번째 받기 주소"
+  vault_recipient_summary: "수신 주소 ${count}개 • 총 $amount"
   recommended_fee_unavailable: "추천 수수료 조회 실패"
   recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
@@ -1087,6 +1092,13 @@ send_screen:
 utxo_selection_screen:
   title: "UTXO 고르기"
   skip: "건너뛰기"
+  empty_title: "선택할 수 있는 UTXO가 없어요"
+  empty_description: "받은 비트코인의 입금이 확정되면 여기에서 선택할 수 있어요."
+  empty_filtered_title: "조건에 맞는 UTXO가 없어요"
+  empty_filtered_description: "다른 태그를 선택하거나 필터를 초기화해 주세요."
+  reset_filter: "필터 초기화"
+  load_error_title: "UTXO 목록을 불러오지 못했어요"
+  load_error_description: "잠시 후 다시 시도해 주세요."
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO 선택"
@@ -1289,6 +1301,7 @@ settings_screen:
   change_password: "비밀번호 바꾸기"
   fiat: "법정 화폐"
   language: "언어"
+  number_format: "숫자 형식"
   utxo_manual_selection: "UTXO 수동 선택"
   utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
   import_labels: "메모 가져오기"
@@ -1338,22 +1351,6 @@ settings_screen:
       connecting: "주소를 확인 중입니다..."
       connected: "주소가 확인되었습니다."
       failed: "주소를 확인할 수 없습니다!"
-  log_viewer_screen:
-    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드로 문의해 주세요."
-    log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
-    log_target: "[로깅 대상]"
-    log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
-    log_target_description_2: "브로드캐스트 실패 구간 원인을 로깅합니다."
-    clear_log: "로그 지우기"
-    clear_log_description: "로그를 지우시겠어요?"
-    email_subject: "[코코넛 월렛] Debug Log"
-    email_body: "상황: (여기에 어떤 상황에서 발생한 문제인지 간략히 적어주세요)"
-    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널에 올려주세요."
-    buttons:
-      discord: "디스코드 가기"
-      copy: "로그 복사"
-      toast:
-        copy_success: "로그가 복사되었어요."
 
 address_list_screen:
   wallet_name: "$name의 주소"
@@ -1442,6 +1439,16 @@ utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
 wallet_detail_screen:
+  vault_select_receiving_wallet_description: "비트코인을 받을 보기 전용 지갑을 선택해 주세요."
+  vault_select_receiving_wallet: "받을 금고 선택"
+  vault_connect_watch_only_wallet: "금고 확인용 지갑 연결하기"
+  vault_watch_only_description: "앱에 ‘금고 확인용(보기 전용) 지갑’을 등록해 보세요. 전용 기기를 매번 켜지 않아도, 비트코인이 잘 있는지 앱에서 실시간으로 안전하게 볼 수 있습니다."
+  vault_watch_only_title: "기기는 오프라인에 두고, 자산은 앱에서 편하게 확인하세요!"
+  vault_no_balance_title: "지금은 보낼 수 있는 비트코인이 없어요"
+  vault_no_balance_description: "비트코인을 받은 뒤 다시 이용해 주세요"
+  vault_description: "지금 쓰고 계신 지갑은 입출금이 편리한 대신, 큰돈을 오래 넣어두기엔 불안할 수 있어요.\n‘금고’는 인터넷이 연결되지 않는 별도의 전용 기기에 비트코인을 보관하는 것을 말해요. 은행에서도 큰 자산은 따로 금고에 보관하는 것과 비슷해요. 이 방법은 외부 해킹 위협으로부터 자산을 격리해 주기 때문에 가장 안전합니다."
+  vault_intro: "내 비트코인을 안전하게 지키는 방법, ‘금고’"
+  move_to_vault: "금고에 넣기"
   recent_transactions: "최근 트랜잭션"
   view_all: "모두 보기"
   never_used_wallet: "사용한 적 없는 지갑이에요"
@@ -1769,6 +1776,8 @@ label_export_screen:
   create_file: "파일 만들기"
   view_list: "목록 보기"
   no_wallet: "지갑을 찾을 수 없어요."
+  empty_wallet_title: "아직 추가된 지갑이 없어요"
+  empty_wallet_description: "지갑을 추가하면 거래 메모와 UTXO 태그를 내보낼 수 있어요."
   no_file: "파일을 찾을 수 없어요.\n먼저 [파일 만들기]에서 파일을 생성해 주세요."
   loading_title: "파일을 만들고 있어요"
   success_title: "파일을 공유할까요?"
@@ -2055,12 +2064,15 @@ fiat_bottom_sheet:
   eur_price: "바이낸스 기준"
 
 language_bottom_sheet:
-  title: "언어 설정"   
+  title: "언어 설정"
   korean: "한국어"
   english: "English"
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "숫자 형식"
 
 estimated_fee_bottom_sheet:
     title: "예상 수수료"

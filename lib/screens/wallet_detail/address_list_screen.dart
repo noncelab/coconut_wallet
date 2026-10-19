@@ -31,6 +31,7 @@ class AddressListScreen extends StatefulWidget {
   final double paddingTop;
   final Color? backgroundColor;
   final bool initialShowOnlyWatchedAddresses;
+  final bool? initialShowOnlyUnusedAddresses;
 
   const AddressListScreen({
     super.key,
@@ -39,6 +40,7 @@ class AddressListScreen extends StatefulWidget {
     this.paddingTop = 0,
     this.backgroundColor,
     this.initialShowOnlyWatchedAddresses = false,
+    this.initialShowOnlyUnusedAddresses,
   });
 
   @override
@@ -52,6 +54,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
   bool _isLoadMoreRunning = false;
   bool _isScrollingToTop = false;
   bool _isReceivingSelected = true;
+  bool? _localUnusedFilter;
+
+  bool get _showOnlyUnusedAddresses => _localUnusedFilter ?? context.read<PreferenceProvider>().showOnlyUnusedAddresses;
 
   /// 모니터링 중인 주소만 보기
   bool _showOnlyWatchedAddresses = false;
@@ -85,9 +90,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
       value: viewModel,
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
-          final showOnlyUnusedAddresses = context.select<PreferenceProvider, bool>(
+          final savedUnusedFilter = context.select<PreferenceProvider, bool>(
             (provider) => provider.showOnlyUnusedAddresses,
           );
+          final showOnlyUnusedAddresses = _localUnusedFilter ?? savedUnusedFilter;
           List<WalletAddress> addressList;
           if (_showOnlyWatchedAddresses) {
             addressList = _filteredWatchedAddresses(_isReceivingSelected, showOnlyUnusedAddresses);
@@ -152,6 +158,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   void initState() {
     super.initState();
     final preferenceProvider = context.read<PreferenceProvider>();
+    _localUnusedFilter = widget.initialShowOnlyUnusedAddresses;
 
     viewModel = AddressListViewModel(context.read<WalletProvider>(), context.read<NodeProvider>(), widget.id);
     _currentUnit = preferenceProvider.currentUnit;
@@ -200,7 +207,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
     }
 
-    final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
+    final showOnlyUnusedAddresses = _showOnlyUnusedAddresses;
 
     if (_isReceivingSelected) {
       viewModel.receivingAddressList.clear();
@@ -259,7 +266,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
         padding: padding,
         child: Row(
           children: [
-            CoconutCheckbox(isSelected: isSelected, onChanged: (_) => onToggle(), width: 14),
+            CoconutCheckbox(
+              isSelected: isSelected,
+              onChanged: (_) => onToggle(),
+              width: 14,
+              color: context.coconutColors.iconPrimary,
+              unSelectedColor: context.coconutColors.iconPrimary,
+              inactiveColor: context.coconutColors.iconDisabled,
+            ),
             CoconutLayout.spacing_150w,
             Expanded(
               child: FittedBox(
@@ -277,12 +291,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Widget _buildShowOnlyUsedAddressesButton() {
     return Selector<PreferenceProvider, bool>(
       selector: (_, viewModel) => viewModel.showOnlyUnusedAddresses,
-      builder: (context, showOnlyUnusedAddresses, child) {
+      builder: (context, savedUnusedFilter, child) {
+        final showOnlyUnusedAddresses = _localUnusedFilter ?? savedUnusedFilter;
         return _buildFilterToggleRow(
           isSelected: showOnlyUnusedAddresses,
           label: t.address_list_screen.show_only_unused_address,
           onToggle: () {
-            context.read<PreferenceProvider>().changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+            if (_localUnusedFilter != null) {
+              setState(() => _localUnusedFilter = !showOnlyUnusedAddresses);
+            } else {
+              context.read<PreferenceProvider>().changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+            }
             scrollToTop().then((_) => _initializeAddressList());
           },
           padding: const EdgeInsets.only(left: 12, right: 16, top: 8),
@@ -555,7 +574,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         cursor,
         kAddressLoadCount,
         !_isReceivingSelected,
-        context.read<PreferenceProvider>().showOnlyUnusedAddresses,
+        _showOnlyUnusedAddresses,
       );
 
       // UI 업데이트 - 탭 상태가 변경되지 않았을 때만 데이터 추가

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
 import 'package:flutter/material.dart';
@@ -37,7 +38,17 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
   late final AnimationController _backgroundController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 22),
-  )..repeat();
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _backgroundController.reset();
+    } else if (!_backgroundController.isAnimating) {
+      _backgroundController.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -150,68 +161,97 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(Sizes.size16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        BrandIconPath.coconutPlanet,
-                        width: Sizes.size18,
-                        height: Sizes.size18,
-                        colorFilter: const ColorFilter.mode(_iconColor, BlendMode.srcIn),
-                      ),
-                      CoconutLayout.spacing_200w,
-                      Expanded(
-                        child: Text(
-                          widget.intro.title,
-                          style: CoconutTypography.body2_14_Bold.setColor(_primaryTextColor),
-                        ),
-                      ),
-                      if (widget.showDismissButton && widget.onDismiss != null) ...[
-                        CoconutLayout.spacing_200w,
-                        GestureDetector(
-                          onTap: widget.onDismiss,
-                          child: SvgPicture.asset(
-                            CommonActionIconPath.close,
-                            width: Sizes.size20,
-                            height: Sizes.size20,
-                            colorFilter: const ColorFilter.mode(_iconSecondaryColor, BlendMode.srcIn),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  CoconutLayout.spacing_300h,
-                  Text(widget.intro.headline, style: CoconutTypography.body3_12_Bold.setColor(_primaryTextColor)),
-                  CoconutLayout.spacing_100h,
-                  Text(widget.intro.description, style: CoconutTypography.body3_12.setColor(_secondaryTextColor)),
-                  CoconutLayout.spacing_200h,
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ShrinkTapWrapper(
-                      onTap: widget.onTap,
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            widget.intro.ctaLabel,
-                            style: CoconutTypography.caption_10_Bold.setColor(_primaryTextColor),
-                          ),
-                          CoconutLayout.spacing_300w,
                           SvgPicture.asset(
-                            CommonNavigationIconPath.arrowRight,
-                            width: Sizes.size10,
-                            height: Sizes.size10,
+                            BrandIconPath.coconutPlanet,
+                            width: Sizes.size18,
+                            height: Sizes.size18,
                             colorFilter: const ColorFilter.mode(_iconColor, BlendMode.srcIn),
                           ),
+                          CoconutLayout.spacing_200w,
+                          Expanded(
+                            child: Text(
+                              widget.intro.title,
+                              style: CoconutTypography.body2_14_Bold.setColor(_primaryTextColor),
+                            ),
+                          ),
+                          if (widget.showDismissButton && widget.onDismiss != null) ...[
+                            CoconutLayout.spacing_200w,
+                            ExcludeSemantics(
+                              child: SvgPicture.asset(
+                                CommonActionIconPath.close,
+                                width: Sizes.size20,
+                                height: Sizes.size20,
+                                colorFilter: const ColorFilter.mode(_iconSecondaryColor, BlendMode.srcIn),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    if (widget.showDismissButton && widget.onDismiss != null)
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        right: 2,
+                        width: 48,
+                        child: Semantics(
+                          label: t.close,
+                          button: true,
+                          onTap: widget.onDismiss,
+                          excludeSemantics: true,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: widget.onDismiss,
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.intro.headline, style: CoconutTypography.body3_12_Bold.setColor(_primaryTextColor)),
+                      CoconutLayout.spacing_100h,
+                      Text(widget.intro.description, style: CoconutTypography.body3_12.setColor(_secondaryTextColor)),
+                      CoconutLayout.spacing_200h,
+                      SizedBox(height: _ctaLabelHeight(context)),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            Positioned(
+              bottom: 0,
+              right: 16,
+              child: Semantics(
+                label: widget.intro.ctaLabel,
+                button: true,
+                onTap: widget.onTap,
+                excludeSemantics: true,
+                child: ShrinkTapWrapper(
+                  onTap: widget.onTap,
+                  shrinkScale: 0.97,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    padding: const EdgeInsets.only(bottom: 16),
+                    color: Colors.transparent,
+                    alignment: Alignment.bottomRight,
+                    child: _buildCtaLabel(),
+                  ),
+                ),
               ),
             ),
           ],
@@ -219,6 +259,31 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
       ),
     );
   }
+
+  double _ctaLabelHeight(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(text: widget.intro.ctaLabel, style: CoconutTypography.caption_10_Bold),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final height = math.max(painter.height, Sizes.size10);
+    painter.dispose();
+    return height;
+  }
+
+  Widget _buildCtaLabel() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(widget.intro.ctaLabel, style: CoconutTypography.caption_10_Bold.setColor(_primaryTextColor)),
+      CoconutLayout.spacing_300w,
+      SvgPicture.asset(
+        CommonNavigationIconPath.arrowRight,
+        width: Sizes.size10,
+        height: Sizes.size10,
+        colorFilter: const ColorFilter.mode(_iconColor, BlendMode.srcIn),
+      ),
+    ],
+  );
 }
 
 class _AnimatedGlowOrb extends StatelessWidget {

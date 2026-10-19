@@ -96,7 +96,10 @@ class _Connectivity extends ChangeNotifier implements ConnectivityProvider {
   }
 }
 
-class _WalletItem extends Mock implements WalletItemBase {}
+class _WalletItem extends Mock implements WalletItemBase {
+  @override
+  int get id => 1;
+}
 
 class _ControlledIsolate extends Mock implements IsolateManager {
   final states = StreamController<IsolateStateMessage>.broadcast();

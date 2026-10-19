@@ -114,8 +114,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, List<TransactionRecord>> _recentTransactions = {};
   Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
   List<Tuple2<int, TransactionRecord>> get orderedRecentTransactions {
+    final walletIds = _walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
     final flatTxs =
-        _recentTransactions.entries.expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx))).toList();
+        _recentTransactions.entries
+            .where((entry) => walletIds.contains(entry.key))
+            .expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx)))
+            .toList();
 
     final pendingStatuses = {TransactionStatus.receiving, TransactionStatus.sending, TransactionStatus.selfsending};
     final confirmedStatuses = {TransactionStatus.received, TransactionStatus.sent, TransactionStatus.self};
@@ -431,6 +435,9 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
+    // deleting 상태에서 먼저 목록에서 빠지므로 DB 거래 삭제를 기다리지 않습니다.
+    final walletIds = walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
+    _recentTransactions.removeWhere((walletId, _) => !walletIds.contains(walletId));
     loadFavoriteWallets(notify: false);
     notifyListeners();
   }

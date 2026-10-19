@@ -35,7 +35,7 @@ class AllFeaturesScreen extends StatefulWidget {
   State<AllFeaturesScreen> createState() => _AllFeaturesScreenState();
 }
 
-class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
+class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKeepAliveClientMixin<AllFeaturesScreen> {
   static const _searchVerticalPadding = 14.0;
   static const _fakeBalanceIconPath = 'assets/svg/features/widgets/fake-balance-mask.svg';
 
@@ -60,6 +60,9 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     extraFeature: widget.onFakeBalanceTap == null ? null : _fakeBalanceFeature,
   );
   final TextEditingController _controller = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -90,6 +93,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colors = context.coconutColors;
     return ChangeNotifierProvider.value(
       value: _viewModel,
@@ -146,7 +150,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
       controller: _controller,
       onChanged: _viewModel.search,
       placeholder: t.all_features.search_placeholder,
-      placeholderStyle: CoconutTypography.body1_16.copyWith(color: colors.tertiaryText),
+      placeholderStyle: CoconutTypography.body1_16.copyWith(color: colors.secondaryTextStrong),
       style: CoconutTypography.body1_16.copyWith(color: colors.primaryText),
       cursorColor: colors.primaryText,
       textInputAction: TextInputAction.search,
@@ -157,16 +161,22 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
             (context, value, _) =>
                 value.text.isEmpty
                     ? const SizedBox.shrink()
-                    : GestureDetector(
+                    : CupertinoButton(
                       key: const Key('all-features-search-clear'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(44, 44),
+                      onPressed: () {
                         _controller.clear();
                         _viewModel.search('');
                       },
                       child: Padding(
-                        padding: const EdgeInsets.only(right: _searchVerticalPadding),
-                        child: Icon(CupertinoIcons.clear_thick_circled, size: 20, color: colors.tertiaryText),
+                        padding: const EdgeInsets.only(left: 10, right: _searchVerticalPadding),
+                        child: Icon(
+                          CupertinoIcons.clear_thick_circled,
+                          size: 20,
+                          color: colors.iconSecondary,
+                          semanticLabel: CupertinoLocalizations.of(context).clearButtonLabel,
+                        ),
                       ),
                     ),
       ),
@@ -284,7 +294,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     );
   }
 
-  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.item, _row(entry));
+  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.launchItem, _row(entry));
 
   Widget _row(AllFeaturesEntry entry) {
     final colors = context.coconutColors;
@@ -296,7 +306,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
               ? const Key('all-features-fake-balance-result')
               : ValueKey('all-features-item-${feature.id}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => _launch(context, feature),
+      onTap: () => _launch(context, entry.launchItem),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Row(

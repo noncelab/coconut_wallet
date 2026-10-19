@@ -339,7 +339,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                 controller: _targetController(wallet.id),
                 focusNode: _targetFocusNodes.putIfAbsent(wallet.id, FocusNode.new),
                 onChanged: (text) {},
-                backgroundColor: colors.background,
+                backgroundColor: colors.inputSurface,
                 maxLength: 19,
                 suffix: Text(t.btc, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
                 errorText:
@@ -402,7 +402,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                 controller: _fakeBalanceController,
                 focusNode: _fakeBalanceFocusNode,
                 onChanged: (text) {},
-                backgroundColor: colors.background,
+                backgroundColor: colors.inputSurface,
                 maxLength: 19,
                 suffix: Text(t.btc, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
                 errorText:

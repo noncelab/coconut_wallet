@@ -192,17 +192,30 @@ class HomeViewModel extends ChangeNotifier {
     return result;
   }
 
-  HomeConfiguration _apply(HomeConfiguration next) {
-    _configuration = HomeGridLayout(next).positionedConfiguration;
+  HomeConfiguration? _previousArrangement;
+
+  bool get canUndoArrangement => _previousArrangement != null;
+
+  void undoArrangement() {
+    final previous = _previousArrangement;
+    if (previous != null) _apply(previous);
+  }
+
+  HomeConfiguration _apply(HomeConfiguration next, {bool rememberArrangement = false}) {
+    final positioned = HomeGridLayout(next).positionedConfiguration;
+    if (rememberArrangement && positioned == _configuration) return _configuration;
+    _previousArrangement = rememberArrangement ? _configuration : null;
+    _configuration = positioned;
     _repository.save(_configuration);
     notifyListeners();
     return _configuration;
   }
 
   void moveToCell(String id, HomeGridPosition position) =>
-      _apply(HomeGridLayout(_configuration).moveToCell(id, position));
+      _apply(HomeGridLayout(_configuration).moveToCell(id, position), rememberArrangement: true);
 
-  void insertBefore(String id, String beforeId) => _apply(HomeGridLayout(_configuration).moveBefore(id, beforeId));
+  void insertBefore(String id, String beforeId) =>
+      _apply(HomeGridLayout(_configuration).moveBefore(id, beforeId), rememberArrangement: true);
 
   void removeItem(String id) => _apply(_configuration.removeItem(id));
 
@@ -368,34 +381,11 @@ class HomeViewModel extends ChangeNotifier {
   /// 위젯 크기를 바꾼다. 키우든 줄이든 앞 항목은 그대로 두고, 그 항목부터 뒤 항목을 순서대로 다시 채운다.
   /// 그래서 키우면 뒤 항목이 밀려나고, 줄이면 생긴 빈칸을 뒤 항목이 당겨 와 채운다.
   void resizeItem(String id, HomeSpan span) {
-    final items = HomeGridLayout(_configuration).itemsInVisualOrder;
-    final index = items.indexWhere((item) => item.id == id);
-    if (index < 0) return;
-    final item = items[index];
+    final item = _configuration.items.where((item) => item.id == id).firstOrNull;
+    if (item == null) return;
     final definition = registry.byId(item.definitionId);
     if (item.span == span || definition == null || !definition.supportedSpans.contains(span)) return;
-    final before = _configuration;
-    _apply(
-      HomeConfiguration(
-        version: before.version,
-        items: [
-          for (final (i, other) in items.indexed)
-            if (i < index)
-              other.copyWith(order: i)
-            else
-              HomeItem(
-                id: other.id,
-                definitionId: other.definitionId,
-                kind: other.kind,
-                order: i,
-                span: i == index ? span : other.span,
-                position: i == 0 && other.position != null ? HomeGridLayout.anchorForSpan(other.position!, span) : null,
-                configuration: other.configuration,
-              ),
-        ],
-        shortcutWalletContext: before.shortcutWalletContext,
-      ),
-    );
+    _apply(HomeGridLayout(_configuration).resizeItem(id, span));
   }
 
   void removeDefinition(HomeItemDefinition definition) {

@@ -29,24 +29,72 @@ class HomeCubePager extends StatefulWidget {
 class HomeCubePagerState extends State<HomeCubePager> {
   final PageController _controller = PageController();
   int _page = 0;
+  int _peekGeneration = 0;
+  bool _isPeeking = false;
+  bool _reduceMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion && _isPeeking) {
+      _peekGeneration++;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _reduceMotion && _isPeeking) cancelPeek();
+      });
+    }
+  }
+
+  void cancelPeek() {
+    _peekGeneration++;
+    if (!_isPeeking) return;
+    _isPeeking = false;
+    if (_controller.hasClients) _controller.jumpToPage(_page);
+  }
 
   void _showHome() {
+    cancelPeek();
+    if (!_controller.hasClients) return;
+    if (_reduceMotion) {
+      _controller.jumpToPage(0);
+      return;
+    }
     _controller.animateToPage(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
   }
 
   void showAllFeatures() {
+    cancelPeek();
+    if (_reduceMotion && _controller.hasClients) {
+      _controller.jumpToPage(1);
+      return;
+    }
     if (!_controller.hasClients) return;
     _controller.animateToPage(1, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
   }
 
   /// 홈을 살짝 밀었다가 되돌리기를 두 번 해서 옆에 All Features가 있다는 걸 보여 준다. 두 번째는 조금 작게
   Future<void> peek() async {
-    for (final ratio in const [0.16, 0.08]) {
-      if (!mounted || !_controller.hasClients || _page != 0 || !_controller.position.haveDimensions) return;
-      final distance = _controller.position.viewportDimension * ratio;
-      await _controller.animateTo(distance, duration: const Duration(milliseconds: 360), curve: Curves.easeOutCubic);
-      if (!mounted || !_controller.hasClients) return;
-      await _controller.animateTo(0, duration: const Duration(milliseconds: 420), curve: Curves.easeInOutCubic);
+    if (_reduceMotion || !widget.swipeEnabled || _isPeeking) return;
+    final generation = ++_peekGeneration;
+    _isPeeking = true;
+    bool canContinue() =>
+        mounted &&
+        generation == _peekGeneration &&
+        !_reduceMotion &&
+        widget.swipeEnabled &&
+        _controller.hasClients &&
+        _page == 0 &&
+        _controller.position.haveDimensions;
+    try {
+      for (final ratio in const [0.16, 0.08]) {
+        if (!canContinue()) return;
+        final distance = _controller.position.viewportDimension * ratio;
+        await _controller.animateTo(distance, duration: const Duration(milliseconds: 360), curve: Curves.easeOutCubic);
+        if (!canContinue()) return;
+        await _controller.animateTo(0, duration: const Duration(milliseconds: 420), curve: Curves.easeInOutCubic);
+      }
+    } finally {
+      if (generation == _peekGeneration) _isPeeking = false;
     }
   }
 
@@ -59,16 +107,17 @@ class HomeCubePagerState extends State<HomeCubePager> {
   Widget _face(int index, Widget child) {
     return AnimatedBuilder(
       animation: _controller,
-      child: child,
+      child: ExcludeFocus(excluding: _page != index, child: child),
       builder: (context, child) {
-        final page = _controller.hasClients && _controller.position.haveDimensions ? _controller.page ?? 0 : 0.0;
+        // 교체된 ScrollPosition은 기존 페이지를 갖고 있어도 첫 레이아웃 전에는 haveDimensions가 false다.
+        final page = _controller.hasClients && _controller.position.hasContentDimensions ? _controller.page ?? 0 : 0.0;
         final offset = (index - page).clamp(-1.0, 1.0);
         return Transform(
           alignment: offset > 0 ? Alignment.centerLeft : Alignment.centerRight,
           transform:
               Matrix4.identity()
                 ..setEntry(3, 2, 0.001)
-                ..rotateY(-offset * HomeCubePager.maxAngle),
+                ..rotateY(_reduceMotion ? 0 : -offset * HomeCubePager.maxAngle),
           child: child,
         );
       },
@@ -82,18 +131,24 @@ class HomeCubePagerState extends State<HomeCubePager> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _showHome();
       },
-      child: PageView(
-        key: const Key('home-cube-pager'),
-        controller: _controller,
-        physics: widget.swipeEnabled ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
-        onPageChanged: (page) {
-          setState(() => _page = page);
-          widget.onPageChanged?.call(page);
-        },
-        children: [
-          _face(0, KeyedSubtree(key: const Key('home-cube-home'), child: widget.home)),
-          _face(1, KeyedSubtree(key: const Key('home-cube-all-features'), child: widget.allFeaturesBuilder(_showHome))),
-        ],
+      child: Listener(
+        onPointerDown: (_) => cancelPeek(),
+        child: PageView(
+          key: const Key('home-cube-pager'),
+          controller: _controller,
+          physics: widget.swipeEnabled ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
+          onPageChanged: (page) {
+            setState(() => _page = page);
+            widget.onPageChanged?.call(page);
+          },
+          children: [
+            _face(0, KeyedSubtree(key: const Key('home-cube-home'), child: widget.home)),
+            _face(
+              1,
+              KeyedSubtree(key: const Key('home-cube-all-features'), child: widget.allFeaturesBuilder(_showHome)),
+            ),
+          ],
+        ),
       ),
     );
   }

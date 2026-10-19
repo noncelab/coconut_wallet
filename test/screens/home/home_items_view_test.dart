@@ -644,7 +644,7 @@ void main() {
     expect(target, const HomeGridPosition(0, 0));
   });
 
-  testWidgets('a 2×2 widget snaps to an even column between two 1×1 shortcuts', (tester) async {
+  testWidgets('a 2×2 widget fits in the center between two 1×1 shortcuts', (tester) async {
     HomeGridPosition? target;
     final registry =
         HomeItemRegistry()
@@ -702,7 +702,7 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
 
-    expect(target, const HomeGridPosition(2, 0));
+    expect(target, const HomeGridPosition(1, 0));
   });
 
   testWidgets('a 4×2 widget drops into row zero from its empty side cell', (tester) async {
@@ -766,7 +766,7 @@ void main() {
     expect(target, const HomeGridPosition(0, 0));
   });
 
-  testWidgets('a wide widget moves ahead when its preview just touches the row above', (tester) async {
+  testWidgets('a wide widget stays put while only its feedback touches the row above', (tester) async {
     HomeGridPosition? target;
     final registry =
         HomeItemRegistry()
@@ -818,6 +818,7 @@ void main() {
 
     final previewTouchesTopRow =
         tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface'))) + const Offset(178, 246);
+    expect(tester.getRect(find.byKey(const ValueKey('home-item-wide'))).contains(previewTouchesTopRow), isTrue);
     final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-wide'))));
     await tester.pump(const Duration(milliseconds: 600));
     await gesture.moveTo(previewTouchesTopRow);
@@ -825,7 +826,7 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
 
-    expect(target, const HomeGridPosition(0, 0));
+    expect(target, const HomeGridPosition(0, 2));
   });
 
   testWidgets('a wide widget dropped over a shortcut moves ahead of that whole row', (tester) async {
@@ -1107,16 +1108,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await gesture.moveTo(target);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(insertedBefore, isNull);
-    final tweenA = tester.widget<TweenAnimationBuilder<Offset>>(
-      find.ancestor(
-        of: find.byKey(const ValueKey('home-item-a')),
-        matching: find.byType(TweenAnimationBuilder<Offset>),
-      ),
-    );
-    expect(tweenA.tween.end, const Offset(184, 0));
     expect(tester.getTopLeft(find.byKey(const ValueKey('home-item-a'))), originalB);
     expect(tester.getTopLeft(find.byKey(const ValueKey('home-item-b'))).dy, greaterThan(originalA.dy));
     final borders = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
@@ -1154,7 +1149,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
     final preview = {
       for (final id in ['a', 'b', 'c']) id: tester.getTopLeft(find.byKey(ValueKey('home-item-$id'))),
     };
@@ -1164,6 +1160,72 @@ void main() {
     for (final id in preview.keys) {
       expect(tester.getTopLeft(find.byKey(ValueKey('home-item-$id'))), preview[id], reason: id);
     }
+  });
+
+  testWidgets('passing over a neighbor briefly does not move it', (tester) async {
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: SingleChildScrollView(
+          child: HomeItemsView(configuration: threeItems(), registry: threeRegistry(), onInsertBefore: (_, __) {}),
+        ),
+      ),
+    );
+    final a = find.byKey(const ValueKey('home-item-a'));
+    final b = find.byKey(const ValueKey('home-item-b'));
+    final originalA = tester.getTopLeft(a);
+    final originalB = tester.getTopLeft(b);
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-c'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(tester.getCenter(a));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(tester.getTopLeft(a), originalA);
+    expect(tester.getTopLeft(b), originalB);
+
+    await gesture.moveTo(tester.getCenter(b));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(tester.getTopLeft(a), originalA);
+    expect(tester.getTopLeft(b), originalB);
+    await gesture.cancel();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a stable hover makes room gradually without saving before release', (tester) async {
+    var drops = 0;
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: SingleChildScrollView(
+          child: HomeItemsView(
+            configuration: threeItems(),
+            registry: threeRegistry(),
+            onInsertBefore: (_, __) => drops++,
+          ),
+        ),
+      ),
+    );
+    final a = find.byKey(const ValueKey('home-item-a'));
+    final origin = tester.getTopLeft(a);
+    final destination = tester.getTopLeft(find.byKey(const ValueKey('home-item-b')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-c'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(tester.getCenter(a));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.getTopLeft(a), origin);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    final moving = tester.getTopLeft(a);
+    expect(moving.dx, greaterThan(origin.dx));
+    expect(moving.dx, lessThan(destination.dx));
+    expect(drops, 0);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.getTopLeft(a), destination);
+    expect(drops, 0);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(drops, 1);
   });
 
   testWidgets('dropping below the content lands on the cell under the finger', (tester) async {
@@ -1370,42 +1432,66 @@ void main() {
       VoidCallback? onArrangeDone,
       void Function(HomeItem item)? onRemove,
       List<String>? selected,
+      ValueNotifier<bool>? motionSetting,
+      bool accessibleNavigation = false,
     }) {
+      var arranging = isArranging;
       return tester.pumpWidget(
         MaterialApp(
           theme: buildCoconutThemeData(),
-          home: Center(
-            child: SizedBox(
-              width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
-              child: HomeItemsView(
-                configuration: configuration,
-                registry: registry,
-                onMoveToCell: onMoveToCell ?? (_, __) {},
-                menuItemsOf:
-                    (item) => [
-                      LongPressedMenuItem(
-                        title: 'move ${item.id}',
-                        iconPath: CommonActionIconPath.editHome,
-                        onSelected: () => selected?.add(item.id),
+          builder:
+              (context, child) =>
+                  motionSetting == null
+                      ? child!
+                      : ValueListenableBuilder<bool>(
+                        valueListenable: motionSetting,
+                        builder:
+                            (context, reduced, _) => MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                disableAnimations: !accessibleNavigation && reduced,
+                                accessibleNavigation: accessibleNavigation && reduced,
+                              ),
+                              child: child!,
+                            ),
                       ),
-                    ],
-                isArranging: isArranging,
-                onArrangeDone: onArrangeDone,
-                onRemove: onRemove,
-              ),
-            ),
+          home: StatefulBuilder(
+            builder:
+                (context, update) => Center(
+                  child: SizedBox(
+                    width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
+                    child: HomeItemsView(
+                      configuration: configuration,
+                      registry: registry,
+                      onMoveToCell: onMoveToCell ?? (_, __) {},
+                      menuItemsOf:
+                          (item) => [
+                            LongPressedMenuItem(
+                              title: 'move ${item.id}',
+                              iconPath: CommonActionIconPath.editHome,
+                              onSelected: () => selected?.add(item.id),
+                            ),
+                          ],
+                      isArranging: arranging,
+                      onArrangeStart: () => update(() => arranging = true),
+                      onArrangeDone: () {
+                        onArrangeDone?.call();
+                        update(() => arranging = false);
+                      },
+                      onRemove: onRemove,
+                    ),
+                  ),
+                ),
           ),
         ),
       );
     }
 
-    testWidgets('a long press opens the menu instead of dragging', (tester) async {
+    testWidgets('a stationary long press opens the menu without moving the item', (tester) async {
       var moved = false;
       await pumpGrid(tester, onMoveToCell: (_, __) => moved = true);
 
       final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
       await tester.pump(const Duration(milliseconds: 600));
-      await gesture.moveBy(const Offset(0, 200));
       await gesture.up();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -1422,6 +1508,107 @@ void main() {
         find.byWidgetPredicate((w) => w is LongPressedMenuWidget && w.useGlassOverlay && w.preferMenuBelow),
         findsWidgets,
       );
+    });
+
+    testWidgets('holding then dragging a widget moves it without a separate edit-menu tap', (tester) async {
+      HomeGridPosition? movedTo;
+      var drops = 0;
+      await pumpGrid(
+        tester,
+        onMoveToCell: (id, position) {
+          expect(id, 'a');
+          movedTo = position;
+          drops++;
+        },
+      );
+      final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+      final destination = surface + const Offset(86, 2 * 92 + 86);
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveTo(destination);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(drops, 0);
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(movedTo, const HomeGridPosition(0, 2));
+      expect(drops, 1);
+      expect(find.text('move a'), findsNothing);
+      expect(tester.widget<HomeItemsView>(find.byType(HomeItemsView)).isArranging, isTrue);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('minor finger jitter during a long press keeps the menu and does not start arranging', (tester) async {
+      var drops = 0;
+      await pumpGrid(tester, onMoveToCell: (_, __) => drops++);
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveBy(const Offset(2, 2));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('move a'), findsOneWidget);
+      expect(tester.widget<HomeItemsView>(find.byType(HomeItemsView)).isArranging, isFalse);
+      expect(drops, 0);
+    });
+
+    testWidgets('a quick release after the first long-press movement still places the widget', (tester) async {
+      HomeGridPosition? movedTo;
+      await pumpGrid(tester, onMoveToCell: (_, position) => movedTo = position);
+      final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveTo(surface + const Offset(86, 2 * 92 + 86));
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(movedTo, const HomeGridPosition(0, 2));
+      expect(find.text('move a'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a quick swipe scrolls the home without starting widget editing', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      var started = 0;
+      var moved = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Center(
+            child: SizedBox(
+              width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
+              height: 250,
+              child: SingleChildScrollView(
+                controller: controller,
+                child: HomeItemsView(
+                  configuration: configuration,
+                  registry: registry,
+                  onMoveToCell: (_, __) => moved++,
+                  onArrangeStart: () => started++,
+                  menuItemsOf:
+                      (item) => [
+                        LongPressedMenuItem(
+                          title: 'move ${item.id}',
+                          iconPath: CommonActionIconPath.editHome,
+                          onSelected: () {},
+                        ),
+                      ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.drag(find.byKey(const ValueKey('home-item-a')), const Offset(0, -100));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(controller.offset, greaterThan(0));
+      expect(started, 0);
+      expect(moved, 0);
+      expect(find.text('move a'), findsNothing);
     });
 
     testWidgets('while arranging, every item shakes with a remove button, drags right away, and a tap ends it', (
@@ -1478,15 +1665,52 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
-    testWidgets('arranging ends by itself after ten seconds without input', (tester) async {
+    for (final accessibleNavigation in [false, true]) {
+      testWidgets(
+        'arranging jiggle cancels pending timers and responds live: accessibleNavigation=$accessibleNavigation',
+        (tester) async {
+          final motion = ValueNotifier(true);
+          addTearDown(motion.dispose);
+          var removed = 0;
+          await pumpGrid(
+            tester,
+            isArranging: true,
+            motionSetting: motion,
+            accessibleNavigation: accessibleNavigation,
+            onRemove: (_) => removed++,
+          );
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          expect(find.byKey(const ValueKey('home-item-remove-a')), findsOneWidget);
+          await tester.tap(find.byKey(const ValueKey('home-item-remove-a')));
+          expect(removed, 1);
+          motion.value = false;
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 150));
+          expect(tester.binding.transientCallbackCount, greaterThan(0));
+          motion.value = true;
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          motion.value = false;
+          await tester.pump();
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    testWidgets('arranging remains active after a minute without input', (tester) async {
       var done = 0;
       await pumpGrid(tester, isArranging: true, onArrangeDone: () => done++, onRemove: (_) {});
-      await tester.pump(const Duration(seconds: 9));
-      await tester.drag(find.byKey(const ValueKey('home-item-a')), const Offset(0, 30));
-      await tester.pump(const Duration(seconds: 9));
+      await tester.pump(const Duration(seconds: 12));
       expect(done, 0);
-      await tester.pump(const Duration(seconds: 2));
-      expect(done, 1);
+      await tester.pump(const Duration(seconds: 48));
+      expect(done, 0);
+      expect(tester.widget<HomeItemsView>(find.byType(HomeItemsView)).isArranging, isTrue);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 200));

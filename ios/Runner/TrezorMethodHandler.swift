@@ -55,6 +55,9 @@ class TrezorMethodHandler: NSObject {
             setPrevTxHex(call, result: result)
         case "clearPrevTxHexes":
             clearPrevTxHexes(call, result: result)
+        case "cancel":
+            bleManager?.disconnect()
+            result(nil)
         case "disconnect":
             disconnect(call, result: result)
         case "isConnected":
@@ -73,9 +76,12 @@ class TrezorMethodHandler: NSObject {
         TrezorMethodHandler.nextHandle += 1
         TrezorMethodHandler.handleMap[handle] = manager
 
-        manager.onDisconnect = { [weak self] in
+        manager.onDisconnect = { [weak self, weak manager] in
             TrezorMethodHandler.handleMap.removeValue(forKey: handle)
-            DispatchQueue.main.async { self?.connectivityEventSink?(false) }
+            DispatchQueue.main.async {
+                guard let manager = manager, self?.bleManager === manager else { return }
+                self?.connectivityEventSink?(false)
+            }
         }
 
         manager.scanAndConnect(timeout: 25) { [weak self] connectResult in
@@ -85,6 +91,10 @@ class TrezorMethodHandler: NSObject {
                 manager.flushReadQueue()
                 manager.drainThenConnect(delay: 2.0) {
                     do {
+                        guard !manager.isCancelled else {
+                            throw NSError(domain: "TrezorBLE", code: -9,
+                                userInfo: [NSLocalizedDescriptionKey: "Pairing cancelled by user"])
+                        }
 #if canImport(trezor_bridgeFFI)
                         let nativeCbs = SwiftBleCallbacks(manager: manager, channel: self!.channel)
                         trezorRegisterCallbacks(bleHandle: handle, callbacks: nativeCbs)
@@ -98,6 +108,7 @@ class TrezorMethodHandler: NSObject {
                         DispatchQueue.main.async { result(deviceId) }
 #endif
                     } catch {
+                        manager.disconnect()
                         TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                         let msg = error.localizedDescription
                         let code: String
@@ -120,7 +131,7 @@ class TrezorMethodHandler: NSObject {
             case .failure(let error):
                 TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                 DispatchQueue.main.async {
-                    self?.bleManager = nil
+                    if self?.bleManager === manager { self?.bleManager = nil }
                     let nsError = error as NSError
                     let code: String
                     if nsError.domain == "TrezorBLE" && nsError.code == -7 {
@@ -385,6 +396,7 @@ fileprivate class TrezorBleManager: NSObject {
         return peripheral.state == .connected
     }
 
+    private let centralQueue = DispatchQueue(label: "trezor.ble.central")
     private var centralManager: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var rxChar: CBCharacteristic?
@@ -395,8 +407,14 @@ fileprivate class TrezorBleManager: NSObject {
 
     // Read queue for incoming BLE notifications (populated by didUpdateValueFor)
     private var readQueue: [Data] = []
-    private var readWaiters: [(Data) -> Void] = []
+    private var readWaiters: [(Data?) -> Void] = []
     private let queueLock = NSLock()
+    private var cancelled = false
+    var isCancelled: Bool {
+        queueLock.lock()
+        defer { queueLock.unlock() }
+        return cancelled
+    }
 
     // Timeout timer reference so we can cancel it on success/error
     private var scanTimeoutTimer: Timer?
@@ -409,7 +427,9 @@ fileprivate class TrezorBleManager: NSObject {
 
     // MARK: - BLE I/O — called by SwiftBleCallbacks (UniFFI callback impl)
     func bleWrite(_ data: Data) -> Bool {
-        guard let char = rxChar, let p = peripheral else {
+        queueLock.lock()
+        defer { queueLock.unlock() }
+        guard !cancelled, let char = rxChar, let p = peripheral else {
             return false
         }
         p.writeValue(data, for: char, type: .withResponse)
@@ -418,22 +438,34 @@ fileprivate class TrezorBleManager: NSObject {
 
     func bleRead() -> Data? {
         queueLock.lock()
+        guard !cancelled else {
+            queueLock.unlock()
+            return nil
+        }
         if !readQueue.isEmpty {
             let data = readQueue.removeFirst()
             queueLock.unlock()
-            return data
+            return isCancelled ? nil : data
         }
         var received: Data?
         let sema = DispatchSemaphore(value: 0)
-        readWaiters.append { data in received = data; sema.signal() }
+        readWaiters.append { [weak self] data in
+            guard let self = self else { sema.signal(); return }
+            self.queueLock.lock()
+            received = data
+            self.queueLock.unlock()
+            sema.signal()
+        }
         queueLock.unlock()
         _ = sema.wait(timeout: .now() + 5)
-        return received
+        queueLock.lock()
+        defer { queueLock.unlock() }
+        return cancelled ? nil : received
     }
 
     override init() {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: DispatchQueue(label: "trezor.ble.central"))
+        centralManager = CBCentralManager(delegate: self, queue: centralQueue)
     }
 
     func flushReadQueue() {
@@ -460,37 +492,58 @@ fileprivate class TrezorBleManager: NSObject {
 
     func scanAndConnect(timeout: TimeInterval, completion: @escaping (Result<String, Error>) -> Void) {
         flushReadQueue()
-        self.completion = completion
         scanTimeoutTimer = Timer.scheduledTimer(withTimeInterval: timeout, repeats: false) { [weak self] _ in
-            guard let self = self, self.deviceId == nil else { return }
-            self.centralManager.stopScan()
-            let error = NSError(
-                domain: "TrezorBLE",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Scan timed out. Make sure Trezor Safe 7 is unlocked and nearby."]
-            )
-            self.completion?(.failure(error))
-            self.completion = nil
+            guard let self = self else { return }
+            self.centralQueue.async {
+                guard self.deviceId == nil else { return }
+                self.centralManager.stopScan()
+                let error = NSError(
+                    domain: "TrezorBLE",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "Scan timed out. Make sure Trezor Safe 7 is unlocked and nearby."]
+                )
+                let pending = self.completion
+                self.completion = nil
+                pending?(.failure(error))
+            }
         }
 
-        if centralManager.state == .poweredOn {
-            startScan()
+        centralQueue.async { [self] in
+            self.completion = completion
+            if centralManager.state == .poweredOn {
+                startScan()
+            }
         }
     }
 
     func disconnect() {
-        timeoutTimer?.invalidate()
-        timeoutTimer = nil
-        scanTimeoutTimer?.invalidate()
-        scanTimeoutTimer = nil
-        if let peripheral = peripheral {
-            centralManager.cancelPeripheralConnection(peripheral)
+        queueLock.lock()
+        cancelled = true
+        let waiters = readWaiters
+        readWaiters.removeAll()
+        readQueue.removeAll()
+        queueLock.unlock()
+        waiters.forEach { $0(nil) }
+        centralQueue.async { [self] in
+            centralManager.stopScan()
+            let pending = completion
+            completion = nil
+            timeoutTimer?.invalidate()
+            timeoutTimer = nil
+            scanTimeoutTimer?.invalidate()
+            scanTimeoutTimer = nil
+            if let peripheral = peripheral {
+                centralManager.cancelPeripheralConnection(peripheral)
+            }
+            peripheral = nil
+            deviceId = nil
+            pending?(.failure(NSError(domain: "TrezorBLE", code: -9,
+                userInfo: [NSLocalizedDescriptionKey: "Pairing cancelled by user"])))
         }
-        peripheral = nil
-        deviceId = nil
     }
 
     private func startScan() {
+        guard !isCancelled, completion != nil else { return }
         centralManager.scanForPeripherals(
             withServices: [TrezorBleManager.serviceUUID],
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
@@ -530,12 +583,17 @@ extension TrezorBleManager: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
+        guard !isCancelled else { return }
         central.stopScan()
         self.peripheral = peripheral
         central.connect(peripheral, options: nil)
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        guard !isCancelled else {
+            central.cancelPeripheralConnection(peripheral)
+            return
+        }
         peripheral.delegate = self
         peripheral.discoverServices([TrezorBleManager.serviceUUID])
     }
@@ -677,6 +735,10 @@ extension TrezorBleManager: CBPeripheralDelegate {
         if error != nil { return }
         guard let data = characteristic.value else { return }
         queueLock.lock()
+        guard !cancelled else {
+            queueLock.unlock()
+            return
+        }
         if let waiter = readWaiters.first {
             readWaiters.removeFirst()
             queueLock.unlock()
@@ -733,9 +795,14 @@ fileprivate class SwiftBleCallbacks: TrezorBleCallbacks {
     }
 
     private func requestFlutterString(method: String, arguments: Any?, fallback: String = "") -> String {
+        guard !manager.isCancelled else { return fallback }
         let sema = DispatchSemaphore(value: 0)
         var value = fallback
         DispatchQueue.main.async {
+            guard !self.manager.isCancelled else {
+                sema.signal()
+                return
+            }
             self.channel.invokeMethod(method, arguments: arguments) { result in
                 if let result = result as? String {
                     value = result

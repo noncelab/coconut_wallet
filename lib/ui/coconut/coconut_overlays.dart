@@ -447,6 +447,8 @@ class CoconutToolTip extends StatefulWidget {
     this.onTapRemove,
     this.padding,
     this.isBubbleClipperSideLeft = true,
+    this.isBubbleClipperCentered = false,
+    this.bubbleArrowPosition,
     this.isPlacementTooltipVisible = false,
     this.animateOnBuild = false,
     this.width,
@@ -474,6 +476,9 @@ class CoconutToolTip extends StatefulWidget {
   final Size iconSize;
   final bool? isAvailableTapToClose;
   final bool isBubbleClipperSideLeft;
+  final bool isBubbleClipperCentered;
+
+  final double? bubbleArrowPosition;
   final bool isPlacementTooltipVisible;
   final bool animateOnBuild;
   final TextStyle titleStyle;
@@ -591,7 +596,12 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
             child: GestureDetector(
               onTap: widget.onTapRemove,
               child: ClipPath(
-                clipper: widget.isBubbleClipperSideLeft ? LeftTriangleBubbleClipper() : RightTriangleBubbleClipper(),
+                clipper:
+                    widget.isBubbleClipperCentered
+                        ? CenterTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition)
+                        : widget.isBubbleClipperSideLeft
+                        ? LeftTriangleBubbleClipper()
+                        : RightTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition),
                 child: Container(
                   padding: _padding,
                   color: _backgroundColor,
@@ -679,7 +689,7 @@ class CoconutPopup extends StatefulWidget {
     this.wrapTitleByWords = false,
     this.centerDescription = true,
     this.wrapDescriptionByWords = false,
-    this.useFixedFontSize = true,
+    this.useFixedFontSize = false,
     this.onTapLeft,
     this.backgroundColor,
     this.titleColor,
@@ -749,7 +759,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
         widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
         CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
     final checkboxTextStyle = widget.checkboxTextStyle ?? CoconutTypography.body3_12;
-    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryText;
+    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryTextStrong;
     final checkboxTextPressingColor =
         widget.checkboxTextStyle?.color?.withValues(alpha: checkboxTextColor.a * 0.5) ?? colors.mutedText;
 
@@ -824,6 +834,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
                   children: [
                     CoconutCheckbox(
                       isSelected: widget.isCheckboxSelected,
+                      color: colors.iconPrimary,
+                      unSelectedColor: colors.iconPrimary,
+                      inactiveColor: colors.iconDisabled,
                       onChanged: (value) => widget.onCheckboxChanged?.call(value),
                     ),
                     const SizedBox(width: 8),
@@ -915,9 +928,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
             widget.useFixedFontSize
                 ? MediaQuery(
                   data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
-                  child: content,
+                  child: SingleChildScrollView(child: content),
                 )
-                : content,
+                : SingleChildScrollView(child: content),
       ),
     );
   }

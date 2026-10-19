@@ -79,8 +79,15 @@ class FeatureLauncher {
       case WalletChoiceKind.ask:
         walletId = await pickWallet(context, choice.candidates);
     }
-    final wallet = allWallets.firstWhereOrNull((w) => w.id == walletId);
-    if (wallet == null || !context.mounted) return FeatureLaunchResult.cancelled;
+    if (walletId == null || !context.mounted) return FeatureLaunchResult.cancelled;
+    if (choice.kind == WalletChoiceKind.ask && !choice.candidates.contains(walletId)) {
+      return FeatureLaunchResult.unavailable;
+    }
+    // A picker may stay open while a wallet is removed or its capabilities change.
+    final wallet = wallets().firstWhereOrNull((w) => w.id == walletId && item.supportsWallet(w));
+    if (wallet == null || (item.isAvailable != null && !item.isAvailable!(context))) {
+      return FeatureLaunchResult.unavailable;
+    }
     await FeatureEntryRoutes.instance.launching(() => launch(context, wallet));
     return FeatureLaunchResult.launched;
   }

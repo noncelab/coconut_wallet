@@ -416,6 +416,116 @@ void main() {
     expect(viewModel.shouldAddWalletBeforeLaunch(viewModel.features.byId(FeatureIds.receive)!), isFalse);
   });
 
+  group('arrangement undo', () {
+    Future<HomeViewModel> editableHome() async {
+      await repository.save(
+        HomeConfiguration(
+          items: [
+            for (final (index, id) in ['a', 'b', 'c'].indexed)
+              HomeItem(
+                id: id,
+                definitionId: 'widget-$id',
+                kind: HomeItemKind.widget,
+                order: index,
+                span: HomeSpan.small,
+              ),
+          ],
+        ),
+      );
+      final viewModel = create(
+        widgetDefinitions: [
+          for (final id in ['a', 'b', 'c']) _Widget(id: 'widget-$id', spans: [HomeSpan.small, HomeSpan.wide]),
+        ],
+      );
+      addTearDown(viewModel.dispose);
+      return viewModel;
+    }
+
+    test('finishing editing keeps a saved move and its explicit undo available', () async {
+      final viewModel = await editableHome();
+      final before = viewModel.configuration;
+      expect(viewModel.canUndoArrangement, isFalse);
+      viewModel.startArranging();
+      viewModel.insertBefore('c', 'a');
+      final moved = viewModel.configuration;
+      expect(moved, isNot(before));
+      expect(repository.load(), moved);
+
+      viewModel.finishArranging();
+      expect(viewModel.isArranging, isFalse);
+      expect(viewModel.configuration, moved);
+      expect(repository.load(), moved);
+      expect(viewModel.canUndoArrangement, isTrue);
+
+      viewModel.startArranging();
+      viewModel.undoArrangement();
+      expect(viewModel.configuration, before);
+      expect(repository.load(), before);
+      expect(viewModel.isArranging, isTrue);
+      expect(viewModel.canUndoArrangement, isFalse);
+    });
+
+    test('undo restores only the latest completed move and persists it', () async {
+      final viewModel = await editableHome();
+      viewModel.insertBefore('c', 'a');
+      final afterFirstDrop = viewModel.configuration;
+      viewModel.moveToCell('a', const HomeGridPosition(2, 2));
+      expect(viewModel.configuration, isNot(afterFirstDrop));
+      expect(viewModel.canUndoArrangement, isTrue);
+
+      viewModel.undoArrangement();
+      expect(viewModel.configuration, afterFirstDrop);
+      expect(repository.load(), afterFirstDrop);
+      expect(viewModel.canUndoArrangement, isFalse);
+      viewModel.undoArrangement();
+      expect(viewModel.configuration, afterFirstDrop);
+      expect(repository.load(), afterFirstDrop);
+    });
+
+    test('dropping back in the same cell does not erase the preceding move undo', () async {
+      final viewModel = await editableHome();
+      final before = viewModel.configuration;
+      viewModel.insertBefore('c', 'a');
+      final moved = viewModel.configuration;
+      final currentCell = HomeGridLayout(moved).positionOf('c')!;
+      viewModel.moveToCell('c', currentCell);
+      viewModel.insertBefore('c', 'c');
+      expect(viewModel.configuration, moved);
+      expect(viewModel.canUndoArrangement, isTrue);
+
+      viewModel.undoArrangement();
+      expect(viewModel.configuration, before);
+      expect(repository.load(), before);
+    });
+
+    final mutations = <String, void Function(HomeViewModel)>{
+      'remove': (model) => model.removeItem('a'),
+      'resize': (model) => model.resizeItem('a', HomeSpan.wide),
+      'add': (model) => model.addItem(model.registry.byId('widget-a')!),
+      'settings': (model) => model.updateItemConfiguration('a', {'unit': 'sats'}),
+      'wallet context': (model) => model.updateShortcutWalletContext(const ShortcutWalletContext.wallet(9)),
+      'preset':
+          (model) => model.applyPreset(
+            HomePreset(id: 'single', name: () => 'Single', description: () => '', definitionIds: ['widget-a']),
+          ),
+      'restore': (model) => model.restore(HomeConfiguration(items: const [])),
+    };
+    for (final mutation in mutations.entries) {
+      test('${mutation.key} invalidates arrangement undo so later changes cannot be overwritten', () async {
+        final viewModel = await editableHome();
+        viewModel.insertBefore('c', 'a');
+        expect(viewModel.canUndoArrangement, isTrue);
+        mutation.value(viewModel);
+        final updated = viewModel.configuration;
+
+        expect(viewModel.canUndoArrangement, isFalse);
+        viewModel.undoArrangement();
+        expect(viewModel.configuration, updated);
+        expect(repository.load(), updated);
+      });
+    }
+  });
+
   group('resizing a widget', () {
     HomeItem widget(String id, String definitionId, int order, HomeGridPosition position) => HomeItem(
       id: id,

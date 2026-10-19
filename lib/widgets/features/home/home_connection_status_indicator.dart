@@ -39,7 +39,7 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
         key: 'error',
         leading: SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
         message: errorMessage(networkStatus),
-        color: colors.danger,
+        color: colors.dangerText,
       );
     } else if (showReconnected) {
       child = _row(
@@ -63,7 +63,7 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2, color: colors.secondaryText),
         ),
         message: t.status_updating,
-        color: colors.secondaryText,
+        color: colors.secondaryTextStrong,
       );
     } else {
       child = const SizedBox.shrink(key: ValueKey('empty'));

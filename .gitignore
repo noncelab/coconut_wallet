@@ -13,6 +13,12 @@
 .history
 .svn/
 .claude/
+!.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/generate-store-release-notes
+!.claude/skills/check-electrum-cert-fingerprints
 .local/
 .zed/*
 CLAUDE.md
@@ -209,3 +215,5 @@ rust/trezor-connect-rs/target/
 # Local agent work and uncommitted growth/QA reports
 /.omo/
 /docs/growth/
+/.qa/
+/pubspec_overrides.yaml

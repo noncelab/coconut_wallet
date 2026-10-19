@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -363,6 +364,14 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     final viewModel = context.watch<HotWalletRestoreViewModel>();
     return PopScope(
       canPop: _canPop && !_isSubmitting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _isSubmitting || _isLeavingScreen) return;
+        if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+          FocusScope.of(context).unfocus();
+          return;
+        }
+        _handleAppBarBackPressed();
+      },
       child: Stack(
         children: [
           Listener(
@@ -494,9 +503,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
   }
 
   void _popScreen() {
+    if (_canPop) return;
     setState(() => _canPop = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) Navigator.of(context).pop();
     });
   }
 
@@ -648,9 +658,15 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
               const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
             ] else if (_scannedMasterFingerprint != null) ...[
               CoconutLayout.spacing_50h,
-              Text(
-                'MFP $_scannedMasterFingerprint',
-                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('MFP ', style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
+                  MfpText(
+                    mfp: _scannedMasterFingerprint!,
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+                  ),
+                ],
               ),
               CoconutLayout.spacing_300h,
             ],
@@ -1057,7 +1073,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                                     }
                                   },
                                   defaultColor: context.coconutColors.surface,
-                                  pressedColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
                                   border: Border.all(color: context.coconutColors.border),
                                   borderRadius: 100,
                                   child: Padding(
@@ -1371,7 +1388,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                   ),
                   backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
                   checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_watch_only,
-                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   isCheckboxSelected: removeWatchOnly,
                   onCheckboxChanged: (value) => setDialogState(() => removeWatchOnly = value),
                   rightButtonText: t.wallet_home_screen.hot_wallet_restore.restore_wallet,

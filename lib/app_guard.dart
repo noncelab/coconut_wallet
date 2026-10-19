@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
@@ -127,7 +126,7 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
-        FileLogger.dispose();
+        break;
       case AppLifecycleState.paused:
         _pausedAt = DateTime.now();
         if (_isPaused) break;

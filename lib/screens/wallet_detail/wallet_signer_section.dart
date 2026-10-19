@@ -148,7 +148,6 @@ class _WalletSignerSectionState extends State<WalletSignerSection> {
             child: ShrinkAnimationButton(
               onPressed: _toggleAccordion,
               isActive: !_isClosing,
-              pressedColor: Colors.transparent,
               pressedOverlayColor: Colors.transparent,
               pressedOverlayOpacity: 0,
               defaultColor: context.coconutColors.background,

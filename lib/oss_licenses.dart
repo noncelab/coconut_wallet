@@ -7655,13 +7655,13 @@ SOFTWARE.''',
   dependencies: [PackageRef('flutter'), PackageRef('permission_handler_platform_interface')],
 );
 
-/// permission_handler_apple 9.6.1
+/// permission_handler_apple 9.6.2
 const _permission_handler_apple = Package(
   name: 'permission_handler_apple',
   description: 'Permission plugin for Flutter. This plugin provides the iOS API to request and check permissions.',
   repository: 'https://github.com/baseflow/flutter-permission-handler',
   authors: [],
-  version: '9.6.1',
+  version: '9.6.2',
   license: '''MIT License
 
 Copyright (c) 2018 Baseflow

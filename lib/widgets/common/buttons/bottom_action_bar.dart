@@ -80,6 +80,7 @@ class BottomActionButton extends StatefulWidget {
   final double iconSize;
   final double spacing;
   final TextStyle textStyle;
+  final int? labelMaxLines;
 
   const BottomActionButton({
     super.key,
@@ -92,6 +93,7 @@ class BottomActionButton extends StatefulWidget {
     this.height,
     this.iconSize = 20,
     this.spacing = 8,
+    this.labelMaxLines = 1,
   });
 
   @override
@@ -111,10 +113,14 @@ class _BottomActionButtonState extends State<BottomActionButton> {
       pressedOverlayOpacity: 0,
       childBuilder: (_, isPressed) {
         final foregroundColor = _foregroundColor(isPressed);
-        return SizedBox(
+        return Container(
           width: double.infinity,
-          height: widget.height ?? _defaultHeight,
+          constraints: BoxConstraints(
+            minHeight: widget.height ?? _defaultHeight,
+            maxHeight: widget.height ?? (widget.labelMaxLines == 1 ? _defaultHeight : double.infinity),
+          ),
           child: Center(
+            heightFactor: 1,
             child:
                 widget.buttonLayout == BottomActionButtonLayout.horizontal
                     ? Row(
@@ -123,7 +129,7 @@ class _BottomActionButtonState extends State<BottomActionButton> {
                       children: [
                         _buildIcon(foregroundColor),
                         SizedBox(width: widget.spacing),
-                        _buildLabel(foregroundColor),
+                        Flexible(child: _buildLabel(foregroundColor)),
                       ],
                     )
                     : Column(
@@ -165,8 +171,9 @@ class _BottomActionButtonState extends State<BottomActionButton> {
       widget.label,
       style: widget.textStyle.copyWith(color: foregroundColor),
       textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+      maxLines: widget.labelMaxLines,
+      softWrap: true,
+      overflow: widget.labelMaxLines == null ? TextOverflow.visible : TextOverflow.ellipsis,
     );
   }
 }

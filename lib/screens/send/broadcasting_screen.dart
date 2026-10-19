@@ -731,6 +731,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
       externalOutputAmounts: viewModel.externalOutputAmounts,
+      externalOutputTapTargets: [
+        for (final item in viewModel.outputDetailItems)
+          if (!item.isChange)
+            FlowOutputTapTarget(address: item.address, amount: item.amount, outputIndex: item.outputIndex),
+      ],
       changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.fee,
       currentUnit: _currentUnit,
@@ -743,14 +748,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       return const SizedBox.shrink();
     }
 
-    int outputIndex = 0;
     final uiItems =
         detailItems.map((item) {
-          if (!item.isChange) {
-            outputIndex += 1;
-          }
           return OutputDetailItem(
-            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
+            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: item.outputIndex),
             address: item.address,
             amountSats: item.amount,
             isChange: item.isChange,

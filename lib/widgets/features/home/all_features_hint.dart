@@ -20,8 +20,20 @@ class AllFeaturesHint extends StatefulWidget {
 }
 
 class _AllFeaturesHintState extends State<AllFeaturesHint> with SingleTickerProviderStateMixin {
-  late final AnimationController _swing = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-    ..repeat();
+  late final AnimationController _swing = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _swing.reset();
+    } else if (!_swing.isAnimating) {
+      _swing.repeat();
+    }
+  }
 
   @override
   void dispose() {

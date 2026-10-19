@@ -38,6 +38,9 @@ const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
 @immutable
 class CoconutColors {
+  /// 코코넛 테마의 lagoon에 흰색을 약 20% 섞은 옅은 색상입니다.
+  static const Color lagoonLight = Color(0xFF8ED9EE);
+
   /// 코코넛 고유 메인넷 로고 그라디언트
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
@@ -122,6 +125,9 @@ class CoconutColors {
   /// 상태
   final Color warning;
   final Color danger;
+
+  /// 오류·위험을 설명하는 작은 텍스트 전경색.
+  final Color dangerText;
   final Color success;
   final Color appLockWarningBackground;
   final Color appLockWarningForeground;
@@ -134,6 +140,8 @@ class CoconutColors {
   /// 시세·금액 상승/하락
   final Color priceUp;
   final Color priceDown;
+  final Color priceUpText;
+  final Color priceDownText;
 
   /// 목표 진행 그래프의 시작/끝 그라디언트 색상
   final Color targetProgressGradientStart;
@@ -282,6 +290,7 @@ class CoconutColors {
 
   /// utxo 오버뷰 화면 요소
   final Color utxoOverviewChartSurface;
+  final Color utxoOverviewAvailabilitySurface;
   final double utxoOverviewChartUnselectedOverlayOpacity;
   final Color utxoOverviewCoinSurface;
   final Color utxoOverviewSelectedCoinBorder;
@@ -373,6 +382,7 @@ class CoconutColors {
     required this.iconButtonHighlight,
     required this.warning,
     required this.danger,
+    required this.dangerText,
     required this.success,
     required this.appLockWarningBackground,
     required this.appLockWarningForeground,
@@ -381,6 +391,8 @@ class CoconutColors {
     required this.dividerStrong,
     required this.priceUp,
     required this.priceDown,
+    required this.priceUpText,
+    required this.priceDownText,
     required this.targetProgressGradientStart,
     required this.targetProgressGradientEnd,
     required this.brandAccentBackground,
@@ -455,6 +467,7 @@ class CoconutColors {
     required this.homeChartLine,
     required this.homeWidgetShadow,
     required this.utxoOverviewChartSurface,
+    required this.utxoOverviewAvailabilitySurface,
     required this.utxoOverviewChartUnselectedOverlayOpacity,
     required this.utxoOverviewCoinSurface,
     required this.utxoOverviewSelectedCoinBorder,
@@ -494,6 +507,286 @@ class CoconutColors {
     required this.guideBubblePrimaryText,
   });
 
+  static double _contrast(Color foreground, Color background) {
+    final a = Color.alphaBlend(Color(foreground.toARGB32()), Color(background.toARGB32())).computeLuminance();
+    final b = Color(background.toARGB32()).computeLuminance();
+    return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05);
+  }
+
+  static Color _lerpForeground(Color a, Color b, Color surfaceA, Color surfaceB, double t, [double minimum = 4.5]) {
+    final foreground = Color.lerp(a, b, t)!;
+    final surface = Color.lerp(surfaceA, surfaceB, t)!;
+    final floor = [minimum, _contrast(a, surfaceA), _contrast(b, surfaceB)].reduce((a, b) => a < b ? a : b);
+    if (_contrast(foreground, surface) >= floor) return foreground;
+    const black = Color(0xFF000000);
+    const white = Color(0xFFFFFFFF);
+    final target = _contrast(black, surface) > _contrast(white, surface) ? black : white;
+    var low = 0.0;
+    var high = 1.0;
+    // Opposite foregrounds must switch polarity; preserve their tint until contrast requires it.
+    for (var i = 0; i < 10; i++) {
+      final mid = (low + high) / 2;
+      if (_contrast(Color.lerp(foreground, target, mid)!, surface) < floor) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return Color.lerp(foreground, target, high)!;
+  }
+
+  /// Interpolates existing roles without changing either palette.
+  static CoconutColors lerp(CoconutColors a, CoconutColors b, double t) {
+    if (t == 0) return a;
+    if (t == 1) return b;
+    return CoconutColors(
+      mainnetLogoGradient: Gradient.lerp(a.mainnetLogoGradient, b.mainnetLogoGradient, t)!,
+      regtestLogo: Color.lerp(a.regtestLogo, b.regtestLogo, t)!,
+      background: Color.lerp(a.background, b.background, t)!,
+      surface: Color.lerp(a.surface, b.surface, t)!,
+      surfacePressOverlay: Color.lerp(a.surfacePressOverlay, b.surfacePressOverlay, t)!,
+      surfacePressOverlayOpacity:
+          a.surfacePressOverlayOpacity + (b.surfacePressOverlayOpacity - a.surfacePressOverlayOpacity) * t,
+      surfaceDisabled: Color.lerp(a.surfaceDisabled, b.surfaceDisabled, t)!,
+      surfaceMuted: Color.lerp(a.surfaceMuted, b.surfaceMuted, t)!,
+      surfaceInset: Color.lerp(a.surfaceInset, b.surfaceInset, t)!,
+      surfaceInfoChip: Color.lerp(a.surfaceInfoChip, b.surfaceInfoChip, t)!,
+      primary: Color.lerp(a.primary, b.primary, t)!,
+      primaryText: _lerpForeground(a.primaryText, b.primaryText, a.background, b.background, t),
+      secondaryTextStrong: _lerpForeground(a.secondaryTextStrong, b.secondaryTextStrong, a.background, b.background, t),
+      secondaryText: _lerpForeground(a.secondaryText, b.secondaryText, a.background, b.background, t),
+      tertiaryText: _lerpForeground(a.tertiaryText, b.tertiaryText, a.background, b.background, t),
+      mutedText: _lerpForeground(a.mutedText, b.mutedText, a.background, b.background, t),
+      accentForeground: Color.lerp(a.accentForeground, b.accentForeground, t)!,
+      border: Color.lerp(a.border, b.border, t)!,
+      borderStrong: Color.lerp(a.borderStrong, b.borderStrong, t)!,
+      shadowDefault: Color.lerp(a.shadowDefault, b.shadowDefault, t)!,
+      shadowSubtle: Color.lerp(a.shadowSubtle, b.shadowSubtle, t)!,
+      iconBackground: Color.lerp(a.iconBackground, b.iconBackground, t)!,
+      iconBackgroundSubtle: Color.lerp(a.iconBackgroundSubtle, b.iconBackgroundSubtle, t)!,
+      iconPrimary: _lerpForeground(a.iconPrimary, b.iconPrimary, a.background, b.background, t, 3),
+      iconSecondary: _lerpForeground(a.iconSecondary, b.iconSecondary, a.background, b.background, t, 3),
+      iconDisabled: Color.lerp(a.iconDisabled, b.iconDisabled, t)!,
+      iconOnDanger: Color.lerp(a.iconOnDanger, b.iconOnDanger, t)!,
+      iconButtonHighlight: Color.lerp(a.iconButtonHighlight, b.iconButtonHighlight, t)!,
+      warning: Color.lerp(a.warning, b.warning, t)!,
+      danger: Color.lerp(a.danger, b.danger, t)!,
+      dangerText: Color.lerp(a.dangerText, b.dangerText, t)!,
+      success: Color.lerp(a.success, b.success, t)!,
+      appLockWarningBackground: Color.lerp(a.appLockWarningBackground, b.appLockWarningBackground, t)!,
+      appLockWarningForeground: Color.lerp(a.appLockWarningForeground, b.appLockWarningForeground, t)!,
+      unbackedWarningForeground: Color.lerp(a.unbackedWarningForeground, b.unbackedWarningForeground, t)!,
+      divider: Color.lerp(a.divider, b.divider, t)!,
+      dividerStrong: Color.lerp(a.dividerStrong, b.dividerStrong, t)!,
+      priceUp: Color.lerp(a.priceUp, b.priceUp, t)!,
+      priceDown: Color.lerp(a.priceDown, b.priceDown, t)!,
+      priceUpText: Color.lerp(a.priceUpText, b.priceUpText, t)!,
+      priceDownText: Color.lerp(a.priceDownText, b.priceDownText, t)!,
+      targetProgressGradientStart: Color.lerp(a.targetProgressGradientStart, b.targetProgressGradientStart, t)!,
+      targetProgressGradientEnd: Color.lerp(a.targetProgressGradientEnd, b.targetProgressGradientEnd, t)!,
+      brandAccentBackground: Color.lerp(a.brandAccentBackground, b.brandAccentBackground, t)!,
+      brandAccentForeground: Color.lerp(a.brandAccentForeground, b.brandAccentForeground, t)!,
+      surfaceButton: Color.lerp(a.surfaceButton, b.surfaceButton, t)!,
+      surfaceButtonText: _lerpForeground(a.surfaceButtonText, b.surfaceButtonText, a.surfaceButton, b.surfaceButton, t),
+      buttonPrimaryBackground: Color.lerp(a.buttonPrimaryBackground, b.buttonPrimaryBackground, t)!,
+      buttonPrimaryForeground: _lerpForeground(
+        a.buttonPrimaryForeground,
+        b.buttonPrimaryForeground,
+        a.buttonPrimaryBackground,
+        b.buttonPrimaryBackground,
+        t,
+      ),
+      buttonPrimaryDisabledBackground:
+          Color.lerp(a.buttonPrimaryDisabledBackground, b.buttonPrimaryDisabledBackground, t)!,
+      buttonPrimaryDisabledForeground:
+          Color.lerp(a.buttonPrimaryDisabledForeground, b.buttonPrimaryDisabledForeground, t)!,
+      buttonPrimaryPressOverlay: Color.lerp(a.buttonPrimaryPressOverlay, b.buttonPrimaryPressOverlay, t)!,
+      buttonPrimaryPressOverlayOpacity:
+          a.buttonPrimaryPressOverlayOpacity +
+          (b.buttonPrimaryPressOverlayOpacity - a.buttonPrimaryPressOverlayOpacity) * t,
+      buttonSecondaryBackground: Color.lerp(a.buttonSecondaryBackground, b.buttonSecondaryBackground, t)!,
+      buttonSecondaryForeground: _lerpForeground(
+        a.buttonSecondaryForeground,
+        b.buttonSecondaryForeground,
+        a.buttonSecondaryBackground,
+        b.buttonSecondaryBackground,
+        t,
+      ),
+      chipUnselectedBackground: Color.lerp(a.chipUnselectedBackground, b.chipUnselectedBackground, t)!,
+      chipUnselectedText: _lerpForeground(
+        a.chipUnselectedText,
+        b.chipUnselectedText,
+        a.chipUnselectedBackground,
+        b.chipUnselectedBackground,
+        t,
+      ),
+      chipSelectedBackground: Color.lerp(a.chipSelectedBackground, b.chipSelectedBackground, t)!,
+      chipSelectedText: _lerpForeground(
+        a.chipSelectedText,
+        b.chipSelectedText,
+        a.chipSelectedBackground,
+        b.chipSelectedBackground,
+        t,
+      ),
+      chipOutlinedUnselectedBackground:
+          Color.lerp(a.chipOutlinedUnselectedBackground, b.chipOutlinedUnselectedBackground, t)!,
+      chipOutlinedUnselectedText: _lerpForeground(
+        a.chipOutlinedUnselectedText,
+        b.chipOutlinedUnselectedText,
+        a.chipOutlinedUnselectedBackground,
+        b.chipOutlinedUnselectedBackground,
+        t,
+      ),
+      chipMovingBorder: Color.lerp(a.chipMovingBorder, b.chipMovingBorder, t)!,
+      chipMovingBackground: Color.lerp(a.chipMovingBackground, b.chipMovingBackground, t)!,
+      chipMovingText: _lerpForeground(
+        a.chipMovingText,
+        b.chipMovingText,
+        a.chipMovingBackground,
+        b.chipMovingBackground,
+        t,
+      ),
+      chipEditModeBackground: Color.lerp(a.chipEditModeBackground, b.chipEditModeBackground, t)!,
+      chipEditModeText: _lerpForeground(
+        a.chipEditModeText,
+        b.chipEditModeText,
+        a.chipEditModeBackground,
+        b.chipEditModeBackground,
+        t,
+      ),
+      chipDisabledText: Color.lerp(a.chipDisabledText, b.chipDisabledText, t)!,
+      chipDisabledBackground: Color.lerp(a.chipDisabledBackground, b.chipDisabledBackground, t)!,
+      inputSurface: Color.lerp(a.inputSurface, b.inputSurface, t)!,
+      inputPlaceholder: _lerpForeground(a.inputPlaceholder, b.inputPlaceholder, a.inputSurface, b.inputSurface, t),
+      inputBorderUnfocused: Color.lerp(a.inputBorderUnfocused, b.inputBorderUnfocused, t)!,
+      inputBorderFocused: Color.lerp(a.inputBorderFocused, b.inputBorderFocused, t)!,
+      segmentedControlSelected: Color.lerp(a.segmentedControlSelected, b.segmentedControlSelected, t)!,
+      segmentedControlBackground: Color.lerp(a.segmentedControlBackground, b.segmentedControlBackground, t)!,
+      segmentedControlSelectedText: _lerpForeground(
+        a.segmentedControlSelectedText,
+        b.segmentedControlSelectedText,
+        a.segmentedControlSelected,
+        b.segmentedControlSelected,
+        t,
+      ),
+      segmentedControlUnselectedText: _lerpForeground(
+        a.segmentedControlUnselectedText,
+        b.segmentedControlUnselectedText,
+        a.segmentedControlBackground,
+        b.segmentedControlBackground,
+        t,
+      ),
+      surfaceBottomSheet: Color.lerp(a.surfaceBottomSheet, b.surfaceBottomSheet, t)!,
+      surfaceBottomSheetElevated: Color.lerp(a.surfaceBottomSheetElevated, b.surfaceBottomSheetElevated, t)!,
+      bottomSheetHandle: Color.lerp(a.bottomSheetHandle, b.bottomSheetHandle, t)!,
+      bottomSheetKeyboardToolbar: Color.lerp(a.bottomSheetKeyboardToolbar, b.bottomSheetKeyboardToolbar, t)!,
+      bottomSheetExtensionFieldBackground:
+          Color.lerp(a.bottomSheetExtensionFieldBackground, b.bottomSheetExtensionFieldBackground, t)!,
+      bottomActionBarBackground: Color.lerp(a.bottomActionBarBackground, b.bottomActionBarBackground, t)!,
+      pulldownMenuBackground: Color.lerp(a.pulldownMenuBackground, b.pulldownMenuBackground, t)!,
+      pulldownMenuPressedColor: Color.lerp(a.pulldownMenuPressedColor, b.pulldownMenuPressedColor, t)!,
+      pulldownMenuDividerColor: Color.lerp(a.pulldownMenuDividerColor, b.pulldownMenuDividerColor, t)!,
+      pulldownMenuTextColor: _lerpForeground(
+        a.pulldownMenuTextColor,
+        b.pulldownMenuTextColor,
+        a.pulldownMenuBackground,
+        b.pulldownMenuBackground,
+        t,
+      ),
+      switchActiveTrack: Color.lerp(a.switchActiveTrack, b.switchActiveTrack, t)!,
+      switchInactiveTrack: Color.lerp(a.switchInactiveTrack, b.switchInactiveTrack, t)!,
+      switchActiveThumb: Color.lerp(a.switchActiveThumb, b.switchActiveThumb, t)!,
+      switchInactiveThumb: Color.lerp(a.switchInactiveThumb, b.switchInactiveThumb, t)!,
+      switchTrackDisabled: Color.lerp(a.switchTrackDisabled, b.switchTrackDisabled, t)!,
+      switchThumbDisabled: Color.lerp(a.switchThumbDisabled, b.switchThumbDisabled, t)!,
+      tooltipBackground: Color.lerp(a.tooltipBackground, b.tooltipBackground, t)!,
+      popupBackground: Color.lerp(a.popupBackground, b.popupBackground, t)!,
+      dimOverlay: Color.lerp(a.dimOverlay, b.dimOverlay, t)!,
+      popoverBackground: Color.lerp(a.popoverBackground, b.popoverBackground, t)!,
+      popoverText: _lerpForeground(a.popoverText, b.popoverText, a.popoverBackground, b.popoverBackground, t),
+      surfaceSkeletonBase: Color.lerp(a.surfaceSkeletonBase, b.surfaceSkeletonBase, t)!,
+      surfaceSkeletonHighlight: Color.lerp(a.surfaceSkeletonHighlight, b.surfaceSkeletonHighlight, t)!,
+      loadingIndicatorColor: Color.lerp(a.loadingIndicatorColor, b.loadingIndicatorColor, t)!,
+      loadingOverlay: Color.lerp(a.loadingOverlay, b.loadingOverlay, t)!,
+      pageIndicatorActive: Color.lerp(a.pageIndicatorActive, b.pageIndicatorActive, t)!,
+      pageIndicatorInactive: Color.lerp(a.pageIndicatorInactive, b.pageIndicatorInactive, t)!,
+      checkIconBackground: Color.lerp(a.checkIconBackground, b.checkIconBackground, t)!,
+      checkIconForeground: _lerpForeground(
+        a.checkIconForeground,
+        b.checkIconForeground,
+        a.checkIconBackground,
+        b.checkIconBackground,
+        t,
+        3,
+      ),
+      checkIconBackgroundDisabled: Color.lerp(a.checkIconBackgroundDisabled, b.checkIconBackgroundDisabled, t)!,
+      checkIconForegroundDisabled: Color.lerp(a.checkIconForegroundDisabled, b.checkIconForegroundDisabled, t)!,
+      linkText: Color.lerp(a.linkText, b.linkText, t)!,
+      homeBackground: Color.lerp(a.homeBackground, b.homeBackground, t)!,
+      homeSurface: Color.lerp(a.homeSurface, b.homeSurface, t)!,
+      homeSurfacePressOverlay: Color.lerp(a.homeSurfacePressOverlay, b.homeSurfacePressOverlay, t)!,
+      homeSurfacePressOverlayOpacity:
+          a.homeSurfacePressOverlayOpacity + (b.homeSurfacePressOverlayOpacity - a.homeSurfacePressOverlayOpacity) * t,
+      homeChartLine: Color.lerp(a.homeChartLine, b.homeChartLine, t)!,
+      homeWidgetShadow: Color.lerp(a.homeWidgetShadow, b.homeWidgetShadow, t)!,
+      utxoOverviewChartSurface: Color.lerp(a.utxoOverviewChartSurface, b.utxoOverviewChartSurface, t)!,
+      utxoOverviewAvailabilitySurface:
+          Color.lerp(a.utxoOverviewAvailabilitySurface, b.utxoOverviewAvailabilitySurface, t)!,
+      utxoOverviewChartUnselectedOverlayOpacity:
+          a.utxoOverviewChartUnselectedOverlayOpacity +
+          (b.utxoOverviewChartUnselectedOverlayOpacity - a.utxoOverviewChartUnselectedOverlayOpacity) * t,
+      utxoOverviewCoinSurface: Color.lerp(a.utxoOverviewCoinSurface, b.utxoOverviewCoinSurface, t)!,
+      utxoOverviewSelectedCoinBorder:
+          Color.lerp(a.utxoOverviewSelectedCoinBorder, b.utxoOverviewSelectedCoinBorder, t)!,
+      utxoOverviewBillSurface: Color.lerp(a.utxoOverviewBillSurface, b.utxoOverviewBillSurface, t)!,
+      utxoOverviewUnselectedOverlay: Color.lerp(a.utxoOverviewUnselectedOverlay, b.utxoOverviewUnselectedOverlay, t)!,
+      utxoOverviewGroupingTabSelectedText:
+          Color.lerp(a.utxoOverviewGroupingTabSelectedText, b.utxoOverviewGroupingTabSelectedText, t)!,
+      utxoOverviewGroupingTabUnselectedText:
+          Color.lerp(a.utxoOverviewGroupingTabUnselectedText, b.utxoOverviewGroupingTabUnselectedText, t)!,
+      utxoOverviewCoinTintStrength:
+          a.utxoOverviewCoinTintStrength + (b.utxoOverviewCoinTintStrength - a.utxoOverviewCoinTintStrength) * t,
+      utxoOverviewCoinIconOpacity:
+          a.utxoOverviewCoinIconOpacity + (b.utxoOverviewCoinIconOpacity - a.utxoOverviewCoinIconOpacity) * t,
+      utxoOverviewCoinInnerStrokeOpacity:
+          a.utxoOverviewCoinInnerStrokeOpacity +
+          (b.utxoOverviewCoinInnerStrokeOpacity - a.utxoOverviewCoinInnerStrokeOpacity) * t,
+      taprootParent: Color.lerp(a.taprootParent, b.taprootParent, t)!,
+      taprootChild: Color.lerp(a.taprootChild, b.taprootChild, t)!,
+      taprootRoleText: Color.lerp(a.taprootRoleText, b.taprootRoleText, t)!,
+      taprootParticipantIconBorder: Color.lerp(a.taprootParticipantIconBorder, b.taprootParticipantIconBorder, t)!,
+      taprootParticipantIconBackground:
+          Color.lerp(a.taprootParticipantIconBackground, b.taprootParticipantIconBackground, t)!,
+      taprootParticipantNeutralBackground:
+          Color.lerp(a.taprootParticipantNeutralBackground, b.taprootParticipantNeutralBackground, t)!,
+      taprootParticipantNeutralBorder:
+          Color.lerp(a.taprootParticipantNeutralBorder, b.taprootParticipantNeutralBorder, t)!,
+      taprootParticipantNeutralRoleBackground:
+          Color.lerp(a.taprootParticipantNeutralRoleBackground, b.taprootParticipantNeutralRoleBackground, t)!,
+      taprootParticipantNeutralRoleBorder:
+          Color.lerp(a.taprootParticipantNeutralRoleBorder, b.taprootParticipantNeutralRoleBorder, t)!,
+      taprootParticipantNeutralRoleText:
+          Color.lerp(a.taprootParticipantNeutralRoleText, b.taprootParticipantNeutralRoleText, t)!,
+      txFlowLine: Color.lerp(a.txFlowLine, b.txFlowLine, t)!,
+      rbfAccent: Color.lerp(a.rbfAccent, b.rbfAccent, t)!,
+      cpfpAccent: Color.lerp(a.cpfpAccent, b.cpfpAccent, t)!,
+      feeBumpingHistoryLine: Color.lerp(a.feeBumpingHistoryLine, b.feeBumpingHistoryLine, t)!,
+      sendingColor: Color.lerp(a.sendingColor, b.sendingColor, t)!,
+      receivingColor: Color.lerp(a.receivingColor, b.receivingColor, t)!,
+      recommendFeeAnimStart: Color.lerp(a.recommendFeeAnimStart, b.recommendFeeAnimStart, t)!,
+      recommendFeeAnimHighlight: Color.lerp(a.recommendFeeAnimHighlight, b.recommendFeeAnimHighlight, t)!,
+      glossaryKeywordBackground: Color.lerp(a.glossaryKeywordBackground, b.glossaryKeywordBackground, t)!,
+      glossaryKeywordText: Color.lerp(a.glossaryKeywordText, b.glossaryKeywordText, t)!,
+      qrScannerOverlay: Color.lerp(a.qrScannerOverlay, b.qrScannerOverlay, t)!,
+      qrScannerProgressBarTrack: Color.lerp(a.qrScannerProgressBarTrack, b.qrScannerProgressBarTrack, t)!,
+      qrScannerProgressBarFill: Color.lerp(a.qrScannerProgressBarFill, b.qrScannerProgressBarFill, t)!,
+      faucetPopoverBackground: Color.lerp(a.faucetPopoverBackground, b.faucetPopoverBackground, t)!,
+      faucetPopoverText: Color.lerp(a.faucetPopoverText, b.faucetPopoverText, t)!,
+      guideBubbleBackground: Color.lerp(a.guideBubbleBackground, b.guideBubbleBackground, t)!,
+      guideBubblePrimaryText: Color.lerp(a.guideBubblePrimaryText, b.guideBubblePrimaryText, t)!,
+    );
+  }
+
   factory CoconutColors.dark() {
     return CoconutColors(
       mainnetLogoGradient: kCoconutMainnetLogoGradient,
@@ -526,6 +819,7 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray850,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
+      dangerText: const Color(0xFFFF7890),
       success: ds.CoconutColors.successOnDark,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
@@ -534,6 +828,8 @@ class CoconutColors {
       dividerStrong: ds.CoconutColors.gray700,
       priceUp: kCoconutPriceUp,
       priceDown: kCoconutPriceDown,
+      priceUpText: const Color(0xFFF36A35),
+      priceDownText: kCoconutPriceDown,
       targetProgressGradientStart: const Color(0xFF8CD5FF),
       targetProgressGradientEnd: const Color(0xFF7775FF),
 
@@ -550,11 +846,11 @@ class CoconutColors {
       buttonSecondaryBackground: ds.CoconutColors.gray350,
       buttonSecondaryForeground: ds.CoconutColors.black,
       chipUnselectedBackground: ds.CoconutColors.gray800,
-      chipUnselectedText: ds.CoconutColors.gray600,
+      chipUnselectedText: const Color(0xFFA0A0A0),
       chipSelectedBackground: ds.CoconutColors.white,
       chipSelectedText: ds.CoconutColors.black,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray800,
-      chipOutlinedUnselectedText: ds.CoconutColors.gray700,
+      chipOutlinedUnselectedText: const Color(0xFFA0A0A0),
       chipMovingBorder: ds.CoconutColors.gray350,
       chipMovingBackground: ds.CoconutColors.gray750,
       chipMovingText: ds.CoconutColors.white,
@@ -563,13 +859,13 @@ class CoconutColors {
       chipDisabledText: ds.CoconutColors.gray600,
       chipDisabledBackground: ds.CoconutColors.gray850,
       inputSurface: ds.CoconutColors.gray800,
-      inputPlaceholder: ds.CoconutColors.gray700,
+      inputPlaceholder: const Color(0xFFA0A0A0),
       inputBorderUnfocused: ds.CoconutColors.gray800,
       inputBorderFocused: ds.CoconutColors.white,
       segmentedControlSelected: ds.CoconutColors.gray900,
       segmentedControlBackground: ds.CoconutColors.gray800,
       segmentedControlSelectedText: ds.CoconutColors.white,
-      segmentedControlUnselectedText: ds.CoconutColors.gray500,
+      segmentedControlUnselectedText: const Color(0xFFA0A0A0),
       surfaceBottomSheet: ds.CoconutColors.gray900,
       surfaceBottomSheetElevated: ds.CoconutColors.gray850,
       bottomSheetHandle: ds.CoconutColors.gray600,
@@ -610,6 +906,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: const Color.fromARGB(12, 255, 255, 255),
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
+      utxoOverviewAvailabilitySurface: ds.CoconutColors.gray800,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.gray900,
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.gray150,
@@ -682,6 +979,7 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray400,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
+      dangerText: const Color(0xFFBF285F),
       success: ds.CoconutColors.successOnLight,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
@@ -690,6 +988,8 @@ class CoconutColors {
       dividerStrong: ds.CoconutColors.gray300,
       priceUp: kCoconutPriceUp,
       priceDown: kCoconutPriceDown,
+      priceUpText: const Color(0xFFBA3B13),
+      priceDownText: const Color(0xFF19752F),
       targetProgressGradientStart: const Color(0xFF329DDA),
       targetProgressGradientEnd: ds.CoconutColors.purple,
 
@@ -706,27 +1006,27 @@ class CoconutColors {
       buttonSecondaryBackground: ds.CoconutColors.gray200,
       buttonSecondaryForeground: ds.CoconutColors.black,
       chipUnselectedBackground: ds.CoconutColors.gray150,
-      chipUnselectedText: ds.CoconutColors.gray350,
+      chipUnselectedText: const Color(0xFF6E6E6E),
       chipSelectedBackground: ds.CoconutColors.gray800,
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray150,
-      chipOutlinedUnselectedText: ds.CoconutColors.gray350,
+      chipOutlinedUnselectedText: const Color(0xFF6E6E6E),
       chipMovingBorder: ds.CoconutColors.gray350,
       chipMovingBackground: ds.CoconutColors.gray200,
       chipMovingText: ds.CoconutColors.gray800,
       chipEditModeBackground: ds.CoconutColors.gray150,
-      chipEditModeText: ds.CoconutColors.gray350,
+      chipEditModeText: const Color(0xFF6E6E6E),
       chipDisabledText: ds.CoconutColors.gray300,
       chipDisabledBackground: ds.CoconutColors.gray100,
       //inputSurface: const Color(0xFFF1F2F5),
       inputSurface: ds.CoconutColors.white,
-      inputPlaceholder: ds.CoconutColors.gray300,
+      inputPlaceholder: const Color(0xFF6E6E6E),
       inputBorderUnfocused: ds.CoconutColors.gray200,
       inputBorderFocused: ds.CoconutColors.black,
       segmentedControlSelected: ds.CoconutColors.gray800,
       segmentedControlBackground: ds.CoconutColors.gray150,
       segmentedControlSelectedText: ds.CoconutColors.white,
-      segmentedControlUnselectedText: ds.CoconutColors.gray400,
+      segmentedControlUnselectedText: const Color(0xFF6E6E6E),
       surfaceBottomSheet: ds.CoconutColors.white,
       surfaceBottomSheetElevated: ds.CoconutColors.gray150,
       bottomSheetHandle: ds.CoconutColors.gray600,
@@ -767,6 +1067,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: ds.CoconutColors.gray600.withValues(alpha: 0.3),
       utxoOverviewChartSurface: ds.CoconutColors.white,
+      utxoOverviewAvailabilitySurface: ds.CoconutColors.gray150,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.white,
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.black,
@@ -818,6 +1119,7 @@ class CoconutColors {
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonLight = Color(0xFF8ED9EE);
     const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
@@ -856,14 +1158,17 @@ class CoconutColors {
       iconButtonHighlight: dim,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
+      dangerText: const Color(0xFFBF285F),
       success: ds.CoconutColors.successOnLight,
-      appLockWarningBackground: kCoconutWarningCard,
+      appLockWarningBackground: kCoconutWarning,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
       dividerStrong: lagoon.withAlpha(60),
       priceUp: kCoconutPriceUp,
       priceDown: kCoconutPriceDown,
+      priceUpText: const Color(0xFFBA3B13),
+      priceDownText: const Color(0xFF19752F),
       targetProgressGradientStart: lagoonDeep,
       targetProgressGradientEnd: palmGreen,
 
@@ -876,30 +1181,30 @@ class CoconutColors {
       buttonPrimaryDisabledBackground: cream,
       buttonPrimaryDisabledForeground: line,
       buttonPrimaryPressOverlay: ds.CoconutColors.white,
-      buttonPrimaryPressOverlayOpacity: 0.5,
+      buttonPrimaryPressOverlayOpacity: 0.12,
       buttonSecondaryBackground: sand,
       buttonSecondaryForeground: huskDeep,
       chipUnselectedBackground: cream,
-      chipUnselectedText: huskSoft,
+      chipUnselectedText: const Color(0xFF865729),
       chipSelectedBackground: huskDeep,
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: cream,
-      chipOutlinedUnselectedText: line,
+      chipOutlinedUnselectedText: const Color(0xFF865729),
       chipMovingBorder: huskSoft,
       chipMovingBackground: sand,
       chipMovingText: huskDeep,
       chipEditModeBackground: cream,
-      chipEditModeText: husk,
+      chipEditModeText: const Color(0xFF865729),
       chipDisabledText: line,
       chipDisabledBackground: shell,
       inputSurface: ds.CoconutColors.white,
-      inputPlaceholder: toast.withAlpha(140),
+      inputPlaceholder: const Color(0xFFA0652C),
       inputBorderUnfocused: line,
       inputBorderFocused: huskDeep,
       segmentedControlSelected: huskDeep,
       segmentedControlBackground: dim,
       segmentedControlSelectedText: ds.CoconutColors.white,
-      segmentedControlUnselectedText: huskSoft,
+      segmentedControlUnselectedText: const Color(0xFF865729),
       surfaceBottomSheet: shell,
       surfaceBottomSheetElevated: Color.lerp(shell, caramel, 0.15)!,
       bottomSheetHandle: caramel,
@@ -919,8 +1224,8 @@ class CoconutColors {
       tooltipBackground: dim,
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
-      popoverBackground: huskDeep,
-      popoverText: ds.CoconutColors.white,
+      popoverBackground: lagoonLight,
+      popoverText: huskDeep,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       loadingIndicatorColor: huskDeep,
@@ -940,6 +1245,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: huskDeep.withValues(alpha: 0.18),
       utxoOverviewChartSurface: shell,
+      utxoOverviewAvailabilitySurface: shell,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
       utxoOverviewCoinSurface: shell,
       utxoOverviewSelectedCoinBorder: huskDeep,

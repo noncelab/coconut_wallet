@@ -358,7 +358,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     child: ShrinkAnimationButton(
                                       onPressed: () => setState(() => _mnemonicWordCount = wordCount),
                                       defaultColor: Colors.transparent,
-                                      pressedColor: context.coconutColors.surfacePressOverlay,
+                                      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+                                      pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
                                       borderRadius: 16,
                                       animationEndValue: 0.94,
                                       child: AnimatedContainer(

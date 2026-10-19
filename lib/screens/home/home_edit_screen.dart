@@ -140,7 +140,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
     final button = CupertinoButton(
       key: ValueKey('home-edit-${onHome ? 'remove' : 'add'}-${definition.id}'),
       padding: EdgeInsets.zero,
-      minimumSize: Size.square(iconSize + 4),
+      minimumSize: const Size.square(48),
       onPressed: () => onHome ? viewModel.removeDefinition(definition) : _add(definition),
       child: Icon(
         onHome ? CupertinoIcons.minus_circle_fill : CupertinoIcons.add_circled_solid,
@@ -153,11 +153,12 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(width: 8),
-        Text(
-          t.home_edit.added,
-          key: ValueKey('home-edit-added-${definition.id}'),
-          textScaler: TextScaler.noScaling,
-          style: CoconutTypography.caption_10.copyWith(color: colors.primary),
+        Flexible(
+          child: Text(
+            t.home_edit.added,
+            key: ValueKey('home-edit-added-${definition.id}'),
+            style: CoconutTypography.body3_12.copyWith(color: colors.primary),
+          ),
         ),
         const SizedBox(width: 2),
         button,
@@ -193,6 +194,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
               final isCurrent = viewModel.currentPresetId == preset.id;
               return HomeWidgetPressable(
                 key: ValueKey('home-preset-card-${preset.id}'),
+                borderRadius: 24,
                 onTap: () => _openPresetPreview(viewModel, preset),
                 child: Container(
                   key: ValueKey('home-preset-${preset.id}'),
@@ -227,7 +229,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                       CoconutLayout.spacing_100h,
                       Text(
                         preset.description(),
-                        style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                        style: CoconutTypography.body2_14.copyWith(color: colors.secondaryTextStrong),
                       ),
                       CoconutLayout.spacing_300h,
                       Align(
@@ -356,21 +358,18 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                               CoconutLayout.spacing_100h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          definition.displayName(),
-                                          key: ValueKey('home-edit-widget-name-${definition.id}'),
-                                          maxLines: 1,
-                                          style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
-                                        ),
-                                      ),
+                                    Text(
+                                      definition.displayName(),
+                                      key: ValueKey('home-edit-widget-name-${definition.id}'),
+                                      style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
                                     ),
-                                    _buildToggleButton(viewModel, definition, iconSize: 22),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: _buildToggleButton(viewModel, definition, iconSize: 22),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -418,7 +417,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
             Expanded(
               child: Text(
                 definition.displayName(),
-                style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
               ),
             ),
             _buildToggleButton(viewModel, definition, iconSize: 24),
@@ -434,7 +433,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
     final available = viewModel.addableShortcutDefinitions;
     Widget header(String text) => Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText)),
+      child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong)),
     );
     Widget divider(String afterId) =>
         Container(key: ValueKey('home-edit-shortcut-divider-$afterId'), height: 1, color: colors.divider);
@@ -469,6 +468,7 @@ class _CategoryChip extends StatelessWidget {
     final colors = context.coconutColors;
     return HomeWidgetPressable(
       onTap: onTap,
+      focusColor: selected ? colors.chipSelectedText : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(

@@ -6,9 +6,12 @@ import 'package:flutter/foundation.dart';
 /// 검색으로 찾은 하위 기능이면 [path]에 상위부터 찾은 기능까지 이름이 들어 있다.
 class AllFeaturesEntry {
   final FeatureItem item;
+  final FeatureItem? matchedItem;
   final List<String> path;
 
-  const AllFeaturesEntry(this.item, {this.path = const []});
+  const AllFeaturesEntry(this.item, {this.matchedItem, this.path = const []});
+
+  FeatureItem get launchItem => matchedItem ?? item;
 }
 
 /// All Features 화면
@@ -81,8 +84,11 @@ class AllFeaturesViewModel extends ChangeNotifier {
   }
 
   List<AllFeaturesEntry> get results => [
-    for (final result in _registry.search(_query))
-      if (_isAvailable(result.item))
-        AllFeaturesEntry(result.item, path: result.matchedPath.length > 1 ? result.matchedPath : const []),
+    for (final result in _registry.search(_query, isAvailable: _isAvailable))
+      AllFeaturesEntry(
+        result.item,
+        matchedItem: result.matchedItem,
+        path: result.matchedPath.length > 1 ? result.matchedPath : const [],
+      ),
   ];
 }

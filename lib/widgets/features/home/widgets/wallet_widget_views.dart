@@ -10,6 +10,7 @@ import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 
 /// 스택을 눌러 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
 /// 목록에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다.
@@ -43,6 +44,9 @@ class WalletStackView extends StatefulWidget {
   final String? emptyActionText;
   final VoidCallback? onEmptyPressed;
 
+  /// 있으면 실제 지갑 뒤에 추가 페이지를 보여 준다.
+  final VoidCallback? onAddPressed;
+
   const WalletStackView({
     super.key,
     required this.keyPrefix,
@@ -55,6 +59,7 @@ class WalletStackView extends StatefulWidget {
     this.onOpen,
     this.emptyActionText,
     this.onEmptyPressed,
+    this.onAddPressed,
   });
 
   @override
@@ -67,6 +72,8 @@ class _WalletStackViewState extends State<WalletStackView> {
   final PageController _controller = PageController();
   bool _indicatorVisible = false;
   Timer? _hideIndicator;
+
+  int get _pageCount => widget.wallets.length + (widget.onAddPressed == null ? 0 : 1);
 
   @override
   void dispose() {
@@ -97,7 +104,7 @@ class _WalletStackViewState extends State<WalletStackView> {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (var i = 0; i < widget.wallets.length; i++)
+            for (var i = 0; i < _pageCount; i++)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -128,6 +135,10 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   void _onTap() {
+    if (widget.onAddPressed != null && _page.round() >= widget.wallets.length) {
+      widget.onAddPressed!();
+      return;
+    }
     final onOpen = widget.onOpen;
     if (onOpen == null) {
       widget.onPressed?.call();
@@ -148,45 +159,54 @@ class _WalletStackViewState extends State<WalletStackView> {
     );
   }
 
+  Widget _emptyCard(BuildContext context, {bool addPage = false}) {
+    final colors = context.coconutColors;
+    final actionText = widget.emptyActionText;
+    return HomeWidgetCard(
+      key: Key('${widget.keyPrefix}-${addPage ? 'add' : 'empty'}'),
+      onPressed: addPage ? null : widget.onEmptyPressed ?? widget.onPressed,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (actionText != null) ...[
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
+                child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text(
+              actionText ?? widget.emptyText,
+              key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
+              textAlign: TextAlign.center,
+              style:
+                  actionText == null
+                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
+                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pageCard(BuildContext context, int index, {bool hero = false}) {
+    if (index == widget.wallets.length) return _emptyCard(context, addPage: true);
+    final wallet = widget.wallets[index];
+    final card = _card(wallet);
+    return hero && widget.onOpen != null ? Hero(tag: _heroTagOf(wallet.id), child: card) : card;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     final wallets = widget.wallets;
-    if (wallets.isEmpty) {
-      final actionText = widget.emptyActionText;
-      return HomeWidgetCard(
-        key: Key('${widget.keyPrefix}-empty'),
-        onPressed: widget.onEmptyPressed ?? widget.onPressed,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (actionText != null) ...[
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                  child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
-                ),
-                const SizedBox(height: 8),
-              ],
-              Text(
-                actionText ?? widget.emptyText,
-                key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
-                textAlign: TextAlign.center,
-                style:
-                    actionText == null
-                        ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
-                        : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    if (wallets.isEmpty) return _emptyCard(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.onOpen == null && widget.onPressed == null ? null : _onTap,
+      onTap: widget.onOpen == null && widget.onPressed == null && widget.onAddPressed == null ? null : _onTap,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
@@ -198,13 +218,13 @@ class _WalletStackViewState extends State<WalletStackView> {
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, _) {
-                      final page = _page.clamp(0.0, (wallets.length - 1).toDouble());
+                      final page = _page.clamp(0.0, (_pageCount - 1).toDouble());
                       final front = page.floor();
                       final progress = page - front;
                       final back = front + 1;
                       return Stack(
                         children: [
-                          if (back < wallets.length)
+                          if (back < _pageCount)
                             Opacity(
                               key: ValueKey('${widget.keyPrefix}-back'),
                               opacity: progress,
@@ -213,7 +233,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                                 child: Transform.scale(
                                   scale:
                                       WalletStackView.backStartScale + (1 - WalletStackView.backStartScale) * progress,
-                                  child: _card(wallets[back]),
+                                  child: _pageCard(context, back),
                                 ),
                               ),
                             ),
@@ -224,10 +244,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                               offset: Offset(-width * progress, 0),
                               child: Transform.scale(
                                 scale: 1 - (1 - WalletStackView.frontEndScale) * progress,
-                                child:
-                                    widget.onOpen == null
-                                        ? _card(wallets[front])
-                                        : Hero(tag: _heroTagOf(wallets[front].id), child: _card(wallets[front])),
+                                child: _pageCard(context, front, hero: true),
                               ),
                             ),
                           ),
@@ -242,12 +259,12 @@ class _WalletStackViewState extends State<WalletStackView> {
                     child: PageView.builder(
                       key: Key('${widget.keyPrefix}-pager'),
                       controller: _controller,
-                      itemCount: wallets.length,
+                      itemCount: _pageCount,
                       itemBuilder: (context, index) => const SizedBox.expand(),
                     ),
                   ),
                 ),
-                if (wallets.length > 1)
+                if (_pageCount > 1)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -257,7 +274,7 @@ class _WalletStackViewState extends State<WalletStackView> {
                         key: Key('${widget.keyPrefix}-indicator'),
                         opacity: _indicatorVisible ? 1 : 0,
                         duration: const Duration(milliseconds: 200),
-                        child: Center(child: _indicator(context)),
+                        child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: _indicator(context))),
                       ),
                     ),
                   ),
@@ -443,29 +460,77 @@ class _DonutPainter extends CustomPainter {
       if (shown >= 1) {
         canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
       } else if (shown > 0) {
-        paint.strokeCap = StrokeCap.round;
-        canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * shown, false, paint..color = colors[visible.single]);
+        canvas.drawPath(
+          _roundedSector(
+            size.center(Offset.zero),
+            radius - stroke / 2,
+            radius + stroke / 2,
+            -math.pi / 2,
+            math.pi * 2 * shown,
+            stroke * 0.1,
+          ),
+          Paint()..color = colors[visible.single],
+        );
       }
       return;
     }
-    paint.strokeCap = StrokeCap.round;
-    final capAngle = (stroke / 2) / radius;
-    final gapAngle = (stroke * 0.35) / radius;
+    final gap = size.shortestSide * 0.014 / radius;
+    final sweeps = [for (final i in visible) math.pi * 2 * values[i] / total];
     final limit = math.pi * 2 * shown;
     var start = 0.0;
-    for (final i in visible) {
-      final sweep = math.pi * 2 * values[i] / total;
-      final drawn = math.min(
-        math.max(0.0001, sweep - capAngle * 2 - gapAngle),
-        limit - start - capAngle - gapAngle / 2,
-      );
-      if (drawn > 0) {
-        canvas.drawArc(rect, -math.pi / 2 + start + capAngle + gapAngle / 2, drawn, false, paint..color = colors[i]);
+    for (var n = 0; n < visible.length; n++) {
+      final sweep = sweeps[n];
+      final before = math.min(gap, math.min(sweep, sweeps[(n + sweeps.length - 1) % sweeps.length]) * 0.08) / 2;
+      final after = math.min(gap, math.min(sweep, sweeps[(n + 1) % sweeps.length]) * 0.08) / 2;
+      final from = start + before;
+      final until = math.min(start + sweep - after, limit);
+      if (until > from) {
+        canvas.drawPath(
+          _roundedSector(
+            size.center(Offset.zero),
+            radius - stroke / 2,
+            radius + stroke / 2,
+            from - math.pi / 2,
+            until - from,
+            stroke * 0.1,
+          ),
+          Paint()..color = colors[visible[n]],
+        );
       }
       start += sweep;
     }
   }
 
+  /// Fillet circles tangent to both the radial edge and the concentric arc.
+  /// Limit their radius so neighboring corners stay inside the true slice angle.
+  Path _roundedSector(Offset center, double inner, double outer, double start, double sweep, double corner) {
+    final halfSine = math.sin(math.min(sweep, math.pi) / 2);
+    final radius =
+        math.min(corner, math.min(outer * halfSine / (1 + halfSine), inner * halfSine / (1 - halfSine))) * (1 - 1e-9);
+    final outerInset = math.asin((radius / (outer - radius)).clamp(0.0, 1.0));
+    final innerInset = math.asin((radius / (inner + radius)).clamp(0.0, 1.0));
+    final outerTangent = math.sqrt(outer * (outer - 2 * radius));
+    final innerTangent = math.sqrt(inner * (inner + 2 * radius));
+    Offset point(double angle, double r) => center + Offset(math.cos(angle), math.sin(angle)) * r;
+    final end = start + sweep;
+    final p = point(start, outerTangent);
+    return Path()
+      ..moveTo(p.dx, p.dy)
+      ..arcToPoint(point(start + outerInset, outer), radius: Radius.circular(radius))
+      ..arcTo(Rect.fromCircle(center: center, radius: outer), start + outerInset, sweep - 2 * outerInset, false)
+      ..arcToPoint(point(end, outerTangent), radius: Radius.circular(radius))
+      ..lineTo(point(end, innerTangent).dx, point(end, innerTangent).dy)
+      ..arcToPoint(point(end - innerInset, inner), radius: Radius.circular(radius))
+      ..arcTo(Rect.fromCircle(center: center, radius: inner), end - innerInset, -sweep + 2 * innerInset, false)
+      ..arcToPoint(point(start, innerTangent), radius: Radius.circular(radius))
+      ..close();
+  }
+
   @override
-  bool shouldRepaint(_DonutPainter oldDelegate) => true;
+  bool shouldRepaint(_DonutPainter oldDelegate) =>
+      !listEquals(values, oldDelegate.values) ||
+      !listEquals(colors, oldDelegate.colors) ||
+      emptyColor != oldDelegate.emptyColor ||
+      strokeRatio != oldDelegate.strokeRatio ||
+      reveal != oldDelegate.reveal;
 }

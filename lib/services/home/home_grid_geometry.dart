@@ -22,10 +22,7 @@ class HomeGridGeometry {
   HomeGridPosition snap(Offset local, HomeSpan span) {
     final rawColumn = local.dx / _pitch;
     final maxColumn = HomeGridLayout.columns - span.width;
-    final column =
-        span == HomeSpan.small
-            ? ((rawColumn / 2).round() * 2).clamp(0, maxColumn)
-            : rawColumn.round().clamp(0, maxColumn);
+    final column = rawColumn.round().clamp(0, maxColumn);
     final row = (local.dy / _pitch).round();
     return HomeGridPosition(column, row < 0 ? 0 : row);
   }

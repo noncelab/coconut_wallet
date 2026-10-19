@@ -124,7 +124,7 @@ class CommonBottomSheets {
                   ),
                 ),
               ),
-              child,
+              Flexible(child: child),
             ],
           ),
         );
@@ -155,6 +155,8 @@ class CommonBottomSheets {
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
+    final isResizable = childBuilder != null && enableDragToResize;
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
@@ -212,21 +214,35 @@ class CommonBottomSheets {
                                   });
                                 }
 
-                                return NotificationListener<ScrollNotification>(
-                                  onNotification: (notification) {
-                                    if (notification is ScrollEndNotification) {
-                                      handleDragEnd();
-                                    }
-                                    return false;
-                                  },
-                                  child: childBuilder(scrollController),
+                                return Material(
+                                  color: resolvedBackgroundColor,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: NotificationListener<ScrollNotification>(
+                                    onNotification: (notification) {
+                                      if (notification is ScrollEndNotification) {
+                                        handleDragEnd();
+                                      }
+                                      return false;
+                                    },
+                                    // Keep the content layout stable while the sheet shrinks.
+                                    // Material clips it to the current draggable height.
+                                    child: OverflowBox(
+                                      alignment: Alignment.topCenter,
+                                      minHeight: sheetHeight,
+                                      maxHeight: sheetHeight,
+                                      child: childBuilder(scrollController),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                   ),
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor: isResizable ? Colors.transparent : resolvedBackgroundColor,
       elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       clipBehavior: Clip.antiAlias,
@@ -685,79 +701,79 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
   Widget build(BuildContext context) {
     const buttonSpacingHeight = Sizes.size12;
     const platformButtonHeightAdjustment = 3.0;
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final buttonAreaHeight =
         widget.showConfirmButton
-            ? FixedBottomButton.fixedBottomButtonDefaultHeight + platformButtonHeightAdjustment + buttonSpacingHeight
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight * textScale.clamp(1.0, double.infinity) +
+                platformButtonHeightAdjustment +
+                buttonSpacingHeight
             : 0.0;
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: Container(
-        color: widget.backgroundColor,
-        child: SafeArea(
-          top: false,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                bottom: buttonAreaHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-                  child: ListView.builder(
-                    controller: widget.scrollController,
-                    shrinkWrap: false,
-                    primary: widget.scrollController == null,
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: Sizes.size16),
-                    itemCount: widget.items.length,
-                    itemBuilder: (context, index) {
-                      final item = widget.items[index];
-                      final id = widget.getItemId(item);
-                      final isSelected = _selectedId == id;
+    return Container(
+      color: widget.backgroundColor,
+      child: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              bottom: buttonAreaHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                child: ListView.builder(
+                  controller: widget.scrollController,
+                  shrinkWrap: false,
+                  primary: widget.scrollController == null,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: Sizes.size16),
+                  itemCount: widget.items.length,
+                  itemBuilder: (context, index) {
+                    final item = widget.items[index];
+                    final id = widget.getItemId(item);
+                    final isSelected = _selectedId == id;
 
-                      void handleTap() {
-                        vibrateExtraLight();
-                        setState(() {
-                          _selectedId = _selectedId == id ? null : id;
-                        });
-                        widget.onSelectionChanged?.call(
+                    void handleTap() {
+                      vibrateExtraLight();
+                      setState(() {
+                        _selectedId = _selectedId == id ? null : id;
+                      });
+                      widget.onSelectionChanged?.call(
+                        _selectedId == null
+                            ? null
+                            : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                      );
+                    }
+
+                    return widget.itemBuilder(context, item, isSelected, handleTap);
+                  },
+                ),
+              ),
+            ),
+            if (widget.showConfirmButton)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: buttonAreaHeight + 5,
+                  child: FixedBottomButton(
+                    showSurroundings: widget.showSurroundings,
+                    isVisibleAboveKeyboard: false,
+                    bottomPadding: 16,
+                    onButtonClicked: () {
+                      final selectedItem =
                           _selectedId == null
                               ? null
-                              : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
-                        );
-                      }
-
-                      return widget.itemBuilder(context, item, isSelected, handleTap);
+                              : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                      Navigator.pop(context, selectedItem);
                     },
+                    isActive:
+                        _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                    text: widget.confirmText,
+                    surroundingsColor: Colors.transparent,
                   ),
                 ),
               ),
-              if (widget.showConfirmButton)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: SizedBox(
-                    height: buttonAreaHeight + 5,
-                    child: FixedBottomButton(
-                      showSurroundings: widget.showSurroundings,
-                      isVisibleAboveKeyboard: false,
-                      bottomPadding: 16,
-                      onButtonClicked: () {
-                        final selectedItem =
-                            _selectedId == null
-                                ? null
-                                : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                        Navigator.pop(context, selectedItem);
-                      },
-                      isActive:
-                          _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
-                      text: widget.confirmText,
-                      surroundingsColor: Colors.transparent,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );

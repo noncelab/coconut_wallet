@@ -252,7 +252,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                                   ? t.send_confirm_screen.passphrase_input_title
                                   : t.sign
                               : t.next,
-                      isActive: !_isLocalSigning,
+                      isActive: viewModel.isTransactionReady && !_isLocalSigning,
                       onButtonClicked: () => _onButtonClicked(viewModel),
                     ),
                   ),
@@ -401,6 +401,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
+    if (!viewModel.isTransactionReady) return;
+
     if (viewModel.isHotWallet) {
       await _signHotWallet(viewModel);
       return;
@@ -697,6 +699,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
       externalOutputAmounts: viewModel.externalOutputAmounts,
+      externalOutputTapTargets: [
+        for (final (index, output) in transaction.outputs.indexed)
+          if (output.isChangeOutput != true)
+            FlowOutputTapTarget(address: output.getAddress(), amount: output.amount, outputIndex: index),
+      ],
       changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.estimatedFee,
       currentUnit: _currentUnit,
@@ -710,12 +717,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     }
 
     final detailItems = <OutputDetailItem>[];
-    int outputIndex = 0;
-    for (final output in transaction.outputs) {
+    for (final (outputIndex, output) in transaction.outputs.indexed) {
       final isChange = output.isChangeOutput == true;
-      if (!isChange) {
-        outputIndex += 1;
-      }
       detailItems.add(
         OutputDetailItem(
           label: isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),

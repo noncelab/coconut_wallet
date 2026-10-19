@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/features/bip329/file_list_item_card.dart';
@@ -332,17 +333,35 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
   }
 
   Widget _buildNoWalletsFound(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 100),
-        Text(
-          t.label_export_screen.no_wallet,
-          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-          textAlign: TextAlign.center,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 100),
+        child: LabelStepLayout(
+          icon: SvgPicture.asset(
+            FeatureShortcutIconPath.labelManagement,
+            colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+          ),
+          heading: t.label_export_screen.empty_wallet_title,
+          titleColor: context.coconutColors.primaryText,
+          content: Column(
+            children: [
+              Text(
+                t.label_export_screen.empty_wallet_description,
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                textAlign: TextAlign.center,
+              ),
+              CoconutLayout.spacing_500h,
+              CoconutButton(
+                text: t.home_widgets.add_wallet,
+                height: 48,
+                onPressed: () => WalletAddScreen.openByWalletCount(context),
+                backgroundColor: context.coconutColors.primaryText,
+                foregroundColor: context.coconutColors.background,
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -725,7 +744,7 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
                 onChanged: (_) => widget.onTap(),
                 width: 24,
                 color: context.coconutColors.iconPrimary,
-                unSelectedColor: context.coconutColors.iconSecondary,
+                unSelectedColor: context.coconutColors.iconPrimary,
                 inactiveColor: context.coconutColors.iconDisabled,
                 isDisabled: effectiveDisabled,
               ),

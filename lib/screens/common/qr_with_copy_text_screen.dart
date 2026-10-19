@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
@@ -14,7 +17,6 @@ import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart'
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
@@ -161,60 +163,58 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final size = renderBox.size;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    Navigator.of(context)
-        .push(
-          PageRouteBuilder(
-            opaque: false,
-            barrierDismissible: true,
-            barrierColor: Colors.transparent,
-            transitionDuration: Duration.zero,
-            pageBuilder: (context, _, __) {
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    behavior: HitTestBehavior.translucent,
-                    child: const SizedBox.expand(),
-                  ),
-                  Positioned(
-                    top: offset.dy + size.height + 8.0,
-                    right: screenWidth - (offset.dx + size.width),
-                    child: MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: CoconutPulldownMenu(
-                        entries:
-                            _optionKeys.map((key) {
-                              return CoconutPulldownMenuItem(title: key);
-                            }).toList(),
+    // 팝업 route로 연다. 이름 없는 PageRoute는 화면 기록에서 다른 화면으로 나간 것으로 보여, 닫을 때 이 화면이 한 번 더 기록된다.
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, _, __) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.translucent,
+              child: const SizedBox.expand(),
+            ),
+            Positioned(
+              top: offset.dy + size.height + 8.0,
+              right: screenWidth - (offset.dx + size.width),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                child: CoconutPulldownMenu(
+                  entries:
+                      _optionKeys.map((key) {
+                        return CoconutPulldownMenuItem(title: key);
+                      }).toList(),
 
-                        selectedIndex: _selectedIndex,
+                  selectedIndex: _selectedIndex,
 
-                        onSelected: (index, title) {
-                          setState(() {
-                            _selectedKey = _optionKeys[index];
-                          });
-                          Navigator.pop(context);
-                        },
-                        backgroundColor: context.coconutColors.pulldownMenuBackground,
-                        shadowColor: context.coconutColors.shadowDefault,
-                        dividerColor: context.coconutColors.pulldownMenuDividerColor,
-                        splashColor: context.coconutColors.pulldownMenuPressedColor,
-                        borderRadius: 8,
-                        isSelectedItemBold: true,
-                        buttonPadding: const EdgeInsets.only(right: 16, left: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        )
-        .then((_) {
-          setState(() {
-            _isPulldownOpen = false;
-          });
-        });
+                  onSelected: (index, title) {
+                    setState(() {
+                      _selectedKey = _optionKeys[index];
+                    });
+                    Navigator.pop(context);
+                  },
+                  backgroundColor: context.coconutColors.pulldownMenuBackground,
+                  shadowColor: context.coconutColors.shadowDefault,
+                  dividerColor: context.coconutColors.pulldownMenuDividerColor,
+                  splashColor: context.coconutColors.pulldownMenuPressedColor,
+                  borderRadius: 8,
+                  isSelectedItemBold: true,
+                  buttonPadding: const EdgeInsets.only(right: 16, left: 16),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      setState(() {
+        _isPulldownOpen = false;
+      });
+    });
   }
 
   @override
@@ -235,10 +235,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: brightness == Brightness.light ? Brightness.dark : Brightness.light,
-          statusBarBrightness: brightness == Brightness.light ? Brightness.light : Brightness.dark,
-        ),
+        systemOverlayStyle: buildSystemBarStyle(backgroundColor: backgroundColor, brightness: brightness),
         leading:
             Navigator.canPop(context)
                 ? IconButton(

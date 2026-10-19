@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
@@ -20,7 +21,12 @@ class ReceiveAddressRouteArgs {
 class AddressListRouteArgs {
   final int id;
   final bool? initialShowOnlyWatchedAddresses;
-  const AddressListRouteArgs({required this.id, this.initialShowOnlyWatchedAddresses});
+  final bool? initialShowOnlyUnusedAddresses;
+  const AddressListRouteArgs({
+    required this.id,
+    this.initialShowOnlyWatchedAddresses,
+    this.initialShowOnlyUnusedAddresses,
+  });
 }
 
 class WalletDetailRouteArgs {
@@ -77,6 +83,8 @@ class UnsignedTransactionQrRouteArgs {
 
 class SendRouteArgs {
   final int? id;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -84,6 +92,8 @@ class SendRouteArgs {
   final String? initialBitcoinUri;
   const SendRouteArgs({
     this.id,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,
@@ -126,6 +136,7 @@ class WalletInfoRouteArgs {
   final bool? showMfpInput;
   final bool? highlightMnemonicBackup;
   final bool? showTargetSetting;
+  final WalletInfoTarget? initialTarget;
   const WalletInfoRouteArgs({
     required this.id,
     required this.walletType,
@@ -133,6 +144,7 @@ class WalletInfoRouteArgs {
     this.showMfpInput,
     this.highlightMnemonicBackup,
     this.showTargetSetting,
+    this.initialTarget,
   });
 }
 

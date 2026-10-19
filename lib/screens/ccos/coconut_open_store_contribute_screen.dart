@@ -10,6 +10,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -157,7 +158,7 @@ class _ContributeTypeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -173,19 +174,26 @@ class _ContributeTypeLine extends StatelessWidget {
       entranceInterval: intervalFromMs(entranceStartMs, entranceEndMs, sceneDurationMs, curve: Curves.easeOutCubic),
       entryOffset: entryOffset,
       textAlign: textAlign,
-      builder:
-          (animation, textAlign) => RichText(
-            textAlign: textAlign,
-            strutStyle: strutStyle,
-            text: typewriterSpan(
-              source: text,
-              animation: animation,
-              interval: typewriterIntervalFromMs(text, typingStartMs, sceneDurationMs),
-              baseStyle: baseStyle,
-              highlightStyle: highlightStyle,
-              highlightPhrases: highlightPhrases,
-            ),
+      builder: (animation, textAlign) {
+        final visibleText = typewriterText(
+          text,
+          animation,
+          typewriterIntervalFromMs(text, typingStartMs, sceneDurationMs),
+        );
+        String displayText(String value) =>
+            LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(value) : value;
+        return RichText(
+          textAlign: textAlign,
+          strutStyle: strutStyle,
+          text: styledSpanFromVisibleText(
+            visibleText: displayText(visibleText),
+            sourceText: displayText(text),
+            baseStyle: baseStyle,
+            highlightStyle: highlightStyle,
+            highlightPhrases: highlightPhrases.map(displayText).toSet(),
           ),
+        );
+      },
     );
   }
 }

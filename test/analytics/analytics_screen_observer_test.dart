@@ -355,7 +355,7 @@ void main() {
       (WalletAddDialogMode.watchOnlySource, AnalyticsScreenNames.walletAddWatchOnlySourcesSheet),
       (WalletAddDialogMode.hotWalletAction, AnalyticsScreenNames.walletAddHotWalletActionsSheet),
     ]) {
-      unawaited(WalletAddDialog.show(harness.context, mode));
+      unawaited(WalletAddDialog.showTopSheet(harness.context, mode));
       await tester.pumpAndSettle();
       expect(harness.analytics.screens.last, screenName);
       harness.navigatorKey.currentState!.pop();

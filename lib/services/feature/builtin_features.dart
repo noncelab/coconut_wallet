@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -7,10 +8,15 @@ import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dar
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
@@ -18,6 +24,7 @@ import 'package:coconut_wallet/screens/settings/tools/glossary_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -59,6 +66,10 @@ FeatureItem _sub(
   required String Function() label,
   required String Function() search,
   List<String> keywords = const [],
+  FeatureContext context = FeatureContext.none,
+  FeatureLaunch? launch,
+  bool Function(BuildContext)? isAvailable,
+  bool Function(WalletItemBase)? isWalletSupported,
 }) {
   return FeatureItem(
     id: '$parentId.$id',
@@ -66,6 +77,10 @@ FeatureItem _sub(
     keywords: keywords,
     localizedKeywords: () => _keywords(search()),
     parentId: parentId,
+    context: context,
+    launch: launch,
+    isAvailable: isAvailable,
+    isWalletSupported: isWalletSupported,
   );
 }
 
@@ -77,11 +92,49 @@ List<String> _keywords(String text) => [
 
 Future<void> _openWalletAdd(BuildContext context, WalletAddDialogMode mode) {
   context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.feature);
-  return WalletAddDialog.show(context, mode);
+  return WalletAddDialog.showTopSheet(context, mode);
 }
 
 Future<void> _push(BuildContext context, String route, [Object? arguments]) {
   return Navigator.pushNamed(context, route, arguments: arguments);
+}
+
+Future<void> _openHotWallet(BuildContext context, {required bool restore}) async {
+  context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.feature);
+  if (!await WalletAddActions.prepareHotWallet(context, restore: restore) || !context.mounted) return;
+  await _push(context, WalletAddActions.hotWalletRoute(restore: restore));
+}
+
+Future<void> _openWalletInfo(
+  BuildContext context,
+  WalletItemBase? wallet, {
+  WalletInfoTarget? target,
+  bool showMfpInput = false,
+  bool highlightMnemonicBackup = false,
+  bool showTargetSetting = false,
+}) => _push(
+  context,
+  AppRouteNames.walletInfo,
+  WalletInfoRouteArgs(
+    id: wallet!.id,
+    walletType: wallet.walletType,
+    entryPoint: kEntryPointWalletHome,
+    initialTarget: target,
+    showMfpInput: showMfpInput,
+    highlightMnemonicBackup: highlightMnemonicBackup,
+    showTargetSetting: showTargetSetting,
+  ),
+);
+
+bool _canEditWalletAppearance(WalletItemBase wallet) {
+  if (wallet.hasLocalKey || wallet.walletImportSource != WalletImportSource.coconutVault) return true;
+  final path = switch (wallet.walletBase) {
+    SingleSignatureWallet value => value.derivationPath,
+    TaprootWallet value => value.derivationPath,
+    _ => '',
+  };
+  final segments = path.split('/');
+  return segments.length > 3 && (int.tryParse(segments[3].replaceAll("'", '')) ?? 0) != 0;
 }
 
 /// 언어를 바꾸면 [t]가 새 번역으로 바뀌므로, 라벨은 부를 때마다 지금 번역에서 읽는다.
@@ -108,6 +161,7 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'pin',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.pin),
       label: () => _subLabels.app_settings_pin,
       search: () => _search.app_settings_pin,
       keywords: const ['PIN'],
@@ -115,6 +169,9 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'biometrics',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.biometrics),
+      isAvailable:
+          (context) => context.read<AuthProvider>().isSetPin && context.read<AuthProvider>().canCheckBiometrics,
       label: () => _subLabels.app_settings_biometrics,
       search: () => _search.app_settings_biometrics,
       keywords: const ['Face ID'],
@@ -122,12 +179,15 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'pin_change',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.pinChange),
+      isAvailable: (context) => context.read<AuthProvider>().isSetPin,
       label: () => _subLabels.app_settings_pin_change,
       search: () => _search.app_settings_pin_change,
     ),
     _sub(
       FeatureIds.appSettings,
       'unit',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.unit),
       label: () => _subLabels.app_settings_unit,
       search: () => _search.app_settings_unit,
       keywords: const ['BTC', 'sats', 'BIP177'],
@@ -135,6 +195,7 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'fiat',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.fiat),
       label: () => _subLabels.app_settings_fiat,
       search: () => _search.app_settings_fiat,
       keywords: const ['KRW', 'USD', 'JPY', 'EUR'],
@@ -142,6 +203,7 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'language',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.language),
       label: () => _subLabels.app_settings_language,
       search: () => _search.app_settings_language,
       keywords: const ['한국어', 'English', '日本語', 'Español', 'Deutsch'],
@@ -149,18 +211,21 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'theme',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.theme),
       label: () => _subLabels.app_settings_theme,
       search: () => _search.app_settings_theme,
     ),
     _sub(
       FeatureIds.appSettings,
       'utxo_selection',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.utxoSelection),
       label: () => _subLabels.app_settings_utxo_selection,
       search: () => _search.app_settings_utxo_selection,
     ),
     _sub(
       FeatureIds.appSettings,
       'electrum',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.electrum),
       label: () => _subLabels.app_settings_electrum,
       search: () => _search.app_settings_electrum,
       keywords: const ['Electrum', 'SSL'],
@@ -168,19 +233,16 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.appSettings,
       'explorer',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.explorer),
+      isAvailable: (_) => NetworkType.currentNetworkType == NetworkType.mainnet,
       label: () => _subLabels.app_settings_explorer,
       search: () => _search.app_settings_explorer,
       keywords: const ['mempool'],
     ),
     _sub(
       FeatureIds.appSettings,
-      'log_viewer',
-      label: () => _subLabels.app_settings_log_viewer,
-      search: () => _search.app_settings_log_viewer,
-    ),
-    _sub(
-      FeatureIds.appSettings,
       'app_info',
+      launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.appInfo),
       label: () => _subLabels.app_settings_app_info,
       search: () => _search.app_settings_app_info,
     ),
@@ -197,6 +259,7 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletAddWatchOnly,
       'devices',
+      launch: (context, _) => _openWalletAdd(context, WalletAddDialogMode.watchOnlySource),
       label: () => _subLabels.wallet_add_watch_only_devices,
       search: () => _search.wallet_add_watch_only_devices,
       keywords: const [
@@ -214,6 +277,10 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletAddWatchOnly,
       'manual',
+      launch: (context, _) async {
+        context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.feature);
+        WalletAddActions.openSource(context, Navigator.of(context), WalletImportSource.extendedPublicKey);
+      },
       label: () => _subLabels.wallet_add_watch_only_manual,
       search: () => _search.wallet_add_watch_only_manual,
       keywords: const ['xpub', 'zpub'],
@@ -231,12 +298,14 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletAddHot,
       'create',
+      launch: (context, _) => _openHotWallet(context, restore: false),
       label: () => _subLabels.wallet_add_hot_create,
       search: () => _search.wallet_add_hot_create,
     ),
     _sub(
       FeatureIds.walletAddHot,
       'restore',
+      launch: (context, _) => _openHotWallet(context, restore: true),
       label: () => _subLabels.wallet_add_hot_restore,
       search: () => _search.wallet_add_hot_restore,
       keywords: const ['SeedQR'],
@@ -261,12 +330,18 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.transactionDraft,
       'signed',
+      launch:
+          (context, _) =>
+              _push(context, AppRouteNames.transactionDraft, const TransactionDraftRouteArgs(isSignedTabActive: true)),
       label: () => _subLabels.transaction_draft_signed,
       search: () => _search.transaction_draft_signed,
     ),
     _sub(
       FeatureIds.transactionDraft,
       'unsigned',
+      launch:
+          (context, _) =>
+              _push(context, AppRouteNames.transactionDraft, const TransactionDraftRouteArgs(isSignedTabActive: false)),
       label: () => _subLabels.transaction_draft_unsigned,
       search: () => _search.transaction_draft_unsigned,
     ),
@@ -288,13 +363,46 @@ List<FeatureItem> builtinFeatures() {
       iconPath: FeatureShortcutIconPath.labelManagement,
       shortcutEligible: true,
       keywords: const ['BIP329'],
-      localizedKeywords: () => _keywords(_search.label_management),
+      localizedKeywords:
+          () =>
+              _keywords(_search.label_management)
+                  .where(
+                    (term) =>
+                        !{
+                          t.label_management_screen.import_title.toLowerCase(),
+                          t.label_management_screen.export_title.toLowerCase(),
+                          'import',
+                          'export',
+                        }.contains(term.toLowerCase()),
+                  )
+                  .toList(),
       launch:
           (context, _) => _push(
             context,
             AppRouteNames.labelManagement,
             const LabelManagementRouteArgs(id: null, showImportMemosFromOtherWalletsOption: false),
           ),
+    ),
+    _sub(
+      FeatureIds.labelManagement,
+      'import',
+      keywords: const ['import'],
+      label: () => t.label_management_screen.import_title,
+      search: () => t.label_management_screen.import_title,
+      launch:
+          (context, _) => _push(
+            context,
+            AppRouteNames.labelImport,
+            const LabelImportRouteArgs(showImportMemosFromOtherWalletsOption: false),
+          ),
+    ),
+    _sub(
+      FeatureIds.labelManagement,
+      'export',
+      keywords: const ['export'],
+      label: () => t.label_management_screen.export_title,
+      search: () => t.label_management_screen.export_title,
+      launch: (context, _) => _push(context, AppRouteNames.labelExport, const LabelExportRouteArgs()),
     ),
     FeatureItem(
       id: FeatureIds.mnemonicWordList,
@@ -440,18 +548,34 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.addresses,
       'search',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _push(context, AppRouteNames.addressSearch, AddressSearchRouteArgs(id: wallet!.id)),
       label: () => _subLabels.addresses_search,
       search: () => _search.addresses_search,
     ),
     _sub(
       FeatureIds.addresses,
       'unused',
+      context: FeatureContext.wallet,
+      launch:
+          (context, wallet) => _push(
+            context,
+            AppRouteNames.addressList,
+            AddressListRouteArgs(id: wallet!.id, initialShowOnlyUnusedAddresses: true),
+          ),
       label: () => _subLabels.addresses_unused,
       search: () => _search.addresses_unused,
     ),
     _sub(
       FeatureIds.addresses,
       'watched',
+      context: FeatureContext.wallet,
+      launch:
+          (context, wallet) => _push(
+            context,
+            AppRouteNames.addressList,
+            AddressListRouteArgs(id: wallet!.id, initialShowOnlyWatchedAddresses: true),
+          ),
       label: () => _subLabels.addresses_watched,
       search: () => _search.addresses_watched,
     ),
@@ -468,12 +592,21 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletDetail,
       'rename',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, target: WalletInfoTarget.appearance),
+      isWalletSupported: _canEditWalletAppearance,
       label: () => _subLabels.wallet_detail_rename,
       search: () => _search.wallet_detail_rename,
     ),
     _sub(
       FeatureIds.walletDetail,
       'mfp',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, showMfpInput: true),
+      isWalletSupported:
+          (wallet) =>
+              wallet.walletType == WalletType.singleSignature &&
+              (wallet.walletImportSource == WalletImportSource.extendedPublicKey || isWalletWithoutMfp(wallet)),
       label: () => _subLabels.wallet_detail_mfp,
       search: () => _search.wallet_detail_mfp,
       keywords: const ['MFP'],
@@ -481,18 +614,27 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletDetail,
       'mnemonic_backup',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, highlightMnemonicBackup: true),
+      isWalletSupported: (wallet) => wallet.hasLocalKey,
       label: () => _subLabels.wallet_detail_mnemonic_backup,
       search: () => _search.wallet_detail_mnemonic_backup,
     ),
     _sub(
       FeatureIds.walletDetail,
       'passphrase',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, target: WalletInfoTarget.passphrase),
+      isWalletSupported: (wallet) => wallet.hotWalletMetadata?.enterPassphraseWhenSigning ?? false,
       label: () => _subLabels.wallet_detail_passphrase,
       search: () => _search.wallet_detail_passphrase,
     ),
     _sub(
       FeatureIds.walletDetail,
       'xpub',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, target: WalletInfoTarget.extendedPublicKey),
+      isWalletSupported: (wallet) => wallet.walletType == WalletType.singleSignature,
       label: () => _subLabels.wallet_detail_xpub,
       search: () => _search.wallet_detail_xpub,
       keywords: const ['xpub', 'zpub'],
@@ -500,6 +642,9 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletDetail,
       'bsms',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, target: WalletInfoTarget.backupData),
+      isWalletSupported: (wallet) => wallet.walletType == WalletType.multiSignature,
       label: () => _subLabels.wallet_detail_bsms,
       search: () => _search.wallet_detail_bsms,
       keywords: const ['BSMS'],
@@ -507,18 +652,24 @@ List<FeatureItem> builtinFeatures() {
     _sub(
       FeatureIds.walletDetail,
       'target',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, showTargetSetting: true),
       label: () => _subLabels.wallet_detail_target,
       search: () => _search.wallet_detail_target,
     ),
     _sub(
       FeatureIds.walletDetail,
       'resync',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _push(context, AppRouteNames.walletResync, WalletResyncRouteArgs(id: wallet!.id)),
       label: () => _subLabels.wallet_detail_resync,
       search: () => _search.wallet_detail_resync,
     ),
     _sub(
       FeatureIds.walletDetail,
       'delete',
+      context: FeatureContext.wallet,
+      launch: (context, wallet) => _openWalletInfo(context, wallet, target: WalletInfoTarget.delete),
       label: () => _subLabels.wallet_detail_delete,
       search: () => _search.wallet_detail_delete,
     ),

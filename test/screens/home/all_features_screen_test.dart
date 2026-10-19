@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/providers/view_model/home/all_features_view_model.dart';
 import 'package:coconut_wallet/screens/home/all_features_screen.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,39 @@ void main() {
     );
     return launched;
   }
+
+  testWidgets('search clear keeps its icon placement with a labelled 44 point hit target', (tester) async {
+    final semantics = tester.ensureSemantics();
+    for (final variant in CoconutThemeVariant.values) {
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(variant: variant),
+          home: Scaffold(body: AllFeaturesScreen(registry: registry, onLaunch: (_, __) {})),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final search = find.byKey(const Key('all-features-search'));
+      expect(tester.widget<CupertinoTextField>(search).placeholderStyle!.color, colors.secondaryTextStrong);
+      await tester.enterText(search, 'send');
+      await tester.pump();
+      final clear = find.byKey(const Key('all-features-search-clear'));
+      expect(tester.getSize(clear).width, greaterThanOrEqualTo(44));
+      expect(tester.getSize(clear).height, greaterThanOrEqualTo(44));
+      expect(find.bySemanticsLabel('Clear'), findsOneWidget);
+      final icon = tester.widget<Icon>(find.descendant(of: clear, matching: find.byType(Icon)));
+      expect(icon.color, colors.iconSecondary);
+      final fieldRect = tester.getRect(search);
+      final iconRect = tester.getRect(find.descendant(of: clear, matching: find.byType(Icon)));
+      expect(fieldRect.right - iconRect.right, 14);
+      await tester.tapAt(tester.getTopLeft(clear) + const Offset(3, 3));
+      await tester.pump();
+      expect(tester.widget<CupertinoTextField>(search).controller!.text, isEmpty);
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    semantics.dispose();
+  });
 
   testWidgets('fake balance search opens its own action in every locale', (tester) async {
     addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
@@ -141,7 +175,7 @@ void main() {
     expect(find.text('Settings › Currency'), findsOneWidget);
     expect(find.text(t.all_features.categories.transactions), findsNothing);
     await tester.tap(find.byKey(const ValueKey('all-features-item-settings')));
-    expect(launched, ['settings']);
+    expect(launched, ['settings.fiat']);
 
     await tester.enterText(find.byKey(const Key('all-features-search')), 'zzz');
     await tester.pump();

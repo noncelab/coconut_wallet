@@ -1,5 +1,7 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
+import 'package:coconut_wallet/screens/common/feature_search_focus.dart';
 import 'dart:async';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -61,6 +63,7 @@ class WalletInfoScreen extends StatefulWidget {
   final bool showMfpInput;
   final bool highlightMnemonicBackup;
   final bool showTargetSetting;
+  final WalletInfoTarget? initialTarget;
   const WalletInfoScreen({
     super.key,
     required this.id,
@@ -69,6 +72,7 @@ class WalletInfoScreen extends StatefulWidget {
     this.showMfpInput = false,
     this.highlightMnemonicBackup = false,
     this.showTargetSetting = false,
+    this.initialTarget,
   });
 
   @override
@@ -161,12 +165,17 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
                             CommonStateIconPath.triangleWarning,
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(
+                              context.coconutColors.appLockWarningBackground,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           CoconutLayout.spacing_50w,
                           Text(
                             t.wallet_info_screen.backup_required,
-                            style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
+                            style: CoconutTypography.body2_14_Bold.setColor(
+                              context.coconutColors.appLockWarningBackground,
+                            ),
                             textAlign: TextAlign.end,
                           ),
                           CoconutLayout.spacing_100w,
@@ -200,6 +209,15 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
 }
 
 class _WalletInfoScreenState extends State<WalletInfoScreen> {
+  Widget _focus(WalletInfoTarget target, Widget child) =>
+      widget.initialTarget == target
+          ? FeatureSearchFocus(
+            key: ValueKey('wallet-info-focus-${target.name}'),
+            // WalletInfoItemCard is rounder than the menu rows.
+            borderRadius: BorderRadius.circular(target == WalletInfoTarget.appearance ? 24 : 12),
+            child: child,
+          )
+          : child;
   final GlobalKey _walletTooltipKey = GlobalKey();
   final GlobalKey<_MnemonicBackupButtonState> _mnemonicBackupButtonKey = GlobalKey<_MnemonicBackupButtonState>();
   static const int kTooltipDuration = 5;
@@ -238,39 +256,42 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                       children: <Widget>[
                         Padding(
                           padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
-                          child: WalletInfoItemCard(
-                            id: widget.id,
-                            walletItem: viewModel.walletItemBase,
-                            taprootKeyPathSelected: viewModel.taprootSpendTypeIndex == 0,
-                            onTooltipClicked: () {
-                              if (_tooltipRemainingTime > 0) {
-                                _removeTooltip();
-                                return;
-                              }
+                          child: _focus(
+                            WalletInfoTarget.appearance,
+                            WalletInfoItemCard(
+                              id: widget.id,
+                              walletItem: viewModel.walletItemBase,
+                              taprootKeyPathSelected: viewModel.taprootSpendTypeIndex == 0,
+                              onTooltipClicked: () {
+                                if (_tooltipRemainingTime > 0) {
+                                  _removeTooltip();
+                                  return;
+                                }
 
-                              Future.delayed(const Duration(milliseconds: 50), () {
-                                setState(() {
-                                  _tooltipRemainingTime = kTooltipDuration;
-                                });
-
-                                _tooltipTimer?.cancel();
-                                _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                Future.delayed(const Duration(milliseconds: 50), () {
                                   setState(() {
-                                    if (_tooltipRemainingTime > 0) {
-                                      _tooltipRemainingTime--;
-                                    } else {
-                                      _removeTooltip();
-                                      timer.cancel();
-                                    }
+                                    _tooltipRemainingTime = kTooltipDuration;
+                                  });
+
+                                  _tooltipTimer?.cancel();
+                                  _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                    setState(() {
+                                      if (_tooltipRemainingTime > 0) {
+                                        _tooltipRemainingTime--;
+                                      } else {
+                                        _removeTooltip();
+                                        timer.cancel();
+                                      }
+                                    });
                                   });
                                 });
-                              });
-                            },
-                            onShowMfpInputBottomSheet: () {
-                              _showMfpInputBottomSheet();
-                            },
-                            tooltipKey: _walletTooltipKey,
-                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
+                              },
+                              onShowMfpInputBottomSheet: () {
+                                _showMfpInputBottomSheet();
+                              },
+                              tooltipKey: _walletTooltipKey,
+                              onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
+                            ),
                           ),
                         ),
                         WalletSignerSection(walletType: widget.walletType),
@@ -312,12 +333,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   },
                                 ),
                               if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
-                                _walletInfoMenu(
-                                  title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    _showPassphraseCheck(viewModel);
-                                  },
+                                _focus(
+                                  WalletInfoTarget.passphrase,
+                                  _walletInfoMenu(
+                                    title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      _showPassphraseCheck(viewModel);
+                                    },
+                                  ),
                                 ),
                               _walletInfoMenu(
                                 title: t.wallet_info_screen.all_addresses,
@@ -335,50 +359,59 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 },
                               ),
                               if (widget.walletType == WalletType.singleSignature) ...[
-                                _walletInfoMenu(
-                                  title: t.wallet_info_screen.extended_public_key,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    _handleAuthFlow(
-                                      onComplete: () {
-                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
-                                      },
-                                    );
-                                  },
+                                _focus(
+                                  WalletInfoTarget.extendedPublicKey,
+                                  _walletInfoMenu(
+                                    title: t.wallet_info_screen.extended_public_key,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      _handleAuthFlow(
+                                        onComplete: () {
+                                          _showExtendedBottomSheet(viewModel.extendedPublicKey);
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
                               if (widget.walletType == WalletType.taproot) ...[
-                                _walletInfoMenu(
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
+                                _focus(
+                                  WalletInfoTarget.backupData,
+                                  _walletInfoMenu(
+                                    title: t.wallet_info_screen.view_wallet_backup_data,
+                                    onPressed: () {
+                                      _removeTooltip();
 
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRouteNames.taprootWalletBackupData,
-                                      arguments: TaprootWalletBackupDataRouteArgs(
-                                        id: widget.id,
-                                        walletName: viewModel.walletName,
-                                      ),
-                                    );
-                                  },
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRouteNames.taprootWalletBackupData,
+                                        arguments: TaprootWalletBackupDataRouteArgs(
+                                          id: widget.id,
+                                          walletName: viewModel.walletName,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
                               if (widget.walletType == WalletType.multiSignature) ...[
-                                _walletInfoMenu(
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
+                                _focus(
+                                  WalletInfoTarget.backupData,
+                                  _walletInfoMenu(
+                                    title: t.wallet_info_screen.view_wallet_backup_data,
+                                    onPressed: () {
+                                      _removeTooltip();
 
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRouteNames.walletBackupData,
-                                      arguments: WalletBackupDataRouteArgs(
-                                        id: widget.id,
-                                        walletName: viewModel.walletName,
-                                      ),
-                                    );
-                                  },
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRouteNames.walletBackupData,
+                                        arguments: WalletBackupDataRouteArgs(
+                                          id: widget.id,
+                                          walletName: viewModel.walletName,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
                             ],
@@ -445,29 +478,34 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   );
                                 },
                               ),
-                              _walletInfoMenu(
-                                title: t.wallet_info_screen.delete_wallet,
-                                titleStyle: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.danger),
-                                showArrowRight: false,
-                                subWidget: Container(
-                                  width: 24,
-                                  height: 24,
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: context.coconutColors.danger.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(8),
+                              _focus(
+                                WalletInfoTarget.delete,
+                                _walletInfoMenu(
+                                  title: t.wallet_info_screen.delete_wallet,
+                                  titleStyle: CoconutTypography.body2_14_Bold.setColor(
+                                    context.coconutColors.dangerText,
                                   ),
-                                  child: SvgPicture.asset(
-                                    CommonActionIconPath.trash,
-                                    width: 16,
-                                    height: 16,
-                                    colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+                                  showArrowRight: false,
+                                  subWidget: Container(
+                                    width: 24,
+                                    height: 24,
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: context.coconutColors.danger.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: SvgPicture.asset(
+                                      CommonActionIconPath.trash,
+                                      width: 16,
+                                      height: 16,
+                                      colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+                                    ),
                                   ),
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showDeleteWalletDialog(viewModel);
+                                  },
                                 ),
-                                onPressed: () {
-                                  _removeTooltip();
-                                  _showDeleteWalletDialog(viewModel);
-                                },
                               ),
                             ],
                           ),
@@ -776,7 +814,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           onTapRight: () => Navigator.of(dialogContext).pop(true),
           onTapLeft: () => Navigator.of(dialogContext).pop(false),
           rightButtonText: t.delete,
-          rightButtonColor: context.coconutColors.danger,
+          rightButtonColor: context.coconutColors.dangerText,
           leftButtonText: t.cancel,
         );
       },
@@ -807,7 +845,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             _showMnemonicBackup(viewModel);
           },
           rightButtonText: t.alert.wallet_delete.backup_and_delete,
-          rightButtonColor: context.coconutColors.danger,
+          rightButtonColor: context.coconutColors.dangerText,
           leftButtonText: t.alert.wallet_delete.backup_now,
         );
       },
@@ -853,6 +891,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       child: QrWithCopyTextScreen(
         qrData: extendedPublicKey,
         title: t.extended_public_key,
+        isBottom: true,
         showPulldownMenu: false,
         backgroundColor: context.coconutColors.background,
       ),
@@ -933,13 +972,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(title, style: resolvedTitleStyle)),
+            Text(title, style: resolvedTitleStyle),
             CoconutLayout.spacing_200w,
-            Flexible(
+            Expanded(
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (subWidget != null) ...[Flexible(child: subWidget), CoconutLayout.spacing_100w],
+                  if (subWidget != null) ...[
+                    Flexible(
+                      child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: subWidget),
+                    ),
+                    CoconutLayout.spacing_100w,
+                  ],
                   if (rightWidget != null) rightWidget,
                   if (showArrowRight)
                     Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),

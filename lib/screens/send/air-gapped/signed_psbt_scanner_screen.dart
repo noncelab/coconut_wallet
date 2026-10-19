@@ -192,24 +192,25 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   Future<void> _showErrorDialog(String errorMessage) async {
     if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.alert.scan_failed,
-          description: errorMessage,
-          onTapRight: () {
-            if (!mounted) return;
-
-            _isProcessing = false;
-            _controller?.start();
-            Navigator.pop(context);
-          },
-          rightButtonText: t.OK,
-        );
-      },
-    );
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.alert.scan_failed,
+            description: errorMessage,
+            onTapRight: () => Navigator.pop(context),
+            rightButtonText: t.OK,
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        _isProcessing = false;
+        await _controller?.start();
+      }
+    }
   }
 
   Future<void> _stopCamera() async {

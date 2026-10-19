@@ -103,6 +103,36 @@ Future<List<HomeConfiguration>> _open(
 }
 
 void main() {
+  testWidgets('catalog names and added status remain legible at narrow widths and large text', (tester) async {
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _open(
+      tester,
+      HomeConfiguration(items: const []),
+      widgetDefinitions: [_SampleWidget(name: 'A long widget catalog display name')],
+    );
+    await tester.tap(find.text(t.home_edit.widgets));
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('home-edit-add-sample_widget')));
+    await _settle(tester);
+    final name = find.byKey(const ValueKey('home-edit-widget-name-sample_widget'));
+    final added = find.byKey(const ValueKey('home-edit-added-sample_widget'));
+    expect(tester.widget<Text>(name).style!.fontSize, greaterThanOrEqualTo(14));
+    expect(tester.widget<Text>(added).style!.fontSize, greaterThanOrEqualTo(12));
+    expect(find.ancestor(of: name, matching: find.byType(FittedBox)), findsNothing);
+    expect(tester.widget<Text>(added).textScaler, isNot(TextScaler.noScaling));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('home-edit-remove-sample_widget'))).shortestSide,
+      greaterThanOrEqualTo(48),
+    );
+    for (final scale in [1.3, 2.0]) {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      await _settle(tester);
+      expect(tester.takeException(), isNull, reason: 'scale $scale');
+    }
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+  });
+
   testWidgets('marks the preset that matches the current home layout', (tester) async {
     final preset = HomePreset(
       id: 'p',

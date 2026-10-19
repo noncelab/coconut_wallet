@@ -77,12 +77,14 @@ class ShortcutDefinition extends HomeItemDefinition {
                         colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                       ),
                       const SizedBox(height: 6),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          feature.shortcutLabel(),
-                          textAlign: TextAlign.center,
-                          style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            feature.shortcutLabel(),
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                          ),
                         ),
                       ),
                     ],

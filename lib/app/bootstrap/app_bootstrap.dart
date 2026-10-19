@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/bootstrap/localization_bootstrap.dart';
@@ -7,11 +9,12 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'system_ui_bootstrap.dart';
@@ -28,9 +31,20 @@ class AppBootstrap {
     // 기본 서버 매칭(findMatching)이 NetworkType에 의존하므로 _loadEnvironment() 이후에 호출해야 한다.
     await ElectrumServerProvider().migrateLegacyCustomServerStorage();
     await _initializeFirebase();
-    await FileLogger.initialize();
+    await deleteLegacyDebugLog();
     applyPersistedLocale();
     setupPluralResolvers();
+  }
+
+  /// 로그 뷰어와 함께 없앤 디버그 로그(`debug_log.txt`)가 업데이트한 기기에 남아 있으면 지운다.
+  @visibleForTesting
+  static Future<void> deleteLegacyDebugLog() async {
+    try {
+      final file = File('${(await getApplicationDocumentsDirectory()).path}/debug_log.txt');
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      Logger.error('AppBootstrap: legacy debug log cleanup failed: ${e.runtimeType}');
+    }
   }
 
   static void _applyPersistedTheme() {

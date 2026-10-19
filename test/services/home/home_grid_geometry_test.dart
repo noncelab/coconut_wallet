@@ -41,10 +41,38 @@ void main() {
     }
   });
 
-  test('a 2×2 dropped below the content snaps to an even column', () {
+  test('a 2×2 dropped below the content snaps one column at a time and stays in bounds', () {
     final w = layout.positionedConfiguration.items.firstWhere((item) => item.id == 'w');
 
+    expect(geometry.dropPosition(layout, w, cell(-1, 6)), const HomeGridPosition(0, 6));
+    expect(geometry.dropPosition(layout, w, cell(0, 6)), const HomeGridPosition(0, 6));
+    expect(geometry.dropPosition(layout, w, cell(1, 6)), const HomeGridPosition(1, 6));
+    expect(geometry.dropPosition(layout, w, cell(2, 6)), const HomeGridPosition(2, 6));
     expect(geometry.dropPosition(layout, w, cell(3, 6)), const HomeGridPosition(2, 6));
+  });
+
+  test('a 2×2 changes columns at each half-cell boundary', () {
+    expect(geometry.snap(const Offset(45.9, 184), HomeSpan.small), const HomeGridPosition(0, 2));
+    expect(geometry.snap(const Offset(46.1, 184), HomeSpan.small), const HomeGridPosition(1, 2));
+    expect(geometry.snap(const Offset(137.9, 184), HomeSpan.small), const HomeGridPosition(1, 2));
+    expect(geometry.snap(const Offset(138.1, 184), HomeSpan.small), const HomeGridPosition(2, 2));
+  });
+
+  test('the center 2×2 rectangle leaves a full shortcut column at either side', () {
+    final centered = geometry.rectOf(const HomeGridPosition(1, 2), HomeSpan.small);
+    final left = geometry.rectOf(const HomeGridPosition(0, 2), HomeSpan.shortcut);
+    final right = geometry.rectOf(const HomeGridPosition(3, 2), HomeSpan.shortcut);
+
+    expect(centered, const Rect.fromLTWH(92, 184, 172, 172));
+    expect(centered.left - left.right, geometry.gap);
+    expect(right.left - centered.right, geometry.gap);
+  });
+
+  test('wide and shortcut snapping retain their bounds and negative rows clamp to zero', () {
+    expect(geometry.snap(const Offset(92, -92), HomeSpan.wide), const HomeGridPosition(0, 0));
+    expect(geometry.snap(const Offset(92, -92), HomeSpan.shortcut), const HomeGridPosition(1, 0));
+    expect(geometry.snap(const Offset(999, 92), HomeSpan.shortcut), const HomeGridPosition(3, 1));
+    expect(geometry.snap(const Offset(-92, -92), HomeSpan.small), const HomeGridPosition(0, 0));
   });
 
   test('moving below the content keeps the empty rows in between', () {

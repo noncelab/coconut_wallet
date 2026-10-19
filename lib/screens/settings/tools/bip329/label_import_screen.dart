@@ -427,7 +427,8 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
               isSelected: _deleteFileOnSuccess,
               onChanged: (_) {},
               width: 16,
-              unSelectedColor: context.coconutColors.iconSecondary,
+              unSelectedColor: context.coconutColors.iconPrimary,
+              inactiveColor: context.coconutColors.iconDisabled,
               color:
                   _isDeleteFileOptionPressed ? context.coconutColors.iconSecondary : context.coconutColors.iconPrimary,
             ),

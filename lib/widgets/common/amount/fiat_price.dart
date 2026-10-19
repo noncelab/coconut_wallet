@@ -26,7 +26,9 @@ class _FiatPriceState extends State<FiatPrice> {
           return const SizedBox.shrink();
         }
 
-        final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: context.coconutColors.secondaryText);
+        final defaultStyle = CoconutTypography.body2_14_Number.copyWith(
+          color: context.coconutColors.secondaryTextStrong,
+        );
         final appliedStyle = (widget.textStyle ?? defaultStyle).copyWith(
           color: widget.textColor ?? widget.textStyle?.color ?? defaultStyle.color,
         );

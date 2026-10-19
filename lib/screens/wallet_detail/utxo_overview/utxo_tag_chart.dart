@@ -152,14 +152,7 @@ class UtxoTagChart extends StatelessWidget {
 
     return Container(
       height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      color: colors.background,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
@@ -195,14 +188,7 @@ class UtxoTagChart extends StatelessWidget {
     final colors = context.coconutColors;
     return Container(
       height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      color: colors.background,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
