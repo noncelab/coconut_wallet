@@ -121,9 +121,9 @@ void openWalletAddFor(BuildContext context, WalletStackKind kind) {
     case WalletStackKind.all:
       WalletAddScreen.openByWalletCount(context);
     case WalletStackKind.hot:
-      WalletAddDialog.show(context, WalletAddDialogMode.hotWalletAction);
+      WalletAddDialog.showTopSheet(context, WalletAddDialogMode.hotWalletAction);
     case WalletStackKind.watchOnly:
-      WalletAddDialog.show(context, WalletAddDialogMode.watchOnlySource);
+      WalletAddDialog.showTopSheet(context, WalletAddDialogMode.watchOnlySource);
   }
 }
 

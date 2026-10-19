@@ -24,7 +24,7 @@ class WalletAddScreen extends StatelessWidget {
   /// 지갑이 하나도 없으면 이 화면을 열고, 이미 지갑이 있으면 기존 지갑 추가 탑 시트를 연다.
   static Future<void> openByWalletCount(BuildContext context) {
     if (context.read<WalletProvider>().walletItemList.isEmpty) return open(context);
-    return WalletAddDialog.show(context, WalletAddDialogMode.walletType);
+    return WalletAddDialog.showTopSheet(context, WalletAddDialogMode.walletType);
   }
 
   static Future<void> open(BuildContext context) {

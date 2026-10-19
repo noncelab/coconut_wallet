@@ -289,7 +289,6 @@ void main() {
 
   for (final (target, route) in [
     ('electrum', AppRouteNames.electrumServer),
-    ('log_viewer', AppRouteNames.logViewer),
     ('app_info', AppRouteNames.appInfo),
     ('explorer', AppRouteNames.blockExplorer),
   ]) {

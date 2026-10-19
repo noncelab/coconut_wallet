@@ -176,8 +176,6 @@ class AppSettingsScreen extends StatefulWidget {
         if (NetworkType.currentNetworkType == NetworkType.mainnet) {
           await Navigator.pushNamed(context, AppRouteNames.blockExplorer);
         }
-      case AppSettingsTarget.logViewer:
-        await Navigator.pushNamed(context, AppRouteNames.logViewer);
       case AppSettingsTarget.appInfo:
         await Navigator.pushNamed(context, AppRouteNames.appInfo);
       case AppSettingsTarget.pin:

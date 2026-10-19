@@ -92,7 +92,7 @@ List<String> _keywords(String text) => [
 
 Future<void> _openWalletAdd(BuildContext context, WalletAddDialogMode mode) {
   context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.feature);
-  return WalletAddDialog.show(context, mode);
+  return WalletAddDialog.showTopSheet(context, mode);
 }
 
 Future<void> _push(BuildContext context, String route, [Object? arguments]) {

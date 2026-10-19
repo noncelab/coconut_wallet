@@ -290,6 +290,7 @@ class CoconutColors {
 
   /// utxo 오버뷰 화면 요소
   final Color utxoOverviewChartSurface;
+  final Color utxoOverviewAvailabilitySurface;
   final double utxoOverviewChartUnselectedOverlayOpacity;
   final Color utxoOverviewCoinSurface;
   final Color utxoOverviewSelectedCoinBorder;
@@ -466,6 +467,7 @@ class CoconutColors {
     required this.homeChartLine,
     required this.homeWidgetShadow,
     required this.utxoOverviewChartSurface,
+    required this.utxoOverviewAvailabilitySurface,
     required this.utxoOverviewChartUnselectedOverlayOpacity,
     required this.utxoOverviewCoinSurface,
     required this.utxoOverviewSelectedCoinBorder,
@@ -728,6 +730,8 @@ class CoconutColors {
       homeChartLine: Color.lerp(a.homeChartLine, b.homeChartLine, t)!,
       homeWidgetShadow: Color.lerp(a.homeWidgetShadow, b.homeWidgetShadow, t)!,
       utxoOverviewChartSurface: Color.lerp(a.utxoOverviewChartSurface, b.utxoOverviewChartSurface, t)!,
+      utxoOverviewAvailabilitySurface:
+          Color.lerp(a.utxoOverviewAvailabilitySurface, b.utxoOverviewAvailabilitySurface, t)!,
       utxoOverviewChartUnselectedOverlayOpacity:
           a.utxoOverviewChartUnselectedOverlayOpacity +
           (b.utxoOverviewChartUnselectedOverlayOpacity - a.utxoOverviewChartUnselectedOverlayOpacity) * t,
@@ -902,6 +906,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: const Color.fromARGB(12, 255, 255, 255),
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
+      utxoOverviewAvailabilitySurface: ds.CoconutColors.gray800,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.gray900,
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.gray150,
@@ -1062,6 +1067,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: ds.CoconutColors.gray600.withValues(alpha: 0.3),
       utxoOverviewChartSurface: ds.CoconutColors.white,
+      utxoOverviewAvailabilitySurface: ds.CoconutColors.gray150,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.white,
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.black,
@@ -1239,6 +1245,7 @@ class CoconutColors {
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: huskDeep.withValues(alpha: 0.18),
       utxoOverviewChartSurface: shell,
+      utxoOverviewAvailabilitySurface: shell,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
       utxoOverviewCoinSurface: shell,
       utxoOverviewSelectedCoinBorder: huskDeep,

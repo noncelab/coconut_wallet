@@ -9,7 +9,6 @@ enum AppSettingsTarget {
   utxoSelection,
   electrum,
   explorer,
-  logViewer,
   appInfo,
 }
 

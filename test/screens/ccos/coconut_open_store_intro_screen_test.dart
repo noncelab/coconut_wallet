@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_intro_screen.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_build_scene.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_first_pow_scene.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -54,9 +55,10 @@ Future<_Routes> _pumpHost(
   ValueNotifier<bool>? motionSetting,
   CoconutThemeVariant variant = CoconutThemeVariant.dark,
   double textScale = 1,
+  Size viewport = const Size(414, 896),
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(414, 896);
+  tester.view.physicalSize = viewport;
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
   final preferences = _Preferences(variant);
@@ -140,6 +142,80 @@ void main() {
       await loader.load();
     }
   });
+
+  for (final variant in CoconutThemeVariant.values) {
+    for (final width in [320.0, 344.38]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('overview numbers and copy never overlap $variant width=$width scale=$scale', (tester) async {
+          await _pumpHost(
+            tester,
+            variant: variant,
+            disableAnimations: true,
+            textScale: scale,
+            viewport: Size(width, 882.29),
+          );
+          await _finishPush(tester);
+          await tester.pump(const Duration(seconds: 2));
+          await tester.tap(find.byType(CoconutAppBarActionButton).last);
+          await tester.pump(const Duration(seconds: 2));
+          await tester.pump();
+          final titles = [
+            t.ccos.intro_screen.scenes.idea.overview_title,
+            t.ccos.intro_screen.scenes.build.overview_title,
+            t.ccos.intro_screen.scenes.first_pow.overview_title,
+            t.ccos.intro_screen.scenes.discover.overview_title,
+            t.ccos.intro_screen.scenes.contribute.overview_title,
+          ];
+          for (var index = 0; index < titles.length; index++) {
+            final step = (index + 1).toString().padLeft(2, '0');
+            final number = find.text(step);
+            await tester.scrollUntilVisible(number, 250, scrollable: find.byType(Scrollable).last);
+            await tester.pump(const Duration(seconds: 1));
+            final copy = find.byWidgetPredicate(
+              (widget) => widget is RichText && widget.text.toPlainText() == titles[index],
+            );
+            expect(copy, findsOneWidget);
+            final numberRect = tester.getRect(number);
+            final copyRect = tester.getRect(copy);
+            final overview = find.byKey(const ValueKey('open-store-overview-list'));
+            final close = find.byKey(const ValueKey('open-store-overview-close'));
+            expect(tester.getRect(overview).top, greaterThanOrEqualTo(tester.getRect(close).bottom));
+            expect(tester.widget<ListView>(overview).clipBehavior, isNot(Clip.none));
+            final evidence = Platform.environment['CCOS_OVERVIEW_EVIDENCE_DIR'];
+            if (evidence != null) {
+              final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(_captureKey));
+              await tester.runAsync(() async {
+                final image = await boundary.toImage();
+                try {
+                  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+                  Directory(evidence).createSync(recursive: true);
+                  File(
+                    '$evidence/${variant.name}-$width-$scale-$step.png',
+                  ).writeAsBytesSync(bytes!.buffer.asUint8List());
+                } finally {
+                  image.dispose();
+                }
+              });
+            }
+            expect(
+              numberRect.bottom,
+              lessThanOrEqualTo(copyRect.top),
+              reason: 'Chapter$step numeric ink must precede readable copy',
+            );
+            final paragraph = tester.renderObject<RenderParagraph>(copy);
+            expect(
+              paragraph.textScaler.scale(18),
+              closeTo(18 * scale, .01),
+              reason: 'Overview copy respects user text scale',
+            );
+            expect(copyRect.left, greaterThanOrEqualTo(0));
+            expect(copyRect.right, lessThanOrEqualTo(width));
+            expect(tester.takeException(), isNull);
+          }
+        });
+      }
+    }
+  }
 
   for (final variant in CoconutThemeVariant.values) {
     for (final reduced in [false, true]) {

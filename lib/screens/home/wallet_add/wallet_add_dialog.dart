@@ -1,8 +1,10 @@
+import 'dart:io';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
-import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -10,7 +12,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

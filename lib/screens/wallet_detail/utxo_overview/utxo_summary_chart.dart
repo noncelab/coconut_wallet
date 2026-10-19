@@ -82,7 +82,6 @@ class UtxoSummaryChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: _AvailabilityChip(
-                    showBorder: colors.utxoOverviewChartSurface == colors.background,
                     label: t.utxo_detail_screen.utxo_unlocked,
                     count: availableCount,
                     sats: availableSats,
@@ -92,7 +91,6 @@ class UtxoSummaryChart extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _AvailabilityChip(
-                    showBorder: colors.utxoOverviewChartSurface == colors.background,
                     label: t.utxo_detail_screen.utxo_locked,
                     count: lockedCount,
                     sats: lockedSats,
@@ -174,30 +172,19 @@ class _AvailabilityChip extends StatelessWidget {
   final int count;
   final int sats;
   final String Function(int) formatBalance;
-  final bool showBorder;
 
-  const _AvailabilityChip({
-    required this.label,
-    required this.count,
-    required this.sats,
-    required this.formatBalance,
-    required this.showBorder,
-  });
+  const _AvailabilityChip({required this.label, required this.count, required this.sats, required this.formatBalance});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: colors.utxoOverviewChartSurface, borderRadius: BorderRadius.circular(12)),
-      foregroundDecoration:
-          showBorder
-              ? BoxDecoration(border: Border.all(color: colors.border), borderRadius: BorderRadius.circular(12))
-              : null,
+      decoration: BoxDecoration(color: colors.utxoOverviewAvailabilitySurface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.mutedText)),
+          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
           const SizedBox(height: 4),
           Text(formatBalance(sats), style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
         ],
