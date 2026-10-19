@@ -62,7 +62,7 @@ class UtxoSummaryChart extends StatelessWidget {
       constraints: buckets.isNotEmpty && height != null ? BoxConstraints(minHeight: height!) : null,
       color: colors.background,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 16, 16, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

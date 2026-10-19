@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
@@ -254,6 +255,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: TooltipButton(
+                                textBuilder:
+                                    walletItem is SinglesigWalletItem
+                                        ? (text, style) => MfpText(mfp: text, style: style)
+                                        : null,
                                 textStyle: (walletItem is TaprootWalletItem
                                         ? CoconutTypography.body3_12_Bold
                                         : CoconutTypography.body2_14_NumberBold)

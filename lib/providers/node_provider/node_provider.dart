@@ -2,7 +2,6 @@ import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
@@ -308,7 +307,10 @@ class NodeProvider extends ChangeNotifier {
         _analyticsService?.logWalletBulkSyncFailed();
       } else {
         _setConnectionError(false);
-        _analyticsService?.logWalletBulkSyncCompleted();
+        // 건너뛴 구독(지갑 로딩 전, 오프라인, 지갑 없음)은 완료로 세지 않는다.
+        if (result.value) {
+          _analyticsService?.logWalletBulkSyncCompleted();
+        }
 
         await Future.delayed(const Duration(seconds: 1));
         await _startBlockUpdates();
@@ -493,6 +495,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// 지갑을 실제로 구독했으면 true, 건너뛰었으면(지갑 로딩 전, 오프라인, 구독할 지갑 없음) false.
   Future<Result<bool>> subscribeWallets() async {
     if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
@@ -502,7 +505,7 @@ class NodeProvider extends ChangeNotifier {
 
     if (walletItems.isEmpty) {
       Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
-      return Result.success(true);
+      return Result.success(false);
     }
 
     return _isolateManager.subscribeWallets(walletItems);
@@ -581,7 +584,6 @@ class NodeProvider extends ChangeNotifier {
     final result = await _isolateManager.broadcast(signedTx);
     if (result.isFailure) {
       Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
-      FileLogger.logBroadcast('NodeProvider failure code=${result.error.code}');
     }
     return result;
   }
@@ -665,7 +667,9 @@ class NodeProvider extends ChangeNotifier {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
           _restartBlockUpdates();
-          _analyticsService?.logWalletBulkSyncCompleted();
+          if (result.value) {
+            _analyticsService?.logWalletBulkSyncCompleted();
+          }
           return Result.success(true);
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');

@@ -38,6 +38,9 @@ const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
 @immutable
 class CoconutColors {
+  /// 코코넛 테마의 lagoon에 흰색을 약 20% 섞은 옅은 색상입니다.
+  static const Color lagoonLight = Color(0xFF8ED9EE);
+
   /// 코코넛 고유 메인넷 로고 그라디언트
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
@@ -1110,6 +1113,7 @@ class CoconutColors {
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonLight = Color(0xFF8ED9EE);
     const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
@@ -1150,7 +1154,7 @@ class CoconutColors {
       danger: kCoconutDanger,
       dangerText: const Color(0xFFBF285F),
       success: ds.CoconutColors.successOnLight,
-      appLockWarningBackground: kCoconutWarningCard,
+      appLockWarningBackground: kCoconutWarning,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
@@ -1214,8 +1218,8 @@ class CoconutColors {
       tooltipBackground: dim,
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
-      popoverBackground: huskDeep,
-      popoverText: ds.CoconutColors.white,
+      popoverBackground: lagoonLight,
+      popoverText: huskDeep,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       loadingIndicatorColor: huskDeep,

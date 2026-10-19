@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
@@ -236,8 +237,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
                   if (vm.fingerprint != null) ...[
                     Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
                     CoconutLayout.spacing_100w,
-                    Text(
-                      vm.fingerprint!.toUpperCase(),
+                    MfpText(
+                      mfp: vm.fingerprint!.toUpperCase(),
                       style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                     ),
                     const Spacer(),

@@ -83,6 +83,8 @@ class UnsignedTransactionQrRouteArgs {
 
 class SendRouteArgs {
   final int? id;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -90,6 +92,8 @@ class SendRouteArgs {
   final String? initialBitcoinUri;
   const SendRouteArgs({
     this.id,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,

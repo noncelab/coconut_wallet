@@ -12,7 +12,6 @@ class AppRouteNames {
   static const String labelExport = '/label-export';
   static const String labelImport = '/label-import';
   static const String labelManagement = '/label-management';
-  static const String logViewer = '/log-viewer';
   static const String hotWalletCreate = '/hot-wallet-create';
   static const String hotWalletMnemonicBackup = '/hot-wallet-mnemonic-backup';
   static const String hotWalletMnemonicBackupGuide = '/hot-wallet-mnemonic-backup-guide';

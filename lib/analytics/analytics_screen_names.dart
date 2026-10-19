@@ -23,6 +23,10 @@ class AnalyticsScreenNames {
   static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
   static const String walletHomeEditWalletSheet = 'wallet-home-edit-wallet-sheet';
   static const String walletHomeEditAddWalletOptionSheet = 'wallet-home-edit-add-wallet-option-sheet';
+  // 홈 지갑 추가 탑시트 (wallet_add_dialog.dart, WalletAddDialogMode별)
+  static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
+  static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
+  static const String walletHomeAddHotWalletActionSheet = 'wallet-home-add-hot-wallet-action-sheet';
   static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
   static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
   static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
@@ -38,6 +42,7 @@ class AnalyticsScreenNames {
   static const String appSettingsUnitSheet = 'app-settings-unit-sheet';
   static const String appSettingsFiatSheet = 'app-settings-fiat-sheet';
   static const String appSettingsLanguageSheet = 'app-settings-language-sheet';
+  static const String appSettingsNumberFormatSheet = 'app-settings-number-format-sheet';
   static const String appSettingsThemeSheet = 'app-settings-theme-sheet';
   static const String appSettingsPinSetSheet = 'app-settings-pin-set-sheet';
   static const String appSettingsPinCheckSheet = 'app-settings-pin-check-sheet';
@@ -64,6 +69,11 @@ class AnalyticsScreenNames {
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';
   static const String walletDetailFaucetSheet = 'wallet-detail-faucet-sheet';
   static const String walletDetailAppSettingsSheet = 'wallet-detail-app-settings-sheet';
+  static const String walletDetailMoveToVaultNoBalanceSheet = 'wallet-detail-move-to-vault-noBalance-sheet';
+  static const String walletDetailMoveToVaultNoWatchOnlyWalletSheet =
+      'wallet-detail-move-to-vault-noWatchOnlyWallet-sheet';
+  static const String walletDetailMoveToVaultSelectWalletSheet =
+      'wallet-detail-move-to-vault-selectWatchOnlyWallet-sheet';
   static const String walletInfoAuthSheet = 'wallet-info-auth-sheet';
   static const String walletInfoXpubSheet = 'wallet-info-xpub-sheet';
   static const String walletInfoMfpSheet = 'wallet-info-mfp-sheet';

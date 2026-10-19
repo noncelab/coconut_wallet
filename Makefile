@@ -57,7 +57,14 @@ aos-run-release:
 
 # fastlane
 pre-deploy: 
-	fastlane pre_deploy
+	bundle exec fastlane pre_deploy
+
+ifeq ($(SKIP_PREP),true)
+PREP_COMMAND := true
+else
+PREP_COMMAND := $(MAKE) pre-deploy && $(MAKE) realm-clean
+endif
+
 
 # gomobile bind targets
 gomobile-android:
@@ -78,39 +85,50 @@ trezor-android:
 
 trezor-bind: trezor-android trezor-ios
 
+FASTLANE_USER :=
+-include ios/fastlane/.env
+export FASTLANE_USER
+
+REQUIRE_APPLE_ID = if [ -z "$${FASTLANE_USER:-}" ]; then echo "FASTLANE_USER must be set in ios/fastlane/.env." >&2; exit 1; fi;
+
+REQUIRE_REGTEST_BRANCH = \
+	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "release-regtest" ]; then \
+		echo "Error: regtest fastlane targets must be run on the release-regtest branch." >&2; \
+		exit 1; \
+	fi; \
+	if grep -qE '^[[:space:]]*firebase_' pubspec.yaml; then \
+		echo "Error: firebase packages must be removed from pubspec.yaml for regtest deployment." >&2; \
+		exit 1; \
+	fi;
+
 fastlane-mainnet:
-	$(MAKE) realm-clean && cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
+	@$(REQUIRE_APPLE_ID) \
+	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 
 fastlane-regtest:
-	$(MAKE) realm-clean && cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_prep:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+	@$(REQUIRE_REGTEST_BRANCH) \
+	$(REQUIRE_APPLE_ID) \
+	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
-ifeq ($(SKIP_PREP),true)
-PRODUCTION_PREP_COMMAND := true
-else
-PRODUCTION_PREP_COMMAND := $(MAKE) pre-deploy && $(MAKE) realm-clean
-endif
-
 fastlane-production-mainnet:
-	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
-	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
-	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
-	export FASTLANE_USER; \
-	$(PRODUCTION_PREP_COMMAND) && \
+	@$(REQUIRE_APPLE_ID) \
+	$(PREP_COMMAND) && \
 	(cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production) && \
 	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true)
 
 fastlane-production-regtest:
-	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
-	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
-	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
-	export FASTLANE_USER; \
-	$(PRODUCTION_PREP_COMMAND) && \
+	@$(REQUIRE_REGTEST_BRANCH) \
+	$(REQUIRE_APPLE_ID) \
+	$(PREP_COMMAND) && \
 	(cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production) && \
 	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true)
 	
 fastlane-mainnet-skipbridge:
+	@$(REQUIRE_APPLE_ID) \
 	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
 
 fastlane-regtest-skipbridge:
+	@$(REQUIRE_REGTEST_BRANCH) \
+	$(REQUIRE_APPLE_ID) \
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_bridge:true

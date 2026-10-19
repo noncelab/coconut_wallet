@@ -214,7 +214,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
 
     _premiumController.text = _formatLocaleDecimalText(text);
-    _viewModel.setPremiumRate(text.toDoubleSafe() ?? 0);
+    _viewModel.setPremiumRate(double.tryParse(text) ?? 0);
   }
 
   void _handlePremiumInputChanged(String value) {
@@ -649,8 +649,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 
+  /// 로케일 포맷 텍스트를 canonical 포맷('.' 소수점, 구분자 없음)으로 정규화한다.
+  /// grouping separator 제거 후 decimal separator를 '.'으로 변환하므로
+  /// 모든 preset(swiss의 ’, frenchSpace의 공백 포함)에서 안전하다.
   String _normalizeLocaleDecimalText(String text) {
-    return text.replaceAll(NumberFormatConfig.instance.decimalSeparator, '.');
+    return normalizeNumTextForNumParsing(text);
   }
 
   double _parsePremiumRate() {
@@ -1491,29 +1494,46 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               '${t.utility.p2p_calculator.premium} ',
               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
-            IntrinsicWidth(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 10),
-                child: Transform.translate(
-                  offset: const Offset(0, -1.5),
-                  child: CoconutTextField(
-                    activeColor: context.coconutColors.primaryText,
-                    cursorColor: context.coconutColors.primaryText,
-                    enabled: _viewModel.isNetworkOn,
-                    controller: premiumController,
-                    focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
-                    padding: EdgeInsets.zero,
-                    maxLines: 1,
-                    height: 24,
-                    textInputAction: TextInputAction.done,
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
-                    onChanged: _handlePremiumInputChanged,
-                    textAlign: TextAlign.end,
-                    isVisibleBorder: false,
+            Builder(
+              builder: (context) {
+                final textPainter = TextPainter(
+                  text: TextSpan(
+                    text: '99${NumberFormatConfig.instance.decimalSeparator}9',
+                    style: CoconutTypography.body2_14.copyWith(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.normal,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ),
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                // Reserve the full allowed rate and caret even when the field is empty.
+                final inputWidth = textPainter.width.ceilToDouble() + 4;
+                textPainter.dispose();
+                return SizedBox(
+                  width: inputWidth,
+                  child: Transform.translate(
+                    offset: const Offset(0, -1.5),
+                    child: CoconutTextField(
+                      activeColor: context.coconutColors.primaryText,
+                      cursorColor: context.coconutColors.primaryText,
+                      enabled: _viewModel.isNetworkOn,
+                      controller: premiumController,
+                      focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
+                      padding: EdgeInsets.zero,
+                      maxLines: 1,
+                      height: 24,
+                      textInputAction: TextInputAction.done,
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
+                      onChanged: _handlePremiumInputChanged,
+                      textAlign: TextAlign.end,
+                      isVisibleBorder: false,
+                    ),
+                  ),
+                );
+              },
             ),
             Text('%', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
           ],
@@ -1705,7 +1725,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _onToolbarButtonPressed(String value) {
     if (_premiumFocusNode.hasFocus) {
       final currentPremium = _parsePremiumRate();
-      final addValue = _formatLocaleDecimalText(value).toDoubleSafe() ?? 0;
+      final addValue = double.tryParse(value) ?? 0;
       final newPremium = (currentPremium + addValue).clamp(0.0, 99.9);
       _premiumController.text = _formatLocaleDecimalText(newPremium.toStringAsFixed(1));
       _viewModel.setPremiumRate(newPremium);
@@ -1830,7 +1850,7 @@ class _CopyableTextState extends State<_CopyableText> {
         setState(() {
           _isPressed = false;
         });
-        Clipboard.setData(ClipboardData(text: widget.value.replaceAll(',', '').replaceAll(' ', '')));
+        Clipboard.setData(ClipboardData(text: widget.value));
       },
       onTapCancel: () {
         setState(() {

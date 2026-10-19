@@ -15,6 +15,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -25,6 +26,7 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/number_format_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
@@ -54,7 +56,7 @@ class AppSettingsScreen extends StatefulWidget {
     };
     if (!selectionSheet) return _openTarget(context, target, highlightTheme: highlightTheme);
     if (!_pendingSelectionSheets.add(context)) return;
-    final releasePending = () => _pendingSelectionSheets.remove(context);
+    bool releasePending() => _pendingSelectionSheets.remove(context);
     final bool ready;
     try {
       ready = await _waitForSourceKeyboard(context);
@@ -373,6 +375,23 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           );
                         },
                       ),
+                      Selector<PreferenceProvider, NumberFormatPreset>(
+                        selector: (_, provider) => provider.numberFormatPreset,
+                        builder: (context, preset, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.number_format,
+                            subtitle: preset.displayLabel,
+                            onPressed: () {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
+                                heightRatio: 0.4,
+                                child: NumberFormatBottomSheet(),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                   CoconutLayout.spacing_400h,
@@ -430,12 +449,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         subtitle: t.label_management_screen.subtitle,
                         isVerticalSubtitle: true,
                         onPressed: () => _showLabelsManagementScreen(context),
-                      ),
-                      _buildAnimatedButton(
-                        title: t.log_viewer,
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRouteNames.logViewer);
-                        },
                       ),
                     ],
                   ),

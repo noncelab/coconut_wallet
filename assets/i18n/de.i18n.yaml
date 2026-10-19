@@ -107,7 +107,6 @@ view: "Ansehen"
 network: "Netzwerk"
 electrum_server: "Electrum-Server"
 block_explorer: "Block-Explorer"
-log_viewer: "Log-Viewer"
 go_to_settings: "Zu den Einstellungen"
 name: "Name"
 account: "Konto"
@@ -611,13 +610,14 @@ wallet_home_screen:
     title: "Neue Wallet erstellen"
     wallet_created_title: "Deine neue Hot Wallet\nist bereit!"
     backup_title: "Mnemonik sichern"
-    backup_intro_title: "Sichere deine Mnemonik, damit du\ndeine Wallet wiederherstellen kannst"
     backup_preparation_title: "Bewahre deine Mnemonik\nsicher auf"
     backup_preparation_description: "Du brauchst deine Mnemonik, um deine Wallet wiederherzustellen. Bewahre sie sicher auf, damit sie nicht verloren geht oder anderen bekannt wird."
     backup_tips_1: "Schreibe sie korrekt auf Papier oder Metall auf."
     backup_tips_2: "Speichere sie nicht als Foto oder digitale Datei."
     backup_tips_3: "Bewahre sie an einem Ort auf, zu dem andere keinen Zugang haben."
     backup_start: "Backup starten"
+    backup_later_title: "Du kannst später ein Backup erstellen"
+    backup_later_description: "Du kannst deine Mnemonik später unter Wallet-Einstellungen > Mnemonik-Backup sichern."
     mnemonic_backup_guide: "Sichere deine Mnemonik an einem sicheren Ort"
     mnemonic_warning_title: "Die Mnemonik ist der Schlüssel zu deiner Wallet"
     mnemonic_warning_description: "Wer diese Wörter kennt, kann deine Bitcoin stehlen. Stelle sicher, dass niemand und keine Kamera in der Nähe ist."
@@ -1041,6 +1041,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "Sende Bitcoin aus deiner Hot Wallet an eine Hardware-Wallet-Adresse.\nVerwalte deine privaten Schlüssel auf einem separaten Gerät und prüfe dein Guthaben in der App."
   utxo_auto_selection: "UTXO-Autoauswahl"
   select_wallet: "Wallet auswählen"
   n_utxos(param=count):
@@ -1059,6 +1060,10 @@ send_screen:
   use_btc_unit: "BTC-Einheit verwenden"
   input_maximum_amount: "Alles senden"
   address_placeholder: "Geben Sie die Adresse des Empfängers ein"
+  vault_address_placeholder: "Empfangsadresse auswählen"
+  vault_addresses: "Adressen von $name"
+  vault_nth_address: "Empfangsadresse $n"
+  vault_recipient_summary: "Empfangsadressen: $count • Gesamt $amount"
   recommended_fee_unavailable: "Empfohlene Gebühr konnte nicht abgerufen werden"
   recommended_fee_unavailable_description: "Bitte geben Sie die Gebühr manuell ein."
   tooltip_text: "${count} Adressen • Gesamt ${amount}"
@@ -1225,6 +1230,7 @@ settings_screen:
   change_password: "Passwort ändern"
   fiat: "Fiat"
   language: "Sprache"
+  number_format: "Zahlenformat"
   utxo_manual_selection: "Manuelle UTXO-Auswahl"
   utxo_manual_selection_description: "UTXOs manuell zum Senden auswählen"
   import_labels: "Notizen importieren"
@@ -1274,22 +1280,6 @@ settings_screen:
       connecting: "Überprüfe Adresse..."
       connected: "Adresse verifiziert"
       failed: "Adresse nicht gefunden!"
-  log_viewer_screen:
-    log_description_1: "Wenn Probleme auftreten, drücken Sie bitte die [Teilen]-Taste und senden Sie es per E-Mail oder kontaktieren Sie uns auf Discord"
-    log_description_2: "Die geteilten Informationen werden nur zur Problemlösung verwendet und sofort nach Lösung des Problems verworfen."
-    log_target: "[Protokollierungsziel]"
-    log_target_description_1: "Zur Symptomüberprüfung und Problemlösung protokollieren wir Informationen beim Hinzufügen der Keystone 3 Pro-Wallet. Einige Geräte können auf Probleme stoßen, daher wird die Protokollierung fortgesetzt, um dies zu überprüfen."
-    log_target_description_2: "Protokolliert die Ursache von Broadcast-Fehlerphasen."
-    clear_log: "Protokoll löschen"
-    clear_log_description: "Sind Sie sicher, dass Sie das Protokoll löschen möchten?"
-    email_subject: "[Coconut Wallet] Debug-Protokoll"
-    email_body: "Situation: (Bitte beschreiben Sie kurz die Situation, in der das Problem aufgetreten ist)"
-    email_error_msg: "E-Mail-App kann nicht geöffnet werden. Bitte kopieren Sie das Protokoll und posten Sie es im Discord-Kanal."
-    buttons:
-      discord: "Zu Discord gehen"
-      copy: "Protokoll kopieren"
-      toast:
-        copy_success: "Protokoll erfolgreich kopiert."
 
 address_list_screen:
   wallet_name: "Adresse von $name"
@@ -1377,6 +1367,16 @@ utxo_tag_screen:
   onboarding_title: "Sie können UTXO-Tags verwalten"
   add_tag: "Drücken Sie die +-Taste, um Ihr erstes Tag zu erstellen"
 wallet_detail_screen:
+  vault_select_receiving_wallet_description: "Wählen Sie eine Beobachtungs-Wallet aus, um Bitcoin zu empfangen."
+  vault_select_receiving_wallet: "Empfangstresor auswählen"
+  vault_connect_watch_only_wallet: "Wallet zur Tresorüberwachung verbinden"
+  vault_watch_only_description: "Registrieren Sie eine „Wallet zur Tresorüberwachung (nur zum Beobachten)“ in der App. So können Sie Ihre Bitcoin sicher in Echtzeit überprüfen, ohne Ihr dediziertes Gerät jedes Mal einzuschalten."
+  vault_watch_only_title: "Lassen Sie Ihr Gerät offline und prüfen Sie Ihr Vermögen bequem in der App!"
+  vault_no_balance_title: "Sie haben derzeit keine Bitcoin zum Senden"
+  vault_no_balance_description: "Bitte versuchen Sie es erneut, nachdem Sie Bitcoin erhalten haben"
+  vault_description: "Mit Ihrer aktuellen Wallet können Sie bequem Bitcoin senden und empfangen. Größere Beträge lange darin aufzubewahren, kann sich jedoch unsicher anfühlen.\nEin „Tresor“ bedeutet, Bitcoin auf einem separaten, dafür vorgesehenen Gerät ohne Internetverbindung aufzubewahren. Das ist ähnlich wie bei Banken, die große Vermögenswerte in einem separaten Tresor verwahren. Diese Methode ist am sichersten, weil sie Ihr Vermögen von externen Hackerangriffen isoliert."
+  vault_intro: "Meine Bitcoin sicher aufbewahren – im „Tresor“"
+  move_to_vault: "In den Tresor übertragen"
   recent_transactions: "Letzte Transaktionen"
   view_all: "Alle anzeigen"
   never_used_wallet: "Diese Wallet wurde noch nicht verwendet"
@@ -1996,6 +1996,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "Zahlenformat"
 
 estimated_fee_bottom_sheet:
   title: "Geschätzte Gebühr"

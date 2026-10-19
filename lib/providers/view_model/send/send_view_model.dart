@@ -356,24 +356,18 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       return;
     }
 
-    final selectedWalletId = _selectedWalletItem!.id;
+    final selectedWallet = _selectedWalletItem!;
     final walletAddressMap = _walletProvider.getReceiveAddressMap();
-    final order = _preferenceProvider.walletOrder;
-    assert(order.isNotEmpty);
-
+    // The bulk lookup omits wallets whose first receive address is not generated yet.
+    // Use the individual lookup to initialize those addresses, and ignore stale order IDs.
+    final wallets = [selectedWallet, ..._orderedRegisteredWallets.where((wallet) => wallet.id != selectedWallet.id)];
     _registeredWalletAddressMap = {
-      selectedWalletId: WalletAddressInfo(
-        walletAddress: walletAddressMap[selectedWalletId]!,
-        name: _selectedWalletItem!.name,
-      ),
+      for (final wallet in wallets)
+        wallet.id: WalletAddressInfo(
+          walletAddress: walletAddressMap[wallet.id] ?? _walletProvider.getReceiveAddress(wallet.id),
+          name: wallet.name,
+        ),
     };
-    for (int i = 0; i < order.length; i++) {
-      if (order[i] == selectedWalletId) continue;
-      _registeredWalletAddressMap[order[i]] = WalletAddressInfo(
-        walletAddress: walletAddressMap[order[i]]!,
-        name: _orderedRegisteredWallets.firstWhere((e) => e.id == order[i]).name,
-      );
-    }
 
     _walletAddressNeedsUpdate = List.filled(_registeredWalletAddressMap.length, false);
   }

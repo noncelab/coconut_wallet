@@ -85,7 +85,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           kUseNewHome && _homePage == 1 ? AnalyticsScreenNames.allFeatures : AnalyticsScreenNames.walletHome,
       };
     }
-    return settings.name;
+    return analyticsRouteScreenName(settings);
   }
 
   Future<void> _saveMigratedWalletIds() async {

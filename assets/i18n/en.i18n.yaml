@@ -107,7 +107,6 @@ view: "View"
 network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
-log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
@@ -611,13 +610,14 @@ wallet_home_screen:
     title: "Create a new wallet"
     wallet_created_title: "Your new hot wallet\nis ready!"
     backup_title: "Back up mnemonic"
-    backup_intro_title: "Back up your mnemonic phrase\nto recover your wallet"
     backup_preparation_title: "Keep your mnemonic\nsafe"
     backup_preparation_description: "You need your mnemonic to recover your wallet. Keep it safe so it is not lost or exposed to others."
     backup_tips_1: "Write it down accurately on paper or metal."
     backup_tips_2: "Do not save it as a photo or digital file."
     backup_tips_3: "Keep it in a place that others cannot access."
     backup_start: "Start backup"
+    backup_later_title: "You can back up later"
+    backup_later_description: "You can back up your mnemonic later in Wallet Settings > Mnemonic Backup."
     mnemonic_backup_guide: "Back up your mnemonic phrase in a safe place"
     mnemonic_warning_title: "Your mnemonic phrase is the key to your wallet"
     mnemonic_warning_description: "Anyone who knows these words can take your Bitcoin. Make sure no one else or any cameras are nearby."
@@ -1042,6 +1042,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "Send bitcoin from your hot wallet to a hardware wallet address.\nManage your private keys on a separate device and check your balance in the app."
   utxo_auto_selection: "UTXO Auto-Select"
   select_wallet: "Select Wallet"
   n_utxos(param=count):
@@ -1060,6 +1061,10 @@ send_screen:
   use_btc_unit: "Use BTC Unit"
   input_maximum_amount: "Send All"
   address_placeholder: "Enter the recipient's address"
+  vault_address_placeholder: "Select a receiving address"
+  vault_addresses: "Addresses for $name"
+  vault_nth_address: "Receiving address $n"
+  vault_recipient_summary: "receiving addresses: $count • Total $amount"
   recommended_fee_unavailable: "Failed to Fetch Recommended Fee"
   recommended_fee_unavailable_description: "Please enter the fee manually."
   tooltip_text: "${count} addresses • Total ${amount}"
@@ -1292,6 +1297,7 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  number_format: "Number Format"
   utxo_manual_selection: "UTXO Manual Selection"
   utxo_manual_selection_description: "Select UTXOs manually for sending"
   import_labels: "Import Notes"
@@ -1335,22 +1341,6 @@ settings_screen:
       connecting: "Checking address..."
       connected: "Address verified"
       failed: "Address not found!"
-  log_viewer_screen:
-    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord"
-    log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
-    log_target: "[Logging Target]"
-    log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
-    log_target_description_2: "Logs the cause of broadcast failure stages."
-    clear_log: "Clear Log"
-    clear_log_description: "Are you sure to clear log?"
-    email_subject: "[Coconut Wallet] Debug Log"
-    email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
-    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel."
-    buttons:
-      discord: "Go to Discord"
-      copy: "Copy Log"
-      toast:
-        copy_success: "Log copied successfully."
 
 address_list_screen:
   wallet_name: "$name's Address"
@@ -1438,6 +1428,16 @@ utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
   add_tag: "Press the + button to create your first tag"
 wallet_detail_screen:
+  vault_select_receiving_wallet_description: "Select a watch-only wallet to receive Bitcoin."
+  vault_select_receiving_wallet: "Select a receiving vault"
+  vault_connect_watch_only_wallet: "Connect a vault monitoring wallet"
+  vault_watch_only_description: "Add a “vault monitoring (watch-only) wallet” to the app. You can safely check your Bitcoin in real time without turning on your dedicated device each time."
+  vault_watch_only_title: "Keep your device offline and check your assets easily in the app!"
+  vault_no_balance_title: "You don’t have any Bitcoin to send right now"
+  vault_no_balance_description: "Please try again after receiving Bitcoin"
+  vault_description: "The wallet you’re using makes sending and receiving convenient, but keeping large amounts in it for a long time may feel risky.\nA “vault” means storing Bitcoin on a separate, dedicated device that is not connected to the internet. It’s similar to how banks keep large assets in a separate vault. This is the safest approach because it isolates your assets from external hacking threats."
+  vault_intro: "A safe way to protect my Bitcoin: ‘Vault’"
+  move_to_vault: "Move to vault"
   recent_transactions: "Recent transactions"
   view_all: "View all"
   never_used_wallet: "This wallet hasn't been used yet"
@@ -2057,6 +2057,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "Number Format"
 
 estimated_fee_bottom_sheet:
   title: "Estimated Fee"

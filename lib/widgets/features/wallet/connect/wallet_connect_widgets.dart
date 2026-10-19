@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -15,13 +16,22 @@ class WalletConnectInfoRow extends StatelessWidget {
   final String label;
   final String value;
   final Axis direction;
+  final bool isMfp;
 
-  const WalletConnectInfoRow({super.key, required this.label, required this.value, this.direction = Axis.horizontal});
+  const WalletConnectInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.direction = Axis.horizontal,
+    this.isMfp = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong);
     final valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
+
+    final valueWidget = isMfp ? MfpText(mfp: value, style: valueStyle) : Text(value, style: valueStyle);
 
     if (direction == Axis.horizontal) {
       return Row(
@@ -36,7 +46,7 @@ class WalletConnectInfoRow extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, Text(value, style: valueStyle)],
+      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, valueWidget],
     );
   }
 }
@@ -425,11 +435,13 @@ class FingerprintCompareCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.expected,
           value: expectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.connected,
           value: connectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
       ],
     );
@@ -542,6 +554,7 @@ class HardwareWalletInfoCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: fingerprintLabel ?? t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
           value: fingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(
