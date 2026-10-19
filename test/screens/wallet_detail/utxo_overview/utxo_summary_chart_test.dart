@@ -218,7 +218,7 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
   final context = tester.element(chartFinder);
   final expectedBackground = context.coconutColors.background.toARGB32();
   final expectedDivider = context.coconutColors.divider.toARGB32();
-  final expectedBorder = context.coconutColors.border.toARGB32();
+  final expectedChipSurface = context.coconutColors.utxoOverviewAvailabilitySurface.toARGB32();
   final chipRects =
       name.startsWith('tags-')
           ? <Rect>[]
@@ -264,7 +264,7 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
         'summaryBottomY': summary.bottom,
         'expectedBackground': expectedBackground,
         'expectedDivider': expectedDivider,
-        'expectedBorder': expectedBorder,
+        'expectedChipSurface': expectedChipSurface,
         'chipRects': [
           for (final rect in chipRects) [rect.left, rect.top, rect.width, rect.height],
         ],
@@ -286,9 +286,14 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
   });
   debugPrint('COINS_SURFACE_PIXELS ${jsonEncode(data)}');
   final pixels = data!['pixels']! as Map<String, int>;
-  if (!name.startsWith('tags-') && name.contains('-light-')) {
+  if (!name.startsWith('tags-')) {
     expect(chipRects, hasLength(2));
-    expect(data['chipEdges'], everyElement(expectedBorder), reason: 'Both white cards need a visible boundary');
+    expect(
+      data['chipEdges'],
+      everyElement(expectedChipSurface),
+      reason: 'Both cards use a flat fill without an outline',
+    );
+    expect(expectedChipSurface, isNot(expectedBackground), reason: 'Card fill must distinguish it from the page');
   }
   for (final sample in ['aboveNativeInset', 'insideNativeInset']) {
     expect(pixels[sample], expectedBackground);
