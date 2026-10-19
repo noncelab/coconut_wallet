@@ -744,7 +744,7 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
                 onChanged: (_) => widget.onTap(),
                 width: 24,
                 color: context.coconutColors.iconPrimary,
-                unSelectedColor: context.coconutColors.iconSecondary,
+                unSelectedColor: context.coconutColors.iconPrimary,
                 inactiveColor: context.coconutColors.iconDisabled,
                 isDisabled: effectiveDisabled,
               ),

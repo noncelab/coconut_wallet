@@ -1075,7 +1075,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         /// isFeeRateLowerThanMin, unintendedDustFee중에서는 있는 것을 모두 표시
         if (_viewModel.finalErrorMessage.isNotEmpty) {
           finalButtonMessages.add(
-            FinalButtonMessage(textColor: context.coconutColors.danger, message: _viewModel.finalErrorMessage),
+            FinalButtonMessage(textColor: context.coconutColors.dangerText, message: _viewModel.finalErrorMessage),
           );
         } else {
           if (isFeeRateLowerThanMin) {
@@ -1145,33 +1145,28 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
     final feeRateText = sats != null ? _formatDecimalTextForDisplay(sats.toStringAsFixed(1)) : "-";
-    final child = MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(width: 1, color: context.coconutColors.border),
-          borderRadius: const BorderRadius.all(Radius.circular(8)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              imagePath,
-              height: 12,
-              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-            ),
-            CoconutLayout.spacing_100w,
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                "$feeRateText ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-              ),
-            ),
-          ],
-        ),
+    final child = Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(width: 1, color: context.coconutColors.border),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SvgPicture.asset(
+            imagePath,
+            height: 12,
+            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_100w,
+          Text(
+            "$feeRateText ${t.send_screen.fee_rate_suffix}",
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
 
@@ -1189,6 +1184,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             !isFetching
                 ? child
                 : Shimmer.fromColors(
+                  enabled: !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context),
                   baseColor: context.coconutColors.primaryText.withValues(alpha: 0.2),
                   highlightColor: context.coconutColors.primaryText.withValues(alpha: 0.6),
                   child: child,
@@ -1288,7 +1284,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                   Text(
                     t.send_screen.recommended_fee_unavailable_description,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   ),
                 ],
               ),
@@ -1371,7 +1367,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         richText: RichText(
           text: TextSpan(
             text: text,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
           ),
         ),
       ),
@@ -1414,7 +1410,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             "${_viewModel.estimatedFeeInSats?.toThousandsSeparatedString() ?? '-'} sats",
                             style: CoconutTypography.body2_14_NumberBold.setColor(
                               _viewModel.isEstimatedFeeGreaterThanBalance
-                                  ? context.coconutColors.danger
+                                  ? context.coconutColors.dangerText
                                   : context.coconutColors.primaryText,
                             ),
                           ),
@@ -1451,7 +1447,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       _viewModel.isFeeSubtractedFromSendAmount
                           ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
                           : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                       maxLines: 2, // en - right overflow 방지
                       softWrap: true,
                     ),
@@ -1496,7 +1492,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           taprootSpendType == TaprootSpendType.keyPath
                               ? t.send_screen.taproot.sign_by_parent
                               : t.send_screen.taproot.sign_by_child,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                           maxLines: 2, // en - right overflow 방지
                           softWrap: true,
                         ),
@@ -1513,66 +1509,65 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRateRow() {
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(child: _buildFeeRowLabel(t.send_screen.fee_rate)),
         Expanded(
+          flex: textScale > 1 ? 2 : 1,
           child: Align(
             alignment: Alignment.centerRight,
             child: SizedBox(
-              width: 100,
+              width: 100 * textScale,
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutTextField(
-                    placeholderColor: context.coconutColors.border,
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: const [RateInputFormatter()],
-                    enableInteractiveSelection: false,
-                    textAlign: TextAlign.end,
-                    controller: _feeRateController,
-                    focusNode: _feeRateFocusNode,
-                    backgroundColor: context.coconutColors.background,
-                    onEditingComplete: () {
-                      _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-                      FocusScope.of(context).unfocus();
-                    },
-                    height: 30,
-                    padding: const EdgeInsets.only(left: 0),
-                    onChanged: (text) {
-                      final normalizedText = normalizeNumTextForNumParsing(text);
-                      final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
-                        final displayText = _formatDecimalTextForDisplay(formattedText);
-                        _feeRateController.text = displayText;
-                        _viewModel.setFeeRateText(formattedText);
-                      });
-                      if (isTooLow) {
-                        CoconutToast.showToast(
-                          context: context,
-                          isVisibleIcon: true,
-                          text: t.send_screen.fee_rate_too_low,
-                          seconds: 1,
-                        );
-                      }
-                    },
-                    maxLines: 1,
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    borderRadius: 8,
-                    suffix: Align(
-                      alignment: Alignment.center,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Text(
-                          t.send_screen.fee_rate_suffix,
-                          style: CoconutTypography.body2_14_NumberBold.copyWith(
-                            color: context.coconutColors.primaryText,
-                            height: 1.0,
-                          ),
+                child: CoconutTextField(
+                  placeholderColor: context.coconutColors.inputPlaceholder,
+                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                  textInputFormatter: const [RateInputFormatter()],
+                  enableInteractiveSelection: false,
+                  textAlign: TextAlign.end,
+                  controller: _feeRateController,
+                  focusNode: _feeRateFocusNode,
+                  backgroundColor: context.coconutColors.inputSurface,
+                  onEditingComplete: () {
+                    _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+                    FocusScope.of(context).unfocus();
+                  },
+                  height: 30 * textScale,
+                  padding: const EdgeInsets.only(left: 0),
+                  onChanged: (text) {
+                    final normalizedText = normalizeNumTextForNumParsing(text);
+                    final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
+                      final displayText = _formatDecimalTextForDisplay(formattedText);
+                      _feeRateController.text = displayText;
+                      _viewModel.setFeeRateText(formattedText);
+                    });
+                    if (isTooLow) {
+                      CoconutToast.showToast(
+                        context: context,
+                        isVisibleIcon: true,
+                        text: t.send_screen.fee_rate_too_low,
+                        seconds: 1,
+                      );
+                    }
+                  },
+                  maxLines: 1,
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  borderRadius: 8,
+                  suffix: Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        t.send_screen.fee_rate_suffix,
+                        style: CoconutTypography.body2_14_NumberBold.copyWith(
+                          color: context.coconutColors.primaryText,
+                          height: 1.0,
                         ),
                       ),
                     ),
@@ -1587,7 +1582,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRowLabel(String label) {
-    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
+    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
   }
 
   Widget _buildPageView(BuildContext context) {
@@ -1760,11 +1755,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   if (_viewModel.isTotalSendAmountExceedsBalance ||
                       isMinimumAmount ||
                       hasInsufficientBalanceErrorOfLastRecipient) {
-                    amountTextColor = context.coconutColors.danger;
+                    amountTextColor = context.coconutColors.dangerText;
                   } else if (_viewModel.isMaxModeLastIndex(index)) {
                     amountTextColor = context.coconutColors.secondaryText;
                   } else if (amountText.isEmpty) {
-                    amountTextColor = context.coconutColors.inputPlaceholder;
+                    amountTextColor = context.coconutColors.secondaryTextStrong;
                   } else {
                     amountTextColor = context.coconutColors.primaryText;
                   }
@@ -1913,7 +1908,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
-                    backgroundColor: context.coconutColors.background,
+                    backgroundColor: context.coconutColors.inputSurface,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
                     maxLines: 1,
@@ -1930,6 +1925,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       }
                     },
                     suffixIconAsset: CommonActionIconPath.scan,
+                    suffixSemanticLabel: t.send_address_screen.text2,
                     suffixIconColor: context.coconutColors.primaryText,
                     suffixIconSize: 18,
                     placeholderText: t.send_screen.address_placeholder,
@@ -1957,7 +1953,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _viewModel.deleteRecipient();
                               _setDropdownMenuVisiblility(false);
                             },
-                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                             padding: EdgeInsets.zero,
                           ),
                         );
@@ -2000,7 +1996,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ),
                 Text(
                   "/ $recipientListLength",
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                 ),
               ],
             ),
@@ -2075,7 +2071,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String derivationPath,
     bool isCurrentWallet,
   ) {
-    final fontStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
+    final fontStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong);
     return Text.rich(
       TextSpan(
         children: [

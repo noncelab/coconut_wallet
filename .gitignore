@@ -209,3 +209,5 @@ rust/trezor-connect-rs/target/
 # Local agent work and uncommitted growth/QA reports
 /.omo/
 /docs/growth/
+/.qa/
+/pubspec_overrides.yaml

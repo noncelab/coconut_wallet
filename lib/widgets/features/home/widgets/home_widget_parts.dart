@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -19,16 +20,24 @@ import 'package:shimmer/shimmer.dart';
 /// 변화율에 맞는 색. 변화가 없거나 값이 없으면 [neutral]
 Color homePriceColorOf(BuildContext context, double? rate, {required Color neutral}) {
   if (rate == null || rate == 0) return neutral;
-  final price = homePriceColors(context);
-  return rate > 0 ? price.up : price.down;
+  final colors = context.coconutColors;
+  return rate > 0 ? colors.priceUpText : colors.priceDownText;
 }
 
 /// 누를 수 있는 홈 위젯. 누르는 동안 살짝 줄어든다.
 class HomeWidgetPressable extends StatefulWidget {
   final VoidCallback onTap;
   final Widget child;
+  final double borderRadius;
+  final Color? focusColor;
 
-  const HomeWidgetPressable({super.key, required this.onTap, required this.child});
+  const HomeWidgetPressable({
+    super.key,
+    required this.onTap,
+    required this.child,
+    this.borderRadius = 20,
+    this.focusColor,
+  });
 
   @override
   State<HomeWidgetPressable> createState() => _HomeWidgetPressableState();
@@ -36,6 +45,7 @@ class HomeWidgetPressable extends StatefulWidget {
 
 class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
   bool _pressed = false;
+  bool _showFocus = false;
 
   void _setPressed(bool pressed) {
     if (_pressed != pressed) setState(() => _pressed = pressed);
@@ -43,16 +53,51 @@ class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
+    return Semantics(
+      button: true,
+      enabled: true,
       onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1,
-        duration: const Duration(milliseconds: 100),
-        child: widget.child,
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.click,
+        onShowFocusHighlight: (value) => setState(() => _showFocus = value),
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          excludeFromSemantics: true,
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => _setPressed(true),
+          onTapUp: (_) => _setPressed(false),
+          onTapCancel: () => _setPressed(false),
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _pressed ? 0.97 : 1,
+            duration:
+                MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 100),
+            child: DecoratedBox(
+              position: DecorationPosition.foreground,
+              decoration:
+                  _showFocus
+                      ? BoxDecoration(
+                        border: Border.all(color: widget.focusColor ?? context.coconutColors.primaryText, width: 3),
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                      )
+                      : const BoxDecoration(),
+              child: widget.child,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -72,8 +117,8 @@ class HomeWidgetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = context.coconutColors.primaryText;
-    return SizedBox(
-      height: kHomeWidgetHeaderHeight,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: kHomeWidgetHeaderHeight),
       child: Row(
         children: [
           SvgPicture.asset(
@@ -114,28 +159,32 @@ class HomeWidgetSkeleton extends StatelessWidget {
         decoration: BoxDecoration(color: colors.surfaceSkeletonBase, borderRadius: BorderRadius.circular(4)),
       ),
     );
-    return HomeWidgetCard(
-      child: Shimmer.fromColors(
-        baseColor: colors.surfaceSkeletonBase,
-        highlightColor: colors.surfaceSkeletonHighlight,
-        child: Column(
-          key: const Key('home-widget-skeleton'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            bar(wide ? 0.4 : 0.7, 16),
-            const SizedBox(height: 8),
-            bar(wide ? 0.25 : 0.45, 10),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(color: colors.surfaceSkeletonBase, borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            bar(wide ? 0.3 : 0.55, 10),
-          ],
+    final content = Column(
+      key: const Key('home-widget-skeleton'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        bar(wide ? 0.4 : 0.7, 16),
+        const SizedBox(height: 8),
+        bar(wide ? 0.25 : 0.45, 10),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(color: colors.surfaceSkeletonBase, borderRadius: BorderRadius.circular(8)),
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        bar(wide ? 0.3 : 0.55, 10),
+      ],
+    );
+    return HomeWidgetCard(
+      child:
+          MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
+              ? content
+              : Shimmer.fromColors(
+                baseColor: colors.surfaceSkeletonBase,
+                highlightColor: colors.surfaceSkeletonHighlight,
+                child: content,
+              ),
     );
   }
 }
@@ -464,6 +513,7 @@ class _SparklinePainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
       oldDelegate.selectedIndex != selectedIndex ||
+      oldDelegate.guideColor != guideColor ||
       !_sameValues(oldDelegate.values, values);
 
   static bool _sameValues(List<double> a, List<double> b) {

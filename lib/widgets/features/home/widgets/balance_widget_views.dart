@@ -41,7 +41,7 @@ class BitcoinBalanceTrendView extends StatelessWidget {
           Expanded(
             child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: HomeSparkline(values: values)),
           ),
-          _TrendFooter(valueText: fiatText, rate: rate, valueColor: context.coconutColors.homeChartLine),
+          _TrendFooter(valueText: fiatText, rate: rate, valueColor: context.coconutColors.primaryText),
         ],
       ),
     );
@@ -359,8 +359,19 @@ class BalanceChangeOverTimeView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (final label in dayLabels)
-                Text(label, style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText)),
+              for (final (index, label) in dayLabels.indexed) ...[
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                    ),
+                  ),
+                ),
+                if (index < dayLabels.length - 1) const SizedBox(width: 2),
+              ],
             ],
           ),
         ],

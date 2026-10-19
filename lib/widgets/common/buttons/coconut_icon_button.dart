@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 /// - close/remove buttons inside overlays, popups, and dialogs
 ///
 /// Use [CoconutAppBarActionButton] instead when the button is an app-bar
-/// action and should keep the standard 40x40 action hit area.
+/// action and should keep the standard 48x48 action hit area.
 class CoconutIconButton extends StatelessWidget {
   final Widget icon;
   final VoidCallback? onPressed;
@@ -62,7 +62,7 @@ class CoconutIconButton extends StatelessWidget {
 
 /// Standard app-bar action icon button.
 ///
-/// This wraps [CoconutIconButton] and fixes the common 40x40 app-bar action
+/// This wraps [CoconutIconButton] and fixes the common 48x48 app-bar action
 /// size used across the app.
 ///
 /// Prefer this over raw `IconButton` for:
@@ -72,12 +72,15 @@ class CoconutIconButton extends StatelessWidget {
 /// If a screen needs a special interaction model or non-standard hit area,
 /// use [CoconutIconButton] directly and document the exception nearby.
 class CoconutAppBarActionButton extends StatelessWidget {
+  static const minimumSize = kMinInteractiveDimension;
+
   final Widget icon;
   final VoidCallback? onPressed;
   final Key? buttonKey;
   final Color? color;
   final Color? highlightColor;
   final double size;
+  final String? tooltip;
 
   const CoconutAppBarActionButton({
     super.key,
@@ -86,16 +89,23 @@ class CoconutAppBarActionButton extends StatelessWidget {
     this.buttonKey,
     this.color,
     this.highlightColor,
-    this.size = 40,
+    this.size = minimumSize,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       key: buttonKey,
-      width: size,
-      height: size,
-      child: CoconutIconButton(icon: icon, onPressed: onPressed, color: color, highlightColor: highlightColor),
+      width: size < minimumSize ? minimumSize : size,
+      height: size < minimumSize ? minimumSize : size,
+      child: CoconutIconButton(
+        icon: icon,
+        onPressed: onPressed,
+        color: color,
+        highlightColor: highlightColor,
+        tooltip: tooltip,
+      ),
     );
   }
 }

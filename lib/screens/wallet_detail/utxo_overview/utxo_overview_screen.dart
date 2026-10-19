@@ -47,6 +47,7 @@ import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdo
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -71,6 +72,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   final _activeBucketY = ValueNotifier<double>(0);
 
   final GlobalKey _scrollRailKey = GlobalKey();
+  final GlobalKey _summaryChartKey = GlobalKey();
+
+  double get _summaryChartHeight {
+    final box = _summaryChartKey.currentContext?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.size.height : UtxoSummaryChart.estimatedHeight;
+  }
+
   final GlobalKey _listOrderDropdownKey = GlobalKey();
   bool _isListOrderDropdownVisible = false;
   double _listOrderDropdownTop = 0;
@@ -163,7 +171,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
 
   double _scrollOffsetForBucket(int bucketIdx, ScrollPosition pos) {
     final filterBarH = _effectiveFilterBarHeight;
-    final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
+    final listStart = _summaryChartHeight + filterBarH;
     final target = listStart + bucketIdx * _itemHeight - (pos.viewportDimension - filterBarH) / 2 + _itemHeight / 2;
     return target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
   }
@@ -502,6 +510,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             ),
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
+                key: _summaryChartKey,
                 height: UtxoSummaryChart.estimatedHeight,
                 buckets: _buckets,
                 totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
@@ -1097,10 +1106,10 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     final maxExtent = pos.maxScrollExtent;
     final pixels = pos.pixels;
     final filterBarH = _effectiveFilterBarHeight;
-    final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
+    final listStart = _summaryChartHeight + filterBarH;
     // 스티키 헤더가 앱바에 붙었을 때(pinned) 리스트 영역은 헤더 아래에서 시작
     final contentCenter =
-        pixels >= UtxoSummaryChart.estimatedHeight
+        pixels >= _summaryChartHeight
             ? pixels + filterBarH + (pos.viewportDimension - filterBarH) / 2
             : pixels + pos.viewportDimension / 2;
     final target =
@@ -1117,17 +1126,28 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   }
 
   void _updateBucketY(int index) {
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.postFrameCallbacks && _applyBucketY(index)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyBucketY(index));
+    if (phase == SchedulerPhase.postFrameCallbacks || phase == SchedulerPhase.idle) {
+      WidgetsBinding.instance.scheduleFrame();
+    }
+  }
+
+  bool _applyBucketY(int index) {
+    if (!mounted || index != _activeIndex.value || index < 0 || index >= _filteredBucketKeys.length) return false;
     final bucketCtx = _filteredBucketKeys[index].currentContext;
-    if (bucketCtx == null) return;
+    if (bucketCtx == null) return false;
     final bucketBox = bucketCtx.findRenderObject() as RenderBox?;
-    if (bucketBox == null || !bucketBox.hasSize) return;
+    if (bucketBox == null || !bucketBox.attached || !bucketBox.hasSize) return false;
     final railCtx = _scrollRailKey.currentContext;
-    if (railCtx == null) return;
+    if (railCtx == null) return false;
     final railBox = railCtx.findRenderObject() as RenderBox?;
-    if (railBox == null || !railBox.hasSize) return;
+    if (railBox == null || !railBox.attached || !railBox.hasSize) return false;
 
     final bucketCenterGlobal = bucketBox.localToGlobal(Offset(bucketBox.size.width / 2, bucketBox.size.height / 2));
     final railTopGlobal = railBox.localToGlobal(Offset.zero);
     _activeBucketY.value = bucketCenterGlobal.dy - railTopGlobal.dy;
+    return true;
   }
 }

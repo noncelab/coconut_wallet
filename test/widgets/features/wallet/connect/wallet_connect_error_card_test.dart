@@ -46,7 +46,7 @@ void main() {
         expect(find.text('1. Check the device connection.', findRichText: true), findsOneWidget);
         expect(find.text('2. Try connecting again.', findRichText: true), findsOneWidget);
         expect(find.text('Turn on Bluetooth.'), message == null || message.isEmpty ? findsNothing : findsOneWidget);
-        expect(tester.widget<Text>(find.text('Connection failed')).style?.color, colors.danger);
+        expect(tester.widget<Text>(find.text('Connection failed')).style?.color, colors.dangerText);
         expect(
           tester.widget<Text>(find.text('Check the cable and device, then try again.')).style?.color,
           colors.primaryText,

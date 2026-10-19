@@ -1,9 +1,203 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('$variant separates hint, counter, error, active and disabled controls', (tester) async {
+      final controller = TextEditingController();
+      final focusNode = FocusNode();
+      addTearDown(controller.dispose);
+      addTearDown(focusNode.dispose);
+      final semantics = tester.ensureSemantics();
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      var clears = 0;
+      var scans = 0;
+
+      Future<void> pump({bool enabled = true, bool error = false}) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildCoconutThemeData(variant: variant),
+            home: Scaffold(
+              body: CoconutTextField(
+                controller: controller,
+                focusNode: focusNode,
+                onChanged: (_) {},
+                placeholderText: 'Address',
+                maxLength: 20,
+                maxLines: 1,
+                enabled: enabled,
+                isError: error,
+                errorText: 'Invalid address',
+                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                onClear: () {
+                  clears++;
+                  controller.clear();
+                },
+                suffixIconAsset: CommonActionIconPath.scan,
+                suffixSemanticLabel: 'Scan address QR',
+                onSuffixPressed: () => scans++,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      await pump();
+      expect(tester.widget<Text>(find.text('Address')).style!.color, colors.inputPlaceholder);
+      expect(tester.widget<Text>(find.text('0/20')).style!.color, colors.secondaryTextStrong);
+      await tester.enterText(find.byType(EditableText), 'bc1test');
+      await tester.pump();
+      expect(find.bySemanticsLabel('Address'), findsOneWidget);
+      final buttons = find.byType(CupertinoButton);
+      expect(buttons, findsNWidgets(2));
+      final clearButton = buttons.first;
+      expect(tester.getSize(clearButton), const Size(44, 44));
+      expect(tester.getSize(buttons.last), const Size(44, 44));
+      expect(find.bySemanticsLabel('Clear'), findsOneWidget);
+      final clearSemantics = tester.getSemantics(find.bySemanticsLabel('Clear')).getSemanticsData();
+      expect(clearSemantics.label, 'Clear');
+      expect(clearSemantics.flagsCollection.isButton, isTrue);
+      expect(clearSemantics.hasAction(SemanticsAction.tap), isTrue);
+      final clearSvg = tester.widget<SvgPicture>(find.descendant(of: clearButton, matching: find.byType(SvgPicture)));
+      expect(clearSvg.colorFilter, ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn));
+      expect(clearSvg.width, 14);
+      await tester.tapAt(tester.getTopLeft(clearButton) + const Offset(3, 3));
+      await tester.pump();
+      expect(clears, 1);
+      expect(controller.text, isEmpty);
+      await tester.tap(find.byType(CupertinoButton));
+      expect(scans, 1);
+
+      controller.text = 'bc1test';
+      await pump(error: true);
+      expect(tester.widget<Text>(find.text('Invalid address')).style!.color, colors.dangerText);
+      await pump(enabled: false);
+      await tester.tap(find.byType(CupertinoButton).first);
+      await tester.tap(find.byType(CupertinoButton).last);
+      expect(clears, 1);
+      expect(scans, 1);
+      expect(controller.text, 'bc1test');
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Clear')).getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      controller.clear();
+      focusNode.unfocus();
+      await pump(enabled: false);
+      expect(tester.widget<Text>(find.text('Address')).style!.color, colors.mutedText);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      semantics.dispose();
+    });
+  }
+
+  testWidgets('search clear and scan accept edge taps independently inside a narrow app bar', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = TextEditingController(text: 'bc1test');
+    final focusNode = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(focusNode.dispose);
+    var clears = 0;
+    var scans = 0;
+    var backs = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(variant: CoconutThemeVariant.coconutTheme),
+        home: Scaffold(
+          appBar: AppBar(
+            toolbarHeight: 56,
+            leading: IconButton(onPressed: () => backs++, icon: const Icon(Icons.arrow_back)),
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.only(right: 16, top: 4),
+              child: CoconutTextField(
+                controller: controller,
+                focusNode: focusNode,
+                onChanged: (_) {},
+                size: CoconutTextFieldSize.search,
+                prefix: const IgnorePointer(
+                  child: IconButton(onPressed: null, icon: Icon(Icons.search_rounded), iconSize: 22),
+                ),
+                maxLines: 1,
+                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                onClear: () {
+                  clears++;
+                  controller.clear();
+                },
+                suffixIconAsset: CommonActionIconPath.scan,
+                onSuffixPressed: () => scans++,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final buttons = find.byType(CupertinoButton);
+    final clearRect = tester.getRect(buttons.first);
+    final scanRect = tester.getRect(buttons.last);
+    expect(clearRect.size, const Size(44, 44));
+    expect(scanRect.size, const Size(44, 44));
+    expect(clearRect.right, lessThanOrEqualTo(scanRect.left));
+    await tester.tapAt(scanRect.bottomRight - const Offset(1, 1));
+    expect(scans, 1);
+    expect(clears, 0);
+    expect(controller.text, 'bc1test');
+    await tester.tapAt(clearRect.topLeft + const Offset(1, 1));
+    await tester.pump();
+    expect(clears, 1);
+    expect(scans, 1);
+    expect(backs, 0);
+    expect(controller.text, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('focus border and persistent label follow a replaced focus node', (tester) async {
+    final controller = TextEditingController();
+    final first = FocusNode();
+    final second = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+    Future<void> pump(FocusNode focusNode) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Scaffold(
+            body: CoconutTextField(
+              controller: controller,
+              focusNode: focusNode,
+              onChanged: (_) {},
+              placeholderText: 'Hint',
+            ),
+          ),
+        ),
+      );
+    }
+
+    await pump(first);
+    first.requestFocus();
+    await tester.pump();
+    expect(find.text('Hint'), findsNothing);
+    await pump(second);
+    second.requestFocus();
+    await tester.pump();
+    expect(find.text('Hint'), findsNothing);
+    second.unfocus();
+    await tester.pump();
+    expect(find.text('Hint'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('disables contextual font shaping for default Pretendard input text', (tester) async {
     final controller = TextEditingController(text: '1x2');
     final focusNode = FocusNode();

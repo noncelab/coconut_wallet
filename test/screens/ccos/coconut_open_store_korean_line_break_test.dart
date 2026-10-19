@@ -215,7 +215,7 @@ void main() {
     }
   });
 
-  testWidgets('CONTRIBUTE retains typing progress, white emphasis and unchanged non-Korean text', (tester) async {
+  testWidgets('CONTRIBUTE retains typing progress, readable emphasis and unchanged non-Korean text', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(320, 1100);
     addTearDown(tester.view.reset);
@@ -245,7 +245,7 @@ void main() {
       final span = tester.widget<RichText>(_text(prefix)).text as TextSpan;
       final highlight = (span.children ?? []).whereType<TextSpan>().where((child) => child.style?.fontSize == 29.4);
       expect(highlight, isNotEmpty);
-      expect(highlight.every((child) => child.style?.color == Colors.white), isTrue);
+      expect(highlight.every((child) => child.style?.color == const Color(0xFF10161C)), isTrue);
       expect(_plain(span.toPlainText()), prefix);
     }
     for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de]) {

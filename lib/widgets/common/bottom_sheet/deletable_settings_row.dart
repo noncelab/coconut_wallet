@@ -1,8 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// [SelectableSettingsRow]와 같은 [SelectableSettingsRowContent] 레이아웃을 쓰지만,
@@ -48,6 +50,9 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
   static const double _dragSlop = 18; // kTouchSlop 기본값과 동일
 
   bool _isPressed = false;
+  bool _tapCancelled = false;
+  bool _showFocus = false;
+  bool _hasFocus = false;
 
   static const double _swipeThreshold = 0.15; // 15% 이상 스와이프 시 삭제 동작
   static const double _swipeStopPosition = 0.2;
@@ -57,7 +62,19 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    _animationController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
+          ..addListener(() {
+            if (_isAnimating) setState(() => _dragOffset = _animation.value);
+          })
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _isAnimating = false;
+              final callback = _pendingOnComplete;
+              _pendingOnComplete = null;
+              callback?.call();
+            }
+          });
   }
 
   @override
@@ -75,27 +92,26 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
   }
 
   void _animateTo(double end, {VoidCallback? onComplete}) {
-    _isAnimating = true;
+    _isAnimating = false;
     _pendingOnComplete = onComplete;
     _animationController.stop();
     _animationController.reset();
     _animation = Tween<double>(
       begin: _dragOffset,
       end: end,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut))..addListener(() {
-      if (mounted) setState(() => _dragOffset = _animation.value);
-    });
-    _animation.addStatusListener((status) {
-      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
-        _isAnimating = false;
-        if (status == AnimationStatus.completed) {
-          final callback = _pendingOnComplete;
-          _pendingOnComplete = null;
-          callback?.call();
-        }
-      }
-    });
+    ).chain(CurveTween(curve: Curves.easeInOut)).animate(_animationController);
+    _isAnimating = true;
     _animationController.forward();
+  }
+
+  void _activate() {
+    if (_isAnimating) return;
+    if (_dragOffset != 0) {
+      widget.onSwipeChanged(false);
+      _animateToOriginalPosition();
+    } else {
+      widget.onTap();
+    }
   }
 
   void _animateToOriginalPosition() => _animateTo(0);
@@ -124,117 +140,169 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
               visible: _dragOffset != 0,
               child: Align(
                 alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: widget.onDelete,
-                  child: Container(
-                    width: _deleteButtonSize,
-                    height: _deleteButtonSize,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colors.danger,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(_borderRadius),
-                        bottomRight: Radius.circular(_borderRadius),
-                      ),
+                child: Container(
+                  width: _deleteButtonSize,
+                  height: _deleteButtonSize,
+                  decoration: BoxDecoration(
+                    color: colors.danger,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(_borderRadius),
+                      bottomRight: Radius.circular(_borderRadius),
                     ),
-                    child: SvgPicture.asset(
-                      CommonActionIconPath.trash,
-                      width: 20,
-                      colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: MergeSemantics(
+                      child: IconButton(
+                        onPressed: widget.onDelete,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(width: _deleteButtonSize, height: _deleteButtonSize),
+                        focusColor: colors.iconOnDanger.withValues(alpha: 0.2),
+                        icon: SvgPicture.asset(
+                          CommonActionIconPath.trash,
+                          semanticsLabel: t.delete,
+                          width: 20,
+                          colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          Listener(
-            onPointerDown: (event) {
-              _dragStartPosition = event.position;
-              _dragRecognized = false;
-              setState(() => _isPressed = true);
-            },
-            onPointerMove: (event) {
-              if (_isAnimating) return;
-              final start = _dragStartPosition;
-              if (start == null) return;
-              if (!_dragRecognized) {
-                final total = event.position - start;
-                if (total.dx.abs() <= total.dy.abs() || total.distance < _dragSlop) {
-                  return;
-                }
-                _dragRecognized = true;
-                if (_isPressed) setState(() => _isPressed = false);
-              }
-              final dx = event.delta.dx;
-              if (dx < 0 || (dx > 0 && _dragOffset < 0)) {
-                setState(() {
-                  _dragOffset = (_dragOffset + dx).clamp(-screenWidth, 0);
-                });
-              }
-            },
-            onPointerUp: (event) {
-              if (_isAnimating) {
-                if (_isPressed) setState(() => _isPressed = false);
-                return;
-              }
-              if (_dragRecognized) {
-                if (_isPressed) setState(() => _isPressed = false);
-                final swipeThresholdPx = screenWidth * _swipeThreshold;
-                if (_dragOffset.abs() >= swipeThresholdPx) {
-                  widget.onSwipeChanged(true);
-                  _animateToDeletePosition();
-                } else {
-                  widget.onSwipeChanged(false);
-                  _animateToOriginalPosition();
-                }
-                return;
-              }
-              setState(() => _isPressed = false);
-              if (_dragOffset != 0) {
-                widget.onSwipeChanged(false);
-                _animateToOriginalPosition();
-              } else {
-                widget.onTap();
-              }
-            },
-            onPointerCancel: (event) {
-              if (_isPressed) setState(() => _isPressed = false);
-              if (_isAnimating || !_dragRecognized) return;
-              widget.onSwipeChanged(false);
-              _animateToOriginalPosition();
-            },
-            child: Transform.translate(
-              offset: Offset(_dragOffset, 0),
-              // ShrinkAnimationButton과 같은 파라미터(0.97, 100ms, easeInOut)로
-              // shrink 효과를 맞춰서 SelectableSettingsRow와 동일하게 느껴지도록 한다.
-              child: AnimatedScale(
-                scale: _isPressed ? 0.97 : 1.0,
-                duration: const Duration(milliseconds: 100),
-                curve: Curves.easeInOut,
-                child: Container(
-                  color: colors.background,
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
-                        child: SelectableSettingsRowContent(
-                          title: widget.title,
-                          subtitle: widget.subtitle,
-                          subtitleStyle: widget.subtitleStyle,
-                          isSelected: widget.isSelected,
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 100),
-                            opacity: _isPressed ? 1 : 0,
-                            child: Container(color: colors.primaryText.withValues(alpha: 0.12)),
+          Transform.translate(
+            offset: Offset(_dragOffset, 0),
+            child: Semantics(
+              container: true,
+              button: true,
+              enabled: true,
+              selected: widget.isSelected,
+              focusable: true,
+              focused: _hasFocus,
+              label: [widget.title, if (widget.subtitle != null) widget.subtitle!].join('\n'),
+              onTap: _activate,
+              onDismiss: widget.onDelete,
+              excludeSemantics: true,
+              child: FocusableActionDetector(
+                includeFocusSemantics: false,
+                onFocusChange: (value) => setState(() => _hasFocus = value),
+                onShowFocusHighlight: (value) => setState(() => _showFocus = value),
+                shortcuts: const {
+                  SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+                  SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+                  SingleActivator(LogicalKeyboardKey.delete): DismissIntent(),
+                },
+                actions: {
+                  DismissIntent: CallbackAction<DismissIntent>(
+                    onInvoke: (_) {
+                      widget.onDelete();
+                      return null;
+                    },
+                  ),
+                  ActivateIntent: CallbackAction<ActivateIntent>(
+                    onInvoke: (_) {
+                      _activate();
+                      return null;
+                    },
+                  ),
+                },
+                child: Listener(
+                  onPointerDown: (event) {
+                    _dragStartPosition = event.position;
+                    _dragRecognized = false;
+                    _tapCancelled = false;
+                    setState(() => _isPressed = true);
+                  },
+                  onPointerMove: (event) {
+                    if (_isAnimating || _tapCancelled) return;
+                    final start = _dragStartPosition;
+                    if (start == null) return;
+                    if (!_dragRecognized) {
+                      final total = event.position - start;
+                      if (total.distance < _dragSlop) return;
+                      if (total.dx.abs() <= total.dy.abs()) {
+                        _tapCancelled = true;
+                        setState(() => _isPressed = false);
+                        return;
+                      }
+                      _dragRecognized = true;
+                      if (_isPressed) setState(() => _isPressed = false);
+                    }
+                    final dx = event.delta.dx;
+                    if (dx < 0 || (dx > 0 && _dragOffset < 0)) {
+                      setState(() {
+                        _dragOffset = (_dragOffset + dx).clamp(-screenWidth, 0);
+                      });
+                    }
+                  },
+                  onPointerUp: (event) {
+                    _dragStartPosition = null;
+                    if (_isAnimating || _tapCancelled) {
+                      if (_isPressed) setState(() => _isPressed = false);
+                      return;
+                    }
+                    if (_dragRecognized) {
+                      if (_isPressed) setState(() => _isPressed = false);
+                      final swipeThresholdPx = screenWidth * _swipeThreshold;
+                      if (_dragOffset.abs() >= swipeThresholdPx) {
+                        widget.onSwipeChanged(true);
+                        _animateToDeletePosition();
+                      } else {
+                        widget.onSwipeChanged(false);
+                        _animateToOriginalPosition();
+                      }
+                      return;
+                    }
+                    setState(() => _isPressed = false);
+                    _activate();
+                  },
+                  onPointerCancel: (event) {
+                    _dragStartPosition = null;
+                    _tapCancelled = true;
+                    if (_isPressed) setState(() => _isPressed = false);
+                    if (_isAnimating || !_dragRecognized) return;
+                    widget.onSwipeChanged(false);
+                    _animateToOriginalPosition();
+                  },
+                  // ShrinkAnimationButton과 같은 파라미터(0.97, 100ms, easeInOut)로
+                  // shrink 효과를 맞춰서 SelectableSettingsRow와 동일하게 느껴지도록 한다.
+                  child: AnimatedScale(
+                    scale: _isPressed ? 0.97 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    curve: Curves.easeInOut,
+                    child: Container(
+                      color: colors.background,
+                      foregroundDecoration:
+                          _showFocus
+                              ? BoxDecoration(
+                                border: Border.all(color: colors.primaryText, width: 2),
+                                borderRadius: BorderRadius.circular(_borderRadius),
+                              )
+                              : null,
+                      child: Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
+                            child: SelectableSettingsRowContent(
+                              title: widget.title,
+                              subtitle: widget.subtitle,
+                              subtitleStyle: widget.subtitleStyle,
+                              isSelected: widget.isSelected,
+                            ),
                           ),
-                        ),
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 100),
+                                opacity: _isPressed ? 1 : 0,
+                                child: Container(color: colors.primaryText.withValues(alpha: 0.12)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

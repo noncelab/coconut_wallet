@@ -1432,11 +1432,28 @@ void main() {
       VoidCallback? onArrangeDone,
       void Function(HomeItem item)? onRemove,
       List<String>? selected,
+      ValueNotifier<bool>? motionSetting,
+      bool accessibleNavigation = false,
     }) {
       var arranging = isArranging;
       return tester.pumpWidget(
         MaterialApp(
           theme: buildCoconutThemeData(),
+          builder:
+              (context, child) =>
+                  motionSetting == null
+                      ? child!
+                      : ValueListenableBuilder<bool>(
+                        valueListenable: motionSetting,
+                        builder:
+                            (context, reduced, _) => MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                disableAnimations: !accessibleNavigation && reduced,
+                                accessibleNavigation: accessibleNavigation && reduced,
+                              ),
+                              child: child!,
+                            ),
+                      ),
           home: StatefulBuilder(
             builder:
                 (context, update) => Center(
@@ -1647,6 +1664,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 200));
     });
+
+    for (final accessibleNavigation in [false, true]) {
+      testWidgets(
+        'arranging jiggle cancels pending timers and responds live: accessibleNavigation=$accessibleNavigation',
+        (tester) async {
+          final motion = ValueNotifier(true);
+          addTearDown(motion.dispose);
+          var removed = 0;
+          await pumpGrid(
+            tester,
+            isArranging: true,
+            motionSetting: motion,
+            accessibleNavigation: accessibleNavigation,
+            onRemove: (_) => removed++,
+          );
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          expect(find.byKey(const ValueKey('home-item-remove-a')), findsOneWidget);
+          await tester.tap(find.byKey(const ValueKey('home-item-remove-a')));
+          expect(removed, 1);
+          motion.value = false;
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 150));
+          expect(tester.binding.transientCallbackCount, greaterThan(0));
+          motion.value = true;
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          motion.value = false;
+          await tester.pump();
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.binding.transientCallbackCount, 0);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
 
     testWidgets('arranging remains active after a minute without input', (tester) async {
       var done = 0;

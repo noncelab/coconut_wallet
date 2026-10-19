@@ -1066,7 +1066,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                                     }
                                   },
                                   defaultColor: context.coconutColors.surface,
-                                  pressedColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
                                   border: Border.all(color: context.coconutColors.border),
                                   borderRadius: 100,
                                   child: Padding(
@@ -1380,7 +1381,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                   ),
                   backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
                   checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_watch_only,
-                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   isCheckboxSelected: removeWatchOnly,
                   onCheckboxChanged: (value) => setDialogState(() => removeWatchOnly = value),
                   rightButtonText: t.wallet_home_screen.hot_wallet_restore.restore_wallet,

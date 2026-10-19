@@ -188,7 +188,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                           Text(
                                             _viewModel.utxoOrder.text,
                                             style: CoconutTypography.caption_10.setColor(
-                                              context.coconutColors.secondaryText,
+                                              context.coconutColors.secondaryTextStrong,
                                             ),
                                           ),
                                           const SizedBox(width: 4),
@@ -460,7 +460,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                   : hasFilter
                   ? copy.empty_filtered_description
                   : copy.empty_description,
-              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
               textAlign: TextAlign.center,
             ),
             CoconutLayout.spacing_500h,
@@ -473,6 +473,13 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       : t.receive,
               height: 48,
               buttonType: CoconutButtonType.outlined,
+              pressedBackgroundColor: Color.alphaBlend(
+                context.coconutColors.surfacePressOverlay.withValues(
+                  alpha: context.coconutColors.surfacePressOverlayOpacity,
+                ),
+                context.coconutColors.surface,
+              ),
+              pressedTextColor: context.coconutColors.primaryText,
               borderColor: context.coconutColors.borderStrong,
               backgroundColor: widget.backgroundColor ?? context.coconutColors.background,
               foregroundColor: context.coconutColors.primaryText,

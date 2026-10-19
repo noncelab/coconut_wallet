@@ -323,7 +323,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             borderRadius: BorderRadius.circular(Sizes.size14),
             border: Border.all(width: 1, color: context.coconutColors.border),
           ),
-          child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
+          child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong)),
         ),
       ),
     );

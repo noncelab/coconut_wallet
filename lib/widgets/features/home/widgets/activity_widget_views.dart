@@ -295,7 +295,7 @@ class TransactionActivityView extends StatelessWidget {
             : '${formatHomeShortDate(days.first.day)} ~ ${formatHomeShortDate(rangeEnd ?? days.last.day)}';
     final receivedColor = colors.receivingColor;
     final sentColor = colors.sendingColor;
-    final organizedColor = colors.iconDisabled;
+    final organizedColor = colors.secondaryText;
     final isEmpty = received + sent + organized == 0;
     Widget barsRow() => Row(
       crossAxisAlignment: CrossAxisAlignment.end,

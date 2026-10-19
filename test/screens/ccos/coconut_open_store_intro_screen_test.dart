@@ -1,11 +1,18 @@
 import 'dart:ui' as ui;
+import 'dart:io';
+
+import 'package:coconut_wallet/localization/strings.g.dart';
 
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_intro_screen.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_build_scene.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_first_pow_scene.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +23,10 @@ const _storyKey = ValueKey('open-store-story');
 const _captureKey = ValueKey('capture');
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
+  _Preferences([this.variant = CoconutThemeVariant.dark]);
+  final CoconutThemeVariant variant;
   @override
-  CoconutThemeVariant get themeVariant => CoconutThemeVariant.dark;
+  CoconutThemeVariant get themeVariant => variant;
 
   @override
   CcosFeatureAvailability getCcosFeatureAvailability(String featureId) => CcosFeatureAvailability(
@@ -42,13 +51,18 @@ Future<_Routes> _pumpHost(
   WidgetTester tester, {
   TargetPlatform platform = TargetPlatform.iOS,
   bool disableAnimations = false,
+  ValueNotifier<bool>? motionSetting,
+  CoconutThemeVariant variant = CoconutThemeVariant.dark,
+  double textScale = 1,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(414, 896);
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
-  final preferences = _Preferences();
+  final preferences = _Preferences(variant);
   addTearDown(preferences.dispose);
+  final motion = motionSetting ?? ValueNotifier(disableAnimations);
+  if (motionSetting == null) addTearDown(motion.dispose);
   final routes = _Routes();
   await tester.pumpWidget(
     RepaintBoundary(
@@ -56,12 +70,18 @@ Future<_Routes> _pumpHost(
       child: ChangeNotifierProvider<PreferenceProvider>.value(
         value: preferences,
         child: MaterialApp(
-          theme: buildCoconutThemeData().copyWith(platform: platform),
+          theme: buildCoconutThemeData(variant: variant).copyWith(platform: platform),
           navigatorObservers: [routes],
           builder:
-              (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: disableAnimations),
-                child: child!,
+              (context, child) => ValueListenableBuilder<bool>(
+                valueListenable: motion,
+                builder:
+                    (context, reduced, _) => MediaQuery(
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(disableAnimations: reduced, textScaler: TextScaler.linear(textScale)),
+                      child: child!,
+                    ),
               ),
           home: Builder(
             builder:
@@ -107,6 +127,118 @@ Future<TestGesture> _beginBack(WidgetTester tester, double distance) async {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final entry
+        in {
+          'Pretendard': ['Pretendard-Regular.ttf', 'Pretendard-Bold.ttf'],
+          'SpaceGrotesk': ['SpaceGrotesk-Regular.ttf', 'SpaceGrotesk-Bold.ttf'],
+        }.entries) {
+      final loader = FontLoader(entry.key);
+      for (final name in entry.value) {
+        loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$name').readAsBytesSync())));
+      }
+      await loader.load();
+    }
+  });
+
+  for (final variant in CoconutThemeVariant.values) {
+    for (final reduced in [false, true]) {
+      for (final textScale in [1.0, 2.0]) {
+        testWidgets(
+          'all five settled scene copy and counters have rendered contrast: $variant reduced=$reduced scale=$textScale',
+          (tester) async {
+            await _pumpHost(tester, variant: variant, disableAnimations: reduced, textScale: textScale);
+            await _finishPush(tester);
+            await tester.pump(const Duration(seconds: 10));
+            await tester.pump(const Duration(seconds: 60));
+            await tester.pump(const Duration(seconds: 5));
+            final lines = [
+              t.ccos.idea_scene.line1,
+              t.ccos.build_scene.line1,
+              t.ccos.first_pow_scene.intro_line1,
+              t.ccos.discover_scene.line1,
+              t.ccos.contribute_scene.line1,
+            ];
+            for (var scene = 0; scene < 5; scene++) {
+              final counter = find.text('${(scene + 1).toString().padLeft(2, '0')} / 05');
+              expect(counter, findsOneWidget);
+              final copy = find.byWidgetPredicate(
+                (widget) => widget is RichText && widget.text.toPlainText().replaceAll('\u2060', '') == lines[scene],
+              );
+              expect(copy, findsOneWidget, reason: 'Scene $scene actual settled body copy');
+              final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(_captureKey));
+              final bytes = await tester.runAsync(() async {
+                final image = await boundary.toImage(pixelRatio: 1);
+                try {
+                  final evidenceDir = Platform.environment['CCOS_CONTRAST_EVIDENCE_DIR'];
+                  if (evidenceDir != null) {
+                    final directory = Directory(evidenceDir)..createSync(recursive: true);
+                    final png = await image.toByteData(format: ui.ImageByteFormat.png);
+                    File(
+                      '${directory.path}/${variant.name}-reduced-$reduced-scale-$textScale-scene-$scene.png',
+                    ).writeAsBytesSync(png!.buffer.asUint8List());
+                  }
+                  return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+                } finally {
+                  image.dispose();
+                }
+              });
+              final targets = [counter, copy];
+              if (scene == 1) {
+                targets.addAll(
+                  [
+                    t.ccos.build_scene.orbit.widget,
+                    t.ccos.build_scene.orbit.theme,
+                    t.ccos.build_scene.orbit.analysis,
+                    t.ccos.build_scene.orbit.tool,
+                    t.ccos.build_scene.orbit.layer2,
+                    t.ccos.build_scene.orbit.backup,
+                  ].map(find.text),
+                );
+              }
+              for (final target in targets) {
+                final rect = tester.getRect(target);
+                var darkest = 1.0;
+                var lightest = 0.0;
+                for (var y = rect.top.ceil(); y < rect.bottom.floor().clamp(0, 896); y++) {
+                  for (var x = rect.left.ceil().clamp(0, 413); x < rect.right.floor().clamp(0, 414); x++) {
+                    final offset = (y * 414 + x) * 4;
+                    final luminance =
+                        Color.fromARGB(
+                          255,
+                          bytes!.getUint8(offset),
+                          bytes.getUint8(offset + 1),
+                          bytes.getUint8(offset + 2),
+                        ).computeLuminance();
+                    if (luminance < darkest) darkest = luminance;
+                    if (luminance > lightest) lightest = luminance;
+                  }
+                }
+                final contrast = (lightest + .05) / (darkest + .05);
+                debugPrint(
+                  'CCOS pixel contrast: ${variant.name} reduced=$reduced scale=$textScale scene=$scene ratio=$contrast',
+                );
+                expect(
+                  contrast,
+                  greaterThanOrEqualTo(4.5),
+                  reason: 'Actual composited glyph/background pixels in scene $scene',
+                );
+              }
+              if (scene < 4) {
+                await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+                await tester.pump();
+                await tester.pump(const Duration(seconds: 1));
+                await tester.pump(const Duration(seconds: 60));
+                await tester.pump(const Duration(seconds: 5));
+              }
+            }
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
     testWidgets('$platform waits for the route to enter before playing the intro', (tester) async {
       final routes = await _pumpHost(tester, platform: platform);
@@ -181,6 +313,99 @@ void main() {
     expect(find.byKey(_loadingKey), findsNothing);
     expect(find.byKey(_storyKey), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('story decorative loops stop and resume when reduced motion changes', (tester) async {
+    final motion = ValueNotifier(true);
+    addTearDown(motion.dispose);
+    await _pumpHost(tester, motionSetting: motion);
+    await _finishPush(tester);
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 40),
+    );
+    expect(find.byKey(_storyKey), findsOneWidget);
+    expect(tester.binding.transientCallbackCount, 0);
+    motion.value = false;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+    motion.value = true;
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  testWidgets('First PoW wiggle stops live and does not resume on an inactive scene', (tester) async {
+    final motion = ValueNotifier(false);
+    final current = ValueNotifier(true);
+    addTearDown(motion.dispose);
+    addTearDown(current.dispose);
+    tester.view.physicalSize = const Size(414, 896);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ValueListenableBuilder<bool>(
+          valueListenable: motion,
+          builder:
+              (context, reduced, child) =>
+                  MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: reduced), child: child!),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: current,
+            builder:
+                (context, active, _) => Scaffold(
+                  body: FirstPowSceneBody(
+                    animation: const AlwaysStoppedAnimation(1),
+                    sceneDurationMs: 11000,
+                    listing: CcosFeatureRegistrySource.featuredListing,
+                    isAdded: false,
+                    isApplied: false,
+                    isCurrentScene: active,
+                    onAdd: () {},
+                    onRemove: () {},
+                  ),
+                ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+    motion.value = true;
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+    current.value = false;
+    motion.value = false;
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+    current.value = true;
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+  });
+
+  testWidgets('Build hero stops both decorative controllers when accessibility changes', (tester) async {
+    final motion = ValueNotifier(false);
+    addTearDown(motion.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ValueListenableBuilder<bool>(
+          valueListenable: motion,
+          builder:
+              (context, reduced, child) =>
+                  MediaQuery(data: MediaQuery.of(context).copyWith(accessibleNavigation: reduced), child: child!),
+          child: const Scaffold(body: BuildSceneBody(animation: AlwaysStoppedAnimation(1))),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+    motion.value = true;
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+    motion.value = false;
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
   });
 
   testWidgets('a completed iOS edge swipe returns while the logo is still animating', (tester) async {

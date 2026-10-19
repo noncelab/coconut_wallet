@@ -144,6 +144,7 @@ class WalletOnboardingView extends StatelessWidget {
           bottom: _buttonBottom,
           child: HomeWidgetPressable(
             key: const Key('wallet-onboarding-add'),
+            borderRadius: 16,
             onTap: onAddWallet,
             child: Container(
               height: _buttonHeight,

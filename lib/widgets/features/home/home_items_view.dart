@@ -650,6 +650,7 @@ class _JiggleState extends State<_Jiggle> with SingleTickerProviderStateMixin {
     TweenSequenceItem(tween: Tween(begin: _maxAngle, end: 0.0), weight: 1),
   ]).animate(_controller);
   Timer? _startTimer;
+  bool _reduceMotion = false;
 
   @override
   void initState() {
@@ -658,11 +659,21 @@ class _JiggleState extends State<_Jiggle> with SingleTickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    _updateMotion();
+  }
+
+  @override
   void didUpdateWidget(covariant _Jiggle oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.enabled == widget.enabled) return;
-    if (widget.enabled) {
-      _start();
+    if (oldWidget.enabled != widget.enabled) _updateMotion();
+  }
+
+  void _updateMotion() {
+    if (widget.enabled && !_reduceMotion) {
+      if (!_controller.isAnimating) _start();
     } else {
       _startTimer?.cancel();
       _controller
@@ -674,7 +685,7 @@ class _JiggleState extends State<_Jiggle> with SingleTickerProviderStateMixin {
   void _start() {
     _startTimer?.cancel();
     _startTimer = Timer(Duration(milliseconds: math.Random().nextInt(100)), () {
-      if (mounted && widget.enabled) _controller.repeat();
+      if (mounted && widget.enabled && !_reduceMotion) _controller.repeat();
     });
   }
 

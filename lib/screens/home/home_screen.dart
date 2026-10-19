@@ -68,13 +68,20 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _peekLimit = 3;
   Timer? _peekTimer;
   int _peeks = 0;
+  bool _reduceMotion = false;
   DateTime _lastTouch = DateTime.fromMillisecondsSinceEpoch(0);
 
   void _startPeeking() {
-    if (_peekTimer != null || _peeks >= _peekLimit) return;
+    if (_reduceMotion ||
+        !_viewModel.showsAllFeaturesHint ||
+        _viewModel.isArranging ||
+        _peekTimer != null ||
+        _peeks >= _peekLimit) {
+      return;
+    }
     _peekTimer = Timer(_peeks == 0 ? _peekDelay : _peekInterval, () async {
       _peekTimer = null;
-      if (!mounted || !_viewModel.showsAllFeaturesHint) return;
+      if (!mounted || _reduceMotion || !_viewModel.showsAllFeaturesHint) return;
       final idle = DateTime.now().difference(_lastTouch) > const Duration(seconds: 2);
       if (!_viewModel.isArranging && idle) {
         _peeks++;
@@ -113,6 +120,21 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<NodeProvider>().currentBlockNotifier,
       ]),
     );
+  }
+
+  void _cancelPeeking() {
+    _peekTimer?.cancel();
+    _peekTimer = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _pagerKey.currentState?.cancelPeek();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) _cancelPeeking();
   }
 
   @override
@@ -315,7 +337,10 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildHomeScroll(context),
         Consumer<HomeViewModel>(
           builder: (context, viewModel, _) {
-            if (!viewModel.showsAllFeaturesHint || viewModel.isArranging) return const SizedBox.shrink();
+            if (!viewModel.showsAllFeaturesHint || viewModel.isArranging) {
+              _cancelPeeking();
+              return const SizedBox.shrink();
+            }
             _startPeeking();
             return Positioned(
               right: 8,

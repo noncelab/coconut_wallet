@@ -134,7 +134,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       focusNode: _addressFocusNode,
                       onChanged: (_) {},
                       size: CoconutTextFieldSize.search,
-                      backgroundColor: context.coconutColors.background,
+                      placeholderText: t.address_search_screen.address_placeholder,
+                      backgroundColor: context.coconutColors.inputSurface,
                       maxLines: 1,
                       clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                       onClear: () {
@@ -154,6 +155,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                         _showAddressScanner();
                       },
                       suffixIconAsset: CommonActionIconPath.scan,
+                      suffixSemanticLabel: t.send_address_screen.text2,
                       suffixIconColor: context.coconutColors.iconPrimary,
                     ),
                   ),

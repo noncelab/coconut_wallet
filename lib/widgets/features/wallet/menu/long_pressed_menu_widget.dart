@@ -102,6 +102,10 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   late AnimationController _closeButtonController;
   late Animation<double> _shakeAnimation;
   final math.Random _random = math.Random();
+  bool _reduceMotion = false;
+  Timer? _shakeTimer;
+  double _closeStartScale = 1;
+  double _closeStartProgress = 1;
   bool _isClosing = false;
   bool _isClosingForAction = false;
 
@@ -148,13 +152,38 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   void _startShakeWithRandomDelay() {
     final delayMs = _random.nextInt(100); // 0 ~ 199ms
 
-    Future.delayed(Duration(milliseconds: delayMs), () {
+    _shakeTimer?.cancel();
+    if (_reduceMotion) return;
+    _shakeTimer = Timer(Duration(milliseconds: delayMs), () {
       if (!mounted) return;
-      if (!widget.isEditMode) return;
+      if (!widget.isEditMode || _reduceMotion) return;
       if (_shakeController.isAnimating) return;
 
       _shakeController.repeat();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) {
+      _shakeTimer?.cancel();
+      _shakeController.reset();
+      _closeButtonController.value = widget.isEditMode ? 1 : 0;
+      if (_overlayEntry != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_reduceMotion || _overlayEntry == null) return;
+          if (_isClosing) {
+            dismissMenu();
+          } else if (_menuAnimationController.value != 1) {
+            _menuAnimationController.value = 1;
+          }
+        });
+      }
+    } else if (widget.isEditMode && !_shakeController.isAnimating) {
+      _startShakeWithRandomDelay();
+    }
   }
 
   @override
@@ -166,18 +195,28 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
         dismissMenu();
         // 편집 모드 진입 → 쉐이킹 시작 및 닫기 버튼 표시
         _startShakeWithRandomDelay();
-        _closeButtonController.forward();
+        if (_reduceMotion) {
+          _closeButtonController.value = 1;
+        } else {
+          _closeButtonController.forward();
+        }
       } else {
         // 편집 모드 해제 → 쉐이킹 정지 및 닫기 버튼 숨김
         _shakeController.stop();
         _shakeController.reset();
-        _closeButtonController.reverse();
+        _shakeTimer?.cancel();
+        if (_reduceMotion) {
+          _closeButtonController.value = 0;
+        } else {
+          _closeButtonController.reverse();
+        }
       }
     }
   }
 
   @override
   void dispose() {
+    _shakeTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _menuGeneration++;
     _removeOverlay();
@@ -251,12 +290,14 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
   void _startHideAnimation({bool releaseNavigation = false}) {
     if (_isClosing) return;
-    if (_overlayEntry == null || MediaQuery.disableAnimationsOf(context) || _menuAnimationController.value == 0) {
+    if (_overlayEntry == null || _reduceMotion || _menuAnimationController.value == 0) {
       dismissMenu();
       return;
     }
     // Keep Back focused on this menu until it disappears; selected actions may open another route immediately.
     if (releaseNavigation) _removeMenuHistory();
+    _closeStartScale = _computeMenuScale();
+    _closeStartProgress = _menuAnimationController.value;
     _isClosing = true;
     _isClosingForAction = releaseNavigation;
     _isMenuPointerActive = false;
@@ -606,7 +647,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
     // 메뉴 등장 애니메이션: 30% -> 110% -> 100%
     _isClosing = false;
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (_reduceMotion) {
       _menuAnimationController.value = 1;
     } else {
       _menuAnimationController.forward(from: 0.0);
@@ -615,6 +656,10 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
 
   double _computeMenuScale() {
     final t = _menuAnimationController.value;
+    if (_isClosing) {
+      final remaining = (t / _closeStartProgress).clamp(0.0, 1.0);
+      return 0.3 + (_closeStartScale - 0.3) * Curves.easeOutCubic.transform(remaining);
+    }
 
     // 열릴 때: 30% -> 110% -> 100%
     const double startScale = 0.3;

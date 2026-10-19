@@ -94,7 +94,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isFeeBottomSheetOpen = false;
   bool _shouldRevalidateOnBuild = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.inputBorderUnfocused;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;
@@ -941,7 +941,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               focusNode: viewModel.amountFocusNode,
               style: CoconutTextFieldStyle.underline,
               underlineSpacing: CoconutTextFieldUnderlineSpacing.standard,
-              backgroundColor: context.coconutColors.background,
+              backgroundColor: context.coconutColors.inputSurface,
               fontSize: 18,
               fontFamily: CoconutTypography.kNumberFontFamily,
               letterSpacing: -0.04,
@@ -1095,7 +1095,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                               child: Text(
                                 '1',
                                 style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                  color: context.coconutColors.inputPlaceholder,
+                                  color: context.coconutColors.secondaryTextStrong,
                                   fontSize: 24,
                                 ),
                                 textAlign: TextAlign.center,
@@ -1974,7 +1974,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             /// 금액 입력란
                             Expanded(
                               child: CoconutTextField(
-                                backgroundColor: context.coconutColors.background,
+                                backgroundColor: context.coconutColors.inputSurface,
                                 enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
@@ -2065,7 +2065,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                           child: Text(
                                             '1',
                                             style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                              color: context.coconutColors.inputPlaceholder,
+                                              color: context.coconutColors.secondaryTextStrong,
                                               fontSize: 24,
                                             ),
                                             textAlign: TextAlign.center,

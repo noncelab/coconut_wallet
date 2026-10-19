@@ -406,7 +406,7 @@ void main() {
         find.descendant(of: find.byType(HomeWidgetCard), matching: find.byType(DecoratedBox)).first,
       );
       expect((card.decoration as BoxDecoration).color, colors.homeSurface, reason: '$variant');
-      final up = homePriceColors(tester.element(find.byType(FiatValuesView))).up;
+      final up = colors.priceUpText;
       expect(tester.widget<Text>(find.text('1')).style!.color, up, reason: '$variant');
       expect(tester.widget<Icon>(find.byKey(const Key('fiat-rate-up'))).color, up, reason: '$variant');
     }
@@ -448,7 +448,7 @@ void main() {
     expect(long.textBottom, closeTo(short.textBottom, 0.01));
   });
 
-  testWidgets('the fiat value under the bitcoin balance trend uses the chart color', (tester) async {
+  testWidgets('the unsigned fiat value under the bitcoin balance trend uses primary text', (tester) async {
     for (final rate in [0.05, -0.05, null]) {
       await _pump(
         tester,
@@ -461,7 +461,7 @@ void main() {
         ),
       );
       final context = tester.element(find.byType(BitcoinBalanceTrendView));
-      expect(tester.widget<Text>(find.text('₩ 214,892,000')).style!.color, context.coconutColors.homeChartLine);
+      expect(tester.widget<Text>(find.text('₩ 214,892,000')).style!.color, context.coconutColors.primaryText);
     }
   });
 
@@ -596,10 +596,10 @@ void main() {
     expect(tester.widget<Text>(time).style?.fontFamily, 'Pretendard');
     expect(tester.getRect(status).center.dy, closeTo(tester.getRect(amount).center.dy, 0.5));
     expect(tester.getRect(time).center.dy, closeTo(tester.getRect(wallet).center.dy, 0.5));
-    expect(tester.getRect(status).bottom, lessThan(tester.getRect(time).top));
+    expect(tester.getRect(status).bottom, lessThanOrEqualTo(tester.getRect(time).top + 0.01));
     expect(tester.getRect(icon).center.dy, closeTo(tester.getRect(firstRow).center.dy, 0.5));
     expect(tester.getRect(icon).width, 30);
-    expect(tester.getRect(amount).right, closeTo(tester.getRect(firstRow).right - 12, 0.5));
+    expect(tester.getRect(amount).right, closeTo(tester.getRect(firstRow).right, 0.5));
 
     final pressed = await tester.startGesture(tester.getCenter(find.text('Wallet 1')));
     await tester.pump(const Duration(milliseconds: 150));

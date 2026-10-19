@@ -676,7 +676,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   controller: _fakeBalanceController,
                   focusNode: _fakeBalanceFocusNode,
                   onChanged: (text) {},
-                  backgroundColor: context.coconutColors.background,
+                  backgroundColor: context.coconutColors.inputSurface,
                   maxLength: viewModel.maxInputLength,
                   suffix: Text(
                     t.btc,

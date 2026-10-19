@@ -1,7 +1,11 @@
-import 'dart:math' as math;
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -39,13 +43,15 @@ import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/home/configure/home_configure_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
+import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
-import 'package:flutter/cupertino.dart' show CupertinoScrollBehavior;
+import 'package:flutter/cupertino.dart'
+    show CupertinoApp, CupertinoPageScaffold, CupertinoScrollBehavior, DefaultCupertinoLocalizations;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -169,9 +175,15 @@ Future<void> _openWidgetsTab(
   Size size = const Size(800, 6000),
   List<WalletItemBase>? walletList,
   NavigatorObserver? routeObserver,
-  bool disableAnimations = false,
+  bool? disableAnimations,
+  bool? accessibleNavigation,
   TargetPlatform? platform,
+  CoconutThemeVariant variant = CoconutThemeVariant.dark,
+  ValueNotifier<CoconutThemeVariant>? themeChanges,
   List<HomeItemDefinition>? widgetDefinitions,
+  Key? captureKey,
+  bool cupertinoShell = false,
+  Color? sourceMarkerColor,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -225,6 +237,19 @@ Future<void> _openWidgetsTab(
         targetSatsOf: (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
       );
+  Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
+  if (sourceMarkerColor != null) {
+    home = Stack(
+      children: [
+        home,
+        Positioned(
+          left: 8,
+          top: 280,
+          child: Text('SOURCE PAGE TEXT', style: TextStyle(color: sourceMarkerColor, fontSize: 28)),
+        ),
+      ],
+    );
+  }
   await tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -232,18 +257,101 @@ Future<void> _openWidgetsTab(
         ChangeNotifierProvider.value(value: homeViewModel),
         ChangeNotifierProvider.value(value: widgetsViewModel),
       ],
-      child: MaterialApp(
-        theme: buildCoconutThemeData().copyWith(platform: platform),
-        navigatorObservers: [if (routeObserver != null) routeObserver],
-        builder:
-            (context, child) =>
-                MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: disableAnimations), child: child!),
-        home: screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets),
-      ),
+      child:
+          cupertinoShell
+              ? CupertinoApp(
+                localizationsDelegates: const [
+                  DefaultMaterialLocalizations.delegate,
+                  DefaultWidgetsLocalizations.delegate,
+                  DefaultCupertinoLocalizations.delegate,
+                ],
+                builder:
+                    (context, child) =>
+                        themeChanges == null
+                            ? Theme(
+                              data: buildCoconutThemeData(variant: variant).copyWith(platform: platform),
+                              child: MediaQuery(
+                                data: MediaQuery.of(context).copyWith(
+                                  disableAnimations: disableAnimations,
+                                  accessibleNavigation: accessibleNavigation,
+                                ),
+                                child: captureKey == null ? child! : RepaintBoundary(key: captureKey, child: child!),
+                              ),
+                            )
+                            : ValueListenableBuilder<CoconutThemeVariant>(
+                              valueListenable: themeChanges,
+                              builder:
+                                  (context, current, _) => CoconutAppTheme(
+                                    variant: current,
+                                    materialTheme: buildCoconutThemeData(variant: current),
+                                    cupertinoTheme: buildAppCupertinoTheme(variant: current),
+                                    child:
+                                        captureKey == null ? child! : RepaintBoundary(key: captureKey, child: child!),
+                                  ),
+                            ),
+                home: home,
+              )
+              : MaterialApp(
+                theme: buildCoconutThemeData(variant: variant).copyWith(platform: platform),
+                navigatorObservers: [if (routeObserver != null) routeObserver],
+                builder:
+                    (context, child) => MediaQuery(
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(disableAnimations: disableAnimations, accessibleNavigation: accessibleNavigation),
+                      child: captureKey == null ? child! : RepaintBoundary(key: captureKey, child: child!),
+                    ),
+                home: home,
+              ),
     ),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+List<Map<String, Object?>> _heroTextOverlaps(WidgetTester tester) {
+  final totals = find.byKey(const Key('hodl-insights-utxo-total')).evaluate();
+  if (totals.isEmpty) return [];
+  FadeTransition? nearest;
+  Element? fadeElement;
+  totals.single.visitAncestorElements((element) {
+    if (element.widget is FadeTransition) {
+      nearest = element.widget as FadeTransition;
+      fadeElement = element;
+      return false;
+    }
+    return true;
+  });
+  if (nearest == null) return [];
+  final stack = fadeElement!.findAncestorWidgetOfExactType<Stack>();
+  if (stack == null) return [];
+  final layers = stack.children.whereType<FadeTransition>().toList();
+  if (layers.length != 2) return [];
+  if (layers.any((layer) => layer.opacity.value <= .01)) return [];
+  final clip = tester.getRect(find.byWidget(stack));
+  List<(String, Rect)> glyphs(FadeTransition layer) => [
+    for (final element in find.descendant(of: find.byWidget(layer), matching: find.byType(RichText)).evaluate())
+      ...(() {
+        final paragraph = element.findRenderObject()! as RenderParagraph;
+        final text = paragraph.text.toPlainText();
+        return [
+          for (final box in paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: text.length)))
+            (text, MatrixUtils.transformRect(paragraph.getTransformTo(null), box.toRect()).intersect(clip)),
+        ];
+      })(),
+  ];
+  return [
+    for (final source in glyphs(layers[0]))
+      for (final destination in glyphs(layers[1]))
+        if (!source.$2.isEmpty && !destination.$2.isEmpty && source.$2.overlaps(destination.$2))
+          {
+            'source': source.$1,
+            'destination': destination.$1,
+            'sourceOpacity': layers[0].opacity.value,
+            'destinationOpacity': layers[1].opacity.value,
+            'intersection': source.$2.intersect(destination.$2).toString(),
+          },
+  ];
 }
 
 void main() {
@@ -997,55 +1105,67 @@ void main() {
       });
     }
 
-    testWidgets('opened from a widget it scrolls to that section and highlights it for a moment', (tester) async {
-      await _openWidgetsTab(
-        tester,
-        fake: false,
-        screen:
-            (_) => ChangeNotifierProvider(
-              create: (_) => HodlInsightsViewModel(_widgetsViewModel!, initialSection: HodlInsightsSection.utxo),
-              child: const HodlInsightsScreen(),
-            ),
-        size: const Size(400, 800),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pump(const Duration(milliseconds: 50));
+    for (final variant in CoconutThemeVariant.values) {
+      testWidgets('$variant widget entry centers and highlights the target with the themed foreground', (tester) async {
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          variant: variant,
+          screen:
+              (_) => ChangeNotifierProvider(
+                create: (_) => HodlInsightsViewModel(_widgetsViewModel!, initialSection: HodlInsightsSection.utxo),
+                child: const HodlInsightsScreen(),
+              ),
+          size: const Size(400, 800),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final list = tester.getRect(find.byKey(const Key('hodl-insights-list')));
-      final utxo = tester.getRect(find.byKey(const Key('hodl-insights-utxo')));
-      final position =
-          tester
-              .state<ScrollableState>(
-                find.descendant(of: find.byKey(const Key('hodl-insights-list')), matching: find.byType(Scrollable)),
-              )
-              .position;
-      expect(position.pixels, greaterThan(0));
-      final section =
-          tester
-              .element(find.byKey(const ValueKey('hodl-insights-highlight-utxo')))
-              .findAncestorWidgetOfExactType<Column>()!;
-      expect((tester.getRect(find.byWidget(section)).center.dy - list.center.dy).abs(), lessThan(10));
-      expect(utxo.bottom, lessThanOrEqualTo(list.bottom));
+        final list = tester.getRect(find.byKey(const Key('hodl-insights-list')));
+        final utxo = tester.getRect(find.byKey(const Key('hodl-insights-utxo')));
+        final position =
+            tester
+                .state<ScrollableState>(
+                  find.descendant(of: find.byKey(const Key('hodl-insights-list')), matching: find.byType(Scrollable)),
+                )
+                .position;
+        expect(position.pixels, greaterThan(0));
+        final section =
+            tester
+                .element(find.byKey(const ValueKey('hodl-insights-highlight-utxo')))
+                .findAncestorWidgetOfExactType<Column>()!;
+        expect((tester.getRect(find.byWidget(section)).center.dy - list.center.dy).abs(), lessThan(10));
+        expect(utxo.bottom, lessThanOrEqualTo(list.bottom));
 
-      Color overlay() =>
-          (tester
-                      .widget<DecoratedBox>(
-                        find
-                            .descendant(
-                              of: find.byKey(const ValueKey('hodl-insights-highlight-utxo')),
-                              matching: find.byType(DecoratedBox),
-                            )
-                            .first,
-                      )
-                      .decoration
-                  as BoxDecoration)
-              .color!;
-      expect(overlay().a, greaterThan(0));
-      await tester.pump(const Duration(milliseconds: 1300));
-      expect(overlay().a, 0);
-      await _close(tester);
-    });
+        Color overlay() =>
+            (tester
+                        .widget<DecoratedBox>(
+                          find
+                              .descendant(
+                                of: find.byKey(const ValueKey('hodl-insights-highlight-utxo')),
+                                matching: find.byType(DecoratedBox),
+                              )
+                              .first,
+                        )
+                        .decoration
+                    as BoxDecoration)
+                .color!;
+        final highlight = find.byKey(const ValueKey('hodl-insights-highlight-utxo'));
+        final color = tester.element(highlight).coconutColors.primaryText;
+        expect(overlay().a, greaterThan(0));
+        expect(overlay().withValues(alpha: 1), color);
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(find.descendant(of: highlight, matching: find.byType(DecoratedBox)).first)
+                    .decoration
+                as BoxDecoration;
+        expect(decoration.borderRadius, BorderRadius.circular(20));
+        await tester.pump(const Duration(milliseconds: 1300));
+        expect(overlay().a, 0);
+        await _close(tester);
+      });
+    }
 
     test('balance, goal, utxo and activity widgets open the insights, others do not', () {
       const opening = {
@@ -1298,6 +1418,93 @@ void main() {
       await _close(tester);
     });
 
+    for (final accessible in [false, true]) {
+      testWidgets(
+        '${accessible ? 'accessible navigation' : 'reduced motion'} snaps a running highlight and fill to their settled state',
+        (tester) async {
+          addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            size: const Size(400, 800),
+            screen:
+                (_) => ChangeNotifierProvider(
+                  create: (_) => HodlInsightsViewModel(_widgetsViewModel!, initialSection: HodlInsightsSection.utxo),
+                  child: const HodlInsightsScreen(),
+                ),
+          );
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 50));
+          Color overlay() =>
+              (tester
+                          .widget<DecoratedBox>(
+                            find
+                                .descendant(
+                                  of: find.byKey(const ValueKey('hodl-insights-highlight-utxo')),
+                                  matching: find.byType(DecoratedBox),
+                                )
+                                .first,
+                          )
+                          .decoration
+                      as BoxDecoration)
+                  .color!;
+          double reveal() =>
+              tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal;
+          expect(overlay().a, greaterThan(0));
+          expect(reveal(), lessThan(1));
+          tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(
+            disableAnimations: !accessible,
+            accessibleNavigation: accessible,
+          );
+          await tester.pump();
+          expect(overlay().a, 0);
+          expect(reveal(), 1);
+          await tester.pump(const Duration(milliseconds: 1300));
+          expect(overlay().a, 0);
+          expect(reveal(), 1);
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+          await tester.pump();
+          expect(overlay().a, 0);
+          expect(reveal(), 1);
+          expect(tester.takeException(), isNull);
+          await _close(tester);
+        },
+      );
+
+      testWidgets(
+        '${accessible ? 'accessible navigation' : 'reduced motion'} enters with final values and no highlight veil',
+        (tester) async {
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            disableAnimations: !accessible,
+            accessibleNavigation: accessible,
+            screen:
+                (_) => ChangeNotifierProvider(
+                  create: (_) => HodlInsightsViewModel(_widgetsViewModel!, initialSection: HodlInsightsSection.utxo),
+                  child: const HodlInsightsScreen(),
+                ),
+          );
+          await tester.pump(const Duration(milliseconds: 450));
+          expect(
+            tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal,
+            1,
+          );
+          final box = tester.widget<DecoratedBox>(
+            find
+                .descendant(
+                  of: find.byKey(const ValueKey('hodl-insights-highlight-utxo')),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          );
+          expect((box.decoration as BoxDecoration).color!.a, 0);
+          expect(tester.takeException(), isNull);
+          await _close(tester);
+        },
+      );
+    }
+
     testWidgets('repeated scroll and edge pulls reuse settled section paint layers', (tester) async {
       await _openWidgetsTab(
         tester,
@@ -1399,6 +1606,665 @@ void main() {
       await _close(tester);
     });
 
+    for (final pair in [
+      (CoconutThemeVariant.dark, CoconutThemeVariant.light),
+      (CoconutThemeVariant.light, CoconutThemeVariant.coconutTheme),
+      (CoconutThemeVariant.coconutTheme, CoconutThemeVariant.dark),
+    ]) {
+      testWidgets('theme changing during actual UTXO Hero keeps landing palette continuous $pair', (tester) async {
+        Directory('.omo/evidence/theme-transition-frames').createSync(recursive: true);
+        final changes = ValueNotifier(pair.$1);
+        addTearDown(changes.dispose);
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          cupertinoShell: true,
+          themeChanges: changes,
+          captureKey: const ValueKey('theme-hero-capture'),
+          size: const Size(344, 800),
+          screen:
+              (vm) => CupertinoPageScaffold(
+                child: HomeCubePager(
+                  allFeaturesBuilder: (_) => const SizedBox(),
+                  home: Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: 174,
+                      height: 174,
+                      child: Builder(
+                        builder:
+                            (context) => vm.registry
+                                .byId(HomeItemIds.utxoStatus)!
+                                .build(
+                                  context,
+                                  const HomeItem(
+                                    id: 'source',
+                                    definitionId: HomeItemIds.utxoStatus,
+                                    kind: HomeItemKind.widget,
+                                    order: 0,
+                                    span: HomeSpan.small,
+                                  ),
+                                ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        changes.value = pair.$2;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 64));
+        await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+        await tester.pump();
+        final colors = <String>[];
+        for (var frame = 0; frame < 31; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final paragraph = tester.renderObject<RenderParagraph>(find.byKey(const Key('hodl-insights-utxo-total')));
+          expect(_heroTextOverlaps(tester), isEmpty);
+          if (frame >= 29) {
+            colors.add(paragraph.text.style!.color.toString());
+            await tester.runAsync(() async {
+              final image =
+                  await tester
+                      .renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('theme-hero-capture')))
+                      .toImage();
+              final png = await image.toByteData(format: ui.ImageByteFormat.png);
+              File(
+                '.omo/evidence/theme-transition-frames/hero-${pair.$1.name}-${pair.$2.name}-${(frame + 1) * 16}.png',
+              ).writeAsBytesSync(png!.buffer.asUint8List());
+              image.dispose();
+            });
+          }
+        }
+        File(
+          '.omo/evidence/theme-transition-hero-${pair.$1.name}-${pair.$2.name}.json',
+        ).writeAsStringSync(jsonEncode(colors));
+        expect(colors[1], colors[0], reason: '480ms overlay and 496ms landed text must share final palette');
+        await tester.pumpAndSettle();
+        expect(find.text(t.hodl_insights.total_utxos(count: 2)), findsOneWidget);
+        changes.value = pair.$1;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 64));
+        Navigator.of(tester.element(find.byKey(const Key('hodl-insights-utxo-total')))).pop();
+        for (var frame = 0; frame < 32; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(tester.takeException(), isNull, reason: 'live theme during reverse keeps original Hero context valid');
+          final total = find.byKey(const Key('hodl-insights-utxo-total'));
+          if (total.evaluate().isNotEmpty) {
+            expect(
+              tester.renderObject<RenderParagraph>(total).text.toPlainText(),
+              t.hodl_insights.total_utxos(count: 2),
+              reason: 'live theme reverse preserves already revealed count',
+            );
+          }
+        }
+        expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+        changes.value = pair.$2;
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 112));
+        Navigator.of(tester.element(find.byKey(const Key('hodl-insights-utxo-total')))).pop();
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'theme and interrupted push cancel cleanly');
+        expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+        await _close(tester);
+      });
+    }
+
+    for (final scenario in [
+      for (final stall in [160, 240, 320, 400])
+        (stall, HomeItemIds.utxoStatus, 'hodl-insights-utxo-total', const Size(414, 896)),
+      (400, HomeItemIds.balanceByWallet, 'hodl-insights-balance-by-wallet', const Size(414, 1200)),
+      (400, HomeItemIds.transactionActivity, 'hodl-insights-activity', const Size(414, 896)),
+    ]) {
+      final (stall, definition, targetKey, viewport) = scenario;
+      testWidgets('cold first frame stall probe $definition $stall', (tester) async {
+        const capture = ValueKey('cold-stall-capture');
+        final evidenceDir = Platform.environment['HODL_COLD_EVIDENCE_DIR'];
+        if (evidenceDir != null) Directory(evidenceDir).createSync(recursive: true);
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          cupertinoShell: true,
+          size: viewport,
+          captureKey: capture,
+          screen:
+              (vm) => CupertinoPageScaffold(
+                child: HomeCubePager(
+                  allFeaturesBuilder: (_) => const SizedBox(),
+                  home: Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: definition == HomeItemIds.utxoStatus ? 174 : 348,
+                      height: 174,
+                      child: Builder(
+                        builder:
+                            (context) => vm.registry
+                                .byId(definition)!
+                                .build(
+                                  context,
+                                  HomeItem(
+                                    id: 'source',
+                                    definitionId: definition,
+                                    kind: HomeItemKind.widget,
+                                    order: 0,
+                                    span: definition == HomeItemIds.utxoStatus ? HomeSpan.small : HomeSpan.wide,
+                                  ),
+                                ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+        await tester.pump();
+        final records = <Map<String, Object?>>[];
+        var elapsed = 0;
+        for (final delta in [
+          stall,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+        ]) {
+          elapsed += delta;
+          await tester.pump(Duration(milliseconds: delta));
+          final total = find.byKey(ValueKey(targetKey));
+          final rows = <Map<String, Object?>>[];
+          for (final element in total.evaluate()) {
+            final p = element.findRenderObject()! as RenderBox;
+            final r = MatrixUtils.transformRect(p.getTransformTo(null), Offset.zero & p.size);
+            var opacity = 1.0;
+            element.visitAncestorElements((e) {
+              if (e.widget is FadeTransition) opacity *= (e.widget as FadeTransition).opacity.value;
+              return true;
+            });
+            rows.add({
+              'text': p is RenderParagraph ? p.text.toPlainText() : targetKey,
+              'rect': [r.left, r.top, r.right, r.bottom],
+              'effectiveWidgetOpacity': opacity,
+            });
+          }
+          records.add({'elapsedMs': elapsed, 'rows': rows});
+          if (evidenceDir != null && records.length <= 3) {
+            await tester.runAsync(() async {
+              final image = await tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage();
+              final png = await image.toByteData(format: ui.ImageByteFormat.png);
+              File('$evidenceDir/$definition-stall-$stall-$elapsed.png').writeAsBytesSync(png!.buffer.asUint8List());
+              image.dispose();
+            });
+          }
+        }
+        if (evidenceDir != null) {
+          File('$evidenceDir/$definition-stall-$stall.json').writeAsStringSync(jsonEncode(records));
+        }
+        final visible =
+            records
+                .where(
+                  (f) =>
+                      (f['rows'] as List).isNotEmpty &&
+                      ((f['rows'] as List).first['effectiveWidgetOpacity'] as double) > .02,
+                )
+                .toList();
+        expect(visible.length, greaterThan(1), reason: 'visible destination samples must not disappear');
+        expect((visible.last['elapsedMs'] as int) - (visible[visible.length - 2]['elapsedMs'] as int), 16);
+        for (var i = 1; i < visible.length; i++) {
+          final prev = (visible[i - 1]['rows'] as List).first['rect'] as List;
+          final next = (visible[i]['rows'] as List).first['rect'] as List;
+          expect(
+            ((next[1] as double) - (prev[1] as double)).abs(),
+            lessThan(50),
+            reason: 'cold high-opacity destination must not teleport between adjacent16ms frames',
+          );
+        }
+        expect(tester.takeException(), isNull);
+        final target = tester.element(find.byKey(ValueKey(targetKey)));
+        final position = Scrollable.of(target).position;
+        expect(position.pixels, inInclusiveRange(position.minScrollExtent, position.maxScrollExtent));
+        if (definition == HomeItemIds.balanceByWallet) {
+          final section = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet')));
+          final viewportRect = tester.getRect(find.byType(CustomScrollView));
+          expect(
+            section.center.dy,
+            closeTo(viewportRect.center.dy, 1),
+            reason: 'leading space centers the measured section',
+          );
+          final before = position.pixels;
+          await tester.drag(find.byKey(ValueKey(targetKey)), const Offset(0, -80));
+          await tester.pump();
+          expect(position.pixels, greaterThan(before), reason: 'synthetic leading space preserves scroll hit testing');
+          final sectionFinder = find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet'));
+          final shifted = tester.getRect(sectionFinder);
+          final expectedOffset = (position.pixels +
+                  shifted.top -
+                  viewportRect.top -
+                  (viewportRect.height - shifted.height) * .4)
+              .clamp(position.minScrollExtent, position.maxScrollExtent);
+          await Scrollable.ensureVisible(tester.element(sectionFinder), alignment: .4);
+          await tester.pump();
+          expect(
+            position.pixels,
+            closeTo(expectedOffset, 1),
+            reason: 'ensureVisible includes the actual leading-space scroll offset',
+          );
+        }
+        await _close(tester);
+      });
+    }
+
+    for (final variant in CoconutThemeVariant.values) {
+      for (final scale in [1.0, 1.3, 2.0]) {
+        testWidgets('UTXO Hero landing preserves rendered text and paint continuity $variant ${scale}x', (
+          tester,
+        ) async {
+          tester.platformDispatcher.textScaleFactorTestValue = scale;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          final evidenceDir = Platform.environment['HODL_ENTRY_EVIDENCE_DIR'];
+          final prefix = '${variant.name}-${scale}x';
+          if (evidenceDir != null) Directory(evidenceDir).createSync(recursive: true);
+          const capture = ValueKey('utxo-flight-capture');
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            variant: variant,
+            cupertinoShell: true,
+            size: const Size(344, 800),
+            captureKey: capture,
+            screen:
+                (vm) => CupertinoPageScaffold(
+                  child: HomeCubePager(
+                    allFeaturesBuilder: (_) => const SizedBox(),
+                    home: Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: 174,
+                        height: 174,
+                        child: Builder(
+                          builder:
+                              (context) => vm.registry
+                                  .byId(HomeItemIds.utxoStatus)!
+                                  .build(
+                                    context,
+                                    const HomeItem(
+                                      id: 'source',
+                                      definitionId: HomeItemIds.utxoStatus,
+                                      kind: HomeItemKind.widget,
+                                      order: 0,
+                                      span: HomeSpan.small,
+                                    ),
+                                  ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+          );
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.text(t.home_widgets.utxo_count(count: 2)), findsOneWidget);
+          if (evidenceDir != null) {
+            final source = find.descendant(
+              of: find.byKey(const ValueKey('home-widget-tap-source')),
+              matching: find.byType(Text),
+            );
+            File('$evidenceDir/$prefix-source.json').writeAsStringSync(
+              jsonEncode([
+                for (final element in source.evaluate())
+                  {
+                    'text': (element.findRenderObject()! as RenderParagraph).text.toPlainText(),
+                    'style': (element.findRenderObject()! as RenderParagraph).text.style.toString(),
+                  },
+              ]),
+            );
+          }
+          await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+          await tester.pump();
+          final landingPixels = <List<int>>[];
+          final records = <Map<String, Object?>>[];
+          for (var frame = 0; frame < 50; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            final finder = find.byKey(const Key('hodl-insights-utxo-total'));
+            final values = <Map<String, Object?>>[];
+            for (final element in finder.evaluate()) {
+              final paragraph = element.findRenderObject()! as RenderParagraph;
+              final rect = MatrixUtils.transformRect(paragraph.getTransformTo(null), Offset.zero & paragraph.size);
+              values.add({
+                'text': paragraph.text.toPlainText(),
+                'rect': [rect.left, rect.top, rect.width, rect.height],
+                'style': paragraph.text.style.toString(),
+              });
+            }
+            final rowRects = <List<double>>[];
+            final rowValues = <List<String>>[];
+            for (var row = 0; row < 4; row++) {
+              final label = find.descendant(
+                of: find.byKey(ValueKey('hodl-insights-utxo-label-$row')),
+                matching: find.byType(Text),
+              );
+              expect(label, findsOneWidget, reason: 'exactly one rendered destination label during flight');
+              final paragraph = tester.renderObject<RenderParagraph>(label);
+              final rect = MatrixUtils.transformRect(paragraph.getTransformTo(null), Offset.zero & paragraph.size);
+              rowRects.add([rect.left, rect.top, rect.width, rect.height]);
+              rowValues.add(
+                find
+                    .descendant(of: find.byKey(ValueKey('hodl-insights-utxo-row-$row')), matching: find.byType(Text))
+                    .evaluate()
+                    .map((e) => (e.findRenderObject()! as RenderParagraph).text.toPlainText())
+                    .toList(),
+              );
+            }
+            expect(values, hasLength(1), reason: 'one visible total per frame');
+            records.add({
+              'ms': (frame + 1) * 16,
+              'total': values,
+              'rowRects': rowRects,
+              'rowValues': rowValues,
+              'textOverlaps': _heroTextOverlaps(tester),
+            });
+            if ((frame >= 8 && frame <= 22) || (frame >= 26 && frame <= 33)) {
+              await tester.runAsync(() async {
+                final image = await tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage();
+                if (evidenceDir != null) {
+                  final png = await image.toByteData(format: ui.ImageByteFormat.png);
+                  File('$evidenceDir/$prefix-${(frame + 1) * 16}.png').writeAsBytesSync(png!.buffer.asUint8List());
+                }
+                if (frame == 14) {
+                  final shuttle = find.byWidgetPredicate(
+                    (widget) => widget is Stack && widget.children.whereType<FadeTransition>().length == 2,
+                  );
+                  final rect = tester.getRect(shuttle);
+                  final point = Offset(rect.right - 8, rect.center.dy);
+                  final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+                  final offset = (point.dy.floor() * image.width + point.dx.floor()) * 4;
+                  final actual = Color.fromARGB(
+                    raw!.getUint8(offset + 3),
+                    raw.getUint8(offset),
+                    raw.getUint8(offset + 1),
+                    raw.getUint8(offset + 2),
+                  );
+                  final expected = HomeCardSurface.of(
+                    tester.element(find.byKey(const Key('hodl-insights-utxo-total'))),
+                  );
+                  expect(actual, expected, reason: 'crossover keeps opaque card paint while text layers exchange');
+                }
+                if (frame == 29 || frame == 30) {
+                  final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+                  final rect = tester.getRect(find.byKey(const Key('hodl-insights-utxo'))).inflate(12);
+                  final dots = [
+                    for (var row = 0; row < 4; row++)
+                      tester.getRect(
+                        find.descendant(
+                          of: find.byKey(ValueKey('hodl-insights-utxo-row-$row')),
+                          matching: find.byWidgetPredicate(
+                            (widget) =>
+                                widget is Container &&
+                                widget.decoration is BoxDecoration &&
+                                (widget.decoration! as BoxDecoration).shape == BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ];
+                  // Shuttle compositing changes only circle-edge antialiasing; retain exact text/interior pixels.
+                  bool circleEdge(int x, int y) =>
+                      dots.any((dot) => ((Offset(x + .5, y + .5) - dot.center).distance - dot.width / 2).abs() <= 1.25);
+                  landingPixels.add([
+                    for (
+                      var y = rect.top.ceil().clamp(0, image.height);
+                      y < rect.bottom.floor().clamp(0, image.height);
+                      y++
+                    )
+                      for (
+                        var x = rect.left.ceil().clamp(0, image.width);
+                        x < rect.right.floor().clamp(0, image.width);
+                        x++
+                      )
+                        if (!circleEdge(x, y))
+                          for (var channel = 0; channel < 4; channel++)
+                            raw!.getUint8((y * image.width + x) * 4 + channel),
+                  ]);
+                }
+                image.dispose();
+              });
+            }
+          }
+          if (evidenceDir != null) File('$evidenceDir/$prefix-trace.json').writeAsStringSync(jsonEncode(records));
+          for (final frame in records) {
+            expect(
+              (frame['total'] as List).single['text'],
+              t.hodl_insights.total_utxos(count: 2),
+              reason: 'selected positive Home UTXO Hero retains the source total at every frame',
+            );
+            final rows = frame['rowValues']! as List<List<String>>;
+            for (var bucket = 0; bucket < 4; bucket++) {
+              expect(
+                rows[bucket][1],
+                bucket == 0 ? '2 (100.0%)' : '0 (0.0%)',
+                reason: 'selected Hero keeps each bucket count',
+              );
+              expect(
+                rows[bucket][2],
+                bucket == 0 ? '0.4 BTC' : '0 BTC',
+                reason: 'selected Hero keeps each bucket amount',
+              );
+            }
+          }
+
+          expect(
+            records.where((frame) => (frame['textOverlaps']! as List).isNotEmpty),
+            isEmpty,
+            reason: 'source and destination glyphs must never overlap while both painted',
+          );
+          final before = records[28]['total']! as List<Map<String, Object?>>;
+          final after = records[30]['total']! as List<Map<String, Object?>>;
+          expect(after.single['text'], before.single['text'], reason: 'landing must not reset visible count');
+          expect(after.single['style'], before.single['style'], reason: 'landing must preserve actual text style');
+          final landingBefore = records[29]['total']! as List<Map<String, Object?>>;
+          expect(after.single['rect'], landingBefore.single['rect'], reason: 'actual total glyph bounds at handoff');
+          expect(records[30]['rowRects'], records[29]['rowRects'], reason: 'actual four label glyph bounds at handoff');
+          expect(
+            landingPixels[1],
+            orderedEquals(landingPixels[0]),
+            reason: 'actual card paint must not flash at Hero removal',
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.text(t.hodl_insights.total_utxos(count: 2)),
+            findsOneWidget,
+            reason: 'entry count-up still reaches real data',
+          );
+          Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+          await tester.pump();
+          for (var frame = 0; frame < 30; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            expect(_heroTextOverlaps(tester), isEmpty, reason: 'reverse must not overlap source/destination glyphs');
+            final total = find.byKey(const Key('hodl-insights-utxo-total'));
+            if (total.evaluate().isNotEmpty) {
+              final paragraph = tester.renderObject<RenderParagraph>(total);
+              expect(
+                paragraph.text.toPlainText(),
+                t.hodl_insights.total_utxos(count: 2),
+                reason: 'reverse flight preserves revealed values',
+              );
+              expect(
+                paragraph.text.style!.decoration,
+                TextDecoration.none,
+                reason: 'reverse flight inherits Material text',
+              );
+            }
+          }
+          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+          await _close(tester);
+        });
+      }
+    }
+
+    for (final variant in CoconutThemeVariant.values) {
+      testWidgets('UTXO entry fully occludes outgoing page text $variant', (tester) async {
+        final samples = <List<List<int>>>[];
+        for (final marker in [const Color(0xFFFF0000), const Color(0xFF00FF00)]) {
+          const capture = ValueKey('utxo-flight-capture');
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            variant: variant,
+            cupertinoShell: true,
+            size: const Size(344, 800),
+            captureKey: capture,
+            sourceMarkerColor: marker,
+            screen:
+                (vm) => CupertinoPageScaffold(
+                  child: HomeCubePager(
+                    allFeaturesBuilder: (_) => const SizedBox(),
+                    home: Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: 174,
+                        height: 174,
+                        child: Builder(
+                          builder:
+                              (context) => vm.registry
+                                  .byId(HomeItemIds.utxoStatus)!
+                                  .build(
+                                    context,
+                                    const HomeItem(
+                                      id: 'source',
+                                      definitionId: HomeItemIds.utxoStatus,
+                                      kind: HomeItemKind.widget,
+                                      order: 0,
+                                      span: HomeSpan.small,
+                                    ),
+                                  ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+          );
+
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+          await tester.pump();
+          final frames = <List<int>>[];
+          for (var frame = 0; frame < 30; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            if ([0, 4, 9, 14, 19, 29].contains(frame)) {
+              await tester.runAsync(() async {
+                final image = await tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage();
+                final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+                frames.add(bytes!.buffer.asUint8List().toList());
+                image.dispose();
+              });
+            }
+          }
+          samples.add(frames);
+          await _close(tester);
+        }
+        for (var frame = 0; frame < samples[0].length; frame++) {
+          var changed = 0;
+          for (var byte = 0; byte < samples[0][frame].length; byte++) {
+            if (samples[0][frame][byte] != samples[1][frame][byte]) changed++;
+          }
+          expect(changed, 0, reason: 'outgoing text color must not affect actual viewport pixels at sample $frame');
+        }
+      });
+    }
+
+    for (final popAt in [const Duration(milliseconds: 112), const Duration(milliseconds: 900)]) {
+      testWidgets('UTXO Hero interrupted pop preserves visible progress at $popAt', (tester) async {
+        const variant = CoconutThemeVariant.dark;
+        const capture = ValueKey('utxo-flight-capture');
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          variant: variant,
+          cupertinoShell: true,
+          size: const Size(344, 800),
+          captureKey: capture,
+          screen:
+              (vm) => CupertinoPageScaffold(
+                child: HomeCubePager(
+                  allFeaturesBuilder: (_) => const SizedBox(),
+                  home: Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: 174,
+                      height: 174,
+                      child: Builder(
+                        builder:
+                            (context) => vm.registry
+                                .byId(HomeItemIds.utxoStatus)!
+                                .build(
+                                  context,
+                                  const HomeItem(
+                                    id: 'source',
+                                    definitionId: HomeItemIds.utxoStatus,
+                                    kind: HomeItemKind.widget,
+                                    order: 0,
+                                    span: HomeSpan.small,
+                                  ),
+                                ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+        await tester.pump();
+
+        for (var elapsed = 0; elapsed < popAt.inMilliseconds; elapsed += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        final total = find.byKey(const Key('hodl-insights-utxo-total'));
+        final before = tester.renderObject<RenderParagraph>(total).text.toPlainText();
+        Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+        await tester.pump();
+        for (var frame = 0; frame < 32; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(_heroTextOverlaps(tester), isEmpty, reason: 'interrupted flight must not overlap glyph layers');
+          if (total.evaluate().isNotEmpty) {
+            final paragraph = tester.renderObject<RenderParagraph>(total);
+            expect(paragraph.text.toPlainText(), before, reason: 'pop must retain the value visible at interruption');
+            expect(paragraph.text.style!.decoration, TextDecoration.none);
+          }
+        }
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _close(tester);
+      });
+    }
+
     for (final target in [
       (
         HomeItemIds.balanceByWallet,
@@ -1454,6 +2320,19 @@ void main() {
         Rect? previousRect;
         for (var frame = 0; frame < 15; frame++) {
           await tester.pump(const Duration(milliseconds: 16));
+          if (target.$1 == HomeItemIds.balanceByWallet) {
+            final context = tester.element(find.byKey(Key(target.$3)));
+            expect(
+              HomeCardSurface.of(context),
+              context.coconutColors.homeBackground,
+              reason: 'the flying wallet card retains its LowerBand surface override',
+            );
+            expect(
+              find.text(t.hodl_insights.total_utxos(count: 0)),
+              findsOneWidget,
+              reason: 'non-selected UTXO summary retains its original entry count-up',
+            );
+          }
           final rect = tester.getRect(find.byKey(Key(target.$3)));
           expect(rect.left, greaterThanOrEqualTo(0), reason: '${target.$1} frame $frame');
           expect(rect.right, lessThanOrEqualTo(400), reason: '${target.$1} frame $frame');
@@ -1483,6 +2362,14 @@ void main() {
         );
         expect(tester.takeException(), isNull);
 
+        if (target.$1 == HomeItemIds.balanceByWallet) {
+          await tester.pump(const Duration(seconds: 2));
+          expect(
+            find.text(t.hodl_insights.total_utxos(count: 2)),
+            findsOneWidget,
+            reason: 'non-selected UTXO summary still completes its delayed count-up',
+          );
+        }
         Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
         await tester.pump();
         await tester.pump(HodlInsightsScreen.transitionDuration);

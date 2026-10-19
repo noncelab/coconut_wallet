@@ -59,18 +59,12 @@ class UtxoSummaryChart extends StatelessWidget {
     final colors = context.coconutColors;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     return Container(
-      height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      constraints: buckets.isNotEmpty && height != null ? BoxConstraints(minHeight: height!) : null,
+      color: colors.background,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -88,6 +82,7 @@ class UtxoSummaryChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: _AvailabilityChip(
+                    showBorder: colors.utxoOverviewChartSurface == colors.background,
                     label: t.utxo_detail_screen.utxo_unlocked,
                     count: availableCount,
                     sats: availableSats,
@@ -97,6 +92,7 @@ class UtxoSummaryChart extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _AvailabilityChip(
+                    showBorder: colors.utxoOverviewChartSurface == colors.background,
                     label: t.utxo_detail_screen.utxo_locked,
                     count: lockedCount,
                     sats: lockedSats,
@@ -105,14 +101,16 @@ class UtxoSummaryChart extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _BarChart(
-              buckets: buckets,
-              tierTheme: tierTheme,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onThemeSettingTap: onThemeSettingTap,
-            ),
+            if (buckets.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _BarChart(
+                buckets: buckets,
+                tierTheme: tierTheme,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onThemeSettingTap: onThemeSettingTap,
+              ),
+            ],
             if (hasReusedAddresses) ...[
               const SizedBox(height: 12),
               Tooltip(
@@ -140,20 +138,22 @@ class UtxoSummaryChart extends StatelessWidget {
                             ),
                           ),
                           CoconutLayout.spacing_150w,
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.utxo_list_screen.reused_address_legend,
-                                style: CoconutTypography.body3_12_Bold.setColor(colors.danger),
-                                textAlign: TextAlign.center,
-                              ),
-                              CoconutLayout.spacing_100h,
-                              Text(
-                                t.utxo_list_screen.reused_address,
-                                style: CoconutTypography.caption_10.setColor(colors.danger),
-                              ),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.utxo_list_screen.reused_address_legend,
+                                  style: CoconutTypography.body3_12_Bold.setColor(colors.danger),
+                                  textAlign: TextAlign.center,
+                                ),
+                                CoconutLayout.spacing_100h,
+                                Text(
+                                  t.utxo_list_screen.reused_address,
+                                  style: CoconutTypography.caption_10.setColor(colors.danger),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -174,8 +174,15 @@ class _AvailabilityChip extends StatelessWidget {
   final int count;
   final int sats;
   final String Function(int) formatBalance;
+  final bool showBorder;
 
-  const _AvailabilityChip({required this.label, required this.count, required this.sats, required this.formatBalance});
+  const _AvailabilityChip({
+    required this.label,
+    required this.count,
+    required this.sats,
+    required this.formatBalance,
+    required this.showBorder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +190,10 @@ class _AvailabilityChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: colors.utxoOverviewChartSurface, borderRadius: BorderRadius.circular(12)),
+      foregroundDecoration:
+          showBorder
+              ? BoxDecoration(border: Border.all(color: colors.border), borderRadius: BorderRadius.circular(12))
+              : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

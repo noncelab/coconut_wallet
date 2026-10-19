@@ -127,7 +127,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final fan = CurvedAnimation(parent: routeAnimation, curve: Curves.easeOutCubic);
     final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight;
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: colors.homeBackground,
       extendBodyBehindAppBar: true,
       appBar: CoconutAppBar.build(
         context: context,

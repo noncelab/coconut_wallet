@@ -11,6 +11,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/home_fake_balance_search.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +36,11 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   Future<void> toggleFakeBalanceActivation(bool isActive) async => active = isActive;
 }
 
-Future<(HomeViewModel, _Preferences)> _pump(WidgetTester tester, {required bool hasBalanceWidget}) async {
+Future<(HomeViewModel, _Preferences)> _pump(
+  WidgetTester tester, {
+  required bool hasBalanceWidget,
+  CoconutThemeVariant variant = CoconutThemeVariant.dark,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = SharedPrefsRepository();
   await prefs.init();
@@ -65,7 +70,7 @@ Future<(HomeViewModel, _Preferences)> _pump(WidgetTester tester, {required bool 
     ChangeNotifierProvider<PreferenceProvider>.value(
       value: preferences,
       child: MaterialApp(
-        theme: buildCoconutThemeData(),
+        theme: buildCoconutThemeData(variant: variant),
         home: Builder(
           builder:
               (context) => Scaffold(
@@ -83,6 +88,30 @@ Future<(HomeViewModel, _Preferences)> _pump(WidgetTester tester, {required bool 
 }
 
 void main() {
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('$variant fake-balance input preserves the readable input surface pair', (tester) async {
+      await _pump(tester, hasBalanceWidget: false, variant: variant);
+      await tester.tap(find.text('Open fake balance'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('widget-configure-fake-balance')));
+      await tester.pumpAndSettle();
+      final field = find.byKey(const Key('widget-configure-fake-balance-input'));
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      expect(tester.widget<CoconutTextField>(field).backgroundColor, colors.inputSurface);
+      final surface = find.descendant(
+        of: field,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration! as BoxDecoration).color == colors.inputSurface &&
+              (widget.decoration! as BoxDecoration).border != null,
+        ),
+      );
+      expect(surface, findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
   testWidgets('with a balance widget, search opens the shared fake balance setting directly', (tester) async {
     await _pump(tester, hasBalanceWidget: true);
 

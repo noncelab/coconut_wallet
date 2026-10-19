@@ -145,7 +145,7 @@ class _IdeaTypeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -256,7 +256,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,

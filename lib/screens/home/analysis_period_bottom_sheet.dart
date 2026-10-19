@@ -236,9 +236,18 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                             isStart: true,
                                             onDateChanged: (d) => setState(() => _startDate = d),
                                           ),
-                                      backgroundColor: context.coconutColors.inputSurface,
+                                      backgroundColor:
+                                          Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
+                                      borderColor: context.coconutColors.inputSurface,
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
+                                      pressedBackgroundColor: Color.alphaBlend(
+                                        context.coconutColors.surfacePressOverlay.withValues(
+                                          alpha: context.coconutColors.surfacePressOverlayOpacity,
+                                        ),
+                                        context.coconutColors.inputSurface,
+                                      ),
+                                      pressedTextColor: context.coconutColors.primaryText,
                                       textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                                       text: _fmt(_startDate),
                                     ),
@@ -254,9 +263,18 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                             isStart: false,
                                             onDateChanged: (d) => setState(() => _endDate = d),
                                           ),
-                                      backgroundColor: context.coconutColors.inputSurface,
+                                      backgroundColor:
+                                          Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
+                                      borderColor: context.coconutColors.inputSurface,
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
+                                      pressedBackgroundColor: Color.alphaBlend(
+                                        context.coconutColors.surfacePressOverlay.withValues(
+                                          alpha: context.coconutColors.surfacePressOverlayOpacity,
+                                        ),
+                                        context.coconutColors.inputSurface,
+                                      ),
+                                      pressedTextColor: context.coconutColors.primaryText,
                                       textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                                       text: _fmt(_endDate),
                                     ),

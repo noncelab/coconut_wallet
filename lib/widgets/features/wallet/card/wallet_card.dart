@@ -16,8 +16,6 @@ import 'package:flutter_svg/svg.dart';
 enum WalletCardSize { small, wide }
 
 class WalletCard extends StatelessWidget {
-  static const glyphOpacity = 0.4;
-
   final WalletItemBase wallet;
   final WalletAppearance appearance;
   final WalletCardSize size;
@@ -81,15 +79,12 @@ class WalletCard extends StatelessWidget {
 
   Widget _buildGlyph(BuildContext context) {
     final isHot = wallet.hasLocalKey;
-    return Opacity(
-      opacity: glyphOpacity,
-      child: SvgPicture.asset(
-        isHot ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
-        key: Key(isHot ? 'wallet-card-glyph-hot' : 'wallet-card-glyph-watch-only'),
-        width: 18,
-        height: 18,
-        colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-      ),
+    return SvgPicture.asset(
+      isHot ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
+      key: Key(isHot ? 'wallet-card-glyph-hot' : 'wallet-card-glyph-watch-only'),
+      width: 18,
+      height: 18,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
   }
 
@@ -121,7 +116,7 @@ class WalletCard extends StatelessWidget {
                     Text(
                       formatMfp(mfp),
                       key: const Key('wallet-card-mfp'),
-                      style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
+                      style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
                     ),
                 ],
               ),
@@ -168,7 +163,7 @@ class WalletCard extends StatelessWidget {
                   secondaryText == null
                       ? const SizedBox.shrink()
                       : Container(
-                        height: kHomeWidgetHeaderHeight,
+                        constraints: const BoxConstraints(minHeight: kHomeWidgetHeaderHeight),
                         alignment: Alignment.centerRight,
                         child: Text(
                           secondaryText!,
@@ -187,17 +182,21 @@ class WalletCard extends StatelessWidget {
           ],
         ),
         if (balanceDisplay != null) ...[
-          const Spacer(flex: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              balanceDisplay!,
-              key: const Key('wallet-card-balance'),
-              style: CoconutTypography.heading4_18_NumberBold.copyWith(color: context.coconutColors.primaryText),
+          Expanded(
+            child: Align(
+              // Preserve the original 3:2 spacing while letting enlarged text fit vertically.
+              alignment: const Alignment(-1, 0.2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  balanceDisplay!,
+                  key: const Key('wallet-card-balance'),
+                  style: CoconutTypography.heading4_18_NumberBold.copyWith(color: context.coconutColors.primaryText),
+                ),
+              ),
             ),
           ),
-          const Spacer(flex: 2),
         ] else
           const Spacer(),
         Row(
@@ -209,10 +208,17 @@ class WalletCard extends StatelessWidget {
                 children: [
                   _buildName(context),
                   if (walletMasterFingerprint(wallet) case final mfp?)
-                    Text(
-                      formatMfp(mfp),
-                      key: const Key('wallet-card-mfp'),
-                      style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.secondaryText),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        formatMfp(mfp),
+                        key: const Key('wallet-card-mfp'),
+                        maxLines: 1,
+                        style: CoconutTypography.body3_12_Number.copyWith(
+                          color: context.coconutColors.secondaryTextStrong,
+                        ),
+                      ),
                     ),
                 ],
               ),

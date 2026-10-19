@@ -587,7 +587,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
               child: CoconutTextField(
                 controller: controller,
                 focusNode: focusNode,
-                backgroundColor: context.coconutColors.surfaceBottomSheet,
+                backgroundColor: context.coconutColors.inputSurface,
                 height: 52,
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
@@ -609,6 +609,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   onChanged(normalized);
                 },
                 suffixIconAsset: CommonActionIconPath.scan,
+                suffixSemanticLabel: t.send_address_screen.text2,
                 suffixIconColor: context.coconutColors.primaryText,
                 placeholderText: t.send_screen.address_placeholder,
                 isError: controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat,

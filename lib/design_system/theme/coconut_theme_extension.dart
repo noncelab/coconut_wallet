@@ -30,6 +30,6 @@ class CoconutThemeExtension extends ThemeExtension<CoconutThemeExtension> {
       return this;
     }
 
-    return t < 0.5 ? this : other;
+    return CoconutThemeExtension(colors: CoconutColors.lerp(colors, other.colors, t));
   }
 }

@@ -165,28 +165,36 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
             onBackPressed: null,
             isBottom: true,
             actionButtonList: [
-              CoconutAppBarActionButton(
-                onPressed: () => openCoconutOpenStoreIntroScreen(context),
-                icon: SvgPicture.asset(
-                  BrandIconPath.coconutPlanet,
-                  width: Sizes.size24,
-                  height: Sizes.size24,
-                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              MergeSemantics(
+                child: CoconutAppBarActionButton(
+                  tooltip: CcosOpenStoreContentSource.intro.ctaLabel,
+                  onPressed: () => openCoconutOpenStoreIntroScreen(context),
+                  icon: SvgPicture.asset(
+                    BrandIconPath.coconutPlanet,
+                    semanticsLabel: CcosOpenStoreContentSource.intro.ctaLabel,
+                    width: Sizes.size24,
+                    height: Sizes.size24,
+                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                  ),
                 ),
               ),
             ],
           ),
-          body: GestureDetector(
-            onTap: () {
-              if (_swipedVariant != null) setState(() => _swipedVariant = null);
-            },
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-              children: [
-                const SizedBox(height: Sizes.size8),
-                _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
-                ..._buildThemeRows(context, provider, builtInThemes),
-              ],
+          body: SafeArea(
+            top: false,
+            child: GestureDetector(
+              excludeFromSemantics: true,
+              onTap: () {
+                if (_swipedVariant != null) setState(() => _swipedVariant = null);
+              },
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                children: [
+                  const SizedBox(height: Sizes.size8),
+                  _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
+                  ..._buildThemeRows(context, provider, builtInThemes),
+                ],
+              ),
             ),
           ),
         );

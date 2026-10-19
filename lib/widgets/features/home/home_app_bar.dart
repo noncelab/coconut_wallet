@@ -12,7 +12,7 @@ import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeAppBar extends StatelessWidget {
-  static const addWalletButtonSize = 40.0;
+  static const addWalletButtonSize = CoconutAppBarActionButton.minimumSize;
 
   final NetworkStatus networkStatus;
   final bool showReconnected;
@@ -44,7 +44,7 @@ class HomeAppBar extends StatelessWidget {
     final iconColor = context.coconutColors.iconPrimary;
     final pressedIconBackground = Color.lerp(context.coconutColors.iconButtonHighlight, iconColor, 0.2)!;
     // CDS reserves 32px for outer padding, 16px around leading, and 4px after the empty title.
-    // Keep the three 40px actions outside the status indicator's maximum width.
+    // Keep the three 48px actions outside the status indicator's maximum width.
     final statusWidth = math.max(
       0.0,
       MediaQuery.sizeOf(context).width -
@@ -91,6 +91,7 @@ class HomeAppBar extends StatelessWidget {
             type: MaterialType.transparency,
             child: CoconutAppBarActionButton(
               buttonKey: const Key('home-edit-button'),
+              tooltip: t.home_menu.edit_home_screen,
               icon: SvgPicture.asset(
                 CommonActionIconPath.editHome,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
@@ -106,6 +107,7 @@ class HomeAppBar extends StatelessWidget {
               type: MaterialType.transparency,
               child: CoconutAppBarActionButton(
                 buttonKey: const Key('home-add-wallet-button'),
+                tooltip: t.home_widgets.add_wallet,
                 size: addWalletButtonSize,
                 icon: SvgPicture.asset(
                   FeatureWalletIconPath.walletAddDefault,
@@ -121,6 +123,7 @@ class HomeAppBar extends StatelessWidget {
             type: MaterialType.transparency,
             child: CoconutAppBarActionButton(
               buttonKey: const Key('home-settings-button'),
+              tooltip: t.settings,
               icon: SvgPicture.asset(
                 FeatureSettingsIconPath.settings,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),

@@ -477,7 +477,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 WalletInfoTarget.delete,
                                 _walletInfoMenu(
                                   title: t.wallet_info_screen.delete_wallet,
-                                  titleStyle: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.danger),
+                                  titleStyle: CoconutTypography.body2_14_Bold.setColor(
+                                    context.coconutColors.dangerText,
+                                  ),
                                   showArrowRight: false,
                                   subWidget: Container(
                                     width: 24,
@@ -807,7 +809,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           onTapRight: () => Navigator.of(dialogContext).pop(true),
           onTapLeft: () => Navigator.of(dialogContext).pop(false),
           rightButtonText: t.delete,
-          rightButtonColor: context.coconutColors.danger,
+          rightButtonColor: context.coconutColors.dangerText,
           leftButtonText: t.cancel,
         );
       },
@@ -838,7 +840,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             _showMnemonicBackup(viewModel);
           },
           rightButtonText: t.alert.wallet_delete.backup_and_delete,
-          rightButtonColor: context.coconutColors.danger,
+          rightButtonColor: context.coconutColors.dangerText,
           leftButtonText: t.alert.wallet_delete.backup_now,
         );
       },

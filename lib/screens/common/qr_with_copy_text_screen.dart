@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
@@ -14,7 +17,6 @@ import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart'
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
@@ -235,10 +237,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: brightness == Brightness.light ? Brightness.dark : Brightness.light,
-          statusBarBrightness: brightness == Brightness.light ? Brightness.light : Brightness.dark,
-        ),
+        systemOverlayStyle: buildSystemBarStyle(backgroundColor: backgroundColor, brightness: brightness),
         leading:
             Navigator.canPop(context)
                 ? IconButton(

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutColors, CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -19,6 +19,8 @@ import 'package:coconut_wallet/utils/legible_color_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart' show precisionErrorTolerance;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -64,9 +66,12 @@ class HodlInsightsScreen extends StatefulWidget {
         reverseTransitionDuration: transitionDuration,
         pageBuilder: (context, _, __) => page(context),
         transitionsBuilder:
-            (_, animation, __, child) => FadeTransition(
-              opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
-              child: child,
+            (context, animation, __, child) => ColoredBox(
+              color: context.coconutColors.homeBackground,
+              child: FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+                child: child,
+              ),
             ),
       ),
     );
@@ -123,17 +128,19 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
             : child;
     return RepaintBoundary(
       key: ValueKey('hodl-insights-repaint-${section.name}'),
-      child: Column(
+      child: _InitialSectionTarget(
         key: _sectionKeys[section],
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) title,
-          _SectionHighlight(
-            key: ValueKey('hodl-insights-highlight-${section.name}'),
-            active: _highlighted == section,
-            child: card,
-          ),
-        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null) title,
+            _SectionHighlight(
+              key: ValueKey('hodl-insights-highlight-${section.name}'),
+              active: _highlighted == section && widget.heroTag == null,
+              child: card,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -157,7 +164,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final viewModel = context.watch<HodlInsightsViewModel>();
-    if (!viewModel.isLoading) _moveToInitialSection(viewModel.initialSection);
+    if (!viewModel.isLoading && widget.heroTag == null) _moveToInitialSection(viewModel.initialSection);
     return Scaffold(
       backgroundColor: colors.homeBackground,
       appBar: CoconutAppBar.build(
@@ -192,8 +199,19 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                   key: const Key('hodl-insights-list'),
                   slivers: [
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(0, 8 + _leadingSpace, 0, 96),
-                      sliver: SliverToBoxAdapter(
+                      padding: EdgeInsets.fromLTRB(
+                        0,
+                        widget.heroTag == null ? 8 + _leadingSpace : 0,
+                        0,
+                        _contentBottomPadding,
+                      ),
+                      sliver: _InitialSectionSliver(
+                        targetKey:
+                            widget.heroTag != null && viewModel.initialSection != HodlInsightsSection.balance
+                                ? _sectionKeys[viewModel.initialSection]
+                                : null,
+                        topPadding: widget.heroTag != null ? 8 : 0,
+                        allowLeadingSpace: viewModel.initialSection != HodlInsightsSection.activity,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -244,7 +262,11 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                   _section(
                                     HodlInsightsSection.utxo,
                                     title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
-                                    child: _UtxoSummaryCard(viewModel: viewModel),
+                                    child: _UtxoSummaryCard(
+                                      viewModel: viewModel,
+                                      animateEntry:
+                                          widget.heroTag == null || widget.heroSection != HodlInsightsSection.utxo,
+                                    ),
                                   ),
                                   _section(
                                     HodlInsightsSection.activity,
@@ -273,10 +295,102 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   }
 }
 
+const _contentBottomPadding = 96.0;
+
+class _InitialSectionTarget extends SingleChildRenderObjectWidget {
+  const _InitialSectionTarget({super.key, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderInitialSectionTarget();
+}
+
+class _RenderInitialSectionTarget extends RenderProxyBox {
+  Rect layoutBounds = Rect.zero;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    layoutBounds = Offset.zero & size;
+  }
+}
+
+/// Position the first Hero destination during layout, before HeroController measures it.
+class _InitialSectionSliver extends SingleChildRenderObjectWidget {
+  final GlobalKey? targetKey;
+  final double topPadding;
+  final bool allowLeadingSpace;
+
+  const _InitialSectionSliver({
+    required this.targetKey,
+    required this.topPadding,
+    required this.allowLeadingSpace,
+    required super.child,
+  });
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderInitialSectionSliver(targetKey, topPadding, allowLeadingSpace);
+}
+
+class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
+  final GlobalKey? targetKey;
+  final bool allowLeadingSpace;
+  double _leading;
+  bool _positioned = false;
+
+  _RenderInitialSectionSliver(this.targetKey, this._leading, this.allowLeadingSpace);
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (child == null) return;
+    assert(constraints.axisDirection == AxisDirection.down && constraints.growthDirection == GrowthDirection.forward);
+    if (!_positioned && targetKey != null) {
+      final target = targetKey!.currentContext?.findRenderObject();
+      if (target is _RenderInitialSectionTarget && target.hasSize) {
+        final bounds = MatrixUtils.transformRect(target.getTransformTo(child), target.layoutBounds);
+        final desired = bounds.center.dy + _leading - constraints.viewportMainAxisExtent / 2;
+        if (allowLeadingSpace && desired < 0) _leading -= desired;
+        final maxOffset = math.max(
+          0.0,
+          child!.size.height + _leading + _contentBottomPadding - constraints.viewportMainAxisExtent,
+        );
+        final offset = (bounds.center.dy + _leading - constraints.viewportMainAxisExtent / 2).clamp(0.0, maxOffset);
+        _positioned = true;
+        final correction = offset - constraints.scrollOffset;
+        if (correction.abs() > precisionErrorTolerance) {
+          geometry = SliverGeometry(scrollOffsetCorrection: correction);
+          return;
+        }
+      }
+    }
+    if (_leading == 0) return;
+    final extent = child!.size.height + _leading;
+    final painted = calculatePaintOffset(constraints, from: 0, to: extent);
+    geometry = SliverGeometry(
+      scrollExtent: extent,
+      paintExtent: painted,
+      cacheExtent: calculateCacheOffset(constraints, from: 0, to: extent),
+      maxPaintExtent: extent,
+      hitTestExtent: painted,
+      hasVisualOverflow: extent > constraints.remainingPaintExtent || constraints.scrollOffset > 0,
+    );
+    setChildParentData(child!, constraints, geometry!);
+    final data = child!.parentData! as SliverPhysicalParentData;
+    data.paintOffset += Offset(0, _leading);
+  }
+
+  @override
+  double childMainAxisPosition(RenderBox child) => _leading - constraints.scrollOffset;
+
+  @override
+  double childScrollOffset(RenderObject child) => _leading;
+}
+
 /// 지갑별 잔액 · UTXO 요약 · 거래 활동 사이: 위 카드 아래에서 다음 제목 글자까지
 const _sectionGap = 40.0;
 
-/// 홈 위젯 카드와 인사이트 카드가 날아가는 동안 내용을 겹쳐 바꾼다. 두 카드는 제 크기로 그린 뒤 폭에 맞춰 줄이고 넘치는 아래는 자른다.
+/// 카드 이동 중 출발 내용을 먼저 걷고 도착 내용을 나타낸다. 각 내용은 제 크기에서 폭에 맞춰 줄인다.
 Widget _cardShuttle(
   BuildContext flightContext,
   Animation<double> animation,
@@ -291,6 +405,18 @@ Widget _cardShuttle(
     parent: ModalRoute.of(cardContext)?.animation ?? animation,
     curve: const Interval(0.15, 0.85),
   );
+  double? revealed;
+  if (!push) {
+    void visit(Element element) {
+      if (element is StatefulElement && element.state is _OpenProgressState) {
+        revealed = (element.state as _OpenProgressState)._value;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    (cardContext as Element).visitChildren(visit);
+  }
   Widget sized(BuildContext heroContext) {
     final size = (heroContext.findRenderObject() as RenderBox?)?.size ?? Size.zero;
     return ClipRRect(
@@ -299,18 +425,57 @@ Widget _cardShuttle(
         fit: BoxFit.fitWidth,
         alignment: Alignment.topCenter,
         clipBehavior: Clip.hardEdge,
-        child: SizedBox.fromSize(size: size, child: (heroContext.widget as Hero).child),
+        child: SizedBox.fromSize(
+          size: size,
+          child: InheritedTheme.capture(from: heroContext, to: Navigator.of(heroContext).context).wrap(
+            HomeCardSurface(
+              color: HomeCardSurface.of(heroContext),
+              child: _HeroFlightRoute(
+                animation: ModalRoute.of(heroContext)?.animation ?? kAlwaysCompleteAnimation,
+                revealed: revealed,
+                child: (heroContext.widget as Hero).child,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  return Stack(
-    fit: StackFit.expand,
-    children: [
-      FadeTransition(opacity: ReverseAnimation(progress), child: sized(widgetContext)),
-      FadeTransition(opacity: progress, child: sized(cardContext)),
-    ],
+  return Builder(
+    builder: (context) {
+      // Keep the shared app palette live while retaining route-local card surfaces.
+      Theme.of(context);
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(color: HomeCardSurface.of(cardContext), borderRadius: BorderRadius.circular(20)),
+          ),
+          FadeTransition(
+            opacity: ReverseAnimation(CurvedAnimation(parent: progress, curve: const Interval(0, 0.5))),
+            child: sized(widgetContext),
+          ),
+          FadeTransition(
+            opacity: CurvedAnimation(parent: progress, curve: const Interval(0.5, 1)),
+            child: sized(cardContext),
+          ),
+        ],
+      );
+    },
   );
+}
+
+/// Shuttle copies keep the owning route's progress instead of starting entry effects in the overlay.
+class _HeroFlightRoute extends InheritedWidget {
+  final Animation<double> animation;
+  final double? revealed;
+
+  const _HeroFlightRoute({required this.animation, this.revealed, required super.child});
+
+  @override
+  bool updateShouldNotify(_HeroFlightRoute oldWidget) =>
+      animation != oldWidget.animation || revealed != oldWidget.revealed;
 }
 
 String _btcNumber(HodlInsightsViewModel viewModel, int sats) => viewModel.data.unit.displayBitcoinAmount(sats);
@@ -362,11 +527,19 @@ class _SectionHighlight extends StatefulWidget {
 
 class _SectionHighlightState extends State<_SectionHighlight> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(vsync: this, duration: _SectionHighlight.duration);
+  bool _reduceMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) _controller.value = 0;
+  }
 
   @override
   void didUpdateWidget(covariant _SectionHighlight oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.active && !oldWidget.active) _controller.reverse(from: 1);
+    if (widget.active && !oldWidget.active && !_reduceMotion) _controller.reverse(from: 1);
   }
 
   @override
@@ -384,7 +557,9 @@ class _SectionHighlightState extends State<_SectionHighlight> with SingleTickerP
           (context, child) => DecoratedBox(
             position: DecorationPosition.foreground,
             decoration: BoxDecoration(
-              color: CoconutColors.white.withValues(alpha: 0.16 * Curves.easeIn.transform(_controller.value)),
+              color: context.coconutColors.primaryText.withValues(
+                alpha: 0.16 * Curves.easeIn.transform(_controller.value),
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: child,
@@ -682,7 +857,7 @@ class _BalanceCard extends StatelessWidget {
                     t.hodl_insights.total_balance,
                     key: const Key('hodl-insights-total-label'),
                     style: CoconutTypography.body3_12.copyWith(
-                      color: colors.secondaryText,
+                      color: colors.secondaryTextStrong,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -750,7 +925,10 @@ class _BalanceCard extends StatelessWidget {
                   key: const Key('hodl-insights-balance-fiat'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: CoconutTypography.body2_14_Number.copyWith(color: colors.secondaryText, height: _lineHeight),
+                  style: CoconutTypography.body2_14_Number.copyWith(
+                    color: colors.secondaryTextStrong,
+                    height: _lineHeight,
+                  ),
                 ),
               ),
               CoconutLayout.spacing_300w,
@@ -796,9 +974,10 @@ class _OpenProgress extends StatefulWidget {
   static const startDelay = Duration(milliseconds: 250);
 
   final double progress;
+  final bool animateEntry;
   final Widget Function(BuildContext context, double progress) builder;
 
-  const _OpenProgress({required this.progress, required this.builder});
+  const _OpenProgress({required this.progress, required this.builder, this.animateEntry = true});
 
   @override
   State<_OpenProgress> createState() => _OpenProgressState();
@@ -812,20 +991,25 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
   Animation<double>? _route;
   Timer? _start;
   bool _reduceMotion = false;
+  double? _flightValue;
 
   double get _value => _from + (_to - _from) * _curve.value;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final flight = context.dependOnInheritedWidgetOfExactType<_HeroFlightRoute>();
+    _flightValue = flight?.revealed;
+    if (_flightValue != null) return;
+    _reduceMotion =
+        !widget.animateEntry || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     if (_reduceMotion) {
       _start?.cancel();
       _route?.removeStatusListener(_onRouteStatus);
       _controller.value = 1;
     }
     if (_route != null) return;
-    final route = ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
+    final route = flight?.animation ?? ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
     _route = route;
     if (_reduceMotion) return;
     if (route.isCompleted) {
@@ -871,7 +1055,7 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) =>
-      AnimatedBuilder(animation: _controller, builder: (context, _) => widget.builder(context, _value));
+      AnimatedBuilder(animation: _controller, builder: (context, _) => widget.builder(context, _flightValue ?? _value));
 }
 
 class _GoalCard extends StatelessWidget {
@@ -907,7 +1091,7 @@ class _GoalCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       t.hodl_insights.no_goal,
-                      style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+                      style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
                     ),
                   ),
                   Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
@@ -986,8 +1170,9 @@ class _UtxoSummaryCard extends StatelessWidget {
   static const _columnGap = 8.0;
 
   final HodlInsightsViewModel viewModel;
+  final bool animateEntry;
 
-  const _UtxoSummaryCard({required this.viewModel});
+  const _UtxoSummaryCard({required this.viewModel, this.animateEntry = true});
 
   @override
   Widget build(BuildContext context) {
@@ -998,6 +1183,7 @@ class _UtxoSummaryCard extends StatelessWidget {
     return _InsightCard(
       child: _OpenProgress(
         progress: 1,
+        animateEntry: animateEntry,
         builder: (context, shown) {
           int counted(int value) => (value * shown).round();
           String bucketCountText(int index) {
@@ -1049,7 +1235,7 @@ class _UtxoSummaryCard extends StatelessWidget {
                 child: Text(
                   t.hodl_insights.utxo_ranges_unit,
                   key: const Key('hodl-insights-utxo-ranges-unit'),
-                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryTextStrong),
                 ),
               ),
               CoconutLayout.spacing_100h,
@@ -1075,7 +1261,7 @@ class _UtxoSummaryCard extends StatelessWidget {
                           child: Text(
                             bucketLabels[i],
                             maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
+                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
                           ),
                         ),
                       ),

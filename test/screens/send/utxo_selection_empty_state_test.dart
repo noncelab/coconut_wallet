@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton;
+
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -149,6 +151,62 @@ void main() {
   }
 
   for (final variant in CoconutThemeVariant.values) {
+    testWidgets('${variant.name}: actual outlined receive button stays readable held, cancelled and released', (
+      tester,
+    ) async {
+      var navigations = 0;
+      final boundary = await pump(tester, _Wallets(), variant: variant, onRoute: (_) => navigations++);
+      final button = find.byType(CoconutButton);
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      final expectedHeld = Color.alphaBlend(
+        colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
+        colors.surface,
+      );
+      Color fill() =>
+          tester
+              .widgetList<Container>(find.descendant(of: button, matching: find.byType(Container)))
+              .map((widget) => widget.decoration)
+              .whereType<BoxDecoration>()
+              .first
+              .color!;
+      void checkContrast() {
+        final foreground = tester.widget<Text>(find.text(t.receive)).style!.color!;
+        final background = fill();
+        final a = foreground.computeLuminance() + .05;
+        final b = background.computeLuminance() + .05;
+        expect(a > b ? a / b : b / a, greaterThanOrEqualTo(4.5));
+      }
+
+      expect(fill(), colors.background);
+      checkContrast();
+      var gesture = await tester.startGesture(tester.getCenter(button));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(fill(), expectedHeld);
+      expect(fill(), isNot(colors.background));
+      expect(tester.widget<Text>(find.text(t.receive)).style!.color, colors.primaryText);
+      expect(navigations, 0);
+      checkContrast();
+      await tester.runAsync(() => _capture(boundary, 'utxo-outlined-${variant.name}-held'));
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(fill(), colors.background);
+      expect(navigations, 0);
+      checkContrast();
+      await tester.runAsync(() => _capture(boundary, 'utxo-outlined-${variant.name}-cancelled'));
+      gesture = await tester.startGesture(tester.getCenter(button));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(fill(), expectedHeld);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(navigations, 1);
+      Navigator.of(tester.element(find.text('receive fixture'))).pop();
+      await tester.pumpAndSettle();
+      expect(fill(), colors.background);
+      checkContrast();
+      await tester.runAsync(() => _capture(boundary, 'utxo-outlined-${variant.name}-released'));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('${variant.name}: unfunded wallet opens receive for same wallet and returns to selection', (
       tester,
     ) async {

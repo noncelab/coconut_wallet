@@ -72,34 +72,37 @@ class SelectableSettingsRowContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
-                if (subtitle != null)
-                  Text(
-                    subtitle!,
-                    style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(colors.primaryText),
-                  ),
-              ],
+    return Semantics(
+      selected: isSelected,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (isSelected)
-          Padding(
-            padding: const EdgeInsets.only(right: Sizes.size8),
-            child: SvgPicture.asset(
-              CommonActionIconPath.check,
-              colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+          if (isSelected)
+            Padding(
+              padding: const EdgeInsets.only(right: Sizes.size8),
+              child: SvgPicture.asset(
+                CommonActionIconPath.check,
+                colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

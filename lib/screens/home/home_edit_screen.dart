@@ -194,6 +194,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
               final isCurrent = viewModel.currentPresetId == preset.id;
               return HomeWidgetPressable(
                 key: ValueKey('home-preset-card-${preset.id}'),
+                borderRadius: 24,
                 onTap: () => _openPresetPreview(viewModel, preset),
                 child: Container(
                   key: ValueKey('home-preset-${preset.id}'),
@@ -228,7 +229,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                       CoconutLayout.spacing_100h,
                       Text(
                         preset.description(),
-                        style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                        style: CoconutTypography.body2_14.copyWith(color: colors.secondaryTextStrong),
                       ),
                       CoconutLayout.spacing_300h,
                       Align(
@@ -432,7 +433,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
     final available = viewModel.addableShortcutDefinitions;
     Widget header(String text) => Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText)),
+      child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong)),
     );
     Widget divider(String afterId) =>
         Container(key: ValueKey('home-edit-shortcut-divider-$afterId'), height: 1, color: colors.divider);
@@ -467,6 +468,7 @@ class _CategoryChip extends StatelessWidget {
     final colors = context.coconutColors;
     return HomeWidgetPressable(
       onTap: onTap,
+      focusColor: selected ? colors.chipSelectedText : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(

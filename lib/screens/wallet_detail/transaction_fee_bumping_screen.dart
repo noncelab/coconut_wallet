@@ -179,8 +179,14 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                           _buildUtxoSelectionOptionWidget(viewModel),
                                         ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
                                           _buildFetchFailedWidget(),
-                                        CoconutLayout.spacing_2500h,
-                                        CoconutLayout.spacing_2500h,
+                                        SizedBox(
+                                          height:
+                                              200 *
+                                              (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
+                                                1.0,
+                                                double.infinity,
+                                              ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -358,18 +364,13 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             fee: viewModel.getTotalEstimatedFee(feeInput).toThousandsSeparatedString(),
           ),
           style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-          textScaler: const TextScaler.linear(1.0),
         ),
       ],
     );
   }
 
   Widget buildErrorText(String message) {
-    return Text(
-      message,
-      style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
-      textScaler: const TextScaler.linear(1.0),
-    );
+    return Text(message, style: CoconutTypography.body2_14.setColor(context.coconutColors.dangerText));
   }
 
   void _onFeeRateChanged(String input) async {
@@ -508,8 +509,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   Widget _buildBumpingFeeTextFieldWidget() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 8,
         children: [
           Selector<FeeBumpingViewModel, ({bool isEstimatedFeeTooLow, bool isUtxoInsufficient})>(
             selector:
@@ -527,9 +531,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             },
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 54,
+                width: 54 * (MediaQuery.textScalerOf(context).scale(14) / 14),
                 child: Center(
                   child: CoconutTextField(
                     controller: _textEditingController,
@@ -668,7 +673,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           ? _viewModel.recommendFeeRateDescription!
                           : t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
                       style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                      textScaler: const TextScaler.linear(1.0),
                     ),
                   ),
               ],
@@ -720,8 +724,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.fastest.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                              textScaler: const TextScaler.linear(1.0),
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                context.coconutColors.secondaryTextStrong,
+                              ),
                             ),
                           ],
                         ),
@@ -760,8 +765,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.halfhour.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                              textScaler: const TextScaler.linear(1.0),
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                context.coconutColors.secondaryTextStrong,
+                              ),
                             ),
                           ],
                         ),
@@ -795,8 +801,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.hour.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                              textScaler: const TextScaler.linear(1.0),
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                context.coconutColors.secondaryTextStrong,
+                              ),
                             ),
                           ],
                         ),
@@ -825,7 +832,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
-        color: context.coconutColors.danger,
+        color: context.coconutColors.danger.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding, vertical: 14),
@@ -837,9 +844,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
-          Text(
-            t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
+          Expanded(
+            child: Text(
+              t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.dangerText),
+            ),
           ),
         ],
       ),
@@ -866,7 +875,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       }
 
       Color textColor =
-          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.accentForeground : context.coconutColors.danger;
+          viewModel.selectedUtxoList.isNotEmpty
+              ? context.coconutColors.accentForeground
+              : context.coconutColors.dangerText;
 
       child = Container(
         key: const ValueKey('content'),
@@ -940,6 +951,13 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               backgroundColor: context.coconutColors.surfaceButton,
               borderColor: context.coconutColors.border,
               buttonType: CoconutButtonType.outlined,
+              pressedBackgroundColor: Color.alphaBlend(
+                context.coconutColors.surfacePressOverlay.withValues(
+                  alpha: context.coconutColors.surfacePressOverlayOpacity,
+                ),
+                context.coconutColors.surfaceButton,
+              ),
+              pressedTextColor: context.coconutColors.primaryText,
               borderRadius: 8,
               isActive: true,
               text: t.select_wallet_with_options_bottom_sheet.select_utxo,
@@ -978,7 +996,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   ),
                   Text(
                     t.transaction_fee_bumping_screen.utxo_auto_selection_description,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   ),
                 ],
               ),
@@ -1007,7 +1025,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   Color _getFeeBumpingAccentColor({bool isError = false}) {
     if (isError) {
-      return context.coconutColors.danger;
+      return context.coconutColors.dangerText;
     }
     return _isRbf ? context.coconutColors.rbfAccent : context.coconutColors.cpfpAccent;
   }

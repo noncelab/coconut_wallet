@@ -150,7 +150,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
       controller: _controller,
       onChanged: _viewModel.search,
       placeholder: t.all_features.search_placeholder,
-      placeholderStyle: CoconutTypography.body1_16.copyWith(color: colors.tertiaryText),
+      placeholderStyle: CoconutTypography.body1_16.copyWith(color: colors.secondaryTextStrong),
       style: CoconutTypography.body1_16.copyWith(color: colors.primaryText),
       cursorColor: colors.primaryText,
       textInputAction: TextInputAction.search,
@@ -161,16 +161,22 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
             (context, value, _) =>
                 value.text.isEmpty
                     ? const SizedBox.shrink()
-                    : GestureDetector(
+                    : CupertinoButton(
                       key: const Key('all-features-search-clear'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(44, 44),
+                      onPressed: () {
                         _controller.clear();
                         _viewModel.search('');
                       },
                       child: Padding(
-                        padding: const EdgeInsets.only(right: _searchVerticalPadding),
-                        child: Icon(CupertinoIcons.clear_thick_circled, size: 20, color: colors.tertiaryText),
+                        padding: const EdgeInsets.only(left: 10, right: _searchVerticalPadding),
+                        child: Icon(
+                          CupertinoIcons.clear_thick_circled,
+                          size: 20,
+                          color: colors.iconSecondary,
+                          semanticLabel: CupertinoLocalizations.of(context).clearButtonLabel,
+                        ),
                       ),
                     ),
       ),

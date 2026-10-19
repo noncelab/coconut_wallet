@@ -191,26 +191,32 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
     duration: const Duration(milliseconds: _wiggleLoopMs),
   );
 
+  bool _reduceMotion = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.isCurrentScene) {
-      _wiggleController.repeat();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    _updateWiggle();
+    if (_reduceMotion) _addedBadgeController.value = widget.isAdded ? 1 : 0;
+  }
+
+  void _updateWiggle() {
+    if (widget.isCurrentScene && !_hasInteractedWithCards && !_reduceMotion) {
+      if (!_wiggleController.isAnimating) _wiggleController.repeat();
+    } else {
+      _wiggleController.reset();
     }
   }
 
   @override
   void didUpdateWidget(covariant FirstPowSceneBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isCurrentScene != oldWidget.isCurrentScene) {
-      if (widget.isCurrentScene && !_hasInteractedWithCards) {
-        _wiggleController.repeat();
-      } else {
-        _wiggleController.stop();
-      }
-    }
+    _updateWiggle();
     if (widget.isAdded == oldWidget.isAdded && widget.isApplied == oldWidget.isApplied) return;
-    if (widget.isAdded) {
+    if (_reduceMotion) {
+      _addedBadgeController.value = widget.isAdded ? 1 : 0;
+    } else if (widget.isAdded) {
       _addedBadgeController.animateWith(
         SpringSimulation(const SpringDescription(mass: 1, stiffness: 280, damping: 14), 0, 1, 0),
       );
@@ -289,7 +295,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
         );
         final topExtra = cardHeight * 0.08 + 24;
 
-        final bodyStyle = CoconutTypography.heading4_18_Bold.setColor(Colors.white).copyWith(height: 1.3);
+        final bodyStyle = CoconutTypography.heading4_18_Bold.setColor(_textPrimary).copyWith(height: 1.3);
         final highlightStyle = bodyStyle.copyWith(
           fontSize: (bodyStyle.fontSize ?? 18) * 1.4,
           fontWeight: FontWeight.w900,
@@ -1001,7 +1007,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                     onTap: () => Navigator.of(context).maybePop(),
                                     child: const Padding(
                                       padding: EdgeInsets.all(12),
-                                      child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+                                      child: Icon(Icons.arrow_back_rounded, color: _textPrimary, size: 24),
                                     ),
                                   ),
                                 ),
@@ -1204,12 +1210,7 @@ class _FirstPowDetailSegment extends StatelessWidget {
             color: selected ? Colors.white.withValues(alpha: 0.82) : Colors.transparent,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Text(
-            label,
-            style: CoconutTypography.caption_10_Bold.setColor(
-              selected ? _textPrimary : Colors.white.withValues(alpha: 0.78),
-            ),
-          ),
+          child: Text(label, style: CoconutTypography.caption_10_Bold.setColor(_textPrimary)),
         ),
       ),
     );
@@ -1372,7 +1373,17 @@ class _CreatorBeliefStatementBoxState extends State<_CreatorBeliefStatementBox> 
   late final AnimationController _glowController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..repeat(reverse: true);
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _glowController.reset();
+    } else if (!_glowController.isAnimating) {
+      _glowController.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {
@@ -1574,7 +1585,7 @@ class _DeliveryStepCard extends StatelessWidget {
                   children: [
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Text(title, style: CoconutTypography.heading3_21_Bold.setColor(Colors.white)),
+                      child: Text(title, style: CoconutTypography.heading3_21_Bold.setColor(_textPrimary)),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1669,7 +1680,7 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with TickerP
   late final AnimationController _floatController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 7000),
-  )..repeat();
+  );
 
   static const List<_FloatingImageSpec> _images = [
     _FloatingImageSpec(
@@ -1708,6 +1719,17 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with TickerP
       phase: 0.0,
     ),
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _floatController.reset();
+      _entranceController.value = 1;
+    } else if (!_floatController.isAnimating) {
+      _floatController.repeat();
+    }
+  }
 
   @override
   void initState() {

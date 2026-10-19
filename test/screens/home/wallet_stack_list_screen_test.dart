@@ -88,7 +88,12 @@ final _wallets = <WalletItemBase>[
   _hot(3),
 ];
 
-Future<void> _pumpHome(WidgetTester tester, {WalletStackKind kind = WalletStackKind.all, WalletCardSize? stack}) {
+Future<void> _pumpHome(
+  WidgetTester tester, {
+  WalletStackKind kind = WalletStackKind.all,
+  WalletCardSize? stack,
+  CoconutThemeVariant variant = CoconutThemeVariant.dark,
+}) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -100,7 +105,7 @@ Future<void> _pumpHome(WidgetTester tester, {WalletStackKind kind = WalletStackK
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
       ],
       child: MaterialApp(
-        theme: buildCoconutThemeData(),
+        theme: buildCoconutThemeData(variant: variant),
         home: Builder(
           builder:
               (context) => Scaffold(
@@ -435,6 +440,25 @@ void main() {
       wallets.notifyListeners();
       await tester.pumpAndSettle();
       await _expectCardPainted(tester, const ValueKey('wallet-stack-list-card-1'), phase: 'provider update');
+    });
+  }
+
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('$variant wallet list uses home background and keeps card surfaces without borders', (tester) async {
+      await _pumpHome(tester, variant: variant);
+      await _open(tester);
+      final page = find.byType(WalletStackListScreen);
+      final colors = tester.element(page).coconutColors;
+      final scaffold = tester.widget<Scaffold>(find.descendant(of: page, matching: find.byType(Scaffold)));
+      expect(scaffold.backgroundColor, colors.homeBackground);
+      final cards = find.descendant(of: page, matching: find.byType(WalletCard));
+      for (final element in cards.evaluate()) {
+        final card = find.byWidget(element.widget);
+        final box = tester.widget<DecoratedBox>(find.descendant(of: card, matching: find.byType(DecoratedBox)).first);
+        expect((box.decoration as BoxDecoration).color, colors.homeSurface);
+        expect((box.decoration as BoxDecoration).border, isNull);
+      }
+      expect(tester.takeException(), isNull);
     });
   }
 

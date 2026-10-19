@@ -26,6 +26,8 @@ import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
+import 'package:flutter/services.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
 import 'package:flutter/material.dart';
@@ -360,7 +362,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     final route = ModalRoute.of(context);
     if (_route != route) {
       _routeAnimation?.removeStatusListener(_handleRouteStatus);
@@ -470,64 +472,73 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
           isApplied: isApplied,
         );
 
+        final systemBarStyle = buildSystemBarStyle(
+          backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
+          brightness: Brightness.light,
+        );
+
         // Stack clips layout overflow, but the enlarged logo paints beyond its
         // layout bounds. Keep that paint inside the route during edge-back.
-        return ClipRect(
-          key: const ValueKey('open-store-route-clip'),
-          child: Stack(
-            children: [
-              Scaffold(
-                backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
-                appBar:
-                    _hasCompletedLoading
-                        ? PreferredSize(
-                          preferredSize: const Size.fromHeight(56),
-                          child: Visibility(
-                            maintainSize: true,
-                            maintainAnimation: true,
-                            maintainState: true,
-                            visible: !_isSceneOverviewVisible,
-                            child: CoconutAppBar.build(
-                              context: context,
-                              foregroundColor: _textPrimary,
-                              leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
-                              onBackPressed: () => Navigator.of(context).maybePop(),
-                              actionButtonList: [
-                                CoconutAppBarActionButton(
-                                  onPressed: _openSceneOverview,
-                                  highlightColor: _accentBlue.withValues(alpha: 0.22),
-                                  icon: SvgPicture.asset(
-                                    CommonMenuIconPath.hamburger,
-                                    width: 24,
-                                    height: 24,
-                                    colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: systemBarStyle,
+          child: ClipRect(
+            key: const ValueKey('open-store-route-clip'),
+            child: Stack(
+              children: [
+                Scaffold(
+                  backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
+                  appBar:
+                      _hasCompletedLoading
+                          ? PreferredSize(
+                            preferredSize: const Size.fromHeight(56),
+                            child: Visibility(
+                              maintainSize: true,
+                              maintainAnimation: true,
+                              maintainState: true,
+                              visible: !_isSceneOverviewVisible,
+                              child: CoconutAppBar.build(
+                                context: context,
+                                foregroundColor: _textPrimary,
+                                systemOverlayStyle: systemBarStyle,
+                                leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
+                                onBackPressed: () => Navigator.of(context).maybePop(),
+                                actionButtonList: [
+                                  CoconutAppBarActionButton(
+                                    onPressed: _openSceneOverview,
+                                    highlightColor: _accentBlue.withValues(alpha: 0.22),
+                                    icon: SvgPicture.asset(
+                                      CommonMenuIconPath.hamburger,
+                                      width: 24,
+                                      height: 24,
+                                      colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        )
-                        : null,
-                body: Stack(
-                  children: [
-                    if (_hasCompletedLoading)
-                      _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
-                    if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-                      _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
-                  ],
-                ),
-              ),
-              if (_hasCompletedLoading && _isSceneOverviewVisible)
-                Positioned.fill(
-                  child: _SceneOverviewOverlay(
-                    items: sceneItems,
-                    currentIndex: _currentSceneIndex,
-                    entranceAnimation: _overviewController,
-                    onClose: _closeSceneOverview,
-                    onSelect: _animateToScene,
+                          )
+                          : null,
+                  body: Stack(
+                    children: [
+                      if (_hasCompletedLoading)
+                        _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
+                      if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
+                        _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+                    ],
                   ),
                 ),
-            ],
+                if (_hasCompletedLoading && _isSceneOverviewVisible)
+                  Positioned.fill(
+                    child: _SceneOverviewOverlay(
+                      items: sceneItems,
+                      currentIndex: _currentSceneIndex,
+                      entranceAnimation: _overviewController,
+                      onClose: _closeSceneOverview,
+                      onSelect: _animateToScene,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -1201,7 +1212,7 @@ class _SceneNavigationNumber extends StatelessWidget {
         step,
         textAlign: alignEnd ? TextAlign.right : TextAlign.left,
         style: CoconutTypography.heading1_32_Bold
-            .setColor(Colors.white.withValues(alpha: 0.92))
+            .setColor(_CoconutOpenStoreIntroScreenState._textPrimary)
             .copyWith(fontSize: 82, height: 0.92),
       ),
     );
@@ -1347,7 +1358,9 @@ class _StoryScene extends StatelessWidget {
                           children: [
                             Text(
                               '${(sceneIndex + 1).toString().padLeft(2, '0')} / 05',
-                              style: CoconutTypography.caption_10_Bold.setColor(Colors.white),
+                              style: CoconutTypography.caption_10_Bold.setColor(
+                                _CoconutOpenStoreIntroScreenState._textPrimary,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             Transform.translate(
@@ -1425,7 +1438,17 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
   late final AnimationController _driftController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 50000),
-  )..repeat();
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _driftController.reset();
+    } else if (!_driftController.isAnimating) {
+      _driftController.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -1640,12 +1663,24 @@ class _SceneNavCircleButtonState extends State<_SceneNavCircleButton> with Singl
   static const int _pulseLoopMs = _pulseBurstMs + _pulsePauseMs;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.pulse) {
-      _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: _pulseLoopMs))
-        ..repeat();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updatePulse();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SceneNavCircleButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updatePulse();
+  }
+
+  void _updatePulse() {
+    if (!widget.pulse || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _pulseController?.reset();
+      return;
     }
+    _pulseController ??= AnimationController(vsync: this, duration: const Duration(milliseconds: _pulseLoopMs));
+    if (!_pulseController!.isAnimating) _pulseController!.repeat();
   }
 
   static double _pulseScaleFor(double loopT) {

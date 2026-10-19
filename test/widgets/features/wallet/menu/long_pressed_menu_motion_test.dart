@@ -33,11 +33,14 @@ Future<_Host> _pumpHost(
   bool reducedMotion = false,
   bool pushOnSelection = false,
   bool withHeader = false,
+  ValueNotifier<bool>? motionSetting,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(414, 896);
   addTearDown(tester.view.reset);
   final host = _Host();
+  final motion = motionSetting ?? ValueNotifier(reducedMotion);
+  if (motionSetting == null) addTearDown(motion.dispose);
   tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
     host.platformCalls.add(call);
     return null;
@@ -51,8 +54,12 @@ Future<_Host> _pumpHost(
         navigatorKey: host.navigatorKey,
         theme: buildCoconutThemeData().copyWith(platform: TargetPlatform.android),
         builder:
-            (context, child) =>
-                MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: reducedMotion), child: child!),
+            (context, child) => ValueListenableBuilder<bool>(
+              valueListenable: motion,
+              builder:
+                  (context, reduced, _) =>
+                      MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: reduced), child: child!),
+            ),
         home: Stack(
           key: _rootKey,
           fit: StackFit.expand,
@@ -166,6 +173,35 @@ Future<ByteData> _pixels(WidgetTester tester) async {
 int _red(ByteData pixels, int x) => pixels.getUint8((100 * 414 + x) * 4);
 
 void main() {
+  testWidgets('closing scale decreases on every frame without replaying the opening overshoot', (tester) async {
+    await _pumpHost(tester);
+    await _open(tester);
+    var width = tester.getRect(find.byKey(_menuKey)).width;
+    await _close(tester, 'outside');
+    for (var frame = 0; frame < 10; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final next = tester.getRect(find.byKey(_menuKey)).width;
+      expect(next, lessThan(width), reason: 'Closing frame $frame must shrink toward the source.');
+      width = next;
+    }
+    await tester.pumpAndSettle();
+    expect(find.byKey(_menuKey), findsNothing);
+  });
+
+  testWidgets('enabling reduced motion during close removes the overlay and releases Back', (tester) async {
+    final motion = ValueNotifier(false);
+    addTearDown(motion.dispose);
+    final host = await _pumpHost(tester, motionSetting: motion);
+    await _open(tester);
+    await _close(tester, 'outside');
+    await tester.pump(const Duration(milliseconds: 16));
+    motion.value = true;
+    await tester.pumpAndSettle();
+    expect(find.byKey(_menuKey), findsNothing);
+    expect(host.handlesBack, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final method in ['back', 'outside']) {
     testWidgets(
       '$method reverses the menu, widget expansion, dim and blur before removing the overlay',
