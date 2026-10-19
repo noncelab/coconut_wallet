@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/bootstrap/app_bootstrap.dart';
+import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,5 +42,54 @@ void main() {
     await AppBootstrap.deleteLegacyDebugLog();
 
     expect(other.existsSync(), isTrue);
+  });
+
+  // 플랫폼 분기(iOS 시뮬레이터 경로 포함)를 .env 파일 없이 인라인 맵으로 검증한다.
+  // 키 이름은 DotenvKeys 실제 정의와 일치시켜 .env 키 드리프트를 잡는다.
+  test('Android는 10.0.2.2(에뮬레이터→호스트 루프백) 피어', () {
+    expect(
+      AppBootstrap.parseFlorestaFixedPeers(
+        const {DotenvKeys.florestaFixedPeersAndroid: '10.0.2.2:18333,10.0.2.2:18444'},
+        isAndroid: true,
+      ),
+      const ['10.0.2.2:18333', '10.0.2.2:18444'],
+    );
+  });
+
+  test('iOS는 127.0.0.1(시뮬레이터→호스트 루프백) 피어', () {
+    expect(
+      AppBootstrap.parseFlorestaFixedPeers(
+        const {DotenvKeys.florestaFixedPeersIos: '127.0.0.1:18333,127.0.0.1:18444'},
+        isAndroid: false,
+      ),
+      const ['127.0.0.1:18333', '127.0.0.1:18444'],
+    );
+  });
+
+  test('키가 없으면 고정 피어 없음(florestad 기본 DNS 시드)', () {
+    expect(AppBootstrap.parseFlorestaFixedPeers(const {}, isAndroid: true), isEmpty);
+    expect(AppBootstrap.parseFlorestaFixedPeers(const {'UNRELATED': 'x'}, isAndroid: false), isEmpty);
+  });
+
+  test('.env 필터 시작 높이가 우선한다', () {
+    expect(
+      AppBootstrap.parseFlorestaFiltersStartHeight(
+        const {DotenvKeys.florestaFiltersStartHeight: '12345'},
+        networkType: NetworkType.mainnet,
+      ),
+      12345,
+    );
+  });
+
+  test('mainnet은 assume-utreexo 체크포인트(939969)로 기본 설정된다', () {
+    expect(
+      AppBootstrap.parseFlorestaFiltersStartHeight(const {}, networkType: NetworkType.mainnet),
+      939969,
+    );
+  });
+
+  test('mainnet 외 네트워크는 기본 genesis(null)', () {
+    expect(AppBootstrap.parseFlorestaFiltersStartHeight(const {}, networkType: NetworkType.regtest), isNull);
+    expect(AppBootstrap.parseFlorestaFiltersStartHeight(const {}, networkType: NetworkType.testnet), isNull);
   });
 }

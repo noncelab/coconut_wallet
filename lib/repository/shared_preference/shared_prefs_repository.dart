@@ -323,4 +323,11 @@ class SharedPrefsRepository {
   Future<void> setBaselineGenesisHash(String genesisHash) async {
     await setString(SharedPrefKeys.kBaselineGenesisHash, genesisHash);
   }
+
+  /// 마지막으로 적용한 Floresta 백엔드 설정 JSON. 없거나 electrum이면 null.
+  String? getFlorestaBackendJson() => getStringOrNull(SharedPrefKeys.kFlorestaBackend);
+
+  Future<void> setFlorestaBackendJson(String value) => setString(SharedPrefKeys.kFlorestaBackend, value);
+
+  Future<void> clearFlorestaBackend() => deleteSharedPrefsWithKey(SharedPrefKeys.kFlorestaBackend);
 }

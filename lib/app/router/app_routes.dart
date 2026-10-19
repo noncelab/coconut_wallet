@@ -17,6 +17,7 @@ import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_scre
 import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/network/floresta_node_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -67,6 +68,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.mnemonicWordList: (context) => const Bip39ListScreen(),
     AppRouteNames.coconutCrew: (context) => const CoconutCrewScreen(),
     AppRouteNames.electrumServer: (context) => const ElectrumServerScreen(),
+    AppRouteNames.florestaNode: (context) => const FlorestaNodeScreen(),
     AppRouteNames.blockExplorer: (context) => const BlockExplorerScreen(),
     AppRouteNames.broadcasting:
         (context) => _buildLoadingScreenWithArgs<BroadcastingRouteArgs>(

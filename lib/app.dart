@@ -30,6 +30,13 @@ class CoconutWalletApp extends StatefulWidget {
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 
+  /// Floresta 임베드 노드가 접속할 고정 피어(regtest 등 DNS 시드가 없는 네트워크).
+  /// 플랫폼별 .env에서 로드하며, 비어 있으면 florestad 기본 DNS 시드를 쓴다.
+  static List<String> kFlorestaFixedPeers = const [];
+
+  /// 임베드 Floresta 노드의 컴팩트 필터 스캔 시작 높이. null이면 genesis부터(기존 동작).
+  static int? kFlorestaFiltersStartHeight;
+
   const CoconutWalletApp({super.key});
 
   @override
@@ -104,6 +111,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
         isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        florestaFixedPeers: CoconutWalletApp.kFlorestaFixedPeers,
+        florestaFiltersStartHeight: CoconutWalletApp.kFlorestaFiltersStartHeight,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(

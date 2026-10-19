@@ -67,7 +67,7 @@ void main() {
       expect(farAddress.isUsed, isFalse, reason: '생성 직후에는 사용된 적 없는 주소여야 한다.');
 
       when(
-        ScriptSyncServiceMock.electrumService.getBalance(any, farAddress.address),
+        ScriptSyncServiceMock.chainSource.getBalance(any, farAddress.address),
       ).thenAnswer((_) async => GetBalanceRes(confirmed: 50000, unconfirmed: 0));
 
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();

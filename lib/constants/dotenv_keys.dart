@@ -2,6 +2,13 @@ class DotenvKeys {
   static const String apiHost = 'API_HOST';
   static const String networkType = 'NETWORK_TYPE';
 
+  // Floresta 임베드 노드의 고정 피어. 피어 호스트 주소가 실행 플랫폼마다 달라 키를 분리한다.
+  static const String florestaFixedPeersAndroid = 'FLORESTA_FIXED_PEERS_ANDROID';
+  static const String florestaFixedPeersIos = 'FLORESTA_FIXED_PEERS_IOS';
+
+  // Floresta 컴팩트 필터 스캔 시작 높이. 음수면 tip 기준 상대값. 미설정 시 네트워크 기본값.
+  static const String florestaFiltersStartHeight = 'FLORESTA_FILTERS_START_HEIGHT';
+
   // Firebase
   static const String firebaseApiKeyAndroid = 'FIREBASE_API_KEY_ANDROID';
   static const String firebaseAppIdAndroid = 'FIREBASE_APP_ID_ANDROID';

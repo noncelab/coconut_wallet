@@ -15,7 +15,7 @@ class SpawnIsolateDto {
     this.host,
     this.port,
     this.ssl,
-    this.networkType, [
+    this.networkType, {
     this.pinnedCertFingerprint,
-  ]);
+  });
 }

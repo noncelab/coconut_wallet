@@ -9,6 +9,7 @@ class AppRouteNames {
   static const String broadcastingComplete = '/broadcasting-complete';
   static const String coconutCrew = '/coconut-crew';
   static const String electrumServer = '/electrum-server';
+  static const String florestaNode = '/floresta-node';
   static const String labelExport = '/label-export';
   static const String labelImport = '/label-import';
   static const String labelManagement = '/label-management';

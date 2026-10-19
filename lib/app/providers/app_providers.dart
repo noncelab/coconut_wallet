@@ -3,6 +3,7 @@ import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_lifecycle.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
@@ -32,6 +33,8 @@ List<SingleChildWidget> buildAppProviders({
   required bool isMainFlow,
   required bool isFirebaseAnalyticsUsed,
   required NetworkType networkType,
+  List<String> florestaFixedPeers = const [],
+  int? florestaFiltersStartHeight,
 }) {
   return [
     ChangeNotifierProvider(create: (_) => VisibilityProvider()),
@@ -99,6 +102,11 @@ List<SingleChildWidget> buildAppProviders({
             walletProvider.walletItemListNotifier,
             isFirebaseAnalyticsUsed ? context.read<AnalyticsService>() : null,
             hasTransactionHistory: isFirebaseAnalyticsUsed ? _hasTransactionHistory(context) : null,
+            lifecycle: FlorestaNodeLifecycle(
+              networkType: networkType,
+              fixedPeers: florestaFixedPeers,
+              filtersStartHeight: florestaFiltersStartHeight,
+            ),
           );
           walletProvider.setWalletUnsubscriber((wallet) async {
             await nodeProvider.unsubscribeWallet(wallet);

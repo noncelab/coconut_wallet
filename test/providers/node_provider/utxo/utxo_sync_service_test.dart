@@ -7,7 +7,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -18,7 +18,7 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
-@GenerateMocks([ElectrumService, NodeStateManager])
+@GenerateMocks([ChainSource, NodeStateManager])
 import 'utxo_sync_service_test.mocks.dart';
 
 void main() {
@@ -26,7 +26,7 @@ void main() {
   late TransactionRepository transactionRepository;
   late UtxoRepository utxoRepository;
   late AddressRepository addressRepository;
-  late MockElectrumService electrumService;
+  late MockChainSource chainSource;
   late MockNodeStateManager stateManager;
   late UtxoSyncService utxoSyncService;
 
@@ -38,11 +38,11 @@ void main() {
     transactionRepository = TransactionRepository(realmManager);
     addressRepository = AddressRepository(realmManager);
     utxoRepository = UtxoRepository(realmManager);
-    electrumService = MockElectrumService();
+    chainSource = MockChainSource();
     stateManager = MockNodeStateManager();
 
     utxoSyncService = UtxoSyncService(
-      electrumService,
+      chainSource,
       stateManager,
       utxoRepository,
       transactionRepository,
@@ -329,7 +329,7 @@ void main() {
       );
 
       // electrum이 잔돈 주소에 대해 같은 트랜잭션의 output 1을 반환하도록 모킹
-      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+      when(chainSource.getUnspentList(any, any)).thenAnswer((_) async {
         return [ListUnspentRes(height: 100, txHash: sharedTxHash, txPos: 1, value: 500000)];
       });
 
@@ -359,7 +359,7 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+      when(chainSource.getUnspentList(any, any)).thenAnswer((_) async {
         return [ListUnspentRes(height: 100, txHash: unknownTxHash, txPos: 0, value: 700000)];
       });
 

@@ -18,10 +18,10 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 
 class IsolateInitializer {
-  static IsolateController entryInitialize(SendPort sendPort, ElectrumService electrumService) {
+  static IsolateController entryInitialize(SendPort sendPort, ChainSource chainSource) {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
     final realmManager = RealmManager();
     final addressRepository = AddressRepository(realmManager);
@@ -31,16 +31,16 @@ class IsolateInitializer {
     final transactionRepository = TransactionRepository(realmManager);
     final subscribeRepository = SubscriptionRepository(realmManager);
     // IsolateStateManager 초기화
-    final transactionRecordService = TransactionRecordService(electrumService, addressRepository);
+    final transactionRecordService = TransactionRecordService(chainSource, addressRepository);
     final isolateStateManager = IsolateStateManager(sendPort);
     final BalanceSyncService balanceSyncService = BalanceSyncService(
-      electrumService,
+      chainSource,
       isolateStateManager,
       addressRepository,
       walletRepository,
     );
     final UtxoSyncService utxoSyncService = UtxoSyncService(
-      electrumService,
+      chainSource,
       isolateStateManager,
       utxoRepository,
       transactionRepository,
@@ -48,14 +48,14 @@ class IsolateInitializer {
     );
     final ScriptCallbackService scriptCallbackService = ScriptCallbackService();
     final TransactionSyncService transactionSyncService = TransactionSyncService(
-      electrumService,
+      chainSource,
       transactionRepository,
       transactionRecordService,
       isolateStateManager,
       utxoRepository,
       scriptCallbackService,
     );
-    final NetworkService networkManager = NetworkService(electrumService);
+    final NetworkService networkManager = NetworkService(chainSource);
     final ScriptSyncService scriptSyncService = ScriptSyncService(
       isolateStateManager,
       balanceSyncService,
@@ -66,7 +66,7 @@ class IsolateInitializer {
     );
 
     final SubscriptionService subscriptionService = SubscriptionService(
-      electrumService,
+      chainSource,
       isolateStateManager,
       addressRepository,
       subscribeRepository,
@@ -86,14 +86,14 @@ class IsolateInitializer {
       subscriptionService,
       networkManager,
       isolateStateManager,
-      electrumService,
+      chainSource,
       transactionRecordService,
       walletResyncService,
       realmManager,
     );
 
     // 소켓 연결 종료 시 상태 콜백
-    electrumService.setOnConnectionLostCallback(() {
+    chainSource.setOnConnectionLostCallback(() {
       isolateStateManager.setNodeSyncStateToFailed();
     });
 

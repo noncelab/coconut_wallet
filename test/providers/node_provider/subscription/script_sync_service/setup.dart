@@ -45,25 +45,25 @@ class _ScriptSyncTestSetup {
   }
 
   static void setupMockElectrumService(_ScriptSyncTestData testData) {
-    final electrumService = ScriptSyncServiceMock.electrumService;
+    final chainSource = ScriptSyncServiceMock.chainSource;
 
-    when(electrumService.getHistory(any, any)).thenAnswer(
+    when(chainSource.getHistory(any, any)).thenAnswer(
       (_) async => [GetTxHistoryRes(height: _TestConstants.blockHeight, txHash: testData.mockTx.transactionHash)],
     );
 
     when(
-      electrumService.getTransaction(testData.mockTx.transactionHash),
+      chainSource.getTransaction(testData.mockTx.transactionHash),
     ).thenAnswer((_) async => testData.mockTx.serialize());
 
     when(
-      electrumService.getBalance(any, any),
+      chainSource.getBalance(any, any),
     ).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: _TestConstants.transactionAmount));
 
     when(
-      electrumService.fetchBlocksByHeight({_TestConstants.blockHeight}),
+      chainSource.fetchBlocksByHeight({_TestConstants.blockHeight}),
     ).thenAnswer((_) async => {_TestConstants.blockHeight: BlockTimestamp(_TestConstants.blockHeight, DateTime.now())});
 
-    when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+    when(chainSource.getUnspentList(any, any)).thenAnswer((_) async {
       return [
         ListUnspentRes(
           height: 0,
@@ -74,7 +74,7 @@ class _ScriptSyncTestSetup {
       ];
     });
 
-    when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+    when(chainSource.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
       invocation,
     ) async {
       final transaction = invocation.positionalArguments[0] as Transaction;
@@ -109,9 +109,9 @@ class _ScriptSyncTestSetup {
         to: testData.walletA.walletBase.getAddress(_TestConstants.addressIndex),
       ),
     ]);
-    final electrumService = ScriptSyncServiceMock.electrumService;
+    final chainSource = ScriptSyncServiceMock.chainSource;
 
-    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((invocation) async {
+    when(chainSource.fetchBlocksByHeight(any)).thenAnswer((invocation) async {
       final blockHeights = invocation.positionalArguments[0] as Set<int>;
       final result = <int, BlockTimestamp>{};
 
@@ -123,7 +123,7 @@ class _ScriptSyncTestSetup {
     });
 
     // 모든 트랜잭션에 대한 모킹 - transactionHash로 매칭
-    when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+    when(chainSource.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
       invocation,
     ) async {
       final transaction = invocation.positionalArguments[0] as Transaction;
@@ -142,28 +142,28 @@ class _ScriptSyncTestSetup {
 
     // 개별 트랜잭션 직렬화 모킹
     when(
-      electrumService.getTransaction(testData.previousMockTx.transactionHash),
+      chainSource.getTransaction(testData.previousMockTx.transactionHash),
     ).thenAnswer((_) async => testData.previousMockTx.serialize());
 
     when(
-      electrumService.getTransaction(testData.mockTx.transactionHash),
+      chainSource.getTransaction(testData.mockTx.transactionHash),
     ).thenAnswer((_) async => testData.mockTx.serialize());
 
     if (testData.cpfpTx != null) {
       when(
-        electrumService.getTransaction(testData.cpfpTx!.transactionHash),
+        chainSource.getTransaction(testData.cpfpTx!.transactionHash),
       ).thenAnswer((_) async => testData.cpfpTx!.serialize());
     }
     if (testData.rbfTx != null) {
       when(
-        electrumService.getTransaction(testData.rbfTx!.transactionHash),
+        chainSource.getTransaction(testData.rbfTx!.transactionHash),
       ).thenAnswer((_) async => testData.rbfTx!.serialize());
     }
 
     // 기본 응답 설정
-    when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
-    when(electrumService.getBalance(any, any)).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0));
-    when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => []);
+    when(chainSource.getHistory(any, any)).thenAnswer((_) async => []);
+    when(chainSource.getBalance(any, any)).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0));
+    when(chainSource.getUnspentList(any, any)).thenAnswer((_) async => []);
 
     // 초기 트랜잭션 추가
     final addressA = testData.walletA.walletBase.getAddress(_TestConstants.addressIndex);
@@ -176,12 +176,12 @@ class _ScriptSyncTestSetup {
     final txHistoryRes = GetTxHistoryRes(height: 0, txHash: testData.mockTx.transactionHash);
 
     when(
-      electrumService.getBalance(any, addressB),
+      chainSource.getBalance(any, addressB),
     ).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: _TestConstants.transactionAmount));
-    when(electrumService.getHistory(any, addressA)).thenAnswer((_) async => [prevTxHistoryRes, txHistoryRes]);
-    when(electrumService.getHistory(any, addressB)).thenAnswer((_) async => [txHistoryRes]);
+    when(chainSource.getHistory(any, addressA)).thenAnswer((_) async => [prevTxHistoryRes, txHistoryRes]);
+    when(chainSource.getHistory(any, addressB)).thenAnswer((_) async => [txHistoryRes]);
 
-    when(electrumService.getUnspentList(any, addressB)).thenAnswer(
+    when(chainSource.getUnspentList(any, addressB)).thenAnswer(
       (_) async => [
         ListUnspentRes(
           height: 0,
@@ -194,7 +194,7 @@ class _ScriptSyncTestSetup {
   }
 
   static Future<void> setupCpfpEnvironment(_ScriptSyncTestData testData) async {
-    final electrumService = ScriptSyncServiceMock.electrumService;
+    final chainSource = ScriptSyncServiceMock.chainSource;
 
     final addressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex);
     final changeAddressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex, isChange: true);
@@ -209,28 +209,28 @@ class _ScriptSyncTestSetup {
       value: _TestConstants.transactionAmount - _TestConstants.cpfpFeeAmount,
     );
 
-    when(electrumService.getHistory(any, addressB)).thenAnswer((_) async => [txHistoryRes, cpfpTxHistoryRes]);
-    when(electrumService.getHistory(any, changeAddressB)).thenAnswer((_) async => [cpfpTxHistoryRes]);
+    when(chainSource.getHistory(any, addressB)).thenAnswer((_) async => [txHistoryRes, cpfpTxHistoryRes]);
+    when(chainSource.getHistory(any, changeAddressB)).thenAnswer((_) async => [cpfpTxHistoryRes]);
 
     when(
-      electrumService.getTransaction(testData.cpfpTx!.transactionHash),
+      chainSource.getTransaction(testData.cpfpTx!.transactionHash),
     ).thenAnswer((_) async => testData.cpfpTx!.serialize());
 
     when(
-      electrumService.getBalance(any, addressB),
+      chainSource.getBalance(any, addressB),
     ).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0));
 
-    when(electrumService.getBalance(any, changeAddressB)).thenAnswer(
+    when(chainSource.getBalance(any, changeAddressB)).thenAnswer(
       (_) async =>
           GetBalanceRes(confirmed: 0, unconfirmed: _TestConstants.transactionAmount - _TestConstants.cpfpFeeAmount),
     );
 
-    when(electrumService.getUnspentList(any, addressB)).thenAnswer((_) async => []);
-    when(electrumService.getUnspentList(any, changeAddressB)).thenAnswer((_) async => [cpfpUnspentRes]);
+    when(chainSource.getUnspentList(any, addressB)).thenAnswer((_) async => []);
+    when(chainSource.getUnspentList(any, changeAddressB)).thenAnswer((_) async => [cpfpUnspentRes]);
   }
 
   static Future<void> setupRbfEnvironment(_ScriptSyncTestData testData) async {
-    final electrumService = ScriptSyncServiceMock.electrumService;
+    final chainSource = ScriptSyncServiceMock.chainSource;
 
     final addressA = testData.walletA.walletBase.getAddress(_TestConstants.addressIndex);
     final addressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex);
@@ -238,15 +238,15 @@ class _ScriptSyncTestSetup {
     final rbfTxHistoryRes = GetTxHistoryRes(height: 0, txHash: testData.rbfTx!.transactionHash);
     final txHistoryRes = GetTxHistoryRes(height: 0, txHash: testData.mockTx.transactionHash);
 
-    when(electrumService.getHistory(any, addressA)).thenAnswer((_) async => [txHistoryRes, rbfTxHistoryRes]);
-    when(electrumService.getHistory(any, addressB)).thenAnswer((_) async => [rbfTxHistoryRes]);
+    when(chainSource.getHistory(any, addressA)).thenAnswer((_) async => [txHistoryRes, rbfTxHistoryRes]);
+    when(chainSource.getHistory(any, addressB)).thenAnswer((_) async => [rbfTxHistoryRes]);
 
     when(
-      electrumService.getTransaction(testData.rbfTx!.transactionHash),
+      chainSource.getTransaction(testData.rbfTx!.transactionHash),
     ).thenAnswer((_) async => testData.rbfTx!.serialize());
 
     when(
-      electrumService.getBalance(any, addressA),
+      chainSource.getBalance(any, addressA),
     ).thenAnswer((_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0));
 
     final rbfUnspentRes = ListUnspentRes(
@@ -256,6 +256,6 @@ class _ScriptSyncTestSetup {
       value: _TestConstants.transactionAmount - _TestConstants.rbfFeeAmount,
     );
 
-    when(electrumService.getUnspentList(any, addressB)).thenAnswer((_) async => [rbfUnspentRes]);
+    when(chainSource.getUnspentList(any, addressB)).thenAnswer((_) async => [rbfUnspentRes]);
   }
 }
