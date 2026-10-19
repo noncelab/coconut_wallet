@@ -967,14 +967,14 @@ class _SceneOverviewOverlay extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(16, 58, 16, 14),
                     child: AnimatedBuilder(
                       animation: entranceAnimation,
                       builder: (context, child) {
                         final contentStageT = _contentStage.transform(entranceAnimation.value);
                         return ListView.separated(
-                          clipBehavior: Clip.none,
-                          padding: const EdgeInsets.only(top: 48),
+                          key: const ValueKey('open-store-overview-list'),
+                          padding: EdgeInsets.zero,
                           physics: const BouncingScrollPhysics(),
                           itemCount: items.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 34),
@@ -1010,6 +1010,7 @@ class _SceneOverviewOverlay extends StatelessWidget {
                         return Opacity(opacity: closeButtonOpacity, child: child);
                       },
                       child: Material(
+                        key: const ValueKey('open-store-overview-close'),
                         color: Colors.white.withValues(alpha: 0.5),
                         shape: const CircleBorder(),
                         child: InkWell(
@@ -1085,7 +1086,6 @@ class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTic
       onTap: widget.onTap,
       isSelected: widget.isSelected || _isPressed,
     );
-    final rowWidth = MediaQuery.sizeOf(context).width - 40;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 18),
@@ -1118,39 +1118,29 @@ class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTic
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
             child: Ink(
-              width: rowWidth,
-              child: Stack(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: widget.isReversed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  Positioned(
-                    left: widget.isReversed ? null : 0,
-                    right: widget.isReversed ? 0 : null,
-                    top: 0,
-                    child: _SceneNavigationNumber(step: widget.item.sceneStep, alignEnd: widget.isReversed),
-                  ),
+                  _SceneNavigationNumber(step: widget.item.sceneStep, alignEnd: widget.isReversed),
+                  const SizedBox(height: 8),
                   Padding(
-                    padding: EdgeInsets.only(
-                      left: widget.isReversed ? 0 : 14,
-                      right: widget.isReversed ? 14 : 0,
-                      top: 52,
-                    ),
-                    child: SizedBox(
-                      width: rowWidth - 14,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: widget.isReversed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                        children: [
-                          ConstrainedBox(constraints: const BoxConstraints(maxWidth: 280), child: copyBlock),
-                          const SizedBox(height: 6),
-                          Padding(
-                            padding: EdgeInsets.only(left: widget.isReversed ? 4 : 0, right: widget.isReversed ? 0 : 4),
-                            child: Row(
-                              mainAxisAlignment: widget.isReversed ? MainAxisAlignment.start : MainAxisAlignment.end,
-                              mainAxisSize: MainAxisSize.max,
-                              children: [jumpButton],
-                            ),
+                    padding: EdgeInsets.only(left: widget.isReversed ? 0 : 14, right: widget.isReversed ? 14 : 0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: widget.isReversed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        ConstrainedBox(constraints: const BoxConstraints(maxWidth: 280), child: copyBlock),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: EdgeInsets.only(left: widget.isReversed ? 4 : 0, right: widget.isReversed ? 0 : 4),
+                          child: Row(
+                            mainAxisAlignment: widget.isReversed ? MainAxisAlignment.start : MainAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [jumpButton],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1181,6 +1171,7 @@ class _SceneNavigationCopy extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         RichText(
+          textScaler: MediaQuery.textScalerOf(context),
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           text: TextSpan(
             children: [
@@ -1206,15 +1197,12 @@ class _SceneNavigationNumber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 150,
-      child: Text(
-        step,
-        textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-        style: CoconutTypography.heading1_32_Bold
-            .setColor(_CoconutOpenStoreIntroScreenState._textPrimary)
-            .copyWith(fontSize: 82, height: 0.92),
-      ),
+    return Text(
+      step,
+      textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+      style: CoconutTypography.heading1_32_Bold
+          .setColor(_CoconutOpenStoreIntroScreenState._textPrimary)
+          .copyWith(fontSize: 82, height: 0.92),
     );
   }
 }
