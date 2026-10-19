@@ -2395,7 +2395,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               key: _viewMoreButtonKey,
                               text: t.view_more,
                               onTap: () {
-                                clearFocus();
+                                _clearFocus();
                                 if (_viewModel.orderedRegisteredWallets.length == 1) {
                                   showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
                                   return;
@@ -2432,7 +2432,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Future<void> loadVaultReceivingAddresses(WalletProvider walletProvider, WalletItemBase vault, int firstIndex) async {
+  Future<void> _loadVaultReceivingAddresses(WalletProvider walletProvider, WalletItemBase vault, int firstIndex) async {
     try {
       final addresses = await walletProvider.getWalletAddressList(
         vault,
@@ -2563,7 +2563,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget buildBoard(BuildContext context) {
+  Widget _buildBoard(BuildContext context) {
     return Selector<SendViewModel, bool>(
       selector: (_, viewModel) => viewModel.showAddressBoard,
       builder: (context, showAddressBoard, child) {
@@ -2577,7 +2577,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  double getScrollableHeight(double usableHeight) {
+  double _getScrollableHeight(double usableHeight) {
     double scrollbarHeight = usableHeight;
     if (_viewModel.showAddressBoard) {
       // AddressBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
@@ -2628,7 +2628,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  void applyIncomingBitcoinUri(String scannedData, int index) {
+  void _applyIncomingBitcoinUri(String scannedData, int index) {
     if (scannedData.toLowerCase().startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
       _addressControllerList[index].text = bip21Data.address;
@@ -2639,7 +2639,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
-        _amountController.text = formatDecimalTextForDisplay(amountText);
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
         _viewModel.setAmountText(bip21Data.amount!, index);
       }
       return;
@@ -2650,7 +2650,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _viewModel.setAddressText(normalized, index);
   }
 
-  void recipientPageListener() {
+  void _recipientPageListener() {
     final page = _recipientPageController.page;
 
     // 페이지가 완전히 변경되었고 이전에 Address 필드에 포커싱이 있었다면, 새로운 페이지의 Address 필드를 포커싱한다.
@@ -2668,26 +2668,26 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  void onRecipientPageDeleted(int page) {
+  void _onRecipientPageDeleted(int page) {
     // PageController가 아직 attach되지 않았으면 (PageView가 빌드되지 않았으면) 실행하지 않음
     if (!_recipientPageController.hasClients) return;
     if (_recipientPageController.page == page) return;
     _recipientPageController.animateToPage(page, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
 
-  void onFeeRateTextUpdate(String text) {
-    _feeRateController.text = formatDecimalTextForDisplay(text);
+  void _onFeeRateTextUpdate(String text) {
+    _feeRateController.text = _formatDecimalTextForDisplay(text);
   }
 
-  void onAmountTextUpdate(String text) {
+  void _onAmountTextUpdate(String text) {
     // 단위변환시 문자열 길이가 달라지므로 viewModel text와 길이를 맞춘다.
     // viewModel의 amount는 canonical 포맷('.' 소수점)이므로 display 포맷으로 변환한다.
-    final displayText = formatDecimalTextForDisplay(text);
+    final displayText = _formatDecimalTextForDisplay(text);
     _previousAmountText = displayText;
     _amountController.text = displayText;
   }
 
-  void amountTextListener() {
+  void _amountTextListener() {
     // 최대 금액 보내기 모드인 경우에는 무시
     if (_viewModel.isAmountDisabled) {
       if (_amountController.text != _previousAmountText) {
@@ -2711,7 +2711,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _previousAmountText = _amountController.text;
   }
 
-  void addAddressField() {
+  void _addAddressField() {
     final controller = TextEditingController();
     final index = _addressControllerList.length;
     addressTextListener() {
@@ -2734,8 +2734,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     final focusNode = FocusNode();
     focusNode.addListener(
       () => setState(() {
-        _feeRateController.text = removeTrailingDecimalSeparator(_feeRateController.text);
-        _amountController.text = removeTrailingDecimalSeparator(_amountController.text);
+        _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+        _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
 
         final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
@@ -2743,7 +2743,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (!focusNode.hasFocus) {
           if (hasAddressTextChangedSinceFocus(index, controller.text)) {
             if (controller.text.toLowerCase().startsWith('bitcoin:')) {
-              applyIncomingBitcoinUri(controller.text, index);
+              _applyIncomingBitcoinUri(controller.text, index);
             }
             _viewModel.validateAllFieldsOnFocusLost();
           }
@@ -2780,7 +2780,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return _addressFocusInTextList[index] != currentText;
   }
 
-  void deleteAddressField(int index) {
+  void _deleteAddressField(int index) {
     _addressControllerList[index].dispose();
     _addressFocusNodeList[index].dispose();
 
@@ -2801,9 +2801,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  void clearFocus() {
-    _feeRateController.text = removeTrailingDecimalSeparator(_feeRateController.text);
-    _amountController.text = removeTrailingDecimalSeparator(_amountController.text);
+  void _clearFocus() {
+    _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+    _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
 
     // setState 변경은 빌드 완료 후 실행
@@ -2820,7 +2820,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   /// 텍스트 끝의 소수점 구분자를 제거하는 함수
-  String removeTrailingDecimalSeparator(String text) {
+  String _removeTrailingDecimalSeparator(String text) {
     final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
     if (text.endsWith(decimalSeparator) || text.endsWith('.')) {
       return text.substring(0, text.length - 1);
@@ -2828,7 +2828,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return text;
   }
 
-  String formatDecimalTextForDisplay(String text) {
+  String _formatDecimalTextForDisplay(String text) {
     return text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 
@@ -2841,12 +2841,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (recipientListLength > currentControllerLength) {
       // 부족한 만큼 추가
       for (int i = currentControllerLength; i < recipientListLength; i++) {
-        addAddressField();
+        _addAddressField();
       }
     } else if (recipientListLength < currentControllerLength) {
       // 초과하는 만큼 삭제
       for (int i = currentControllerLength - 1; i >= recipientListLength; i--) {
-        deleteAddressField(i);
+        _deleteAddressField(i);
       }
     }
 
@@ -2874,12 +2874,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (recipientListLength > 0) {
       final currentIndex = _viewModel.currentIndex;
       if (currentIndex < recipientListLength) {
-        final amount = formatDecimalTextForDisplay(_viewModel.recipientList[currentIndex].amount);
+        final amount = _formatDecimalTextForDisplay(_viewModel.recipientList[currentIndex].amount);
         if (_amountController.text != amount) {
-          _amountController.removeListener(amountTextListener);
+          _amountController.removeListener(_amountTextListener);
           _amountController.text = amount;
           _previousAmountText = amount;
-          _amountController.addListener(amountTextListener);
+          _amountController.addListener(_amountTextListener);
         }
       }
     }
