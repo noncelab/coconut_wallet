@@ -295,6 +295,7 @@ feature_search:
   app_settings_fiat: "currency"
   app_settings_language: "language"
   app_settings_theme: "dark mode, light mode, theme"
+  app_settings_number_format: "number format, thousands, decimal, separator, grouping"
   app_settings_utxo_selection: "coin selection, coin control"
   app_settings_electrum: "node, server, port"
   app_settings_explorer: "explorer"

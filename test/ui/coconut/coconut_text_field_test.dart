@@ -170,6 +170,7 @@ void main() {
     Future<void> pump(FocusNode focusNode) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: buildCoconutThemeData(),
           home: Scaffold(
             body: CoconutTextField(
               controller: controller,

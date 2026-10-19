@@ -5,25 +5,35 @@ import 'dart:ui' as ui;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
+import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/all_features_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
+import 'package:coconut_wallet/screens/settings/number_format_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../mock/wallet_mock.dart';
 
@@ -36,12 +46,27 @@ class _Preferences extends ChangeNotifier implements PreferenceProvider {
   @override
   String get language => 'ko';
   @override
+  NumberFormatPreset get numberFormatPreset => NumberFormatPreset.dotDecimal;
+  @override
   bool get isManualUtxoSelectionMode => false;
   @override
   Future<void> setManualUtxoSelectionMode(bool value) async {
     writes++;
   }
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _EmptyWalletPreferences implements WalletPreferencesRepository {
+  @override
+  bool hasWalletPreferences() => false;
+  @override
+  List<int> getWalletOrder() => [];
+  @override
+  List<int> getFavoriteWalletIds() => [];
+  @override
+  List<int> getExcludedWalletIds() => [];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -93,11 +118,12 @@ void main() {
     int? selectedWallet = 2,
     CoconutThemeVariant variant = CoconutThemeVariant.dark,
     bool capture = false,
+    PreferenceProvider? preferenceProvider,
   }) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
+          ChangeNotifierProvider<PreferenceProvider>.value(value: preferenceProvider ?? preferences),
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
           Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
         ],
@@ -143,6 +169,26 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(ValueKey('all-features-item-$parentId')));
     await tester.pumpAndSettle();
+  }
+
+  Future<PreferenceProvider> numberFormatPreferences(AppLocale locale) async {
+    SharedPreferences.setMockInitialValues({
+      SharedPrefKeys.kLanguage: locale.languageCode,
+      SharedPrefKeys.kNumberFormatPreset: 'dotDecimal',
+    });
+    await SharedPrefsRepository().init();
+    final electrum = ElectrumServerProvider();
+    final explorer = BlockExplorerProvider();
+    final provider = PreferenceProvider(_EmptyWalletPreferences(), electrum, explorer);
+    addTearDown(() {
+      provider.dispose();
+      electrum.dispose();
+      explorer.dispose();
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+      LocaleSettings.setLocaleSync(AppLocale.ko);
+      NetworkType.setNetworkType(NetworkType.regtest);
+    });
+    return provider;
   }
 
   Future<ByteData> pixels(WidgetTester tester) async {
@@ -221,6 +267,81 @@ void main() {
     navigator.currentState!.pop();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('all-features-search')), findsOneWidget);
+  });
+
+  for (final network in [NetworkType.mainnet, NetworkType.testnet, NetworkType.regtest]) {
+    for (final locale in AppLocale.values) {
+      testWidgets('number format search persists a selection without a wallet ($network, ${locale.languageCode})', (
+        tester,
+      ) async {
+        NetworkType.setNetworkType(network);
+        wallets = [];
+        final provider = await numberFormatPreferences(locale);
+        await pump(tester, preferenceProvider: provider);
+        await searchTap(tester, t.settings_screen.number_format, FeatureIds.appSettings);
+
+        expect(find.byType(NumberFormatBottomSheet), findsOneWidget);
+        expect(find.byType(AppSettingsScreen), findsNothing);
+        expect(choices, isEmpty);
+        expect(routes, isEmpty);
+        expect(recents.first, FeatureIds.appSettings);
+        expect(provider.numberFormatPreset, NumberFormatPreset.dotDecimal);
+        expect(SharedPrefsRepository().getString(SharedPrefKeys.kNumberFormatPreset), 'dotDecimal');
+
+        await tester.tap(find.text('1.234,5678 9012'));
+        await tester.pumpAndSettle();
+        expect(provider.numberFormatPreset, NumberFormatPreset.commaDecimal);
+        expect(SharedPrefsRepository().getString(SharedPrefKeys.kNumberFormatPreset), 'commaDecimal');
+        expect(NumberFormatConfig.instance.decimalSeparator, ',');
+        expect(NumberFormatConfig.instance.groupingSeparator, '.');
+        final selectedRow = find.ancestor(
+          of: find.text('1.234,5678 9012'),
+          matching: find.byType(SelectableSettingsRow),
+        );
+        expect(tester.widget<SelectableSettingsRow>(selectedRow).isSelected, isTrue);
+
+        navigator.currentState!.pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(NumberFormatBottomSheet), findsNothing);
+        expect(find.byKey(const Key('all-features-search')), findsOneWidget);
+        expect(navigator.currentState!.canPop(), isFalse);
+
+        await searchTap(tester, t.settings_screen.number_format, FeatureIds.appSettings);
+        expect(tester.widget<SelectableSettingsRow>(selectedRow).isSelected, isTrue);
+        navigator.currentState!.pop();
+        await tester.pumpAndSettle();
+        expect(navigator.currentState!.canPop(), isFalse);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets('number format search waits for the keyboard and ignores duplicate taps', (tester) async {
+    final provider = await numberFormatPreferences(AppLocale.ko);
+    wallets = [];
+    await pump(tester, preferenceProvider: provider);
+    await tester.enterText(find.byKey(const Key('all-features-search')), '숫자 구분');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    final result = find.byKey(const ValueKey('all-features-item-app_settings'));
+    await tester.tap(result);
+    await tester.pump();
+    await tester.tap(result);
+    await tester.pump();
+    expect(find.byType(NumberFormatBottomSheet), findsNothing);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 80);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(find.byType(NumberFormatBottomSheet), findsNothing);
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await tester.pumpAndSettle();
+    expect(find.byType(NumberFormatBottomSheet), findsOneWidget);
+    expect(provider.numberFormatPreset, NumberFormatPreset.dotDecimal);
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(NumberFormatBottomSheet), findsNothing);
+    expect(navigator.currentState!.canPop(), isFalse);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('manual UTXO search reveals the row without toggling it', (tester) async {

@@ -88,7 +88,7 @@ class SelectableSettingsRowContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText).merge(titleStyle)),
                   if (subtitle != null)
                     Text(
                       subtitle!,

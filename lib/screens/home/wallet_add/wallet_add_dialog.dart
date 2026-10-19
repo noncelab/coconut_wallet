@@ -312,6 +312,7 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(walletImportSource);
     final navigator = Navigator.of(context);
     navigator.pop();
 

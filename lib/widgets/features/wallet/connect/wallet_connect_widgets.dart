@@ -31,7 +31,10 @@ class WalletConnectInfoRow extends StatelessWidget {
     final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong);
     final valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
 
-    final valueWidget = isMfp ? MfpText(mfp: value, style: valueStyle) : Text(value, style: valueStyle);
+    final valueWidget =
+        isMfp
+            ? MfpText(mfp: value, style: valueStyle, textAlign: direction == Axis.horizontal ? TextAlign.end : null)
+            : Text(value, style: valueStyle, textAlign: direction == Axis.horizontal ? TextAlign.end : null);
 
     if (direction == Axis.horizontal) {
       return Row(
@@ -39,7 +42,7 @@ class WalletConnectInfoRow extends StatelessWidget {
         children: [
           Expanded(child: Text(label, style: labelStyle)),
           const SizedBox(width: 16),
-          Flexible(child: Text(value, style: valueStyle, textAlign: TextAlign.end)),
+          Flexible(child: Align(alignment: AlignmentDirectional.topEnd, child: valueWidget)),
         ],
       );
     }
