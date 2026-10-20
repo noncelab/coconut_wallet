@@ -318,8 +318,9 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
                       iconIndex: wallet.iconIndex,
                       isHotWallet: wallet.hasLocalKey,
                     ),
-                    // 제목·부제의 단어 줄바꿈(R1)은 SafetyChoiceRow가 한다
-                    title: wallet.name,
+                    // 부제에 주소 목적지가 들어가므로 R1은 이 화면이 부분마다 한다(주소에는 이음 문자 없이)
+                    keepWords: false,
+                    title: safetyKoText(wallet.name),
                     subtitle: _statusLine(rescue, wallet.id, status),
                     subtitleColor: _needsAttention.contains(status) ? colors.warningText : null,
                     below:
@@ -357,7 +358,7 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
   /// 행 부제: "→ 목적지 · 초안 상태". 준비된 초안의 수수료는 아래 따로 한 줄([_FeeLine])
   String _statusLine(RescueReadyProvider rescue, int walletId, RescueStatus status) {
     final copy = t.premium.rescue;
-    if (status == RescueStatus.notSet) return copy.not_set;
+    if (status == RescueStatus.notSet) return safetyKoText(copy.not_set);
     final draft = rescue.drafts[walletId];
     final time = draft == null ? null : formatHomeRelativeTime(draft.preparedAt, DateTime.now());
     final detail = switch (status) {
@@ -374,8 +375,13 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
             ? t.premium.assist.fee_too_high(percent: SweepFee.maxSharePercent)
             : copy.draft_unavailable,
     };
+    // 단어 중간 줄바꿈 금지(R1)는 부분마다. 주소 목적지는 그대로(이음 문자가 대조·복사를 바꾼다)
     final destination = rescue.destinationLabel(walletId);
-    return [if (destination != null) '→ $destination', detail].join(' · ');
+    final isAddress = rescue.destinationOf(walletId)?.address != null;
+    return [
+      if (destination != null) '→ ${isAddress ? destination : safetyKoText(destination)}',
+      safetyKoText(detail),
+    ].join(' · ');
   }
 }
 

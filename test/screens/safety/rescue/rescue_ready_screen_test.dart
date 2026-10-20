@@ -239,6 +239,10 @@ void main() {
           matching: plainText('→ w2 · ${copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))}'),
         );
         expect(textOf(tester, ready).style!.color, colors.secondaryText);
+        // 상태 글은 단어 중간 줄바꿈 금지(R1). 행은 keepWords: false라 이 화면이 부분마다 넣는다(다시 감싸도 같으면 적용된 것)
+        final status = textOf(tester, ready).data!.split(' · ').last;
+        expect(status, isNot(copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))));
+        expect(status, safetyKoText(status));
         final fee = find.descendant(
           of: row,
           matching: find.text('${t.estimated_fee} ${BitcoinUnit.btc.displayBitcoinAmount(1410, withUnit: true)}'),
@@ -398,14 +402,14 @@ void main() {
         await tester.tap(find.byKey(const Key('rescue-address-save')));
         await tester.pumpAndSettle();
         expect(rescue.destinationOf(6)?.address, _external);
-        // 행 부제에 줄인 주소 목적지(단어 줄바꿈은 SafetyChoiceRow가 부제 전체에 한다)
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('rescue-wallet-6')),
-            matching: plainTextContaining('→ ${shortenAddress(_external)} ·'),
-          ),
-          findsOneWidget,
+        // 행 부제의 주소 목적지에는 이음 문자가 없다(R1은 주소에 쓰지 않음). 나머지 한국어는 단어 줄바꿈
+        final subtitle = find.descendant(
+          of: find.byKey(const Key('rescue-wallet-6')),
+          matching: find.textContaining('→ ${shortenAddress(_external)} · '),
         );
+        expect(subtitle, findsOneWidget, reason: '주소 그대로');
+        final detail = textOf(tester, subtitle).data!.split(' · ').last;
+        expect(detail, safetyKoText(detail), reason: '상태 글은 R1 적용');
         await tester.pump(const Duration(seconds: 4));
       });
 
