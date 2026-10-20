@@ -514,19 +514,22 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
     final colors = context.coconutColors;
     final unit = context.read<PreferenceProvider>().currentUnit;
     final remainingSats = _session.remaining?.inputs.fold<int>(0, (sum, u) => sum + u.amount) ?? 0;
-    // 이름은 Flexible, 값은 Expanded(끝 정렬). 지금 글자 배율로 한 줄에 둘이 안 들어가면 이름 위·값 아래로 쌓는다
+    // 한 줄에 둘이 들어가면 이름이 남는 폭(Expanded)을 갖고 값은 제 폭으로 상자 오른쪽 끝에 붙는다(POLISH X6, C6·D10과
+    // 같은 결과. Flexible+Expanded는 폭을 반씩 나눠 값이 가운데에서 멈췄다). 안 들어가면 이름 위·값 아래로 쌓는다
     // (값이 숫자 기둥처럼 갈리지 않게, GPT M6·POLISH H14)
     Widget row(String label, String value, {Color? valueColor, Key? key}) {
       final labelStyle = CoconutTypography.body2_14.setColor(colors.secondaryText);
       final valueStyle = CoconutTypography.body2_14_Bold.setColor(valueColor ?? colors.primaryText);
       final labelText = Text(safetyKoText(label), style: labelStyle);
-      final valueText = Text(value, textAlign: TextAlign.end, style: valueStyle);
+      // 값(금액+단위)은 언제나 한 줄(R2·X2): 숫자 묶음 사이에서 갈리지 않는다
+      final valueText = Text(value, textAlign: TextAlign.end, maxLines: 1, softWrap: false, style: valueStyle);
       return LayoutBuilder(
         key: key,
         builder: (context, constraints) {
+          // 그려질 글 그대로(이음 문자·기본 글꼴 포함) 잰다
           double width(String text, TextStyle style) {
             final painter = TextPainter(
-              text: TextSpan(text: text, style: style),
+              text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
               textScaler: MediaQuery.textScalerOf(context),
               textDirection: Directionality.of(context),
               maxLines: 1,
@@ -536,12 +539,17 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
             return width;
           }
 
-          final fits = width(label, labelStyle) + 12 + width(value, valueStyle) <= constraints.maxWidth;
+          final fits = width(safetyKoText(label), labelStyle) + 12 + width(value, valueStyle) <= constraints.maxWidth;
           return fits
-              ? Row(children: [Flexible(child: labelText), CoconutLayout.spacing_300w, Expanded(child: valueText)])
+              ? Row(children: [Expanded(child: labelText), CoconutLayout.spacing_300w, valueText])
               : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [labelText, CoconutLayout.spacing_100h, valueText],
+                children: [
+                  labelText,
+                  CoconutLayout.spacing_100h,
+                  // 값만으로도 폭을 넘으면 오른쪽 끝에 붙은 채 작아진다
+                  FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: valueText),
+                ],
               );
         },
       );
@@ -1058,9 +1066,11 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
               : (isHot ? strings.sign_and_send : t.next),
       onButton: blocked ? _lowerFee : _confirm,
       buttonEnabled: !blocked || canLower,
-      footer: Text(
-        '${safetyKoText(strings.network_fee)} ${unit.displayBitcoinAmount(plan.fee, withUnit: true)}',
+      footer: _AmountLine(
         key: const Key('safety-assist-review-fee'),
+        amountKey: const Key('safety-assist-review-fee-amount'),
+        label: strings.network_fee,
+        amount: unit.displayBitcoinAmount(plan.fee, withUnit: true),
         style: CoconutTypography.body3_12.setColor(colors.secondaryText),
       ),
       children: [
@@ -1095,10 +1105,11 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         else
           _AddressBox(address: target.address),
         CoconutLayout.spacing_400h,
-        Text(
-          '${safetyKoText(t.send_amount)} ${unit.displayBitcoinAmount(plan.amount, withUnit: true)}',
+        _AmountLine(
           key: const Key('safety-assist-review-amount'),
-          textAlign: TextAlign.center,
+          amountKey: const Key('safety-assist-review-amount-value'),
+          label: t.send_amount,
+          amount: unit.displayBitcoinAmount(plan.amount, withUnit: true),
           style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
         ),
         // 대체가 막혀 남은 코인만 옮길 때: 의심 거래의 코인은 이 금액에 없다(Grok §3)
@@ -1284,6 +1295,28 @@ SafetyVerificationLine? _verificationLine(BuildContext context, WalletItemBase? 
           key: key,
           verification: SafetyAssist.verification(context.read<SafetyProvider?>()?.state, wallet),
         );
+
+/// 이름 + 금액 한 줄(가운데). 금액+단위는 한 덩어리라 숫자 묶음 사이에서 갈리지 않고("0.0000 1921 / BTC"), 그 덩어리만으로
+/// 폭을 넘으면 작아진다(POLISH X2·R2). 좁으면 이름이 윗줄, 금액이 아랫줄
+class _AmountLine extends StatelessWidget {
+  const _AmountLine({super.key, required this.label, required this.amount, required this.style, this.amountKey});
+
+  final String label;
+  final String amount;
+  final TextStyle style;
+  final Key? amountKey;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.center,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: MediaQuery.textScalerOf(context).scale(4),
+    children: [
+      Text(safetyKoText(label), textAlign: TextAlign.center, style: style),
+      FittedBox(fit: BoxFit.scaleDown, child: Text(amount, key: amountKey, maxLines: 1, softWrap: false, style: style)),
+    ],
+  );
+}
 
 class _InfoLine extends StatelessWidget {
   const _InfoLine({

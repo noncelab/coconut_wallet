@@ -912,8 +912,8 @@ void main() {
       );
       // 정확한 수수료는 버튼 위 네트워크 수수료 줄
       expect(
-        tester.widget<Text>(find.byKey(const Key('safety-assist-review-fee'))).data,
-        contains(BitcoinUnit.btc.displayBitcoinAmount(floor.fee, withUnit: true)),
+        tester.widget<Text>(find.byKey(const Key('safety-assist-review-fee-amount'))).data,
+        BitcoinUnit.btc.displayBitcoinAmount(floor.fee, withUnit: true),
       );
       expect(find.byKey(const Key('safety-assist-review-fee-excessive')), findsNothing);
       // 남은 코인만 옮기기는 따로 고를 때만
@@ -1321,5 +1321,87 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-assist-options')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('POLISH §10 iOS 시뮬레이터 검토(320dp)', () {
+    final utxos = [
+      _utxo(incident, 0, 90000, status: UtxoStatus.outgoing, spentBy: _attackTxid),
+      _utxo(incident, 1, 30000, status: UtxoStatus.locked),
+    ];
+    const conflicts = [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true)];
+
+    Future<void> openOptions(WidgetTester tester, double textScale) async {
+      tester.view.physicalSize = const Size(320 * 3, 2400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final env = await pump(
+        tester,
+        utxos: utxos,
+        conflicts: conflicts,
+        preferences: _Preferences(hidden: false),
+        textScale: textScale,
+      );
+      env.start();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-assist-options')), findsOneWidget);
+    }
+
+    List<TextBox> glyphBoxes(WidgetTester tester, Finder text) {
+      final paragraph = tester.renderObject<RenderParagraph>(text);
+      return paragraph.getBoxesForSelection(
+        TextSelection(baseOffset: 0, extentOffset: paragraph.text.toPlainText().length),
+      );
+    }
+
+    /// 글자(상자 아님)가 실제로 끝나는 x
+    double glyphRight(WidgetTester tester, Finder text) =>
+        tester
+            .renderObject<RenderParagraph>(text)
+            .localToGlobal(Offset(glyphBoxes(tester, text).map((b) => b.right).reduce((a, b) => a > b ? a : b), 0))
+            .dx;
+
+    /// 그려진 줄 수
+    int lines(WidgetTester tester, Finder text) => glyphBoxes(tester, text).map((b) => b.top.round()).toSet().length;
+
+    testWidgets('X6: "대응 방법" 요약 값은 1.0·2.0배 모두 상자 오른쪽 끝, 2.0배에서도 이름이 한 줄', (tester) async {
+      for (final scale in [1.0, 2.0]) {
+        await openOptions(tester, scale);
+        final row = find.byKey(const Key('safety-assist-replacement-state'));
+        final value = find.descendant(of: row, matching: find.text(t.premium.assist.available));
+        expect(glyphRight(tester, value), moreOrLessEquals(tester.getRect(row).right, epsilon: 0.5), reason: '×$scale');
+        final label = find.descendant(of: row, matching: _koText(t.premium.assist.replacement));
+        expect(lines(tester, label), 1, reason: '×$scale');
+        // 남은 비트코인 줄(쌓인 모양이어도) 값은 한 줄(금액+단위가 갈리지 않음, X2·R2)이고 끝이 같은 오른쪽 끝
+        final remaining = find.descendant(
+          of: find.byKey(const Key('safety-assist-options')),
+          matching: find.text(BitcoinUnit.btc.displayBitcoinAmount(30000, withUnit: true)),
+        );
+        expect(lines(tester, remaining), 1, reason: '×$scale');
+        expect(
+          glyphRight(tester, remaining),
+          moreOrLessEquals(tester.getRect(row).right, epsilon: 0.5),
+          reason: '×$scale',
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('X2: 2.0배 검토의 네트워크 수수료·보낼 금액은 금액+단위가 한 덩어리로 한 줄', (tester) async {
+      await openOptions(tester, 2);
+      await tester.tap(find.byKey(const Key('safety-guide-button'))); // 대체 거래 준비
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
+      await tester.pumpAndSettle();
+      for (final key in ['safety-assist-review-fee', 'safety-assist-review-amount']) {
+        // 금액(숫자 묶음 사이 빈칸 포함)으로 끝나는 글이 하나, 그 글은 한 줄로 그려진다
+        final amount = find.descendant(
+          of: find.byKey(Key(key)),
+          matching: find.byWidgetPredicate((w) => w is RichText && RegExp(r'\d BTC$').hasMatch(w.text.toPlainText())),
+        );
+        expect(amount, findsOneWidget, reason: key);
+        expect(lines(tester, amount), 1, reason: key);
+      }
+      expect(tester.takeException(), isNull);
+    });
   });
 }
