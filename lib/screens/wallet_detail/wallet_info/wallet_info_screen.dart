@@ -29,6 +29,10 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/providers/safety_provider.dart';
+import 'package:coconut_wallet/screens/safety/bsms_verification_screen.dart';
+import 'package:coconut_wallet/screens/safety/watch_only_verification_screen.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_safety_status_row.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -230,6 +234,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final safety = context.watch<SafetyProvider?>();
     return ChangeNotifierProvider<WalletInfoViewModel>(
       create:
           (_) => WalletInfoViewModel(
@@ -359,6 +364,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 },
                               ),
                               if (widget.walletType == WalletType.singleSignature) ...[
+                                if (safety != null && !viewModel.walletItemBase.hasLocalKey)
+                                  _walletInfoMenu(
+                                    title: t.wallet_health.watch_only_verify.title,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      WatchOnlyVerificationScreen.open(context, walletId: widget.id);
+                                    },
+                                  ),
                                 _focus(
                                   WalletInfoTarget.extendedPublicKey,
                                   _walletInfoMenu(
@@ -395,6 +408,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 ),
                               ],
                               if (widget.walletType == WalletType.multiSignature) ...[
+                                if (safety != null)
+                                  _walletInfoMenu(
+                                    title: t.wallet_health.bsms_verify.title,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      BsmsVerificationScreen.open(context, walletId: widget.id);
+                                    },
+                                  ),
                                 _focus(
                                   WalletInfoTarget.backupData,
                                   _walletInfoMenu(
@@ -414,6 +435,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   ),
                                 ),
                               ],
+                              WalletSafetyStatusRow(walletId: widget.id),
+                              WalletRescueDestinationRow(walletId: widget.id),
                             ],
                           ),
                         ),
@@ -926,9 +949,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           authenticator: FlutterHotWalletAuthenticator(context),
         ).unlock(metadata.secureStorageKey),
       );
-      if (!mounted || plaintext == null) return;
+      if (plaintext == null) return;
+      Object? verified;
       try {
-        await Navigator.pushNamed(
+        // 인증 중 화면이 닫혀도 반환된 평문은 반드시 지운다.
+        if (!mounted) return;
+        verified = await Navigator.pushNamed(
           context,
           AppRouteNames.hotWalletPassphraseCheck,
           arguments: HotWalletPassphraseCheckRouteArgs(
@@ -938,6 +964,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         );
       } finally {
         plaintext.wipe();
+      }
+      if (mounted && verified == true) {
+        await context.read<SafetyProvider?>()?.recordPassphraseVerified(widget.id);
       }
     } catch (error) {
       if (!mounted) return;
