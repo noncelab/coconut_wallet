@@ -7,6 +7,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../screens/safety/wallet_health_fixtures.dart';
@@ -356,6 +357,20 @@ void main() {
     final spans = safetyNumberSpans('복구 86점', words, digits).children!.cast<TextSpan>();
     expect([for (final span in spans) span.text], ['복구 ', '86', '점']);
     expect([for (final span in spans) span.style!.fontFamily], ['Body', 'Number', 'Body']);
+  });
+
+  testWidgets('D23: with a 36 icon box the review text starts where the 36-circle incident rows start', (tester) async {
+    const check = SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.failed, severity: SafetySeverity.actionNeeded);
+    double textStart() =>
+        tester.getTopLeft(_text(safetyIssueText(check))).dx - tester.getTopLeft(find.byType(SafetyReviewRow)).dx;
+    await _pump(tester, SafetyListCard(rows: [SafetyReviewRow(check: check, onTap: () {})]));
+    final plain = textStart();
+    await _pump(tester, SafetyListCard(rows: [SafetyReviewRow(check: check, onTap: () {}, iconBox: 36)]));
+    // 알림 사건 줄과 같은 꼴: SafetyIconCircle 36 + spacing_300w 뒤에 글(16 아이콘 자리보다 20 오른쪽)
+    expect(textStart(), plain + 20);
+    final icon = find.descendant(of: find.byType(SafetyReviewRow), matching: find.byType(SvgPicture)).first;
+    final rowLeft = tester.getTopLeft(find.byType(SafetyReviewRow)).dx;
+    expect(tester.getCenter(icon).dx - rowLeft, textStart() - 12 - 18); // 36 자리 가운데
   });
 
   test('C44: an exported but unverified BSMS backup reads as such, not as never verified', () {

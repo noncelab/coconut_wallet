@@ -730,12 +730,15 @@ class _CardSkeleton extends StatelessWidget {
 /// 검토 필요 행(Wallet Health "검토 필요"·🔔 "확인할 항목" 공용): ⚠ + 지갑 + 문제 + 알약.
 /// 알약만 따로 누르지 않고 행 전체가 그 점검의 동작을 한다(점검 → 문구·알약·동작 매핑을 이 위젯 하나에 둔다)
 class SafetyReviewRow extends StatelessWidget {
-  const SafetyReviewRow({super.key, required this.check, this.onTap});
+  const SafetyReviewRow({super.key, required this.check, this.onTap, this.iconBox});
 
   final SafetyCheckResult check;
 
   /// 기본은 점검별 동작([openSafetyCheckAction])
   final VoidCallback? onTap;
+
+  /// ⚠ 자리 폭(아이콘은 가운데). 🔔 알림처럼 36 원 아이콘의 사건 줄과 한 화면에 있으면 36을 줘 글 시작선을 맞춘다(POLISH D23)
+  final double? iconBox;
 
   @override
   Widget build(BuildContext context) {
@@ -749,10 +752,15 @@ class SafetyReviewRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            SvgPicture.asset(
-              CommonStateIconPath.triangleWarning,
-              width: 16,
-              colorFilter: ColorFilter.mode(colors.warningText, BlendMode.srcIn),
+            SizedBox(
+              width: iconBox ?? 16,
+              child: Center(
+                child: SvgPicture.asset(
+                  CommonStateIconPath.triangleWarning,
+                  width: 16,
+                  colorFilter: ColorFilter.mode(colors.warningText, BlendMode.srcIn),
+                ),
+              ),
             ),
             CoconutLayout.spacing_300w,
             Expanded(
