@@ -100,7 +100,7 @@ class UtxoGroupingTabBar extends StatelessWidget {
         children: [
           Container(
             color: context.coconutColors.background,
-            padding: const EdgeInsets.fromLTRB(4, 12, 0, 0),
+            padding: const EdgeInsets.only(left: 4),
             child: SizedBox(
               width: _tabWidth * 2,
               height: 40,
@@ -139,6 +139,7 @@ class UtxoGroupingTabBar extends StatelessWidget {
             ),
           ),
           Container(width: MediaQuery.sizeOf(context).width, height: 1, color: context.coconutColors.divider),
+          const SizedBox(height: 12),
         ],
       ),
     );

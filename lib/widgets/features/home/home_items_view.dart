@@ -9,6 +9,7 @@ import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/services/home/home_item_registry.dart';
+import 'package:coconut_wallet/widgets/features/home/span_size_option.dart';
 import 'package:coconut_wallet/widgets/features/home/home_item_draggable.dart';
 import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -342,9 +343,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth - inset * 2;
         final cellExtent =
-            maxWidth.isFinite
-                ? ((maxWidth - (_columns - 1) * _gap) / _columns).clamp(1.0, HomeItemsView.cell).toDouble()
-                : HomeItemsView.cell;
+            maxWidth.isFinite ? math.max(1.0, (maxWidth - (_columns - 1) * _gap) / _columns) : HomeItemsView.cell;
         // Keep the surface fixed while dragging so a centered grid does not move under the pointer.
         final rowCount = math.max(1, layout.rows);
         final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
@@ -719,32 +718,16 @@ class _SizePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         for (final span in spans)
-          GestureDetector(
+          SpanSizeOption(
             key: ValueKey('home-item-size-$itemId-${span.toJson()}'),
-            behavior: HitTestBehavior.opaque,
+            columns: span.width,
+            rows: span.height,
+            isSelected: span == selected,
             onTap: () => onSelected(span),
-            child: Container(
-              width: 52,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: span == selected ? colors.primaryText.withValues(alpha: 0.08) : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                width: span.width >= 4 ? 30 : 18,
-                height: span.height >= 2 ? 16 : 10,
-                decoration: BoxDecoration(
-                  border: Border.all(color: colors.primaryText, width: 1.6),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
           ),
       ],
     );

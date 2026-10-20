@@ -466,6 +466,7 @@ void main() {
         ..register(_LabelDefinition('w3', HomeItemKind.widget, HomeSpan.small));
 
   testWidgets('long-press dragging an item onto another inserts it before the target', (tester) async {
+    usePhoneViewport(tester);
     String? movedId;
     String? beforeId;
     await tester.pumpWidget(
@@ -975,6 +976,7 @@ void main() {
   }
 
   testWidgets('dropping the last shortcut onto the first 2×2 inserts it before that widget', (tester) async {
+    usePhoneViewport(tester);
     String? movedId;
     String? beforeId;
     final registry =
@@ -1088,6 +1090,7 @@ void main() {
   });
 
   testWidgets('dragging over an item previews the positions after insertion without a highlight', (tester) async {
+    usePhoneViewport(tester);
     final configuration = threeItems();
     String? insertedBefore;
     await tester.pumpWidget(
@@ -1192,6 +1195,7 @@ void main() {
   });
 
   testWidgets('a stable hover makes room gradually without saving before release', (tester) async {
+    usePhoneViewport(tester);
     var drops = 0;
     await tester.pumpWidget(
       CupertinoApp(
@@ -1776,4 +1780,10 @@ class _ResizableDefinition extends HomeItemDefinition {
 
   @override
   Widget build(BuildContext context, HomeItem item) => Text('built:$id');
+}
+
+void usePhoneViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
 }

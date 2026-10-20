@@ -24,12 +24,16 @@ class RecentTransactionsView extends StatelessWidget {
   final DateTime now;
   final void Function(int walletId)? onTransactionTap;
 
+  /// 지갑 하나만 보여 주는 곳(지갑 상세)에서 거래 자체를 열 때 쓴다. 있으면 [onTransactionTap]보다 먼저 쓴다.
+  final void Function(HomeRecentTransaction tx)? onTransactionSelected;
+
   const RecentTransactionsView({
     super.key,
     required this.transactions,
     required this.amountText,
     required this.now,
     this.onTransactionTap,
+    this.onTransactionSelected,
   });
 
   @override
@@ -65,7 +69,12 @@ class RecentTransactionsView extends StatelessWidget {
                   amountText: amountText,
                   now: now,
                   height: rowHeight,
-                  onTap: onTransactionTap == null ? null : () => onTransactionTap!(tx.walletId),
+                  onTap:
+                      onTransactionSelected != null
+                          ? () => onTransactionSelected!(tx)
+                          : onTransactionTap == null
+                          ? null
+                          : () => onTransactionTap!(tx.walletId),
                 ),
               ],
               if (emptyRows > 0) ...[
@@ -155,7 +164,7 @@ class _TransactionRow extends StatelessWidget {
                         statusText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                        style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -166,18 +175,18 @@ class _TransactionRow extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: Text(
                           '$sign ${amountText(tx.amount.abs())}',
-                          style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText),
+                          style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
                         ),
                       ),
                     ),
                   ],
                 ),
-
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Text(
                       formatHomeDateTime(tx.time, now),
-                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
+                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -186,7 +195,7 @@ class _TransactionRow extends StatelessWidget {
                         maxLines: 1,
                         textAlign: TextAlign.right,
                         overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
                       ),
                     ),
                   ],

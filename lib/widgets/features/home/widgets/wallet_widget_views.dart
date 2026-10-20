@@ -6,6 +6,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -149,10 +150,12 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   Widget _card(WalletItemBase wallet) {
+    final appearances = context.watchWalletAppearance();
     return WalletCard(
       key: ValueKey('${widget.keyPrefix}-card-${wallet.id}'),
       wallet: wallet,
-      appearance: WalletAppearance.of(wallet),
+      appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+      backgroundPhoto: appearances?.photoFileFor(wallet.id),
       size: widget.size,
       balanceDisplay: widget.balanceTextOf?.call(wallet),
       secondaryText: widget.secondaryTextOf?.call(wallet),

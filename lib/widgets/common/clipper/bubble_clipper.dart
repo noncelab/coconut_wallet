@@ -60,13 +60,16 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
 }
 
 class LeftTriangleBubbleClipper extends CustomClipper<Path> {
+  /// 꼭지점 위치(말풍선 왼쪽 위 기준). 말풍선을 아이콘에 맞춰 놓을 때 쓴다.
+  static const Offset arrowTip = Offset(39, 5);
+
   @override
   Path getClip(Size size) {
     var path = Path();
     path.moveTo(15, 15);
-    path.lineTo(30, 15);
-    path.lineTo(39, 5);
-    path.lineTo(48, 15);
+    path.lineTo(arrowTip.dx - 9, 15);
+    path.lineTo(arrowTip.dx, arrowTip.dy);
+    path.lineTo(arrowTip.dx + 9, 15);
     path.lineTo(size.width - 15, 15);
     path.quadraticBezierTo(size.width, 15, size.width, 30);
     path.lineTo(size.width, size.height - 15);

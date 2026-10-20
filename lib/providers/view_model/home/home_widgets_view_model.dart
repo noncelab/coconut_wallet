@@ -220,6 +220,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
               time: tx.timestamp,
               type: tx.transactionType,
               status: TransactionUtil.getStatus(tx),
+              txHash: tx.transactionHash,
             ),
       ];
       bool pending(HomeRecentTransaction tx) =>

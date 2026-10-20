@@ -21,6 +21,7 @@ class HomeAlertCard extends StatefulWidget {
     required this.icon,
     required this.onTap,
     required this.onClosed,
+    this.topSpacing = 16,
   }) : assert(type != HomeAlertCardType.openStore),
        intro = null;
 
@@ -31,6 +32,7 @@ class HomeAlertCard extends StatefulWidget {
     required this.onTap,
     required this.onClosed,
   }) : type = HomeAlertCardType.openStore,
+       topSpacing = 16,
        title = null,
        description = null,
        icon = null;
@@ -43,6 +45,9 @@ class HomeAlertCard extends StatefulWidget {
   final CcosOpenStoreIntro? intro;
   final VoidCallback onTap;
   final VoidCallback onClosed;
+
+  /// 카드가 나타날 때 위에 함께 펼쳐지는 여백.
+  final double topSpacing;
 
   @override
   State<HomeAlertCard> createState() => _HomeAlertCardState();
@@ -118,7 +123,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
           scale: 0.96 + (0.04 * value),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [SizedBox(height: 16 * value), _buildSecurityCard(context, heightFactor: value)],
+            children: [SizedBox(height: widget.topSpacing * value), _buildSecurityCard(context, heightFactor: value)],
           ),
         ),
       ),
@@ -190,7 +195,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.title!, style: titleStyle),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 4),
                           Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
                         ],
                       ),

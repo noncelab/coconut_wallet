@@ -9,6 +9,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutPulldownMenu, CoconutPulldownMenuItem, CoconutPulldownMenuGroup;
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -89,7 +90,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _pulldownKey = GlobalKey();
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
-  bool _isPulldownOpen = false;
   int? _amountInSats; // bip21 포맷의 amount를 sats로 변환한 값
 
   String _selectedKey = "";
@@ -210,11 +210,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
           ],
         );
       },
-    ).then((_) {
-      setState(() {
-        _isPulldownOpen = false;
-      });
-    });
+    );
   }
 
   @override
@@ -313,23 +309,19 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8, right: 16),
                     child: Container(
-                      key: _pulldownKey,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: context.coconutColors.pulldownMenuBackground,
-                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: context.coconutColors.border),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: MediaQuery(
                         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                        child: CoconutPulldown(
-                          title: _displayTitle,
-                          isOpen: _isPulldownOpen,
-                          onChanged: (isOpen) {
-                            setState(() {
-                              _isPulldownOpen = true;
-                            });
-                            _showDropdownMenu();
-                          },
+                        child: UtxoListDropdownButton(
+                          dropdownGlobalKey: _pulldownKey,
+                          activeOption: _displayTitle,
+                          isEnabled: true,
+                          alignRight: false,
+                          onTapDropdown: _showDropdownMenu,
                         ),
                       ),
                     ),

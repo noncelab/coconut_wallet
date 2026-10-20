@@ -9,6 +9,7 @@ class HomeRecentTransaction {
   final DateTime time;
   final TransactionType type;
   final TransactionStatus? status;
+  final String? txHash;
 
   const HomeRecentTransaction({
     required this.walletId,
@@ -17,6 +18,7 @@ class HomeRecentTransaction {
     required this.time,
     required this.type,
     this.status,
+    this.txHash,
   });
 }
 

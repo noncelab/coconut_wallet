@@ -1,14 +1,15 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../mock/wallet_mock.dart';
 
@@ -42,10 +43,12 @@ Future<void> _pump(
   VoidCallback? onPressed,
   double textScale = 1,
   double edge = 172,
+  WalletBackground? background,
+  CoconutThemeVariant? themeVariant,
 }) {
   return tester.pumpWidget(
     MaterialApp(
-      theme: buildCoconutThemeData(),
+      theme: buildCoconutThemeData(variant: themeVariant),
       builder:
           (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
@@ -58,7 +61,7 @@ Future<void> _pump(
             height: edge,
             child: WalletCard(
               wallet: wallet,
-              appearance: WalletAppearance.of(wallet),
+              appearance: WalletAppearance.of(wallet, background: background),
               size: size,
               balanceDisplay: balance,
               secondaryText: secondary,
@@ -112,22 +115,19 @@ void main() {
     expect(balance.bottom, lessThan(tester.getRect(find.text(wallet.name)).top));
   });
 
-  testWidgets('watch-only wallet shows the watch-only glyph', (tester) async {
+  testWidgets('watch-only wallet shows the embossed WATCH-ONLY label', (tester) async {
     await _pump(tester, WalletMock.createSingleSigWalletItem(), WalletCardSize.small);
 
     expect(find.byKey(const Key('wallet-card-glyph-watch-only')), findsOneWidget);
     expect(find.byKey(const Key('wallet-card-glyph-hot')), findsNothing);
-    final glyph = find.byKey(const Key('wallet-card-glyph-watch-only'));
-    expect(
-      tester.widget<SvgPicture>(glyph).colorFilter,
-      ColorFilter.mode(tester.element(glyph).coconutColors.secondaryText, BlendMode.srcIn),
-    );
+    expect(find.bySemanticsLabel('WATCH-ONLY'), findsOneWidget);
   });
 
-  testWidgets('hot wallet shows the hot glyph', (tester) async {
+  testWidgets('hot wallet shows the embossed HOT label', (tester) async {
     await _pump(tester, _hotWallet(), WalletCardSize.wide);
 
     expect(find.byKey(const Key('wallet-card-glyph-hot')), findsOneWidget);
+    expect(find.bySemanticsLabel('HOT'), findsOneWidget);
   });
 
   testWidgets('multisig wallet has no MFP subtitle', (tester) async {
@@ -192,4 +192,77 @@ void main() {
 
     expect(tapped, 1);
   });
+
+  testWidgets('no background keeps the plain card', (tester) async {
+    await _pump(tester, WalletMock.createSingleSigWalletItem(), WalletCardSize.small);
+
+    expect(find.byType(WalletCardBackground), findsNothing);
+  });
+
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('skin background draws behind the content (${variant.name})', (tester) async {
+      final wallet = WalletMock.createSingleSigWalletItem();
+      await _pump(
+        tester,
+        wallet,
+        WalletCardSize.wide,
+        balance: '0.1234 5678 BTC',
+        background: const WalletSkinBackground('mint'),
+        themeVariant: variant,
+        onPressed: () {},
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(WalletCardBackground), findsOneWidget);
+      expect(find.text(wallet.name), findsOneWidget);
+    });
+  }
+
+  testWidgets('solid color background draws in dark theme too', (tester) async {
+    await _pump(
+      tester,
+      WalletMock.createSingleSigWalletItem(),
+      WalletCardSize.small,
+      background: const WalletColorBackground(0xFFBFDFFF),
+      themeVariant: CoconutThemeVariant.dark,
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(WalletCardBackground), findsOneWidget);
+  });
+
+  testWidgets('photo background without a file falls back to the theme surface', (tester) async {
+    await _pump(
+      tester,
+      WalletMock.createSingleSigWalletItem(),
+      WalletCardSize.small,
+      background: const WalletPhotoBackground(fileName: 'missing.jpg', aspectRatio: 1),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(WalletCardBackground), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+  });
+
+  for (final size in WalletCardSize.values) {
+    testWidgets('multisig card shows quorum instead of MFP (${size.name})', (tester) async {
+      final wallet = WalletMock.createMultiSigWalletItem();
+      await _pump(tester, wallet, size);
+
+      expect(find.byKey(const Key('wallet-card-mfp')), findsNothing);
+      expect(find.text('${wallet.requiredSignatureCount}/${wallet.signers.length}'), findsOneWidget);
+    });
+  }
+
+  for (final (argb, brightness) in [(0xFFFFF4B8, Brightness.light), (0xFF1B2A4A, Brightness.dark)]) {
+    testWidgets('text on a solid color follows its brightness (${brightness.name})', (tester) async {
+      final wallet = WalletMock.createSingleSigWalletItem();
+      await _pump(tester, wallet, WalletCardSize.small, background: WalletColorBackground(argb));
+
+      final name = tester.widget<Text>(find.text(wallet.name));
+      final expected =
+          brightness == Brightness.light ? CoconutColors.light().primaryText : CoconutColors.dark().primaryText;
+      expect(name.style?.color, expected);
+    });
+  }
 }

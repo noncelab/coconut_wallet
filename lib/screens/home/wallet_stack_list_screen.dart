@@ -10,10 +10,14 @@ import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletList;
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -80,6 +84,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
   static const _pageFraction = 0.4;
 
   late final PageController _controller;
+  final Map<int, GlobalKey> _cardKeys = {};
   int _focused = 0;
 
   WalletStackListViewModel get _viewModel => context.read<WalletStackListViewModel>();
@@ -104,15 +109,61 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final index = _page.round();
     if (index == _focused) return;
     setState(() => _focused = index);
+    if (ModalRoute.of(context)?.isCurrent ?? true) vibrateExtraLight();
     final wallets = _viewModel.wallets;
     if (index < wallets.length) widget.onFocusWallet?.call(wallets[index].id);
   }
 
+  Object _heroTagOf(int walletId) =>
+      widget.heroTagOf?.call(walletId) ?? ('wallet-wheel', identityHashCode(this), walletId);
+
+  /// 지갑 상세에서 카드를 넘기면 휠도 그 카드로 옮겨 둔다. 돌아올 때 그 카드로 돌아온다.
+  void _showWallet(int walletId) {
+    final index = _viewModel.wallets.indexWhere((wallet) => wallet.id == walletId);
+    if (index >= 0 && _controller.hasClients && _page.round() != index) _controller.jumpToPage(index);
+  }
+
+  /// 휠에 놓인 지갑 카드의 화면 좌표. 지갑 상세로 펼치고 접을 때 쓴다.
+  Rect? _cardRectOf(int walletId) {
+    final box = _cardKeys[walletId]?.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
   void _openWallet(WalletItemBase wallet) {
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.walletDetail,
-      arguments: WalletDetailRouteArgs(id: wallet.id, entryPoint: kEntryPointWalletList),
+    final openedWalletId = ValueNotifier(wallet.id);
+    final args = WalletDetailRouteArgs(
+      id: wallet.id,
+      entryPoint: kEntryPointWalletList,
+      walletIds: [for (final item in _viewModel.wallets) item.id],
+      onFocusChanged: (walletId) {
+        openedWalletId.value = walletId;
+        _showWallet(walletId);
+      },
+    );
+    final routeBuilder = context.findAncestorWidgetOfExactType<WidgetsApp>()?.routes?[AppRouteNames.walletDetail];
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
+        transitionDuration: WalletCardDetailScreen.transitionDuration,
+        reverseTransitionDuration: WalletCardDetailScreen.transitionDuration,
+        pageBuilder:
+            (routeContext, _, __) =>
+                routeBuilder?.call(routeContext) ??
+                WalletCardDetailScreen(
+                  id: args.id,
+                  entryPoint: args.entryPoint,
+                  walletIds: args.walletIds,
+                  onFocusChanged: args.onFocusChanged,
+                ),
+        transitionsBuilder:
+            (_, animation, __, child) => WalletDetailExpandTransition(
+              animation: animation,
+              walletId: openedWalletId,
+              cardRectOf: _cardRectOf,
+              child: child,
+            ),
+      ),
     );
   }
 
@@ -268,21 +319,25 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   Widget _walletCard(BuildContext context, WalletStackListViewModel viewModel, WalletItemBase wallet) {
     final last = viewModel.lastTransactionTime(wallet);
+    final appearances = context.watchWalletAppearance();
     final card = _ScaledCard(
       child: WalletCard(
         key: ValueKey('wallet-stack-list-card-${wallet.id}'),
         wallet: wallet,
-        appearance: WalletAppearance.of(wallet),
+        appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+        backgroundPhoto: appearances?.photoFileFor(wallet.id),
         size: WalletCardSize.small,
         balanceDisplay: viewModel.balanceText(wallet),
         secondaryText: last == null ? null : formatHomeRelativeTime(last, DateTime.now()),
       ),
     );
-    final tagOf = widget.heroTagOf;
-    if (tagOf == null) return card;
     return HeroMode(
       enabled: _focused < viewModel.wallets.length,
-      child: Hero(tag: tagOf(wallet.id), flightShuttleBuilder: _shuttle, child: card),
+      child: Hero(
+        tag: _heroTagOf(wallet.id),
+        flightShuttleBuilder: _shuttle,
+        child: KeyedSubtree(key: _cardKeys.putIfAbsent(wallet.id, GlobalKey.new), child: card),
+      ),
     );
   }
 

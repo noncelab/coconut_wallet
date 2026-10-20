@@ -18,9 +18,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.20.0+90
 app_versions:
-  ios_regtest: 4.20.0
-  ios_mainnet: 1.0.0
-  aos_regtest: 4.0.0+102
+  ios_regtest: 5.0.0+1
+  ios_mainnet: 1.0.0+1
+  aos_regtest: 5.0.0+103
   aos_mainnet: 1.0.0+94
 
 environment:
@@ -94,6 +94,8 @@ dependencies:
   firebase_analytics: ^11.6.0
   vpn_detector: ^1.2.0
   file_picker: ^8.0.5
+  image_picker: ^1.2.2
+  image_picker_android: 0.8.13+8
   coconut_design_system:
     git:
       url: https://github.com/noncelab/coconut_design_system.git

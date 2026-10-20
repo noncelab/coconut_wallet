@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -555,6 +556,26 @@ void main() {
     expect(find.byKey(const ValueKey('stack-card-3')), findsOneWidget);
   });
 
+  testWidgets('returning from wallet detail shows the wallet the detail screen ended on', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    final firstId = _wallets.first.id;
+    await tester.tapAt(tester.getCenter(find.byKey(ValueKey('wallet-stack-list-card-$firstId'))));
+    await tester.pumpAndSettle();
+
+    final detail = tester.element(find.byKey(_detailKey));
+    final args = ModalRoute.of(detail)!.settings.arguments! as WalletDetailRouteArgs;
+    expect(args.walletIds, isNotEmpty);
+    final otherId = args.walletIds![2];
+    args.onFocusChanged!(otherId);
+    await tester.pump();
+    Navigator.of(detail).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(ValueKey('wallet-stack-list-facts-$otherId')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opened from My Wallets, the wheel shows its title', (tester) async {
     await tester.pumpWidget(
       MultiProvider(
@@ -579,5 +600,27 @@ void main() {
 
     expect(find.text('My Wallets'), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-stack-list-card-1')), findsOneWidget);
+  });
+
+  testWidgets('opening a wallet expands its card background from the card to the whole screen', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    await tester.pumpAndSettle();
+    final firstId = _wallets.first.id;
+    final card = tester.getRect(find.byKey(ValueKey('wallet-stack-list-card-$firstId')));
+    await tester.tapAt(card.center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final layer = tester.getRect(
+      find.descendant(of: find.byType(WalletDetailExpandTransition), matching: find.byType(ClipRRect)).first,
+    );
+    final screen = Offset.zero & tester.view.physicalSize;
+    expect(layer.width, greaterThan(card.width));
+    expect(layer.width, lessThanOrEqualTo(screen.width));
+    expect(layer.contains(card.center), isTrue);
+
+    await tester.pumpAndSettle();
+    expect(find.byKey(_detailKey), findsOneWidget);
   });
 }

@@ -14,8 +14,8 @@ import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/wallet_onboarding_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/utxo_summary_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
-import 'package:coconut_wallet/utils/legible_color_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -1166,9 +1166,6 @@ class _GoalCard extends StatelessWidget {
 }
 
 class _UtxoSummaryCard extends StatelessWidget {
-  static const bucketLabels = UtxoStatusView.bucketLabels;
-  static const _columnGap = 8.0;
-
   final HodlInsightsViewModel viewModel;
   final bool animateEntry;
 
@@ -1176,129 +1173,18 @@ class _UtxoSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final buckets = viewModel.utxoBuckets;
-    final total = buckets.total;
-    final bucketColors = [for (final color in viewModel.data.utxoBucketColors) legibleOn(color, colors.homeSurface)];
     return _InsightCard(
       child: _OpenProgress(
         progress: 1,
         animateEntry: animateEntry,
-        builder: (context, shown) {
-          int counted(int value) => (value * shown).round();
-          String bucketCountText(int index) {
-            final percent = total == 0 ? 0.0 : buckets.counts[index] * 100 / total * shown;
-            return '${counted(buckets.counts[index])} (${percent.toStringAsFixed(1)}%)';
-          }
-
-          return Column(
-            key: const Key('hodl-insights-utxo'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.hodl_insights.total_utxos(count: counted(total)),
-                key: const Key('hodl-insights-utxo-total'),
-                style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
-              ),
-              CoconutLayout.spacing_300h,
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(
-                  height: 12,
-                  child: ColoredBox(
-                    color: colors.surfaceMuted,
-                    child:
-                        total == 0
-                            ? const SizedBox.expand()
-                            : LayoutBuilder(
-                              builder:
-                                  (context, constraints) => Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      for (var i = 0; i < buckets.counts.length; i++)
-                                        if (buckets.counts[i] > 0)
-                                          Container(
-                                            key: ValueKey('hodl-insights-utxo-segment-$i'),
-                                            width: constraints.maxWidth * buckets.counts[i] / total * shown,
-                                            padding: const EdgeInsets.symmetric(horizontal: 1),
-                                            child: ColoredBox(color: bucketColors[i]),
-                                          ),
-                                    ],
-                                  ),
-                            ),
-                  ),
-                ),
-              ),
-              CoconutLayout.spacing_200h,
-              Padding(
-                padding: const EdgeInsets.only(left: 18),
-                child: Text(
-                  t.hodl_insights.utxo_ranges_unit,
-                  key: const Key('hodl-insights-utxo-ranges-unit'),
-                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryTextStrong),
-                ),
-              ),
-              CoconutLayout.spacing_100h,
-              for (var i = 0; i < buckets.counts.length; i++) ...[
-                if (i > 0) Divider(height: 1, color: colors.divider),
-                Padding(
-                  key: ValueKey('hodl-insights-utxo-row-$i'),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(color: bucketColors[i], shape: BoxShape.circle),
-                      ),
-                      CoconutLayout.spacing_200w,
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          key: ValueKey('hodl-insights-utxo-label-$i'),
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            bucketLabels[i],
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: _columnGap),
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          key: ValueKey('hodl-insights-utxo-count-$i'),
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            bucketCountText(i),
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: _columnGap),
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            buckets.amounts.length > i ? _btcText(viewModel, counted(buckets.amounts[i])) : '-',
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
+        builder:
+            (context, shown) => UtxoSummaryView(
+              keyPrefix: 'hodl-insights',
+              buckets: viewModel.utxoBuckets,
+              bucketColors: viewModel.data.utxoBucketColors,
+              amountText: (sats) => _btcText(viewModel, sats),
+              shown: shown,
+            ),
       ),
     );
   }

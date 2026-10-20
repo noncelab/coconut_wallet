@@ -174,7 +174,7 @@ void main() {
         size: WalletCardSize.small,
         secondaryText: '11일 전',
       ),
-      find.text('11일 전'),
+      find.byKey(const Key('wallet-card-glyph-watch-only')),
     );
 
     expect(utxo, closeTo(goal, 0.5));

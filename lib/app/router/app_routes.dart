@@ -47,7 +47,8 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_appearance_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
@@ -93,7 +94,12 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
-          (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
+          (args) => WalletCardDetailScreen(
+            id: args.id,
+            entryPoint: args.entryPoint,
+            walletIds: args.walletIds,
+            onFocusChanged: args.onFocusChanged,
+          ),
         ),
     AppRouteNames.walletBackupData:
         (context) => _buildScreenWithArgs<WalletBackupDataRouteArgs>(
@@ -163,6 +169,9 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => WalletAddScannerScreen(importSource: args.walletImportSource),
         ),
+    AppRouteNames.walletAppearance:
+        (context) =>
+            _buildScreenWithArgs<WalletAppearanceRouteArgs>(context, (args) => WalletAppearanceScreen(id: args.id)),
     AppRouteNames.walletInfo:
         (context) => _buildLoadingScreenWithArgs<WalletInfoRouteArgs>(
           context,

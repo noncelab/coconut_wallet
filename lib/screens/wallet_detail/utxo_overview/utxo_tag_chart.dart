@@ -414,7 +414,7 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
-                        untaggedColor: colors.utxoOverviewChartSurface,
+                        untaggedColor: colors.surfaceMuted,
                         overlayBlendColor: colors.divider,
                         multiTagFallbackColor: colors.iconSecondary,
                         tagBlendColor: colors.secondaryText,
