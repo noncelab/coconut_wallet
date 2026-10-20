@@ -216,7 +216,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       ),
       if (report != null) ...[
         ..._reviewSection(report),
-        if (!waiting && context.read<EntitlementService?>() != null) ...[
+        // 판매 카드는 지갑이 없을 때(S0)만 뺀다. S4에서도 Premium 줄과 비상 이동 준비(자금 없음 상태 포함)를 연다
+        if (!noWallet && context.read<EntitlementService?>() != null) ...[
           CoconutLayout.spacing_600h,
           ..._premiumSection(),
         ],
@@ -233,8 +234,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
               footer: noWallet ? s.not_included_footer_no_wallet : s.not_included_footer_usage,
             ),
           ],
-          CoconutLayout.spacing_600h,
-          const WalletHealthUnlockCard(),
+          // "더 많은 점검을 하려면"은 지갑이 없을 때만(UI 브리프 WH-S0)
+          if (noWallet) ...[CoconutLayout.spacing_600h, const WalletHealthUnlockCard()],
         ],
         ..._recommendedSection(report),
       ],

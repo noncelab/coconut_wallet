@@ -783,7 +783,7 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
   }
 }
 
-/// 지갑 0개·데이터 부족에서 Premium 카드 대신
+/// 지갑 0개(S0)에서 Premium 카드 대신 보이는 안내. 할 일 목록이라 완료 체크가 아니라 중립 동그라미를 쓴다
 class WalletHealthUnlockCard extends StatelessWidget {
   const WalletHealthUnlockCard({super.key});
 
@@ -812,7 +812,7 @@ class WalletHealthUnlockCard extends StatelessWidget {
           const SizedBox(height: 12),
           for (final (i, text) in [s.unlock_add_wallet, s.unlock_verify_watch_only, s.unlock_use_bitcoin].indexed) ...[
             if (i > 0) const SizedBox(height: 6),
-            _CheckLine(text: text, color: colors.success),
+            _CheckLine(text: text, color: colors.iconSecondary, iconPath: CommonFormIconPath.circle),
           ],
         ],
       ),
@@ -820,11 +820,13 @@ class WalletHealthUnlockCard extends StatelessWidget {
   }
 }
 
+/// 아이콘 + 한 줄. Premium 혜택 목록은 체크, 지갑 0개 안내는 중립 동그라미
 class _CheckLine extends StatelessWidget {
-  const _CheckLine({required this.text, required this.color});
+  const _CheckLine({required this.text, required this.color, this.iconPath = CommonActionIconPath.check});
 
   final String text;
   final Color color;
+  final String iconPath;
 
   @override
   Widget build(BuildContext context) {
@@ -834,7 +836,7 @@ class _CheckLine extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 2),
           child: SvgPicture.asset(
-            CommonActionIconPath.check,
+            iconPath,
             width: 14,
             height: 14,
             colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

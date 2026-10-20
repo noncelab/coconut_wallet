@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
@@ -13,7 +14,9 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -52,6 +55,10 @@ final _wallets = [
 
 Finder _inGauge(String text) => find.descendant(of: find.byType(HealthGauge), matching: find.text(text));
 
+Finder _svg(String asset) => find.byWidgetPredicate(
+  (w) => w is SvgPicture && w.bytesLoader is SvgAssetLoader && (w.bytesLoader as SvgAssetLoader).assetName == asset,
+);
+
 final _premiumCard = find.byKey(const Key('wallet-health-premium-card'));
 final _checkAgain = find.byKey(const Key('wallet-health-check-again'));
 final _addWallet = find.byKey(const Key('wallet-health-add-wallet'));
@@ -86,7 +93,7 @@ void main() {
         expect(_premiumCard, findsOneWidget);
       });
 
-      testWidgets('S4 not enough data: dash, explanation, how-it-works link, waiting checks, no Premium', (
+      testWidgets('S4 not enough data: dash, explanation, how-it-works link, waiting checks, Premium, no unlock card', (
         tester,
       ) async {
         await _pump(tester, notEnoughDataReport(), variant: variant);
@@ -100,8 +107,10 @@ void main() {
         expect(find.text(t.wallet_health.section.available_now), findsOneWidget);
         expect(find.text(t.wallet_health.section.not_included_yet), findsOneWidget);
         expect(find.text(t.wallet_health.check.passphrase_verify.name), findsNothing); // 해당 없음은 "아직"이 아니다
-        expect(find.text(t.wallet_health.section.unlock_more), findsOneWidget);
-        expect(_premiumCard, findsNothing);
+        // "더 많은 점검을 하려면"은 S0 전용(UI 브리프 WH-S4에는 없다). 판매 카드는 S0에서만 뺀다(H07)
+        expect(find.byType(WalletHealthUnlockCard), findsNothing);
+        expect(find.text(t.wallet_health.section.unlock_more), findsNothing);
+        expect(_premiumCard, findsOneWidget);
         expect(_checkAgain, findsOneWidget);
       });
 
@@ -123,6 +132,12 @@ void main() {
         expect(find.text(t.wallet_health.section.after_adding_wallet), findsOneWidget);
         expect(find.text(t.wallet_health.section.not_included_footer_no_wallet), findsOneWidget);
         expect(_premiumCard, findsNothing);
+        expect(find.byKey(const Key('wallet-health-premium-active')), findsNothing);
+        // 할 일 안내: 세 줄 모두 중립 동그라미, 완료 체크는 없다
+        final unlock = find.byType(WalletHealthUnlockCard);
+        expect(unlock, findsOneWidget);
+        expect(find.descendant(of: unlock, matching: _svg(CommonActionIconPath.check)), findsNothing);
+        expect(find.descendant(of: unlock, matching: _svg(CommonFormIconPath.circle)), findsNWidgets(3));
       });
 
       testWidgets('S3 critical: siren hero, incident card, [거래 검토] above the Premium variant, other checks', (
@@ -477,6 +492,19 @@ void main() {
     expect(find.text(t.premium.rescue.health_row(n: 2)), findsOneWidget);
     expect(find.textContaining(t.premium.rescue.ready_body), findsOneWidget);
     expect(_inGauge('86'), findsOneWidget); // 점수는 Premium과 무관
+  });
+
+  testWidgets('S4 keeps the Premium line and the Rescue-ready entry before any funds', (tester) async {
+    await _pump(
+      tester,
+      notEnoughDataReport(),
+      premium: const PremiumState(PremiumStatus.active),
+      rescue: FakeRescueReady(),
+    );
+    expect(find.byKey(const Key('wallet-health-premium-active')), findsOneWidget);
+    expect(find.byKey(const Key('wallet-health-rescue-ready')), findsOneWidget);
+    expect(find.text(t.premium.rescue.none_body), findsOneWidget); // 목적지 없음 상태도 열 수 있다(R05)
+    expect(_inGauge(t.wallet_health.hero.not_enough_data_title), findsOneWidget); // 점수는 여전히 없다
   });
 
   testWidgets('Rescue-ready line covers partial, none, failed and paused', (tester) async {
