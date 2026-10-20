@@ -16,10 +16,10 @@ void main() {
   }
   registry.registerShortcuts(FeatureRegistry.builtin());
 
-  test('there are four presets with unique ids', () {
+  test('there are five presets with unique ids, safety before statistics', () {
     final ids = builtinHomePresets().map((preset) => preset.id).toList();
 
-    expect(ids, ['default', 'simple', 'hide_balances', 'statistics']);
+    expect(ids, ['default', 'simple', 'hide_balances', 'safety', 'statistics']);
   });
 
   test('every preset item is registered', () {

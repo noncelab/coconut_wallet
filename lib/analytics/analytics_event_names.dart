@@ -33,4 +33,11 @@ class AnalyticsEventNames {
 
   // 새 홈 편집(Edit Home)을 나갈 때 한 번
   static const String homeEditCompleted = 'home_edit_completed';
+
+  // Wallet Health(Epic 3). 점수·검사 결과·사건 내용·금액은 보내지 않는다
+  static const String safetyCheckStarted = 'safety_check_started';
+  static const String safetyCheckCompleted = 'safety_check_completed';
+  static const String incidentResponseStarted = 'incident_response_started';
+  static const String incidentResponseCompleted = 'incident_response_completed';
+  static const String premiumPurchaseCompleted = 'premium_purchase_completed';
 }

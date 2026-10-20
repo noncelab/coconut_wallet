@@ -14,6 +14,7 @@ import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
+import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
@@ -370,4 +371,5 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
           bucketColors: viewModel.utxoBucketColors,
         ),
   ),
+  ...safetyHomeWidgets(),
 ];

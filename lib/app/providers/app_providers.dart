@@ -8,6 +8,8 @@ import 'package:coconut_wallet/providers/preferences/electrum_server_provider.da
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
+import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -22,6 +24,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -105,6 +108,33 @@ List<SingleChildWidget> buildAppProviders({
           });
           return nodeProvider;
         },
+      ),
+      // Wallet Health: 앱 시작부터 스토어 권한 확인과 안전 점검을 돌린다
+      Provider<EntitlementService>(
+        lazy: false,
+        create: (context) => createEntitlementService(analytics: context.read<AnalyticsService>()),
+        dispose: (_, service) => service.dispose(),
+      ),
+      ChangeNotifierProvider<SafetyProvider>(
+        lazy: false,
+        create:
+            (context) => SafetyProvider(
+              walletProvider: context.read<WalletProvider>(),
+              nodeProvider: context.read<NodeProvider>(),
+              authProvider: context.read<AuthProvider>(),
+              connectivityProvider: context.read<ConnectivityProvider>(),
+              realmManager: context.read<RealmManager>(),
+              analytics: context.read<AnalyticsService>(),
+            ),
+      ),
+      ChangeNotifierProvider<RescueReadyProvider>(
+        lazy: false,
+        create:
+            (context) => RescueReadyProvider(
+              walletProvider: context.read<WalletProvider>(),
+              nodeProvider: context.read<NodeProvider>(),
+              entitlement: context.read<EntitlementService>(),
+            ),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

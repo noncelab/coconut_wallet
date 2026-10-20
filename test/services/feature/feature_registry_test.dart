@@ -9,8 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final registry = FeatureRegistry.builtin();
 
-  test('top-level items match the inventory chapters 3 and 4 with add wallet split in two (12 global + 9 wallet)', () {
-    expect(registry.topLevel.where((item) => item.context == FeatureContext.none), hasLength(12));
+  test('top-level items: inventory chapters 3 and 4, add wallet split in two, safety check (13 global + 8 wallet)', () {
+    expect(registry.topLevel.where((item) => item.context == FeatureContext.none), hasLength(13));
     expect(registry.topLevel.where((item) => item.context == FeatureContext.wallet), hasLength(8));
   });
 
@@ -104,7 +104,7 @@ void main() {
       expect(item.context, FeatureContext.none, reason: id);
       expect(item.shortcutEligible, isTrue, reason: id);
     }
-    expect(registry.shortcutEligible, hasLength(15));
+    expect(registry.shortcutEligible, hasLength(16));
   });
 
   test('the open store sits under added features and is not a shortcut', () {

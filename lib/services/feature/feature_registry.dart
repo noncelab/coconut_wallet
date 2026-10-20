@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/services/feature/builtin_features.dart';
+import 'package:coconut_wallet/services/feature/safety_features.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 
 export 'package:coconut_wallet/services/feature/builtin_features.dart' show FeatureIds, allFeaturesOrder;
@@ -29,7 +30,7 @@ class FeatureRegistry {
 
   FeatureRegistry(List<FeatureItem> items) : all = List.unmodifiable(items), _byId = {for (final i in items) i.id: i};
 
-  factory FeatureRegistry.builtin() => FeatureRegistry([...builtinFeatures(), ..._ccosFeatures()]);
+  factory FeatureRegistry.builtin() => FeatureRegistry([...builtinFeatures(), ...safetyFeatures(), ..._ccosFeatures()]);
 
   static List<FeatureItem> _ccosFeatures() {
     return [

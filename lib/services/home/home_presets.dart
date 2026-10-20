@@ -3,9 +3,10 @@ import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/home/home_preset.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:coconut_wallet/services/feature/safety_features.dart';
 
-/// Safety Check 기능은 Epic 3에서 등록된다. 등록 전에는 프리셋 적용 때 건너뛴다.
-const safetyCheckFeatureId = 'safety_check';
+/// Safety Check 기능 id(Epic 3의 SafetyFeatureIds.safetyCheck와 같다)
+const safetyCheckFeatureId = SafetyFeatureIds.safetyCheck;
 
 /// 처음 설치했을 때 적용하는 프리셋
 const defaultPresetId = 'default';
@@ -61,26 +62,25 @@ List<HomePreset> builtinHomePresets() => [
       HomeItemIds.shortcut(FeatureIds.utxoOverview),
     ],
   ),
-  // Epic 3에서 안전 위젯이 완성되면 다시 켠다.
-  // HomePreset(
-  //   id: 'safety',
-  //   name: () => t.home_presets.safety_name,
-  //   description: () => t.home_presets.safety_description,
-  //   spans: const {HomeItemIds.watchOnlyWalletStack: HomeSpan.small, HomeItemIds.hotWalletStack: HomeSpan.small},
-  //   definitionIds: [
-  //     HomeItemIds.safetyStatusWide,
-  //     HomeItemIds.watchOnlyWalletStack,
-  //     HomeItemIds.hotWalletStack,
-  //     HomeItemIds.shortcut(safetyCheckFeatureId),
-  //     HomeItemIds.shortcut(FeatureIds.mnemonicWordList),
-  //     HomeItemIds.shortcut(FeatureIds.addresses),
-  //     HomeItemIds.shortcut(FeatureIds.glossary),
-  //     HomeItemIds.shortcut(FeatureIds.receive),
-  //     HomeItemIds.shortcut(FeatureIds.send),
-  //     HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
-  //     HomeItemIds.shortcut(FeatureIds.utxoOverview),
-  //   ],
-  // ),
+  HomePreset(
+    id: 'safety',
+    name: () => t.home_presets.safety_name,
+    description: () => t.home_presets.safety_description,
+    spans: const {HomeItemIds.watchOnlyWalletStack: HomeSpan.small, HomeItemIds.hotWalletStack: HomeSpan.small},
+    definitionIds: [
+      HomeItemIds.safetyStatusWide,
+      HomeItemIds.watchOnlyWalletStack,
+      HomeItemIds.hotWalletStack,
+      HomeItemIds.shortcut(safetyCheckFeatureId),
+      HomeItemIds.shortcut(FeatureIds.mnemonicWordList),
+      HomeItemIds.shortcut(FeatureIds.addresses),
+      HomeItemIds.shortcut(FeatureIds.glossary),
+      HomeItemIds.shortcut(FeatureIds.receive),
+      HomeItemIds.shortcut(FeatureIds.send),
+      HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
+      HomeItemIds.shortcut(FeatureIds.utxoOverview),
+    ],
+  ),
   HomePreset(
     id: 'statistics',
     name: () => t.home_presets.statistics_name,

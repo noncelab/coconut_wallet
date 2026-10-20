@@ -23,6 +23,10 @@ class AnalyticsParameterNames {
 
   // 화면 (screen_view): 탭이 있는 화면에서 보이는 탭, UtxoOrganizerSegment / UtxoOverviewSegment .name
   static const String segment = 'segment';
+
+  // Wallet Health: incident_response_*의 대응 방식(free / premium), premium_purchase_completed의 기간(monthly / yearly)
+  static const String responseMode = 'response_mode';
+  static const String period = 'period';
 }
 
 class AnalyticsUserPropertyNames {

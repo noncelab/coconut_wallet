@@ -52,6 +52,9 @@ void main() {
       expect(providerTypes, isNot(contains('SendInfoProvider')));
       expect(providerTypes, isNot(contains('WalletProvider')));
       expect(providerTypes, isNot(contains('NodeProvider')));
+      expect(providerTypes, isNot(contains('EntitlementService')));
+      expect(providerTypes, isNot(contains('SafetyProvider')));
+      expect(providerTypes, isNot(contains('RescueReadyProvider')));
     });
 
     test('isMainFlow=true일 때 모든 provider가 등록된다', () {
@@ -67,6 +70,9 @@ void main() {
       expect(providerTypes, contains('SendInfoProvider'));
       expect(providerTypes, contains('WalletProvider'));
       expect(providerTypes, contains('NodeProvider'));
+      expect(providerTypes, contains('EntitlementService'));
+      expect(providerTypes, contains('SafetyProvider'));
+      expect(providerTypes, contains('RescueReadyProvider'));
     });
 
     test('AnalyticsService가 항상 등록된다 (regtest 환경에서도 누락되지 않음)', () {

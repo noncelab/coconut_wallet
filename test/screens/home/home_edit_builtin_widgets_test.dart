@@ -1201,13 +1201,15 @@ void main() {
       });
     }
 
-    test('balance, goal, utxo and activity widgets open the insights, others do not', () {
+    test('balance, goal, utxo, activity and safety widgets open their screens, others do not', () {
       const opening = {
         HomeItemIds.bitcoinBalanceTrend,
         HomeItemIds.balanceByWallet,
         HomeItemIds.savingsGoal,
         HomeItemIds.utxoStatus,
         HomeItemIds.transactionActivity,
+        HomeItemIds.safetyStatusSmall,
+        HomeItemIds.safetyStatusWide,
       };
       for (final definition in builtinHomeWidgets().whereType<BuiltinHomeWidget>()) {
         expect(definition.onTap != null, opening.contains(definition.id), reason: definition.id);

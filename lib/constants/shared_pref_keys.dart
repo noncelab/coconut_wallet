@@ -112,6 +112,15 @@ class SharedPrefKeys {
   static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
       'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
 
+  /// Wallet Health(Epic 3): 안전 점검 상태 JSON(기준점·앱이 보낸 txid·사건·검증 기록). 비밀번호 분실 시 초기화
+  static const String kSafetyState = 'SAFETY_STATE_V1';
+
+  /// Coconut Premium 구독 상태 캐시(표시용). 비밀번호 분실 시 초기화해도 시작할 때 스토어에서 다시 확인한다
+  static const String kPremiumEntitlementCache = 'PREMIUM_ENTITLEMENT_V1';
+
+  /// 디버그·regtest 빌드 전용 Premium 강제 켜기(메인넷 릴리즈에서는 무시)
+  static const String kPremiumDebugOverride = 'PREMIUM_DEBUG_OVERRIDE';
+
   /// 비밀번호 분실 시 초기화 대상
   /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
   /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.
@@ -131,6 +140,9 @@ class SharedPrefKeys {
     kAddWalletHintDismissed,
     kAllFeaturesHintDismissed,
     kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+    kSafetyState,
+    kPremiumEntitlementCache,
+    kPremiumDebugOverride,
   ];
 
   /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
