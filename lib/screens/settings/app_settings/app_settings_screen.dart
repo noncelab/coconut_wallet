@@ -22,12 +22,14 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/premium/premium_subscription_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/number_format_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
+import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
@@ -232,6 +234,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       child: Consumer<SettingsViewModel>(
         builder: (context, viewModel, child) {
           final colors = context.coconutColors;
+          final premium = context.read<EntitlementService?>();
+          final premiumDebug = premium != null && premiumDebugOverrideAllowed();
           return Scaffold(
             backgroundColor: colors.background,
             appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: true),
@@ -396,6 +400,17 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           );
                         },
                       ),
+                      if (premium != null)
+                        ValueListenableBuilder<PremiumState>(
+                          key: const Key('app-settings-premium'),
+                          valueListenable: premium.state,
+                          builder:
+                              (context, state, _) => _buildAnimatedButton(
+                                title: t.premium.name,
+                                subtitle: premiumStatusLabel(state),
+                                onPressed: () => PremiumSubscriptionScreen.open(context),
+                              ),
+                        ),
                     ],
                   ),
                   CoconutLayout.spacing_400h,
@@ -457,18 +472,35 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                     ],
                   ),
 
-                  // 개발자 모드에서만 표시되는 디버그 섹션
-                  if (kDebugMode) ...[
+                  // 개발자 모드에서만 표시되는 디버그 섹션(Premium 강제 켜기는 regtest 빌드에서도. 메인넷 릴리즈엔 없음)
+                  if (kDebugMode || premiumDebug) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
-                    _buildAnimatedButton(
-                      title: 'Realm 디버그용 뷰어',
-                      onPressed: () {
-                        final realmManager = Provider.of<RealmManager>(context, listen: false);
-                        Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute(builder: (context) => RealmDebugScreen(realmManager: realmManager)));
-                      },
+                    ButtonGroup(
+                      buttons: [
+                        if (kDebugMode)
+                          _buildAnimatedButton(
+                            title: 'Realm 디버그용 뷰어',
+                            onPressed: () {
+                              final realmManager = Provider.of<RealmManager>(context, listen: false);
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => RealmDebugScreen(realmManager: realmManager)),
+                              );
+                            },
+                          ),
+                        if (premiumDebug)
+                          SingleButton(
+                            key: const Key('app-settings-premium-debug'),
+                            title: t.premium.subscription.dev_force_premium,
+                            rightElement: _buildSwitch(
+                              isOn: premium.debugOverride,
+                              onChanged: (isOn) async {
+                                await premium.setDebugOverride(isOn);
+                                if (mounted) setState(() {});
+                              },
+                            ),
+                          ),
+                      ],
                     ),
                   ],
 
