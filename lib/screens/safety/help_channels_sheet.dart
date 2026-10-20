@@ -117,7 +117,7 @@ class HelpCenterNeverAsksNote extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: EdgeInsets.only(top: safetyIconTop(context, CoconutTypography.body3_12, 14)),
           child: SvgPicture.asset(
             CommonStateIconPath.shieldWarning,
             width: 14,

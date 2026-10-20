@@ -23,6 +23,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_wallet_card.dart';
@@ -204,6 +205,7 @@ class _Step2 extends StatelessWidget {
           buttons: [
             _task(
               context,
+              SingleButtonPosition.top,
               'create',
               FeatureWalletIconPath.walletAddDefault,
               t.wallet_home_screen.hot_wallet_add.create.title,
@@ -212,6 +214,7 @@ class _Step2 extends StatelessWidget {
             ),
             _task(
               context,
+              SingleButtonPosition.middle,
               'utxo',
               FeatureShortcutIconPath.utxos,
               strings.task_utxo,
@@ -224,6 +227,7 @@ class _Step2 extends StatelessWidget {
             ),
             _task(
               context,
+              SingleButtonPosition.bottom,
               'send',
               FeatureShortcutIconPath.send,
               strings.task_send,
@@ -244,20 +248,30 @@ class _Step2 extends StatelessWidget {
     );
   }
 
-  Widget _task(BuildContext context, String id, String icon, String title, String subtitle, VoidCallback onTap) =>
-      SafetyChoiceRow(
-        key: Key('safety-guide-step2-$id'),
-        title: title,
-        subtitle: subtitle,
-        leading: SvgPicture.asset(
-          icon,
-          width: 24,
-          height: 24,
-          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-        ),
-        backgroundColor: Colors.transparent,
-        onTap: onTap,
-      );
+  /// ButtonGroup 안의 할 일 줄: 앱의 SingleButton과 같은 위치별 여백, 진동 없음(POLISH D19)
+  Widget _task(
+    BuildContext context,
+    SingleButtonPosition position,
+    String id,
+    String icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) => SafetyChoiceRow(
+    key: Key('safety-guide-step2-$id'),
+    padding: position.padding,
+    haptic: false,
+    title: title,
+    subtitle: subtitle,
+    leading: SvgPicture.asset(
+      icon,
+      width: 24,
+      height: 24,
+      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+    ),
+    backgroundColor: Colors.transparent,
+    onTap: onTap,
+  );
 
   /// "완료했어요"는 직접 확인한 결과로 저장된다는 확인을 한 번 받는다
   Future<void> _confirmMoved(BuildContext context) async {

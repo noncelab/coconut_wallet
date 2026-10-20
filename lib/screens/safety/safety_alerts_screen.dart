@@ -4,13 +4,16 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/safety/incident_sheets.dart';
 import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
-import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart' show SafetyPressRow, SafetyReviewRow;
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart'
+    show SafetyPressRow, SafetyReviewRow, safetyHidesAmounts;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -185,17 +188,28 @@ class _IncidentRow extends StatelessWidget {
       ),
     };
     final walletName = incidentWalletOf(context, incident.walletId)?.name;
+    // 보낸 금액(잔액 숨김·가짜 잔액이거나 설정·거래 기록을 모르면 뺀다, 안전 화면 공용 규칙)
+    final record = context.read<WalletProvider?>()?.getTransactionRecord(incident.walletId, incident.txid);
+    final unit = context.read<PreferenceProvider?>()?.currentUnit;
+    final amount =
+        record == null || unit == null || safetyHidesAmounts(context)
+            ? null
+            : unit.displayBitcoinAmount(record.amount.abs(), withUnit: true);
     final subtitle = [
       if (walletName != null) walletName,
+      if (amount != null) amount,
       // 멤풀에서 사라진 사건은 "다음 동기화 때 다시 확인", 대체됐으면 끝에 "· 대체됨"
       if (incident.isInfo) ...[
         t.wallet_health.incident.dropped_subtitle,
         if (incident.txState == IncidentTxState.replaced) txStates.replaced,
-      ] else ...[
-        if (incident.txState != IncidentTxState.dropped) txState,
-        t.wallet_health.alerts.detected_at(time: formatHomeRelativeTime(incident.detectedAt, now)),
-      ],
+      ] else if (incident.txState != IncidentTxState.dropped)
+        txState,
     ].join(' · ');
+    // "발견 · 3분 전"은 둘째 줄(POLISH D22)
+    final detected =
+        incident.isInfo
+            ? null
+            : t.wallet_health.alerts.detected_at(time: formatHomeRelativeTime(incident.detectedAt, now));
 
     return SafetyPressRow(
       key: Key('safety-alert-incident-${incident.id}'),
@@ -259,7 +273,16 @@ class _IncidentRow extends StatelessWidget {
                           ],
                         ),
                         CoconutLayout.spacing_50h,
-                        Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                        if (subtitle.isNotEmpty)
+                          Text(
+                            safetyKoText(subtitle),
+                            style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                          ),
+                        if (detected != null)
+                          Text(
+                            safetyKoText(detected),
+                            style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                          ),
                       ],
                     ),
                   ),

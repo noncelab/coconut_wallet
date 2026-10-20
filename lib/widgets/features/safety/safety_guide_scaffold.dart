@@ -414,7 +414,7 @@ class SafetyStepList extends StatelessWidget {
         key: const ValueKey('pending'),
         width: 28,
         height: 28,
-        colorFilter: ColorFilter.mode(colors.iconDisabled, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn), // 코코넛에서도 보이는 대기 원(D26)
       );
       status = t.safety_guide.move.step_pending_a11y;
     }
@@ -604,7 +604,13 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
       width: 64,
       height: 64,
       decoration: BoxDecoration(color: colors.checkIconBackground, shape: BoxShape.circle),
-      child: Icon(Icons.check_rounded, size: 40, color: colors.checkIconForeground),
+      alignment: Alignment.center,
+      child: SvgPicture.asset(
+        CommonActionIconPath.check,
+        width: 32,
+        height: 32,
+        colorFilter: ColorFilter.mode(colors.checkIconForeground, BlendMode.srcIn),
+      ),
     );
     return ExcludeSemantics(
       child: Lottie.asset(

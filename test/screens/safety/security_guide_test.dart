@@ -141,6 +141,11 @@ void main() {
     expect(tester.widget<Text>(findText(strings.exposure.title)).style!.fontSize, 18);
     expect(findText(strings.exposure.no_reuse_title), findsOneWidget);
     expect(findText(strings.help_center.never_asks), findsOneWidget);
+    // D21: 줄 → 버튼 → 사기 예방 문장 순서
+    expect(
+      tester.getRect(findText(strings.help_center.never_asks)).top,
+      greaterThan(tester.getRect(find.byKey(const Key('safety-exposure-got-it'))).bottom),
+    );
     await tapVisible(tester, find.byKey(const Key('safety-exposure-got-it')));
     expect(findText(strings.exposure.no_reuse_title), findsNothing);
     expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);

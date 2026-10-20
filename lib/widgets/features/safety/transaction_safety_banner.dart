@@ -91,6 +91,10 @@ class _TransactionSafetyBannerState extends State<TransactionSafetyBanner> {
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
         duration: duration,
+        // 배너가 바뀌는 동안 두 배너를 위에 맞춰 겹친다(가운데 정렬이면 높이가 다를 때 위치가 튄다)
+        layoutBuilder:
+            (current, previous) =>
+                Stack(alignment: Alignment.topCenter, children: [...previous, if (current != null) current]),
         child:
             variant == null
                 ? const SizedBox(width: double.infinity)

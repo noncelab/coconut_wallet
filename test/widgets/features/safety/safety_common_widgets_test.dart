@@ -2,6 +2,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../screens/safety/safety_test_harness.dart';
@@ -139,4 +140,27 @@ void main() {
       });
     });
   }
+
+  // D16: 배너 아이콘은 글자 배율이 커져도 제목 첫 줄 가운데에 있다(R3)
+  testWidgets('the banner icon stays centred on the first title line at 2.0x', (tester) async {
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors;
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+        child: _app(
+          CoconutThemeVariant.light,
+          SafetyStatusBanner(
+            background: colors.dangerSurface,
+            iconPath: 'assets/svg/common/state/triangle-warning.svg',
+            iconColor: colors.danger,
+            title: 'Title',
+            body: 'Body',
+          ),
+        ),
+      ),
+    );
+    final icon = tester.getRect(find.byType(SvgPicture).first);
+    final title = tester.getRect(findText('Title'));
+    expect((icon.center.dy - title.center.dy).abs(), lessThan(1.5));
+  });
 }

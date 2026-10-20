@@ -21,6 +21,13 @@ String safetyKoText(String text) =>
 /// 한글이 없는 글(영문 고유명사만 있는 줄 등)에는 넣지 않는다: 읽기 라벨·검색에 그대로 남는다
 final _hangul = RegExp('[\uAC00-\uD7A3]');
 
+/// 글 첫 줄 가운데에 [iconSize] 아이콘을 두는 위 여백(글자 배율로 계산, POLISH R3·SafetyNumberedRow와 같은 식)
+double safetyIconTop(BuildContext context, TextStyle style, double iconSize) =>
+    ((MediaQuery.textScalerOf(context).scale(style.fontSize!) * (style.height ?? 1.0) - iconSize) / 2).clamp(
+      0.0,
+      double.infinity,
+    );
+
 /// 동작 줄이기(앱 공통 기준)
 bool safetyReduceMotion(BuildContext context) =>
     MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
@@ -106,6 +113,8 @@ class SafetyChoiceRow extends StatelessWidget {
     this.subtitleColor,
     this.below,
     this.keepWords = true,
+    this.padding = const EdgeInsets.all(Sizes.size20),
+    this.haptic = true,
   });
 
   final String title;
@@ -123,12 +132,18 @@ class SafetyChoiceRow extends StatelessWidget {
   /// 한국어 단어 가운데 줄바꿈 막기(R1). 주소·금액 같은 값이 든 줄이면 false(제목·부제를 주어진 그대로)
   final bool keepWords;
 
+  /// 안쪽 여백(ButtonGroup 안이면 `SingleButtonPosition.padding`)
+  final EdgeInsets padding;
+
+  /// 누를 때 가벼운 진동(앱의 ButtonGroup 행처럼 진동 없는 목록이면 false)
+  final bool haptic;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return ShrinkAnimationButton(
       onPressed: () {
-        vibrateExtraLight();
+        if (haptic) vibrateExtraLight();
         onTap();
       },
       defaultColor: backgroundColor ?? colors.surface,
@@ -136,7 +151,7 @@ class SafetyChoiceRow extends StatelessWidget {
       borderRadius: CoconutStyles.radius_400,
       animationEndValue: 0.95,
       child: Padding(
-        padding: const EdgeInsets.all(Sizes.size20),
+        padding: padding,
         child: Row(
           children: [
             if (leading != null) ...[leading!, CoconutLayout.spacing_400w],
@@ -472,7 +487,6 @@ class SafetyStatusBanner extends StatelessWidget {
     final hasLink = linkText != null && onLink != null;
     return Container(
       width: double.infinity,
-      // 링크는 자체 여백 4가 있어서 아래 여백을 줄인다
       // 링크는 누르는 높이 44를 위해 위아래 14를 품는다(R7). 그만큼 바깥 아래 여백을 줄여 보이는 간격은 그대로
       padding: EdgeInsets.fromLTRB(16, 16, 16, hasLink ? 2 : 16),
       decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(CoconutStyles.radius_200)),
@@ -482,11 +496,15 @@ class SafetyStatusBanner extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset(
-                iconPath,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              // 아이콘을 제목 첫 줄 가운데에(글자 배율로 계산, R3)
+              Padding(
+                padding: EdgeInsets.only(top: safetyIconTop(context, CoconutTypography.body2_14_Bold, 20)),
+                child: SvgPicture.asset(
+                  iconPath,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
               ),
               CoconutLayout.spacing_200w,
               Expanded(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
@@ -267,4 +268,49 @@ void main() {
       expect(tester.widget<Text>(findText(chip)).style!.color, colors.secondaryTextStrong);
     }
   });
+
+  // D22: 사건 줄에 보낸 금액(안전 화면 공용 규칙으로 숨김), "발견 · N분 전"은 둘째 줄
+  for (final (label, preferences, shows) in [
+    ('visible', FakePreferences(), true),
+    ('hidden balance', FakePreferences(isBalanceHidden: true), false),
+  ]) {
+    testWidgets('an incident row shows the sent amount ($label) and the detected time on its own line', (tester) async {
+      usePhoneSize(tester);
+      final detected = testIncident();
+      final safety = SafetyProvider.fixed(
+        WalletHealthReport(
+          status: WalletHealthStatus.criticalOverride,
+          profile: WeightProfile.hotFunded,
+          criticalIncidents: [detected],
+          evaluatedAt: DateTime(2026, 10, 20, 9),
+        ),
+        state: SafetyState(incidents: [detected]),
+      );
+      await tester.pumpWidget(
+        safetyTestApp(
+          origin(),
+          safety: safety,
+          wallets: FakeWallets(const [], records: {kTxid}),
+          preferences: preferences,
+        ),
+      );
+      unawaited(SafetyAlertsScreen.open(originContext(tester)));
+      await tester.pumpAndSettle();
+      final row = find.byKey(Key('safety-alert-incident-${detected.id}'));
+      final amount = find.descendant(
+        of: row,
+        matching: findTextContaining(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)),
+      );
+      expect(amount, shows ? findsOneWidget : findsNothing);
+      final detectedLine = find.descendant(
+        of: row,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data ?? '').replaceAll('\u2060', '').startsWith(strings.alerts.detected_at(time: '').trim()),
+        ),
+      );
+      expect(detectedLine, findsOneWidget);
+    });
+  }
 }
