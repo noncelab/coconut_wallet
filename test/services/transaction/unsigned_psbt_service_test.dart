@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -13,6 +14,32 @@ import '../../core/transaction/rbf_builder/setup_util.dart';
 import '../../core/transaction/cpfp_builder/setup_util.dart';
 
 import '../../mock/wallet_mock.dart';
+
+class _ObservedTransaction extends Transaction {
+  final Transaction original;
+  final SendPort observations;
+  bool _reported = false;
+
+  _ObservedTransaction(this.original, this.observations)
+    : super(
+        Codec.decodeHex(original.version),
+        original.inputs,
+        original.outputs,
+        Codec.decodeHex(original.lockTime),
+        true,
+      ) {
+    changeAddressDerivationPath = original.changeAddressDerivationPath;
+  }
+
+  @override
+  List<Utxo> get utxoList {
+    if (!_reported) {
+      _reported = true;
+      observations.send(Isolate.current.controlPort);
+    }
+    return original.utxoList;
+  }
+}
 
 void main() {
   late NetworkType previousNetwork;
@@ -124,15 +151,18 @@ void main() {
     }
   }
 
-  test('many inputs are prepared while the main isolate can process events', () async {
+  test('many-input PSBT preparation reads transaction metadata in a worker isolate', () async {
     NetworkType.setNetworkType(NetworkType.regtest);
     final item = WalletMock.createSingleSigWalletItem();
     final tx = buildTransaction(item, count: 100);
-    final preparation = prepareUnsignedPsbt(transaction: tx, wallet: item.walletBase);
-    var handledEvent = false;
-    await Future<void>(() => handledEvent = true);
-    final result = await preparation;
-    expect(handledEvent, isTrue);
+    final observations = ReceivePort();
+    addTearDown(observations.close);
+    final worker = observations.first.timeout(const Duration(seconds: 30));
+    final result = await prepareUnsignedPsbt(
+      transaction: _ObservedTransaction(tx, observations.sendPort),
+      wallet: item.walletBase,
+    );
+    expect(await worker, isNot(Isolate.current.controlPort));
     expect(result.psbt.inputs, hasLength(100));
     expect(result.serialized, Psbt.fromTransaction(tx, item.walletBase).serialize());
   });

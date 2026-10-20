@@ -2773,13 +2773,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          if (_hasAddressTextChangedSinceFocus(index, controller.text)) {
-            if (controller.text.toLowerCase().startsWith('bitcoin:')) {
-              _applyIncomingBitcoinUri(controller.text, index);
-            }
+          if (_hasAddressTextChangedSinceFocus(index, controller.text) &&
+              controller.text.toLowerCase().startsWith('bitcoin:')) {
+            _applyIncomingBitcoinUri(controller.text, index);
+          } else {
+            // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
+            _viewModel.validateAllFieldsOnFocusLost();
           }
-          // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
-          _viewModel.validateAllFieldsOnFocusLost();
         } else {
           _addressFocusInTextList[index] = controller.text;
           Future.delayed(const Duration(milliseconds: 1000), () {

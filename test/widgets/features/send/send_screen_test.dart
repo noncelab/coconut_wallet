@@ -31,6 +31,25 @@ import 'package:provider/provider.dart';
 import '../../../mock/utxo_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
+class _CountingWallet extends SingleSignatureWallet {
+  _CountingWallet(SingleSignatureWallet wallet)
+    : super(
+        wallet.keyStore.masterFingerprint,
+        wallet.keyStore.hdWallet,
+        wallet.addressType,
+        wallet.derivationPath,
+        wallet.keyStore.extendedPublicKey,
+      );
+
+  int changeAddressDerivations = 0;
+
+  @override
+  String getAddressWithDerivationPath(String derivationPath) {
+    changeAddressDerivations++;
+    return super.getAddressWithDerivationPath(derivationPath);
+  }
+}
+
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   _Wallets(this.wallet, this.vault);
   final WalletItemBase wallet;
@@ -125,9 +144,12 @@ void main() {
     int? transactionDraftId,
     bool vaultEntry = false,
     bool verifyInputCompletion = false,
+    bool verifyUriCompletion = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
+    final countingWallet = _CountingWallet(wallet.walletBase as SingleSignatureWallet);
+    wallet.walletBase = countingWallet;
     final selectedUtxos =
         withSelectedUtxos
             ? [
@@ -276,6 +298,32 @@ void main() {
       await tester.pump();
       expect(vm.isReadyToSend, isTrue, reason: 'reverting an edit still requires validation on focus out');
     }
+    if (verifyUriCompletion) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setFeeRateText('1');
+      final addressFinder = find.byWidgetPredicate(
+        (widget) => widget is EditableText && widget.keyboardType == TextInputType.text,
+      );
+      final addressInput = tester.widget<EditableText>(addressFinder);
+      addressInput.focusNode.requestFocus();
+      await tester.pump();
+      expect(addressInput.focusNode.hasFocus, isTrue);
+      final address = vault.getAddress(5);
+      await tester.enterText(addressFinder, 'bitcoin:$address?amount=0.0001');
+      countingWallet.changeAddressDerivations = 0;
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(addressInput.focusNode.hasFocus, isFalse);
+      expect(vm.recipientList.single.address, address);
+      expect(vm.recipientList.single.amount, '10000');
+      expect(vm.showFeeBoard, isTrue);
+      expect(vm.isReadyToSend, isTrue);
+      expect(
+        countingWallet.changeAddressDerivations,
+        1,
+        reason: 'one input completion must build the transaction only once',
+      );
+    }
     if (transactionDraftId != null) {
       final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
       vm.setAddressText('invalid', 0);
@@ -309,6 +357,10 @@ void main() {
       withSelectedUtxos: true,
       verifyInputCompletion: true,
     );
+  });
+
+  testWidgets('pasting a BIP21 URI and completing the address input builds the transaction once', (tester) async {
+    await opensUtxoSelectionSheetOnEntry(tester, manualMode: true, withSelectedUtxos: true, verifyUriCompletion: true);
   });
 
   testWidgets('opening a draft with manually chosen UTXOs does not open the UTXO selection sheet', (tester) async {
