@@ -10,9 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// POLISH R1: 한국어는 단어 중간에서 줄을 바꾸지 않는다(앱 방식 `TextUtils.preventLineBreakInsideWords`).
-/// 줄바꿈될 수 있는 제목·배너·카드 글에만 쓴다. 주소·금액·숫자에는 쓰지 않는다(글자 사이 이음 문자가 복사·비교를 바꾼다)
+/// 줄바꿈될 수 있는 제목·배너·카드 글에만 쓴다. 주소·금액·숫자에는 쓰지 않는다(글자 사이 이음 문자가 복사·비교를 바꾼다).
+/// 두 번 감싸도 한 번과 같다(이미 든 이음 문자를 걷고 다시 넣는다): 스스로 감싸는 공용 행·배너에 감싼 글을 넘겨도 된다
 String safetyKoText(String text) =>
-    LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(text) : text;
+    LocaleSettings.currentLocale == AppLocale.ko
+        ? TextUtils.preventLineBreakInsideWords(text.replaceAll('\u2060', ''))
+        : text;
 
 /// 동작 줄이기(앱 공통 기준)
 bool safetyReduceMotion(BuildContext context) =>

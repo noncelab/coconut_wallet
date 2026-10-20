@@ -27,6 +27,8 @@ void main() {
     addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
     LocaleSettings.setLocaleSync(AppLocale.ko);
     expect(safetyKoText('다시 계산해 둬요'), '다\u2060시 계\u2060산\u2060해 둬\u2060요');
+    // 두 번 감싸도 한 번과 같다(스스로 감싸는 공용 행·배너에 감싼 글을 넘겨도 이음 문자가 겹치지 않는다)
+    expect(safetyKoText(safetyKoText('다시 계산해 둬요')), safetyKoText('다시 계산해 둬요'));
     LocaleSettings.setLocaleSync(AppLocale.en);
     expect(safetyKoText('Check again'), 'Check again');
   });
