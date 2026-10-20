@@ -134,7 +134,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
             ),
           ),
           CoconutLayout.spacing_300w,
-          Expanded(child: Text(title, style: CoconutTypography.body2_14.setColor(colors.primaryText))),
+          Expanded(child: Text(safetyKoText(title), style: CoconutTypography.body2_14.setColor(colors.primaryText))),
           CoconutLayout.spacing_300w,
           Flexible(
             child: Text(
@@ -181,7 +181,13 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(copy.description, style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText)),
+                // 짧은 제목 + 설명(보기 전용 검증 화면과 같은 머리, POLISH C11)
+                Text(
+                  safetyKoText(copy.heading),
+                  style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
+                ),
+                CoconutLayout.spacing_300h,
+                Text(safetyKoText(copy.description), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
                 CoconutLayout.spacing_600h,
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -258,7 +264,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                 if (_error != null) ...[
                   CoconutLayout.spacing_300h,
                   Text(
-                    _error!,
+                    safetyKoText(_error!),
                     key: const Key('bsms-verification-error'),
                     style: CoconutTypography.body2_14.setColor(colors.dangerText),
                   ),

@@ -12,6 +12,8 @@ import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_sheets.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_state_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -154,7 +156,8 @@ class WalletSafetyStatusPill extends StatelessWidget {
           child: Semantics(
             button: true,
             excludeSemantics: true,
-            label: t.wallet_health.status_chip.a11y(status: text),
+            // 이 지갑 시트를 연다: 홈 칩의 'Wallet Health 열기'가 아니라 이 지갑 상태 보기
+            label: t.wallet_health.wallet_info.status_a11y(status: text),
             onTap: open,
             // 알약 위아래 6도 누를 수 있게 해 누르는 높이를 44 이상으로(POLISH R7). 알약 위의 탭은 알약 버튼이 받는다
             child: GestureDetector(
@@ -174,13 +177,8 @@ class WalletSafetyStatusPill extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // TODO(E7): 홈 칩과 같은 safetyStateIcon으로 바꾸기(triangle 광학 크기)
-                        SvgPicture.asset(
-                          icon,
-                          width: 16,
-                          height: 16,
-                          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                        ),
+                        // 홈 칩과 같은 아이콘 도우미(triangle은 광학 크기를 맞춘다, POLISH E7)
+                        safetyStateIcon(icon, 16, iconColor),
                         CoconutLayout.spacing_150w,
                         Text(
                           '${t.wallet_health.wallet_info.safety_status} · ',
@@ -188,7 +186,7 @@ class WalletSafetyStatusPill extends StatelessWidget {
                         ),
                         Flexible(
                           child: Text(
-                            text,
+                            safetyKoText(text),
                             maxLines: 2,
                             textAlign: TextAlign.center,
                             style: CoconutTypography.body3_12_Bold.setColor(color),
@@ -227,12 +225,14 @@ class WalletRescueDestinationRow extends StatelessWidget {
     return ValueListenableBuilder<PremiumState>(
       valueListenable: entitlement.state,
       builder: (context, state, _) {
-        if (!state.isActive && rescue.destinationOf(walletId) == null) return const SizedBox.shrink();
+        // 무료에게도 자리를 보인다(POLISH §4 D7·C36): 목적지가 없으면 "정하지 않음" + Premium 칩. 화면이 결제를 막는다
+        final destination = rescue.destinationLabel(walletId);
         return _WalletInfoStatusRow(
           key: const Key('wallet-rescue-destination-row'),
           title: t.premium.rescue.destination,
-          value: rescue.destinationLabel(walletId) ?? t.premium.rescue.not_set,
+          value: destination ?? t.premium.rescue.not_set,
           valueColor: context.coconutColors.secondaryText,
+          chip: destination == null && !state.isActive && state.status != PremiumStatus.verifying,
           onPressed: () => RescueReadyScreen.open(context, walletId: walletId),
         );
       },
@@ -247,11 +247,15 @@ class _WalletInfoStatusRow extends StatelessWidget {
     required this.value,
     required this.valueColor,
     required this.onPressed,
+    this.chip = false,
   });
 
   final String title, value;
   final Color valueColor;
   final VoidCallback onPressed;
+
+  /// 값 뒤 PremiumChip(무료의 비상 목적지 행)
+  final bool chip;
 
   @override
   Widget build(BuildContext context) {
@@ -266,12 +270,15 @@ class _WalletInfoStatusRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Row(
           children: [
-            Expanded(child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText))),
+            Expanded(
+              child: Text(safetyKoText(title), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+            ),
             CoconutLayout.spacing_200w,
             // 값과 화살표는 위 니모닉 백업 행처럼 오른쪽 끝(느슨한 Flexible이면 줄 가운데에 멈춘다)
             Expanded(
               child: Text(value, textAlign: TextAlign.end, style: CoconutTypography.body2_14.setColor(valueColor)),
             ),
+            if (chip) ...[CoconutLayout.spacing_200w, const PremiumChip()],
             CoconutLayout.spacing_100w,
             Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],

@@ -59,10 +59,13 @@ VoidCallback whenRouteSettled(BuildContext context, VoidCallback onSettled) {
 
 /// 대시보드 바탕(homeBackground) 위 목록 카드. ButtonGroup과 같은 구분선 규칙을 homeSurface r20 카드에 쓴다
 class SafetyListCard extends StatelessWidget {
-  const SafetyListCard({super.key, required this.rows, this.backgroundColor});
+  const SafetyListCard({super.key, required this.rows, this.backgroundColor, this.footer});
 
   final List<Widget> rows;
   final Color? backgroundColor;
+
+  /// 행 다음, 구분선 반복 밖에 붙는 띠(예: "아직 포함 안 됨" 안내). 띠 위에 구분선이 겹치지 않는다(POLISH C27)
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +87,7 @@ class SafetyListCard extends StatelessWidget {
               ),
             rows[i],
           ],
+          if (footer != null) footer!,
         ],
       ),
     );
@@ -166,9 +170,12 @@ class SafetyChoiceRow extends StatelessWidget {
 
 /// 검토 필요 행 끝의 연노랑 알약. 따로 누르지 않고 행 전체가 같은 동작을 한다
 class SafetyActionPill extends StatelessWidget {
-  const SafetyActionPill({super.key, required this.text});
+  const SafetyActionPill({super.key, required this.text, this.danger = false});
 
   final String text;
+
+  /// 사건처럼 위급한 줄: dangerSurface + dangerText(알림 화면 "확인 필요" 칩과 같은 짝, POLISH C23)
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
@@ -176,10 +183,21 @@ class SafetyActionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size6),
       decoration: BoxDecoration(
-        color: colors.warningSurface,
+        color: danger ? colors.dangerSurface : colors.warningSurface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
-      child: Text(text, style: CoconutTypography.body3_12_Bold.setColor(colors.warningText)),
+      // 긴 언어에서도 옆 글을 밀어내지 않게 폭을 정하고 한 줄로 줄여 맞춘다(POLISH C7)
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 96),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            text,
+            maxLines: 1,
+            style: CoconutTypography.body3_12_Bold.setColor(danger ? colors.dangerText : colors.warningText),
+          ),
+        ),
+      ),
     );
   }
 }

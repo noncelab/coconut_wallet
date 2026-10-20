@@ -182,7 +182,8 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 180),
+            // 아래 고정 버튼(스캔 + 직접 비교 글 버튼)과 그 위 흐림을 비켜 간다. 글자 배율을 따른다(POLISH R4·C37)
+            padding: EdgeInsets.fromLTRB(20, 24, 20, safetyFooterClearance(context, hasSubWidget: true)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -200,7 +201,10 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(copy.address_label, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                      Text(
+                        safetyKoText(copy.address_label),
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                      ),
                       CoconutLayout.spacing_200h,
                       // 4글자씩 묶어 보인다. 글자를 넣지 않고 묶음 끝 글자 뒤만 넓혀서 복사하면 원래 주소 그대로(POLISH C31)
                       SelectableText.rich(
@@ -272,7 +276,7 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
                 if (_error != null) ...[
                   CoconutLayout.spacing_300h,
                   Text(
-                    _error!,
+                    safetyKoText(_error!),
                     key: const Key('watch-only-verification-error'),
                     style: CoconutTypography.body2_14.setColor(colors.dangerText),
                   ),

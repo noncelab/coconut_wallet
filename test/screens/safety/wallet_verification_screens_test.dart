@@ -415,6 +415,9 @@ void main() {
 
         testWidgets('BSMS header shows the shared wallet icon with the signer gradient (C10)', (tester) async {
           await mount(tester, theme, const BsmsVerificationScreen(walletId: 2));
+          // C11: 짧은 제목 + 설명(설명 전체가 큰 제목이 아니다)
+          expect(_text(t.wallet_health.bsms_verify.heading), findsOneWidget);
+          expect(tester.widget<Text>(_text(t.wallet_health.bsms_verify.description)).style!.fontSize, 14);
           expect(tester.widget<WalletIconSmall>(find.byType(WalletIconSmall).first).gradientColors, isNotNull);
         });
 
@@ -592,7 +595,7 @@ void main() {
       ),
     );
     final row = find.byKey(const Key('wallet-rescue-destination-row'));
-    expect(row, findsNothing);
+    expect(row, findsOneWidget); // C36: 무료에게도 자리를 보인다("정하지 않음" + Premium 칩)
     entitlement.emit(const PremiumState(PremiumStatus.active));
     await tester.pumpAndSettle();
     expect(row, findsOneWidget);
@@ -609,7 +612,8 @@ void main() {
     }
     rescue.rename(null);
     await tester.pumpAndSettle();
-    expect(row, findsNothing);
+    expect(row, findsOneWidget); // 목적지를 지워도 자리는 남는다(C36)
+    expect(_text(t.premium.rescue.not_set), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

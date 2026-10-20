@@ -321,7 +321,7 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
                       child: Text(text, maxLines: 1, style: style),
                     )
                     : Text(
-                      text,
+                      safetyKoText(text),
                       key: ValueKey(text),
                       textAlign: TextAlign.center,
                       maxLines: 2,

@@ -122,12 +122,12 @@ class _AboutSheet extends StatelessWidget {
         ),
         _SheetTitle(report?.score != null ? s.meaning_title : t.wallet_health.hero.no_score, top: 16),
         Text(
-          report?.score != null ? s.meaning_body : s.no_score_body,
+          safetyKoText(report?.score != null ? s.meaning_body : s.no_score_body),
           style: CoconutTypography.body2_14.setColor(colors.secondaryText),
         ),
         if (report?.status == WalletHealthStatus.notEnoughData) ...[
           CoconutLayout.spacing_200h,
-          Text(s.min_coverage, style: secondary),
+          Text(safetyKoText(s.min_coverage), style: secondary),
         ],
         _SheetTitle(s.range_title),
         for (final (i, label) in WalletHealthLabel.values.indexed) ...[
@@ -136,7 +136,7 @@ class _AboutSheet extends StatelessWidget {
         ],
         if (report != null && report.walletCount > 0) ...[
           _SheetTitle(s.included_title),
-          Text(_walletsLine(report), style: secondary),
+          Text(safetyKoText(_walletsLine(report)), style: secondary),
           CoconutLayout.spacing_300h,
           _IncludedGrid(report: report),
         ],
@@ -147,7 +147,7 @@ class _AboutSheet extends StatelessWidget {
             _ContributionRow(contribution: contribution),
           ],
           CoconutLayout.spacing_300h,
-          Text(s.wallets_note, style: secondary),
+          Text(safetyKoText(s.wallets_note), style: secondary),
         ],
         if (notIncluded.isNotEmpty) ...[
           _SheetTitle(s.not_included_title),
@@ -158,7 +158,7 @@ class _AboutSheet extends StatelessWidget {
               children: [
                 for (final (i, line) in notIncluded.indexed) ...[
                   if (i > 0) CoconutLayout.spacing_100h,
-                  Text(line, style: secondary),
+                  Text(safetyKoText(line), style: secondary),
                 ],
               ],
             ),
@@ -166,7 +166,7 @@ class _AboutSheet extends StatelessWidget {
         ],
         if (report != null) ...[
           _SheetTitle(s.data_title),
-          Text(s.data_note, style: secondary),
+          Text(safetyKoText(s.data_note), style: secondary),
           CoconutLayout.spacing_300h,
           _Box(
             radius: 12,
@@ -175,7 +175,10 @@ class _AboutSheet extends StatelessWidget {
                 _DataRow(
                   label: s.last_updated,
                   value: Text(
-                    DateTimeUtil.formatTimestamp(report.lastSuccessfulSyncAt ?? report.evaluatedAt).join(' '),
+                    // 성공한 동기화가 없으면 검사 시각을 쓰지 않는다(오프라인 자료가 새것처럼 보이면 안 된다, REQ §18.10.1·C45)
+                    report.lastSuccessfulSyncAt == null
+                        ? '—'
+                        : DateTimeUtil.formatTimestamp(report.lastSuccessfulSyncAt!).join(' '),
                     textAlign: TextAlign.end,
                     style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
                   ),
@@ -203,7 +206,7 @@ class _AboutSheet extends StatelessWidget {
               s.weight_not_scored,
             ].indexed) ...[if (i > 0) CoconutLayout.spacing_100h, _Bullet(text: text)],
         _SheetTitle(s.coverage_title),
-        Text(s.coverage_body, style: secondary),
+        Text(safetyKoText(s.coverage_body), style: secondary),
       ],
     );
   }
@@ -226,7 +229,10 @@ class _SheetTitle extends StatelessWidget {
     padding: EdgeInsets.only(top: top, bottom: 12),
     child: Semantics(
       header: true,
-      child: Text(text, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
+      child: Text(
+        safetyKoText(text),
+        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+      ),
     ),
   );
 }
@@ -277,10 +283,14 @@ class _RangeRow extends StatelessWidget {
             child: Container(width: 10, height: 10, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
           ),
           CoconutLayout.spacing_300w,
-          // 글자를 키우면 열도 같이 넓힌다(POLISH R3)
+          // "90–100"은 한 줄로 56 칸 안에 줄여 맞춘다(POLISH C20)
           SizedBox(
-            width: MediaQuery.textScalerOf(context).scale(56),
-            child: Text(range, style: CoconutTypography.body2_14_Number.setColor(colors.secondaryText)),
+            width: 56,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(range, maxLines: 1, style: CoconutTypography.body2_14_Number.setColor(colors.secondaryText)),
+            ),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -289,7 +299,7 @@ class _RangeRow extends StatelessWidget {
               children: [
                 Text(walletHealthLabelText(label), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
                 CoconutLayout.spacing_50h,
-                Text(description, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                Text(safetyKoText(description), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
               ],
             ),
           ),
@@ -365,7 +375,7 @@ class _IncludedBox extends StatelessWidget {
               CoconutLayout.spacing_150w,
               Expanded(
                 child: Text(
-                  safetyCategoryName(category),
+                  safetyKoText(safetyCategoryName(category)),
                   style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
                 ),
               ),
@@ -375,7 +385,10 @@ class _IncludedBox extends StatelessWidget {
           ),
           CoconutLayout.spacing_200h,
           if (names.isEmpty)
-            Text(t.wallet_health.category.waiting, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+            Text(
+              safetyKoText(t.wallet_health.category.waiting),
+              style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+            ),
           for (final (i, name) in names.indexed) ...[
             if (i > 0) CoconutLayout.spacing_100h,
             Row(
@@ -391,7 +404,9 @@ class _IncludedBox extends StatelessWidget {
                   ),
                 ),
                 CoconutLayout.spacing_150w,
-                Expanded(child: Text(name, style: CoconutTypography.body3_12.setColor(colors.primaryText))),
+                Expanded(
+                  child: Text(safetyKoText(name), style: CoconutTypography.body3_12.setColor(colors.primaryText)),
+                ),
               ],
             ),
           ],
@@ -432,10 +447,16 @@ class _ContributionRow extends StatelessWidget {
           ),
         ),
         CoconutLayout.spacing_200w,
-        // 글자가 섞인 문장이라 본문 글꼴(숫자 글꼴에는 한글이 없다)
-        Text(
-          t.wallet_health.about.wallet_recovery(score: contribution.score),
-          style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+        // 좁으면 오른쪽 정렬로 줄을 바꾼다. 글자는 본문 글꼴, 숫자만 숫자 글꼴(숫자 글꼴에는 한글이 없다, POLISH C17)
+        Flexible(
+          child: Text.rich(
+            safetyNumberSpans(
+              t.wallet_health.about.wallet_recovery(score: contribution.score),
+              CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+              CoconutTypography.body2_14_NumberBold.setColor(colors.primaryText),
+            ),
+            textAlign: TextAlign.end,
+          ),
         ),
       ],
     );
@@ -451,7 +472,7 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+      Text(safetyKoText(label), style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
       CoconutLayout.spacing_400w,
       Expanded(child: Align(alignment: Alignment.centerRight, child: value)),
     ],
@@ -477,7 +498,7 @@ class _ConnectionValue extends StatelessWidget {
         CoconutLayout.spacing_100w,
         Flexible(
           child: Text(
-            connected ? t.wallet_health.connection.connected : t.wallet_health.about.offline_not_scored,
+            safetyKoText(connected ? t.wallet_health.connection.connected : t.wallet_health.about.offline_not_scored),
             style: CoconutTypography.body3_12.setColor(connected ? colors.success : colors.dangerText),
           ),
         ),
@@ -506,7 +527,7 @@ class _Bullet extends StatelessWidget {
           ),
         ),
         CoconutLayout.spacing_200w,
-        Expanded(child: Text(text, style: CoconutTypography.body3_12.setColor(colors.secondaryText))),
+        Expanded(child: Text(safetyKoText(text), style: CoconutTypography.body3_12.setColor(colors.secondaryText))),
       ],
     );
   }
@@ -578,7 +599,7 @@ class _CategorySheet extends StatelessWidget {
                       ),
             ),
             CoconutLayout.spacing_200w,
-            Expanded(child: Text(status.text, style: CoconutTypography.body2_14.setColor(status.color))),
+            Expanded(child: Text(safetyKoText(status.text), style: CoconutTypography.body2_14.setColor(status.color))),
           ],
         ),
         CoconutLayout.spacing_400h,
@@ -597,7 +618,7 @@ class _CategorySheet extends StatelessWidget {
             ),
           ),
         CoconutLayout.spacing_300h,
-        Text(note, style: secondary),
+        Text(safetyKoText(note), style: secondary),
       ],
     );
   }
@@ -612,7 +633,7 @@ class _CategorySheet extends StatelessWidget {
     if (walletIds.isEmpty) {
       return [
         Text(
-          t.wallet_health.category_sheet.no_applicable,
+          safetyKoText(t.wallet_health.category_sheet.no_applicable),
           style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
         ),
       ];
@@ -748,7 +769,10 @@ class _CheckRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(safetyCheckName(item.id), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                Text(
+                  safetyKoText(safetyCheckName(item.id)),
+                  style: CoconutTypography.body2_14.setColor(colors.primaryText),
+                ),
                 if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
               ],
             ),
@@ -759,7 +783,11 @@ class _CheckRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(result, textAlign: TextAlign.end, style: CoconutTypography.body3_12.setColor(resultColor)),
+                Text(
+                  safetyKoText(result),
+                  textAlign: TextAlign.end,
+                  style: CoconutTypography.body3_12.setColor(resultColor),
+                ),
                 if (failed && !showWallet) ...[CoconutLayout.spacing_100h, SafetyActionPill(text: safetyCtaText(item))],
               ],
             ),
@@ -831,7 +859,7 @@ class _WalletSheet extends StatelessWidget {
         ],
         if (checks.isEmpty && incidents.isEmpty)
           Text(
-            t.wallet_health.category_sheet.no_applicable,
+            safetyKoText(t.wallet_health.category_sheet.no_applicable),
             style: CoconutTypography.body2_14.setColor(colors.secondaryText),
           )
         else
@@ -859,12 +887,13 @@ class _WalletSheet extends StatelessWidget {
                           CoconutLayout.spacing_300w,
                           Expanded(
                             child: Text(
-                              t.wallet_health.incident.outgoing_title,
+                              safetyKoText(t.wallet_health.incident.outgoing_title),
                               style: CoconutTypography.body2_14.setColor(colors.primaryText),
                             ),
                           ),
                           CoconutLayout.spacing_200w,
-                          SafetyActionPill(text: t.wallet_health.cta.review),
+                          // 사건은 위급 짝(빨강 사이렌 옆 노랑 알약이 아니라, POLISH C23)
+                          SafetyActionPill(text: t.wallet_health.cta.review, danger: true),
                         ],
                       ),
                     ),
@@ -874,7 +903,7 @@ class _WalletSheet extends StatelessWidget {
             ),
           ),
         CoconutLayout.spacing_300h,
-        Text(t.wallet_health.about.wallets_note, style: secondary),
+        Text(safetyKoText(t.wallet_health.about.wallets_note), style: secondary),
       ],
     );
     return SafeArea(
@@ -973,18 +1002,40 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     String? secondary;
     VoidCallback? onSecondary;
     String? learnMore;
+    void openUtxo(BuildContext c, UtxoState utxo) =>
+        Navigator.pushNamed(c, AppRouteNames.utxoDetail, arguments: UtxoDetailRouteArgs(utxo: utxo, id: walletId!));
 
     switch (item.id) {
       case SafetyCheckId.addressReuse:
         final walletName = safetyWalletOf(context, walletId)?.name;
-        final utxos = walletId == null ? const <UtxoState>[] : context.read<WalletProvider?>()?.getUtxoList(walletId);
+        final utxos =
+            walletId == null
+                ? const <UtxoState>[]
+                : context.read<WalletProvider?>()?.getUtxoList(walletId) ?? const <UtxoState>[];
         bodies = [r.address_reuse.body];
+        // 주소마다 머리 + 그 주소에 남은 UTXO(최대 5개, 그 밖은 "외 N건"). 누르면 그 UTXO 상세(UI_SPEC §5.3, POLISH C42)
         rows = [
           for (final address in item.subjects)
-            _AddressRow(
-              address: hidden ? null : address,
-              utxosLeft: utxos?.where((u) => u.to == address).length,
-              walletName: walletName,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _AddressRow(address: hidden ? null : address, walletName: walletName),
+                for (final (i, utxo) in utxos.where((u) => u.to == address).indexed)
+                  if (i < 5)
+                    _UtxoRow(
+                      amount: hidden ? null : utxo.amount,
+                      date: utxo.timestamp,
+                      onTap: _go((c) => openUtxo(c, utxo)),
+                    ),
+                if (utxos.where((u) => u.to == address).length > 5)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    child: Text(
+                      t.wallet_health.widget.more_items(n: utxos.where((u) => u.to == address).length - 5),
+                      style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                    ),
+                  ),
+              ],
             ),
         ];
         if (walletId != null) {
@@ -1007,11 +1058,14 @@ class _ReviewSheetState extends State<_ReviewSheet> {
                   for (final id in item.subjects)
                     if (context.read<WalletProvider?>()?.getUtxoState(walletId, id) case final utxo?) utxo,
                 ];
-        void openUtxo(BuildContext c, UtxoState utxo) =>
-            Navigator.pushNamed(c, AppRouteNames.utxoDetail, arguments: UtxoDetailRouteArgs(utxo: utxo, id: walletId!));
         rows = [
           for (final utxo in utxos)
-            _DustRow(amount: hidden ? null : utxo.amount, date: utxo.timestamp, onTap: _go((c) => openUtxo(c, utxo))),
+            _UtxoRow(
+              amount: hidden ? null : utxo.amount,
+              date: utxo.timestamp,
+              label: r.dusting.unlocked,
+              onTap: _go((c) => openUtxo(c, utxo)),
+            ),
         ];
         if (utxos.isNotEmpty) {
           primary = r.dusting.view_utxo;
@@ -1102,7 +1156,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
           ],
           for (final (i, body) in bodies.indexed) ...[
             if (i > 0) CoconutLayout.spacing_200h,
-            Text(body, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+            Text(safetyKoText(body), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
           ],
           if (learnMore != null)
             AnimatedSize(
@@ -1112,7 +1166,10 @@ class _ReviewSheetState extends State<_ReviewSheet> {
                   _learnMore
                       ? Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text(learnMore, style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                        child: Text(
+                          safetyKoText(learnMore),
+                          style: CoconutTypography.body2_14.setColor(colors.primaryText),
+                        ),
                       )
                       : const SizedBox(width: double.infinity),
             ),
@@ -1162,18 +1219,17 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   }
 }
 
+/// 다시 쓴 주소 한 줄의 머리: 가운데를 줄인 주소 + 지갑 이름(남은 UTXO는 아래 줄들이 보여 준다)
 class _AddressRow extends StatelessWidget {
-  const _AddressRow({required this.address, required this.utxosLeft, required this.walletName});
+  const _AddressRow({required this.address, required this.walletName});
 
   /// null = 숨김
   final String? address;
-  final int? utxosLeft;
   final String? walletName;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final left = utxosLeft;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
@@ -1185,14 +1241,9 @@ class _AddressRow extends StatelessWidget {
               TextUtils.truncate(address!, 28, 12, 12),
               style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
             ),
-          if (left != null && left > 0)
+          if (address == null)
             Text(
-              t.wallet_health.review.address_reuse.utxos_left(n: left),
-              style: CoconutTypography.body3_12.setColor(address == null ? colors.primaryText : colors.secondaryText),
-            )
-          else if (address == null)
-            Text(
-              safetyCheckName(SafetyCheckId.addressReuse),
+              safetyKoText(safetyCheckName(SafetyCheckId.addressReuse)),
               style: CoconutTypography.body3_12.setColor(colors.primaryText),
             ),
           if (walletName != null) Text(walletName!, style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
@@ -1202,13 +1253,17 @@ class _AddressRow extends StatelessWidget {
   }
 }
 
-class _DustRow extends StatelessWidget {
-  const _DustRow({required this.amount, required this.date, required this.onTap});
+/// UTXO 한 줄(금액·날짜, 누르면 UTXO 상세). 더스팅 의심과 주소 재사용 시트가 같이 쓴다
+class _UtxoRow extends StatelessWidget {
+  const _UtxoRow({required this.amount, required this.date, required this.onTap, this.label});
 
-  /// null = 숨김
+  /// null = 숨김(잔액 숨김·가짜 잔액)
   final int? amount;
   final DateTime date;
   final VoidCallback onTap;
+
+  /// 날짜 앞에 붙는 말(더스팅: "잠기지 않음")
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -1225,13 +1280,14 @@ class _DustRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (amount != null)
-                    Text(
-                      BitcoinUnit.sats.displayBitcoinAmount(amount, withUnit: true),
-                      style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
-                    ),
+                  amount == null
+                      ? Text(t.premium.assist.hidden, style: CoconutTypography.body3_12.setColor(colors.primaryText))
+                      : Text(
+                        BitcoinUnit.sats.displayBitcoinAmount(amount, withUnit: true),
+                        style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+                      ),
                   Text(
-                    '${t.wallet_health.review.dusting.unlocked} · ${DateTimeUtil.formatTimestamp(date).join(' ')}',
+                    [if (label != null) label!, DateTimeUtil.formatTimestamp(date).join(' ')].join(' · '),
                     style: secondary,
                   ),
                 ],
@@ -1262,10 +1318,10 @@ class _KeyValueRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+          Text(safetyKoText(label), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
           CoconutLayout.spacing_50h,
           Text(
-            value,
+            number ? value : safetyKoText(value),
             style: (number ? CoconutTypography.body3_12_Number : CoconutTypography.body3_12).setColor(
               colors.primaryText,
             ),
@@ -1294,7 +1350,8 @@ Future<void> showSafetyRecommendedSheet(BuildContext context, RecommendedItem it
       builder: (context) {
         final colors = context.coconutColors;
         final r = t.wallet_health.recommended;
-        return Padding(
+        // 큰 글자·작은 화면에서도 표시 버튼까지 내려갈 수 있게(POLISH C38)
+        return SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1305,7 +1362,13 @@ Future<void> showSafetyRecommendedSheet(BuildContext context, RecommendedItem it
                 style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
               ),
               CoconutLayout.spacing_200h,
-              Text(r.intro, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+              // 이 점검이 무엇을 확인하는지 한 줄, 그다음 공통 안내(R41)
+              Text(
+                safetyKoText(safetyRecommendedBody(id)),
+                style: CoconutTypography.body2_14.setColor(colors.primaryText),
+              ),
+              CoconutLayout.spacing_200h,
+              Text(safetyKoText(r.intro), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
               CoconutLayout.spacing_600h,
               InlineActionButton(
                 key: const Key('wallet-health-recommended-toggle'),

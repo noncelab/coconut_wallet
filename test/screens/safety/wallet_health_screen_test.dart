@@ -25,6 +25,15 @@ import 'package:provider/provider.dart';
 import '../../mock/wallet_mock.dart';
 import 'wallet_health_fixtures.dart';
 
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
+
+/// 글자 일부 찾기(U+2060 이음 문자를 빼고 비교)
+Finder _textContaining(Pattern pattern) => find.byWidgetPredicate(
+  (w) => w is Text && ((w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '').contains(pattern) ?? false),
+);
+
 Future<FakeSafetyProvider> _pump(
   WidgetTester tester,
   WalletHealthReport? report, {
@@ -35,6 +44,8 @@ Future<FakeSafetyProvider> _pump(
   bool entitlement = true,
   FakeRescueReady? rescue,
   bool startCheck = false,
+  double textScale = 1,
+  double height = 2400,
 }) => pumpWalletHealthApp(
   tester,
   WalletHealthScreen(startCheck: startCheck),
@@ -42,6 +53,8 @@ Future<FakeSafetyProvider> _pump(
   variant: variant,
   locale: locale,
   width: width,
+  height: height,
+  textScale: textScale,
   // 앱에서는 늘 있는 EntitlementService. entitlement: false = 없는 하네스
   premium: entitlement ? premium ?? const PremiumState(PremiumStatus.none) : null,
   rescue: rescue,
@@ -55,7 +68,7 @@ final _wallets = [
   WalletMock.createSingleSigWalletItem(id: 2, name: 'Savings'),
 ];
 
-Finder _inGauge(String text) => find.descendant(of: find.byType(HealthGauge), matching: find.text(text));
+Finder _inGauge(String text) => find.descendant(of: find.byType(HealthGauge), matching: _text(text));
 
 Finder _svg(String asset) => find.byWidgetPredicate(
   (w) => w is SvgPicture && w.bytesLoader is SvgAssetLoader && (w.bytesLoader as SvgAssetLoader).assetName == asset,
@@ -75,25 +88,25 @@ void main() {
         expect(_inGauge('86'), findsOneWidget);
         expect(_inGauge(t.wallet_health.score_label.good), findsOneWidget);
         expect(_checkAgain, findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.review_needed)), findsOneWidget);
-        expect(find.text(t.wallet_health.check.watch_only_verify.issue_not_verified), findsOneWidget);
-        expect(find.text(t.wallet_health.category.addresses_reused(n: 2)), findsNWidgets(2)); // 카드 상태 줄 + 행
+        expect(_text(t.wallet_health.section.review_needed), findsOneWidget);
+        expect(_text(t.wallet_health.check.watch_only_verify.issue_not_verified), findsOneWidget);
+        expect(_text(t.wallet_health.category.addresses_reused(n: 2)), findsNWidgets(2)); // 카드 상태 줄 + 행
         expect(_premiumCard, findsOneWidget);
         // C4: 판매 카드 안에는 칩이 없다(Premium 바탕 위에서 묻히고 젬이 두 번 나온다). 머리 줄은 PremiumMark 20
         expect(find.descendant(of: _premiumCard, matching: find.byType(PremiumChip)), findsNothing);
         expect(find.descendant(of: _premiumCard, matching: find.byType(PremiumMark)), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.all_good)), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.recommended)), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.recommended.mnemonic_stored)), findsOneWidget);
+        expect(_text(t.wallet_health.section.all_good), findsOneWidget);
+        expect(_text(t.wallet_health.section.recommended), findsOneWidget);
+        expect(_text(t.wallet_health.recommended.mnemonic_stored), findsOneWidget);
         // Free 문구는 상시 감시를 약속하지 않는다
         for (final text in tester.widgetList<Text>(find.byType(Text))) {
-          expect(text.data ?? '', isNot(contains('모니터링')));
+          expect((text.data ?? '').replaceAll('\u2060', ''), isNot(contains('모니터링')));
         }
       });
 
       testWidgets('S2 all good: no review section, Premium card still after the cards', (tester) async {
         await _pump(tester, scoredReport(issues: false), variant: variant);
-        expect(find.text(safetyKoText(t.wallet_health.section.review_needed)), findsNothing);
+        expect(_text(t.wallet_health.section.review_needed), findsNothing);
         expect(_premiumCard, findsOneWidget);
       });
 
@@ -102,18 +115,15 @@ void main() {
       ) async {
         await _pump(tester, notEnoughDataReport(), variant: variant);
         expect(_inGauge(t.wallet_health.hero.not_enough_data_title), findsOneWidget);
-        expect(
-          find.descendant(of: find.byType(HealthGauge), matching: find.textContaining(RegExp(r'\d'))),
-          findsNothing,
-        );
-        expect(find.text(t.wallet_health.hero.not_enough_data_body), findsOneWidget);
-        expect(find.text(t.wallet_health.hero.how_score_works), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.available_now)), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.not_included_yet)), findsOneWidget);
-        expect(find.text(t.wallet_health.check.passphrase_verify.name), findsNothing); // 해당 없음은 "아직"이 아니다
+        expect(find.descendant(of: find.byType(HealthGauge), matching: _textContaining(RegExp(r'\d'))), findsNothing);
+        expect(_text(t.wallet_health.hero.not_enough_data_body), findsOneWidget);
+        expect(_text(t.wallet_health.hero.how_score_works), findsOneWidget);
+        expect(_text(t.wallet_health.section.available_now), findsOneWidget);
+        expect(_text(t.wallet_health.section.not_included_yet), findsOneWidget);
+        expect(_text(t.wallet_health.check.passphrase_verify.name), findsNothing); // 해당 없음은 "아직"이 아니다
         // "더 많은 점검을 하려면"은 S0 전용(UI 브리프 WH-S4에는 없다). S4는 판매 카드 대신 비상 이동 줄만(POLISH §4 D4)
         expect(find.byType(WalletHealthUnlockCard), findsNothing);
-        expect(find.text(t.wallet_health.section.unlock_more), findsNothing);
+        expect(_text(t.wallet_health.section.unlock_more), findsNothing);
         expect(_premiumCard, findsNothing);
         expect(_checkAgain, findsOneWidget);
       });
@@ -121,20 +131,17 @@ void main() {
       testWidgets('S0 no wallet: no number or label, [지갑 추가] instead of check again, no Premium', (tester) async {
         await _pump(tester, noWalletReport(), variant: variant);
         expect(_inGauge(t.wallet_health.hero.no_wallet_title), findsOneWidget);
-        expect(
-          find.descendant(of: find.byType(HealthGauge), matching: find.textContaining(RegExp(r'\d'))),
-          findsNothing,
-        );
+        expect(find.descendant(of: find.byType(HealthGauge), matching: _textContaining(RegExp(r'\d'))), findsNothing);
         for (final label in WalletHealthLabel.values) {
-          expect(find.text(walletHealthLabelText(label)), findsNothing);
+          expect(_text(walletHealthLabelText(label)), findsNothing);
         }
         expect(_addWallet, findsOneWidget);
-        expect(find.text(t.home_widgets.add_wallet), findsOneWidget);
+        expect(_text(t.home_widgets.add_wallet), findsOneWidget);
         expect(_checkAgain, findsNothing);
-        expect(find.text(t.wallet_health.hero.no_wallet_body), findsOneWidget);
-        expect(find.text(t.wallet_health.category.available), findsOneWidget);
-        expect(find.text(safetyKoText(t.wallet_health.section.after_adding_wallet)), findsOneWidget);
-        expect(find.text(t.wallet_health.section.not_included_footer_no_wallet), findsOneWidget);
+        expect(_text(t.wallet_health.hero.no_wallet_body), findsOneWidget);
+        expect(_text(t.wallet_health.category.available), findsOneWidget);
+        expect(_text(t.wallet_health.section.after_adding_wallet), findsOneWidget);
+        expect(_text(t.wallet_health.section.not_included_footer_no_wallet), findsOneWidget);
         expect(_premiumCard, findsNothing);
         expect(find.byKey(const Key('wallet-health-premium-active')), findsNothing);
         // 할 일 안내: 세 줄 모두 중립 동그라미, 완료 체크는 없다
@@ -148,20 +155,20 @@ void main() {
         tester,
       ) async {
         await _pump(tester, criticalReport(incidents: 2), variant: variant);
-        expect(find.text(t.wallet_health.critical.title), findsOneWidget);
-        expect(find.text(t.wallet_health.incident.outgoing_multiple_title(n: 2)), findsOneWidget);
+        expect(_text(t.wallet_health.critical.title), findsOneWidget);
+        expect(_text(t.wallet_health.incident.outgoing_multiple_title(n: 2)), findsOneWidget);
         expect(_inGauge('76'), findsNothing);
         expect(find.byKey(const Key('wallet-health-incident-card')), findsOneWidget);
-        expect(find.text(t.wallet_health.critical.more_alerts(n: 1)), findsOneWidget);
-        expect(find.text(t.wallet_health.critical.review_transaction), findsOneWidget);
-        expect(find.text(t.premium.card.critical_title), findsOneWidget);
+        expect(_text(t.wallet_health.critical.more_alerts(n: 1)), findsOneWidget);
+        expect(_text(t.wallet_health.critical.review_transaction), findsOneWidget);
+        expect(_text(t.premium.card.critical_title), findsOneWidget);
         // 무료 대응 버튼이 Premium 카드보다 위
         expect(
           tester.getTopLeft(find.byKey(const Key('wallet-health-critical-review'))).dy,
           lessThan(tester.getTopLeft(_premiumCard).dy),
         );
-        expect(find.text(safetyKoText(t.wallet_health.critical.other_checks)), findsOneWidget);
-        expect(find.text(t.wallet_health.check.app_lock.issue), findsOneWidget);
+        expect(_text(t.wallet_health.critical.other_checks), findsOneWidget);
+        expect(_text(t.wallet_health.check.app_lock.issue), findsOneWidget);
         expect(_checkAgain, findsNothing);
       });
     });
@@ -170,11 +177,11 @@ void main() {
   testWidgets('label for 0–49 is "조치 필요", never "Critical"', (tester) async {
     await _pump(tester, scoredReport(score: 40));
     expect(_inGauge('조치 필요'), findsOneWidget);
-    expect(find.textContaining('Critical'), findsNothing);
+    expect(_textContaining('Critical'), findsNothing);
 
     await _pump(tester, scoredReport(score: 40), locale: AppLocale.en);
     expect(_inGauge('Action needed'), findsOneWidget);
-    expect(find.textContaining('Critical'), findsNothing);
+    expect(_textContaining('Critical'), findsNothing);
   });
 
   testWidgets('check again shows the checking state for at least 700 ms, then returns', (tester) async {
@@ -182,19 +189,19 @@ void main() {
     await tester.tap(_checkAgain);
     await tester.pump();
     expect(safety.checks, 1);
-    expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2)); // 게이지 + 버튼
+    expect(_text(t.wallet_health.summary.checking), findsNWidgets(2)); // 게이지 + 버튼
     expect(find.byKey(const Key('wallet-health-card-skeleton')), findsNWidgets(4));
     // 누른 채로 또 눌러도 한 번만
     await tester.tap(_checkAgain, warnIfMissed: false);
     await tester.pump(const Duration(milliseconds: 600));
     expect(safety.checks, 1);
-    expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2));
+    expect(_text(t.wallet_health.summary.checking), findsNWidgets(2));
     // provider 최소 1.2초 + 화면 최소 700ms(Stopwatch는 실제 시간이라 테스트에서는 700ms를 다 기다린다)
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_health.summary.checking), findsNothing);
-    expect(find.text(t.wallet_health.summary.check_again), findsOneWidget);
+    expect(_text(t.wallet_health.summary.checking), findsNothing);
+    expect(_text(t.wallet_health.summary.check_again), findsOneWidget);
   });
 
   testWidgets('open(startCheck: true) starts one check on entry', (tester) async {
@@ -220,7 +227,7 @@ void main() {
       wallets: _wallets,
       reduceMotion: false,
     );
-    await tester.tap(find.text('open'));
+    await tester.tap(_text('open'));
     await tester.pump(); // 첫 프레임은 Hero 측정용 offstage
     await tester.pump(const Duration(milliseconds: 300)); // 아직 밀려 들어오는 중
     expect(safety.checks, 0);
@@ -229,7 +236,7 @@ void main() {
     expect(safety.checks, 1);
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_health.summary.check_again), findsOneWidget);
+    expect(_text(t.wallet_health.summary.check_again), findsOneWidget);
   });
 
   group('C1: review sheets follow balance hide / fake balance', () {
@@ -252,7 +259,12 @@ void main() {
     );
     final reuseCheck = scoredReport().reviewItems.firstWhere((r) => r.id == SafetyCheckId.addressReuse);
 
-    Future<void> open(WidgetTester tester, SafetyCheckResult check, PreferenceProvider? preferences) async {
+    Future<void> open(
+      WidgetTester tester,
+      SafetyCheckResult check,
+      PreferenceProvider? preferences, {
+      List<UtxoState>? utxos,
+    }) async {
       await tester.pumpWidget(const SizedBox()); // 앞서 연 시트를 닫고 새로 시작
       await pumpWalletHealthApp(
         tester,
@@ -264,19 +276,46 @@ void main() {
         report: scoredReport(),
         wallets: _wallets,
         utxos: {
-          1: [dust],
+          1: utxos ?? [dust],
         },
         preferences: preferences,
       );
-      await tester.tap(find.text('open'));
+      await tester.tap(_text('open'));
       await tester.pumpAndSettle();
     }
 
+    testWidgets('C42: each reused address lists its remaining UTXOs, five then "외 N건"', (tester) async {
+      final address = reuseCheck.subjects.first;
+      final left = [
+        for (var i = 0; i < 7; i++)
+          UtxoState(
+            transactionHash: '${'e' * 63}$i',
+            index: i,
+            amount: 1000 + i,
+            derivationPath: "m/84'/1'/0'/0/1",
+            blockHeight: 100,
+            to: address,
+            timestamp: DateTime(2026, 10, 2),
+          ),
+      ];
+      final sheet = find.byKey(const Key('wallet-health-review-sheet'));
+      await open(tester, reuseCheck, FakePreferences(), utxos: left);
+      expect(find.descendant(of: sheet, matching: find.byType(SafetyPressRow)), findsNWidgets(5));
+      expect(_text(t.wallet_health.widget.more_items(n: 2)), findsOneWidget);
+      expect(_textContaining('1,000'), findsOneWidget);
+      // 남은 개수 글은 없다(줄이 보여 준다)
+      expect(_text(t.wallet_health.review.address_reuse.utxos_left(n: 7)), findsNothing);
+      // 숨김이면 금액 대신 "숨김", 동작은 그대로
+      await open(tester, reuseCheck, FakePreferences(isBalanceHidden: true), utxos: left);
+      expect(_textContaining('1,000'), findsNothing);
+      expect(find.descendant(of: sheet, matching: _text(t.premium.assist.hidden)), findsNWidgets(5));
+    });
+
     testWidgets('visible: dust amount and reused addresses are shown', (tester) async {
       await open(tester, dustCheck, FakePreferences());
-      expect(find.textContaining('546'), findsOneWidget);
+      expect(_textContaining('546'), findsOneWidget);
       await open(tester, reuseCheck, FakePreferences());
-      expect(find.textContaining('bc1qreuse000'), findsNWidgets(2));
+      expect(_textContaining('bc1qreuse000'), findsNWidgets(2));
     });
 
     for (final (mode, preferences) in [
@@ -286,14 +325,14 @@ void main() {
     ]) {
       testWidgets('$mode: no real amount or address fragment, explanation and actions stay', (tester) async {
         await open(tester, dustCheck, preferences);
-        expect(find.textContaining('546'), findsNothing);
-        expect(find.textContaining(t.wallet_health.review.dusting.unlocked), findsOneWidget);
-        expect(find.text(t.wallet_health.review.dusting.view_utxo), findsOneWidget);
+        expect(_textContaining('546'), findsNothing);
+        expect(_textContaining(t.wallet_health.review.dusting.unlocked), findsOneWidget);
+        expect(_text(t.wallet_health.review.dusting.view_utxo), findsOneWidget);
 
         await open(tester, reuseCheck, preferences);
-        expect(find.textContaining('bc1qreuse'), findsNothing);
-        expect(find.text(t.wallet_health.review.address_reuse.body), findsOneWidget);
-        expect(find.text(t.wallet_health.review.address_reuse.view_utxos), findsOneWidget);
+        expect(_textContaining('bc1qreuse'), findsNothing);
+        expect(_text(t.wallet_health.review.address_reuse.body), findsOneWidget);
+        expect(_text(t.wallet_health.review.address_reuse.view_utxos), findsOneWidget);
       });
     }
   });
@@ -319,9 +358,9 @@ void main() {
       evaluatedAt: DateTime.now(),
     );
     await _pump(tester, report);
-    expect(find.text(t.wallet_health.incident.outgoing_title), findsOneWidget); // 머리 = 사건
+    expect(_text(t.wallet_health.incident.outgoing_title), findsOneWidget); // 머리 = 사건
     expect(find.byKey(Key('wallet-health-review-${cert.key}')), findsOneWidget);
-    expect(find.text(t.wallet_health.incident.server_identity_title), findsOneWidget);
+    expect(_text(t.wallet_health.incident.server_identity_title), findsOneWidget);
   });
 
   testWidgets('C2: two non-incident criticals: the hero shows one, the other stays in review', (tester) async {
@@ -350,7 +389,7 @@ void main() {
       evaluatedAt: DateTime.now(),
     );
     await _pump(tester, report);
-    expect(find.text(t.wallet_health.incident.watch_only_mismatch_title), findsOneWidget); // 머리
+    expect(_text(t.wallet_health.incident.watch_only_mismatch_title), findsOneWidget); // 머리
     expect(find.byKey(Key('wallet-health-review-${watchOnly.key}')), findsNothing);
     expect(find.byKey(Key('wallet-health-review-${cert.key}')), findsOneWidget);
   });
@@ -358,10 +397,10 @@ void main() {
   testWidgets('C3: without EntitlementService no paywall card is offered (the paywall needs it)', (tester) async {
     await _pump(tester, scoredReport(), entitlement: false);
     expect(_premiumCard, findsNothing);
-    expect(find.text(safetyKoText(t.wallet_health.section.all_good)), findsOneWidget);
+    expect(_text(t.wallet_health.section.all_good), findsOneWidget);
     await _pump(tester, criticalReport(), entitlement: false);
     expect(_premiumCard, findsNothing);
-    expect(find.text(safetyKoText(t.wallet_health.critical.other_checks)), findsOneWidget);
+    expect(_text(t.wallet_health.critical.other_checks), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -373,9 +412,9 @@ void main() {
       premium: active,
       rescue: FakeRescueReady(statuses: {1: RescueStatus.pending, 2: RescueStatus.pending}),
     );
-    expect(find.text(t.premium.rescue.draft_pending), findsOneWidget);
-    expect(find.textContaining(t.premium.rescue.ready_body), findsNothing);
-    expect(find.text(t.premium.rescue.health_row(n: 0)), findsNothing);
+    expect(_text(t.premium.rescue.draft_pending), findsOneWidget);
+    expect(_textContaining(t.premium.rescue.ready_body), findsNothing);
+    expect(_text(t.premium.rescue.health_row(n: 0)), findsNothing);
 
     for (final (status, text) in [
       (RescueStatus.noBalance, t.premium.rescue.draft_no_balance),
@@ -388,8 +427,8 @@ void main() {
         premium: active,
         rescue: FakeRescueReady(statuses: {1: RescueStatus.ready, 2: status}, drafts: {1: readyDraft()}),
       );
-      expect(find.text(t.premium.rescue.ready_partial(ready: 1, total: 2)), findsOneWidget, reason: '$status');
-      expect(find.text(text), findsOneWidget, reason: '$status');
+      expect(_text(t.premium.rescue.ready_partial(ready: 1, total: 2)), findsOneWidget, reason: '$status');
+      expect(_text(text), findsOneWidget, reason: '$status');
     }
   });
 
@@ -430,11 +469,11 @@ void main() {
     await tester.pump();
     expect(safety.checks, 1);
     await tester.pump(const Duration(milliseconds: 650));
-    expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2));
+    expect(_text(t.wallet_health.summary.checking), findsNWidgets(2));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_health.summary.checking), findsNothing);
-    expect(find.text(t.wallet_health.summary.check_again), findsOneWidget);
+    expect(_text(t.wallet_health.summary.checking), findsNothing);
+    expect(_text(t.wallet_health.summary.check_again), findsOneWidget);
   });
 
   testWidgets('C6: a check that fails at once also waits 700 ms, then says it failed', (tester) async {
@@ -443,11 +482,11 @@ void main() {
     await tester.tap(_checkAgain);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 650));
-    expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2));
+    expect(_text(t.wallet_health.summary.checking), findsNWidgets(2));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
-    expect(find.text(t.wallet_health.summary.checking), findsNothing);
-    expect(find.text(t.wallet_health.toast.check_failed), findsOneWidget);
+    expect(_text(t.wallet_health.summary.checking), findsNothing);
+    expect(_text(t.wallet_health.toast.check_failed), findsOneWidget);
     await tester.pump(const Duration(seconds: 4)); // 토스트가 사라질 때까지
     await tester.pumpAndSettle();
   });
@@ -463,16 +502,16 @@ void main() {
       report: scoredReport(),
       wallets: _wallets,
     );
-    await tester.tap(find.text('open'));
+    await tester.tap(_text('open'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-wallet-sheet')), findsOneWidget);
-    expect(find.text(t.wallet_health.wallet_info.view_all), findsOneWidget);
+    expect(_text(t.wallet_health.wallet_info.view_all), findsOneWidget);
     // C2: 목록 끝 밑줄 글이 아니라 시트 아래에 고정한 앱 표준 버튼(목록을 내리지 않아도 보인다)
     final viewAll = find.byKey(const Key('wallet-health-view-all'));
     expect(find.ancestor(of: viewAll, matching: find.byType(FixedBottomButton)), findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('wallet-health-wallet-sheet')), matching: viewAll), findsNothing);
-    expect(find.text(t.wallet_health.wallet_info.view_all).hitTestable(), findsOneWidget);
-    await tester.tap(find.text(t.wallet_health.wallet_info.view_all));
+    expect(_text(t.wallet_health.wallet_info.view_all).hitTestable(), findsOneWidget);
+    await tester.tap(_text(t.wallet_health.wallet_info.view_all));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-wallet-sheet')), findsNothing);
     expect(find.byType(WalletHealthScreen), findsOneWidget);
@@ -502,10 +541,10 @@ void main() {
     await _pump(tester, scoredReport(), premium: const PremiumState(PremiumStatus.active), rescue: allReady);
     expect(_premiumCard, findsNothing);
     expect(find.byKey(const Key('wallet-health-premium-active')), findsOneWidget);
-    expect(find.text(t.premium.subscription.active_title), findsOneWidget);
-    expect(find.text(safetyKoText(t.premium.name)), findsOneWidget); // 구역 하나 "Coconut Premium"(POLISH §4 D1)
-    expect(find.text(t.premium.rescue.health_row(n: 2)), findsOneWidget);
-    expect(find.textContaining(t.premium.rescue.ready_body), findsOneWidget);
+    expect(_text(t.premium.subscription.active_title), findsOneWidget);
+    expect(_text(t.premium.name), findsOneWidget); // 구역 하나 "Coconut Premium"(POLISH §4 D1)
+    expect(_text(t.premium.rescue.health_row(n: 2)), findsOneWidget);
+    expect(_textContaining(t.premium.rescue.ready_body), findsOneWidget);
     expect(_inGauge('86'), findsOneWidget); // 점수는 Premium과 무관
   });
 
@@ -518,19 +557,19 @@ void main() {
     );
     expect(find.byKey(const Key('wallet-health-premium-active')), findsOneWidget);
     expect(find.byKey(const Key('wallet-health-rescue-ready')), findsOneWidget);
-    expect(find.text(t.premium.rescue.none_body), findsOneWidget); // 목적지 없음 상태도 열 수 있다(R05)
+    expect(_text(t.premium.rescue.none_body), findsOneWidget); // 목적지 없음 상태도 열 수 있다(R05)
     expect(_inGauge(t.wallet_health.hero.not_enough_data_title), findsOneWidget); // 점수는 여전히 없다
   });
 
   group('C3: one Coconut Premium section, status before sales (POLISH §4)', () {
     final rescueRow = find.byKey(const Key('wallet-health-rescue-ready'));
-    final premiumTitle = find.text(safetyKoText(t.premium.name));
+    final premiumTitle = _text(t.premium.name);
 
     testWidgets('free S1: the rescue row (with the Premium chip) comes before the sales card', (tester) async {
       await _pump(tester, scoredReport(), rescue: FakeRescueReady());
       expect(premiumTitle, findsOneWidget);
       expect(find.descendant(of: rescueRow, matching: find.byType(PremiumChip)), findsOneWidget);
-      expect(find.descendant(of: rescueRow, matching: find.text(t.premium.rescue.name)), findsOneWidget);
+      expect(find.descendant(of: rescueRow, matching: _text(t.premium.rescue.name)), findsOneWidget);
       expect(tester.getTopLeft(rescueRow).dy, lessThan(tester.getTopLeft(_premiumCard).dy)); // 상태가 먼저, 광고는 그다음
     });
 
@@ -559,14 +598,14 @@ void main() {
         premium: const PremiumState(PremiumStatus.expired),
         rescue: FakeRescueReady(statuses: {1: RescueStatus.paused}),
       );
-      expect(find.descendant(of: rescueRow, matching: find.text(t.premium.rescue.paused_title)), findsOneWidget);
+      expect(find.descendant(of: rescueRow, matching: _text(t.premium.rescue.paused_title)), findsOneWidget);
       expect(_premiumCard, findsNothing);
     });
 
     testWidgets('subscriber: "Premium 사용 중" (gem) then the rescue row (feature icon), no sales card', (tester) async {
       await _pump(tester, scoredReport(), premium: const PremiumState(PremiumStatus.active), rescue: FakeRescueReady());
       final active = find.byKey(const Key('wallet-health-premium-active'));
-      expect(find.descendant(of: active, matching: find.text(t.premium.subscription.active_title)), findsOneWidget);
+      expect(find.descendant(of: active, matching: _text(t.premium.subscription.active_title)), findsOneWidget);
       expect(find.descendant(of: active, matching: find.byType(PremiumMark)), findsOneWidget);
       expect(find.descendant(of: rescueRow, matching: find.byType(PremiumMark)), findsNothing);
       expect(tester.getTopLeft(active).dy, lessThan(tester.getTopLeft(rescueRow).dy));
@@ -582,11 +621,11 @@ void main() {
       premium: active,
       rescue: FakeRescueReady(statuses: {1: RescueStatus.ready}, drafts: {1: readyDraft()}),
     );
-    expect(find.text(t.premium.rescue.ready_partial(ready: 1, total: 2)), findsOneWidget);
-    expect(find.text(t.premium.rescue.partial_body), findsOneWidget);
+    expect(_text(t.premium.rescue.ready_partial(ready: 1, total: 2)), findsOneWidget);
+    expect(_text(t.premium.rescue.partial_body), findsOneWidget);
 
     await _pump(tester, scoredReport(), premium: active, rescue: FakeRescueReady());
-    expect(find.text(t.premium.rescue.none_body), findsOneWidget);
+    expect(_text(t.premium.rescue.none_body), findsOneWidget);
 
     await _pump(
       tester,
@@ -594,9 +633,9 @@ void main() {
       premium: active,
       rescue: FakeRescueReady(statuses: {1: RescueStatus.failed, 2: RescueStatus.ready}),
     );
-    final title = tester.widget<Text>(find.text(t.premium.rescue.needs_check_title));
+    final title = tester.widget<Text>(_text(t.premium.rescue.needs_check_title));
     expect(title.style!.color, resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors.warningText);
-    expect(find.text(t.premium.rescue.fee_failed), findsOneWidget);
+    expect(_text(t.premium.rescue.fee_failed), findsOneWidget);
 
     // 구독이 끝나도 정해 둔 목적지가 있으면 "멈춤" 줄(초안·지갑은 그대로)
     await _pump(
@@ -606,7 +645,7 @@ void main() {
       rescue: FakeRescueReady(statuses: {1: RescueStatus.paused}),
     );
     expect(_premiumCard, findsNothing); // 남은 초안 옆 광고는 볼모처럼 읽힌다(POLISH §4 D5)
-    expect(find.text(t.premium.rescue.paused_title), findsOneWidget);
+    expect(_text(t.premium.rescue.paused_title), findsOneWidget);
   });
 
   testWidgets('S3: a ready rescue draft shows [지금 이동] in the Premium slot, below [거래 검토]', (tester) async {
@@ -618,20 +657,20 @@ void main() {
     );
     final card = find.byKey(const Key('wallet-health-rescue-card'));
     expect(card, findsOneWidget);
-    expect(find.text(t.premium.rescue.card_title), findsOneWidget);
-    expect(find.text(t.premium.rescue.move_now), findsOneWidget);
+    expect(_text(t.premium.rescue.card_title), findsOneWidget);
+    expect(_text(t.premium.rescue.move_now), findsOneWidget);
     expect(_premiumCard, findsNothing);
     expect(
       tester.getTopLeft(find.byKey(const Key('wallet-health-critical-review'))).dy,
       lessThan(tester.getTopLeft(card).dy),
     );
     // 지갑 · 거래 상태 줄, 잔액을 모르면 금액 대신 "보낸 거래"
-    expect(find.text('Daily1 · ${t.wallet_health.incident.tx_state.unconfirmed}'), findsOneWidget);
-    expect(find.text(t.wallet_health.critical.sent_transaction), findsOneWidget);
+    expect(_text('Daily1 · ${t.wallet_health.incident.tx_state.unconfirmed}'), findsOneWidget);
+    expect(_text(t.wallet_health.critical.sent_transaction), findsOneWidget);
 
     await _pump(tester, criticalReport(), premium: const PremiumState(PremiumStatus.active), rescue: FakeRescueReady());
     expect(find.byKey(const Key('wallet-health-assist-card')), findsOneWidget);
-    expect(find.text(t.premium.card.prepare_response), findsOneWidget);
+    expect(_text(t.premium.card.prepare_response), findsOneWidget);
   });
 
   testWidgets('S3 without an incident: server identity change shows the server card and [인증서 검토]', (tester) async {
@@ -654,12 +693,12 @@ void main() {
       evaluatedAt: DateTime.now(),
     );
     await _pump(tester, report);
-    expect(find.text(t.wallet_health.incident.server_identity_title), findsOneWidget);
+    expect(_text(t.wallet_health.incident.server_identity_title), findsOneWidget);
     expect(find.byKey(const Key('wallet-health-critical-check-card')), findsOneWidget);
-    expect(find.text('${t.wallet_health.review.server_cert.fingerprint} 12345678…'), findsOneWidget);
-    expect(find.text(t.wallet_health.critical.review_certificate), findsOneWidget);
-    expect(find.text(safetyKoText(t.wallet_health.critical.other_checks)), findsOneWidget);
-    expect(find.text(safetyKoText(t.wallet_health.section.review_needed)), findsNothing); // 위급 항목은 머리에서만
+    expect(_text('${t.wallet_health.review.server_cert.fingerprint} 12345678…'), findsOneWidget);
+    expect(_text(t.wallet_health.critical.review_certificate), findsOneWidget);
+    expect(_text(t.wallet_health.critical.other_checks), findsOneWidget);
+    expect(_text(t.wallet_health.section.review_needed), findsNothing); // 위급 항목은 머리에서만
   });
 
   testWidgets('mempool-dropped incident is an info row in the review card, wallet rows carry the wallet', (
@@ -682,10 +721,10 @@ void main() {
       evaluatedAt: DateTime.now(),
     );
     await _pump(tester, report);
-    expect(find.text(t.wallet_health.section.mempool_dropped), findsOneWidget);
-    expect(find.text('Savings2 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsOneWidget);
-    expect(find.text('Daily1 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsNWidgets(2));
-    expect(find.text(t.wallet_health.section.recommended_progress(done: 0, total: 1)), findsOneWidget);
+    expect(_text(t.wallet_health.section.mempool_dropped), findsOneWidget);
+    expect(_text('Savings2 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsOneWidget);
+    expect(_text('Daily1 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsNWidgets(2));
+    expect(_text(t.wallet_health.section.recommended_progress(done: 0, total: 1)), findsOneWidget);
   });
 
   testWidgets('info button opens the About sheet with the v2 categories and no "pts"', (tester) async {
@@ -694,21 +733,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-about-sheet')), findsOneWidget);
     // C16: 시트 제목은 짧게(화면 제목과 같은 "지갑 상태"), 문장 제목은 본문 첫 줄 18 Bold
-    expect(find.text(t.wallet_health.title), findsNWidgets(2)); // 화면 앱바 + 시트 머리
+    expect(_text(t.wallet_health.title), findsNWidgets(2)); // 화면 앱바 + 시트 머리
     final heading = find.descendant(
       of: find.byKey(const Key('wallet-health-about-sheet')),
-      matching: find.text(safetyKoText(t.wallet_health.about.title)),
+      matching: _text(t.wallet_health.about.title),
     );
     expect(heading, findsOneWidget);
     expect(tester.widget<Text>(heading).style!.fontSize, 18);
     for (final label in WalletHealthLabel.values) {
-      expect(find.text(walletHealthLabelText(label)), findsWidgets);
+      expect(_text(walletHealthLabelText(label)), findsWidgets);
     }
-    expect(find.text('45%'), findsOneWidget);
-    expect(find.textContaining('pts'), findsNothing);
-    expect(find.text(t.wallet_health.about.coverage_body), findsOneWidget);
-    expect(find.text(t.wallet_health.about.data_note), findsOneWidget);
-    expect(find.text(t.wallet_health.about.weight_largest_wallet), findsOneWidget);
+    expect(_text('45%'), findsOneWidget);
+    expect(_textContaining('pts'), findsNothing);
+    expect(_text(t.wallet_health.about.coverage_body), findsOneWidget);
+    expect(_text(t.wallet_health.about.data_note), findsOneWidget);
+    expect(_text(t.wallet_health.about.weight_largest_wallet), findsOneWidget);
   });
 
   testWidgets('category card opens its detail sheet; a failing row inside it opens the review sheet', (tester) async {
@@ -716,9 +755,9 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-health-category-privacy')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-category-sheet-privacy')), findsOneWidget);
-    expect(find.text(t.wallet_health.about.weight_privacy), findsOneWidget);
+    expect(_text(t.wallet_health.about.weight_privacy), findsOneWidget);
     // 실패 행: 이름 + 짧은 결과 + 꺾쇠
-    expect(find.text(t.wallet_health.check.address_reuse.count(n: 2)), findsOneWidget);
+    expect(_text(t.wallet_health.check.address_reuse.count(n: 2)), findsOneWidget);
     final reuseRow = find.byKey(Key('wallet-health-check-row-${scoredReport().reviewItems[1].key}'));
     expect(reuseRow, findsOneWidget);
     await tester.tap(reuseRow);
@@ -728,11 +767,11 @@ void main() {
     // C16: 시트 머리는 점검 이름, 문장 제목은 본문 첫 줄(긴 de/es/ja 제목이 말줄임되지 않게)
     final heading = find.descendant(
       of: find.byKey(const Key('wallet-health-review-sheet')),
-      matching: find.text(safetyKoText(t.wallet_health.review.address_reuse.title)),
+      matching: _text(t.wallet_health.review.address_reuse.title),
     );
     expect(heading, findsOneWidget);
     expect(tester.widget<Text>(heading).style!.fontSize, 18);
-    expect(find.text(safetyCheckName(SafetyCheckId.addressReuse)), findsWidgets);
+    expect(_text(safetyCheckName(SafetyCheckId.addressReuse)), findsWidgets);
   });
 
   // 당겨서 새로고침은 iOS(바운스)에서만 끝까지 당겨진다. 안드로이드 기본 스크롤은 넘침이 없어 걸리지 않는다
@@ -758,17 +797,17 @@ void main() {
 
   testWidgets('review row opens the review item sheet', (tester) async {
     await _pump(tester, scoredReport());
-    await tester.tap(find.text(t.wallet_health.category.addresses_reused(n: 2)).last);
+    await tester.tap(_text(t.wallet_health.category.addresses_reused(n: 2)).last);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-review-sheet')), findsOneWidget);
-    expect(find.text(t.wallet_health.review.address_reuse.body), findsOneWidget);
+    expect(_text(t.wallet_health.review.address_reuse.body), findsOneWidget);
   });
 
   testWidgets('recommended check is marked done by the user from its sheet', (tester) async {
     final safety = await _pump(tester, scoredReport());
-    await tester.tap(find.text(safetyKoText(t.wallet_health.recommended.mnemonic_stored)));
+    await tester.tap(_text(t.wallet_health.recommended.mnemonic_stored));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_health.recommended.intro), findsOneWidget);
+    expect(_text(t.wallet_health.recommended.intro), findsOneWidget);
     await tester.tap(find.byKey(const Key('wallet-health-recommended-toggle')));
     await tester.pumpAndSettle();
     expect(safety.recommendedDone, {RecommendedCheckId.hotPhysicalBackup: true});
@@ -785,11 +824,11 @@ void main() {
       await _pump(tester, scoredReport(), locale: locale, width: 320);
       // 본문 글은 줄을 바꾸고 줄이지 않는다
       for (final text in [t.wallet_health.check.watch_only_verify.issue_not_verified, t.premium.card.body]) {
-        expect(find.ancestor(of: find.text(text), matching: find.byType(FittedBox)), findsNothing, reason: text);
+        expect(find.ancestor(of: _text(text), matching: find.byType(FittedBox)), findsNothing, reason: text);
       }
       // 한 줄 이름·숫자만 줄여 맞춘다(POLISH R2·C22): 카드 머리 폭에서 단어 중간에 줄이 바뀌지 않게
       expect(
-        find.ancestor(of: find.text(t.wallet_health.category.recovery_readiness), matching: find.byType(FittedBox)),
+        find.ancestor(of: _text(t.wallet_health.category.recovery_readiness), matching: find.byType(FittedBox)),
         findsOneWidget,
       );
       await tester.tap(find.byKey(const Key('wallet-health-info')));
@@ -797,4 +836,144 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('P1 polish', () {
+    WalletHealthReport report({
+      List<SafetyCheckResult>? reviewItems,
+      List<SafetyCheckResult>? allGoodItems,
+      DateTime? lastSuccessfulSyncAt,
+    }) {
+      final base = scoredReport();
+      return WalletHealthReport(
+        status: base.status,
+        score: base.score,
+        label: base.label,
+        profile: base.profile,
+        categories: base.categories,
+        recovery: base.recovery,
+        reviewItems: reviewItems ?? base.reviewItems,
+        allGoodItems: allGoodItems ?? base.allGoodItems,
+        notIncluded: base.notIncluded,
+        recommended: base.recommended,
+        walletCount: base.walletCount,
+        fundedWalletCount: base.fundedWalletCount,
+        evaluatedAt: base.evaluatedAt,
+        lastSuccessfulSyncAt: lastSuccessfulSyncAt,
+      );
+    }
+
+    testWidgets('C40: a check is "정상" only when no wallet fails it', (tester) async {
+      await _pump(
+        tester,
+        report(
+          reviewItems: const [
+            SafetyCheckResult(
+              SafetyCheckId.mnemonicBackup,
+              SafetyOutcome.failed,
+              walletId: 2,
+              severity: SafetySeverity.actionNeeded,
+            ),
+          ],
+          allGoodItems: const [
+            SafetyCheckResult(SafetyCheckId.mnemonicBackup, SafetyOutcome.passed, walletId: 1),
+            SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.passed),
+          ],
+        ),
+      );
+      final passed = [for (final row in tester.widgetList<SafetyPassedRow>(find.byType(SafetyPassedRow))) row.item.id];
+      expect(passed, isNot(contains(SafetyCheckId.mnemonicBackup)));
+      expect(passed, contains(SafetyCheckId.appLock));
+    });
+
+    testWidgets('C45: About shows "—" for the last update until a sync succeeded', (tester) async {
+      final about = find.byKey(const Key('wallet-health-about-sheet'));
+      await _pump(tester, report());
+      await tester.tap(find.byKey(const Key('wallet-health-info')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: about, matching: _text('—')), findsOneWidget);
+
+      await _pump(tester, report(lastSuccessfulSyncAt: DateTime(2026, 10, 20, 9)));
+      await tester.tap(find.byKey(const Key('wallet-health-info')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: about, matching: _text('—')), findsNothing);
+    });
+
+    testWidgets('C3: the free row says what it does; verifying with a destination says it is checking', (tester) async {
+      final row = find.byKey(const Key('wallet-health-rescue-ready'));
+      await _pump(tester, scoredReport(), rescue: FakeRescueReady());
+      expect(find.descendant(of: row, matching: _text(t.premium.rescue.free_body)), findsOneWidget);
+      await _pump(
+        tester,
+        scoredReport(),
+        premium: const PremiumState(PremiumStatus.verifying),
+        rescue: FakeRescueReady(statuses: {1: RescueStatus.ready}),
+      );
+      expect(find.descendant(of: row, matching: _text(t.premium.rescue.verifying)), findsOneWidget);
+    });
+
+    Future<void> openRecommended(
+      WidgetTester tester,
+      RecommendedCheckId id, {
+      double width = 390,
+      double height = 2400,
+      double textScale = 1,
+    }) async {
+      await tester.pumpWidget(const SizedBox());
+      await pumpWalletHealthApp(
+        tester,
+        Builder(
+          builder:
+              (context) => TextButton(
+                onPressed: () => showSafetyRecommendedSheet(context, RecommendedItem(id: id)),
+                child: const Text('open'),
+              ),
+        ),
+        report: scoredReport(),
+        wallets: _wallets,
+        width: width,
+        height: height,
+        textScale: textScale,
+      );
+      await tester.tap(_text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('C43: own titles for hot storage and multisig separation; title, guide, then the common intro', (
+      tester,
+    ) async {
+      final r = t.wallet_health.recommended;
+      await openRecommended(tester, RecommendedCheckId.hotSafeStorage);
+      expect(_text(r.safe_storage), findsOneWidget);
+      expect(tester.getTopLeft(_text(r.safe_storage_body)).dy, lessThan(tester.getTopLeft(_text(r.intro)).dy));
+      await openRecommended(tester, RecommendedCheckId.multisigBackupSeparation);
+      expect(_text(r.recovery_separate), findsOneWidget);
+      expect(_text(r.recovery_separate_body), findsOneWidget);
+      expect(r.safe_storage, isNot(r.recovery_separate));
+    });
+
+    testWidgets('C38: at 320×568 and 2.0× the recommended sheet scrolls to its button', (tester) async {
+      await openRecommended(tester, RecommendedCheckId.hotPhysicalBackup, width: 320, height: 568, textScale: 2.0);
+      expect(tester.takeException(), isNull);
+      final toggle = find.byKey(const Key('wallet-health-recommended-toggle'));
+      await tester.scrollUntilVisible(
+        toggle,
+        80,
+        scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)).first,
+      );
+      expect(toggle.hitTestable(), findsOneWidget);
+    });
+
+    for (final scale in [1.3, 2.0]) {
+      testWidgets('320 dp × $scale: every state and the About sheet fit without overflow', (tester) async {
+        for (final r in [scoredReport(), notEnoughDataReport(), noWalletReport(), criticalReport(incidents: 2)]) {
+          await _pump(tester, r, width: 320, textScale: scale, rescue: FakeRescueReady());
+          expect(tester.takeException(), isNull);
+        }
+        await _pump(tester, scoredReport(), width: 320, textScale: scale, rescue: FakeRescueReady());
+        await tester.tap(find.byKey(const Key('wallet-health-info')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }

@@ -200,7 +200,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       if (waiting) ...[
         CoconutLayout.spacing_400h,
         Text(
-          noWallet ? t.wallet_health.hero.no_wallet_body : t.wallet_health.hero.not_enough_data_body,
+          safetyKoText(noWallet ? t.wallet_health.hero.no_wallet_body : t.wallet_health.hero.not_enough_data_body),
           textAlign: TextAlign.center,
           style: CoconutTypography.body2_14.setColor(colors.secondaryText),
         ),
@@ -227,9 +227,9 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
         // 판매 카드는 지갑이 없을 때(S0)만 뺀다. S4에서도 Premium 줄과 비상 이동 준비(자금 없음 상태 포함)를 연다
         if (!noWallet && context.read<EntitlementService?>() != null)
           ..._premiumSection(notEnoughData: status == WalletHealthStatus.notEnoughData),
-        if (report.allGoodItems.isNotEmpty) ...[
+        if (_passedChecks(report) case final passed when passed.isNotEmpty) ...[
           SafetySectionTitle(waiting ? s.available_now : s.all_good),
-          SafetyListCard(rows: [for (final item in _uniqueById(report.allGoodItems)) SafetyPassedRow(item: item)]),
+          SafetyListCard(rows: [for (final item in passed) SafetyPassedRow(item: item)]),
         ],
         if (waiting) ...[
           if (notIncluded.isNotEmpty) ...[
@@ -246,6 +246,15 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
         ..._recommendedSection(report),
       ],
     ];
+  }
+
+  /// "정상 항목": 점검 종류별 한 줄. 같은 점검이 어느 지갑에서든 검토 필요면 두지 않는다(모든 지갑이 통과해야 정상, C40)
+  List<SafetyCheckResult> _passedChecks(WalletHealthReport report) {
+    final failing = {for (final r in report.reviewItems) r.id};
+    return _uniqueById([
+      for (final item in report.allGoodItems)
+        if (!failing.contains(item.id)) item,
+    ]);
   }
 
   /// 지갑이 생기거나 쓰기 시작하면 자동으로 들어오는 점검(점검 종류별 한 줄)
@@ -300,6 +309,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
           final line = rescue == null ? null : _rescueLine(rescue, premium.isActive);
           // 구독이 끝나도 정해 둔 목적지가 남으면 멈춤 줄(지우기·지금 이동은 그대로). 그 옆에 판매 카드는 두지 않는다
           final paused = !premium.isActive && line != null;
+          final walletIds = [for (final w in context.read<WalletProvider?>()?.walletItemList ?? const []) w.id];
+          final hasDestination = rescue != null && walletIds.any((id) => rescue.statusOf(id) != RescueStatus.notSet);
           final rows = <Widget>[
             if (premium.isActive)
               _PremiumRow(
@@ -319,8 +330,10 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
                   colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                 ),
                 title: line?.title ?? t.premium.rescue.name,
-                // TODO(copy): premium.rescue.free_body(무료, 목적지 없음) · premium.rescue.verifying(구독 확인 중)
-                subtitle: line?.subtitle,
+                // 구독 확인 중이고 목적지가 있으면 확인 중 안내, 그 밖의 무료는 이 기능이 하는 일(POLISH §4 D1·D6)
+                subtitle:
+                    line?.subtitle ??
+                    (verifying && hasDestination ? t.premium.rescue.verifying : t.premium.rescue.free_body),
                 warning: line?.warning ?? false,
                 chip: line == null && !verifying,
                 onTap: () => RescueReadyScreen.open(context),
@@ -464,13 +477,13 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             HealthGauge(report: report, isChecking: checking),
             CoconutLayout.spacing_300h,
             Text(
-              c.title,
+              safetyKoText(c.title),
               textAlign: TextAlign.center,
               style: CoconutTypography.heading4_18_Bold.setColor(colors.dangerText),
             ),
             CoconutLayout.spacing_100h,
             Text(
-              safetyCriticalTitle(report),
+              safetyKoText(safetyCriticalTitle(report)),
               textAlign: TextAlign.center,
               style: CoconutTypography.body2_14.setColor(colors.secondaryText),
             ),
@@ -622,7 +635,10 @@ class _CriticalCheckCard extends StatelessWidget {
         ],
       );
     } else {
-      content = Text(safetyCheckName(check.id), style: CoconutTypography.body2_14.setColor(colors.primaryText));
+      content = Text(
+        safetyKoText(safetyCheckName(check.id)),
+        style: CoconutTypography.body2_14.setColor(colors.primaryText),
+      );
     }
     return SafetyListCard(
       key: const Key('wallet-health-critical-check-card'),
@@ -686,7 +702,7 @@ class _IncidentCard extends StatelessWidget {
                     children: [
                       // 금액 대신 "보낸 거래"(잔액 숨김을 따른다)
                       Text(
-                        t.wallet_health.critical.sent_transaction,
+                        safetyKoText(t.wallet_health.critical.sent_transaction),
                         style: CoconutTypography.body2_14.setColor(colors.primaryText),
                       ),
                       Text(
@@ -743,7 +759,7 @@ class _InfoIncidentRow extends StatelessWidget {
                 children: [
                   if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                   Text(
-                    t.wallet_health.section.mempool_dropped,
+                    safetyKoText(t.wallet_health.section.mempool_dropped),
                     style: CoconutTypography.body2_14.setColor(colors.primaryText),
                   ),
                 ],
@@ -796,12 +812,12 @@ class _PremiumRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    safetyKoText(title),
                     style: CoconutTypography.body2_14.setColor(warning ? colors.warningText : colors.primaryText),
                   ),
                   if (subtitle != null) ...[
                     CoconutLayout.spacing_50h,
-                    Text(subtitle!, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                    Text(safetyKoText(subtitle!), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                   ],
                 ],
               ),
@@ -843,7 +859,10 @@ class _OtherCheckRow extends StatelessWidget {
             ),
             CoconutLayout.spacing_300w,
             Expanded(
-              child: Text(safetyCategoryName(category), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+              child: Text(
+                safetyKoText(safetyCategoryName(category)),
+                style: CoconutTypography.body2_14.setColor(colors.primaryText),
+              ),
             ),
             CoconutLayout.spacing_200w,
             Flexible(
@@ -857,7 +876,11 @@ class _OtherCheckRow extends StatelessWidget {
                             ? CoconutTypography.body2_14_Bold.setColor(colors.secondaryText)
                             : CoconutTypography.body1_16_NumberBold.setColor(colors.primaryText),
                   ),
-                  Text(status.text, textAlign: TextAlign.end, style: CoconutTypography.body3_12.setColor(status.color)),
+                  Text(
+                    safetyKoText(status.text),
+                    textAlign: TextAlign.end,
+                    style: CoconutTypography.body3_12.setColor(status.color),
+                  ),
                 ],
               ),
             ),
@@ -912,7 +935,7 @@ class _RecommendedRow extends StatelessWidget {
                     safetyKoText(safetyRecommendedName(context, item)), // "확인하 / 기" 방지(POLISH R1)
                     style: CoconutTypography.body2_14.setColor(colors.primaryText),
                   ),
-                  Text(subtitle, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                 ],
               ),
             ),

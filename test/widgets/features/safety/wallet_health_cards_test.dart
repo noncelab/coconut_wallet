@@ -11,7 +11,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../screens/safety/wallet_health_fixtures.dart';
 
-Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(find.text(text).first).style!.color!;
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
+
+/// 글자 일부 찾기(U+2060 이음 문자를 빼고 비교)
+Finder _textContaining(Pattern pattern) => find.byWidgetPredicate(
+  (w) => w is Text && ((w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '').contains(pattern) ?? false),
+);
+
+Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(_text(text).first).style!.color!;
 
 Future<void> _pump(WidgetTester tester, Widget child, {CoconutThemeVariant variant = CoconutThemeVariant.light}) =>
     pumpWalletHealthApp(tester, Scaffold(body: SingleChildScrollView(child: child)), variant: variant, width: 320);
@@ -27,10 +36,10 @@ void main() {
           WalletHealthCategoryGrid(report: scoredReport(), isChecking: false, onTap: (_) {}),
           variant: variant,
         );
-        expect(find.text('80'), findsOneWidget);
+        expect(_text('80'), findsOneWidget);
         expect(_textColor(tester, t.wallet_health.category.addresses_reused(n: 2)), colors.warningText);
         expect(_textColor(tester, t.wallet_health.summary.items_need_attention(n: 1)), colors.warningText);
-        expect(find.text(t.wallet_health.summary.no_issues_found), findsNWidgets(2));
+        expect(_text(t.wallet_health.summary.no_issues_found), findsNWidgets(2));
         expect(_textColor(tester, t.wallet_health.summary.no_issues_found), colors.success);
 
         await _pump(
@@ -38,11 +47,11 @@ void main() {
           WalletHealthCategoryGrid(report: noWalletReport(), isChecking: false, onTap: (_) {}),
           variant: variant,
         );
-        expect(find.text(t.wallet_health.category.available), findsOneWidget);
-        expect(find.text('100'), findsNothing); // 지갑 0개는 숫자 대신 "사용 가능"
-        expect(find.text(t.wallet_health.category.reason_add_wallet), findsOneWidget);
+        expect(_text(t.wallet_health.category.available), findsOneWidget);
+        expect(_text('100'), findsNothing); // 지갑 0개는 숫자 대신 "사용 가능"
+        expect(_text(t.wallet_health.category.reason_add_wallet), findsOneWidget);
         expect(_textColor(tester, t.wallet_health.category.reason_add_wallet), colors.secondaryText);
-        expect(find.text(t.wallet_health.category.waiting), findsNWidgets(3));
+        expect(_text(t.wallet_health.category.waiting), findsNWidgets(3));
       });
 
       testWidgets('review row: warning icon, issue text, pill; the whole row is the button', (tester) async {
@@ -57,9 +66,9 @@ void main() {
           SafetyListCard(rows: [SafetyReviewRow(check: item, onTap: () => taps++)]),
           variant: variant,
         );
-        expect(find.text(t.wallet_health.check.app_lock.issue), findsOneWidget);
+        expect(_text(t.wallet_health.check.app_lock.issue), findsOneWidget);
         expect(_textColor(tester, t.wallet_health.cta.set_up), colors.warningText);
-        await tester.tap(find.text(t.wallet_health.check.app_lock.issue));
+        await tester.tap(_text(t.wallet_health.check.app_lock.issue));
         await tester.pumpAndSettle();
         expect(taps, 1);
       });
@@ -100,19 +109,19 @@ void main() {
           expect(find.byType(PremiumChip), findsNothing); // Premium 바탕 위에는 칩을 두지 않는다
           expect(find.byType(PremiumMark), findsOneWidget);
           expect(tester.widget<PremiumSurface>(find.byType(PremiumSurface)).ringWidth, 1);
-          expect(find.text(t.premium.card.point_prepare), findsOneWidget);
-          expect(find.text(t.premium.card.point_rescue), findsOneWidget);
-          expect(find.text(t.premium.card.point_guide), findsOneWidget);
+          expect(_text(t.premium.card.point_prepare), findsOneWidget);
+          expect(_text(t.premium.card.point_rescue), findsOneWidget);
+          expect(_text(t.premium.card.point_guide), findsOneWidget);
           expect(_textColor(tester, t.premium.card.title), colors.primaryText);
           expect(_textColor(tester, t.premium.card.point_rescue), colors.secondaryTextStrong);
           for (final text in tester.widgetList<Text>(find.byType(Text))) {
-            expect(text.data ?? '', isNot(contains('모니터링')));
+            expect((text.data ?? '').replaceAll('\u2060', ''), isNot(contains('모니터링')));
           }
           // 안쪽 버튼은 없다: 카드 어디를 눌러도 같은 한 동작
           expect(find.byType(ShrinkAnimationButton), findsOneWidget);
-          await tester.tap(find.text(t.premium.card.point_rescue));
+          await tester.tap(_text(t.premium.card.point_rescue));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(t.premium.card.explore));
+          await tester.tap(_text(t.premium.card.explore));
           await tester.pumpAndSettle();
           expect(taps, 2);
 
@@ -134,9 +143,9 @@ void main() {
 
     await _pump(tester, header(scoredReport(connected: false)));
     expect(find.byKey(const Key('wallet-health-add-wallet')), findsNothing);
-    expect(find.text(t.wallet_health.hero.offline_line), findsOneWidget);
+    expect(_text(t.wallet_health.hero.offline_line), findsOneWidget);
     expect(
-      find.text('${t.wallet_health.hero.wallets_checked(n: 2)} · ${t.wallet_health.hero.funded_wallets(n: 1)}'),
+      _text('${t.wallet_health.hero.wallets_checked(n: 2)} · ${t.wallet_health.hero.funded_wallets(n: 1)}'),
       findsOneWidget,
     );
     await tester.tap(find.byKey(const Key('wallet-health-check-again')));
@@ -144,8 +153,8 @@ void main() {
 
     await _pump(tester, header(noWalletReport()));
     expect(find.byKey(const Key('wallet-health-check-again')), findsNothing);
-    expect(find.text(t.home_widgets.add_wallet), findsOneWidget);
-    expect(find.textContaining(t.wallet_health.hero.wallets_checked(n: 0)), findsNothing);
+    expect(_text(t.home_widgets.add_wallet), findsOneWidget);
+    expect(_textContaining(t.wallet_health.hero.wallets_checked(n: 0)), findsNothing);
     await tester.tap(find.byKey(const Key('wallet-health-add-wallet')));
     expect(adds, 1);
   });
@@ -163,10 +172,10 @@ void main() {
     expect(find.byKey(const Key('wallet-health-card-skeleton')), findsNWidgets(4));
     // 지난 결과는 틀(크기)로만 남고 보이지 않는다(C14)
     expect(
-      tester.widget<Visibility>(find.ancestor(of: find.text('80'), matching: find.byType(Visibility))).visible,
+      tester.widget<Visibility>(find.ancestor(of: _text('80'), matching: find.byType(Visibility))).visible,
       isFalse,
     );
-    expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2)); // 게이지 라벨 + 버튼
+    expect(_text(t.wallet_health.summary.checking), findsNWidgets(2)); // 게이지 라벨 + 버튼
   });
 
   testWidgets('C14: re-checking keeps each card the size of its last result (no layout jump)', (tester) async {
@@ -204,7 +213,7 @@ void main() {
   testWidgets('C9/C22: the big value and the category name scale down on one line instead of wrapping', (tester) async {
     await _pump(tester, WalletHealthCategoryGrid(report: scoredReport(), isChecking: false, onTap: (_) {}));
     for (final text in ['80', safetyCategoryName(SafetyCategory.recovery)]) {
-      final fitted = find.ancestor(of: find.text(text), matching: find.byType(FittedBox));
+      final fitted = find.ancestor(of: _text(text), matching: find.byType(FittedBox));
       expect(fitted, findsOneWidget);
       expect(tester.widget<FittedBox>(fitted).fit, BoxFit.scaleDown);
     }
@@ -218,9 +227,9 @@ void main() {
       ),
     );
     final row = tester.getRect(find.byType(SafetyPassedRow));
-    final value = tester.getRect(find.text(t.wallet_health.check.app_lock.enabled));
+    final value = tester.getRect(_text(t.wallet_health.check.app_lock.enabled));
     expect(value.right, closeTo(row.right - 20, 0.5)); // 행 안쪽 여백 20
-    expect(tester.widget<Text>(find.text(t.wallet_health.check.app_lock.enabled)).textAlign, TextAlign.end);
+    expect(tester.widget<Text>(_text(t.wallet_health.check.app_lock.enabled)).textAlign, TextAlign.end);
   });
 
   testWidgets('C25: icons and dots stay centred on the first line as text grows', (tester) async {
@@ -283,10 +292,10 @@ void main() {
       ),
     ];
     await _pump(tester, SafetyListCard(rows: [for (final c in rows) SafetyReviewRow(check: c, onTap: () {})]));
-    expect(find.text(t.wallet_health.check.watch_only_verify.issue_mismatch), findsOneWidget);
-    expect(find.text(t.wallet_health.cta.rescan), findsOneWidget);
-    expect(find.text(t.wallet_health.check.bsms_backup.issue_update_required), findsOneWidget);
-    expect(find.text(t.wallet_health.check.recent_at_add.issue), findsOneWidget);
+    expect(_text(t.wallet_health.check.watch_only_verify.issue_mismatch), findsOneWidget);
+    expect(_text(t.wallet_health.cta.rescan), findsOneWidget);
+    expect(_text(t.wallet_health.check.bsms_backup.issue_update_required), findsOneWidget);
+    expect(_text(t.wallet_health.check.recent_at_add.issue), findsOneWidget);
     expect(
       safetyIssueText(
         const SafetyCheckResult(
@@ -310,8 +319,8 @@ void main() {
       subjects: ['tx'],
     );
     await _pump(tester, SafetyListCard(rows: [SafetyReviewRow(check: check, onTap: () {})]));
-    expect(find.text(t.wallet_health.check.self_transfer.issue), findsOneWidget);
-    expect(find.text(t.wallet_health.cta.review), findsOneWidget);
+    expect(_text(t.wallet_health.check.self_transfer.issue), findsOneWidget);
+    expect(_text(t.wallet_health.cta.review), findsOneWidget);
     expect(safetyCheckName(check.id), t.wallet_health.check.self_transfer.name);
     expect(
       safetyPassedText(const SafetyCheckResult(SafetyCheckId.unexpectedSelfTransfer, SafetyOutcome.passed)).text,
@@ -327,8 +336,25 @@ void main() {
         footer: t.wallet_health.section.not_included_footer_usage,
       ),
     );
-    expect(find.text(t.wallet_health.check.mnemonic_backup.name), findsOneWidget);
-    expect(find.text(t.wallet_health.about.excluded_no_bitcoin), findsOneWidget);
-    expect(find.text(t.wallet_health.section.not_included_footer_usage), findsOneWidget);
+    expect(_text(t.wallet_health.check.mnemonic_backup.name), findsOneWidget);
+    expect(_text(t.wallet_health.about.excluded_no_bitcoin), findsOneWidget);
+    expect(_text(t.wallet_health.section.not_included_footer_usage), findsOneWidget);
+  });
+
+  testWidgets('C7: a long action label stays one line inside a capped pill instead of pushing the issue text', (
+    tester,
+  ) async {
+    await _pump(tester, const SafetyActionPill(text: 'Escanear de nuevo otra vez'));
+    expect(tester.getSize(find.byType(SafetyActionPill)).width, lessThanOrEqualTo(96 + 24)); // 글 96 + 좌우 여백
+    expect(tester.widget<Text>(_text('Escanear de nuevo otra vez')).maxLines, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('C17: only the digits use the number font', (tester) async {
+    const words = TextStyle(fontFamily: 'Body');
+    const digits = TextStyle(fontFamily: 'Number');
+    final spans = safetyNumberSpans('복구 86점', words, digits).children!.cast<TextSpan>();
+    expect([for (final span in spans) span.text], ['복구 ', '86', '점']);
+    expect([for (final span in spans) span.style!.fontFamily], ['Body', 'Number', 'Body']);
   });
 }

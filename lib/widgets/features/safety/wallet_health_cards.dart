@@ -277,6 +277,27 @@ String safetyRecommendedName(BuildContext context, RecommendedItem item) {
   };
 }
 
+/// 글자와 숫자가 섞인 짧은 글: 숫자만 [digits] 글꼴(숫자 글꼴 SpaceGrotesk에는 한글이 없다)
+TextSpan safetyNumberSpans(String text, TextStyle words, TextStyle digits) => TextSpan(
+  children: [
+    for (final match in RegExp(r'\d+|\D+').allMatches(text))
+      TextSpan(text: match[0], style: RegExp(r'^\d').hasMatch(match[0]!) ? digits : words),
+  ],
+);
+
+/// 권장 점검 시트의 한 줄 안내(제목 아래, 공통 안내 위). 점검마다 무엇을 확인하는지 말한다(R41)
+String safetyRecommendedBody(RecommendedCheckId id) {
+  final r = t.wallet_health.recommended;
+  return switch (id) {
+    RecommendedCheckId.hotPhysicalBackup => r.mnemonic_stored_body,
+    RecommendedCheckId.hotSafeStorage => r.safe_storage_body,
+    RecommendedCheckId.multisigBackupSeparation => r.recovery_separate_body,
+    RecommendedCheckId.hotPassphraseOffline => r.passphrase_recoverable_body,
+    RecommendedCheckId.multisigQuorumAccess => r.signer_access_body,
+    RecommendedCheckId.metadataStoredOffsite => r.metadata_stored_body,
+  };
+}
+
 /// 카테고리 카드·시트의 상태 줄. 가장 큰 감점 원인을 직접 보여 준다
 ({String text, Color color}) safetyCategoryStatus(
   BuildContext context,
@@ -371,17 +392,21 @@ class WalletHealthHeaderCard extends StatelessWidget {
           if (report != null) ...[
             CoconutLayout.spacing_200h,
             Text(
-              t.wallet_health.summary.last_checked(time: formatHomeRelativeTime(report.evaluatedAt, DateTime.now())),
+              safetyKoText(
+                t.wallet_health.summary.last_checked(time: formatHomeRelativeTime(report.evaluatedAt, DateTime.now())),
+              ),
               textAlign: TextAlign.center,
               style: lineStyle,
             ),
             if (!noWallet) ...[
               CoconutLayout.spacing_100h,
               Text(
-                [
-                  hero.wallets_checked(n: report.walletCount),
-                  if (report.fundedWalletCount > 0) hero.funded_wallets(n: report.fundedWalletCount),
-                ].join(' · '),
+                safetyKoText(
+                  [
+                    hero.wallets_checked(n: report.walletCount),
+                    if (report.fundedWalletCount > 0) hero.funded_wallets(n: report.fundedWalletCount),
+                  ].join(' · '),
+                ),
                 textAlign: TextAlign.center,
                 style: lineStyle,
               ),
@@ -399,7 +424,7 @@ class WalletHealthHeaderCard extends StatelessWidget {
                     colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_100w,
-                  Flexible(child: Text(t.wallet_health.hero.offline_line, style: lineStyle)),
+                  Flexible(child: Text(safetyKoText(t.wallet_health.hero.offline_line), style: lineStyle)),
                 ],
               ),
             ],
@@ -600,7 +625,7 @@ class _CategoryCard extends StatelessWidget {
           big,
           CoconutLayout.spacing_50h,
           Text(
-            status.text,
+            safetyKoText(status.text),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: CoconutTypography.body3_12.setColor(status.color),
@@ -710,7 +735,10 @@ class SafetyReviewRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-                  Text(safetyIssueText(check), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                  Text(
+                    safetyKoText(safetyIssueText(check)),
+                    style: CoconutTypography.body2_14.setColor(colors.primaryText),
+                  ),
                 ],
               ),
             ),
@@ -747,12 +775,19 @@ class SafetyPassedRow extends StatelessWidget {
           ),
           CoconutLayout.spacing_300w,
           Expanded(
-            child: Text(safetyCheckName(item.id), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+            child: Text(
+              safetyKoText(safetyCheckName(item.id)),
+              style: CoconutTypography.body2_14.setColor(colors.primaryText),
+            ),
           ),
           CoconutLayout.spacing_200w,
           // 값은 오른쪽 끝(느슨한 Flexible이면 줄 가운데에 멈춘다)
           Expanded(
-            child: Text(result.text, textAlign: TextAlign.end, style: CoconutTypography.body3_12.setColor(color)),
+            child: Text(
+              safetyKoText(result.text),
+              textAlign: TextAlign.end,
+              style: CoconutTypography.body3_12.setColor(color),
+            ),
           ),
         ],
       ),
@@ -783,25 +818,29 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
                 CoconutLayout.spacing_300w,
                 Expanded(
                   child: Text(
-                    safetyCheckName(item.id),
+                    safetyKoText(safetyCheckName(item.id)),
                     style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                   ),
                 ),
                 if (showReasons && item.reason != null) ...[
                   CoconutLayout.spacing_200w,
-                  Flexible(child: Text(safetyReasonText(item.reason!), textAlign: TextAlign.end, style: style)),
+                  // 이유는 오른쪽 끝(C6과 같은 줄 규칙)
+                  Expanded(
+                    child: Text(safetyKoText(safetyReasonText(item.reason!)), textAlign: TextAlign.end, style: style),
+                  ),
                 ],
               ],
             ),
           ),
-        Container(
-          width: double.infinity,
-          color: colors.surfaceMuted,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          // 꼭 읽어야 하는 띠 글: 코코넛 secondaryText는 이 바탕에서 2.65:1(POLISH R5)
-          child: Text(footer, style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
-        ),
       ],
+      // 띠는 행 구분선 반복 밖에(겹선 없이, POLISH C27)
+      footer: Container(
+        width: double.infinity,
+        color: colors.surfaceMuted,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        // 꼭 읽어야 하는 띠 글: 코코넛 secondaryText는 이 바탕에서 2.65:1(POLISH R5)
+        child: Text(safetyKoText(footer), style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
+      ),
     );
   }
 }
@@ -829,7 +868,12 @@ class WalletHealthUnlockCard extends StatelessWidget {
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
               CoconutLayout.spacing_200w,
-              Expanded(child: Text(s.unlock_more, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText))),
+              Expanded(
+                child: Text(
+                  safetyKoText(s.unlock_more),
+                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                ),
+              ),
             ],
           ),
           CoconutLayout.spacing_300h,
@@ -875,7 +919,10 @@ class _CheckLine extends StatelessWidget {
         ),
         CoconutLayout.spacing_200w,
         Expanded(
-          child: Text(text, style: CoconutTypography.body3_12.setColor(textColor ?? context.coconutColors.primaryText)),
+          child: Text(
+            safetyKoText(text),
+            style: CoconutTypography.body3_12.setColor(textColor ?? context.coconutColors.primaryText),
+          ),
         ),
       ],
     );
@@ -911,14 +958,14 @@ class WalletHealthPremiumCard extends StatelessWidget {
               CoconutLayout.spacing_200w,
               Expanded(
                 child: Text(
-                  critical ? card.critical_title : card.title,
+                  safetyKoText(critical ? card.critical_title : card.title),
                   style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
                 ),
               ),
             ],
           ),
           CoconutLayout.spacing_300h,
-          if (critical) Text(card.critical_body, style: secondary),
+          if (critical) Text(safetyKoText(card.critical_body), style: secondary),
           if (!critical) ...[
             for (final (i, text) in [card.point_prepare, card.point_rescue, card.point_guide].indexed) ...[
               if (i > 0) CoconutLayout.spacing_150h,
@@ -932,7 +979,14 @@ class WalletHealthPremiumCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(card.explore, style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText)),
+                // 큰 글자에서는 오른쪽 정렬로 줄을 바꾼다(320dp × 2.0에서 넘치지 않게)
+                Flexible(
+                  child: Text(
+                    safetyKoText(card.explore),
+                    textAlign: TextAlign.end,
+                    style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
+                  ),
+                ),
                 CoconutLayout.spacing_100w,
                 SvgPicture.asset(
                   CommonNavigationIconPath.arrowRight,

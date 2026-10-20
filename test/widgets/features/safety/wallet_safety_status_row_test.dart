@@ -7,10 +7,15 @@ import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/rescue/rescue_ready_screen.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_safety_status_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
 
 class _Rescue extends ChangeNotifier implements RescueReadyProvider {
   String? label;
@@ -85,9 +90,9 @@ void main() {
         tester,
       ) async {
         await mount(tester, SafetyProvider.fixed(null));
-        expect(find.text(t.wallet_health.wallet_info.waiting), findsOneWidget);
+        expect(_text(t.wallet_health.wallet_info.waiting), findsOneWidget);
         await mount(tester, SafetyProvider.fixed(_report()));
-        final text = tester.widget<Text>(find.text(t.wallet_health.wallet_info.no_issues));
+        final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.no_issues));
         expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.success);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: only this wallet contributes to the attention count', (
@@ -115,7 +120,7 @@ void main() {
             ),
           ),
         );
-        final text = tester.widget<Text>(find.text(t.wallet_health.wallet_info.needs_attention(n: 1)));
+        final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.needs_attention(n: 1)));
         expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.warningText);
         expect(tester.takeException(), isNull);
       });
@@ -136,13 +141,13 @@ void main() {
             state: SafetyState.initial().copyWith(cautionWalletIds: {1}),
           ),
         );
-        final text = tester.widget<Text>(find.text(t.wallet_health.wallet_info.critical));
+        final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.critical));
         expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.dangerText);
-        expect(find.text(t.wallet_health.wallet_info.caution), findsNothing);
+        expect(_text(t.wallet_health.wallet_info.caution), findsNothing);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: caution is visible before a report exists', (tester) async {
         await mount(tester, SafetyProvider.fixed(null, state: SafetyState.initial().copyWith(cautionWalletIds: {1})));
-        expect(find.text(t.wallet_health.wallet_info.caution), findsOneWidget);
+        expect(_text(t.wallet_health.wallet_info.caution), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -159,7 +164,7 @@ void main() {
         expect(find.byKey(const Key('wallet-rescue-destination-row')), findsNothing);
         expect(tester.takeException(), isNull);
       });
-      testWidgets('${locale.name} ${theme.name} at 320 dp: destination follows Premium and wraps its name', (
+      testWidgets('${locale.name} ${theme.name} at 320 dp: destination shows for everyone, a chip until Premium', (
         tester,
       ) async {
         final entitlement = FakeEntitlementService();
@@ -168,15 +173,19 @@ void main() {
         addTearDown(rescue.dispose);
         await mount(tester, null, destination: true, entitlement: entitlement, rescue: rescue);
         final row = find.byKey(const Key('wallet-rescue-destination-row'));
-        expect(row, findsNothing);
+        // C36: 무료에게도 자리를 보인다. 목적지가 없으면 "정하지 않음" + Premium 칩
+        expect(row, findsOneWidget);
+        expect(_text(t.premium.rescue.not_set), findsOneWidget);
+        expect(find.descendant(of: row, matching: find.byType(PremiumChip)), findsOneWidget);
         entitlement.emit(const PremiumState(PremiumStatus.active));
         await tester.pumpAndSettle();
-        expect(find.text(t.premium.rescue.destination), findsOneWidget);
-        expect(find.text(t.premium.rescue.not_set), findsOneWidget);
+        expect(_text(t.premium.rescue.destination), findsOneWidget);
+        expect(_text(t.premium.rescue.not_set), findsOneWidget);
+        expect(find.descendant(of: row, matching: find.byType(PremiumChip)), findsNothing); // 구독 중에는 칩 없음
         final name = locale == AppLocale.ko ? '아주 긴 이름의 비상 목적지 지갑' : 'A very long emergency destination wallet name';
         rescue.rename(name);
         await tester.pumpAndSettle();
-        expect(find.text(name), findsOneWidget);
+        expect(_text(name), findsOneWidget);
         expect(tester.getSize(row).width, 320);
         expect(tester.takeException(), isNull);
         for (final status in [
@@ -191,7 +200,8 @@ void main() {
         }
         rescue.rename(null);
         await tester.pumpAndSettle();
-        expect(row, findsNothing);
+        expect(row, findsOneWidget); // 목적지를 지운 무료 사용자도 자리는 그대로(칩과 함께)
+        expect(find.descendant(of: row, matching: find.byType(PremiumChip)), findsOneWidget);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: expired destination stays reachable until cleared', (
         tester,
@@ -202,11 +212,11 @@ void main() {
         addTearDown(rescue.dispose);
         await mount(tester, null, destination: true, entitlement: entitlement, rescue: rescue);
         final row = find.byKey(const Key('wallet-rescue-destination-row'));
-        expect(row, findsNothing);
+        expect(row, findsOneWidget); // C36: 만료여도 목적지가 없으면 "정하지 않음" + 칩
         rescue.rename('Emergency wallet');
         await tester.pumpAndSettle();
         expect(row, findsOneWidget);
-        expect(find.text('Emergency wallet'), findsOneWidget);
+        expect(_text('Emergency wallet'), findsOneWidget);
         await tester.tap(row);
         await tester.pumpAndSettle();
         final screen = find.byType(RescueReadyScreen);
@@ -215,11 +225,11 @@ void main() {
         await tester.pumpAndSettle();
         rescue.rename(null);
         await tester.pumpAndSettle();
-        expect(row, findsNothing);
+        expect(_text(t.premium.rescue.not_set), findsOneWidget);
         entitlement.emit(const PremiumState(PremiumStatus.active));
         await tester.pumpAndSettle();
         expect(row, findsOneWidget);
-        expect(find.text(t.premium.rescue.not_set), findsOneWidget);
+        expect(_text(t.premium.rescue.not_set), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: destination opens RescueReady for this wallet', (

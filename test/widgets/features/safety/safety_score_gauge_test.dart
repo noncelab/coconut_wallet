@@ -10,13 +10,22 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../screens/safety/wallet_health_fixtures.dart';
 
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
+
+/// 글자 일부 찾기(U+2060 이음 문자를 빼고 비교)
+Finder _textContaining(Pattern pattern) => find.byWidgetPredicate(
+  (w) => w is Text && ((w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '').contains(pattern) ?? false),
+);
+
 /// 게이지 페인터(비공개 타입이라 dynamic으로 읽는다)
 dynamic _painter(WidgetTester tester) =>
     tester
         .widget<CustomPaint>(find.descendant(of: find.byType(HealthGauge), matching: find.byType(CustomPaint)).first)
         .painter;
 
-Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(find.text(text)).style!.color!;
+Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(_text(text)).style!.color!;
 
 Future<void> _pump(
   WidgetTester tester,
@@ -45,7 +54,7 @@ void main() {
       testWidgets('scored: number + label, theme gradient on the surfaceMuted track', (tester) async {
         final semantics = tester.ensureSemantics();
         await _pump(tester, scoredReport(score: 86), variant: variant);
-        expect(find.text('86'), findsOneWidget);
+        expect(_text('86'), findsOneWidget);
         expect(_textColor(tester, t.wallet_health.score_label.good), colors.success);
         final painter = _painter(tester);
         expect(painter.track, colors.surfaceMuted);
@@ -62,26 +71,26 @@ void main() {
 
       testWidgets('0–49 reads "조치 필요" in dangerText but the arc stays the normal gradient', (tester) async {
         await _pump(tester, scoredReport(score: 42), variant: variant);
-        expect(find.text('조치 필요'), findsOneWidget);
-        expect(find.textContaining('Critical'), findsNothing);
+        expect(_text('조치 필요'), findsOneWidget);
+        expect(_textContaining('Critical'), findsNothing);
         expect(_textColor(tester, '조치 필요'), colors.dangerText);
         expect(_painter(tester).critical, isNull);
       });
 
       testWidgets('no wallet and not enough data show the track and a dash, never a number', (tester) async {
         await _pump(tester, noWalletReport(), variant: variant);
-        expect(find.text(t.wallet_health.hero.no_wallet_title), findsOneWidget);
-        expect(find.textContaining(RegExp(r'\d')), findsNothing);
+        expect(_text(t.wallet_health.hero.no_wallet_title), findsOneWidget);
+        expect(_textContaining(RegExp(r'\d')), findsNothing);
         expect(_painter(tester).progress, 0);
 
         await _pump(tester, notEnoughDataReport(), variant: variant);
-        expect(find.text(t.wallet_health.hero.not_enough_data_title), findsOneWidget);
-        expect(find.textContaining(RegExp(r'\d')), findsNothing);
+        expect(_text(t.wallet_health.hero.not_enough_data_title), findsOneWidget);
+        expect(_textContaining(RegExp(r'\d')), findsNothing);
       });
 
       testWidgets('critical: red arc and siren instead of the preserved score', (tester) async {
         await _pump(tester, criticalReport(), variant: variant);
-        expect(find.text('76'), findsNothing);
+        expect(_text('76'), findsNothing);
         expect(_painter(tester).critical, colors.danger.withValues(alpha: 0.28));
         final siren = tester.widget<SvgPicture>(find.byType(SvgPicture));
         expect((siren.bytesLoader as SvgAssetLoader).assetName, CommonStateIconPath.siren);
@@ -99,7 +108,7 @@ void main() {
 
   testWidgets('checking dims the previous fill and says "검사 중…"', (tester) async {
     await _pump(tester, scoredReport(score: 86), isChecking: true);
-    expect(find.text(t.wallet_health.summary.checking), findsOneWidget);
+    expect(_text(t.wallet_health.summary.checking), findsOneWidget);
     expect(_painter(tester).fillOpacity, closeTo(0.35, 1e-9));
     expect(_painter(tester).sweep, isNull); // 동작 줄이기: 스윕 없음
   });
@@ -114,7 +123,7 @@ void main() {
   testWidgets('C8: score and checking labels stay on one line and scale down; S0/S4 captions may use two', (
     tester,
   ) async {
-    Text label(String text) => tester.widget<Text>(find.text(text));
+    Text label(String text) => tester.widget<Text>(_text(text));
     // de "Handlungsbedarf"가 가장 긴 라벨
     Future<void> pump(WalletHealthReport report, {bool checking = false}) => pumpWalletHealthApp(
       tester,
@@ -124,7 +133,7 @@ void main() {
     await pump(scoredReport(score: 42));
     final scored = walletHealthLabelText(WalletHealthLabel.of(42));
     expect(label(scored).maxLines, 1);
-    expect(find.ancestor(of: find.text(scored), matching: find.byType(FittedBox)), findsNWidgets(2)); // 안쪽 원 + 라벨
+    expect(find.ancestor(of: _text(scored), matching: find.byType(FittedBox)), findsNWidgets(2)); // 안쪽 원 + 라벨
     await pump(scoredReport(score: 86), checking: true);
     expect(label(t.wallet_health.summary.checking).maxLines, 1);
     await pump(noWalletReport());
@@ -135,8 +144,8 @@ void main() {
   testWidgets('compact is 72 wide with the number only', (tester) async {
     await _pump(tester, scoredReport(score: 86), compact: true);
     expect(tester.getSize(find.byType(HealthGauge)).width, 72);
-    expect(find.text('86'), findsOneWidget);
-    expect(find.text(t.wallet_health.score_label.good), findsNothing);
+    expect(_text('86'), findsOneWidget);
+    expect(_text(t.wallet_health.score_label.good), findsNothing);
     expect(_painter(tester).stroke, 7);
   });
 
@@ -170,7 +179,7 @@ void main() {
       ),
       reduceMotion: false,
     );
-    await tester.tap(find.text('open'));
+    await tester.tap(_text('open'));
     await tester.pump(); // 첫 프레임은 Hero 측정용 offstage(전환이 끝난 것처럼 보인다)
     await tester.pump(const Duration(milliseconds: 300)); // 아직 밀려 들어오는 중
     expect(_painter(tester).progress, 0);
@@ -197,6 +206,6 @@ void main() {
     expect(mid, inExclusiveRange(0.6, 0.8));
     await tester.pumpAndSettle();
     expect(_painter(tester).progress, closeTo(0.6, 1e-9));
-    expect(find.text('60'), findsOneWidget);
+    expect(_text('60'), findsOneWidget);
   });
 }

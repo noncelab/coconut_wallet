@@ -15,6 +15,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
+
 const _pill = Key('wallet-safety-status-pill');
 
 WalletHealthReport _report({
@@ -143,14 +147,11 @@ void main() {
         final pill = find.byKey(_pill);
         expect(pill, findsOneWidget);
         expect(tester.widget<ShrinkAnimationButton>(pill).defaultColor, background);
-        final state = tester.widget<Text>(find.text(text));
+        final state = tester.widget<Text>(_text(text));
         expect(state.style!.color, textColor);
         expect(state.maxLines, 2); // 길면 두 줄, 말줄임 없음
         expect(state.overflow, isNot(TextOverflow.ellipsis));
-        expect(
-          tester.widget<Text>(find.text('${t.wallet_health.wallet_info.safety_status} · ')).style!.color,
-          textColor,
-        );
+        expect(tester.widget<Text>(_text('${t.wallet_health.wallet_info.safety_status} · ')).style!.color, textColor);
         final svg = tester.widget<SvgPicture>(find.descendant(of: pill, matching: _svg(icon)));
         expect(svg.colorFilter, ColorFilter.mode(iconColor, BlendMode.srcIn));
         // 누르는 영역(알약 + 위아래 6)은 44 이상
@@ -160,12 +161,14 @@ void main() {
     }
   }
 
-  testWidgets('one button for screen readers with the chip label', (tester) async {
+  testWidgets('one button for screen readers that says it shows this wallet (not "opens Wallet Health")', (
+    tester,
+  ) async {
     final semantics = tester.ensureSemantics();
     await mount(tester, SafetyProvider.fixed(_report(issues: [_attention])));
     expect(
       find.bySemanticsLabel(
-        t.wallet_health.status_chip.a11y(status: t.wallet_health.wallet_info.needs_attention(n: 1)),
+        t.wallet_health.wallet_info.status_a11y(status: t.wallet_health.wallet_info.needs_attention(n: 1)),
       ),
       findsOneWidget,
     );
@@ -208,7 +211,7 @@ void main() {
   testWidgets('tap on a critical incident opens its transaction detail', (tester) async {
     final incident = SafetyIncident(walletId: 1, txid: 'tx-1', detectedAt: DateTime(2026));
     await mount(tester, SafetyProvider.fixed(_report(incidents: [incident])));
-    expect(find.text(t.wallet_health.wallet_info.critical), findsOneWidget);
+    expect(_text(t.wallet_health.wallet_info.critical), findsOneWidget);
     await tester.tap(find.byKey(_pill));
     await tester.pumpAndSettle();
     expect(pushed, [AppRouteNames.transactionDetail]);
