@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -35,6 +36,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   static const priceWaitLimit = Duration(seconds: 10);
 
   final Map<String, Object?> _cache = {};
+  DateTime? _cacheCalendarDay;
   bool _disposed = false;
   bool _priceWaitExpired = false;
   Timer? _priceWaitTimer;
@@ -64,6 +66,18 @@ class HomeWidgetsViewModel extends ChangeNotifier {
       _priceWaitExpired = true;
       if (!_disposed) notifyListeners();
     });
+  }
+
+  /// Clock injected at construction. Callers that bucket by calendar day use this
+  /// instead of [DateTime.now], so labels and balances share one anchor.
+  DateTime get now {
+    final value = _now().toLocal();
+    final day = DateTime(value.year, value.month, value.day);
+    if (_cacheCalendarDay != day) {
+      _cacheCalendarDay = day;
+      _cache.clear();
+    }
+    return value;
   }
 
   bool get isWalletDataLoading => _walletProvider.walletLoadState != WalletLoadState.loadCompleted;
@@ -178,9 +192,21 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     return HomeWidgetMath.changeRate(closes.last, price);
   }
 
-  List<int> dailyBalances({List<int>? walletIds, int days = defaultDays}) {
+  /// Uses the same invalidation signals as the derived balance series. The
+  /// immutable snapshot avoids rereading Realm for every chart animation frame.
+  List<TransactionRecord> transactionRecordsOf(int walletId) {
+    final today = now;
+    return _cached(
+      'transactions:$walletId:${today.year}-${today.month}-${today.day}',
+      () => List<TransactionRecord>.unmodifiable(_walletProvider.getTransactionRecordList(walletId)),
+    );
+  }
+
+  List<int> dailyBalances({List<int>? walletIds, int days = defaultDays, DateTime? asOf}) {
     final ids = _idsOf(walletIds);
-    return _cached('daily:$ids:$days:$isFakeBalance', () {
+    final today = (asOf ?? now).toLocal();
+    // The day is part of the key so a call after local midnight does not reuse yesterday.
+    return _cached('daily:$ids:$days:$isFakeBalance:${today.year}-${today.month}-${today.day}', () {
       if (isFakeBalance) {
         return HomeWidgetMath.fakeTrend(
           end: totalBalance(ids),
@@ -189,8 +215,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
         );
       }
       final perWallet = [
-        for (final id in ids)
-          HomeWidgetMath.dailyBalances(_walletProvider.getTransactionRecordList(id), balanceOf(id), _now(), days),
+        for (final id in ids) HomeWidgetMath.dailyBalances(transactionRecordsOf(id), balanceOf(id), today, days),
       ];
       return [for (var i = 0; i < days; i++) perWallet.fold(0, (sum, balances) => sum + balances[i])];
     });
@@ -201,12 +226,14 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   /// 기간과 상관없이 가장 최근 거래부터 [recentTransactionLimit]개. 아직 확인되지 않은 거래가 먼저 온다.
   List<HomeRecentTransaction> recentTransactions({List<int>? walletIds}) {
     final ids = _idsOf(walletIds);
-    return _cached('recent:$ids:$isFakeBalance', () {
+    final today = now;
+    final calendarKey = isFakeBalance ? ':${today.year}-${today.month}-${today.day}' : '';
+    return _cached('recent:$ids:$isFakeBalance$calendarKey', () {
       final names = {for (final wallet in wallets) wallet.id: wallet.name};
       if (isFakeBalance) {
         return HomeWidgetMath.fakeRecentTransactions(
           seed: HomeWidgetMath.seed(['recent', ...ids]),
-          now: _now(),
+          now: today,
           wallets: [for (final id in ids) (walletId: id, walletName: names[id] ?? '', balance: balanceOf(id))],
         );
       }
@@ -236,8 +263,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
 
   List<HomeDailyActivity> dailyActivity({List<int>? walletIds, int days = defaultDays}) {
     final ids = _idsOf(walletIds);
-    return _cached('activity:$ids:$days:$isFakeBalance', () {
-      final now = _now();
+    final today = now;
+    return _cached('activity:$ids:$days:$isFakeBalance:${today.year}-${today.month}-${today.day}', () {
+      final now = today;
       if (isFakeBalance) {
         return HomeWidgetMath.fakeDailyActivity(
           seed: HomeWidgetMath.seed(['activity', now.year, now.month, now.day, ...ids]),
@@ -254,8 +282,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   /// 기간 동안의 받기·보내기·정리 횟수와 수량
   HomeActivityTotals activityTotals({List<int>? walletIds, int days = defaultDays}) {
     final ids = _idsOf(walletIds);
-    return _cached('totals:$ids:$days:$isFakeBalance', () {
-      final now = _now();
+    final today = now;
+    return _cached('totals:$ids:$days:$isFakeBalance:${today.year}-${today.month}-${today.day}', () {
+      final now = today;
       if (isFakeBalance) {
         return HomeWidgetMath.fakeActivityTotals(
           seed: HomeWidgetMath.seed(['totals', now.year, now.month, now.day, ...ids, days]),
@@ -271,21 +300,24 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   }
 
   /// 첫 거래일부터 오늘까지의 일수(최소 7일). 가짜 잔액이면 실제 사용 기간이 드러나지 않게 1년으로 본다.
-  int daysSinceFirstTransaction({List<int>? walletIds}) {
+  int daysSinceFirstTransaction({List<int>? walletIds, DateTime? asOf}) {
     if (isFakeBalance) return 365;
     final ids = _idsOf(walletIds);
-    return _cached('first:$ids', () {
+    final today = (asOf ?? now).toLocal();
+    return _cached('first:$ids:${today.year}-${today.month}-${today.day}', () {
       DateTime? first;
       for (final id in ids) {
-        for (final tx in _walletProvider.getTransactionRecordList(id)) {
-          if (first == null || tx.timestamp.isBefore(first)) first = tx.timestamp;
+        for (final tx in transactionRecordsOf(id)) {
+          final local = tx.timestamp.toLocal();
+          if (first == null || local.isBefore(first)) first = local;
         }
       }
       if (first == null) return defaultDays;
-      final today = _now();
-      final days =
-          DateTime(today.year, today.month, today.day).difference(DateTime(first.year, first.month, first.day)).inDays +
-          1;
+      // UTC date-only difference counts calendar days. Duration.inDays drops a day across a
+      // 23h spring-forward, and a UTC timestamp's own year/month/day is not the local date.
+      final start = DateTime.utc(first.year, first.month, first.day);
+      final end = DateTime.utc(today.year, today.month, today.day);
+      final days = end.difference(start).inDays + 1;
       return days < defaultDays ? defaultDays : days;
     });
   }

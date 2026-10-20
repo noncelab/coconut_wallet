@@ -1,0 +1,923 @@
+import 'dart:math' as math;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
+import 'package:coconut_wallet/services/home/home_widget_math.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart';
+
+const walletBalanceHistoryHeroTag = 'hodl-balance-history';
+
+Widget walletBalanceHistoryFlight(
+  BuildContext context,
+  Animation<double> animation,
+  HeroFlightDirection direction,
+  BuildContext from,
+  BuildContext to,
+) {
+  Widget fitted(BuildContext heroContext) {
+    final size = (heroContext.findRenderObject() as RenderBox).size;
+    return FittedBox(
+      fit: BoxFit.fill,
+      child: SizedBox(width: size.width, height: size.height, child: (heroContext.widget as Hero).child),
+    );
+  }
+
+  final compact = direction == HeroFlightDirection.push ? from : to;
+  final detail = direction == HeroFlightDirection.push ? to : from;
+  return AnimatedBuilder(
+    animation: animation,
+    builder:
+        (_, __) => Stack(
+          fit: StackFit.expand,
+          children: [
+            Opacity(opacity: 1 - animation.value, child: fitted(compact)),
+            Opacity(opacity: animation.value, child: fitted(detail)),
+          ],
+        ),
+  );
+}
+
+class WalletBalanceHistoryScreen extends StatefulWidget {
+  final HodlInsightsViewModel viewModel;
+  const WalletBalanceHistoryScreen({super.key, required this.viewModel});
+
+  static Future<void> open(BuildContext context, HodlInsightsViewModel viewModel) => Navigator.of(context).push<void>(
+    PageRouteBuilder<void>(
+      settings: const RouteSettings(name: '/wallet-balance-history'),
+      opaque: false,
+      transitionDuration: const Duration(milliseconds: 450),
+      reverseTransitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (_, __, ___) => WalletBalanceHistoryScreen(viewModel: viewModel),
+      transitionsBuilder:
+          (_, animation, __, child) =>
+              FadeTransition(opacity: animation.drive(CurveTween(curve: Curves.easeOutCubic)), child: child),
+    ),
+  );
+
+  @override
+  State<WalletBalanceHistoryScreen> createState() => _WalletBalanceHistoryScreenState();
+}
+
+class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen> with WidgetsBindingObserver {
+  late HomeWidgetPeriod _period;
+  late DateTime _today;
+  late int _days;
+  late int _allDays;
+  late double _span;
+  late double _end;
+  int? _selected;
+  bool _changedOnly = false;
+  final Set<int> _expanded = {};
+  final Map<int, double> _cardExtents = {};
+  double _cardExtent = 0;
+  double _startSpan = 1;
+  double _startEnd = 0;
+  Offset _startPosition = Offset.zero;
+  bool _pinching = false;
+
+  HodlInsightsViewModel get vm => widget.viewModel;
+  List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
+  List<int> get _balances => vm.data.dailyBalances(walletIds: vm.walletIds, days: _days, asOf: _today);
+  int get _first => (_end - _span + 1).round().clamp(0, _days - 1);
+  int get _last => _end.round().clamp(_first, _days - 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _readAnchor();
+    _period = vm.balancePeriod;
+    _span = (_period == HomeWidgetPeriod.all ? _allDays : _period.days).toDouble();
+    _end = (_days - 1).toDouble();
+    vm.data.addListener(_onData);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _readAnchor() {
+    _today = vm.data.now;
+    _allDays = math.max(2, vm.data.daysSinceFirstTransaction(walletIds: vm.walletIds, asOf: _today));
+    _days = math.max(365, _allDays);
+  }
+
+  void _onData() => _reanchor();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _reanchor();
+  }
+
+  /// Moves the chart onto the data clock's calendar day. A block refresh and an app resume
+  /// both land here; the selected calendar date stays, and a window pinned to today follows today.
+  void _reanchor() {
+    if (!mounted) return;
+    final selectedDay = _selected == null ? null : _dates[_selected!];
+    final pinnedToEnd = (_end - (_days - 1)).abs() < 0.5;
+    final followedAll = _period == HomeWidgetPeriod.all && (_span - _allDays).abs() < 0.5;
+    final previousToday = _localDate(_today);
+    final previousDays = _days;
+    setState(() {
+      _readAnchor();
+      if (followedAll) _span = _allDays.toDouble();
+      _span = _span.clamp(2.0, _days.toDouble());
+      final dayShift = _calendarDistance(previousToday, _localDate(_today));
+      if (pinnedToEnd) {
+        _end = (_days - 1).toDouble();
+      } else {
+        _end = (_end + (_days - previousDays) - dayShift).clamp(_span - 1, (_days - 1).toDouble());
+      }
+      if (selectedDay != null) {
+        final index = _dates.indexOf(_localDate(selectedDay));
+        _selected = index < 0 ? null : index;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    vm.data.removeListener(_onData);
+    super.dispose();
+  }
+
+  void _selectPeriod(HomeWidgetPeriod period) => setState(() {
+    _period = period;
+    _span = (period == HomeWidgetPeriod.all ? _allDays : period.days).toDouble();
+    _end = (_days - 1).toDouble();
+    if (_selected != null) _selected = _selected!.clamp(_first, _last);
+    _expanded.clear();
+  });
+
+  void _syncPeriod() {
+    if ((_span - _allDays).abs() < 0.5 && (_period == HomeWidgetPeriod.all || _allDays > 365)) {
+      _period = HomeWidgetPeriod.all;
+      return;
+    }
+    final choices = [...HomeWidgetPeriod.widgetPeriods, HomeWidgetPeriod.all];
+    int daysOf(HomeWidgetPeriod period) => period == HomeWidgetPeriod.all ? _allDays : period.days;
+    _period = choices.reduce(
+      (a, b) => (math.log(_span / daysOf(a))).abs() <= (math.log(_span / daysOf(b))).abs() ? a : b,
+    );
+  }
+
+  void _focusAt(double x, double width) {
+    final index = (_first + (x / width).clamp(0.0, 1.0) * (_last - _first)).round();
+    if (index != _selected) {
+      final balances = _balances;
+      if (index > 0 && balances[index] != balances[index - 1]) vibrateExtraLight();
+      setState(() {
+        _selected = index;
+        _expanded.clear();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final balances = _balances;
+    final dates = _dates;
+    final selected = _selected;
+    final unit = vm.data.unit;
+    return Scaffold(
+      backgroundColor: colors.homeBackground,
+      appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            children: [
+              Text(
+                selected == null ? t.hodl_insights.total_balance : DateFormat('yyyy.MM.dd').format(dates[selected]),
+                style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                child: Text(
+                  unit.displayBitcoinAmount(balances[selected ?? balances.length - 1], withUnit: true),
+                  style: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: BalanceHistoryPeriodChips(selected: _period, onSelected: _selectPeriod),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxHeight = constraints.maxHeight;
+                    const listGap = 12.0;
+                    final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
+                    var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
+                    var chartTarget = preferredChart;
+                    // A below-layout card can be a few pixels taller than the 52% leftover.
+                    // Yield chart height until that card fits. The floor keeps the plot visible.
+                    if (selected != null && _cardExtent > listHeight) {
+                      final minChart = math.max(120.0, maxHeight * 0.36);
+                      listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
+                      chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
+                    }
+                    // Lay the list out at its final height for the whole shrink.
+                    // A bottom-pinned slot is shorter than the header mid-tween and overflows.
+                    return TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 360),
+                      curve: Curves.easeInOutCubic,
+                      tween: Tween(end: chartTarget),
+                      child: selected == null || listHeight <= 0 ? null : _wallets(dates[selected]),
+                      builder:
+                          (context, chartHeight, wallets) => SizedBox(
+                            height: constraints.maxHeight,
+                            width: constraints.maxWidth,
+                            child: Stack(
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                SizedBox(
+                                  height: chartHeight,
+                                  width: double.infinity,
+                                  child: Hero(
+                                    tag: walletBalanceHistoryHeroTag,
+                                    flightShuttleBuilder: walletBalanceHistoryFlight,
+                                    child: Material(
+                                      color: colors.homeSurface,
+                                      borderRadius: BorderRadius.circular(20),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: _chart(balances, dates),
+                                    ),
+                                  ),
+                                ),
+                                if (wallets != null)
+                                  Positioned(
+                                    top: chartHeight + listGap,
+                                    left: 0,
+                                    right: 0,
+                                    height: listHeight,
+                                    child: wallets,
+                                  ),
+                              ],
+                            ),
+                          ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chart(List<int> balances, List<DateTime> dates) {
+    final colors = context.coconutColors;
+    final values = balances.sublist(_first, _last + 1);
+    final minimum = values.reduce(math.min);
+    final maximum = values.reduce(math.max);
+    final selected = _selected;
+    final localSelected = selected != null && selected >= _first && selected <= _last ? selected - _first : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 12),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(vm.data.unit.symbol, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _valueAxis(minimum, maximum),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      return GestureDetector(
+                        key: const Key('balance-history-interactive-chart'),
+                        behavior: HitTestBehavior.opaque,
+                        onTapUp: (details) {
+                          if (_selected == null) {
+                            _focusAt(details.localPosition.dx, width);
+                          } else {
+                            setState(() {
+                              _selected = null;
+                              _expanded.clear();
+                            });
+                          }
+                        },
+                        onScaleStart: (details) {
+                          _startSpan = _span;
+                          _startEnd = _end;
+                          _startPosition = details.localFocalPoint;
+                          _pinching = details.pointerCount > 1;
+                        },
+                        onScaleUpdate: (details) {
+                          if (details.pointerCount > 1) _pinching = true;
+                          if (_selected != null && !_pinching) {
+                            _focusAt(details.localFocalPoint.dx, width);
+                            return;
+                          }
+                          if (_pinching && details.pointerCount < 2) return;
+                          final delta = details.localFocalPoint - _startPosition;
+                          final zoom =
+                              _pinching
+                                  ? details.scale
+                                  : delta.dy.abs() > delta.dx.abs()
+                                  ? math.exp(-delta.dy / 160)
+                                  : 1.0;
+                          final span = (_startSpan / zoom).clamp(2.0, _days.toDouble());
+                          final anchor =
+                              _selected?.toDouble() ?? _startEnd - (_startSpan - 1) * (1 - _startPosition.dx / width);
+                          final fraction =
+                              _selected == null
+                                  ? _startPosition.dx / width
+                                  : ((_selected! - (_startEnd - _startSpan + 1)) / (_startSpan - 1)).clamp(0.0, 1.0);
+                          setState(() {
+                            _span = span;
+                            _end = (zoom == 1 && !_pinching
+                                    ? _startEnd - delta.dx / width * (_startSpan - 1)
+                                    : anchor + (span - 1) * (1 - fraction))
+                                .clamp(span - 1, (_days - 1).toDouble());
+                            _syncPeriod();
+                          });
+                        },
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned.fill(child: HomeSparkline(values: values, selectedIndex: localSelected)),
+                            if (localSelected != null)
+                              Builder(
+                                builder: (context) {
+                                  final point = HomeSparkline.pointOf(values, localSelected, constraints.biggest);
+                                  return Positioned(
+                                    top: -42,
+                                    width: 150,
+                                    left: (point.dx - 75).clamp(0.0, math.max(0.0, width - 150)),
+                                    child: Container(
+                                      key: const Key('hodl-insights-balance-readout'),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: colors.homeBackground,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          FittedBox(
+                                            child: Text(
+                                              vm.data.unit.displayBitcoinAmount(values[localSelected], withUnit: true),
+                                              style: CoconutTypography.body3_12_NumberBold.copyWith(
+                                                color: colors.primaryText,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat('yyyy.MM.dd').format(dates[selected!]),
+                                            style: CoconutTypography.caption_10_Number.copyWith(
+                                              color: colors.tertiaryText,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (final index in {_first, (_first + _last) ~/ 2, _last})
+                Text(
+                  DateFormat('yy.MM.dd').format(dates[index]),
+                  style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wallets(DateTime day) {
+    final colors = context.coconutColors;
+    final end = DateTime(day.year, day.month, day.day + 1);
+    final states =
+        [
+          for (final wallet in vm.data.wallets)
+            if (vm.walletIds == null || vm.walletIds!.contains(wallet.id))
+              () {
+                final all = vm.data.transactionRecordsOf(wallet.id);
+                final today =
+                    all.where((tx) => !tx.timestamp.isBefore(day) && tx.timestamp.isBefore(end)).toList()
+                      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+                return (
+                  wallet: wallet,
+                  transactions: today,
+                  hasHistory: all.any((tx) => tx.timestamp.isBefore(end)),
+                  balance:
+                      vm.data.balanceOf(wallet.id) -
+                      all.where((tx) => !tx.timestamp.isBefore(end)).fold<int>(0, (s, tx) => s + tx.amount),
+                  change: today.fold<int>(0, (s, tx) => s + tx.amount),
+                );
+              }(),
+        ].where((state) => state.hasHistory && (!_changedOnly || state.change != 0)).toList();
+    if (_cardExtents.keys.any((index) => index >= states.length)) {
+      _cardExtents.removeWhere((index, _) => index >= states.length);
+      _scheduleCardExtent();
+    }
+    Widget tile(int index) {
+      final state = states[index];
+      final expanded = _expanded.contains(state.wallet.id);
+      final hasTransactions = state.transactions.isNotEmpty;
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final below =
+              hasTransactions &&
+              !_deltaFitsBesideIdentity(
+                context,
+                constraints.maxWidth,
+                state.change,
+                state.transactions.length,
+                state.balance,
+                state.wallet.name,
+              );
+          return Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              children: [
+                _CardExtent(
+                  onExtent: (height) => _noteCardExtent(index, height),
+                  child: WalletItemCard(
+                    walletItem: state.wallet,
+                    animatedBalanceData: AnimatedBalanceData(state.balance, state.balance),
+                    fakeBalance: state.balance,
+                    currentUnit: vm.data.unit,
+                    isLastItem: true,
+                    isStarVisible: false,
+                    backgroundColor: colors.homeSurface,
+                    placeTrailingBelow: below,
+                    onPressed: () {
+                      if (!hasTransactions) return;
+                      setState(() {
+                        if (expanded) {
+                          _expanded.remove(state.wallet.id);
+                        } else {
+                          _expanded.add(state.wallet.id);
+                        }
+                      });
+                    },
+                    rightWidget:
+                        hasTransactions
+                            ? _deltaTrailing(state.change, state.transactions.length, expanded, below)
+                            : const SizedBox.shrink(),
+                  ),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 280),
+                  alignment: Alignment.topCenter,
+                  child:
+                      expanded
+                          ? Column(
+                            children: [
+                              for (final tx in state.transactions)
+                                TransactionItemCard(
+                                  tx: tx,
+                                  id: state.wallet.id,
+                                  currentUnit: vm.data.unit,
+                                  compact: true,
+                                  backgroundColor: colors.homeSurface,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  onPressed:
+                                      () => Navigator.pushNamed(
+                                        context,
+                                        AppRouteNames.transactionDetail,
+                                        arguments: TransactionDetailRouteArgs(
+                                          id: state.wallet.id,
+                                          txHash: tx.transactionHash,
+                                        ),
+                                      ),
+                                ),
+                            ],
+                          )
+                          : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _walletSectionHeader(states.length),
+        const SizedBox(height: 10),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          layoutBuilder:
+              (current, previous) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  for (final outgoing in previous) ExcludeSemantics(child: IgnorePointer(child: outgoing)),
+                  if (current != null) current,
+                ],
+              ),
+          transitionBuilder:
+              (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
+                  child: child,
+                ),
+              ),
+          child: Column(
+            key: ValueKey((day, _changedOnly, states.isEmpty)),
+            children: [
+              if (states.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    t.wallet_list.balance_history_detail.no_wallets,
+                    textAlign: TextAlign.center,
+                    style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                  ),
+                )
+              else
+                for (var index = 0; index < states.length; index++) ...[
+                  tile(index),
+                  if (index != states.length - 1) const SizedBox(height: 8),
+                ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _walletSectionHeader(int count) {
+    final colors = context.coconutColors;
+    final title = '${t.wallet_list.balance_history_detail.wallets_at_date} · $count';
+    final filterLabel = t.wallet_list.balance_history_detail.changed_wallets_only;
+    final titleStyle = CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText);
+    final filterStyle = CoconutTypography.caption_10.copyWith(color: colors.secondaryText);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final titleWidth = _singleLineWidth(context, title, titleStyle);
+        final filterWidth = _singleLineWidth(context, filterLabel, filterStyle) + 14 + 6;
+        final sideBySide = titleWidth + 8 + filterWidth <= constraints.maxWidth;
+        final titleText = Text(title, style: titleStyle);
+        final filter = _changedOnlyFilter(expandLabel: !sideBySide);
+        if (sideBySide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [Expanded(child: titleText), const SizedBox(width: 8), filter],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [titleText, const SizedBox(height: 8), filter],
+        );
+      },
+    );
+  }
+
+  Widget _changedOnlyFilter({required bool expandLabel}) {
+    final colors = context.coconutColors;
+    final label = Text(
+      t.wallet_list.balance_history_detail.changed_wallets_only,
+      textAlign: expandLabel ? TextAlign.start : TextAlign.end,
+      style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _changedOnly = !_changedOnly),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: Sizes.size44),
+        child: Row(
+          mainAxisSize: expandLabel ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: expandLabel ? MainAxisAlignment.start : MainAxisAlignment.end,
+          children: [
+            CoconutCheckbox(
+              isSelected: _changedOnly,
+              width: 14,
+              color: colors.iconPrimary,
+              unSelectedColor: colors.iconSecondary,
+              inactiveColor: colors.iconDisabled,
+              onChanged: (_) => setState(() => _changedOnly = !_changedOnly),
+            ),
+            const SizedBox(width: 6),
+            if (expandLabel) Expanded(child: label) else label,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Right-aligned caption ticks. Five labels while their measured heights fit, or while
+  /// fitting them stays at least the 1× caption height. Fewer ticks only after that.
+  /// A stack of measured slots, not a flex column, so a subpixel miss cannot overflow.
+  Widget _valueAxis(int minimum, int maximum) {
+    final style = CoconutTypography.caption_10_Number.copyWith(color: context.coconutColors.tertiaryText);
+    return SizedBox(
+      key: const Key('balance-history-value-axis'),
+      width: 46,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxHeight = constraints.maxHeight;
+            if (!constraints.hasBoundedHeight || maxHeight <= 0) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [for (final amount in _axisTickAmounts(minimum, maximum, 4)) _axisLabel(amount, style)],
+              );
+            }
+            final designHeight = _singleLineHeight(context, '0', style, textScaler: TextScaler.noScaling);
+            var amounts = _axisTickAmounts(minimum, maximum, 4);
+            var scale = 1.0;
+            var accepted = false;
+            for (final intervals in const [4, 2, 1]) {
+              final candidate = _axisTickAmounts(minimum, maximum, intervals);
+              final heights = [
+                for (final amount in candidate)
+                  _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amount), style),
+              ];
+              final sum = heights.fold<double>(0, (total, height) => total + height);
+              if (sum <= 0) continue;
+              final candidateScale = sum <= maxHeight ? 1.0 : maxHeight / sum;
+              final shortest = heights.reduce(math.min) * candidateScale;
+              if (candidateScale == 1.0 || shortest >= designHeight) {
+                amounts = candidate;
+                scale = candidateScale;
+                accepted = true;
+                break;
+              }
+            }
+            if (!accepted) {
+              amounts = [maximum.round()];
+              final height = _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amounts.first), style);
+              scale = height <= maxHeight ? 1.0 : maxHeight / height;
+            }
+            final boxHeights = [
+              for (final amount in amounts)
+                math.min(
+                  maxHeight,
+                  _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amount), style) * scale,
+                ),
+            ];
+            final count = amounts.length;
+            final used = boxHeights.fold<double>(0, (total, height) => total + height);
+            final gap = scale == 1 && count > 1 ? math.max(0.0, (maxHeight - used) / (count - 1)) : 0.0;
+            final ticks = <Widget>[];
+            var cursor = 0.0;
+            for (var index = 0; index < count; index++) {
+              final top =
+                  count == 1 && minimum == maximum
+                      ? math.max(0.0, (maxHeight - boxHeights[index]) / 2)
+                      : index == count - 1
+                      ? math.max(0.0, maxHeight - boxHeights[index])
+                      : cursor;
+              ticks.add(
+                Positioned(
+                  top: top,
+                  left: 0,
+                  right: 0,
+                  height: boxHeights[index],
+                  child: Align(
+                    alignment:
+                        count == 1
+                            ? Alignment.centerRight
+                            : index == 0
+                            ? Alignment.topRight
+                            : index == count - 1
+                            ? Alignment.bottomRight
+                            : Alignment.centerRight,
+                    child: _axisLabel(amounts[index], style),
+                  ),
+                ),
+              );
+              cursor += boxHeights[index] + gap;
+            }
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: maxHeight,
+              child: Stack(clipBehavior: Clip.none, children: ticks),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _axisLabel(int amount, TextStyle style) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Text(vm.data.unit.displayBitcoinAmount(amount), style: style),
+    );
+  }
+
+  void _noteCardExtent(int index, double height) {
+    final previous = _cardExtents[index];
+    if (previous != null && (previous - height).abs() < 0.5) return;
+    _cardExtents[index] = height;
+    _scheduleCardExtent();
+  }
+
+  void _scheduleCardExtent() {
+    var next = 0.0;
+    for (final value in _cardExtents.values) {
+      if (value > next) next = value;
+    }
+    if ((next - _cardExtent).abs() < 0.5) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      var resolved = 0.0;
+      for (final value in _cardExtents.values) {
+        if (value > resolved) resolved = value;
+      }
+      if ((resolved - _cardExtent).abs() < 0.5) return;
+      setState(() => _cardExtent = resolved);
+    });
+  }
+
+  bool _deltaFitsBesideIdentity(
+    BuildContext context,
+    double cardWidth,
+    int change,
+    int count,
+    int balance,
+    String name,
+  ) {
+    final deltaWidth = math.max(
+      _singleLineWidth(context, _changeLabel(change), CoconutTypography.body3_12_NumberBold),
+      _singleLineWidth(
+        context,
+        t.wallet_list.balance_history_detail.transaction_count(n: count),
+        CoconutTypography.caption_10,
+      ),
+    );
+    final identityWidth = math.max(
+      _balanceIdentityWidth(context, balance),
+      _singleLineWidth(context, name, CoconutTypography.body3_12),
+    );
+    // Padding 20+20, icon 36, spacing_200w on both sides of the identity, gap 8, chevron 18.
+    const chrome = 40.0 + 36.0 + 8.0 + 8.0 + 8.0 + 18.0;
+    return deltaWidth + identityWidth + chrome + 4 <= cardWidth;
+  }
+
+  /// Full-size balance row, matching WalletItemCard's symbol placement. Not a scaled-down width.
+  double _balanceIdentityWidth(BuildContext context, int balance) {
+    final unit = vm.data.unit;
+    final style = CoconutTypography.body2_14_NumberBold;
+    final number = _singleLineWidth(context, unit.displayBitcoinAmount(balance), style);
+    if (unit.isPrefixSymbol) {
+      return _singleLineWidth(context, unit.symbol, style) + 2 + number;
+    }
+    return number + _singleLineWidth(context, ' ${unit.symbol}', style) + 2;
+  }
+
+  String _changeLabel(int change) =>
+      '${change > 0 ? '+' : ''}${vm.data.unit.displayBitcoinAmount(change, withUnit: true)}';
+
+  Widget _deltaTrailing(int change, int count, bool expanded, bool below) {
+    final colors = context.coconutColors;
+    final amount = Text(
+      _changeLabel(change),
+      textAlign: TextAlign.right,
+      style: CoconutTypography.body3_12_NumberBold.copyWith(
+        color: homePriceColorOf(context, change.sign.toDouble(), neutral: colors.primaryText),
+      ),
+    );
+    final countText = Text(
+      t.wallet_list.balance_history_detail.transaction_count(n: count),
+      textAlign: TextAlign.right,
+      style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+    );
+    final chevron = AnimatedRotation(
+      turns: expanded ? 0.5 : 0,
+      duration: const Duration(milliseconds: 220),
+      child: Icon(Icons.expand_more, size: 18, color: colors.iconSecondary),
+    );
+    if (!below) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [amount, countText]),
+          const SizedBox(width: 8),
+          chevron,
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        amount,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: countText),
+            const SizedBox(width: 8),
+            SizedBox(width: Sizes.size44, height: Sizes.size44, child: Center(child: chevron)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+DateTime _localDate(DateTime time) {
+  final local = time.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+int _calendarDistance(DateTime from, DateTime to) =>
+    DateTime.utc(to.year, to.month, to.day).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+double _singleLineWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
+double _singleLineHeight(BuildContext context, String text, TextStyle style, {TextScaler? textScaler}) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+    textScaler: textScaler ?? MediaQuery.textScalerOf(context),
+  )..layout();
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
+
+List<int> _axisTickAmounts(int minimum, int maximum, int intervals) {
+  return {
+    for (var tick = intervals; tick >= 0; tick--) (minimum + (maximum - minimum) * tick / intervals).round(),
+  }.toList();
+}
+
+class _CardExtent extends SingleChildRenderObjectWidget {
+  const _CardExtent({required this.onExtent, required super.child});
+
+  final ValueChanged<double> onExtent;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderCardExtent(onExtent);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderCardExtent renderObject) {
+    renderObject.onExtent = onExtent;
+  }
+}
+
+class _RenderCardExtent extends RenderProxyBox {
+  _RenderCardExtent(this.onExtent);
+
+  ValueChanged<double> onExtent;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final height = size.height;
+    if (_reported != null && (height - _reported!).abs() < 0.5) return;
+    _reported = height;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onExtent(height));
+  }
+}
