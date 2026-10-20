@@ -542,5 +542,73 @@ void main() {
       expect((c.feeVerified, c.fee), (false, 2820));
       expect(SweepFee.isFloorExempt(floorPlan(c)), isFalse);
     });
+
+    test('R2-M1: 해시가 맞는 무관한 고수수료 거래를 자식이라고 하거나 입력 번호가 범위 밖이면 연결 거짓 → 미확인·예외 아님', () async {
+      final root = _attackTx(rbf: true);
+      final rootTxid = root.transactionHash;
+      // 일렉트럼에 실제로 있고 수수료도 셀 수 있지만 사건 거래의 출력을 쓰지 않는 고수수료 거래
+      final prev = _spend([_stolen('', i: 8)]);
+      final unrelated = Transaction.forSweep(
+        [_output(prev)],
+        _payTo,
+        500,
+        WalletMock.createSingleSigWalletItem().walletBase,
+      );
+      final child = _spend([_output(root)]); // 진짜 자식(입력 1개)
+      node.raw
+        ..[rootTxid] = root.serialize()
+        ..[prev.transactionHash] = prev.serialize()
+        ..[unrelated.transactionHash] = unrelated.serialize()
+        ..[child.transactionHash] = child.serialize();
+      wallets.utxos = [_stolen(rootTxid)];
+      mempool.txs[rootTxid] = {'txid': rootTxid, 'fee': 1410, 'weight': 564};
+      for (final tx in [unrelated, child]) {
+        mempool.txs[tx.transactionHash] = {'txid': tx.transactionHash, 'fee': 50000, 'weight': 440};
+      }
+
+      for (final claim in [
+        {'spent': true, 'txid': unrelated.transactionHash, 'vin': 0},
+        {'spent': true, 'txid': child.transactionHash, 'vin': 3},
+      ]) {
+        mempool.outspends[rootTxid] = [claim];
+        final c = (await analyzer.analyze(1, [rootTxid])).single;
+        expect(c.descendants.map((d) => d.txid), [claim['txid']], reason: '$claim');
+        expect(c.feeVerified, isFalse, reason: '$claim');
+        expect(SweepFee.isFloorExempt(floorPlan(c)), isFalse, reason: '$claim');
+      }
+    });
+
+    test('R2-M1: 확인한 연결로 이어진 2단계 사슬(사건 → 자식 → 손자)은 확인 → 예외', () async {
+      final root = _attackTx(rbf: true);
+      final rootTxid = root.transactionHash;
+      final child = _spend([_output(root)]);
+      final grandchild = _spend([_output(child)]);
+      node.raw
+        ..[rootTxid] = root.serialize()
+        ..[child.transactionHash] = child.serialize()
+        ..[grandchild.transactionHash] = grandchild.serialize();
+      wallets.utxos = [_stolen(rootTxid)];
+      mempool.txs[rootTxid] = {'txid': rootTxid, 'fee': 1410, 'weight': 564};
+      for (final tx in [child, grandchild]) {
+        mempool.txs[tx.transactionHash] = {'txid': tx.transactionHash, 'fee': 300, 'weight': 440};
+      }
+      mempool.outspends[rootTxid] = [
+        {'spent': true, 'txid': child.transactionHash, 'vin': 0},
+      ];
+      mempool.outspends[child.transactionHash] = [
+        {'spent': true, 'txid': grandchild.transactionHash, 'vin': 0},
+      ];
+
+      final c = (await analyzer.analyze(1, [rootTxid])).single;
+      expect(c.feeVerified, isTrue);
+      expect(
+        {for (final d in c.descendants) d.txid: d.fee},
+        {
+          child.transactionHash: root.outputs.single.amount - child.outputs.single.amount,
+          grandchild.transactionHash: child.outputs.single.amount - grandchild.outputs.single.amount,
+        },
+      );
+      expect(SweepFee.isFloorExempt(floorPlan(c)), isTrue);
+    });
   });
 }

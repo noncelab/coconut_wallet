@@ -9,6 +9,9 @@ import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 typedef SweepDescendant = ({String txid, int fee, double vSize});
 typedef _Root = ({int fee, double vSize, bool confirmed, bool signalsRbf, bool verified, TransactionRecord? record});
 
+/// 자손을 찾은 연결: [child]의 입력 [vin]이 [parent]의 출력 [vout]을 쓴다고 들었다(모르면 null). 일렉트럼 원본으로 확인한다(R2-M1)
+typedef _Edge = ({String parent, String child, int? vout, int? vin});
+
 /// 사건 거래(충돌)의 수수료·크기·RBF 신호·자손을 모은다. 결과는 [SweepBuilder.plan]에 그대로 넣는다.
 /// 네트워크 실패·형식이 틀린 응답은 다시 시도하지 않는다(로컬 값 + descendantsComplete=false, 사용자가 다시 분석).
 ///
@@ -63,9 +66,9 @@ class ConflictAnalyzer {
         );
         continue;
       }
-      final (descendants, complete) = await _descendants(walletId, txid, root.record, utxos, evicted, pending);
-      // 자손도 일렉트럼 원본으로 센다(mempool.space만 아는 자손은 여기서 걸린다). 하나라도 못 세면 이 충돌은 미확인
-      final verified = root.verified ? await server.feesOf(descendants) : null;
+      final (descendants, complete, links) = await _descendants(walletId, txid, root.record, utxos, evicted, pending);
+      // 자손도 일렉트럼 원본으로 센다(mempool.space만 아는 자손·지어낸 연결은 여기서 걸린다). 하나라도 못 세면 이 충돌은 미확인
+      final verified = root.verified ? await server.feesOf(txid, descendants, links) : null;
       conflicts.add(
         SweepConflict(
           txid: txid,
@@ -130,8 +133,9 @@ class ConflictAnalyzer {
 
   /// 로컬(CPFP 기록·충돌이 만든 우리 UTXO를 쓴 거래) + mempool.space outspends.
   /// [evicted]는 모든 사건 거래가 함께 쓰는 예산이다. 넘으면 바로 멈추고, 넘은 만큼 담긴 결과로 plan이 막는다.
-  /// 다른 사건 거래를 만나면 목록에 넣되(그 거래가 이 충돌을 통해 밀려남을 알리려고) 그 아래는 그 거래가 찾는다
-  Future<(List<SweepDescendant>, bool)> _descendants(
+  /// 다른 사건 거래를 만나면 목록에 넣되(그 거래가 이 충돌을 통해 밀려남을 알리려고) 그 아래는 그 거래가 찾는다.
+  /// 찾은 연결(부모 출력 → 자식 입력)도 모두 돌려준다. 연결은 믿지 않고 analyze가 일렉트럼 원본으로 확인한다
+  Future<(List<SweepDescendant>, bool, List<_Edge>)> _descendants(
     int walletId,
     String root,
     TransactionRecord? rootRecord,
@@ -140,6 +144,7 @@ class ConflictAnalyzer {
     Set<String> roots,
   ) async {
     final found = <String, SweepDescendant>{};
+    final links = <_Edge>[];
     final counted = <String>{}; // 이 충돌이 예산에 처음 넣은 txid
     bool overBudget() => evicted.length > SweepBuilder.maxDescendants;
     void add(SweepDescendant d) {
@@ -150,29 +155,39 @@ class ConflictAnalyzer {
     final localQueue = [root];
     while (localQueue.isNotEmpty && !overBudget()) {
       final parent = localQueue.removeAt(0);
-      final children = <String>{
-        if (parent == root && rootRecord?.cpfpHistory != null) rootRecord!.cpfpHistory!.childTransactionHash,
+      final edges = <_Edge>[
+        // CPFP 기록은 어느 출력인지 모른다(부모의 아무 출력이나 쓰면 됨)
+        if (parent == root && rootRecord?.cpfpHistory != null)
+          (parent: parent, child: rootRecord!.cpfpHistory!.childTransactionHash, vout: null, vin: null),
         for (final u in utxos)
-          if (u.transactionHash == parent && u.spentByTransactionHash != null) u.spentByTransactionHash!,
-      };
-      for (final child in children) {
-        if (child == root || found.containsKey(child) || overBudget()) continue;
-        final r = _walletProvider.getTransactionRecord(walletId, child);
+          if (u.transactionHash == parent && u.spentByTransactionHash != null)
+            (parent: parent, child: u.spentByTransactionHash!, vout: u.index, vin: null),
+      ];
+      for (final e in edges) {
+        if (e.child == root) continue;
+        links.add(e);
+        if (found.containsKey(e.child) || overBudget()) continue;
+        final r = _walletProvider.getTransactionRecord(walletId, e.child);
         if (r == null || r.vSize <= 0 || r.fee < 0) continue; // 네트워크 조회가 채운다
-        add((txid: child, fee: r.fee, vSize: r.vSize));
-        if (!roots.contains(child)) localQueue.add(child);
+        add((txid: e.child, fee: r.fee, vSize: r.vSize));
+        if (!roots.contains(e.child)) localQueue.add(e.child);
       }
     }
     final local = Map.of(found);
-    if (overBudget()) return (found.values.toList(), true);
+    if (overBudget()) return (found.values.toList(), true, links);
 
     try {
       final visited = {root};
       final queue = [root];
       while (queue.isNotEmpty) {
-        for (final o in await _mempoolApi.fetchOutspends(queue.removeAt(0))) {
+        final parent = queue.removeAt(0);
+        final outspends = await _mempoolApi.fetchOutspends(parent);
+        for (var vout = 0; vout < outspends.length; vout++) {
+          final o = outspends[vout];
           if (o['spent'] != true) continue;
           final child = (o['txid'] as String).toLowerCase(); // fetchOutspends가 형식을 확인했다
+          final vin = o['vin'];
+          links.add((parent: parent, child: child, vout: vout, vin: vin is int ? vin : null));
           if (!visited.add(child)) continue;
           if (!found.containsKey(child)) {
             // 찾기용 mempool.space 값. analyze가 이 자손을 일렉트럼 원본(txid 확인)과 입력 값(내 UTXO·일렉트럼 이전 거래)으로
@@ -182,15 +197,15 @@ class ConflictAnalyzer {
             if (checked == null) throw const FormatException('Invalid descendant');
             add((txid: child, fee: checked.fee, vSize: checked.vSize));
           }
-          if (overBudget()) return (found.values.toList(), true);
+          if (overBudget()) return (found.values.toList(), true, links);
           if (!roots.contains(child)) queue.add(child);
         }
       }
-      return (found.values.toList(), true);
+      return (found.values.toList(), true, links);
     } catch (_) {
       // 네트워크에서 더한 자손은 예산에서 되돌린다(로컬만 남김)
       evicted.removeAll(counted.where((txid) => !local.containsKey(txid)));
-      return (local.values.toList(), false);
+      return (local.values.toList(), false, links);
     }
   }
 }
@@ -239,8 +254,9 @@ class _ServerTxs {
     return fee < 0 || vSize <= 0 ? null : (fee: fee, vSize: vSize);
   }
 
-  /// 자손마다 일렉트럼 원본으로 (수수료, 크기). 일렉트럼이 모르는 자손이 있거나 하나라도 못 세면 null
-  Future<List<SweepDescendant>?> feesOf(List<SweepDescendant> descendants) async {
+  /// 자손마다 일렉트럼 원본으로 (수수료, 크기). 모든 자손이 [root]에서 확인한 연결로만 닿아야 한다(R2-M1: 지어낸 연결로
+  /// 무관한 고수수료 거래가 하한에 들어가 예외가 되지 않게). 일렉트럼이 모르거나 못 세거나 닿지 않는 자손이 있으면 null
+  Future<List<SweepDescendant>?> feesOf(String root, List<SweepDescendant> descendants, List<_Edge> links) async {
     final counted = <SweepDescendant>[];
     for (final d in descendants) {
       final raw = await get(d.txid);
@@ -248,6 +264,27 @@ class _ServerTxs {
       if (own == null) return null;
       counted.add((txid: d.txid, fee: own.fee, vSize: own.vSize));
     }
-    return counted;
+    final ids = {for (final d in descendants) d.txid};
+    final reached = {root};
+    for (var grew = true; grew;) {
+      grew = false;
+      for (final e in links) {
+        if (ids.contains(e.child) && !reached.contains(e.child) && reached.contains(e.parent) && await _spends(e)) {
+          reached.add(e.child);
+          grew = true;
+        }
+      }
+    }
+    return ids.every(reached.contains) ? counted : null;
+  }
+
+  /// 자식 원본의 입력(vin)이 부모 원본의 그 출력(vout)을 쓰는지, 번호 범위까지. 둘 다 이미 받아 둔 원본이다
+  Future<bool> _spends(_Edge e) async {
+    final parent = await get(e.parent), child = await get(e.child);
+    final vout = e.vout, vin = e.vin;
+    if (parent == null || child == null || (vout != null && vout >= parent.outputs.length)) return false;
+    bool spendsParent(TransactionInput i) =>
+        i.transactionHash == e.parent && i.index < parent.outputs.length && (vout == null || i.index == vout);
+    return vin == null ? child.inputs.any(spendsParent) : vin < child.inputs.length && spendsParent(child.inputs[vin]);
   }
 }

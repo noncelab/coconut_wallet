@@ -122,6 +122,24 @@ abstract final class SafetyAssistFlow {
 Route<T> assistRoute<T>(String name, Widget page) =>
     CupertinoPageRoute<T>(settings: RouteSettings(name: '/safety-guide/$name'), builder: (_) => page);
 
+/// 아직 열린 기준점 검토 거래(최근 출금·앱이 만들지 않은 자기 앞 전송). 엔진과 같은 규칙: 지갑 기록에 있고 인지·앱이 만든
+/// 거래·사건이 아님. 사용자 거래일 수 있어 대체하지 않는다(그 코인은 이동 금액에 없음, Grok G6)
+Set<String> _openReviewTxids(BuildContext context, int walletId) {
+  final state = context.read<SafetyProvider?>()?.state;
+  final baseline = state?.baselines[walletId];
+  if (state == null || baseline == null) return const {};
+  final records = context.read<WalletProvider>();
+  final incidents = {for (final i in state.incidents) i.txid};
+  return {
+    for (final txid in {...baseline.pendingSentAtBaseline, ...baseline.unexpectedSelfTxids})
+      if (records.getTransactionRecord(walletId, txid) != null &&
+          !state.recognizedTxids.contains(txid) &&
+          !state.isAppCreated(txid) &&
+          !incidents.contains(txid))
+        txid,
+  };
+}
+
 /// 화면 사이에서 넘기는 분석 결과·선택
 class AssistSession {
   AssistSession({
@@ -1183,8 +1201,10 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
           textAlign: TextAlign.center,
           style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
         ),
-        // 대체가 막혀 남은 코인만 옮길 때: 의심 거래의 코인은 이 금액에 없다(Grok §3)
-        if (!session.replace && session.conflicts.isNotEmpty) ...[
+        // 대체가 막혀 남은 코인만 옮길 때: 의심 거래의 코인은 이 금액에 없다(Grok §3).
+        // 아직 열린 기준점 검토 거래도 사용자 거래일 수 있어 대체하지 않으므로 같은 안내(Grok G6)
+        if (!session.replace &&
+            (session.conflicts.isNotEmpty || _openReviewTxids(context, session.wallet.id).isNotEmpty)) ...[
           CoconutLayout.spacing_200h,
           _InfoLine(key: const Key('safety-assist-review-excludes'), text: t.premium.assist.excludes_suspicious),
         ],

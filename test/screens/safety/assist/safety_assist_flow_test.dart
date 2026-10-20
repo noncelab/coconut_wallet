@@ -5,6 +5,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
@@ -81,6 +82,12 @@ class _Wallets extends Fake implements WalletProvider {
 
   @override
   WalletAddress getReceiveAddress(int walletId) => throw StateError('not generated');
+
+  final records = <String, TransactionRecord>{};
+
+  @override
+  TransactionRecord? getTransactionRecord(int walletId, String transactionHash) =>
+      walletId == 1 ? records[transactionHash] : null;
 
   @override
   Balance getWalletBalance(int walletId) => Balance(0, 0);
@@ -215,6 +222,8 @@ void main() {
     bool rescueCanMoveNow = false,
     FakeEntitlementService? premium,
     Map<int, WatchOnlyVerification> verifications = const {},
+    bool withIncident = true,
+    Map<int, WalletBaseline> baselines = const {},
   }) async {
     final auth = _Auth();
     final rescueProvider = rescueReady == null ? null : _Rescue(rescueReady, ready: rescueCanMoveNow);
@@ -227,17 +236,19 @@ void main() {
       null,
       state: SafetyState.initial().copyWith(
         incidents: [
-          SafetyIncident(
-            walletId: 1,
-            txid: _attackTxid,
-            detectedAt: DateTime(2026, 10, 20),
-            state: IncidentState.responding,
-            responseMode: IncidentResponseMode.premium,
-            guideStep: 2,
-          ),
+          if (withIncident)
+            SafetyIncident(
+              walletId: 1,
+              txid: _attackTxid,
+              detectedAt: DateTime(2026, 10, 20),
+              state: IncidentState.responding,
+              responseMode: IncidentResponseMode.premium,
+              guideStep: 2,
+            ),
         ],
         rescue: rescue,
         watchOnlyVerifications: verifications,
+        baselines: baselines,
       ),
     );
     final walletProvider = _Wallets(wallets ?? [incident, destination], utxos);
@@ -397,6 +408,7 @@ void main() {
 
     expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
     expect(find.text(t.premium.rescue.recalculated), findsOneWidget);
+    expect(find.byKey(const Key('safety-assist-review-excludes')), findsNothing); // 빠진 코인 없음
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
     expect(env.pushed.last, AppRouteNames.sendConfirm);
@@ -921,4 +933,47 @@ void main() {
       );
     });
   }
+
+  testWidgets('Grok G6: 열린 기준점 검토 거래만 있는 지갑도 지금 이동 검토에 그 코인이 빠졌다는 안내, 그 거래는 대체하지 않음', (tester) async {
+    const reviewTxid = 'c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3';
+    final rest = _utxo(incident, 1, 50000);
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 0, 40000, status: UtxoStatus.outgoing, spentBy: reviewTxid), rest],
+      conflicts: const [],
+      withIncident: false,
+      baselines: {
+        1: WalletBaseline(height: 100, at: DateTime(2026, 10, 1), pendingSentAtBaseline: const {reviewTxid}),
+      },
+    );
+    env.wallets.records[reviewTxid] = TransactionRecord(
+      reviewTxid,
+      DateTime(2026, 10, 1),
+      0,
+      TransactionType.sent,
+      null,
+      -40000,
+      200,
+      const [],
+      const [],
+      110,
+      DateTime(2026, 10, 1),
+    );
+    SafetyAssistFlow.moveNow(
+      env.host(),
+      walletId: 1,
+      destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+    expect(find.byKey(const Key('safety-assist-review-excludes')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pumpAndSettle();
+    expect(env.pushed.last, AppRouteNames.sendConfirm);
+    // 검토 거래가 쓰는 코인은 넣지 않는다(대체 아님)
+    final tx = env.sendInfo.transaction!;
+    expect(tx.inputs.single.transactionHash, rest.transactionHash);
+    expect(tx.inputs.every((i) => i.sequence == SweepBuilder.rbfSequence), isTrue);
+  });
 }
