@@ -24,6 +24,10 @@ class _Rescue extends ChangeNotifier implements RescueReadyProvider {
     notifyListeners();
   }
 
+  /// RescueReadyScreen이 그릴 때 읽는다(Premium 안내 한 줄)
+  @override
+  bool get lacksPremium => false;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
