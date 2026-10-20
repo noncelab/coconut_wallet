@@ -205,81 +205,88 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
       appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background),
       body: SafeArea(
         top: false,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                SafetyGuideProgressBar(value: widget.progress),
-                Expanded(
-                  child: SingleChildScrollView(
-                    // 아래 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이)
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      40,
-                      20,
-                      hasButton ? safetyFooterClearance(context, hasSubWidget: hasSubWidget) : 40,
-                    ),
-                    child: Column(
-                      children: [
-                        if (widget.hero != null) ...[
-                          // 제 모양을 가진 머리 그림(예: PremiumHero)은 회색 원 없이 그대로
-                          _SequentialEntry(visible: _visible > 0, child: widget.hero!),
-                          CoconutLayout.spacing_400h,
-                        ] else if (widget.iconPath != null || widget.icon != null) ...[
-                          _SequentialEntry(
-                            visible: _visible > 0,
-                            child: SafetyIconCircle(
-                              size: 72,
-                              background: colors.iconBackgroundSubtle,
-                              icon:
-                                  widget.icon ??
-                                  SvgPicture.asset(
-                                    widget.iconPath!,
-                                    width: 32,
-                                    height: 32,
-                                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
-                                  ),
-                            ),
+        // 버튼 묶음 높이를 재서 아래 여백·페이드를 그만큼 키운다(X1)
+        child: SafetyFooterScope(
+          builder:
+              (context) => Stack(
+                children: [
+                  Column(
+                    children: [
+                      SafetyGuideProgressBar(value: widget.progress),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          // 아래 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이)
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            40,
+                            20,
+                            hasButton ? safetyFooterClearance(context, hasSubWidget: hasSubWidget) : 40,
                           ),
-                          CoconutLayout.spacing_400h,
-                        ],
-                        _SequentialEntry(
-                          visible: _visible > 1,
-                          child: Semantics(
-                            header: true,
-                            child: Text(
-                              safetyKoText(widget.title),
-                              textAlign: TextAlign.center,
-                              style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
-                            ),
+                          child: Column(
+                            children: [
+                              if (widget.hero != null) ...[
+                                // 제 모양을 가진 머리 그림(예: PremiumHero)은 회색 원 없이 그대로
+                                _SequentialEntry(visible: _visible > 0, child: widget.hero!),
+                                CoconutLayout.spacing_400h,
+                              ] else if (widget.iconPath != null || widget.icon != null) ...[
+                                _SequentialEntry(
+                                  visible: _visible > 0,
+                                  child: SafetyIconCircle(
+                                    size: 72,
+                                    background: colors.iconBackgroundSubtle,
+                                    icon:
+                                        widget.icon ??
+                                        SvgPicture.asset(
+                                          widget.iconPath!,
+                                          width: 32,
+                                          height: 32,
+                                          colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                                        ),
+                                  ),
+                                ),
+                                CoconutLayout.spacing_400h,
+                              ],
+                              _SequentialEntry(
+                                visible: _visible > 1,
+                                child: Semantics(
+                                  header: true,
+                                  child: Text(
+                                    safetyKoText(widget.title),
+                                    textAlign: TextAlign.center,
+                                    style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
+                                  ),
+                                ),
+                              ),
+                              if (widget.description != null) ...[
+                                CoconutLayout.spacing_300h,
+                                _SequentialEntry(
+                                  visible: _visible > 2,
+                                  child: Text(
+                                    safetyKoText(widget.description!),
+                                    textAlign: TextAlign.center,
+                                    style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                                  ),
+                                ),
+                              ],
+                              if (widget.children.isNotEmpty) ...[
+                                CoconutLayout.spacing_600h,
+                                _SequentialEntry(
+                                  visible: _visible > 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: widget.children,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (widget.description != null) ...[
-                          CoconutLayout.spacing_300h,
-                          _SequentialEntry(
-                            visible: _visible > 2,
-                            child: Text(
-                              safetyKoText(widget.description!),
-                              textAlign: TextAlign.center,
-                              style: CoconutTypography.body2_14.setColor(colors.secondaryText),
-                            ),
-                          ),
-                        ],
-                        if (widget.children.isNotEmpty) ...[
-                          CoconutLayout.spacing_600h,
-                          _SequentialEntry(
-                            visible: _visible > 3,
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widget.children),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            if (hasButton && _visible > 0) _bottomButton(context),
-          ],
+                  if (hasButton && _visible > 0) _bottomButton(context),
+                ],
+              ),
         ),
       ),
     );
@@ -528,73 +535,76 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
         appBar: CoconutAppBar.build(context: context, isLeadingVisible: false, backgroundColor: colors.background),
         body: SafeArea(
           top: false,
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  if (widget.progress != null) SafetyGuideProgressBar(value: widget.progress!),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder:
-                          (context, constraints) => SingleChildScrollView(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                              // 내용이 짧으면 가운데에서 28 위, 길면 버튼 묶음과 그 위 페이드를 비켜 스크롤(R4, 버튼 글이 커지는 만큼 같이)
-                              child: Padding(
-                                padding: EdgeInsets.fromLTRB(
-                                  20,
-                                  widget.subWidget == null ? 104 : 128,
-                                  20,
-                                  safetyFooterClearance(context, hasSubWidget: widget.subWidget != null),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      widget.icon ?? _checkMark(context),
-                                      CoconutLayout.spacing_600h,
-                                      if (widget.badge != null) ...[widget.badge!, CoconutLayout.spacing_300h],
-                                      Semantics(
-                                        header: true,
-                                        child: Text(
-                                          safetyKoText(widget.title),
-                                          textAlign: TextAlign.center,
-                                          style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
+          child: SafetyFooterScope(
+            builder:
+                (context) => Stack(
+                  children: [
+                    Column(
+                      children: [
+                        if (widget.progress != null) SafetyGuideProgressBar(value: widget.progress!),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder:
+                                (context, constraints) => SingleChildScrollView(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                    // 내용이 짧으면 가운데에서 28 위, 길면 버튼 묶음과 그 위 페이드를 비켜 스크롤(R4, 버튼 글이 커지는 만큼 같이)
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        20,
+                                        widget.subWidget == null ? 104 : 128,
+                                        20,
+                                        safetyFooterClearance(context, hasSubWidget: widget.subWidget != null),
+                                      ),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            widget.icon ?? _checkMark(context),
+                                            CoconutLayout.spacing_600h,
+                                            if (widget.badge != null) ...[widget.badge!, CoconutLayout.spacing_300h],
+                                            Semantics(
+                                              header: true,
+                                              child: Text(
+                                                safetyKoText(widget.title),
+                                                textAlign: TextAlign.center,
+                                                style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
+                                              ),
+                                            ),
+                                            CoconutLayout.spacing_400h,
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                                              child: Text(
+                                                safetyKoText(widget.description),
+                                                textAlign: TextAlign.center,
+                                                style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                                              ),
+                                            ),
+                                            if (widget.children.isNotEmpty) ...[
+                                              CoconutLayout.spacing_600h,
+                                              ...widget.children,
+                                            ],
+                                          ],
                                         ),
                                       ),
-                                      CoconutLayout.spacing_400h,
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                                        child: Text(
-                                          safetyKoText(widget.description),
-                                          textAlign: TextAlign.center,
-                                          style: CoconutTypography.body2_14.setColor(colors.secondaryText),
-                                        ),
-                                      ),
-                                      if (widget.children.isNotEmpty) ...[
-                                        CoconutLayout.spacing_600h,
-                                        ...widget.children,
-                                      ],
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
                           ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              FixedBottomButton(
-                buttonKey: const Key('safety-result-button'),
-                surroundingsKey: const Key('safety-result-fade'),
-                onButtonClicked: widget.onButton,
-                text: widget.buttonText,
-                surroundingsColor: colors.background,
-                surroundingsPadding: widget.subWidget == null ? null : safetySubLineFadePadding(context),
-                subWidget: widget.subWidget,
-              ),
-            ],
+                    FixedBottomButton(
+                      buttonKey: const Key('safety-result-button'),
+                      surroundingsKey: const Key('safety-result-fade'),
+                      onButtonClicked: widget.onButton,
+                      text: widget.buttonText,
+                      surroundingsColor: colors.background,
+                      surroundingsPadding: widget.subWidget == null ? null : safetySubLineFadePadding(context),
+                      subWidget: widget.subWidget,
+                    ),
+                  ],
+                ),
           ),
         ),
       ),

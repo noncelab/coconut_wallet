@@ -341,6 +341,11 @@ void main() {
     expect(last, lessThanOrEqualTo(tester.getRect(footer).top));
     final fade = tester.getRect(find.byKey(const Key('incident-what-to-do-fade')));
     expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
+    // X1 회귀: 독일어 2.0배에서 버튼이 두 줄로 감겨도 페이드의 불투명한 절반이 "단계별로 하기" 링크 위에서 시작한다
+    expect(
+      fade.top + fade.height / 2,
+      lessThanOrEqualTo(tester.getRect(find.byKey(const Key('incident-what-to-do-step-by-step'))).top),
+    );
     expect(tester.takeException(), isNull);
   });
 

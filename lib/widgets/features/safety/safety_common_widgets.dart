@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -5,6 +7,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -35,8 +38,69 @@ bool safetyReduceMotion(BuildContext context) =>
 /// FixedBottomButton 위 페이드를 비켜 가는 스크롤 아래 여백(R4: 160, 부가 줄이 있으면 184).
 /// 버튼과 부가 줄은 본문 글처럼 커지므로 본문 크기(14)의 배율만큼 늘린다. 160을 글자 크기로 키우면 큰 글자를 덜 키우는
 /// 비선형 배율(Android 14+)에서 모자란다(선택 시트 common_bottom_sheets.dart와 같은 계산)
-double safetyFooterClearance(BuildContext context, {bool hasSubWidget = false}) =>
-    (hasSubWidget ? 184 : 160) * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, double.infinity);
+/// [SafetyFooterScope] 안이면 실제로 잰 버튼 묶음 높이(L)로 키운다: 보조 줄이 있으면 페이드의 불투명한 절반이 그 줄까지
+/// 덮도록 2L−32(여유 8), 없으면 L+24. 명세 값보다 작아지지는 않는다(X1: 버튼 글이 큰 글자에서 여러 줄로 감길 때)
+double safetyFooterClearance(BuildContext context, {bool hasSubWidget = false}) {
+  final spec =
+      (hasSubWidget ? 184 : 160) * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, double.infinity);
+  final footer = context.dependOnInheritedWidgetOfExactType<_SafetyFooterHeight>()?.height ?? 0;
+  return math.max(spec, hasSubWidget ? 2 * footer - 32 : footer + 24);
+}
+
+/// 본문 스크롤과 그 위에 겹친 FixedBottomButton을 함께 감싸, 그려진 뒤 버튼 묶음(보조 줄 + 버튼)의 높이를 잰다.
+/// [builder]의 context로 부른 safetyFooterClearance·safetySubLineFadePadding이 그 높이를 따른다(X1).
+/// 다른 화면은 `Stack(`을 `SafetyFooterScope(builder: (context) => Stack(`으로 감싸기만 하면 된다
+class SafetyFooterScope extends StatefulWidget {
+  const SafetyFooterScope({super.key, required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  State<SafetyFooterScope> createState() => _SafetyFooterScopeState();
+}
+
+class _SafetyFooterScopeState extends State<SafetyFooterScope> {
+  double _height = 0;
+
+  // FixedBottomButton 안 첫 Column이 묶음(보조 줄 → 간격 → 버튼)이다. 그 위끝에서 이 영역 아래끝까지
+  void _measure(Duration _) {
+    final box = mounted ? context.findRenderObject() : null;
+    if (box is! RenderBox || !box.hasSize) return;
+    double? top;
+    void findGroup(Element element) {
+      if (top != null) return;
+      final render = element.renderObject;
+      if (element.widget is Column && render is RenderBox && render.hasSize) {
+        top = render.localToGlobal(Offset.zero, ancestor: box).dy;
+        return;
+      }
+      element.visitChildElements(findGroup);
+    }
+
+    void findButton(Element element) =>
+        element.widget is FixedBottomButton
+            ? element.visitChildElements(findGroup)
+            : element.visitChildElements(findButton);
+    context.visitChildElements(findButton);
+    final height = top == null ? 0.0 : box.size.height - top!;
+    if ((height - _height).abs() >= 1) setState(() => _height = height);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback(_measure);
+    return _SafetyFooterHeight(height: _height, child: Builder(builder: widget.builder));
+  }
+}
+
+class _SafetyFooterHeight extends InheritedWidget {
+  const _SafetyFooterHeight({required this.height, required super.child});
+
+  final double height;
+
+  @override
+  bool updateShouldNotify(_SafetyFooterHeight oldWidget) => oldWidget.height != height;
+}
 
 /// 보조 줄(링크·수수료 줄)이 있는 FixedBottomButton의 페이드 여백: 불투명한 아래 절반이 보조 줄 위에서 시작하고,
 /// 아래 여백(R4)과 같은 배율로 커진다(POLISH X1). `surroundingsPadding`에 넘긴다

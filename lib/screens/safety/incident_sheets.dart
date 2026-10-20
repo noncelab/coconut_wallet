@@ -451,114 +451,120 @@ class _WhatToDoSheet extends StatelessWidget {
       (strings.step3_title, strings.step3_body),
       (strings.step4_title, strings.step4_body),
     ];
-    return Stack(
-      children: [
-        ListView(
-          controller: controller,
-          // 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이) + 아래 안전 영역
-          padding: EdgeInsets.fromLTRB(
-            20,
-            8,
-            20,
-            safetyFooterClearance(context, hasSubWidget: rescueDestination != null) +
-                MediaQuery.paddingOf(context).bottom,
-          ),
-          children: [
-            Center(
-              child: Container(
-                width: 55,
-                height: 4,
-                decoration: BoxDecoration(color: colors.bottomSheetHandle, borderRadius: BorderRadius.circular(4)),
-              ),
-            ),
-            CoconutLayout.spacing_600h,
-            Center(
-              child: SafetyIconCircle(
-                size: 48,
-                background: colors.dangerSurface,
-                icon: SvgPicture.asset(
-                  CommonStateIconPath.triangleWarning,
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(colors.danger, BlendMode.srcIn),
+    return SafetyFooterScope(
+      builder:
+          (context) => Stack(
+            children: [
+              ListView(
+                controller: controller,
+                // 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이) + 아래 안전 영역
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  safetyFooterClearance(context, hasSubWidget: rescueDestination != null) +
+                      MediaQuery.paddingOf(context).bottom,
                 ),
-              ),
-            ),
-            CoconutLayout.spacing_400h,
-            Text(
-              safetyKoText(strings.title),
-              textAlign: TextAlign.center,
-              style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
-            ),
-            CoconutLayout.spacing_200h,
-            Text(
-              safetyKoText(strings.body),
-              textAlign: TextAlign.center,
-              style: CoconutTypography.body2_14.setColor(colors.secondaryText),
-            ),
-            CoconutLayout.spacing_600h,
-            if (rescueDestination != null) ...[
-              Row(
                 children: [
-                  const PremiumChip(),
-                  CoconutLayout.spacing_200w,
-                  Expanded(
-                    child: Text(
-                      t.premium.rescue.destination_line(destination: rescueDestination!),
-                      style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                  Center(
+                    child: Container(
+                      width: 55,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.bottomSheetHandle,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  CoconutLayout.spacing_600h,
+                  Center(
+                    child: SafetyIconCircle(
+                      size: 48,
+                      background: colors.dangerSurface,
+                      icon: SvgPicture.asset(
+                        CommonStateIconPath.triangleWarning,
+                        width: 24,
+                        height: 24,
+                        colorFilter: ColorFilter.mode(colors.danger, BlendMode.srcIn),
+                      ),
+                    ),
+                  ),
+                  CoconutLayout.spacing_400h,
+                  Text(
+                    safetyKoText(strings.title),
+                    textAlign: TextAlign.center,
+                    style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
+                  ),
+                  CoconutLayout.spacing_200h,
+                  Text(
+                    safetyKoText(strings.body),
+                    textAlign: TextAlign.center,
+                    style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                  ),
+                  CoconutLayout.spacing_600h,
+                  if (rescueDestination != null) ...[
+                    Row(
+                      children: [
+                        const PremiumChip(),
+                        CoconutLayout.spacing_200w,
+                        Expanded(
+                          child: Text(
+                            t.premium.rescue.destination_line(destination: rescueDestination!),
+                            style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                          ),
+                        ),
+                      ],
+                    ),
+                    CoconutLayout.spacing_300h,
+                  ],
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBottomSheetElevated,
+                      borderRadius: BorderRadius.circular(CoconutStyles.radius_250),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          safetyKoText(strings.what_to_do),
+                          style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                        ),
+                        CoconutLayout.spacing_400h,
+                        for (var i = 0; i < steps.length; i++) ...[
+                          if (i > 0) CoconutLayout.spacing_400h,
+                          SafetyNumberedRow(number: i + 1, title: steps[i].$1, description: steps[i].$2),
+                        ],
+                      ],
                     ),
                   ),
                 ],
               ),
-              CoconutLayout.spacing_300h,
-            ],
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.surfaceBottomSheetElevated,
-                borderRadius: BorderRadius.circular(CoconutStyles.radius_250),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    safetyKoText(strings.what_to_do),
-                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+              if (rescueDestination == null)
+                FixedBottomButton(
+                  buttonKey: const Key('incident-what-to-do-start'),
+                  surroundingsKey: const Key('incident-what-to-do-fade'),
+                  text: strings.get_started,
+                  surroundingsColor: colors.surfaceBottomSheet,
+                  onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.guide),
+                )
+              else
+                FixedBottomButton(
+                  buttonKey: const Key('incident-what-to-do-move-now'),
+                  surroundingsKey: const Key('incident-what-to-do-fade'),
+                  text: t.premium.rescue.move_now,
+                  surroundingsColor: colors.surfaceBottomSheet,
+                  surroundingsPadding: safetySubLineFadePadding(context),
+                  onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.moveNow),
+                  subWidget: CoconutUnderlinedButton(
+                    key: const Key('incident-what-to-do-step-by-step'),
+                    text: strings.step_by_step,
+                    defaultColor: colors.secondaryTextStrong,
+                    onTap: () => Navigator.pop(context, _WhatToDoChoice.guide),
                   ),
-                  CoconutLayout.spacing_400h,
-                  for (var i = 0; i < steps.length; i++) ...[
-                    if (i > 0) CoconutLayout.spacing_400h,
-                    SafetyNumberedRow(number: i + 1, title: steps[i].$1, description: steps[i].$2),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (rescueDestination == null)
-          FixedBottomButton(
-            buttonKey: const Key('incident-what-to-do-start'),
-            surroundingsKey: const Key('incident-what-to-do-fade'),
-            text: strings.get_started,
-            surroundingsColor: colors.surfaceBottomSheet,
-            onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.guide),
-          )
-        else
-          FixedBottomButton(
-            buttonKey: const Key('incident-what-to-do-move-now'),
-            surroundingsKey: const Key('incident-what-to-do-fade'),
-            text: t.premium.rescue.move_now,
-            surroundingsColor: colors.surfaceBottomSheet,
-            surroundingsPadding: safetySubLineFadePadding(context),
-            onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.moveNow),
-            subWidget: CoconutUnderlinedButton(
-              key: const Key('incident-what-to-do-step-by-step'),
-              text: strings.step_by_step,
-              defaultColor: colors.secondaryTextStrong,
-              onTap: () => Navigator.pop(context, _WhatToDoChoice.guide),
-            ),
+                ),
+            ],
           ),
-      ],
     );
   }
 }

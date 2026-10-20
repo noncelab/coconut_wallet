@@ -325,8 +325,8 @@ void main() {
   });
 
   // X1: 보조 줄이 있으면 페이드의 불투명한 아래 절반이 보조 줄 위에서 시작한다(모든 배율)
-  // 2.0배는 한 줄 버튼으로: 버튼 글이 여러 줄로 감기면 명세 식으로는 링크가 반투명 띠에 걸친다(리드에 보고)
-  for (final (scale, button) in [(1.0, 'Continue the security review'), (2.0, 'Next')]) {
+  // 버튼 글이 큰 글자에서 여러 줄로 감겨도(재서 키운다) 보조 줄은 불투명한 띠 위에 있다
+  for (final (scale, button) in [(1.0, 'Continue the security review'), (2.0, 'Continue the security review')]) {
     testWidgets('the fade is opaque behind the sub line at ${scale}x on 320dp', (tester) async {
       useSmallPhone(tester, scale);
       final pages = [
@@ -352,6 +352,18 @@ void main() {
           ),
           'safety-result-fade',
           const Key('result-sub'),
+        ),
+        // Assist 검토 화면과 같은 쓰임: 수수료 줄을 footer 자리에(보조 줄로) 넘긴다
+        (
+          SafetyGuidePage(
+            progress: 0.25,
+            title: 'Review the move',
+            buttonText: 'Sign and send the transaction',
+            onButton: () {},
+            footer: const Text('Network fee 0.0000 1410 BTC', key: Key('review-fee')),
+          ),
+          'safety-guide-fade',
+          const Key('review-fee'),
         ),
       ];
       for (final (page, fade, sub) in pages) {
