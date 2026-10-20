@@ -309,10 +309,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(findText(t.premium.purchased.title), findsOneWidget);
       expect(premium.state.value.period, PremiumPeriod.yearly);
-      // POLISH G10: 제목 위 Premium 칩
+      // §4 D9: 본문 아래 비상 이동 목적지 안내 한 줄
       expect(
-        tester.getRect(find.byType(PremiumChip)).bottom,
-        lessThanOrEqualTo(tester.getRect(findText(t.premium.purchased.title)).top),
+        tester.getRect(findText(t.premium.purchased.rescue_hint)).top,
+        greaterThanOrEqualTo(tester.getRect(findText(t.premium.purchased.body)).bottom),
       );
 
       await tester.tap(findText(t.confirm));
@@ -345,7 +345,7 @@ void main() {
       await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('premium-result-pending')), findsOneWidget);
-      expect(find.byType(PremiumChip), findsNothing); // 승인 전에는 Premium이 아니다
+      expect(find.byKey(const Key('premium-result-rescue-hint')), findsNothing);
       expect(findText(t.premium.purchased.pending_title), findsOneWidget);
       expect(findText(t.premium.purchased.pending_body), findsOneWidget);
       expect(result.value, isNull); // 확인 전에는 닫히지 않는다

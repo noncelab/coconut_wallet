@@ -134,10 +134,23 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                         ),
                       )
                       : null,
-              // 승인 대기는 아직 Premium이 아니라 칩이 없다
-              badge: pending ? null : const PremiumChip(),
+              // 승인 대기는 아직 Premium이 아니라 비상 이동 안내가 없다
               buttonText: t.confirm,
               onButton: () => Navigator.of(resultContext).pop(),
+              children: [
+                // POLISH §4 D9: 목적지를 정해야 초안이 생긴다(정하는 곳 안내). "서명과 전송은 직접"은 본문에 그대로
+                if (!pending)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      safetyKoText(t.premium.purchased.rescue_hint),
+                      key: const Key('premium-result-rescue-hint'),
+                      textAlign: TextAlign.center,
+                      // 다음 단계 안내라 위계를 지킨다: 제목 > 본문 > 안내(R5의 secondaryTextStrong은 안전 필독 글 전용)
+                      style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                    ),
+                  ),
+              ],
             ),
       ),
     );
