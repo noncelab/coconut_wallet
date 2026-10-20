@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
@@ -21,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 import '../../mock/wallet_mock.dart';
 import 'wallet_health_fixtures.dart';
@@ -46,6 +48,7 @@ Future<FakeSafetyProvider> _pump(
   bool startCheck = false,
   double textScale = 1,
   double height = 2400,
+  List<SingleChildWidget> extra = const [],
 }) => pumpWalletHealthApp(
   tester,
   WalletHealthScreen(startCheck: startCheck),
@@ -59,8 +62,30 @@ Future<FakeSafetyProvider> _pump(
   premium: entitlement ? premium ?? const PremiumState(PremiumStatus.none) : null,
   rescue: rescue,
   wallets: _wallets,
+  extra: extra,
   settle: !startCheck,
 );
+
+/// 홈 상태칩이 읽는 연결 상태(C46)
+class _Connectivity extends ChangeNotifier implements ConnectivityProvider {
+  _Connectivity({this.internet = true, this.vpn = false});
+
+  final bool internet, vpn;
+
+  @override
+  bool get isInternetOn => internet;
+  @override
+  bool get isInternetOff => !internet;
+  @override
+  bool get isVpnActive => vpn;
+  @override
+  bool get isVpnInactive => !vpn;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+SingleChildWidget _connectivity({bool internet = true, bool vpn = false}) =>
+    ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity(internet: internet, vpn: vpn));
 
 /// 지갑 1 "Daily1"(보기 전용), 지갑 2 "Savings2"
 final _wallets = [
@@ -774,26 +799,32 @@ void main() {
     expect(_text(safetyCheckName(SafetyCheckId.addressReuse)), findsWidgets);
   });
 
-  // 당겨서 새로고침은 iOS(바운스)에서만 끝까지 당겨진다. 안드로이드 기본 스크롤은 넘침이 없어 걸리지 않는다
-  testWidgets(
-    'C15: in S3 pulling down shows the standard refresh indicator; scored layouts keep the sweep',
-    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
-    (tester) async {
-      await _pump(tester, criticalReport(incidents: 1));
-      await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 300));
-      await tester.pump();
-      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
+  // 앱 뿌리가 CupertinoApp이라 Android에서도 튕김 스크롤(CupertinoScrollBehavior)로 당겨진다. 이 틀은 MaterialApp이라
+  // 같은 스크롤 동작을 깔고 기본 플랫폼(Android)에서 확인한다
+  testWidgets('C15: in S3 pulling down shows the standard refresh indicator; scored layouts keep the sweep', (
+    tester,
+  ) async {
+    Future<void> pump(WalletHealthReport report) => pumpWalletHealthApp(
+      tester,
+      const ScrollConfiguration(behavior: CupertinoScrollBehavior(), child: WalletHealthScreen()),
+      report: report,
+      premium: const PremiumState(PremiumStatus.none),
+      wallets: _wallets,
+    );
+    await pump(criticalReport(incidents: 1));
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 300));
+    await tester.pump();
+    expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
 
-      await _pump(tester, scoredReport());
-      await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 300));
-      await tester.pump();
-      expect(find.byType(CupertinoActivityIndicator), findsNothing); // 게이지 스윕이 진행 표시
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
-    },
-  );
+    await pump(scoredReport());
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 300));
+    await tester.pump();
+    expect(find.byType(CupertinoActivityIndicator), findsNothing); // 게이지 스윕이 진행 표시
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+  });
 
   testWidgets('review row opens the review item sheet', (tester) async {
     await _pump(tester, scoredReport());
@@ -892,6 +923,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.descendant(of: about, matching: _text('—')), findsOneWidget);
 
+      await tester.pumpWidget(const SizedBox()); // 열린 시트 경로를 지운다(같은 MaterialApp이면 남는다)
       await _pump(tester, report(lastSuccessfulSyncAt: DateTime(2026, 10, 20, 9)));
       await tester.tap(find.byKey(const Key('wallet-health-info')));
       await tester.pumpAndSettle();
@@ -965,15 +997,113 @@ void main() {
 
     for (final scale in [1.3, 2.0]) {
       testWidgets('320 dp × $scale: every state and the About sheet fit without overflow', (tester) async {
-        for (final r in [scoredReport(), notEnoughDataReport(), noWalletReport(), criticalReport(incidents: 2)]) {
-          await _pump(tester, r, width: 320, textScale: scale, rescue: FakeRescueReady());
+        for (final r in [
+          scoredReport(),
+          scoredReport(connected: false),
+          notEnoughDataReport(),
+          noWalletReport(),
+          criticalReport(incidents: 2),
+        ]) {
+          await _pump(tester, r, width: 320, textScale: scale, rescue: FakeRescueReady(), extra: [_connectivity()]);
           expect(tester.takeException(), isNull);
         }
-        await _pump(tester, scoredReport(), width: 320, textScale: scale, rescue: FakeRescueReady());
-        await tester.tap(find.byKey(const Key('wallet-health-info')));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
+        for (final r in [scoredReport(), noWalletReport()]) {
+          await tester.pumpWidget(const SizedBox()); // 앞 시트를 닫고 새로 연다
+          await _pump(tester, r, width: 320, textScale: scale, rescue: FakeRescueReady());
+          await tester.tap(find.byKey(const Key('wallet-health-info')));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
       });
     }
+  });
+
+  group('P2 polish', () {
+    final about = find.byKey(const Key('wallet-health-about-sheet'));
+
+    Future<void> openAbout(WidgetTester tester, WalletHealthReport report, {double width = 390}) async {
+      await tester.pumpWidget(const SizedBox()); // 앞에서 연 시트 경로가 남지 않게
+      await _pump(tester, report, width: width);
+      await tester.tap(find.byKey(const Key('wallet-health-info')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('C41: S0 lists the four checks a wallet adds, in the brief order, without reasons or 거래 충돌', (
+      tester,
+    ) async {
+      await _pump(tester, noWalletReport());
+      final card = find.byType(WalletHealthNotIncludedCard);
+      final names = [
+        safetyCheckName(SafetyCheckId.addressReuse),
+        safetyCheckName(SafetyCheckId.possibleDusting),
+        safetyCheckName(SafetyCheckId.unrecognizedOutgoing),
+        t.wallet_health.category.recovery_readiness,
+      ];
+      expect(find.descendant(of: card, matching: find.byIcon(CupertinoIcons.clock)), findsNWidgets(4));
+      final tops = [for (final name in names) tester.getTopLeft(find.descendant(of: card, matching: _text(name))).dy];
+      expect(tops, [...tops]..sort());
+      expect(find.descendant(of: card, matching: _text(safetyCheckName(SafetyCheckId.txConflict))), findsNothing);
+      expect(find.descendant(of: card, matching: _text(safetyReasonText(NotApplicableReason.noWallet))), findsNothing);
+      expect(
+        find.descendant(of: card, matching: _text(t.wallet_health.section.not_included_footer_no_wallet)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('C47: with no wallet the About sheet splits what works now from what a wallet adds', (tester) async {
+      await openAbout(tester, noWalletReport());
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.section.available_now)), findsOneWidget);
+      expect(find.descendant(of: about, matching: find.byType(SafetyPassedRow)), findsNWidgets(2)); // 앱 잠금·업데이트
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.section.after_adding_wallet)), findsOneWidget);
+      final card = find.descendant(of: about, matching: find.byType(WalletHealthNotIncludedCard));
+      final names = safetyNoWalletCheckNames(about: true);
+      expect(names.take(4), safetyNoWalletCheckNames()); // 앞 넷은 화면 S0와 같은 순서(C41)
+      final tops = [for (final name in names) tester.getTopLeft(find.descendant(of: card, matching: _text(name))).dy];
+      expect(tops, [...tops]..sort());
+
+      await openAbout(tester, scoredReport());
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.section.after_adding_wallet)), findsNothing);
+      expect(find.descendant(of: about, matching: find.byType(WalletHealthNotIncludedCard)), findsNothing);
+    });
+
+    testWidgets('C46: offline, the header says why under the offline line, in the home chip words', (tester) async {
+      final header = find.byType(WalletHealthHeaderCard);
+      final chip = t.wallet_health.status_chip;
+      for (final (provider, cause) in [
+        (_connectivity(internet: false), chip.offline),
+        (_connectivity(vpn: true), chip.vpn),
+        (_connectivity(), chip.connection_failed),
+      ]) {
+        await _pump(tester, scoredReport(connected: false), extra: [provider]);
+        final line = find.descendant(of: header, matching: _text(cause));
+        expect(line, findsOneWidget, reason: cause);
+        final offline = find.descendant(of: header, matching: _text(t.wallet_health.hero.offline_line));
+        expect(tester.getTopLeft(line).dy, greaterThan(tester.getBottomLeft(offline).dy));
+        expect(tester.widget<Text>(line).style!.fontSize, 12);
+      }
+      await _pump(tester, scoredReport(), extra: [_connectivity(internet: false)]);
+      expect(_text(chip.offline), findsNothing);
+    });
+
+    testWidgets('C39: the About "포함" boxes go one per row when a box would be narrower than 150', (tester) async {
+      Finder box(SafetyCategory category) => find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_IncludedBox' && (w as dynamic).category == category,
+      );
+      await openAbout(tester, scoredReport(), width: 320);
+      final (recovery, activity) = (
+        tester.getTopLeft(box(SafetyCategory.recovery)),
+        tester.getTopLeft(box(SafetyCategory.activity)),
+      );
+      expect(activity.dx, recovery.dx);
+      expect(activity.dy, greaterThan(recovery.dy));
+
+      await openAbout(tester, scoredReport());
+      final (wideRecovery, wideActivity) = (
+        tester.getTopLeft(box(SafetyCategory.recovery)),
+        tester.getTopLeft(box(SafetyCategory.activity)),
+      );
+      expect(wideActivity.dy, wideRecovery.dy);
+      expect(wideActivity.dx, greaterThan(wideRecovery.dx));
+    });
   });
 }

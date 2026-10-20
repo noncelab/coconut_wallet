@@ -129,6 +129,25 @@ class _AboutSheet extends StatelessWidget {
           CoconutLayout.spacing_200h,
           Text(safetyKoText(s.min_coverage), style: secondary),
         ],
+        // 지갑이 없을 때: 지금 되는 점검과 지갑을 추가하면 되는 점검(REQ §18.11.4·§18.11.9-8, C47). 화면 S0와 같은 이름·행
+        if (report != null && report.status == WalletHealthStatus.noWallet) ...[
+          if (report.allGoodItems.isNotEmpty) ...[
+            _SheetTitle(t.wallet_health.section.available_now),
+            SafetyListCard(
+              backgroundColor: colors.surfaceBottomSheetElevated,
+              rows: [
+                for (final (i, item) in report.allGoodItems.indexed)
+                  if (report.allGoodItems.indexWhere((other) => other.id == item.id) == i) SafetyPassedRow(item: item),
+              ],
+            ),
+          ],
+          _SheetTitle(t.wallet_health.section.after_adding_wallet),
+          WalletHealthNotIncludedCard(
+            names: safetyNoWalletCheckNames(about: true),
+            showReasons: false,
+            backgroundColor: colors.surfaceBottomSheetElevated,
+          ),
+        ],
         _SheetTitle(s.range_title),
         for (final (i, label) in WalletHealthLabel.values.indexed) ...[
           if (i > 0) Divider(color: colors.divider, height: 1),
@@ -318,6 +337,27 @@ class _IncludedGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget box(SafetyCategory category) => Expanded(child: _IncludedBox(category: category, report: report));
+    const order = [SafetyCategory.recovery, SafetyCategory.activity, SafetyCategory.app, SafetyCategory.privacy];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 상자가 150dp보다 좁아지면(작은 폭) 한 줄에 하나씩(POLISH C39)
+        if ((constraints.maxWidth - 12) / 2 < 150) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (i, category) in order.indexed) ...[
+                if (i > 0) CoconutLayout.spacing_300h,
+                _IncludedBox(category: category, report: report),
+              ],
+            ],
+          );
+        }
+        return _twoColumns(box);
+      },
+    );
+  }
+
+  Widget _twoColumns(Widget Function(SafetyCategory) box) {
     return Column(
       children: [
         IntrinsicHeight(

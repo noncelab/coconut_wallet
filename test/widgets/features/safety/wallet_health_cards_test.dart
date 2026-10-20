@@ -357,4 +357,19 @@ void main() {
     expect([for (final span in spans) span.text], ['복구 ', '86', '점']);
     expect([for (final span in spans) span.style!.fontFamily], ['Body', 'Number', 'Body']);
   });
+
+  test('C44: an exported but unverified BSMS backup reads as such, not as never verified', () {
+    const exported = SafetyCheckResult(
+      SafetyCheckId.bsmsBackup,
+      SafetyOutcome.failed,
+      walletId: 2,
+      severity: SafetySeverity.actionNeeded,
+      detail: SafetyCheckDetail.exportedNotVerified,
+    );
+    final c = t.wallet_health.check.bsms_backup;
+    expect(safetyIssueText(exported), c.issue_exported_not_verified);
+    expect(safetyFailedResultText(exported), c.exported_not_verified);
+    const never = SafetyCheckResult(SafetyCheckId.bsmsBackup, SafetyOutcome.failed, walletId: 2);
+    expect(safetyFailedResultText(never), c.not_verified);
+  });
 }

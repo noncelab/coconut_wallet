@@ -156,6 +156,8 @@ String safetyIssueText(SafetyCheckResult item) {
     SafetyCheckId.bsmsBackup => switch (detail) {
       SafetyCheckDetail.updateRequired => c.bsms_backup.issue_update_required,
       SafetyCheckDetail.mismatch => c.bsms_backup.issue_mismatch,
+      // 지금 구성으로 내보냈지만 아직 검증하지 않음(R30)
+      SafetyCheckDetail.exportedNotVerified => c.bsms_backup.issue_exported_not_verified,
       _ => c.bsms_backup.issue_not_verified,
     },
     SafetyCheckId.unrecognizedOutgoing => t.wallet_health.incident.outgoing_title,
@@ -191,6 +193,7 @@ String safetyFailedResultText(SafetyCheckResult item) {
     SafetyCheckId.bsmsBackup => switch (detail) {
       SafetyCheckDetail.updateRequired => c.bsms_backup.update_required,
       SafetyCheckDetail.mismatch => c.bsms_backup.mismatch,
+      SafetyCheckDetail.exportedNotVerified => c.bsms_backup.exported_not_verified,
       _ => c.bsms_backup.not_verified,
     },
     SafetyCheckId.addressReuse => c.address_reuse.count(n: item.subjects.length),
@@ -285,6 +288,20 @@ TextSpan safetyNumberSpans(String text, TextStyle words, TextStyle digits) => Te
   ],
 );
 
+/// 지갑을 추가하면 확인할 수 있는 점검의 이름(브리프 §3.4 순서). [about]이면 About 시트용으로
+/// 보기 전용 검증·다중 서명 구성·BSMS까지(REQ §18.11.4, POLISH C41·C47)
+List<String> safetyNoWalletCheckNames({bool about = false}) => [
+  safetyCheckName(SafetyCheckId.addressReuse),
+  safetyCheckName(SafetyCheckId.possibleDusting),
+  safetyCheckName(SafetyCheckId.unrecognizedOutgoing),
+  t.wallet_health.category.recovery_readiness,
+  if (about) ...[
+    safetyCheckName(SafetyCheckId.watchOnlyVerify),
+    safetyCheckName(SafetyCheckId.multisigConfig),
+    safetyCheckName(SafetyCheckId.bsmsBackup),
+  ],
+];
+
 /// 권장 점검 시트의 한 줄 안내(제목 아래, 공통 안내 위). 점검마다 무엇을 확인하는지 말한다(R41)
 String safetyRecommendedBody(RecommendedCheckId id) {
   final r = t.wallet_health.recommended;
@@ -365,12 +382,16 @@ class WalletHealthHeaderCard extends StatelessWidget {
     required this.isChecking,
     required this.onCheckAgain,
     required this.onAddWallet,
+    this.offlineCause,
   });
 
   final WalletHealthReport? report;
   final bool isChecking;
   final VoidCallback onCheckAgain;
   final VoidCallback onAddWallet;
+
+  /// 오프라인일 때 그 원인(홈 상태칩과 같은 말: 네트워크 끊김·VPN 확인·연결 실패, C46)
+  final String? offlineCause;
 
   @override
   Widget build(BuildContext context) {
@@ -427,6 +448,10 @@ class WalletHealthHeaderCard extends StatelessWidget {
                   Flexible(child: Text(safetyKoText(t.wallet_health.hero.offline_line), style: lineStyle)),
                 ],
               ),
+              if (offlineCause != null) ...[
+                CoconutLayout.spacing_100h,
+                Text(safetyKoText(offlineCause!), textAlign: TextAlign.center, style: lineStyle),
+              ],
             ],
           ],
         ],
@@ -797,19 +822,35 @@ class SafetyPassedRow extends StatelessWidget {
 
 /// 아직 포함되지 않은 점검(🕒) + 회색 띠
 class WalletHealthNotIncludedCard extends StatelessWidget {
-  const WalletHealthNotIncludedCard({super.key, required this.items, required this.footer, this.showReasons = true});
+  const WalletHealthNotIncludedCard({
+    super.key,
+    this.items = const [],
+    this.names,
+    this.footer,
+    this.showReasons = true,
+    this.backgroundColor,
+  });
 
   final List<SafetyCheckResult> items;
-  final String footer;
+
+  /// 점검 결과 대신 이름만(지갑 0개: 브리프 §3.4 목록). 있으면 [items]는 쓰지 않는다
+  final List<String>? names;
+  final String? footer;
   final bool showReasons;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final style = CoconutTypography.body3_12.setColor(colors.secondaryText);
     return SafetyListCard(
+      backgroundColor: backgroundColor,
       rows: [
-        for (final item in items)
+        for (final (name, reason) in [
+          for (final n in names ?? const <String>[]) (n, null),
+          if (names == null)
+            for (final item in items) (safetyCheckName(item.id), showReasons ? item.reason : null),
+        ])
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
@@ -817,30 +858,31 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
                 Icon(CupertinoIcons.clock, size: 18, color: colors.iconSecondary),
                 CoconutLayout.spacing_300w,
                 Expanded(
-                  child: Text(
-                    safetyKoText(safetyCheckName(item.id)),
-                    style: CoconutTypography.body2_14.setColor(colors.secondaryText),
-                  ),
+                  child: Text(safetyKoText(name), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
                 ),
-                if (showReasons && item.reason != null) ...[
+                if (reason != null) ...[
                   CoconutLayout.spacing_200w,
                   // 이유는 오른쪽 끝(C6과 같은 줄 규칙)
-                  Expanded(
-                    child: Text(safetyKoText(safetyReasonText(item.reason!)), textAlign: TextAlign.end, style: style),
-                  ),
+                  Expanded(child: Text(safetyKoText(safetyReasonText(reason)), textAlign: TextAlign.end, style: style)),
                 ],
               ],
             ),
           ),
       ],
       // 띠는 행 구분선 반복 밖에(겹선 없이, POLISH C27)
-      footer: Container(
-        width: double.infinity,
-        color: colors.surfaceMuted,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-        // 꼭 읽어야 하는 띠 글: 코코넛 secondaryText는 이 바탕에서 2.65:1(POLISH R5)
-        child: Text(safetyKoText(footer), style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
-      ),
+      footer:
+          footer == null
+              ? null
+              : Container(
+                width: double.infinity,
+                color: colors.surfaceMuted,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                // 꼭 읽어야 하는 띠 글: 코코넛 secondaryText는 이 바탕에서 2.65:1(POLISH R5)
+                child: Text(
+                  safetyKoText(footer!),
+                  style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                ),
+              ),
     );
   }
 }

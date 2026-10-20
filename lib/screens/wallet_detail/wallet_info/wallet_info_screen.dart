@@ -29,8 +29,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/bsms_verification_screen.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart'
+    show safetyFailedResultText, safetyPassedText;
 import 'package:coconut_wallet/screens/safety/watch_only_verification_screen.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_safety_status_row.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
@@ -411,6 +414,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 if (safety != null)
                                   _walletInfoMenu(
                                     title: t.wallet_health.bsms_verify.title,
+                                    // 이 지갑 BSMS 백업 상태(지갑 상태 시트와 같은 짧은 말, 예: 내보냄 · 미검증)
+                                    subWidget: switch (_bsmsStatus(safety)) {
+                                      final status? => Text(status, style: _menuSubTextStyle),
+                                      null => null,
+                                    },
                                     onPressed: () {
                                       _removeTooltip();
                                       BsmsVerificationScreen.open(context, walletId: widget.id);
@@ -422,6 +430,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     title: t.wallet_info_screen.view_wallet_backup_data,
                                     onPressed: () {
                                       _removeTooltip();
+                                      // BSMS를 내보낸 것으로 기록한다(검증은 아니다, R30). 지금 구성의 해시와 시각
+                                      context.read<SafetyProvider?>()?.recordBsmsExport(widget.id);
 
                                       Navigator.pushNamed(
                                         context,
@@ -1023,6 +1033,19 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         ),
       ),
     );
+  }
+
+  /// 지갑 상태 보고서의 이 지갑 BSMS 백업 결과(실패면 짧은 결과 글, 통과면 통과 글). 결과가 없으면 null
+  String? _bsmsStatus(SafetyProvider safety) {
+    final report = safety.report;
+    if (report == null) return null;
+    for (final r in report.reviewItems) {
+      if (r.id == SafetyCheckId.bsmsBackup && r.walletId == widget.id) return safetyFailedResultText(r);
+    }
+    for (final r in report.allGoodItems) {
+      if (r.id == SafetyCheckId.bsmsBackup && r.walletId == widget.id) return safetyPassedText(r).text;
+    }
+    return null;
   }
 
   TextStyle get _menuSubTextStyle => CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText);

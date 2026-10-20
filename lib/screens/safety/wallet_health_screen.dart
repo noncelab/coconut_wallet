@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
@@ -196,6 +197,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
         isChecking: checking,
         onCheckAgain: _checkAgain,
         onAddWallet: () => WalletAddScreen.openByWalletCount(context),
+        offlineCause: report != null && !report.isConnected ? _offlineCause() : null,
       ),
       if (waiting) ...[
         CoconutLayout.spacing_400h,
@@ -231,21 +233,35 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
           SafetySectionTitle(waiting ? s.available_now : s.all_good),
           SafetyListCard(rows: [for (final item in passed) SafetyPassedRow(item: item)]),
         ],
-        if (waiting) ...[
-          if (notIncluded.isNotEmpty) ...[
-            SafetySectionTitle(noWallet ? s.after_adding_wallet : s.not_included_yet),
-            WalletHealthNotIncludedCard(
-              items: notIncluded,
-              showReasons: !noWallet,
-              footer: noWallet ? s.not_included_footer_no_wallet : s.not_included_footer_usage,
-            ),
-          ],
+        if (noWallet) ...[
+          // 브리프 §3.4의 네 줄, 이 순서로(C41). 복구 준비는 점검이 아니라 카테고리 이름 한 줄
+          SafetySectionTitle(s.after_adding_wallet),
+          WalletHealthNotIncludedCard(
+            names: safetyNoWalletCheckNames(),
+            showReasons: false,
+            footer: s.not_included_footer_no_wallet,
+          ),
           // "더 많은 점검을 하려면"은 지갑이 없을 때만(UI 브리프 WH-S0)
-          if (noWallet) ...[CoconutLayout.spacing_800h, const WalletHealthUnlockCard()],
+          CoconutLayout.spacing_800h,
+          const WalletHealthUnlockCard(),
+        ] else if (waiting && notIncluded.isNotEmpty) ...[
+          SafetySectionTitle(s.not_included_yet),
+          WalletHealthNotIncludedCard(items: notIncluded, footer: s.not_included_footer_usage),
         ],
         ..._recommendedSection(report),
       ],
     ];
+  }
+
+  /// 오프라인 원인. 홈 상태칩(HomeConnectionStatusViewModel)과 같은 갈래: 인터넷 없음 → 네트워크 끊김,
+  /// VPN 켜짐 → VPN 확인, 그 밖에는 연결 실패. 칩의 뷰모델은 홈 화면 안에만 있어 여기서는 연결 상태를 직접 읽는다
+  String? _offlineCause() {
+    final connectivity = context.watch<ConnectivityProvider?>();
+    if (connectivity == null) return null;
+    final chip = t.wallet_health.status_chip;
+    if (connectivity.isInternetOff) return chip.offline;
+    if (connectivity.isVpnActive) return chip.vpn;
+    return chip.connection_failed;
   }
 
   /// "정상 항목": 점검 종류별 한 줄. 같은 점검이 어느 지갑에서든 검토 필요면 두지 않는다(모든 지갑이 통과해야 정상, C40)
