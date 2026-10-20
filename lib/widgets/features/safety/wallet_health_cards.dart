@@ -649,12 +649,8 @@ class _CategoryCard extends StatelessWidget {
           CoconutLayout.spacing_200h,
           big,
           CoconutLayout.spacing_50h,
-          Text(
-            safetyKoText(status.text),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: CoconutTypography.body3_12.setColor(status.color),
-          ),
+          // 큰 글자에서도 말줄임 없이 줄을 바꾼다(같은 줄 카드는 IntrinsicHeight로 같은 높이, POLISH X3)
+          Text(safetyKoText(status.text), style: CoconutTypography.body3_12.setColor(status.color)),
         ],
       );
       if (!isChecking) {
@@ -862,17 +858,27 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(CupertinoIcons.clock, size: 18, color: colors.iconSecondary),
+                // 아이콘은 이름 첫 줄 가운데(R3)
+                Padding(
+                  padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body2_14, 18)),
+                  child: Icon(CupertinoIcons.clock, size: 18, color: colors.iconSecondary),
+                ),
                 CoconutLayout.spacing_300w,
                 Expanded(
-                  child: Text(safetyKoText(name), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(safetyKoText(name), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+                      // 이유 문장이 길어 이 카드만 이름 아래에 왼쪽 정렬로 둔다(POLISH X4)
+                      if (reason != null) ...[
+                        CoconutLayout.spacing_50h,
+                        Text(safetyKoText(safetyReasonText(reason)), style: style),
+                      ],
+                    ],
+                  ),
                 ),
-                if (reason != null) ...[
-                  CoconutLayout.spacing_200w,
-                  // 이유는 오른쪽 끝(C6과 같은 줄 규칙)
-                  Expanded(child: Text(safetyKoText(safetyReasonText(reason)), textAlign: TextAlign.end, style: style)),
-                ],
               ],
             ),
           ),

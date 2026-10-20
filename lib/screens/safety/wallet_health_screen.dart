@@ -63,6 +63,10 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
 
   bool _checking = false;
   VoidCallback? _cancelSettle;
+  final _scroll = ScrollController();
+
+  /// 직전 빌드가 위급 배치였는지(위급으로 바뀌는 순간을 안다)
+  bool _wasCritical = false;
 
   @override
   void initState() {
@@ -83,7 +87,24 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
   @override
   void dispose() {
     _cancelSettle?.call();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  /// 보고서가 위급으로 바뀌면 맨 위로 올린다(POLISH X12). 검토 행처럼 깊이 내려간 자리에 그대로 있으면
+  /// 사이렌 머리와 [검토] 버튼이 화면 밖에 남는다(예: 불일치를 확정하고 돌아왔을 때)
+  void _followCritical(bool critical) {
+    if (critical && !_wasCritical) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scroll.hasClients || _scroll.offset <= 0) return;
+        if (safetyReduceMotion(context)) {
+          _scroll.jumpTo(0);
+        } else {
+          _scroll.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+        }
+      });
+    }
+    _wasCritical = critical;
   }
 
   /// 다시 검사: 버튼·당겨서 새로고침·바로가기. 분석 이벤트는 provider가 남긴다
@@ -133,6 +154,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     final report = provider?.report;
     // checkAgain은 provider가 1.2초 이상 검사 중으로 둔다(백그라운드 refresh는 검사 중 표시 없음)
     final checking = _checking || (provider?.isChecking ?? false) || report == null;
+    _followCritical(report?.isCritical ?? false);
     return Scaffold(
       key: const Key('wallet-health-screen'),
       backgroundColor: colors.homeBackground,
@@ -157,6 +179,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
+          controller: _scroll,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             // 진행 표시는 게이지 스윕이 대신한다. 위급(S3) 머리는 사이렌이라 스윕이 없어 기본 당김 표시를 쓴다(POLISH C15)

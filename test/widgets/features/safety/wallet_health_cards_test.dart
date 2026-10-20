@@ -342,6 +342,17 @@ void main() {
     expect(_text(t.wallet_health.section.not_included_footer_usage), findsOneWidget);
   });
 
+  testWidgets('X4: a not-included reason sits under its name, left-aligned like it', (tester) async {
+    final item = notEnoughDataReport().notIncluded.first; // 니모닉 백업 — 비트코인 없음
+    await _pump(tester, WalletHealthNotIncludedCard(items: [item]));
+    final name = _text(safetyCheckName(item.id));
+    final reason = _text(safetyReasonText(item.reason!));
+    expect(tester.getTopLeft(reason).dy, greaterThanOrEqualTo(tester.getBottomLeft(name).dy));
+    expect(tester.getTopLeft(reason).dx, tester.getTopLeft(name).dx);
+    expect(tester.widget<Text>(reason).textAlign, isNot(TextAlign.end));
+    expect(tester.widget<Text>(reason).style!.fontSize, CoconutTypography.body3_12.fontSize);
+  });
+
   testWidgets('C7: a long action label stays one line inside a capped pill instead of pushing the issue text', (
     tester,
   ) async {

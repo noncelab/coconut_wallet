@@ -3,6 +3,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
+import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -1107,6 +1108,104 @@ void main() {
       );
       expect(wideActivity.dy, wideRecovery.dy);
       expect(wideActivity.dx, greaterThan(wideRecovery.dx));
+    });
+  });
+
+  group('fix round (POLISH §10)', () {
+    testWidgets('X11: the wallet sheet starts with the wallet-detail caution banner, only for a wallet in caution', (
+      tester,
+    ) async {
+      final sheet = find.byKey(const Key('wallet-health-wallet-sheet'));
+      final banner = find.descendant(of: sheet, matching: find.byKey(const Key('safety-caution-banner')));
+      Future<void> open(SafetyState state, {double width = 390, double textScale = 1}) async {
+        await tester.pumpWidget(const SizedBox()); // 앞 시트 경로를 지운다
+        await pumpWalletHealthApp(
+          tester,
+          Builder(
+            builder:
+                (context) =>
+                    TextButton(onPressed: () => showWalletContributionSheet(context, 1), child: const Text('open')),
+          ),
+          report: scoredReport(),
+          state: state,
+          wallets: _wallets,
+          width: width,
+          textScale: textScale,
+        );
+        await tester.tap(_text('open'));
+        await tester.pumpAndSettle();
+      }
+
+      await open(const SafetyState(cautionWalletIds: {1}));
+      expect(banner, findsOneWidget);
+      // 지갑 머리 줄 위, 시트 맨 위
+      final header = find.descendant(of: sheet, matching: _textContaining('Daily')).first;
+      expect(tester.getBottomLeft(banner).dy, lessThanOrEqualTo(tester.getTopLeft(header).dy));
+      expect(_text(t.safety_guide.caution.remove_link), findsOneWidget);
+
+      await open(const SafetyState(cautionWalletIds: {2}));
+      expect(banner, findsNothing);
+
+      await open(const SafetyState(cautionWalletIds: {1}), width: 320, textScale: 2.0);
+      expect(banner, findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('X3: category card status lines wrap at 2.0× instead of ending in "…"', (tester) async {
+      for (final report in [notEnoughDataReport(), noWalletReport()]) {
+        await _pump(tester, report, width: 375, textScale: 2.0);
+        for (final category in SafetyCategory.values) {
+          final card = find.byKey(Key('wallet-health-category-${category.name}'));
+          for (final text in tester.widgetList<Text>(find.descendant(of: card, matching: find.byType(Text)))) {
+            expect(text.overflow, isNot(TextOverflow.ellipsis), reason: category.name);
+            expect(text.maxLines, isNot(2), reason: category.name);
+          }
+        }
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('X5: the About "포함" boxes go one per row when larger text leaves a box under 150 × scale', (
+      tester,
+    ) async {
+      Finder box(SafetyCategory category) => find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_IncludedBox' && (w as dynamic).category == category,
+        skipOffstage: false,
+      );
+      Future<(Offset, Offset)> boxes(double scale) async {
+        await tester.pumpWidget(const SizedBox());
+        await _pump(tester, scoredReport(), textScale: scale, height: 4000);
+        await tester.tap(find.byKey(const Key('wallet-health-info')));
+        await tester.pumpAndSettle();
+        return (tester.getTopLeft(box(SafetyCategory.recovery)), tester.getTopLeft(box(SafetyCategory.activity)));
+      }
+
+      final (recovery, activity) = await boxes(2.0); // 390 폭: 상자 169 < 150 × 2
+      expect(activity.dx, recovery.dx);
+      expect(activity.dy, greaterThan(recovery.dy));
+      final (plainRecovery, plainActivity) = await boxes(1.0); // 169 ≥ 150
+      expect(plainActivity.dy, plainRecovery.dy);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('X12: when the report turns critical, Health scrolls back up to the critical hero', (tester) async {
+      final list = find.descendant(of: find.byType(WalletHealthScreen), matching: find.byType(Scrollable)).first;
+      double pixels() => tester.state<ScrollableState>(list).position.pixels;
+      await _pump(tester, scoredReport(), height: 700);
+      await tester.drag(list, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      final scrolled = pixels();
+      expect(scrolled, greaterThan(300));
+
+      // 같은 화면(상태 유지)에 다른 정상 보고서: 자리를 지킨다
+      await _pump(tester, scoredReport(score: 80), height: 700);
+      expect(pixels(), scrolled);
+
+      // 위급으로 바뀌면 맨 위로(사이렌 머리와 [검토] 버튼이 보인다)
+      await _pump(tester, criticalReport(), height: 700);
+      await tester.pumpAndSettle();
+      expect(pixels(), 0);
+      expect(find.byKey(const Key('wallet-health-critical-review')).hitTestable(), findsOneWidget);
     });
   });
 }

@@ -33,6 +33,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
@@ -341,8 +342,9 @@ class _IncludedGrid extends StatelessWidget {
     const order = [SafetyCategory.recovery, SafetyCategory.activity, SafetyCategory.app, SafetyCategory.privacy];
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 상자가 150dp보다 좁아지면(작은 폭) 한 줄에 하나씩(POLISH C39)
-        if ((constraints.maxWidth - 12) / 2 < 150) {
+        // 상자가 150dp(글자 배율만큼 넓혀)보다 좁아지면 한 줄에 하나씩(POLISH C39·X5)
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        if ((constraints.maxWidth - 12) / 2 < 150 * textScale) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -894,6 +896,8 @@ class _WalletSheet extends StatelessWidget {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       children: [
+        // 사용 주의면 지갑 상세와 같은 배너(문구·해제·확인 창·토스트가 같다, POLISH X11). 아니면 아무것도 그리지 않는다
+        SafetyCautionBanner(walletId: walletId),
         if (wallet != null) ...[
           _WalletHeader(wallet: wallet, score: report?.recovery.firstWhereOrNull((r) => r.walletId == walletId)?.score),
           CoconutLayout.spacing_400h,

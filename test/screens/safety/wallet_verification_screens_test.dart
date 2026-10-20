@@ -30,6 +30,7 @@ import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -490,6 +491,16 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('X1: the watch-only footer fade starts above its link line and grows with the text (R4)', (tester) async {
+    await mount(tester, CoconutThemeVariant.light, const WatchOnlyVerificationScreen(walletId: 1));
+    final footer = find.byType(FixedBottomButton);
+    final button = tester.widget<FixedBottomButton>(footer);
+    expect(button.subWidget, isNotNull);
+    final clearance = safetyFooterClearance(tester.element(footer), hasSubWidget: true);
+    expect(clearance, greaterThan(184)); // 1.3배
+    expect(button.surroundingsPadding, EdgeInsets.fromLTRB(16, clearance, 16, 40));
+  });
 
   testWidgets('BSMS bounds accumulated unique UR bytes and resets for a valid backup', (tester) async {
     await mount(tester, CoconutThemeVariant.light, const BsmsVerificationScreen(walletId: 2));

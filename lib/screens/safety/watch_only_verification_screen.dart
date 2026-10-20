@@ -294,6 +294,13 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
                     : copy.scan,
             isActive: !_busy,
             onButtonClicked: complete ? () => Navigator.pop(context) : _scan,
+            // 페이드의 불투명한 아래 절반이 링크 줄 위에서 시작하게, 글자 배율만큼 높인다(POLISH X1·R4)
+            surroundingsPadding: EdgeInsets.fromLTRB(
+              16,
+              safetyFooterClearance(context, hasSubWidget: !complete),
+              16,
+              40,
+            ),
             subWidget:
                 complete
                     ? null
