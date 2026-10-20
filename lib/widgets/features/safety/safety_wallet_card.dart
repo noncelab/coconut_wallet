@@ -37,7 +37,8 @@ class SafetyWalletCard extends StatelessWidget {
               : wallets.getWalletBalance(walletId).total;
       balance = preferences.currentUnit.displayBitcoinAmount(sats, withUnit: true);
     }
-    var badge = safetyCautionBadgeFor(context, walletId);
+    // 넓은 카드 머리의 8dp 간격은 배지가 가진다(배지가 없으면 간격도 없음, POLISH H1/D9)
+    var badge = safetyCautionBadgeFor(context, walletId, leadingGap: 8);
     if (badge != null && animateBadge && !safetyReduceMotion(context)) {
       badge = badge.scaleInAnimation(delay: const Duration(milliseconds: 300));
     }

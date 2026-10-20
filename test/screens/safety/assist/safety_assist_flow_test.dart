@@ -37,7 +37,8 @@ import 'package:coconut_wallet/services/safety/conflict_analyzer.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show PremiumActionCard, PremiumChip;
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart'
+    show PremiumActionCard, PremiumChip, PremiumHero, SafetyIconCircle;
 import 'package:coconut_wallet/screens/safety/help_channels_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
@@ -1257,6 +1258,10 @@ void main() {
     );
     env.start();
     await tester.pumpAndSettle();
+    // H4: Premium "순간" 머리(회색 원 위 다이아 아님)
+    final page = find.byKey(const Key('safety-assist-rescue-ready'));
+    expect(find.descendant(of: page, matching: find.byType(PremiumHero)), findsOneWidget);
+    expect(find.descendant(of: page, matching: find.byType(SafetyIconCircle)), findsNothing);
     final r = t.premium.rescue;
     final description = [
       r.card_body,

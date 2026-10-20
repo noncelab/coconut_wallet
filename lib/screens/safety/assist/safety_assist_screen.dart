@@ -384,12 +384,8 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
         return SafetyGuidePage(
           key: const Key('safety-assist-rescue-ready'),
           progress: 0.25,
-          icon: SvgPicture.asset(
-            CustomWalletIcons.diamond,
-            width: 32,
-            height: 32,
-            colorFilter: ColorFilter.mode(context.coconutColors.premiumText, BlendMode.srcIn),
-          ),
+          // Premium "순간" 화면 머리(POLISH H4). 회색 원 위 다이아는 꺼진 것처럼 보였다
+          hero: const PremiumHero(),
           title: strings.rescue.incident_ready,
           // 초안 있음 → 마지막 갱신 · 검토할 때 다시 계산(POLISH H12, Health S3와 같은 말)
           description: [
