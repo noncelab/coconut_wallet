@@ -260,6 +260,18 @@ class _WalletInfoStatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    // 큰 글자(1.3배~)에서는 칩을 값 아래 오른쪽 끝에: 나란히면 이름·값이 함께 두 줄로 좁아진다(X14).
+    // 칩 줄은 이름+값 폭 전체를 쓴다(2.0배의 칩은 값 칸 하나보다 넓다)
+    final chipBelow = chip && MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.3;
+    final texts = Row(
+      children: [
+        Expanded(child: Text(safetyKoText(title), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText))),
+        CoconutLayout.spacing_200w,
+        // 값과 화살표는 위 니모닉 백업 행처럼 오른쪽 끝(느슨한 Flexible이면 줄 가운데에 멈춘다)
+        Expanded(child: Text(value, textAlign: TextAlign.end, style: CoconutTypography.body2_14.setColor(valueColor))),
+        if (chip && !chipBelow) ...[CoconutLayout.spacing_200w, const PremiumChip()],
+      ],
+    );
     return ShrinkAnimationButton(
       defaultColor: Colors.transparent,
       pressedOverlayColor: colors.primaryText,
@@ -271,14 +283,14 @@ class _WalletInfoStatusRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(safetyKoText(title), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+              child:
+                  chipBelow
+                      ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [texts, CoconutLayout.spacing_100h, const PremiumChip()],
+                      )
+                      : texts,
             ),
-            CoconutLayout.spacing_200w,
-            // 값과 화살표는 위 니모닉 백업 행처럼 오른쪽 끝(느슨한 Flexible이면 줄 가운데에 멈춘다)
-            Expanded(
-              child: Text(value, textAlign: TextAlign.end, style: CoconutTypography.body2_14.setColor(valueColor)),
-            ),
-            if (chip) ...[CoconutLayout.spacing_200w, const PremiumChip()],
             CoconutLayout.spacing_100w,
             Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],

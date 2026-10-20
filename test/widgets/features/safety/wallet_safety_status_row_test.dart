@@ -247,4 +247,53 @@ void main() {
       });
     }
   }
+
+  // X14: 큰 글자(1.3배~)에서는 칩을 값 아래 오른쪽에(나란히면 이름·값이 함께 두 줄로 좁아진다)
+  for (final locale in [AppLocale.ko, AppLocale.de]) {
+    testWidgets(
+      'X14 ${locale.name}: the destination chip sits beside the value at 1.0× and under it, right-aligned, from 1.3×',
+      (tester) async {
+        LocaleSettings.setLocaleSync(locale);
+        addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+        tester.view.physicalSize = const Size(320, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final entitlement = FakeEntitlementService();
+        final rescue = _Rescue();
+        addTearDown(entitlement.dispose);
+        addTearDown(rescue.dispose);
+        for (final scale in [1.0, 1.3, 2.0]) {
+          await tester.pumpWidget(
+            Provider<EntitlementService>.value(
+              value: entitlement,
+              child: ChangeNotifierProvider<RescueReadyProvider>.value(
+                value: rescue,
+                child: MaterialApp(
+                  theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
+                  builder:
+                      (context, child) => MediaQuery(
+                        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+                        child: child!,
+                      ),
+                  home: const Scaffold(body: WalletRescueDestinationRow(walletId: 1)),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final row = find.byKey(const Key('wallet-rescue-destination-row'));
+          final chip = tester.getRect(find.descendant(of: row, matching: find.byType(PremiumChip)));
+          final value = tester.getRect(_text(t.premium.rescue.not_set));
+          if (scale < 1.3) {
+            expect(chip.left, greaterThanOrEqualTo(value.right), reason: '$scale');
+          } else {
+            expect(chip.top, greaterThanOrEqualTo(value.bottom), reason: '$scale');
+            expect(chip.right, closeTo(value.right, 0.5), reason: '$scale');
+          }
+          expect(tester.takeException(), isNull, reason: '$scale');
+        }
+      },
+    );
+  }
 }

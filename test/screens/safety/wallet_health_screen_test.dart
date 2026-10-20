@@ -1188,6 +1188,36 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // X13: 큰 글자(1.3배~)에서는 칩을 부제 아래 왼쪽에(나란히면 칩이 폭의 35%를 차지해 글이 여섯 줄로 좁아진다)
+    for (final locale in [AppLocale.ko, AppLocale.de]) {
+      testWidgets(
+        'X13 ${locale.name}: the free rescue row chip sits beside the text at 1.0× and under the subtitle from 1.3×',
+        (tester) async {
+          for (final scale in [1.0, 1.3, 2.0]) {
+            await _pump(
+              tester,
+              notEnoughDataReport(),
+              locale: locale,
+              width: 320,
+              height: 6000, // de 2.0배에서 Premium 구역이 2400 아래로 내려간다
+              textScale: scale,
+              rescue: FakeRescueReady(),
+            );
+            final row = find.byKey(const Key('wallet-health-rescue-ready'));
+            final chip = tester.getRect(find.descendant(of: row, matching: find.byType(PremiumChip)));
+            final subtitle = tester.getRect(find.descendant(of: row, matching: _text(t.premium.rescue.free_body)));
+            if (scale < 1.3) {
+              expect(chip.left, greaterThanOrEqualTo(subtitle.right), reason: '$scale');
+            } else {
+              expect(chip.top, greaterThanOrEqualTo(subtitle.bottom), reason: '$scale');
+              expect(chip.left, closeTo(subtitle.left, 0.5), reason: '$scale');
+            }
+            expect(tester.takeException(), isNull, reason: '$scale');
+          }
+        },
+      );
+    }
+
     testWidgets('X12: when the report turns critical, Health scrolls back up to the critical hero', (tester) async {
       final list = find.descendant(of: find.byType(WalletHealthScreen), matching: find.byType(Scrollable)).first;
       double pixels() => tester.state<ScrollableState>(list).position.pixels;

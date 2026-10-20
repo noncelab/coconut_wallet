@@ -837,6 +837,8 @@ class _PremiumRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    // 큰 글자(1.3배~)에서는 칩을 부제 아래 왼쪽에: 나란히면 칩이 폭을 크게 차지해 글이 여러 줄로 좁아진다(X13, D의 X7·X8과 같은 기준)
+    final chipBelow = chip && MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.3;
     return SafetyPressRow(
       background: colors.homeSurface,
       onTap: onTap,
@@ -858,10 +860,11 @@ class _PremiumRow extends StatelessWidget {
                     CoconutLayout.spacing_50h,
                     Text(safetyKoText(subtitle!), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                   ],
+                  if (chipBelow) ...[CoconutLayout.spacing_100h, const PremiumChip()],
                 ],
               ),
             ),
-            if (chip) ...[CoconutLayout.spacing_200w, const PremiumChip()],
+            if (chip && !chipBelow) ...[CoconutLayout.spacing_200w, const PremiumChip()],
             Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],
         ),
