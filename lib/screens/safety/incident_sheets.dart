@@ -125,16 +125,24 @@ Future<bool> markIncidentRecognized(BuildContext context, String incidentId, {bo
 /// 같은 거래가 다른 지갑에도 열려 있으면 그 지갑의 알림도 함께 닫힌다는 것을 묻는다(레드팀 §6).
 /// 다른 지갑이 없거나 "함께 표시하기"면 true, 취소면 false(아무것도 바꾸지 않는다)
 Future<bool> confirmSharedRecognition(BuildContext context, String incidentId) async {
-  final provider = context.read<SafetyProvider?>();
+  final state = context.read<SafetyProvider?>()?.state;
+  if (state == null) return true;
   final separator = incidentId.indexOf(':'); // 사건 id = '지갑:txid'
   final walletId = int.tryParse(incidentId.substring(0, separator));
   final txid = incidentId.substring(separator + 1);
-  final wallets = [
-    for (final other in provider?.state.incidents ?? const <SafetyIncident>[])
-      if (other.txid == txid && other.walletId != walletId && other.isOpen)
-        incidentWalletOf(context, other.walletId)?.name ?? '#${other.walletId}',
-  ];
-  if (wallets.isEmpty) return true;
+  final records = context.read<WalletProvider?>();
+  final otherWalletIds = <int>{
+    for (final other in state.incidents)
+      if (other.txid == txid && other.isOpen) other.walletId,
+    // 인지는 txid 단위(recognizedTxids)라 그 거래가 보이는 다른 지갑의 기준점 검토 항목도 함께 닫힌다(Grok G4)
+    if (!state.recognizedTxids.contains(txid))
+      for (final MapEntry(key: id, value: baseline) in state.baselines.entries)
+        if ((baseline.pendingSentAtBaseline.contains(txid) || baseline.unexpectedSelfTxids.contains(txid)) &&
+            records?.getTransactionRecord(id, txid) != null)
+          id,
+  }..remove(walletId);
+  if (otherWalletIds.isEmpty) return true;
+  final wallets = [for (final id in otherWalletIds) incidentWalletOf(context, id)?.name ?? '#$id'];
   final strings = t.safety_guide.recognize;
   final confirmed = await showDialog<bool>(
     context: context,

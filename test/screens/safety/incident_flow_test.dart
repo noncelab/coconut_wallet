@@ -428,4 +428,49 @@ void main() {
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.recognized);
     await settleToasts(tester);
   });
+
+  // Grok G4: 인지는 txid 단위라 그 거래가 보이는 다른 지갑의 기준점 검토 항목도 함께 닫힌다 → 그 지갑도 먼저 묻는다
+  for (final (label, incidents) in [
+    ('a review item in two wallets', const <SafetyIncident>[]),
+    ('an incident here and only a review item in the other wallet', [testIncident()]),
+  ]) {
+    testWidgets('"It\'s mine" asks first for $label; cancel leaves both unchanged', (tester) async {
+      final review = WalletBaseline(height: 100, pendingSentAtBaseline: const {kTxid}, at: DateTime(2026, 10, 20));
+      final safety = SafetyProvider.fixed(
+        null,
+        state: SafetyState(incidents: incidents, baselines: {if (incidents.isEmpty) kWalletId: review, 2: review}),
+      );
+      final before = safety.state;
+      await tester.pumpWidget(
+        safetyTestApp(
+          origin(),
+          safety: safety,
+          wallets: FakeWallets(
+            [
+              WalletMock.createSingleSigWalletItem(id: kWalletId, name: 'daily'),
+              WalletMock.createSingleSigWalletItem(id: 2, name: 'savings'),
+            ],
+            records: {kTxid},
+          ),
+          routes: {AppRouteNames.transactionDetail: (_) => _detail()},
+        ),
+      );
+      unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(safety.incidentFor(2, kTxid), isNull); // 다른 지갑에는 사건 없이 검토 항목만
+
+      await tester.tap(find.byKey(const Key('incident-recognize-yes')));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.recognize.shared_title), findsOneWidget);
+      expect(find.textContaining('savings2'), findsOneWidget);
+      expect(find.textContaining('daily1'), findsNothing); // 지금 지갑은 이름에 넣지 않는다
+      await tester.tap(find.text(t.cancel));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('incident-recognize-yes')), findsOneWidget); // 인지 시트로 돌아온다
+      expect(safety.state, before); // 두 지갑 모두 그대로
+    });
+  }
 }
