@@ -277,7 +277,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         size: WalletCardSize.small,
         balanceDisplay: viewModel.balanceText(wallet),
         secondaryText: last == null ? null : formatHomeRelativeTime(last, DateTime.now()),
-        statusBadge: safetyCautionBadgeFor(context, wallet.id),
+        statusBadge: safetyCautionBadgeFor(context, wallet.id, compact: true),
       ),
     );
     final tagOf = widget.heroTagOf;

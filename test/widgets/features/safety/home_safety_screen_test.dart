@@ -6,6 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
+import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -21,12 +22,15 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/home_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/safety/home_safety_status_chip.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show safetyKoText;
 import 'package:coconut_wallet/widgets/features/safety/safety_status_widget_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -99,6 +103,20 @@ WalletHealthReport _scored({int walletCount = 1}) => WalletHealthReport(
   walletCount: walletCount,
   evaluatedAt: DateTime.now(),
 );
+
+/// 지갑 1의 출금 사건 하나(위급)
+final _incident = SafetyIncident(walletId: 1, txid: 'a', detectedAt: DateTime(2026, 10, 20));
+WalletHealthReport _critical() => WalletHealthReport(
+  status: WalletHealthStatus.criticalOverride,
+  score: 80,
+  profile: WeightProfile.hotFunded,
+  walletCount: 1,
+  criticalIncidents: [_incident],
+  evaluatedAt: DateTime.now(),
+);
+
+HomeItem _widgetItem(String id, String definitionId, HomeSpan span, int order) =>
+    HomeItem(id: id, definitionId: definitionId, kind: HomeItemKind.widget, order: order, span: span);
 
 const _safetyTile = HomeItem(
   id: 'safety-1',
@@ -229,9 +247,14 @@ void main() {
     expect(hint, findsOneWidget);
     final chip = tester.getRect(find.byType(HomeSafetyStatusChip));
     expect(tester.getRect(hint).top, greaterThanOrEqualTo(chip.bottom));
-    expect(tester.getRect(_tailOf(hint)).center.dx - chip.left, moreOrLessEquals(16, epsilon: 0.5));
+    // 말풍선은 칩보다 8 왼쪽, 꼬리는 말풍선 왼쪽에서 23
+    expect(tester.getRect(_tailOf(hint)).center.dx - chip.left, moreOrLessEquals(15, epsilon: 0.5));
+    expect(
+      find.bySemanticsLabel('${t.wallet_health.first_hint.title}, ${t.wallet_health.first_hint.description}'),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.bySemanticsLabel(t.wallet_health.first_hint.close_a11y));
+    await tester.tap(find.descendant(of: hint, matching: find.byKey(const Key('add-wallet-hint-close'))));
     await tester.pump();
     await tester.pump();
     expect(hint, findsNothing);
@@ -253,7 +276,7 @@ void main() {
     // 앱바 칩도 같은 문구라 타일 안에서 찾는다
     final title = find.descendant(
       of: find.byType(SafetyStatusWidgetView),
-      matching: find.text(t.wallet_health.summary.no_issues_found),
+      matching: find.text(safetyKoText(t.wallet_health.summary.no_issues_found)),
     );
     expect(title, findsOneWidget);
     expect(tester.renderObject<RenderParagraph>(title).textScaler.scale(10), moreOrLessEquals(12));
@@ -269,7 +292,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
-    expect(find.text(t.wallet_home_screen.unbacked_hot_wallet_warning.title), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_home_screen.unbacked_hot_wallet_warning.title)), findsOneWidget);
 
     await tester.tap(find.byType(PositionedCardCloseButton));
     await tester.pump();
@@ -279,5 +302,76 @@ void main() {
     expect(find.byType(HomeAlertCard), findsNothing);
     expect(SharedPrefsRepository().getInt(SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt), greaterThan(0));
     await tester.pumpWidget(const SizedBox());
+  }, timeout: _timeout);
+
+  // POLISH §5·E5(GPT M2): 가장 좁은 폰(320dp)과 큰 글자에서 새 홈 전체. 사용 주의 배지는 2×2 지갑 카드와
+  // 지갑 바퀴에서 아이콘 원(compact), 4×2에서만 글자 배지
+  testWidgets('the real home fits 320dp at 1.3×/2.0×, with the icon caution badge on the 2×2 stack and the wheel', (
+    tester,
+  ) async {
+    final items = [
+      _safetyTile,
+      _widgetItem('stack-1', HomeItemIds.allWalletStack, HomeSpan.small, 1),
+      _widgetItem('safety-2', HomeItemIds.safetyStatusWide, HomeSpan.wide, 2),
+      _widgetItem('stack-2', HomeItemIds.watchOnlyWalletStack, HomeSpan.wide, 3),
+    ];
+    Iterable<bool> compactIn(Finder scope) => tester
+        .widgetList<SafetyCautionBadge>(find.descendant(of: scope, matching: find.byType(SafetyCautionBadge)))
+        .map((badge) => badge.compact);
+    for (final scale in [1.3, 2.0]) {
+      final safety = SafetyProvider.fixed(
+        _critical(),
+        state: SafetyState(incidents: [_incident], cautionWalletIds: const {1}),
+      );
+      await _pumpHome(
+        tester,
+        safety: safety,
+        wallets: [safetyWallet(id: 1)],
+        items: items,
+        width: 320,
+        textScale: scale,
+      );
+      // 위급 배너는 바로 나타나 240ms 동안 펼쳐진다
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull, reason: '×$scale');
+      expect(find.byType(HomeAlertCard), findsOneWidget, reason: '×$scale');
+      expect(find.byType(SafetyStatusWidgetView), findsNWidgets(2), reason: '×$scale');
+      expect(compactIn(find.byType(HomeScreen)), unorderedEquals([true, false]), reason: '×$scale');
+      expect(find.text(t.safety_guide.caution.badge), findsOneWidget, reason: '×$scale'); // 4×2만 글자
+
+      final pager = find.byKey(const Key('${HomeItemIds.allWalletStack}-pager'));
+      await tester.ensureVisible(pager);
+      await tester.tap(pager);
+      await tester.pump();
+      await tester.pump(WalletStackListScreen.transitionDuration);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(compactIn(find.byType(WalletStackListScreen)), [true], reason: 'wheel ×$scale');
+      expect(tester.takeException(), isNull, reason: 'wheel ×$scale');
+      await tester.pumpWidget(const SizedBox());
+    }
+  }, timeout: _timeout);
+
+  // POLISH E1: 넓은 화면(폴드 펼침 673dp)에서도 배너와 홈 편집 버튼이 그리드 폭(칸 80 × 4 = 356)에 맞춰 가운데
+  testWidgets('on the unfolded Fold the banner and Edit Home line up with the grid instead of the screen', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      safety: SafetyProvider.fixed(_critical(), state: SafetyState(incidents: [_incident])),
+      wallets: [safetyWallet(id: 1)],
+      items: [_widgetItem('safety-2', HomeItemIds.safetyStatusWide, HomeSpan.wide, 0)],
+      width: 673,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final grid = tester.getRect(find.byType(SafetyStatusWidgetView));
+    expect(grid.width, 356);
+    for (final finder in [find.byType(HomeAlertCard), find.byKey(const Key('home-edit-entry'))]) {
+      final rect = tester.getRect(finder);
+      expect(rect.left, moreOrLessEquals(grid.left), reason: '$finder');
+      expect(rect.right, moreOrLessEquals(grid.right), reason: '$finder');
+    }
+    expect(tester.takeException(), isNull);
   }, timeout: _timeout);
 }

@@ -11,11 +11,14 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/feature/safety_features.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show safetyKoText;
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_status_widget_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../services/safety/safety_fakes.dart';
 
@@ -53,7 +56,22 @@ final _critical = _report(
   incidents: [SafetyIncident(walletId: 1, txid: 'a', detectedAt: DateTime(2026, 10, 20))],
 );
 
-/// 홈 그리드 칸(344dp: 69, 412dp: 86) 기준 2×2·4×2 크기
+/// 사건 밖 위급(서버 신원)
+final _cert = _report(
+  WalletHealthStatus.criticalOverride,
+  score: 80,
+  review: const [SafetyCheckResult(SafetyCheckId.serverCert, SafetyOutcome.failed, severity: SafetySeverity.critical)],
+);
+final _several = _report(
+  WalletHealthStatus.criticalOverride,
+  score: 80,
+  incidents: [
+    SafetyIncident(walletId: 1, txid: 'a', detectedAt: DateTime(2026, 10, 20)),
+    SafetyIncident(walletId: 1, txid: 'b', detectedAt: DateTime(2026, 10, 20)),
+  ],
+);
+
+/// 홈 그리드 칸(320dp: 63, 344dp: 69, 412dp: 86) 기준 2×2·4×2 크기
 Size _tileSize(HomeSpan span, double cell) => Size(span.width * cell + (span.width - 1) * 12, span.height * cell + 12);
 
 Future<void> _pump(
@@ -62,6 +80,7 @@ Future<void> _pump(
   WalletHealthReport? report,
   bool withSafety = true,
   double cell = 69,
+  double textScale = 1.2,
 }) async {
   final size = _tileSize(span, cell);
   await tester.pumpWidget(
@@ -74,9 +93,9 @@ Future<void> _pump(
         theme: buildCoconutThemeData(),
         builder:
             (context, child) => MediaQuery(
-              // 타일은 글자 배율을 1.2에서 멈춘다
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-              child: child!,
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              // 홈 타일처럼 글자 배율을 1.2에서 멈춘다
+              child: MediaQuery.withClampedTextScaling(maxScaleFactor: kHomeTileMaxTextScale, child: child!),
             ),
         home: Scaffold(body: Center(child: SizedBox.fromSize(size: size, child: SafetyStatusWidgetView(span: span)))),
       ),
@@ -102,11 +121,11 @@ void main() {
     ) async {
       for (final cell in [69.0, 86.0]) {
         await _pump(tester, span, report: _scored, cell: cell);
-        expect(find.text(t.wallet_health.summary.no_issues_found), findsOneWidget);
+        expect(find.text(safetyKoText(t.wallet_health.summary.no_issues_found)), findsOneWidget);
         expect(find.byType(HealthGauge), span == HomeSpan.wide ? findsOneWidget : findsNothing);
 
         await _pump(tester, span, report: _attention, cell: cell);
-        expect(find.text(t.wallet_health.summary.items_need_attention(n: 2)), findsOneWidget);
+        expect(find.text(safetyKoText(t.wallet_health.status_chip.attention(n: 2))), findsOneWidget);
         if (span == HomeSpan.wide) {
           // 가장 급한 항목(조치 필요)이 먼저
           final firstItem = '${t.wallet_health.check.mnemonic_backup.name} ${t.wallet_health.widget.more_items(n: 1)}';
@@ -114,8 +133,8 @@ void main() {
         }
 
         await _pump(tester, span, report: _critical, cell: cell);
-        expect(find.text(t.wallet_health.widget.outgoing_short), findsOneWidget);
-        expect(find.text('${t.wallet_health.incident.review_now} ›'), findsOneWidget);
+        expect(find.text(safetyKoText(t.wallet_health.widget.outgoing_short)), findsOneWidget);
+        expect(find.text(t.wallet_health.incident.review_now), findsOneWidget);
         if (span == HomeSpan.wide) {
           expect(find.text('Test · ${t.wallet_health.incident.tx_state.unconfirmed}'), findsOneWidget);
         }
@@ -124,10 +143,32 @@ void main() {
     }, timeout: _timeout);
   }
 
+  // POLISH §5: 가장 좁은 폰(320dp)과 큰 글자. 시스템 1.3×·2.0×는 타일 안에서 1.2×로 멈춘다
+  testWidgets('every state fits 2×2 and 4×2 at 320/344/412dp with 1.3× and 2.0× system text', (tester) async {
+    final states = {
+      'W1': _scored,
+      'S0': _report(WalletHealthStatus.noWallet),
+      'W2': _attention,
+      'W3': _critical,
+      'W3 cause': _cert,
+      'W3 several': _several,
+    };
+    for (final span in [HomeSpan.small, HomeSpan.wide]) {
+      for (final cell in [63.0, 69.0, 86.0]) {
+        for (final scale in [1.3, 2.0]) {
+          for (final MapEntry(key: name, value: report) in states.entries) {
+            await _pump(tester, span, report: report, cell: cell, textScale: scale);
+            expect(tester.takeException(), isNull, reason: '$name $span cell $cell ×$scale');
+          }
+        }
+      }
+    }
+  }, timeout: _timeout);
+
   testWidgets('no wallet: up to date with the add-a-wallet line', (tester) async {
     await _pump(tester, HomeSpan.small, report: _report(WalletHealthStatus.noWallet));
-    expect(find.text(t.wallet_health.status_chip.up_to_date), findsOneWidget);
-    expect(find.text(t.wallet_health.widget.no_wallet), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.status_chip.up_to_date)), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.widget.no_wallet)), findsOneWidget);
   }, timeout: _timeout);
 
   test('two Safety Status widgets, one size each, in the safety category', () {
@@ -240,13 +281,60 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text(t.wallet_health.summary.last_checked(time: t.relative_time.minutes_ago(n: 10))), findsOneWidget);
+    expect(find.text(t.relative_time.minutes_ago(n: 10)), findsOneWidget);
 
     // 같은 결과로 다시 검사가 끝났다는 알림
     safety.report = checkedNow;
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text(t.wallet_health.summary.last_checked(time: t.relative_time.just_now)), findsOneWidget);
+    expect(find.text(t.relative_time.just_now), findsOneWidget);
+  }, timeout: _timeout);
+
+  testWidgets('a critical cause that is not an incident reads "보안 경고"; several incidents show their count on 4×2', (
+    tester,
+  ) async {
+    await _pump(tester, HomeSpan.small, report: _cert);
+    expect(find.text(safetyKoText(t.wallet_health.status_chip.critical)), findsOneWidget);
+    await _pump(tester, HomeSpan.wide, report: _cert, cell: 86);
+    expect(find.text(safetyKoText(t.wallet_health.status_chip.critical)), findsOneWidget);
+    // 긴 원인 제목은 4×2의 첫 상세 줄로
+    expect(find.text(t.wallet_health.incident.server_identity_title), findsOneWidget);
+
+    await _pump(tester, HomeSpan.wide, report: _several, cell: 86);
+    expect(find.text(safetyKoText(t.wallet_health.incident.outgoing_multiple_title(n: 2))), findsOneWidget);
+    await _pump(tester, HomeSpan.small, report: _several);
+    expect(find.text(safetyKoText(t.wallet_health.widget.outgoing_short)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, timeout: _timeout);
+
+  testWidgets('skeleton bars and the shimmer base use surfaceMuted, so the skeleton shows on the card', (tester) async {
+    const variant = CoconutThemeVariant.dark;
+    final muted = resolveCoconutThemeExtension(variant: variant).colors.surfaceMuted;
+    for (final reduceMotion in [true, false]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(variant: variant),
+          home: Builder(
+            builder:
+                (context) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+                  child: const Scaffold(
+                    body: Center(child: SizedBox.square(dimension: 150, child: HomeWidgetSkeleton())),
+                  ),
+                ),
+          ),
+        ),
+      );
+      final bars = tester.widgetList<Container>(
+        find.descendant(of: find.byKey(const Key('home-widget-skeleton')), matching: find.byType(Container)),
+      );
+      expect(bars, isNotEmpty);
+      expect(bars.every((bar) => (bar.decoration as BoxDecoration?)?.color == muted), isTrue);
+      // 동작 줄이기면 반짝임 없이 막대만, 아니면 반짝임 바탕도 같은 색
+      final shimmer = find.byType(Shimmer);
+      expect(shimmer, reduceMotion ? findsNothing : findsOneWidget);
+      if (!reduceMotion) expect(tester.widget<Shimmer>(shimmer).gradient.colors.first, muted);
+    }
   }, timeout: _timeout);
 }
 

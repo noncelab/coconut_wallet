@@ -4,7 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAp
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
@@ -217,7 +216,25 @@ class _AlertsIcon extends StatelessWidget {
           height: 24,
           colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         ),
-        if (unread) Positioned(top: -1, right: -1, child: reduceMotion ? dot : dot.scaleInAnimation()),
+        // 생길 때 240ms 커지며, 읽으면 220ms 페이드로 사라진다(동작 줄이기면 바로)
+        Positioned(
+          top: 1,
+          right: 2,
+          child:
+              reduceMotion
+                  ? (unread ? dot : const SizedBox.shrink())
+                  : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 240),
+                    reverseDuration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    transitionBuilder:
+                        (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(animation), child: child),
+                        ),
+                    child: unread ? dot : const SizedBox.shrink(),
+                  ),
+        ),
       ],
     );
   }

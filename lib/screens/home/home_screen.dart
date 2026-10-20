@@ -39,6 +39,8 @@ import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
+import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
@@ -70,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 그리드 아래 홈 편집 버튼 높이와 위아래 여백
   static const _homeEditEntryHeight = 56.0;
-  static const _homeEditEntryTop = 12.0;
+  static const _homeEditEntryTop = 0.0; // 그리드 아래 배지 여백 16이 간격이 된다
   static const _homeEditEntryBottom = 16.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
@@ -404,19 +406,32 @@ class _HomeScreenState extends State<HomeScreen> {
     if (safety == null || !safety.showsHomeHint || viewModel.isArranging || viewModel.showsAddWalletHint) {
       return const SizedBox.shrink();
     }
-    final hint = GestureDetector(
-      key: const Key('wallet-health-hint'),
-      onTap: () {
-        safety.dismissHomeHint();
-        WalletHealthScreen.open(context);
-      },
-      child: AddWalletHint(
-        title: t.wallet_health.first_hint.title,
-        description: t.wallet_health.first_hint.description,
-        closeLabel: t.wallet_health.first_hint.close_a11y,
-        tailFromRight: AddWalletHint.width - 16,
-        nudges: 0,
-        onClose: safety.dismissHomeHint,
+    void open() {
+      safety.dismissHomeHint();
+      WalletHealthScreen.open(context);
+    }
+
+    final title = t.wallet_health.first_hint.title;
+    final description = t.wallet_health.first_hint.description;
+    // 한 번에 읽히는 버튼 하나(누르면 열기, 화면 읽기의 닫기 동작은 X와 같다)
+    final hint = Semantics(
+      button: true,
+      label: '$title, $description',
+      onTap: open,
+      onDismiss: safety.dismissHomeHint,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('wallet-health-hint'),
+        onTap: open,
+        child: AddWalletHint(
+          title: title,
+          description: description,
+          closeLabel: t.wallet_health.first_hint.close_a11y,
+          // 말풍선을 8 왼쪽으로 내고 꼬리를 칩 아이콘 가운데에
+          tailFromRight: AddWalletHint.width - 23,
+          nudges: 0,
+          onClose: safety.dismissHomeHint,
+        ),
       ),
     );
     return CompositedTransformFollower(
@@ -424,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
       showWhenUnlinked: false,
       targetAnchor: Alignment.bottomLeft,
       followerAnchor: Alignment.topLeft,
-      offset: const Offset(0, 4),
+      offset: const Offset(-8, 4),
       child: Align(alignment: Alignment.topLeft, child: _reduceMotion ? hint : hint.fadeInAnimation()),
     );
   }
@@ -439,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
             builder:
                 (context, arranging, _) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: HomeSafetyBanner(isArranging: arranging),
+                  child: _gridWidth(HomeSafetyBanner(isArranging: arranging)),
                 ),
           ),
         ),
@@ -479,7 +494,9 @@ class _HomeScreenState extends State<HomeScreen> {
         SliverToBoxAdapter(
           child: Selector<HomeViewModel, bool>(
             selector: (_, viewModel) => viewModel.isArranging,
-            builder: (context, arranging, _) => arranging ? const SizedBox.shrink() : _buildHomeEditEntry(context),
+            builder:
+                (context, arranging, _) =>
+                    arranging ? const SizedBox.shrink() : _gridWidth(_buildHomeEditEntry(context), gutter: 16),
           ),
         ),
       ],
@@ -533,6 +550,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  /// 넓은 화면(폴드 펼침 등)에서 그리드 최대 폭(칸 80 × 4, 안쪽 좌우 여백 [gutter] 포함)에 맞춰 가운데에 둔다
+  Widget _gridWidth(Widget child, {double gutter = 0}) => Center(
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: HomeGridGeometry.extent(HomeGridLayout.columns, HomeItemsView.cell, HomeItemsView.gap) + gutter * 2,
+      ),
+      child: child,
+    ),
+  );
 
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();

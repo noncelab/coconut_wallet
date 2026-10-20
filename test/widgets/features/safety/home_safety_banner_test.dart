@@ -13,6 +13,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/home_safety_banner.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show safetyKoText;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -89,6 +90,7 @@ Future<void> _pump(
   bool arranging = false,
   SafetyWalletsFake? wallets,
   SafetyAuthFake? auth,
+  double textScale = 1,
 }) async {
   await tester.pumpWidget(
     MultiProvider(
@@ -99,6 +101,11 @@ Future<void> _pump(
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(),
+        builder:
+            (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
         home: Scaffold(body: HomeSafetyBanner(isArranging: arranging)),
       ),
     ),
@@ -117,9 +124,13 @@ void main() {
   testWidgets('a critical incident shows a red banner with no close button', (tester) async {
     await _pump(tester, report: _report(incidents: [_incident('a')]));
 
-    expect(find.text(t.wallet_health.incident.outgoing_title), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.outgoing_title)), findsOneWidget);
     expect(
-      find.text('${t.wallet_health.incident.outgoing_body(wallet: 'Test')}\n${t.wallet_health.incident.tap_to_review}'),
+      find.text(
+        safetyKoText(
+          '${t.wallet_health.incident.outgoing_body(wallet: 'Test')}\n${t.wallet_health.incident.tap_to_review}',
+        ),
+      ),
       findsOneWidget,
     );
     final card = tester.widget<HomeAlertCard>(find.byType(HomeAlertCard));
@@ -132,7 +143,7 @@ void main() {
     tester,
   ) async {
     await _pump(tester, report: _report(incidents: [_incident('a'), _incident('b')]));
-    expect(find.text(t.wallet_health.incident.outgoing_multiple_title(n: 2)), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.outgoing_multiple_title(n: 2))), findsOneWidget);
 
     await _pump(
       tester,
@@ -142,8 +153,34 @@ void main() {
         ],
       ),
     );
-    expect(find.text(t.wallet_health.incident.server_identity_title), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.server_identity_title)), findsOneWidget);
     expect(find.byType(PositionedCardCloseButton), findsNothing);
+  }, timeout: _timeout);
+
+  // POLISH §5·E15: 가장 좁은 폰(320dp에서 홈 좌우 16을 뺀 288)과 큰 글자
+  testWidgets('every banner fits the 320dp home at 1.3× and 2.0× text', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(288, 800);
+    addTearDown(tester.view.reset);
+    SafetyWalletsFake funded({bool backedUp = false}) =>
+        SafetyWalletsFake([safetyWallet(id: 1, hot: true, backedUp: backedUp)])..balances[1] = Balance(1000, 0);
+    final cases = <(String, WalletHealthReport, SafetyWalletsFake?, SafetyAuthFake?)>[
+      ('incident', _report(incidents: [_incident('a')]), null, null),
+      ('incidents', _report(incidents: [_incident('a'), _incident('b')]), null, null),
+      ('watch-only', _report(review: [_critical(SafetyCheckId.watchOnlyVerify, walletId: 1)]), null, null),
+      ('multisig', _report(review: [_critical(SafetyCheckId.multisigConfig, walletId: 1)]), null, null),
+      ('server', _report(review: [_critical(SafetyCheckId.serverCert)]), null, null),
+      ('backup', _report(), funded(), null),
+      ('app lock', _report(), funded(backedUp: true), SafetyAuthFake()..enabled = false),
+    ];
+    for (final scale in [1.3, 2.0]) {
+      for (final (name, report, wallets, auth) in cases) {
+        await _pump(tester, report: report, wallets: wallets, auth: auth, textScale: scale);
+        expect(find.byType(HomeAlertCard), findsOneWidget, reason: '$name ×$scale');
+        expect(tester.takeException(), isNull, reason: '$name ×$scale');
+        await tester.pumpWidget(const SizedBox());
+      }
+    }
   }, timeout: _timeout);
 
   testWidgets('nothing while arranging or without the safety provider', (tester) async {
@@ -158,7 +195,7 @@ void main() {
     final wallets = SafetyWalletsFake([safetyWallet(id: 1, hot: true)])..balances[1] = Balance(1000, 0);
     await _pump(tester, report: _report(), wallets: wallets);
 
-    expect(find.text(t.wallet_home_screen.unbacked_hot_wallet_warning.title), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_home_screen.unbacked_hot_wallet_warning.title)), findsOneWidget);
     expect(tester.widget<HomeAlertCard>(find.byType(HomeAlertCard)).type, HomeAlertCardType.mnemonicBackup);
 
     await tester.tap(find.byType(PositionedCardCloseButton));
@@ -171,13 +208,13 @@ void main() {
   testWidgets('the incident wins over the backup warning; app lock off shows the app lock warning', (tester) async {
     final unbacked = SafetyWalletsFake([safetyWallet(id: 1, hot: true)])..balances[1] = Balance(1000, 0);
     await _pump(tester, report: _report(incidents: [_incident('a')]), wallets: unbacked);
-    expect(find.text(t.wallet_health.incident.outgoing_title), findsOneWidget);
-    expect(find.text(t.wallet_home_screen.unbacked_hot_wallet_warning.title), findsNothing);
+    expect(find.text(safetyKoText(t.wallet_health.incident.outgoing_title)), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_home_screen.unbacked_hot_wallet_warning.title)), findsNothing);
 
     final backedUp = SafetyWalletsFake([safetyWallet(id: 1, hot: true, backedUp: true)])
       ..balances[1] = Balance(1000, 0);
     await _pump(tester, report: _report(), wallets: backedUp, auth: SafetyAuthFake()..enabled = false);
-    expect(find.text(t.wallet_home_screen.app_lock_warning.title), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_home_screen.app_lock_warning.title)), findsOneWidget);
     expect(tester.widget<HomeAlertCard>(find.byType(HomeAlertCard)).type, HomeAlertCardType.appLock);
   }, timeout: _timeout);
 
@@ -278,17 +315,17 @@ void main() {
     ]..sort((a, b) => a.id.index.compareTo(b.id.index));
 
     await _pump(tester, report: _report(review: review));
-    expect(find.text(t.wallet_health.incident.watch_only_mismatch_title), findsOneWidget);
-    expect(find.text(t.wallet_health.incident.watch_only_mismatch_body(wallet: 'Test')), findsOneWidget);
-    expect(find.text(t.wallet_health.incident.server_identity_title), findsNothing);
-    expect(find.text(t.wallet_health.incident.multisig_mismatch_title), findsNothing);
+    expect(find.text(safetyKoText(t.wallet_health.incident.watch_only_mismatch_title)), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.watch_only_mismatch_body(wallet: 'Test'))), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.server_identity_title)), findsNothing);
+    expect(find.text(safetyKoText(t.wallet_health.incident.multisig_mismatch_title)), findsNothing);
     expect(find.byType(HomeAlertCard), findsOneWidget);
 
     // 출금 사건이 있으면 사건이 이긴다(두 줄 본문은 이때만)
     await _pump(tester, report: _report(incidents: [_incident('a')], review: review));
-    expect(find.text(t.wallet_health.incident.outgoing_title), findsOneWidget);
-    expect(find.textContaining(t.wallet_health.incident.tap_to_review), findsOneWidget);
+    expect(find.text(safetyKoText(t.wallet_health.incident.outgoing_title)), findsOneWidget);
+    expect(find.textContaining(safetyKoText(t.wallet_health.incident.tap_to_review)), findsOneWidget);
     await _pump(tester, report: _report(review: review));
-    expect(find.textContaining(t.wallet_health.incident.tap_to_review), findsNothing);
+    expect(find.textContaining(safetyKoText(t.wallet_health.incident.tap_to_review)), findsNothing);
   }, timeout: _timeout);
 }

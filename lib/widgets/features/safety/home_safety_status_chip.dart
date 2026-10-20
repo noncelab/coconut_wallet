@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -6,12 +8,14 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_state_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// 홈 앱바 왼쪽 상태칩(아이콘 + 문구 + 꺾쇠). 누르면 Wallet Health.
-/// 문구가 0.85배로 줄여도 안 들어가면 짧은 꼴(아이콘·꺾쇠, 조치 필요는 건수만)로 바꾼다. 의미 라벨은 늘 전체 문구.
+/// 문구가 0.85배(글자를 키웠으면 1배 크기)까지 줄여도 안 들어가면 짧은 꼴(아이콘·꺾쇠, 조치 필요는 건수만)로 바꾼다.
+/// 의미 라벨은 늘 전체 문구.
 class HomeSafetyStatusChip extends StatelessWidget {
   /// 아이콘 16 + 간격 6 + 4 + 꺾쇠 6
   static const _chromeWidth = 32.0;
@@ -45,8 +49,7 @@ class HomeSafetyStatusChip extends StatelessWidget {
     final colors = context.coconutColors;
     // 동작 줄이기: 전환 없이 바로 바꾸고, 업데이트 중 표시는 돌지 않는 원호로
     final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
-    Widget svg(String path, Color? color) =>
-        SvgPicture.asset(path, width: 16, colorFilter: color == null ? null : ColorFilter.mode(color, BlendMode.srcIn));
+    Widget svg(String path, Color? color) => safetyStateIcon(path, 16, color);
     final (icon, color) = switch (status.kind) {
       HomeSafetyStatusKind.critical => (svg(CommonStateIconPath.siren, colors.danger), colors.dangerText),
       HomeSafetyStatusKind.connectionProblem => (
@@ -59,12 +62,18 @@ class HomeSafetyStatusChip extends StatelessWidget {
       ),
       HomeSafetyStatusKind.reconnected => (svg(CommonFormIconPath.circleCheck, colors.success), colors.success),
       HomeSafetyStatusKind.updating => (
+        // 16 상자 안의 14: 다른 상태로 바뀔 때 글이 옆으로 튀지 않게
         SizedBox.square(
-          dimension: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: colors.secondaryText,
-            value: reduceMotion ? 0.75 : null,
+          dimension: 16,
+          child: Center(
+            child: SizedBox.square(
+              dimension: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colors.secondaryText,
+                value: reduceMotion ? 0.75 : null,
+              ),
+            ),
           ),
         ),
         colors.secondaryTextStrong,
@@ -80,7 +89,9 @@ class HomeSafetyStatusChip extends StatelessWidget {
     };
     final text = _text;
     final style = CoconutTypography.body3_12_Bold.copyWith(color: color);
-    final fits = measureHomeText(context, text, style) * 0.85 <= maxWidth - _chromeWidth;
+    // 1.3×에서 정상 상태 글이 사라지지 않게, 키운 만큼은 1배 크기까지 줄여 보인다
+    final minScale = math.min(0.85, 1 / MediaQuery.textScalerOf(context).scale(1));
+    final fits = measureHomeText(context, text, style) * minScale <= maxWidth - _chromeWidth;
     final label =
         fits
             ? Flexible(
@@ -116,7 +127,7 @@ class HomeSafetyStatusChip extends StatelessWidget {
       excludeSemantics: true,
       child: CupertinoButton(
         padding: EdgeInsets.zero,
-        minimumSize: const Size(0, _tapHeight),
+        minimumSize: const Size(44, _tapHeight), // 짧은 꼴도 터치 폭 44
         pressedOpacity: 0.5,
         alignment: Alignment.centerLeft,
         onPressed:

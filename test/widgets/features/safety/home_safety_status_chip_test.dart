@@ -202,13 +202,14 @@ void main() {
     }
   }, timeout: _timeout);
 
-  testWidgets('every status fits beside the three actions at 344/412dp and 1.0/1.3/2.0× text', (tester) async {
+  // 320dp는 넘침만 본다: 테스트 글꼴은 띄어쓰기도 1em이라 "점검 이상 없음"·"확인 n"이 기기(Pretendard)보다 일찍 짧은 꼴이 된다
+  testWidgets('every status fits beside the three actions at 320/344/412dp and 1.0/1.3/2.0× text', (tester) async {
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
     final handle = tester.ensureSemantics();
-    for (final width in [344.0, 412.0]) {
+    for (final width in [320.0, 344.0, 412.0]) {
       for (final scale in [1.0, 1.3, 2.0]) {
         for (final status in _allStatuses) {
           await _pumpBar(tester, width, status, CoconutThemeVariant.light, textScale: scale);

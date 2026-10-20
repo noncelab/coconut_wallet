@@ -157,7 +157,7 @@ class _WalletStackViewState extends State<WalletStackView> {
       size: widget.size,
       balanceDisplay: widget.balanceTextOf?.call(wallet),
       secondaryText: widget.secondaryTextOf?.call(wallet),
-      statusBadge: safetyCautionBadgeFor(context, wallet.id),
+      statusBadge: safetyCautionBadgeFor(context, wallet.id, compact: widget.size == WalletCardSize.small),
     );
   }
 

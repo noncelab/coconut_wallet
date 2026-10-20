@@ -24,6 +24,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart' show safetyCriticalTitle;
 import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter/widgets.dart';
@@ -131,8 +132,8 @@ class _HomeSafetyBannerState extends State<HomeSafetyBanner> {
           key: ValueKey('home-safety-banner-${critical.key}'),
           type: HomeAlertCardType.securityIncident,
           showDelay: Duration.zero,
-          title: critical.title,
-          description: critical.body,
+          title: safetyKoText(critical.title),
+          description: safetyKoText(critical.body),
           icon: _icon(CommonStateIconPath.siren, colors.iconOnDanger),
           onTap: open,
           onClosed: null,
@@ -172,14 +173,16 @@ class _HomeSafetyBannerState extends State<HomeSafetyBanner> {
                 : state.showWarningAfterPrevious
                 ? _nextWarningDelay
                 : _warningDelay,
-        title:
-            isBackup
-                ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-                : t.wallet_home_screen.app_lock_warning.title,
-        description:
-            isBackup
-                ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
-                : t.wallet_home_screen.app_lock_warning.description,
+        title: safetyKoText(
+          isBackup
+              ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+              : t.wallet_home_screen.app_lock_warning.title,
+        ),
+        description: safetyKoText(
+          isBackup
+              ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+              : t.wallet_home_screen.app_lock_warning.description,
+        ),
         icon:
             isBackup
                 ? _icon(CommonStateIconPath.triangleWarning, colors.iconOnDanger)

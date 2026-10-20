@@ -10,7 +10,9 @@ import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/safety/home_safety_banner.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_state_icon.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart' show safetyCheckName;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -39,33 +41,69 @@ class SafetyStatusWidgetView extends StatelessWidget {
     final walletName = walletNameLookup(wallets);
     final critical = safetyCriticalAlertOf(report, walletName);
     final issues = report.attentionCount;
-    final lastChecked = t.wallet_health.summary.last_checked(
-      time: formatHomeRelativeTime(report.evaluatedAt, DateTime.now()),
-    );
+    final time = formatHomeRelativeTime(report.evaluatedAt, DateTime.now());
+    final detailStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryText);
+    final actionStyle = CoconutTypography.body3_12_Bold.copyWith(color: colors.dangerText);
+    Text line(String text) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: detailStyle);
+    // 2×2 아래 줄은 좁아서 시간만, 4×2는 "마지막 검사 · 시간"
+    final checked = line(wide ? t.wallet_health.summary.last_checked(time: time) : time);
 
+    // 지갑 없음 안내는 여러 줄이 될 수 있어, 2×2에서는 아래 고정 줄이 아니라 제목과 함께 줄어드는 열에 둔다
+    // (아래 줄은 높이가 고정이라 320dp·긴 언어에서 넘친다)
+    Widget? noWalletLine;
     final String title;
     final String iconPath;
     final Color iconColor, titleColor;
     final List<Widget> details;
-    final detailStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryText);
-    final actionStyle = CoconutTypography.body3_12_Bold.copyWith(color: colors.dangerText);
-    Text line(String text, TextStyle style) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
-
     if (critical != null) {
-      title = report.criticalIncidents.isEmpty ? critical.title : t.wallet_health.widget.outgoing_short;
+      final incidents = report.criticalIncidents.length;
+      final incident = incidents == 1 ? report.criticalIncidents.single : null;
+      // 사건 밖 위급은 칩과 같은 말(긴 제목은 4×2 첫 상세 줄로), 4×2의 여러 사건은 건수가 든 제목
+      title =
+          incidents == 0
+              ? t.wallet_health.status_chip.critical
+              : wide && incidents > 1
+              ? t.wallet_health.incident.outgoing_multiple_title(n: incidents)
+              : t.wallet_health.widget.outgoing_short;
       (iconPath, iconColor, titleColor) = (CommonStateIconPath.siren, colors.danger, colors.dangerText);
-      final incident = report.criticalIncidents.length == 1 ? report.criticalIncidents.single : null;
       final txState =
           incident?.txState == IncidentTxState.confirmed
               ? t.wallet_health.incident.tx_state.confirmed
               : t.wallet_health.incident.tx_state.unconfirmed;
       details = [
-        if (wide) line(incident == null ? critical.body : '${walletName(incident.walletId)} · $txState', detailStyle),
-        if (wide) const SizedBox(height: 6),
-        line('${t.wallet_health.incident.review_now} ›', actionStyle),
+        if (wide) ...[
+          line(
+            incidents == 0
+                ? critical.title
+                : incident == null
+                ? critical.body
+                : '${walletName(incident.walletId)} · $txState',
+          ),
+          const SizedBox(height: 6),
+        ],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                t.wallet_health.incident.review_now,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: actionStyle,
+              ),
+            ),
+            CoconutLayout.spacing_100w,
+            SvgPicture.asset(
+              CommonNavigationIconPath.arrowRight,
+              width: 6,
+              height: 10,
+              colorFilter: ColorFilter.mode(colors.dangerText, BlendMode.srcIn),
+            ),
+          ],
+        ),
       ];
     } else if (issues > 0) {
-      title = t.wallet_health.summary.items_need_attention(n: issues);
+      title = t.wallet_health.status_chip.attention(n: issues);
       (iconPath, iconColor, titleColor) = (CommonStateIconPath.triangleWarning, colors.warningText, colors.warningText);
       final first = ([...report.reviewItems]..sort((a, b) => a.severity.index.compareTo(b.severity.index))).first;
       details = [
@@ -74,39 +112,32 @@ class SafetyStatusWidgetView extends StatelessWidget {
             issues > 1
                 ? '${safetyCheckName(first.id)} ${t.wallet_health.widget.more_items(n: issues - 1)}'
                 : safetyCheckName(first.id),
-            detailStyle,
           ),
-        line(lastChecked, detailStyle),
+        checked,
       ];
     } else {
       final scored = report.score != null;
+      final noWallet = report.status == WalletHealthStatus.noWallet;
       title = scored ? t.wallet_health.summary.no_issues_found : t.wallet_health.status_chip.up_to_date;
       (iconPath, iconColor, titleColor) = (
         scored ? CommonStateIconPath.shieldCheck : CommonFormIconPath.circleCheck,
-        colors.success,
+        // 지갑이 없으면 초록 "정상"이 아니라 중립
+        noWallet ? colors.iconSecondary : colors.success,
         colors.primaryText,
       );
-      final noWallet = report.status == WalletHealthStatus.noWallet;
+      if (noWallet) noWalletLine = Text(safetyKoText(t.wallet_health.widget.no_wallet), style: detailStyle);
       details = [
-        if (noWallet)
-          line(t.wallet_health.widget.no_wallet, detailStyle)
+        // 지갑 없음 안내는 말줄임 없이 줄바꿈
+        if (noWalletLine != null)
+          noWalletLine
         else ...[
           if (wide)
-            line(
-              t.wallet_health.widget.checks_count(n: report.allGoodItems.length + report.reviewItems.length),
-              detailStyle,
-            ),
-          line(lastChecked, detailStyle),
+            line(t.wallet_health.widget.checks_count(n: report.allGoodItems.length + report.reviewItems.length)),
+          checked,
         ],
       ];
     }
 
-    Widget icon(double size) => SvgPicture.asset(
-      iconPath,
-      width: size,
-      height: size,
-      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-    );
     final body =
         wide
             ? Row(
@@ -119,11 +150,14 @@ class SafetyStatusWidgetView extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          icon(16),
-                          CoconutLayout.spacing_150w,
+                          // 위급이면 게이지 가운데에 이미 사이렌이 있다
+                          if (critical == null) ...[
+                            safetyStateIcon(iconPath, 16, iconColor),
+                            CoconutLayout.spacing_150w,
+                          ],
                           Expanded(
                             child: Text(
-                              title,
+                              safetyKoText(title),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: CoconutTypography.body2_14_Bold.copyWith(color: titleColor),
@@ -146,18 +180,26 @@ class SafetyStatusWidgetView extends StatelessWidget {
                   child: _ScaleDownColumn(
                     alignment: const Alignment(-1, 0.2),
                     children: [
-                      icon(24),
+                      safetyStateIcon(iconPath, 24, iconColor),
                       const SizedBox(height: 6),
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.body1_16_Bold.copyWith(color: titleColor),
+                      // 한 줄에 안 들어가는 제목은 열 전체를 줄이지 않고 제목만 한 단계 작은 글로 두 줄까지
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final large = CoconutTypography.body1_16_Bold.copyWith(color: titleColor);
+                          final fits = measureHomeText(context, title, large) <= constraints.maxWidth;
+                          return Text(
+                            safetyKoText(title),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: fits ? large : CoconutTypography.body2_14_Bold.copyWith(color: titleColor),
+                          );
+                        },
                       ),
+                      if (noWalletLine != null) ...[const SizedBox(height: 4), noWalletLine],
                     ],
                   ),
                 ),
-                details.last,
+                if (noWalletLine == null) details.last,
               ],
             );
 
@@ -170,7 +212,7 @@ class SafetyStatusWidgetView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             HomeWidgetHeader(
-              iconPath: CommonStateIconPath.shieldCheck,
+              iconPath: FeatureWidgetIconPath.shieldCheck,
               title: t.wallet_health.widget.name,
               style: wide ? CoconutTypography.body2_14_Bold : CoconutTypography.body3_12_Bold,
             ),
