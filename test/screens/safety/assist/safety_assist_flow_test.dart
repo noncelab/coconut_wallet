@@ -460,7 +460,11 @@ void main() {
     }
 
     await addViaScanner(3);
-    expect(find.byKey(const Key('safety-assist-add-same-seed')), findsOneWidget);
+    final banner = find.byKey(const Key('safety-assist-add-same-seed'));
+    expect(banner, findsOneWidget);
+    for (final text in [t.premium.destination.excluded_wallet_title, t.premium.destination.excluded_wallet_body]) {
+      expect(find.descendant(of: banner, matching: find.text(text)), findsOneWidget);
+    }
     expect(find.byKey(const Key('safety-assist-wallet-added')), findsNothing);
 
     await addViaScanner(2);
@@ -934,19 +938,12 @@ void main() {
     });
   }
 
-  testWidgets('Grok G6: 열린 기준점 검토 거래만 있는 지갑도 지금 이동 검토에 그 코인이 빠졌다는 안내, 그 거래는 대체하지 않음', (tester) async {
+  group('Grok G6: 열린 기준점 검토 거래(사용자 거래일 수 있어 대체 안 함)', () {
     const reviewTxid = 'c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3';
-    final rest = _utxo(incident, 1, 50000);
-    final env = await pump(
-      tester,
-      utxos: [_utxo(incident, 0, 40000, status: UtxoStatus.outgoing, spentBy: reviewTxid), rest],
-      conflicts: const [],
-      withIncident: false,
-      baselines: {
-        1: WalletBaseline(height: 100, at: DateTime(2026, 10, 1), pendingSentAtBaseline: const {reviewTxid}),
-      },
-    );
-    env.wallets.records[reviewTxid] = TransactionRecord(
+    final baselines = {
+      1: WalletBaseline(height: 100, at: DateTime(2026, 10, 1), pendingSentAtBaseline: const {reviewTxid}),
+    };
+    final reviewRecord = TransactionRecord(
       reviewTxid,
       DateTime(2026, 10, 1),
       0,
@@ -959,21 +956,54 @@ void main() {
       110,
       DateTime(2026, 10, 1),
     );
-    SafetyAssistFlow.moveNow(
-      env.host(),
-      walletId: 1,
-      destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
-    );
-    await tester.pumpAndSettle();
+    Finder line(String key, String text) => find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
+    Future<void> moveNow(WidgetTester tester, BuildContext host) async {
+      SafetyAssistFlow.moveNow(
+        host,
+        walletId: 1,
+        destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+      );
+      await tester.pumpAndSettle();
+    }
 
-    expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
-    expect(find.byKey(const Key('safety-assist-review-excludes')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('safety-guide-button')));
-    await tester.pumpAndSettle();
-    expect(env.pushed.last, AppRouteNames.sendConfirm);
-    // 검토 거래가 쓰는 코인은 넣지 않는다(대체 아님)
-    final tx = env.sendInfo.transaction!;
-    expect(tx.inputs.single.transactionHash, rest.transactionHash);
-    expect(tx.inputs.every((i) => i.sequence == SweepBuilder.rbfSequence), isTrue);
+    testWidgets('검토 거래만 빠지면 중립 안내(확인 중인 거래), 그 거래 코인은 넣지 않음', (tester) async {
+      final rest = _utxo(incident, 1, 50000);
+      final env = await pump(
+        tester,
+        utxos: [_utxo(incident, 0, 40000, status: UtxoStatus.outgoing, spentBy: reviewTxid), rest],
+        conflicts: const [],
+        withIncident: false,
+        baselines: baselines,
+      );
+      env.wallets.records[reviewTxid] = reviewRecord;
+      await moveNow(tester, env.host());
+
+      expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+      expect(line('safety-assist-review-excludes-review', t.premium.assist.excludes_under_review), findsOneWidget);
+      expect(find.byKey(const Key('safety-assist-review-excludes')), findsNothing); // 의심 거래 안내는 아님
+      await tester.tap(find.byKey(const Key('safety-guide-button')));
+      await tester.pumpAndSettle();
+      expect(env.pushed.last, AppRouteNames.sendConfirm);
+      final tx = env.sendInfo.transaction!;
+      expect(tx.inputs.single.transactionHash, rest.transactionHash);
+      expect(tx.inputs.every((i) => i.sequence == SweepBuilder.rbfSequence), isTrue);
+    });
+
+    testWidgets('사건 코인과 검토 거래 코인이 함께 빠지면 두 안내 모두', (tester) async {
+      final env = await pump(
+        tester,
+        utxos: [_utxo(incident, 0, 40000, status: UtxoStatus.outgoing, spentBy: reviewTxid), _utxo(incident, 1, 50000)],
+        conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true, confirmed: true)],
+        baselines: baselines,
+      );
+      env.wallets.records[reviewTxid] = reviewRecord;
+      await moveNow(tester, env.host());
+      await tester.tap(find.byKey(const Key('safety-guide-button'))); // 대체 불가(P6) → 남은 비트코인 검토
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+      expect(line('safety-assist-review-excludes', t.premium.assist.excludes_suspicious), findsOneWidget);
+      expect(line('safety-assist-review-excludes-review', t.premium.assist.excludes_under_review), findsOneWidget);
+    });
   });
 }

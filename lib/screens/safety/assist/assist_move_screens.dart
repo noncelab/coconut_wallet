@@ -273,8 +273,9 @@ class _AssistAddWalletScreenState extends State<AssistAddWalletScreen> with Rout
             background: colors.dangerSurface,
             iconPath: CommonStateIconPath.triangleWarning,
             iconColor: colors.danger,
-            title: strings.same_seed_error,
-            body: t.premium.destination.excluded_note,
+            // 같은 시드뿐 아니라 MFP·공개키 공유, 사용 주의, 보안 경고, 검증 불일치로 빠진 지갑 모두
+            title: t.premium.destination.excluded_wallet_title,
+            body: t.premium.destination.excluded_wallet_body,
           ),
       ],
     );

@@ -1201,12 +1201,18 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
           textAlign: TextAlign.center,
           style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
         ),
-        // 대체가 막혀 남은 코인만 옮길 때: 의심 거래의 코인은 이 금액에 없다(Grok §3).
-        // 아직 열린 기준점 검토 거래도 사용자 거래일 수 있어 대체하지 않으므로 같은 안내(Grok G6)
-        if (!session.replace &&
-            (session.conflicts.isNotEmpty || _openReviewTxids(context, session.wallet.id).isNotEmpty)) ...[
+        // 대체가 막혀 남은 코인만 옮길 때: 의심 거래의 코인은 이 금액에 없다(Grok §3)
+        if (!session.replace && session.conflicts.isNotEmpty) ...[
           CoconutLayout.spacing_200h,
           _InfoLine(key: const Key('safety-assist-review-excludes'), text: t.premium.assist.excludes_suspicious),
+        ],
+        // 아직 열린 기준점 검토 거래는 사용자 거래일 수 있어 대체하지 않는다. 그 코인도 빠진다(Grok G6, 중립 문구)
+        if (_openReviewTxids(context, session.wallet.id).isNotEmpty) ...[
+          CoconutLayout.spacing_200h,
+          _InfoLine(
+            key: const Key('safety-assist-review-excludes-review'),
+            text: t.premium.assist.excludes_under_review,
+          ),
         ],
         if (session.feeSource != FeeRateSource.fresh) ...[
           CoconutLayout.spacing_200h,
