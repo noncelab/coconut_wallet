@@ -72,6 +72,11 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
       transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+      layoutBuilder:
+          (currentChild, previousChildren) => Stack(
+            alignment: Alignment.centerLeft,
+            children: [...previousChildren, if (currentChild != null) currentChild],
+          ),
       child: child,
     );
   }
