@@ -143,7 +143,8 @@ class HomeWidgetHeader extends StatelessWidget {
   }
 }
 
-/// 데이터를 기다리는 동안 보여 주는 위젯 자리
+/// 데이터를 기다리는 동안 보여 주는 위젯 자리. 막대와 반짝임 바탕은 `surfaceMuted`라 카드 위에서 보이고,
+/// 동작 줄이기면 반짝임 없이 막대만 둔다(`surfaceSkeletonBase`는 어두움·코코넛에서 카드 바탕과 같다).
 class HomeWidgetSkeleton extends StatelessWidget {
   final bool wide;
 
@@ -156,7 +157,7 @@ class HomeWidgetSkeleton extends StatelessWidget {
       widthFactor: widthFactor,
       child: Container(
         height: height,
-        decoration: BoxDecoration(color: colors.surfaceSkeletonBase, borderRadius: BorderRadius.circular(4)),
+        decoration: BoxDecoration(color: colors.surfaceMuted, borderRadius: BorderRadius.circular(4)),
       ),
     );
     final content = Column(
@@ -169,7 +170,7 @@ class HomeWidgetSkeleton extends StatelessWidget {
         const SizedBox(height: 12),
         Expanded(
           child: Container(
-            decoration: BoxDecoration(color: colors.surfaceSkeletonBase, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: colors.surfaceMuted, borderRadius: BorderRadius.circular(8)),
           ),
         ),
         const SizedBox(height: 12),
@@ -181,7 +182,7 @@ class HomeWidgetSkeleton extends StatelessWidget {
           MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
               ? content
               : Shimmer.fromColors(
-                baseColor: colors.surfaceSkeletonBase,
+                baseColor: colors.surfaceMuted,
                 highlightColor: colors.surfaceSkeletonHighlight,
                 child: content,
               ),
