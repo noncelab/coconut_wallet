@@ -459,7 +459,8 @@ void main() {
           expect(box.bottom, lessThanOrEqualTo(paragraph.size.height + 0.1), reason: definition.id);
         }
         final add = find.byKey(ValueKey('home-edit-add-${definition.id}'));
-        expect(tester.getRect(add).top, greaterThanOrEqualTo(tester.getRect(name).bottom), reason: definition.id);
+        expect(tester.getRect(add).left, greaterThanOrEqualTo(tester.getRect(name).right), reason: definition.id);
+        expect(tester.getCenter(add).dy, closeTo(tester.getCenter(name).dy, 0.5), reason: definition.id);
         expect(tester.getSize(add).shortestSide, greaterThanOrEqualTo(48), reason: definition.id);
       }
       await _close(tester);
@@ -532,7 +533,9 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('an added built-in widget wraps its title above a scaled, tappable status footer', (tester) async {
+  testWidgets('an added built-in widget keeps its wrapped title and scaled, tappable status on one line', (
+    tester,
+  ) async {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await _openWidgetsTab(
       tester,
@@ -585,7 +588,9 @@ void main() {
       expect(titleParagraph.text.toPlainText(), definition.displayName());
       expect(titleParagraph.didExceedMaxLines, isFalse);
       expect(statusParagraph.didExceedMaxLines, isFalse);
-      expect(footerRect.top, greaterThanOrEqualTo(tester.getRect(name).bottom));
+      expect(footerRect.left, greaterThanOrEqualTo(tester.getRect(name).right));
+      expect(tester.getCenter(remove).dy, closeTo(tester.getCenter(name).dy, 0.5));
+      expect(tester.getCenter(added).dy, closeTo(tester.getCenter(name).dy, 0.5));
       expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
       expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
       expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));

@@ -358,19 +358,24 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                               CoconutLayout.spacing_100h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      definition.displayName(),
-                                      key: ValueKey('home-edit-widget-name-${definition.id}'),
-                                      style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: _buildToggleButton(viewModel, definition, iconSize: 22),
-                                    ),
-                                  ],
+                                child: LayoutBuilder(
+                                  builder:
+                                      (context, constraints) => Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              definition.displayName(),
+                                              key: ValueKey('home-edit-widget-name-${definition.id}'),
+                                              style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+                                            ),
+                                          ),
+                                          // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
+                                          ConstrainedBox(
+                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
+                                            child: _buildToggleButton(viewModel, definition, iconSize: 22),
+                                          ),
+                                        ],
+                                      ),
                                 ),
                               ),
                             ],
