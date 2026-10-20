@@ -809,6 +809,48 @@ void main() {
       services.remove(service);
     });
 
+    testWidgets('R2-M2: 재시도 조회가 한 번 실패해도 다음 단계로 이어지고, 회복되면 확인된 뒤 멈춘다', (tester) async {
+      iap.owned = [_play(PurchaseStateWrapper.purchased, PurchaseStatus.restored)];
+      final service = create(ackRetryDelay: const Duration(seconds: 10));
+      await drain(tester);
+      expect(iap.completed, hasLength(1)); // 첫 확인은 안 됐다(조회가 계속 미확인으로 보여 준다)
+      final queries = iap.restoreCount;
+
+      // 10초 뒤 재시도의 조회가 일시적으로 실패한다
+      iap.restoreError = InAppPurchaseException(
+        source: 'google_play',
+        code: 'restore_transactions_failed',
+        message: '2',
+      );
+      await tester.pump(const Duration(seconds: 10));
+      await drain(tester);
+      expect(iap.restoreCount, queries + 1);
+      expect(iap.completed, hasLength(1));
+      expect(service.state.value.status, PremiumStatus.verifying); // 실패는 닫힌 쪽으로
+
+      // 회복: 다음 단계(20초 뒤)에 다시 조회해 확인한다
+      iap.restoreError = null;
+      iap.onComplete =
+          (_) => iap.owned = [_play(PurchaseStateWrapper.purchased, PurchaseStatus.restored, acknowledged: true)];
+      await tester.pump(const Duration(seconds: 19));
+      await drain(tester);
+      expect(iap.completed, hasLength(1));
+      expect(iap.restoreCount, queries + 1);
+      await tester.pump(const Duration(seconds: 1));
+      await drain(tester);
+      expect(iap.completed, hasLength(2));
+      expect(service.state.value.isActive, isTrue);
+      expect(iap.restoreCount, queries + 3); // 실패 1 + 재시도 1 + 확인됐는지 1
+
+      // 확인됐으니 더 묻지도 다시 확인하지도 않는다
+      await tester.pump(const Duration(minutes: 20));
+      await drain(tester);
+      expect(iap.completed, hasLength(2));
+      expect(iap.restoreCount, queries + 3);
+      service.dispose();
+      services.remove(service);
+    });
+
     testWidgets('G-R2: 복원을 누르면 기다리지 않고 바로 다시 확인한다', (tester) async {
       iap.owned = [_play(PurchaseStateWrapper.purchased, PurchaseStatus.restored)];
       final service = create(ackRetryDelay: const Duration(minutes: 10));

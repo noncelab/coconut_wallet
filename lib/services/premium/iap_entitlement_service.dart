@@ -337,14 +337,21 @@ class InAppPurchaseEntitlementService with WidgetsBindingObserver implements Ent
       _ackRetry?.cancel();
       _ackRetry = null;
       _ackDelay = _ackRetryBase;
-    } else if (!(_ackRetry?.isActive ?? false)) {
-      final delay = _ackDelay;
-      _ackDelay = delay * 2 > _ackRetryMax ? _ackRetryMax : delay * 2;
-      _ackRetry = Timer(delay, () {
-        _attempted.clear();
-        unawaited(_silentQuery());
-      });
+    } else {
+      _scheduleAckRetry();
     }
+  }
+
+  /// 확인 대기는 조회가 실패해도 남는다: 실패하면 다음 단계(점점 길게, 최대 15분)로 다시 잡는다.
+  /// 성공한 조회가 확인됨·소유 없음을 보여 주거나([_acknowledge]) 닫히면 멈춘다
+  void _scheduleAckRetry() {
+    if (_disposed || (_ackRetry?.isActive ?? false)) return;
+    final delay = _ackDelay;
+    _ackDelay = delay * 2 > _ackRetryMax ? _ackRetryMax : delay * 2;
+    _ackRetry = Timer(delay, () async {
+      _attempted.clear();
+      if (!await _silentQuery()) _scheduleAckRetry();
+    });
   }
 
   /// 플랫폼별로 있어야 할 증거가 있을 때만 owned(없거나 이상하면 열지 않는다)
