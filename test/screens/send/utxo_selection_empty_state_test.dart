@@ -19,6 +19,7 @@ import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_mod
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -237,6 +238,25 @@ void main() {
     expect(wallets.reads, 2);
     expect(find.byType(UtxoSelectionCard), findsOneWidget);
     expect(find.text(t.utxo_selection_screen.empty_title), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a failed read on return from receive shows a zero amount for zero selected coins', (tester) async {
+    // A previously selected coin is gone (e.g. spent from another signer): the empty state offers receive, and
+    // reading the coins again on return fails. The header must not keep the old selection's sum
+    final wallets = _Wallets();
+    await pump(tester, wallets, selected: [_utxo(UtxoStatus.unspent, amount: 1000)]);
+    final header = find.byType(SelectedUtxoAmountHeader);
+    expect(tester.widget<SelectedUtxoAmountHeader>(header).selectedUtxoAmountSum, 1000);
+    await tester.tap(find.text(t.receive));
+    await tester.pumpAndSettle();
+    wallets.fails = true;
+    Navigator.of(tester.element(find.text('receive fixture'))).pop();
+    await tester.pumpAndSettle();
+    expect(find.text(t.utxo_selection_screen.load_error_title), findsOneWidget);
+    final after = tester.widget<SelectedUtxoAmountHeader>(header);
+    expect(after.selectedUtxoCount, 0);
+    expect(after.selectedUtxoAmountSum, 0);
     expect(tester.takeException(), isNull);
   });
 

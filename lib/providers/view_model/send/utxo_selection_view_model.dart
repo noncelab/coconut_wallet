@@ -68,6 +68,8 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       _utxoTagMap.clear();
       _utxoTagList = [];
       _selectedUtxoList = [];
+      // 선택을 비우면 합계 캐시도 비운다: 아래 읽기가 실패해(catch) 빈 선택으로 남아도 이전 합계가 보이지 않게
+      _cachedSelectedUtxoAmountSum = null;
       _selectedUtxoIdSet.clear();
       _initialSelectedUtxoList.clear();
 
