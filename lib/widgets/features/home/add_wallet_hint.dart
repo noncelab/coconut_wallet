@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 
 /// 지갑이 없을 때 앱 바의 지갑 추가 버튼을 가리키는 말풍선. [nudges]가 바뀔 때마다 살짝 흔들린다.
+/// 문구를 바꿔 다른 안내 말풍선(지갑 상태 첫 노출)에도 쓴다.
 class AddWalletHint extends StatefulWidget {
   static const width = 228.0;
   static const tailHeight = 10.0;
@@ -15,8 +16,21 @@ class AddWalletHint extends StatefulWidget {
   final double tailFromRight;
   final int nudges;
   final VoidCallback onClose;
+  final String? title;
+  final String? description;
 
-  const AddWalletHint({super.key, required this.tailFromRight, required this.nudges, required this.onClose});
+  /// 닫기 버튼 의미 라벨
+  final String? closeLabel;
+
+  const AddWalletHint({
+    super.key,
+    required this.tailFromRight,
+    required this.nudges,
+    required this.onClose,
+    this.title,
+    this.description,
+    this.closeLabel,
+  });
 
   @override
   State<AddWalletHint> createState() => _AddWalletHintState();
@@ -71,12 +85,12 @@ class _AddWalletHintState extends State<AddWalletHint> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          TextUtils.preventLineBreakInsideWords(t.add_wallet_hint.title),
+                          TextUtils.preventLineBreakInsideWords(widget.title ?? t.add_wallet_hint.title),
                           style: CoconutTypography.body2_14_Bold.copyWith(color: foreground),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          TextUtils.preventLineBreakInsideWords(t.add_wallet_hint.description),
+                          TextUtils.preventLineBreakInsideWords(widget.description ?? t.add_wallet_hint.description),
                           style: CoconutTypography.body3_12.copyWith(color: foreground),
                         ),
                       ],
@@ -87,7 +101,7 @@ class _AddWalletHintState extends State<AddWalletHint> with SingleTickerProvider
                     padding: const EdgeInsets.all(4),
                     minimumSize: const Size(32, 32),
                     onPressed: widget.onClose,
-                    child: Icon(CupertinoIcons.xmark, size: 16, color: foreground),
+                    child: Icon(CupertinoIcons.xmark, size: 16, color: foreground, semanticLabel: widget.closeLabel),
                   ),
                 ],
               ),

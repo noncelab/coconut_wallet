@@ -7,7 +7,8 @@ import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_butt
 import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
 import 'package:flutter/material.dart';
 
-enum HomeAlertCardType { mnemonicBackup, appLock, openStore }
+/// [securityIncident]는 위급 사건 배너(백업 경고와 같은 빨간 카드, 닫기 없음)
+enum HomeAlertCardType { mnemonicBackup, appLock, openStore, securityIncident }
 
 class HomeAlertCard extends StatefulWidget {
   static const contentPadding = EdgeInsets.fromLTRB(16, 16, 8, 16);
@@ -42,7 +43,9 @@ class HomeAlertCard extends StatefulWidget {
   final Widget? icon;
   final CcosOpenStoreIntro? intro;
   final VoidCallback onTap;
-  final VoidCallback onClosed;
+
+  /// null이면 닫기 버튼을 그리지 않는다(위급 사건은 인지·완료될 때만 사라진다)
+  final VoidCallback? onClosed;
 
   @override
   State<HomeAlertCard> createState() => _HomeAlertCardState();
@@ -56,14 +59,26 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   late final Animation<double> _animation;
   Timer? _showDelayTimer;
 
+  /// 동작 줄이기면 펼치기·접기 없이 최종 모습으로 바로 바뀐다
+  bool _reduceMotion = false;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: _animationDuration);
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
     _showDelayTimer = Timer(widget.showDelay, () {
-      if (mounted) _controller.forward(from: 0);
+      if (!mounted) return;
+      _reduceMotion ? _controller.value = 1 : _controller.forward(from: 0);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    // 펼치는 도중에 켜지면 끝 모습으로. 접는 중이면 그대로 둔다(멈추면 닫기 콜백이 오지 않음)
+    if (_reduceMotion && _controller.status == AnimationStatus.forward) _controller.value = 1;
   }
 
   @override
@@ -75,8 +90,12 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
 
   Future<void> _close() async {
     _showDelayTimer?.cancel();
-    await _controller.reverse();
-    if (mounted) widget.onClosed();
+    if (_reduceMotion) {
+      _controller.value = 0;
+    } else {
+      await _controller.reverse();
+    }
+    if (mounted) widget.onClosed?.call();
   }
 
   @override
@@ -135,11 +154,9 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   }
 
   Widget _buildSecurityCard(BuildContext context, {required double heightFactor}) {
-    final isMnemonicBackup = widget.type == HomeAlertCardType.mnemonicBackup;
+    final isRed = widget.type != HomeAlertCardType.appLock;
     final textColor =
-        isMnemonicBackup
-            ? context.coconutColors.unbackedWarningForeground
-            : context.coconutColors.appLockWarningForeground;
+        isRed ? context.coconutColors.unbackedWarningForeground : context.coconutColors.appLockWarningForeground;
     final titleStyle = CoconutTypography.body1_16_Bold.setColor(textColor);
     final titleLineHeight =
         TextPainter(
@@ -152,8 +169,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
     final calculatedCloseIconTop = (titleLineHeight - PositionedCardCloseButton.defaultIconSize) / 2;
     final closeIconTop = calculatedCloseIconTop > 0 ? calculatedCloseIconTop : 0.0;
     final closeButtonTop = HomeAlertCard.contentPadding.top + closeIconTop - PositionedCardCloseButton.padding.top;
-    final iconColor =
-        isMnemonicBackup ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
+    final iconColor = isRed ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -162,9 +178,9 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: isMnemonicBackup ? null : context.coconutColors.appLockWarningBackground,
+          color: isRed ? null : context.coconutColors.appLockWarningBackground,
           gradient:
-              isMnemonicBackup
+              isRed
                   ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -179,7 +195,12 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
           child: Stack(
             children: [
               Padding(
-                padding: HomeAlertCard.contentPadding.copyWith(right: PositionedCardCloseButton.contentRightInset),
+                padding: HomeAlertCard.contentPadding.copyWith(
+                  right:
+                      widget.onClosed == null
+                          ? HomeAlertCard.contentPadding.left
+                          : PositionedCardCloseButton.contentRightInset,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -198,7 +219,8 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                   ],
                 ),
               ),
-              PositionedCardCloseButton(onPressed: _close, color: iconColor, positionTop: closeButtonTop),
+              if (widget.onClosed != null)
+                PositionedCardCloseButton(onPressed: _close, color: iconColor, positionTop: closeButtonTop),
             ],
           ),
         ),

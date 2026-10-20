@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 
@@ -156,6 +157,7 @@ class _WalletStackViewState extends State<WalletStackView> {
       size: widget.size,
       balanceDisplay: widget.balanceTextOf?.call(wallet),
       secondaryText: widget.secondaryTextOf?.call(wallet),
+      statusBadge: safetyCautionBadgeFor(context, wallet.id),
     );
   }
 
