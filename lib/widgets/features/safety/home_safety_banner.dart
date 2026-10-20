@@ -25,6 +25,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart' show safetyCriticalTitle;
+import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -159,36 +160,40 @@ class _HomeSafetyBannerState extends State<HomeSafetyBanner> {
     if (warning == null) return const SizedBox.shrink();
 
     final isBackup = warning == HomeSecurityWarningType.unbackedHotWallet;
-    return HomeAlertCard.security(
-      key: ValueKey('home-safety-banner-${warning.name}'),
-      type: isBackup ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
-      showDelay:
-          reduceMotion
-              ? Duration.zero
-              : state.showWarningAfterPrevious
-              ? _nextWarningDelay
-              : _warningDelay,
-      title:
-          isBackup
-              ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-              : t.wallet_home_screen.app_lock_warning.title,
-      description:
-          isBackup
-              ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
-              : t.wallet_home_screen.app_lock_warning.description,
-      icon:
-          isBackup
-              ? _icon(CommonStateIconPath.triangleWarning, colors.iconOnDanger)
-              : _icon(CommonStateIconPath.shieldWarning, colors.appLockWarningForeground),
-      onTap: isBackup ? () => _openBackup(unbacked!) : _openAppLockSettings,
-      onClosed: () async {
-        await _policy.dismiss(
-          warning,
-          hasHotWalletWithBalance: hasHotWalletWithBalance,
-          isAppLockEnabled: isAppLockEnabled,
-        );
-        if (mounted) setState(() {});
-      },
+    // 새 홈은 CupertinoPageScaffold 안이라 Material이 없다. 닫기 X(InkWell)가 Material 조상을 찾게 투명 Material로 감싼다
+    return Material(
+      type: MaterialType.transparency,
+      child: HomeAlertCard.security(
+        key: ValueKey('home-safety-banner-${warning.name}'),
+        type: isBackup ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
+        showDelay:
+            reduceMotion
+                ? Duration.zero
+                : state.showWarningAfterPrevious
+                ? _nextWarningDelay
+                : _warningDelay,
+        title:
+            isBackup
+                ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                : t.wallet_home_screen.app_lock_warning.title,
+        description:
+            isBackup
+                ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                : t.wallet_home_screen.app_lock_warning.description,
+        icon:
+            isBackup
+                ? _icon(CommonStateIconPath.triangleWarning, colors.iconOnDanger)
+                : _icon(CommonStateIconPath.shieldWarning, colors.appLockWarningForeground),
+        onTap: isBackup ? () => _openBackup(unbacked!) : _openAppLockSettings,
+        onClosed: () async {
+          await _policy.dismiss(
+            warning,
+            hasHotWalletWithBalance: hasHotWalletWithBalance,
+            isAppLockEnabled: isAppLockEnabled,
+          );
+          if (mounted) setState(() {});
+        },
+      ),
     );
   }
 

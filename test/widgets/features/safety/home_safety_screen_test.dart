@@ -6,7 +6,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
+import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -20,6 +22,8 @@ import 'package:coconut_wallet/repository/shared_preference/home_configuration_r
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/safety/home_safety_status_chip.dart';
@@ -108,6 +112,7 @@ Future<void> _pumpHome(
   WidgetTester tester, {
   SafetyProvider? safety,
   List<WalletItemBase> wallets = const [],
+  Map<int, int> balances = const {},
   List<HomeItem> items = const [],
   double width = 412,
   double textScale = 1,
@@ -123,7 +128,10 @@ Future<void> _pumpHome(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<WalletProvider>.value(value: SafetyWalletsFake(wallets)),
+        ChangeNotifierProvider<WalletProvider>.value(
+          value: SafetyWalletsFake(wallets)
+            ..balances.addAll({for (final e in balances.entries) e.key: Balance(e.value, 0)}),
+        ),
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
         ChangeNotifierProvider<PriceProvider>.value(value: _Prices()),
         ChangeNotifierProvider<NodeProvider>.value(value: node),
@@ -250,6 +258,26 @@ void main() {
     expect(title, findsOneWidget);
     expect(tester.renderObject<RenderParagraph>(title).textScaler.scale(10), moreOrLessEquals(12));
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  }, timeout: _timeout);
+
+  // 회귀: 새 홈은 CupertinoPageScaffold라 Material이 없어서 경고 카드의 닫기 X(InkWell)가 "No Material widget found"로 깨졌다
+  testWidgets('on the real home the backup warning renders, closes from its X and snoozes', (tester) async {
+    final safety = SafetyProvider.fixed(_scored(), state: SafetyState.initial().copyWith(hintDismissed: true));
+    await _pumpHome(tester, safety: safety, wallets: [safetyWallet(id: 1, hot: true)], balances: {1: 100000});
+    // 백업·앱 잠금 경고는 2초 뒤에 나타나 240ms 동안 펼쳐진다
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    expect(find.text(t.wallet_home_screen.unbacked_hot_wallet_warning.title), findsOneWidget);
+
+    await tester.tap(find.byType(PositionedCardCloseButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(HomeAlertCard), findsNothing);
+    expect(SharedPrefsRepository().getInt(SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt), greaterThan(0));
     await tester.pumpWidget(const SizedBox());
   }, timeout: _timeout);
 }
