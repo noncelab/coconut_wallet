@@ -542,92 +542,103 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('an added built-in widget keeps its wrapped title and scaled, tappable status on one line', (
-    tester,
-  ) async {
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await _openWidgetsTab(
-      tester,
-      fake: false,
-      size: const Size(320, 6000),
-      widgetDefinitions: [builtinHomeWidgets().singleWhere((definition) => definition.id == HomeItemIds.fiatValues)],
-    );
-    final viewModel = tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
-    final definition = viewModel.registry.byId(HomeItemIds.fiatValues)!;
-    final add = find.byKey(const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
-    final name = find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.fiatValues}'));
-    final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.fiatValues}'));
-    final remove = find.byKey(const ValueKey('home-edit-remove-${HomeItemIds.fiatValues}'));
+  testWidgets(
+    'an added built-in widget keeps its title, status and preview on one line with text capped at the tile scale',
+    (tester) async {
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        size: const Size(320, 6000),
+        widgetDefinitions: [builtinHomeWidgets().singleWhere((definition) => definition.id == HomeItemIds.fiatValues)],
+      );
+      final viewModel = tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
+      final definition = viewModel.registry.byId(HomeItemIds.fiatValues)!;
+      final add = find.byKey(const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
+      final name = find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.fiatValues}'));
+      final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.fiatValues}'));
+      final remove = find.byKey(const ValueKey('home-edit-remove-${HomeItemIds.fiatValues}'));
 
-    await tester.ensureVisible(add);
-    await tester.tap(add);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(find.byKey(const Key('widget-configure-submit')), findsOneWidget);
-    for (final fiat in [FiatCode.USD, FiatCode.JPY, FiatCode.EUR]) {
-      await tester.tap(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')));
-      await tester.pump();
-    }
-    await tester.tap(find.byKey(const Key('widget-configure-submit')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(viewModel.isOnHome(definition), isTrue);
-    expect(viewModel.itemOf(definition)!.configuration['fiats'], ['KRW']);
-
-    for (final scale in [1.3, 2.0]) {
-      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      await tester.ensureVisible(add);
+      await tester.tap(add);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      await tester.ensureVisible(remove);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      final title = tester.widget<Text>(name);
-      final status = tester.widget<Text>(added);
-      final titleParagraph = tester.renderObject<RenderParagraph>(name);
-      final statusParagraph = tester.renderObject<RenderParagraph>(added);
-      final footerRect = tester.getRect(remove).expandToInclude(tester.getRect(added));
-      final cardRect = tester.getRect(find.byKey(const ValueKey('home-edit-widget-${HomeItemIds.fiatValues}')));
-
-      expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize);
-      expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily);
-      expect(status.style!.fontSize, CoconutTypography.body3_12.fontSize);
-      expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
-      expect(titleParagraph.textScaler.scale(14), closeTo(14 * scale, 0.01));
-      expect(statusParagraph.textScaler.scale(12), closeTo(12 * scale, 0.01));
-      expect(titleParagraph.text.toPlainText(), TextUtils.preventLineBreakInsideWords(definition.displayName()));
-      expect(titleParagraph.didExceedMaxLines, isFalse);
-      expect(statusParagraph.didExceedMaxLines, isFalse);
-      expect(footerRect.left, greaterThanOrEqualTo(tester.getRect(name).right));
-      expect(tester.getCenter(remove).dy, closeTo(tester.getCenter(name).dy, 0.5));
-      expect(tester.getCenter(added).dy, closeTo(tester.getCenter(name).dy, 0.5));
-      expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
-      expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
-      expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
-      if (scale == 2) {
-        expect(
-          titleParagraph
-              .getBoxesForSelection(
-                TextSelection(baseOffset: 0, extentOffset: titleParagraph.text.toPlainText().length),
-              )
-              .length,
-          greaterThan(1),
-          reason: 'the narrow catalog wraps the complete title instead of shrinking it',
-        );
+      expect(find.byKey(const Key('widget-configure-submit')), findsOneWidget);
+      for (final fiat in [FiatCode.USD, FiatCode.JPY, FiatCode.EUR]) {
+        await tester.tap(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')));
+        await tester.pump();
       }
-      expect(tester.takeException(), isNull, reason: 'scale $scale');
-    }
-    tester.platformDispatcher.clearTextScaleFactorTestValue();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.tap(remove);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(viewModel.isOnHome(definition), isFalse);
-    expect(added, findsNothing);
-    expect(add, findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await _close(tester);
-  });
+      await tester.tap(find.byKey(const Key('widget-configure-submit')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(viewModel.isOnHome(definition), isTrue);
+      expect(viewModel.itemOf(definition)!.configuration['fiats'], ['KRW']);
+
+      for (final scale in [1.3, 2.0]) {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.ensureVisible(remove);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        final title = tester.widget<Text>(name);
+        final status = tester.widget<Text>(added);
+        final titleParagraph = tester.renderObject<RenderParagraph>(name);
+        final statusParagraph = tester.renderObject<RenderParagraph>(added);
+        final footerRect = tester.getRect(remove).expandToInclude(tester.getRect(added));
+        final cardRect = tester.getRect(find.byKey(const ValueKey('home-edit-widget-${HomeItemIds.fiatValues}')));
+
+        expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize);
+        expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily);
+        expect(status.style!.fontSize, CoconutTypography.body3_12.fontSize);
+        expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
+        // 고정 크기 타일과 그 이름 줄은 시스템 글자 배율을 kHomeTileMaxTextScale에서 멈춘다.
+        final tileScale = math.min(scale, kHomeTileMaxTextScale);
+        expect(titleParagraph.textScaler.scale(14), closeTo(14 * tileScale, 0.01));
+        expect(statusParagraph.textScaler.scale(12), closeTo(12 * tileScale, 0.01));
+        final previewText = find.descendant(
+          of: find.byKey(const ValueKey('home-edit-widget-shadow-${HomeItemIds.fiatValues}')),
+          matching: find.byType(Text),
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(previewText.first).textScaler.scale(10),
+          closeTo(10 * tileScale, 0.01),
+        );
+        expect(titleParagraph.text.toPlainText(), TextUtils.preventLineBreakInsideWords(definition.displayName()));
+        expect(titleParagraph.didExceedMaxLines, isFalse);
+        expect(statusParagraph.didExceedMaxLines, isFalse);
+        expect(footerRect.left, greaterThanOrEqualTo(tester.getRect(name).right));
+        expect(tester.getCenter(remove).dy, closeTo(tester.getCenter(name).dy, 0.5));
+        expect(tester.getCenter(added).dy, closeTo(tester.getCenter(name).dy, 0.5));
+        expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
+        expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
+        expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
+        if (scale == 2) {
+          expect(
+            titleParagraph
+                .getBoxesForSelection(
+                  TextSelection(baseOffset: 0, extentOffset: titleParagraph.text.toPlainText().length),
+                )
+                .length,
+            greaterThan(1),
+            reason: 'the narrow catalog wraps the complete title instead of shrinking it',
+          );
+        }
+        expect(tester.takeException(), isNull, reason: 'scale $scale');
+      }
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(remove);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(viewModel.isOnHome(definition), isFalse);
+      expect(added, findsNothing);
+      expect(add, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    },
+  );
 
   for (final preset in builtinHomePresets()) {
     testWidgets('the ${preset.id} preset preview renders the real home grid', (tester) async {

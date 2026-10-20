@@ -346,8 +346,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                                     ],
                                   ),
                                   child: IgnorePointer(
-                                    child: definition.build(
-                                      context,
+                                    child: definition.buildTile(
                                       HomeItem(
                                         id: 'preview-${definition.id}',
                                         definitionId: definition.id,
@@ -361,27 +360,31 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                                 ),
                               ),
                               CoconutLayout.spacing_100h,
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: LayoutBuilder(
-                                  builder:
-                                      (context, constraints) => Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
-                                              TextUtils.preventLineBreakInsideWords(definition.displayName()),
-                                              key: ValueKey('home-edit-widget-name-${definition.id}'),
-                                              style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+                              // 이름 줄도 타일과 같은 배율에서 멈춰, 좁은 카드에서 이름이 한 글자씩 쌓이지 않게 한다.
+                              MediaQuery.withClampedTextScaling(
+                                maxScaleFactor: kHomeTileMaxTextScale,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: LayoutBuilder(
+                                    builder:
+                                        (context, constraints) => Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
+                                                TextUtils.preventLineBreakInsideWords(definition.displayName()),
+                                                key: ValueKey('home-edit-widget-name-${definition.id}'),
+                                                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+                                              ),
                                             ),
-                                          ),
-                                          // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
-                                          ConstrainedBox(
-                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
-                                            child: _buildToggleButton(viewModel, definition, iconSize: 22),
-                                          ),
-                                        ],
-                                      ),
+                                            // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
+                                            ConstrainedBox(
+                                              constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
+                                              child: _buildToggleButton(viewModel, definition, iconSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                  ),
                                 ),
                               ),
                             ],

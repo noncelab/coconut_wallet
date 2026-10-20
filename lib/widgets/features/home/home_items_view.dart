@@ -465,7 +465,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     double lead,
   ) {
     final size = HomeGridGeometry(cellExtent: cellExtent, gap: _gap).sizeOf(item.span);
-    final content = definition.build(context, item);
+    final content = definition.buildTile(item);
     final box = SizedBox(width: size.width, height: size.height, child: content);
     if (!_draggable) return SizedBox(key: ValueKey('home-item-${item.id}'), child: box);
 
