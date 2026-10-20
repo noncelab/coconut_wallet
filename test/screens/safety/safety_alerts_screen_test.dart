@@ -313,4 +313,29 @@ void main() {
       expect(detectedLine, findsOneWidget);
     });
   }
+
+  // D23: 검토 줄의 글 시작선이 사건 줄(36 원 아이콘)과 같다
+  testWidgets('review rows start their text where incident rows do', (tester) async {
+    usePhoneSize(tester);
+    final detected = testIncident();
+    final safety = SafetyProvider.fixed(
+      WalletHealthReport(
+        status: WalletHealthStatus.criticalOverride,
+        profile: WeightProfile.hotFunded,
+        criticalIncidents: [detected],
+        reviewItems: const [
+          SafetyCheckResult(SafetyCheckId.appUpdate, SafetyOutcome.failed, severity: SafetySeverity.warning),
+        ],
+        evaluatedAt: DateTime(2026, 10, 20, 9),
+      ),
+      state: SafetyState(incidents: [detected]),
+    );
+    await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+    unawaited(SafetyAlertsScreen.open(originContext(tester)));
+    await tester.pumpAndSettle();
+    final incidentText = tester.getRect(findText(strings.incident.outgoing_title)).left;
+    final reviewText =
+        tester.getRect(find.descendant(of: find.byType(SafetyReviewRow), matching: find.byType(Text)).first).left;
+    expect((reviewText - incidentText).abs(), lessThan(1));
+  });
 }

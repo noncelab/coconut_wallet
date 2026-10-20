@@ -113,7 +113,8 @@ class _SafetyAlertsScreenState extends State<SafetyAlertsScreen> {
                   // 검토 행은 Wallet Health와 같다(Track C)
                   if (checks.isNotEmpty) ...[
                     SafetySectionTitle(strings.section_attention, top: open.isEmpty ? 8 : 32),
-                    SafetyListCard(rows: [for (final check in checks) SafetyReviewRow(check: check)]),
+                    // 아이콘을 36 상자에 두어 글 시작선을 사건 줄(36 원)과 맞춘다(POLISH D23)
+                    SafetyListCard(rows: [for (final check in checks) SafetyReviewRow(check: check, iconBox: 36)]),
                   ],
                   if (earlier.isNotEmpty) ...[
                     SafetySectionTitle(strings.section_earlier, top: open.isEmpty && checks.isEmpty ? 8 : 32),
