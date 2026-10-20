@@ -78,9 +78,33 @@ void main() {
     final incident = detected
         .respond(IncidentResponseMode.premium)
         .withTxState(IncidentTxState.replaced)
-        .withGuideStep(1, assistStartedAt: now);
+        .withGuideStep(1, assistStartedAt: now)
+        .withRecoveryReview(RecoveryReviewStatus.exposureSuspected, RecoveryMaterialType.multisigRecoveryMaterial);
     expect(SafetyIncident.fromJson(incident.toJson()), incident);
     expect(SafetyIncident.fromJson(detected.toJson()), detected);
+  });
+
+  test('recovery review: older saves read notChecked, recording keeps the response as it is (R33)', () {
+    final json =
+        detected.respond(IncidentResponseMode.free).withGuideStep(4).toJson()
+          ..remove('recoveryReview')
+          ..remove('recoveryMaterial');
+    final old = SafetyIncident.fromJson(json);
+    expect((old.recoveryReview, old.recoveryMaterial), (RecoveryReviewStatus.notChecked, null));
+    // 노출 의심도 단계·모드를 그대로 둔다(자금 이동으로 되돌리지 않는다)
+    final reviewed = old.withRecoveryReview(
+      RecoveryReviewStatus.exposureSuspected,
+      RecoveryMaterialType.signerRecoveryMaterial,
+    );
+    expect(
+      (reviewed.state, reviewed.guideStep, reviewed.responseMode),
+      (IncidentState.responding, 4, IncidentResponseMode.free),
+    );
+    expect(
+      (reviewed.recoveryReview, reviewed.recoveryMaterial),
+      (RecoveryReviewStatus.exposureSuspected, RecoveryMaterialType.signerRecoveryMaterial),
+    );
+    expect(reviewed.complete(now).recoveryReview, RecoveryReviewStatus.exposureSuspected, reason: 'kept on completion');
   });
 
   test('unknown state name throws (state loader falls back to initial)', () {

@@ -440,6 +440,26 @@ class SafetyProvider extends ChangeNotifier {
     if (mode != null) _analytics?.logIncidentResponseCompleted(mode!);
   }
 
+  /// 가이드 STEP4의 복구 정보 자가 점검(완료했어요 → completedByUser, 노출 경로 → exposureSuspected). 종류는 지갑 종류에서
+  /// 정한다(입력 수집기와 같은 기준). 사건 상태·단계·모드는 바꾸지 않는다: 노출 의심은 안내만 연다(REQ §19.10.1·§23.5)
+  Future<void> recordRecoveryReview(String id, RecoveryReviewStatus status) => _change((s) {
+    final incident = _incident(s, id);
+    final wallet = _wallets!.getWalletById(incident.walletId);
+    final material =
+        wallet.hasLocalKey
+            ? RecoveryMaterialType.mnemonic
+            : wallet.walletType == WalletType.multiSignature
+            ? RecoveryMaterialType.multisigRecoveryMaterial
+            : RecoveryMaterialType.signerRecoveryMaterial;
+    final next = incident.withRecoveryReview(status, material);
+    return s.copyWith(
+      incidents: [
+        for (final i in s.incidents)
+          if (i.id == id) next else i,
+      ],
+    );
+  });
+
   Future<void> setCaution(int walletId, bool caution) => _change((s) {
     final ids = {...s.cautionWalletIds};
     caution ? ids.add(walletId) : ids.remove(walletId);

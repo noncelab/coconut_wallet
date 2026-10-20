@@ -6,6 +6,12 @@ enum IncidentTxState { pending, confirmed, replaced, dropped }
 
 enum IncidentResponseMode { free, premium }
 
+/// 사고 뒤 복구 정보 자가 점검(REQ §19.10.1). 사용자가 직접 확인한 결과만 남긴다: "검증됨"은 없다
+enum RecoveryReviewStatus { notChecked, completedByUser, exposureSuspected }
+
+/// 점검할 복구 정보. 지갑 종류에서 정한다(핫월렛 니모닉 · 보기 전용·탭루트 서명 기기 · 다중서명)
+enum RecoveryMaterialType { mnemonic, signerRecoveryMaterial, multisigRecoveryMaterial }
+
 /// 코코넛이 만들지 않은 출금 거래 하나(SPEC §7.3). 잘못된 상태 전이는 [StateError].
 class SafetyIncident extends Equatable {
   const SafetyIncident({
@@ -18,6 +24,8 @@ class SafetyIncident extends Equatable {
     this.guideStep = 0,
     this.assistStartedAt,
     this.resolvedAt,
+    this.recoveryReview = RecoveryReviewStatus.notChecked,
+    this.recoveryMaterial,
   });
 
   final int walletId;
@@ -28,6 +36,10 @@ class SafetyIncident extends Equatable {
   final IncidentResponseMode? responseMode;
   final int guideStep;
   final DateTime? assistStartedAt, resolvedAt;
+
+  /// STEP4 복구 정보 점검 결과와 그 종류(기록할 때 정한다, 기록 전 null). 대응 단계·Premium 준비 상태와 따로 둔다(REQ §23.5)
+  final RecoveryReviewStatus recoveryReview;
+  final RecoveryMaterialType? recoveryMaterial;
 
   String get id => '$walletId:$txid';
 
@@ -60,6 +72,10 @@ class SafetyIncident extends Equatable {
   SafetyIncident withGuideStep(int step, {DateTime? assistStartedAt}) =>
       _copy(guideStep: step, assistStartedAt: assistStartedAt);
 
+  /// 상태·단계·모드는 그대로. 노출 의심도 자금 이동 단계로 되돌리지 않는다(안내만 연다, REQ §23.5)
+  SafetyIncident withRecoveryReview(RecoveryReviewStatus status, RecoveryMaterialType material) =>
+      _copy(recoveryReview: status, recoveryMaterial: material);
+
   SafetyIncident _copy({
     IncidentState? state,
     IncidentTxState? txState,
@@ -67,6 +83,8 @@ class SafetyIncident extends Equatable {
     int? guideStep,
     DateTime? assistStartedAt,
     DateTime? resolvedAt,
+    RecoveryReviewStatus? recoveryReview,
+    RecoveryMaterialType? recoveryMaterial,
   }) => SafetyIncident(
     walletId: walletId,
     txid: txid,
@@ -77,6 +95,8 @@ class SafetyIncident extends Equatable {
     guideStep: guideStep ?? this.guideStep,
     assistStartedAt: assistStartedAt ?? this.assistStartedAt,
     resolvedAt: resolvedAt ?? this.resolvedAt,
+    recoveryReview: recoveryReview ?? this.recoveryReview,
+    recoveryMaterial: recoveryMaterial ?? this.recoveryMaterial,
   );
 
   Map<String, Object?> toJson() => {
@@ -89,9 +109,11 @@ class SafetyIncident extends Equatable {
     'guideStep': guideStep,
     'assistStartedAt': assistStartedAt?.toIso8601String(),
     'resolvedAt': resolvedAt?.toIso8601String(),
+    'recoveryReview': recoveryReview.name,
+    'recoveryMaterial': recoveryMaterial?.name,
   };
 
-  /// 모르는 값이면 예외. `SafetyState.fromJson`이 받아서 초기 상태로 되돌린다.
+  /// 모르는 값이면 예외. `SafetyState.fromJson`이 받아서 초기 상태로 되돌린다. 점검 기록이 없던 저장값은 notChecked
   factory SafetyIncident.fromJson(Map<String, Object?> j) => SafetyIncident(
     walletId: j['walletId'] as int,
     txid: j['txid'] as String,
@@ -102,6 +124,12 @@ class SafetyIncident extends Equatable {
     guideStep: j['guideStep'] as int? ?? 0,
     assistStartedAt: j['assistStartedAt'] == null ? null : DateTime.parse(j['assistStartedAt'] as String),
     resolvedAt: j['resolvedAt'] == null ? null : DateTime.parse(j['resolvedAt'] as String),
+    recoveryReview:
+        j['recoveryReview'] == null
+            ? RecoveryReviewStatus.notChecked
+            : RecoveryReviewStatus.values.byName(j['recoveryReview'] as String),
+    recoveryMaterial:
+        j['recoveryMaterial'] == null ? null : RecoveryMaterialType.values.byName(j['recoveryMaterial'] as String),
   );
 
   @override
@@ -115,5 +143,7 @@ class SafetyIncident extends Equatable {
     guideStep,
     assistStartedAt,
     resolvedAt,
+    recoveryReview,
+    recoveryMaterial,
   ];
 }

@@ -25,6 +25,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../repository/realm/test_realm_manager.dart';
 import '../services/safety/safety_fakes.dart';
 
+/// 구성이 온전한 2-of-2 다중서명 지갑
+MultisigWalletItem _multisig({int id = 1}) {
+  final keys = [
+    for (final byte in [1, 2])
+      KeyStore.fromSeed(Seed.fromEntropy(Uint8List.fromList(List.filled(16, byte))), AddressType.p2wsh),
+  ];
+  return MultisigWalletItem(
+    id: id,
+    name: 'Multi',
+    colorIndex: 0,
+    iconIndex: 0,
+    descriptor: MultisignatureVault.fromKeyStoreList(keys, 2).descriptor,
+    signers: [MultisigSigner(), MultisigSigner()],
+    requiredSignatureCount: 2,
+  );
+}
+
 class _Provider extends SafetyProvider {
   _Provider({
     required super.walletProvider,
@@ -482,20 +499,7 @@ void main() {
   testWidgets(
     'BSMS export keeps the collector\'s descriptor hash, shows exported · not verified, never verifies (R30)',
     (tester) async {
-      final keys = [
-        for (final byte in [1, 2])
-          KeyStore.fromSeed(Seed.fromEntropy(Uint8List.fromList(List.filled(16, byte))), AddressType.p2wsh),
-      ];
-      final multisig = MultisigWalletItem(
-        id: 1,
-        name: 'Multi',
-        colorIndex: 0,
-        iconIndex: 0,
-        descriptor: MultisignatureVault.fromKeyStoreList(keys, 2).descriptor,
-        signers: [MultisigSigner(), MultisigSigner()],
-        requiredSignatureCount: 2,
-      );
-      wallets.walletItemListNotifier.value = [multisig];
+      wallets.walletItemListNotifier.value = [_multisig()];
       create(tester);
       await settle(tester);
       await provider.recordBsmsExport(1);
@@ -512,6 +516,43 @@ void main() {
       expect(bsms.detail, SafetyCheckDetail.exportedNotVerified);
     },
   );
+  testWidgets('recovery review keeps the status and the wallet kind\'s material, never moves the response (R33)', (
+    tester,
+  ) async {
+    store.state = SafetyState(incidents: [incident('known')]);
+    wallets.records[1] = [safetyTx('known')];
+    create(tester);
+    await settle(tester);
+    await provider.markIncidentUnrecognized('1:known', IncidentResponseMode.free);
+    await provider.setIncidentGuideStep('1:known', 4);
+    // 노출 의심: 안내만 연다. 상태·단계·모드는 그대로
+    await provider.recordRecoveryReview('1:known', RecoveryReviewStatus.exposureSuspected);
+    final suspected = store.state.incidents.single;
+    expect(
+      (suspected.recoveryReview, suspected.recoveryMaterial),
+      (RecoveryReviewStatus.exposureSuspected, RecoveryMaterialType.signerRecoveryMaterial),
+      reason: 'watch-only wallet',
+    );
+    expect(
+      (suspected.state, suspected.guideStep, suspected.responseMode),
+      (IncidentState.responding, 4, IncidentResponseMode.free),
+    );
+    expect(provider.state.incidents.single.recoveryReview, RecoveryReviewStatus.exposureSuspected);
+    // 종류는 기록할 때 지갑 종류에서 정한다
+    for (final (wallet, material) in [
+      (safetyWallet(hot: true), RecoveryMaterialType.mnemonic),
+      (_multisig(), RecoveryMaterialType.multisigRecoveryMaterial),
+    ]) {
+      wallets.walletItemListNotifier.value = [wallet];
+      await provider.recordRecoveryReview('1:known', RecoveryReviewStatus.completedByUser);
+      final saved = store.state.incidents.single;
+      expect((saved.recoveryReview, saved.recoveryMaterial), (RecoveryReviewStatus.completedByUser, material));
+    }
+    await expectLater(
+      provider.recordRecoveryReview('1:missing', RecoveryReviewStatus.completedByUser),
+      throwsStateError,
+    );
+  });
   testWidgets('h-notation descriptor hashes match the original stored wallet descriptor', (tester) async {
     final body = wallets.walletItemList.single.descriptor.split('#').first.replaceAll("'", 'h');
     final descriptor = '$body#${Checksum.getChecksum(body)}';

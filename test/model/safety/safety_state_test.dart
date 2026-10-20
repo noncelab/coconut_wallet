@@ -23,11 +23,10 @@ void main() {
     lastBroadcast: (walletId: 1, txid: 't2', at: at),
     recognizedTxids: const {'r1'},
     incidents: [
-      SafetyIncident(
-        walletId: 1,
-        txid: 'x',
-        detectedAt: at,
-      ).respond(IncidentResponseMode.premium).withGuideStep(2, assistStartedAt: at),
+      SafetyIncident(walletId: 1, txid: 'x', detectedAt: at)
+          .respond(IncidentResponseMode.premium)
+          .withGuideStep(2, assistStartedAt: at)
+          .withRecoveryReview(RecoveryReviewStatus.completedByUser, RecoveryMaterialType.mnemonic),
     ],
     cautionWalletIds: const {1},
     watchOnlyVerifications: {
