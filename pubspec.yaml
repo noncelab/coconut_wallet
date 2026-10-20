@@ -96,10 +96,10 @@ dependencies:
   firebase_analytics: ^11.6.0
   vpn_detector: ^1.2.0
   file_picker: ^8.0.5
-  # Coconut Premium 구독. 출시 전 Flutter 3.38+ 업그레이드와 함께 ^3.3(Play Billing 8)으로 올린다
-  in_app_purchase: ^3.2.3
-  # 안드로이드 기본 요금제·iOS 체험 정보용. 범위는 in_app_purchase 3.3.x(android 0.5)도 허용
-  in_app_purchase_android: ">=0.4.0 <0.6.0"
+  # Coconut Premium 구독. 3.3부터 Play Billing 8(2026-08-31부터 Play 필수), Flutter 3.38 이상
+  in_app_purchase: ^3.3.1
+  # 안드로이드 기본 요금제·iOS 체험 정보용
+  in_app_purchase_android: ^0.5.0
   in_app_purchase_storekit: ^0.4.0
   coconut_design_system:
     git:
