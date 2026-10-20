@@ -92,6 +92,11 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
         context: context,
         title: t.premium.rescue.destination,
         screenName: '/wallet-health/rescue/destination',
+        // 지갑마다 줄이 있고 큰 글자에서 줄이 길어져, 반 높이로 열면 여러 쪽을 넘겨야 한다(X10).
+        // 앱의 받는 주소 선택 시트와 같은 높이: 0.9로 열고 0.6까지 내릴 수 있다
+        initialChildSize: 0.9,
+        minChildSize: 0.599,
+        maxChildSize: 0.9,
         childBuilder: (scrollController) {
           final list = SelectableBottomSheetBody<_DestinationOption>(
             scrollController: scrollController,

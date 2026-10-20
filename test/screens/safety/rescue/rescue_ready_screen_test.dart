@@ -735,6 +735,34 @@ void main() {
     expect(rescue.destinationOf(6), isNull);
   });
 
+  testWidgets('목적지 시트: 320dp · 글자 2배에서 거의 화면 높이로 열린다(X10)', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    rescue = _Rescue(walletProvider: wallets, nodeProvider: node, entitlement: premium, store: store);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WalletProvider>.value(value: wallets),
+          ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
+          Provider<EntitlementService>.value(value: premium),
+        ],
+        child: MaterialApp(
+          theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
+          home: const RescueReadyScreen(walletId: 6),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final list = find.byWidgetPredicate((w) => w is SelectableBottomSheetBody);
+    expect(list, findsOneWidget, reason: '시트가 열렸다');
+    // 반 높이(전에는 0.55)면 목록이 화면 가운데 아래에서 시작한다. 0.9면 위쪽 1/3 안에서 시작
+    expect(tester.getTopLeft(list).dy, lessThan(640 / 3));
+  });
+
   testWidgets('주소 직접 입력 시트: 320dp · 글자 2배 · 키보드가 올라와도 넘치지 않는다(GPT M3)', (tester) async {
     await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
     await tester.tap(find.byKey(const Key('rescue-destination-address:new')));
