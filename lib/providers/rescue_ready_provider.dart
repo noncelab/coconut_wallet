@@ -102,6 +102,12 @@ class RescueReadyProvider extends ChangeNotifier {
 
   bool get isPremiumActive => _entitlement.state.value.isActive;
 
+  /// 구독 없음·만료. 확인 중(verifying)·결제 대기는 아니다(앱을 열 때마다 "멈춤"·Premium 안내가 깜박이지 않게)
+  bool get lacksPremium {
+    final status = _entitlement.state.value.status;
+    return status == PremiumStatus.expired || status == PremiumStatus.none;
+  }
+
   /// 막힘 없는 초안 + 잔액 없음 등 막힌 초안. 목적지를 다시 정해야 하는 지갑은 빠진다
   Map<int, RescueDraftSummary> get drafts {
     final state = _store.load();
@@ -130,9 +136,7 @@ class RescueReadyProvider extends ChangeNotifier {
     final entry = state.rescue[walletId];
     if (entry == null) return RescueStatus.notSet;
     if (_targetOf(walletId, entry.destination, state) == null) return RescueStatus.invalidDestination;
-    final premium = _entitlement.state.value.status;
-    // 확인 중(verifying)·결제 대기는 만료가 아니다(앱을 열 때마다 "멈춤"이 깜박이지 않게)
-    if (premium == PremiumStatus.expired || premium == PremiumStatus.none) return RescueStatus.paused;
+    if (lacksPremium) return RescueStatus.paused;
     final draft = entry.draft;
     if (draft == null) return _feeFailed ? RescueStatus.failed : RescueStatus.pending;
     return switch (draft.blocker) {

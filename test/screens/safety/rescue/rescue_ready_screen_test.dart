@@ -98,11 +98,17 @@ class _Rescue extends RescueReadyProvider {
   /// 제외 지갑에서 도출된 주소(실제 도출은 isolate라 위젯 테스트의 가짜 시간에서 돌지 않는다. 규칙은 provider 테스트가 본다)
   final derivedFromExcluded = <String>{};
 
+  /// 도출 확인 자체가 실패(isolate 오류 등)
+  bool deriveFails = false;
+
   @override
   Future<void> moveNow(BuildContext context, int walletId) async => moves.add(walletId);
 
   @override
-  Future<bool> derivesFromExcludedWallet(int walletId, String address) async => derivedFromExcluded.contains(address);
+  Future<bool> derivesFromExcludedWallet(int walletId, String address) async {
+    if (deriveFails) throw StateError('derive failed');
+    return derivedFromExcluded.contains(address);
+  }
 }
 
 /// 저장소에 쓴 뒤 알리는 SafetyProvider 흉내
@@ -181,6 +187,12 @@ void main() {
 
   Text textOf(WidgetTester tester, Finder finder) => tester.widget<Text>(finder);
 
+  /// 단어 이음 문자(R1, U+2060)를 빼면 [text]와 같은 글. 공용 부품(SafetyChoiceRow·주소 시트·검증 줄)이 이음 문자를
+  /// 넣는지와 무관하게 찾는다. 이 화면이 직접 넣는 R1은 따로 정확히 본다
+  Finder plainText(String text) => find.byWidgetPredicate((w) => w is Text && w.data?.replaceAll('\u2060', '') == text);
+  Finder plainTextContaining(String text) =>
+      find.byWidgetPredicate((w) => w is Text && (w.data?.replaceAll('\u2060', '').contains(text) ?? false));
+
   WatchOnlyVerification verification(WalletItemBase wallet, VerificationResult result, {String? descriptorHash}) =>
       WatchOnlyVerification(
         method: VerificationMethod.qr,
@@ -200,22 +212,26 @@ void main() {
 
         final scaffold = tester.widget<Scaffold>(find.byKey(const Key('rescue-ready-screen')));
         expect(scaffold.backgroundColor, colors.background);
-        expect(textOf(tester, find.text(copy.wallets_title)).style!.color, colors.primaryText);
-        expect(textOf(tester, find.text(copy.description)).style!.color, colors.secondaryText);
-        expect(find.text(copy.on_device), findsOneWidget);
+        expect(textOf(tester, plainText(copy.wallets_title)).style!.color, colors.primaryText);
+        expect(textOf(tester, plainText(copy.description)).style!.color, colors.secondaryText);
+        expect(plainText(copy.on_device), findsOneWidget);
+        // 이 화면이 직접 쓰는 한국어 글은 단어 중간에서 줄을 바꾸지 않는다(R1)
+        for (final text in [copy.wallets_title, copy.description, copy.on_device]) {
+          expect(textOf(tester, plainText(text)).data, safetyKoText(text));
+        }
 
         // 모든 사용자에게 제목 위 Premium 칩
         expect(find.byType(PremiumChip), findsOneWidget);
         expect(
           tester.getBottomLeft(find.byType(PremiumChip)).dy,
-          lessThan(tester.getTopLeft(find.text(copy.wallets_title)).dy),
+          lessThan(tester.getTopLeft(plainText(copy.wallets_title)).dy),
         );
 
         // 상태 줄과 수수료 줄은 따로(숫자가 줄 사이로 갈리지 않게, POLISH I4)
         final row = find.byKey(const Key('rescue-wallet-1'));
         final ready = find.descendant(
           of: row,
-          matching: find.text('→ w2 · ${copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))}'),
+          matching: plainText('→ w2 · ${copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))}'),
         );
         expect(textOf(tester, ready).style!.color, colors.secondaryText);
         final fee = find.descendant(
@@ -226,7 +242,7 @@ void main() {
         expect(find.ancestor(of: fee, matching: find.byType(FittedBox)), findsOneWidget);
         expect(tester.getTopLeft(fee).dy, greaterThan(tester.getBottomLeft(ready).dy));
         expect(
-          find.descendant(of: find.byKey(const Key('rescue-wallet-6')), matching: find.text(copy.not_set)),
+          find.descendant(of: find.byKey(const Key('rescue-wallet-6')), matching: plainText(copy.not_set)),
           findsOneWidget,
         );
         // 잔액 있는 w1이 맨 위
@@ -236,6 +252,7 @@ void main() {
         );
         // 사고가 없으면 지금 이동은 보이지 않는다
         expect(find.byKey(const Key('rescue-move-now-1')), findsNothing);
+        expect(find.byKey(const Key('rescue-premium-note')), findsNothing, reason: '구독 중에는 Premium 안내 없음');
       });
 
       testWidgets('행 → 목적지 시트(보기 전용 먼저, MFP 없음·이 기기 경고) → 저장', (tester) async {
@@ -251,18 +268,22 @@ void main() {
         ];
         expect(ids, [...ids]..sort(), reason: '보기 전용(MFP 있음) → MFP 없음 → 주소 입력 → 이 기기 지갑 → 이 기기 새 핫월렛(SafetyAssist 순서)');
         expect(find.byKey(const Key('rescue-destination-off')), findsNothing, reason: '목적지가 없으면 끄기도 없다');
+        expect(find.byKey(const Key('rescue-destination-premium-note')), findsNothing, reason: '구독 중에는 흐린 줄도 안내도 없다');
         expect(
           find.descendant(
             of: find.byKey(const Key('rescue-destination-wallet:4')),
-            matching: find.text(copy.unknown_seed),
+            matching: plainText(copy.unknown_seed),
           ),
           findsOneWidget,
         );
-        final warning = find.descendant(
-          of: find.byKey(const Key('rescue-destination-wallet:1')),
-          matching: find.text(copy.new_hot_wallet_warning),
-        );
-        expect(textOf(tester, warning).style!.color, colors.warningText);
+        // 이 기기 경고: 이미 있는 핫월렛은 "이 지갑도", 새 핫월렛 줄은 "여기 만든 지갑도"(POLISH I9)
+        for (final (id, text) in [
+          ('wallet:1', copy.existing_hot_wallet_warning),
+          ('hot:new', copy.new_hot_wallet_warning),
+        ]) {
+          final warning = find.descendant(of: find.byKey(Key('rescue-destination-$id')), matching: plainText(text));
+          expect(textOf(tester, warning).style!.color, colors.warningText, reason: id);
+        }
 
         await tester.tap(find.byKey(const Key('rescue-destination-wallet:2')));
         await tester.pumpAndSettle();
@@ -283,7 +304,7 @@ void main() {
         await pumpScreen(tester, variant, safety: store.state);
         final invalid = find.descendant(
           of: find.byKey(const Key('rescue-wallet-1')),
-          matching: find.text('→ w2 · ${t.premium.rescue.destination_invalid}'),
+          matching: plainText('→ w2 · ${t.premium.rescue.destination_invalid}'),
         );
         expect(textOf(tester, invalid).style!.color, colors.warningText);
 
@@ -293,12 +314,12 @@ void main() {
         final copy = t.premium.destination;
         final verified = find.descendant(
           of: find.byKey(const Key('rescue-destination-wallet:4')),
-          matching: find.text(copy.verified_on(date: '26.10.20')),
+          matching: plainText(copy.verified_on(date: '26.10.20')),
         );
         expect(textOf(tester, verified).style!.color, colors.success, reason: 'H8: 확인됨은 success');
         for (final text in [copy.verified_on(date: '26.10.20'), copy.not_verified]) {
           expect(
-            find.descendant(of: find.byKey(const Key('rescue-destination-wallet:1')), matching: find.text(text)),
+            find.descendant(of: find.byKey(const Key('rescue-destination-wallet:1')), matching: plainText(text)),
             findsNothing,
             reason: '핫월렛은 서명 기기 검증 대상이 아니다',
           );
@@ -343,14 +364,14 @@ void main() {
         );
         await tester.enterText(field, 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq');
         await tester.pump();
-        expect(find.text(AddressValidationError.notRegtestnetAddress.message), findsOneWidget);
+        expect(plainText(AddressValidationError.notRegtestnetAddress.message), findsOneWidget);
         await tester.tap(find.byKey(const Key('rescue-address-save')));
         await tester.pumpAndSettle();
         expect(rescue.destinationOf(6), isNull, reason: '비활성 버튼');
 
         await tester.enterText(field, own);
         await tester.pump();
-        expect(find.text(t.premium.destination.error_self_address), findsOneWidget);
+        expect(plainText(t.premium.destination.error_self_address), findsOneWidget);
 
         // 만들어 둔 주소 목록 밖이지만 이 지갑에서 나온 주소: 저장을 누를 때 걸러진다(Grok §5)
         final beyondGap = wallets.walletItemList.last.walletBase.getAddress(500);
@@ -359,15 +380,23 @@ void main() {
         await tester.pump();
         await tester.tap(find.byKey(const Key('rescue-address-save')));
         await tester.pumpAndSettle();
-        expect(find.text(t.premium.destination.error_self_address), findsOneWidget);
+        expect(plainText(t.premium.destination.error_self_address), findsOneWidget);
         expect(rescue.destinationOf(6), isNull);
 
         await tester.enterText(field, _external.toUpperCase());
         await tester.pump();
-        expect(find.text(t.premium.destination.external_warning), findsOneWidget);
+        expect(plainText(t.premium.destination.external_warning), findsOneWidget);
         await tester.tap(find.byKey(const Key('rescue-address-save')));
         await tester.pumpAndSettle();
         expect(rescue.destinationOf(6)?.address, _external);
+        // 행 부제에 줄인 주소 목적지(단어 줄바꿈은 SafetyChoiceRow가 부제 전체에 한다)
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('rescue-wallet-6')),
+            matching: plainTextContaining('→ ${shortenAddress(_external)} ·'),
+          ),
+          findsOneWidget,
+        );
         await tester.pump(const Duration(seconds: 4));
       });
 
@@ -389,7 +418,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(const Key('rescue-wallet-1')),
-            matching: find.textContaining(t.premium.rescue.draft_paused(time: t.relative_time.minutes_ago(n: 3))),
+            matching: plainTextContaining(t.premium.rescue.draft_paused(time: t.relative_time.minutes_ago(n: 3))),
           ),
           findsOneWidget,
         );
@@ -405,7 +434,7 @@ void main() {
         await pumpScreen(tester, variant);
         final line = find.descendant(
           of: find.byKey(const Key('rescue-wallet-1')),
-          matching: find.text('→ w2 · ${t.premium.rescue.destination_invalid}'),
+          matching: plainText('→ w2 · ${t.premium.rescue.destination_invalid}'),
         );
         expect(textOf(tester, line).style!.color, colors.warningText);
       });
@@ -489,6 +518,10 @@ void main() {
         for (final id in ['wallet:4', 'address:new', 'wallet:6', 'hot:new']) {
           expect(item(id).isDisabled, isTrue, reason: id);
         }
+        // 흐린 이유를 중립 한 줄로(버튼·가격 없음)
+        final note = find.byKey(const Key('rescue-destination-premium-note'));
+        expect(textOf(tester, note).data, safetyKoText(t.premium.rescue.premium_note));
+        expect(textOf(tester, note).style!.color, colors.secondaryText);
         // 다른 목적지는 눌러도 고르지 않고, 저장에서 페이월도 없다
         await tester.tap(find.byKey(const Key('rescue-destination-wallet:4')));
         await tester.pumpAndSettle();
@@ -515,7 +548,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(const Key('rescue-wallet-6')),
-            matching: find.text('→ w2 · ${t.premium.rescue.draft_paused_none}'),
+            matching: plainText('→ w2 · ${t.premium.rescue.draft_paused_none}'),
           ),
           findsOneWidget,
         );
@@ -541,7 +574,7 @@ void main() {
         await pumpScreen(tester, variant);
         final line = find.descendant(
           of: find.byKey(const Key('rescue-wallet-1')),
-          matching: find.text('→ w2 · ${t.premium.assist.fee_too_high(percent: SweepFee.maxSharePercent)}'),
+          matching: plainText('→ w2 · ${t.premium.assist.fee_too_high(percent: SweepFee.maxSharePercent)}'),
         );
         expect(textOf(tester, line).style!.color, colors.warningText);
       });
@@ -577,7 +610,7 @@ void main() {
     final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors;
     for (final id in ['wallet:2', 'wallet:4']) {
       final option = find.byKey(Key('rescue-destination-$id'));
-      final caption = find.descendant(of: option, matching: find.text(t.premium.destination.not_verified));
+      final caption = find.descendant(of: option, matching: plainText(t.premium.destination.not_verified));
       expect(textOf(tester, caption).style!.color, colors.secondaryText, reason: id);
       final icons = [
         for (final svg in tester.widgetList<SvgPicture>(find.descendant(of: option, matching: find.byType(SvgPicture))))
@@ -594,6 +627,42 @@ void main() {
     expect(find.byType(PremiumPaywallScreen), findsNothing);
     expect(find.text(t.premium.rescue.destination), findsNothing);
     expect(find.byType(PremiumChip), findsOneWidget);
+    // 설명 아래 Premium 안내 한 줄(D8)
+    final note = find.byKey(const Key('rescue-premium-note'));
+    expect(textOf(tester, note).data, safetyKoText(t.premium.rescue.premium_note));
+    expect(
+      textOf(tester, note).style!.color,
+      resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors.secondaryTextStrong,
+    );
+    expect(tester.getTopLeft(note).dy, greaterThan(tester.getBottomLeft(plainText(t.premium.rescue.description)).dy));
+  });
+
+  testWidgets('구독 확인 중에는 Premium 안내가 깜박이지 않는다(D6·D8)', (tester) async {
+    premium.emit(const PremiumState(PremiumStatus.verifying));
+    await pumpScreen(tester, CoconutThemeVariant.light);
+    expect(find.byKey(const Key('rescue-premium-note')), findsNothing);
+    premium.emit(const PremiumState(PremiumStatus.expired));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rescue-premium-note')), findsOneWidget, reason: '만료가 확인되면 보인다');
+  });
+
+  testWidgets('제외 지갑 도출 확인이 실패하면 주소를 받지 않는다(실패 시 거절)', (tester) async {
+    await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
+    await tester.tap(find.byKey(const Key('rescue-destination-address:new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.premium.rescue.save));
+    await tester.pumpAndSettle();
+    rescue.deriveFails = true;
+    await tester.enterText(
+      find.descendant(of: find.byKey(const Key('rescue-address-field')), matching: find.byType(EditableText)),
+      _external,
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('rescue-address-save')));
+    await tester.pumpAndSettle();
+    expect(plainText(t.premium.destination.error_self_address), findsOneWidget);
+    expect(find.byKey(const Key('rescue-address-field')), findsOneWidget, reason: '시트가 닫히지 않는다');
+    expect(rescue.destinationOf(6), isNull);
   });
 
   testWidgets('주소 직접 입력 시트: 320dp · 글자 2배 · 키보드가 올라와도 넘치지 않는다(GPT M3)', (tester) async {

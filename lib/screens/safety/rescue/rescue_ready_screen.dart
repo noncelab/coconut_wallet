@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart'
     show CoconutLayout, CoconutTypography, Sizes, TextColorExtension;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
@@ -14,18 +13,16 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart' show ensurePremium;
 import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
-import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
-import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
+import 'package:coconut_wallet/widgets/features/safety/safety_address_entry_sheet.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_verification_line.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
@@ -87,24 +84,47 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
         if (current != null) const _DestinationOption(null),
       ];
       final initial = options.firstWhereOrNull((o) => o.isCurrent(current) && o.canPreselect)?.id;
+      final colors = context.coconutColors;
       final picked = await CommonBottomSheets.showSelectableDraggableSheet<_DestinationOption>(
         context: context,
         title: t.premium.rescue.destination,
         screenName: '/wallet-health/rescue/destination',
-        items: options,
-        getItemId: (o) => o.id,
-        initiallySelectedId: initial,
-        confirmText: t.premium.rescue.save,
-        itemBuilder:
-            (context, option, isSelected, onTap) => SelectableBottomSheetTextItem(
-              key: Key('rescue-destination-${option.id}'),
-              isSelected: isSelected,
-              // 구독이 끝났으면 지우기만(지금 목적지는 선택된 채로 보인다). 자물쇠·경고색 없이 흐리게만
-              isDisabled: !canChange && option.assist != null && option.id != initial,
-              onTap: onTap,
-              reserveCheckIconSpace: true,
-              child: _DestinationOptionView(option),
-            ),
+        childBuilder: (scrollController) {
+          final list = SelectableBottomSheetBody<_DestinationOption>(
+            scrollController: scrollController,
+            items: options,
+            getItemId: (o) => o.id,
+            initiallySelectedId: initial,
+            confirmText: t.premium.rescue.save,
+            backgroundColor: colors.surfaceBottomSheet,
+            itemBuilder:
+                (context, option, isSelected, onTap) => SelectableBottomSheetTextItem(
+                  key: Key('rescue-destination-${option.id}'),
+                  isSelected: isSelected,
+                  // 구독이 끝났으면 지우기만(지금 목적지는 선택된 채로 보인다). 자물쇠·경고색 없이 흐리게만
+                  isDisabled: !canChange && option.assist != null && option.id != initial,
+                  onTap: onTap,
+                  reserveCheckIconSpace: true,
+                  child: _DestinationOptionView(option),
+                ),
+          );
+          if (canChange) return list;
+          // 흐린 목적지가 왜 흐린지 중립 한 줄(버튼·가격 없음). 글 시작을 목록 글과 맞춘다(목록 16 + 줄 16)
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Sizes.size32, 0, Sizes.size32, Sizes.size8),
+                child: Text(
+                  safetyKoText(t.premium.rescue.premium_note),
+                  key: const Key('rescue-destination-premium-note'),
+                  style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                ),
+              ),
+              Expanded(child: list),
+            ],
+          );
+        },
       );
       if (picked == null || !mounted) return;
 
@@ -151,8 +171,8 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
       builder:
           (dialogContext) => CoconutPopup(
             key: const Key('rescue-hot-wallet-confirm'),
-            title: copy.hot_confirm_title,
-            description: copy.hot_confirm_body,
+            title: safetyKoText(copy.hot_confirm_title),
+            description: safetyKoText(copy.hot_confirm_body),
             languageCode: LocaleSettings.currentLocale.languageCode,
             leftButtonText: t.cancel,
             rightButtonText: copy.hot_confirm_create,
@@ -169,14 +189,26 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
     }
   }
 
-  Future<String?> _enterAddress(int walletId) => CommonBottomSheets.showBottomSheet<String>(
-    context: context,
-    title: t.premium.destination.enter_address,
-    screenName: '/wallet-health/rescue/address',
-    showDragHandle: true,
-    showCloseButton: true,
-    child: _AddressEntry(walletId: walletId),
-  );
+  /// 주소 직접 입력(Assist와 같은 공용 시트, POLISH H6/I5). 지금 네트워크 형식 + 이 지갑·제외 지갑 주소 거절.
+  /// 만들어 둔 주소 목록 밖의 제외 지갑 주소는 저장을 누를 때 한 번 더 확인한다(무거워서). 확인하지 못하면 받지 않는다
+  Future<String?> _enterAddress(int walletId) {
+    final rescue = context.read<RescueReadyProvider>();
+    final selfAddress = t.premium.destination.error_self_address;
+    return showSafetyAddressEntrySheet(
+      context,
+      screenName: '/wallet-health/rescue/address',
+      actionText: t.premium.rescue.save,
+      fieldKey: const Key('rescue-address-field'),
+      actionKey: const Key('rescue-address-save'),
+      validate: (address) {
+        final check = rescue.checkAddress(walletId, address);
+        return check.format?.message ?? (check.ownedByExcluded ? selfAddress : null);
+      },
+      confirm:
+          (address) async =>
+              await rescue.derivesFromExcludedWallet(walletId, address).catchError((_) => true) ? selfAddress : null,
+    );
+  }
 
   Future<void> _moveNow(int walletId) async {
     final rescue = context.read<RescueReadyProvider?>();
@@ -222,15 +254,27 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 모든 사용자에게 같은 머리(POLISH §2.4). 무료 사용자 안내 한 줄(premium_note)은 문구가 오면 설명 아래에
+              // 모든 사용자에게 같은 머리(POLISH §2.4)
               const Align(alignment: AlignmentDirectional.centerStart, child: PremiumChip()),
               CoconutLayout.spacing_200h,
-              Text(copy.wallets_title, style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText)),
+              Text(
+                safetyKoText(copy.wallets_title),
+                style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
+              ),
               CoconutLayout.spacing_300h,
-              Text(copy.description, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+              Text(safetyKoText(copy.description), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+              // 구독 없음·만료일 때만(D8). 확인 중에는 구독자에게 깜박이지 않게 숨긴다
+              if (rescue?.lacksPremium ?? false) ...[
+                CoconutLayout.spacing_200h,
+                Text(
+                  safetyKoText(copy.premium_note),
+                  key: const Key('rescue-premium-note'),
+                  style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                ),
+              ],
               CoconutLayout.spacing_200h,
               Text(
-                t.premium.destination.excluded_note_setup,
+                safetyKoText(t.premium.destination.excluded_note_setup),
                 style: CoconutTypography.body3_12.setColor(colors.secondaryText),
               ),
               CoconutLayout.spacing_600h,
@@ -245,6 +289,7 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
                       iconIndex: wallet.iconIndex,
                       isHotWallet: wallet.hasLocalKey,
                     ),
+                    // 제목·부제의 단어 줄바꿈(R1)은 SafetyChoiceRow가 한다
                     title: wallet.name,
                     subtitle: _statusLine(rescue, wallet.id, status),
                     subtitleColor: _needsAttention.contains(status) ? colors.warningText : null,
@@ -257,14 +302,14 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
                     CoconutLayout.spacing_200h,
                     InlineActionButton(
                       key: Key('rescue-move-now-${wallet.id}'),
-                      text: copy.move_now,
+                      text: safetyKoText(copy.move_now),
                       onPressed: () => _moveNow(wallet.id),
                     ),
                   ],
                   CoconutLayout.spacing_200h,
                 ],
               CoconutLayout.spacing_200h,
-              Text(copy.on_device, style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
+              Text(safetyKoText(copy.on_device), style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
             ],
           ),
         ),
@@ -359,12 +404,13 @@ class _DestinationOptionView extends StatelessWidget {
     final colors = context.coconutColors;
     final d = option.assist;
     final copy = t.premium.destination;
+    // 주소에는 단어 이음 문자를 넣지 않는다(R1)
     final title = switch (d) {
-      null => t.premium.rescue.turn_off,
-      AssistDestination(:final wallet?) => wallet.name,
-      AssistDestination(kind: AssistDestinationKind.newHotWallet) => copy.new_hot_wallet,
+      null => safetyKoText(t.premium.rescue.turn_off),
+      AssistDestination(:final wallet?) => safetyKoText(wallet.name),
+      AssistDestination(kind: AssistDestinationKind.newHotWallet) => safetyKoText(copy.new_hot_wallet),
       AssistDestination(:final address?) => shortenAddress(address),
-      _ => copy.enter_address,
+      _ => safetyKoText(copy.enter_address),
     };
     final subtitle = switch (d) {
       AssistDestination(cannotVerifySeed: true) => null, // 아래 정보 줄
@@ -375,7 +421,7 @@ class _DestinationOptionView extends StatelessWidget {
     };
     final wallet = d?.wallet;
     final checkable = wallet != null && !wallet.hasLocalKey;
-    final verifiedAt = checkable ? _verifiedAt(context.watch<SafetyProvider?>()?.state, wallet) : null;
+    final verifiedAt = checkable ? SafetyAssist.verifiedAt(context.watch<SafetyProvider?>()?.state, wallet) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -390,7 +436,7 @@ class _DestinationOptionView extends StatelessWidget {
         ),
         if (subtitle != null) ...[
           CoconutLayout.spacing_50h,
-          Text(subtitle, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+          Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
         ],
         if (d?.cannotVerifySeed ?? false)
           _NoteLine(
@@ -399,58 +445,31 @@ class _DestinationOptionView extends StatelessWidget {
             text: copy.unknown_seed,
             textColor: colors.secondaryText,
           ),
+        // 이 기기 지갑 경고. 이미 있는 핫월렛은 "이 지갑도", 새로 만들 핫월렛은 "여기 만든 지갑도"(POLISH I9). 막지는 않는다
         if (d?.onThisDevice ?? false)
           _NoteLine(
             iconPath: CommonStateIconPath.triangleWarning,
             iconColor: colors.warningText,
-            text: copy.new_hot_wallet_warning,
+            text: d?.wallet != null ? copy.existing_hot_wallet_warning : copy.new_hot_wallet_warning,
             textColor: colors.warningText,
           ),
-        // 서명 기기 검증 표시(POLISH H8, Assist와 같은 규칙). 미확인은 경보가 아니라 안내
+        // 서명 기기 검증 표시(POLISH H8, Assist와 같은 공용 줄). 미확인은 경보가 아니라 안내
         if (checkable)
-          verifiedAt != null
-              ? _NoteLine(
-                iconPath: CommonStateIconPath.shieldCheck,
-                iconSize: 14,
-                iconColor: colors.success,
-                text: copy.verified_on(date: DateTimeUtil.formatTimestamp(verifiedAt)[0]),
-                textColor: colors.success,
-              )
-              : _NoteLine(
-                iconPath: CommonStateIconPath.circleInfo,
-                iconSize: 14,
-                iconColor: colors.iconSecondary,
-                text: copy.not_verified,
-                textColor: colors.secondaryText,
-              ),
+          Padding(
+            padding: const EdgeInsets.only(top: Sizes.size4),
+            child: SafetyVerificationLine(verifiedAt: verifiedAt),
+          ),
       ],
     );
-  }
-
-  /// 보기 전용 목적지를 서명 기기로 검증한 때(xpub이 바꿔치기된 지갑으로 옮기지 않게). 다중서명은 BSMS 대조.
-  /// 검증 규칙은 엔진·Assist와 같다(디스크립터가 바뀐 기록은 무효). 불일치 지갑은 목적지 후보에서 이미 빠진다
-  static DateTime? _verifiedAt(SafetyState? state, WalletItemBase wallet) {
-    final hash = WalletVerification.descriptorHash(wallet.descriptor);
-    if (wallet.walletType == WalletType.multiSignature) {
-      final bsms = state?.bsms[wallet.id];
-      return bsms != null && bsms.matched && bsms.configHash == hash ? bsms.at : null;
-    }
-    final v = state?.watchOnlyVerifications[wallet.id];
-    return v != null && v.descriptorHash == hash && v.result == VerificationResult.match ? v.at : null;
   }
 }
 
 class _NoteLine extends StatelessWidget {
-  const _NoteLine({
-    required this.iconPath,
-    this.iconSize = 12,
-    required this.iconColor,
-    required this.text,
-    required this.textColor,
-  });
+  const _NoteLine({required this.iconPath, required this.iconColor, required this.text, required this.textColor});
+
+  static const _iconSize = 12.0;
 
   final String iconPath;
-  final double iconSize;
   final Color iconColor;
   final String text;
   final Color textColor;
@@ -466,131 +485,16 @@ class _NoteLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(top: ((lineHeight - iconSize) / 2).clamp(0.0, double.infinity)),
+            padding: EdgeInsets.only(top: (lineHeight - _iconSize) / 2),
             child: SvgPicture.asset(
               iconPath,
-              width: iconSize,
-              height: iconSize,
+              width: _iconSize,
+              height: _iconSize,
               colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
           ),
           CoconutLayout.spacing_100w,
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(top: ((iconSize - lineHeight) / 2).clamp(0.0, double.infinity)),
-              child: Text(text, style: style.setColor(textColor)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 주소 직접 입력. 지금 네트워크 형식 검사(기존 AddressValidator) + 이 지갑·제외 지갑 주소 거절
-class _AddressEntry extends StatefulWidget {
-  const _AddressEntry({required this.walletId});
-
-  final int walletId;
-
-  @override
-  State<_AddressEntry> createState() => _AddressEntryState();
-}
-
-class _AddressEntryState extends State<_AddressEntry> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
-  bool _checking = false;
-
-  /// 저장할 때 확인한, 제외 지갑에서 나온 주소(그 주소가 입력돼 있는 동안 오류로 보인다)
-  String? _derivedFromExcluded;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  String? get _error {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return null;
-    final check = context.read<RescueReadyProvider>().checkAddress(widget.walletId, text);
-    if (check.format != null) return check.format!.message;
-    final excluded = check.ownedByExcluded || normalizeAddress(text) == _derivedFromExcluded;
-    return excluded ? t.premium.destination.error_self_address : null;
-  }
-
-  /// 만들어 둔 주소 목록 밖의 제외 지갑 주소도 저장 전에 한 번 확인한다(무거워서 누를 때만)
-  Future<void> _save() async {
-    final address = normalizeAddress(_controller.text.trim());
-    setState(() => _checking = true);
-    final excluded = await context.read<RescueReadyProvider>().derivesFromExcludedWallet(widget.walletId, address);
-    if (!mounted) return;
-    if (excluded) {
-      setState(() {
-        _checking = false;
-        _derivedFromExcluded = address;
-      });
-      vibrateLightDouble();
-      return;
-    }
-    Navigator.pop(context, address);
-  }
-
-  Future<void> _scan() async {
-    final scanned = await showAddressScannerBottomSheet(context, title: t.premium.destination.enter_address);
-    if (scanned == null || !mounted) return;
-    _controller.text = normalizeAddress(scanned.trim());
-    _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final error = _error;
-    final canSave = _controller.text.trim().isNotEmpty && error == null && !_checking;
-    // 키보드가 올라와 시트가 줄어도 넘치지 않게 스크롤(GPT M3). H6 공용 시트가 오면 바꿔 끼운다
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CoconutTextField(
-            key: const Key('rescue-address-field'),
-            controller: _controller,
-            focusNode: _focusNode,
-            onChanged: (_) => setState(() {}),
-            backgroundColor: colors.inputSurface,
-            height: 52,
-            padding: const EdgeInsets.only(left: 16),
-            maxLines: 1,
-            placeholderText: t.premium.destination.address_hint,
-            clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
-            onClear: () => setState(_controller.clear),
-            suffixIconAsset: CommonActionIconPath.scan,
-            suffixSemanticLabel: t.premium.destination.enter_address,
-            suffixIconColor: colors.primaryText,
-            onSuffixPressed: _scan,
-            isError: error != null,
-            errorText: error,
-            isErrorTextMultiline: true,
-          ),
-          CoconutLayout.spacing_300h,
-          _NoteLine(
-            iconPath: CommonStateIconPath.circleInfo,
-            iconColor: colors.iconSecondary,
-            text: t.premium.destination.external_warning,
-            textColor: colors.secondaryText,
-          ),
-          CoconutLayout.spacing_600h,
-          InlineActionButton(
-            key: const Key('rescue-address-save'),
-            isActive: canSave,
-            text: t.premium.rescue.save,
-            onPressed: _save,
-          ),
+          Expanded(child: Text(safetyKoText(text), style: style.setColor(textColor))),
         ],
       ),
     );
