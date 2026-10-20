@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/services/home/home_item_registry.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -137,32 +138,36 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
   Widget _buildToggleButton(HomeViewModel viewModel, HomeItemDefinition definition, {double iconSize = 28}) {
     final colors = context.coconutColors;
     final onHome = viewModel.isOnHome(definition);
-    final button = CupertinoButton(
+    final icon = Icon(
+      onHome ? CupertinoIcons.minus_circle_fill : CupertinoIcons.add_circled_solid,
+      color: colors.mutedText,
+      size: iconSize,
+    );
+    // '추가됨 (−)'는 한 버튼으로 묶어 글자와 아이콘을 4px로 붙인다. 아이콘은 48px 터치 영역의 오른쪽 끝에 둬서
+    // 추가 여부와 상관없이 줄 오른쪽 끝(이름의 왼쪽 시작과 대칭)에 맞춘다.
+    return CupertinoButton(
       key: ValueKey('home-edit-${onHome ? 'remove' : 'add'}-${definition.id}'),
-      padding: EdgeInsets.zero,
+      padding: onHome ? const EdgeInsets.only(left: 8) : EdgeInsets.zero,
+      alignment: Alignment.centerRight,
       minimumSize: const Size.square(48),
       onPressed: () => onHome ? viewModel.removeDefinition(definition) : _add(definition),
-      child: Icon(
-        onHome ? CupertinoIcons.minus_circle_fill : CupertinoIcons.add_circled_solid,
-        color: colors.mutedText,
-        size: iconSize,
-      ),
-    );
-    if (!onHome) return button;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            t.home_edit.added,
-            key: ValueKey('home-edit-added-${definition.id}'),
-            style: CoconutTypography.body3_12.copyWith(color: colors.primary),
-          ),
-        ),
-        const SizedBox(width: 2),
-        button,
-      ],
+      child:
+          onHome
+              ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      t.home_edit.added,
+                      key: ValueKey('home-edit-added-${definition.id}'),
+                      style: CoconutTypography.body3_12.copyWith(color: colors.primary),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  icon,
+                ],
+              )
+              : icon,
     );
   }
 
@@ -364,7 +369,8 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              definition.displayName(),
+                                              // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
+                                              TextUtils.preventLineBreakInsideWords(definition.displayName()),
                                               key: ValueKey('home-edit-widget-name-${definition.id}'),
                                               style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
                                             ),

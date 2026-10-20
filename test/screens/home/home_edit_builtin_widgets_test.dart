@@ -431,18 +431,19 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(ValueKey('home-edit-widget-${definition.id}')),
-            matching: find.text(definition.displayName()),
+            matching: find.text(TextUtils.preventLineBreakInsideWords(definition.displayName())),
           ),
           findsAtLeastNWidgets(1),
           reason: definition.id,
         );
       }
-      expect(find.text(t.home_widgets.recent_transactions), findsOneWidget);
+      expect(find.text(TextUtils.preventLineBreakInsideWords(t.home_widgets.recent_transactions)), findsOneWidget);
       for (final definition in builtinHomeWidgets()) {
         final name = find.byKey(ValueKey('home-edit-widget-name-${definition.id}'));
         final title = tester.widget<Text>(name);
         final paragraph = tester.renderObject<RenderParagraph>(name);
-        expect(title.data, definition.displayName(), reason: definition.id);
+        // 어절 중간에서 줄을 바꾸지 않도록 단어 안에 word joiner를 넣는다.
+        expect(title.data, TextUtils.preventLineBreakInsideWords(definition.displayName()), reason: definition.id);
         expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize, reason: definition.id);
         expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily, reason: definition.id);
         expect(title.maxLines, isNull, reason: definition.id);
@@ -462,6 +463,14 @@ void main() {
         expect(tester.getRect(add).left, greaterThanOrEqualTo(tester.getRect(name).right), reason: definition.id);
         expect(tester.getCenter(add).dy, closeTo(tester.getCenter(name).dy, 0.5), reason: definition.id);
         expect(tester.getSize(add).shortestSide, greaterThanOrEqualTo(48), reason: definition.id);
+        // 이름의 왼쪽 시작과 + 아이콘의 오른쪽 끝은 카드 가장자리에서 같은 거리에 놓인다.
+        final cardRect = tester.getRect(find.byKey(ValueKey('home-edit-widget-${definition.id}')));
+        final iconRect = tester.getRect(find.descendant(of: add, matching: find.byType(Icon)));
+        expect(
+          cardRect.right - iconRect.right,
+          closeTo(tester.getRect(name).left - cardRect.left, 0.5),
+          reason: definition.id,
+        );
       }
       await _close(tester);
     });
@@ -585,7 +594,7 @@ void main() {
       expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
       expect(titleParagraph.textScaler.scale(14), closeTo(14 * scale, 0.01));
       expect(statusParagraph.textScaler.scale(12), closeTo(12 * scale, 0.01));
-      expect(titleParagraph.text.toPlainText(), definition.displayName());
+      expect(titleParagraph.text.toPlainText(), TextUtils.preventLineBreakInsideWords(definition.displayName()));
       expect(titleParagraph.didExceedMaxLines, isFalse);
       expect(statusParagraph.didExceedMaxLines, isFalse);
       expect(footerRect.left, greaterThanOrEqualTo(tester.getRect(name).right));
@@ -597,7 +606,9 @@ void main() {
       if (scale == 2) {
         expect(
           titleParagraph
-              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: definition.displayName().length))
+              .getBoxesForSelection(
+                TextSelection(baseOffset: 0, extentOffset: titleParagraph.text.toPlainText().length),
+              )
               .length,
           greaterThan(1),
           reason: 'the narrow catalog wraps the complete title instead of shrinking it',
