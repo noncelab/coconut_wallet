@@ -469,14 +469,17 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           _PlanCard(product: product, selected: product == _selected, onTap: () => setState(() => _selected = product)),
         ],
       CoconutLayout.spacing_400h,
-      // 전체 고지(약관·개인정보 링크는 아래 고정 영역에 늘 보인다). 체험 문장은 고른 상품에 스토어 체험이 있을 때만
+      // 전체 고지(약관·개인정보 링크는 아래 고정 영역에 늘 보인다). 체험 문장은 고른 상품에 스토어 체험이 있을 때만.
+      // 큰 글자에서도 단어 중간에서 끊기지 않게(R1, X9)
       Text(
-        [
-          android ? t.premium.store_notice.google : t.premium.store_notice.apple,
-          if (_selected?.freeTrialDays != null)
-            android ? t.premium.store_notice.google_trial : t.premium.store_notice.apple_trial,
-          t.premium.paywall.platform_note,
-        ].join(' '),
+        safetyKoText(
+          [
+            android ? t.premium.store_notice.google : t.premium.store_notice.apple,
+            if (_selected?.freeTrialDays != null)
+              android ? t.premium.store_notice.google_trial : t.premium.store_notice.apple_trial,
+            t.premium.paywall.platform_note,
+          ].join(' '),
+        ),
         key: const Key('premium-paywall-notice'),
         style: CoconutTypography.caption_10.setColor(colors.secondaryText),
       ),

@@ -191,6 +191,10 @@ void main() {
   Finder findText(String value) =>
       find.byWidgetPredicate((w) => w is Text && plain(w.data ?? w.textSpan?.toPlainText() ?? '') == value);
 
+  /// [findText]의 포함 버전(여러 문장을 한 Text로 잇는 스토어 고지)
+  Finder findTextContaining(String value) =>
+      find.byWidgetPredicate((w) => w is Text && plain(w.data ?? w.textSpan?.toPlainText() ?? '').contains(value));
+
   group('페이월', () {
     testWidgets('스토어 가격 그대로·연간 기본 선택·자동 갱신 고지·약관·개인정보·복원', variant: TargetPlatformVariant.only(TargetPlatform.iOS), (
       tester,
@@ -205,12 +209,14 @@ void main() {
       expect(planRing(tester, PremiumPeriod.yearly), colors.mainnetLogoGradient);
       expect((planRing(tester, PremiumPeriod.monthly)! as LinearGradient).colors, everyElement(Colors.transparent));
       expect(findText('${t.premium.store_notice.apple} ${t.premium.paywall.platform_note}'), findsOneWidget);
+      // X9: 고지도 R1(safetyKoText)이라 큰 글자에서 단어 중간에서 끊기지 않는다
+      expect(tester.widget<Text>(find.byKey(const Key('premium-paywall-notice'))).data, contains('\u2060'));
       expect(findText(t.app_info_screen.terms_of_service), findsOneWidget);
       expect(findText(t.app_info_screen.privacy_policy), findsOneWidget);
       expect(findText(t.premium.paywall.subscribe), findsOneWidget);
       expect(findText(t.premium.paywall.trial(n: 7)), findsNothing);
       // 스토어가 체험을 주지 않으면 체험 문구는 어디에도 없다(고지 포함)
-      expect(find.textContaining(t.premium.store_notice.apple_trial), findsNothing);
+      expect(findTextContaining(t.premium.store_notice.apple_trial), findsNothing);
       expect(find.textContaining(t.premium.paywall.start_trial), findsNothing);
 
       await tester.tap(find.byKey(const Key('premium-paywall-restore')));
@@ -286,7 +292,7 @@ void main() {
       // 체험은 Premium 상품의 속성: premiumText(초록 아님)
       expect(tester.widget<Text>(findText(t.premium.paywall.trial(n: 7))).style!.color, colors.premiumText);
       expect(findText(t.premium.paywall.start_trial), findsOneWidget);
-      expect(find.textContaining(t.premium.store_notice.google_trial), findsOneWidget);
+      expect(findTextContaining(t.premium.store_notice.google_trial), findsOneWidget);
       expect(
         planText(tester).split('\n').first,
         '${t.premium.name} · ${t.premium.paywall.period_year} · ₩39,000 · ${t.premium.paywall.trial(n: 7)}',
@@ -298,7 +304,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(planRing(tester, PremiumPeriod.monthly), colors.mainnetLogoGradient);
       expect(findText(t.premium.paywall.subscribe), findsOneWidget);
-      expect(find.textContaining(t.premium.store_notice.google_trial), findsNothing);
+      expect(findTextContaining(t.premium.store_notice.google_trial), findsNothing);
     });
 
     testWidgets('구독 → 결과 화면 → 확인 → open이 true', (tester) async {
