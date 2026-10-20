@@ -78,6 +78,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -860,7 +861,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _hotWalletSigningViewModel = signingViewModel;
     Uint8List? passphrase;
     try {
-      await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      context.loaderOverlay.show();
+      try {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      } finally {
+        if (mounted) context.loaderOverlay.hide();
+      }
       if (!mounted) return;
       final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
       if (signingViewModel.shouldEnterPassphraseWhenSigning) {
@@ -2644,14 +2652,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
         _amountController.text = _formatDecimalTextForDisplay(amountText);
-        _viewModel.setAmountText(bip21Data.amount!, index);
+        _viewModel.setAmountText(bip21Data.amount!, index, validate: false);
       }
+      _viewModel.validateAllFieldsOnFocusLost();
       return;
     }
 
     final normalized = normalizeAddress(scannedData);
     _addressControllerList[index].text = normalized;
     _viewModel.setAddressText(normalized, index);
+    _viewModel.validateAllFieldsOnFocusLost();
   }
 
   void _recipientPageListener() {
@@ -2749,8 +2759,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             if (controller.text.toLowerCase().startsWith('bitcoin:')) {
               _applyIncomingBitcoinUri(controller.text, index);
             }
-            _viewModel.validateAllFieldsOnFocusLost();
           }
+          // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
+          _viewModel.validateAllFieldsOnFocusLost();
         } else {
           _addressFocusInTextList[index] = controller.text;
           Future.delayed(const Duration(milliseconds: 1000), () {

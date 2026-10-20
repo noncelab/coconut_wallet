@@ -124,6 +124,7 @@ void main() {
     bool withSelectedUtxos = false,
     int? transactionDraftId,
     bool vaultEntry = false,
+    bool verifyInputCompletion = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
@@ -214,6 +215,65 @@ void main() {
       expect(viewModel.validRecipientList, contains(viewModel.recipientList[1]));
       expect(viewModel.showFeeBoard, isTrue);
     }
+    if (verifyInputCompletion) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setFeeRateText('1');
+      vm.setMaxMode(true);
+      vm.setAddressText(vault.getAddress(5), 0);
+      expect(vm.isReadyToSend, isFalse);
+      vm.validateAllFieldsOnFocusLost(); // QR result completion
+      expect(vm.showFeeBoard, isTrue);
+      expect(vm.isReadyToSend, isTrue);
+
+      vm.setAddressText('invalid', 0);
+      expect(vm.isReadyToSend, isFalse);
+      expect(vm.recipientList.first.addressError, AddressError.none);
+      vm.setFeeRateText('2'); // must not rebuild unvalidated input
+      expect(vm.isReadyToSend, isFalse);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.recipientList.first.addressError, AddressError.invalid);
+
+      vm.setAddressText(vault.getAddress(5), 0);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.isReadyToSend, isTrue);
+      vm.setMaxMode(false);
+      for (final digit in '10000'.split('')) {
+        vm.onKeyTap(digit);
+        expect(vm.isReadyToSend, isFalse);
+      }
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.isReadyToSend, isTrue);
+
+      vm.addRecipient();
+      vm.setCurrentPage(1);
+      vm.setAddressText('invalid', 1);
+      vm.deleteRecipient();
+      expect(vm.isReadyToSend, isTrue, reason: 'deleting the edited recipient must restore remaining inputs');
+      await tester.pump();
+
+      final addressInput = tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .firstWhere((field) => field.keyboardType == TextInputType.text);
+      final address = vault.getAddress(5);
+      addressInput.controller.text = address;
+      vm.validateAllFieldsOnFocusLost();
+      addressInput.focusNode.requestFocus();
+      await tester.pump();
+      addressInput.controller.text = '${address}x';
+      addressInput.controller.text = address;
+      expect(vm.isReadyToSend, isFalse);
+      addressInput.focusNode.unfocus();
+      await tester.pump();
+      expect(vm.isReadyToSend, isTrue, reason: 'reverting an edit still requires validation on focus out');
+    }
+    if (transactionDraftId != null) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setAddressText('invalid', 0);
+      expect(vm.isReadyToSend, isFalse);
+      vm.loadTransactionDraft(transactionDraftId);
+      expect(vm.isReadyToSend, isTrue, reason: 'loading a draft must discard pending manual edits');
+      await tester.pump();
+    }
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
     return opened;
@@ -228,6 +288,17 @@ void main() {
 
   testWidgets('manual UTXO selection entered with chosen UTXOs does not open the sheet again', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: true, withSelectedUtxos: true), isFalse);
+  });
+
+  testWidgets('completed max-send and amount inputs rebuild, while edits invalidate the previous result', (
+    tester,
+  ) async {
+    await opensUtxoSelectionSheetOnEntry(
+      tester,
+      manualMode: true,
+      withSelectedUtxos: true,
+      verifyInputCompletion: true,
+    );
   });
 
   testWidgets('opening a draft with manually chosen UTXOs does not open the UTXO selection sheet', (tester) async {
