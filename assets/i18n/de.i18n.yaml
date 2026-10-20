@@ -2956,8 +2956,8 @@ premium:
     none_remaining: "Es gibt keine Bitcoin zum Verschieben"
   destination:
     title: "Wohin verschieben?"
-    excluded_note: "Wallets mit demselben MFP wie die betroffene Wallet werden nicht angezeigt."
-    excluded_note_setup: "Diese Wallet und Wallets mit demselben MFP werden nicht angezeigt."
+    excluded_note: "Wallets mit gleichem MFP oder Schlüssel sind nicht dabei. Watch-only per QR prüfen."
+    excluded_note_setup: "Diese Wallet und Wallets mit gleichem MFP oder Schlüssel sind nicht dabei."
     watch_only_wallets: "Deine Watch-only-Wallets"
     watch_only_wallets_body: "Die Schlüssel liegen auf einem anderen Gerät"
     section_new: "Neue Wallet"

@@ -2978,8 +2978,8 @@ premium:
     none_remaining: "There's no bitcoin left to move"
   destination:
     title: "Where should it go?"
-    excluded_note: "Wallets with the same MFP as the affected wallet aren't listed."
-    excluded_note_setup: "This wallet and wallets with the same MFP aren't listed."
+    excluded_note: "Same MFP or key: hidden. Verify watch-only wallets by QR."
+    excluded_note_setup: "This wallet and wallets with the same MFP or key aren't listed."
     watch_only_wallets: "Your watch-only wallets"
     watch_only_wallets_body: "Keys are on another device"
     section_new: "New wallet"

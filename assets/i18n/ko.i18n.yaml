@@ -2984,8 +2984,8 @@ premium:
     none_remaining: "옮길 수 있는 비트코인이 없어요"
   destination:
     title: "어디로 옮길까요?"
-    excluded_note: "사건이 난 지갑과 MFP가 같은 지갑은 목록에서 뺐어요."
-    excluded_note_setup: "이 지갑과 MFP가 같은 지갑은 목록에서 뺐어요."
+    excluded_note: "MFP나 공개키가 같은 지갑은 뺐어요. 보기 전용은 QR로 확인해야 검증돼요."
+    excluded_note_setup: "이 지갑과 MFP나 공개키가 같은 지갑은 뺐어요."
     watch_only_wallets: "쓰던 보기 전용 지갑"
     watch_only_wallets_body: "키가 다른 기기에 있어요"
     section_new: "새 지갑"

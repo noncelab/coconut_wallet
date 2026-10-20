@@ -2966,8 +2966,8 @@ premium:
     none_remaining: "移せるビットコインはありません"
   destination:
     title: "どこに移しますか？"
-    excluded_note: "問題のあったウォレットとMFPが同じウォレットは一覧から除いています。"
-    excluded_note_setup: "このウォレットとMFPが同じウォレットは一覧から除いています。"
+    excluded_note: "MFPか公開鍵が同じウォレットは除外しました。閲覧専用はQRでの検証が必要です。"
+    excluded_note_setup: "このウォレットとMFPか公開鍵が同じウォレットは一覧から除いています。"
     watch_only_wallets: "使用中の閲覧専用ウォレット"
     watch_only_wallets_body: "鍵は別のデバイスにあります"
     section_new: "新しいウォレット"

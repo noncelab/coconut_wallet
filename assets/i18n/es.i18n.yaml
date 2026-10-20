@@ -2969,8 +2969,8 @@ premium:
     none_remaining: "No queda bitcoin que mover"
   destination:
     title: "¿A dónde lo movemos?"
-    excluded_note: "Las billeteras con la misma MFP que la afectada no aparecen."
-    excluded_note_setup: "Esta billetera y las que tienen la misma MFP no aparecen."
+    excluded_note: "Ocultamos las de igual MFP o clave. Verifica por QR las de solo lectura."
+    excluded_note_setup: "Esta billetera y las que tienen la misma MFP o clave no aparecen."
     watch_only_wallets: "Tus billeteras de solo lectura"
     watch_only_wallets_body: "Las claves están en otro dispositivo"
     section_new: "Billetera nueva"
