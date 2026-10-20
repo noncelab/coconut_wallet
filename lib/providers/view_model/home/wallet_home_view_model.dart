@@ -323,7 +323,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
-    if (_connectivityProvider.isInternetOff && _connectivityProvider.isVpnInactive) {
+    if (_connectivityProvider.isInternetOff) {
       return NetworkStatus.offline;
     }
 
@@ -341,9 +341,6 @@ class WalletHomeViewModel extends ChangeNotifier {
         return NetworkStatus.online;
       }
       if (_connectivityProvider.isVpnActive) {
-        if (_connectivityProvider.isInternetOff) {
-          return NetworkStatus.offline;
-        }
         return NetworkStatus.vpnBlocked;
       }
       return NetworkStatus.connectionFailed;

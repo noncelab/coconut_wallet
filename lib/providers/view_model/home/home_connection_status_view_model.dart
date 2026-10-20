@@ -37,7 +37,7 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   bool get isSyncing => (!_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing) || _isInErrorDisplayDelay;
 
   NetworkStatus get networkStatus {
-    if (_connectivityProvider.isInternetOff && _connectivityProvider.isVpnInactive) {
+    if (_connectivityProvider.isInternetOff) {
       return NetworkStatus.offline;
     }
 
@@ -54,9 +54,6 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
         return NetworkStatus.online;
       }
       if (_connectivityProvider.isVpnActive) {
-        if (_connectivityProvider.isInternetOff) {
-          return NetworkStatus.offline;
-        }
         return NetworkStatus.vpnBlocked;
       }
       return NetworkStatus.connectionFailed;

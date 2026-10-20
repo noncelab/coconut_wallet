@@ -79,9 +79,14 @@ class ConnectivityProvider extends ChangeNotifier {
   void _handleConnectivityChanged(List<ConnectivityResult> result) {
     Logger.log('ConnectivityProvider: Connectivity changed: $result');
 
-    // 실제 인터넷 연결만 체크 (WiFi, Ethernet, Mobile)
+    // VPN 경로도 포함한다. iOS에서는 VPN이 other로 보고된다.
     final isNetworkOn = result.any(
-      (r) => r == ConnectivityResult.wifi || r == ConnectivityResult.ethernet || r == ConnectivityResult.mobile,
+      (r) =>
+          r == ConnectivityResult.wifi ||
+          r == ConnectivityResult.ethernet ||
+          r == ConnectivityResult.mobile ||
+          r == ConnectivityResult.vpn ||
+          r == ConnectivityResult.other,
     );
 
     // VPN도 ConnectivityResult로 감지될 수 있음

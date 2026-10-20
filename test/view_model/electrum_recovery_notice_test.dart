@@ -201,6 +201,68 @@ void main() {
     wallet.blockHeight.dispose();
   });
 
+  for (final state in NodeSyncState.values) {
+    for (final initializing in [false, true]) {
+      test('VPN 감지가 남아도 오프라인이 우선한다: $state, initializing=$initializing', () {
+        connectivity.vpnActive = true;
+        final viewModel = createViewModel();
+        sync.add(state);
+        node.initializing = initializing;
+        node.connectionError = true;
+
+        connectivity.setInternet(false);
+
+        expect(viewModel.networkStatus, NetworkStatus.offline);
+        expect(viewModel.showElectrumReconnected, isFalse);
+      });
+    }
+  }
+
+  for (final cold in [false, true]) {
+    testWidgets('VPN 감지가 남아도 실제 노드의 연결 종료·초기화 보류는 오프라인이다: cold=$cold', (tester) async {
+      final isolate = _ControlledIsolate();
+      final wallets = ValueNotifier<List<WalletItemBase>>([]);
+      connectivity.internetOn = false;
+      connectivity.vpnActive = true;
+      final realNode = NodeProvider(
+        ElectrumServer.custom('localhost', 50001, false),
+        NetworkType.mainnet,
+        connectivity,
+        wallet.loadState,
+        wallets,
+        null,
+        isolateManager: isolate,
+      );
+      if (!cold) {
+        connectivity.internetOn = true;
+        await realNode.initialize();
+      }
+      final viewModel = WalletHomeViewModel(wallet, preference, connectivity, realNode);
+      try {
+        await tester.pump();
+        if (!cold) {
+          isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
+          await tester.pump();
+          connectivity.setInternet(false);
+          await tester.pump();
+        }
+
+        expect(realNode.isConnected, isFalse);
+        expect(viewModel.networkStatus, NetworkStatus.offline);
+        expect(viewModel.showElectrumReconnected, isFalse);
+        await tester.pump(const Duration(seconds: 6));
+        expect(viewModel.networkStatus, NetworkStatus.offline);
+        expect(viewModel.showElectrumReconnected, isFalse);
+      } finally {
+        viewModel.dispose();
+        realNode.dispose();
+        await tester.pump();
+        await isolate.states.close();
+        wallets.dispose();
+      }
+    });
+  }
+
   test('처음부터 연결되면 성공 문구를 켜지 않는다', () {
     final viewModel = createViewModel();
 
