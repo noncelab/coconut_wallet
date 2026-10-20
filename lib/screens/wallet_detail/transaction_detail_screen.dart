@@ -56,6 +56,7 @@ import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/features/safety/transaction_safety_banner.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final int id;
@@ -144,6 +145,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        TransactionSafetyBanner(walletId: widget.id, txHash: tx.transactionHash),
                         HighlightedInfoArea(textList: DateTimeUtil.formatTimestamp(tx.timestamp.toLocal())),
                         CoconutLayout.spacing_500h,
                         _buildAmount(tx),

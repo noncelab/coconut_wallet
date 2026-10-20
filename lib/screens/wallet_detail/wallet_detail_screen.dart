@@ -47,6 +47,7 @@ import 'package:coconut_wallet/widgets/features/transaction/card/transaction_ite
 import 'package:coconut_wallet/widgets/features/wallet/badge/wallet_type_badge.dart';
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -159,6 +160,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         for (final child in [
                           _buildBalanceHeader(),
                           CoconutLayout.spacing_500h,
+                          SafetyCautionBanner(walletId: widget.id),
                           _buildSecurityWarning(),
                           _buildTargetCard(),
                           CoconutLayout.spacing_500h,

@@ -17,6 +17,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -276,6 +277,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         size: WalletCardSize.small,
         balanceDisplay: viewModel.balanceText(wallet),
         secondaryText: last == null ? null : formatHomeRelativeTime(last, DateTime.now()),
+        statusBadge: safetyCautionBadgeFor(context, wallet.id),
       ),
     );
     final tagOf = widget.heroTagOf;

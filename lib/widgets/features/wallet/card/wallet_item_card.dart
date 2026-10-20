@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 
 class WalletItemCard extends StatelessWidget {
   final WalletItemBase walletItem;
@@ -274,8 +275,10 @@ class WalletItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    SafetyCautionBadge(walletId: walletItem.id),
                   ],
                 ),
+              if (placeTrailingBelow) SafetyCautionBadge(walletId: walletItem.id),
             ],
           ),
         ),
