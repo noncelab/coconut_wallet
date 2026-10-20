@@ -10,7 +10,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart' show ensurePremium;
+import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart'
+    show AssistSignerGuideScreen, ensurePremium;
 import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -38,9 +39,11 @@ class RescueReadyScreen extends StatefulWidget {
   /// 지갑 정보 "비상 목적지" 행에서 열면 그 지갑의 목적지 시트를 바로 연다(구독 중이거나 목적지가 있을 때만)
   final int? walletId;
 
+  static const routeName = '/wallet-health/rescue';
+
   static Future<void> open(BuildContext context, {int? walletId}) => Navigator.of(context).push(
     CupertinoPageRoute<void>(
-      settings: const RouteSettings(name: '/wallet-health/rescue'),
+      settings: const RouteSettings(name: routeName),
       builder: (_) => RescueReadyScreen(walletId: walletId),
     ),
   );
@@ -138,6 +141,10 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
           final walletId = await _createHotWallet();
           if (walletId == null || !mounted) return;
           next = RescueDestination(walletId: walletId, setAt: DateTime.now());
+        case AssistDestination(kind: AssistDestinationKind.vaultNewWallet):
+          final walletId = await _addSignerWallet(wallet);
+          if (walletId == null || !mounted) return;
+          next = RescueDestination(walletId: walletId, setAt: DateTime.now());
         case AssistDestination(address: _?):
           return; // 지금 목적지 그대로
         case _:
@@ -187,6 +194,28 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
       if (mounted) _warn(t.safety_guide.move.create_failed);
       return null;
     }
+  }
+
+  /// 볼트(서명 기기)에서 새 지갑 만들기 안내 → 지갑 추가 스캔(Assist와 같은 화면, UI_SPEC §10.8). 추가해서 받아들여진 지갑 id,
+  /// 그만두면 null. 같은 니모닉·사용 주의 등 제외 지갑은 안내 화면이 받지 않는다
+  Future<int?> _addSignerWallet(WalletItemBase source) async {
+    final here = ModalRoute.of(context);
+    int? added;
+    await Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        settings: const RouteSettings(name: '${RescueReadyScreen.routeName}/signer-new-wallet'),
+        builder:
+            (_) => AssistSignerGuideScreen(
+              sourceWallet: source,
+              onAdded: (context, wallet) {
+                added = wallet.id;
+                // 안내·추가 화면을 닫고 이 화면으로(지갑 추가 흐름이 무엇을 쌓았든)
+                Navigator.of(context).popUntil((route) => route == here || route.isFirst);
+              },
+            ),
+      ),
+    );
+    return added;
   }
 
   /// 주소 직접 입력(Assist와 같은 공용 시트, POLISH H6/I5). 지금 네트워크 형식 + 이 지갑·제외 지갑 주소 거절.
@@ -379,6 +408,7 @@ class _DestinationOption {
     null => 'off',
     AssistDestination(:final wallet?) => 'wallet:${wallet.id}',
     AssistDestination(kind: AssistDestinationKind.newHotWallet) => 'hot:new',
+    AssistDestination(kind: AssistDestinationKind.vaultNewWallet) => 'vault:new',
     AssistDestination(address: _?) => 'address:current',
     _ => 'address:new',
   };
@@ -409,6 +439,7 @@ class _DestinationOptionView extends StatelessWidget {
       null => safetyKoText(t.premium.rescue.turn_off),
       AssistDestination(:final wallet?) => safetyKoText(wallet.name),
       AssistDestination(kind: AssistDestinationKind.newHotWallet) => safetyKoText(copy.new_hot_wallet),
+      AssistDestination(kind: AssistDestinationKind.vaultNewWallet) => safetyKoText(copy.vault_new_wallet),
       AssistDestination(:final address?) => shortenAddress(address),
       _ => safetyKoText(copy.enter_address),
     };
@@ -416,12 +447,13 @@ class _DestinationOptionView extends StatelessWidget {
       AssistDestination(cannotVerifySeed: true) => null, // 아래 정보 줄
       AssistDestination(kind: AssistDestinationKind.watchOnlyWallet) => copy.watch_only_wallets_body,
       AssistDestination(kind: AssistDestinationKind.newHotWallet) => copy.new_hot_wallet_body,
+      AssistDestination(kind: AssistDestinationKind.vaultNewWallet) => copy.vault_new_wallet_body,
       AssistDestination(address: _?) => copy.enter_address,
       _ => null,
     };
     final wallet = d?.wallet;
     final checkable = wallet != null && !wallet.hasLocalKey;
-    final verifiedAt = checkable ? SafetyAssist.verifiedAt(context.watch<SafetyProvider?>()?.state, wallet) : null;
+    final verification = checkable ? SafetyAssist.verification(context.watch<SafetyProvider?>()?.state, wallet) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -457,7 +489,7 @@ class _DestinationOptionView extends StatelessWidget {
         if (checkable)
           Padding(
             padding: const EdgeInsets.only(top: Sizes.size4),
-            child: SafetyVerificationLine(verifiedAt: verifiedAt),
+            child: SafetyVerificationLine(verification: verification),
           ),
       ],
     );

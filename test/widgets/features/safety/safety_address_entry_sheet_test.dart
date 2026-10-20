@@ -8,6 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 const _address = 'bcrt1qxa3vg30kvqsd73knsv0dj8z26jx223chv8fzcx';
 const _field = Key('entry-field'), _action = Key('entry-action');
 
+/// R1 이음 문자를 빼고 비교(시트가 오류 문장을 safetyKoText로 감싼다)
+Finder _plainText(String text) =>
+    find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText().replaceAll('\u2060', '') == text);
+
 void main() {
   late List<String> confirmed;
   late Future<String?> result;
@@ -70,12 +74,12 @@ void main() {
     expect(actionActive(tester), isFalse);
     await tester.enterText(find.byKey(_field), 'nope');
     await tester.pump();
-    expect(find.text('format'), findsOneWidget);
+    expect(_plainText('format'), findsOneWidget);
     expect(actionActive(tester), isFalse);
 
     await tester.enterText(find.byKey(_field), 'bitcoin:${_address.toUpperCase()}?amount=0.1');
     await tester.pump();
-    expect(find.text('format'), findsNothing);
+    expect(_plainText('format'), findsNothing);
     expect(actionActive(tester), isTrue);
     await tester.tap(find.byKey(_action));
     await tester.pumpAndSettle();
@@ -89,11 +93,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(_action));
     await tester.pumpAndSettle();
-    expect(find.text('rejected'), findsOneWidget);
+    expect(_plainText('rejected'), findsOneWidget);
     expect(find.byKey(_field), findsOneWidget); // 시트가 그대로
 
     await tester.enterText(find.byKey(_field), '${_address}x');
     await tester.pump();
-    expect(find.text('rejected'), findsNothing);
+    expect(_plainText('rejected'), findsNothing);
   });
 }

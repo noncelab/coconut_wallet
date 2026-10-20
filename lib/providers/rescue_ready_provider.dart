@@ -156,8 +156,8 @@ class RescueReadyProvider extends ChangeNotifier {
     return address == null ? null : shortenAddress(address);
   }
 
-  /// 목적지 시트 후보(UI_SPEC §10.7 순서). 이 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑은 빠진다.
-  /// 볼트에서 새 지갑 만들기는 사건 대응 흐름에만 있어 넣지 않는다(지갑을 추가한 뒤 고르기)
+  /// 목적지 시트 후보(UI_SPEC §10.7·§10.8, Assist와 같은 순서). 이 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑은
+  /// 빠진다. "볼트에서 새 지갑"은 안내 → 지갑 추가 스캔을 거친 뒤 그 지갑을 목적지로 저장한다(화면이 맡는다)
   List<AssistDestination> destinationOptions(int walletId) {
     final source = _walletById(walletId);
     if (source == null) return const [];
@@ -170,9 +170,8 @@ class RescueReadyProvider extends ChangeNotifier {
         rescueDestination: state.rescue[walletId]?.destination,
       ))
         // 받기 주소를 제외 지갑도 가진 지갑(같은 디스크립터의 핫·보기 전용 사본)도 보이지 않게 같은 검사를 한다
-        if (d.kind != AssistDestinationKind.vaultNewWallet &&
-            (d.wallet == null ||
-                _target(source, RescueDestination(walletId: d.wallet!.id, setAt: _now()), state) != null))
+        if (d.wallet == null ||
+            _target(source, RescueDestination(walletId: d.wallet!.id, setAt: _now()), state) != null)
           d,
     ];
   }

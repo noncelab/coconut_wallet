@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/premium/premium_paywall_screen.dart';
+import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart' show AssistSignerGuideScreen;
 import 'package:coconut_wallet/screens/safety/rescue/rescue_ready_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
@@ -193,14 +194,18 @@ void main() {
   Finder plainTextContaining(String text) =>
       find.byWidgetPredicate((w) => w is Text && (w.data?.replaceAll('\u2060', '').contains(text) ?? false));
 
-  WatchOnlyVerification verification(WalletItemBase wallet, VerificationResult result, {String? descriptorHash}) =>
-      WatchOnlyVerification(
-        method: VerificationMethod.qr,
-        result: result,
-        matchedIndex: 0,
-        descriptorHash: descriptorHash ?? WalletVerification.descriptorHash(wallet.descriptor),
-        at: DateTime(2026, 10, 20),
-      );
+  WatchOnlyVerification verification(
+    WalletItemBase wallet,
+    VerificationResult result, {
+    String? descriptorHash,
+    VerificationMethod method = VerificationMethod.qr,
+  }) => WatchOnlyVerification(
+    method: method,
+    result: result,
+    matchedIndex: 0,
+    descriptorHash: descriptorHash ?? WalletVerification.descriptorHash(wallet.descriptor),
+    at: DateTime(2026, 10, 20),
+  );
 
   for (final variant in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
@@ -263,10 +268,14 @@ void main() {
         final copy = t.premium.destination;
         expect(find.text(t.premium.rescue.destination), findsOneWidget);
         final ids = [
-          for (final id in ['wallet:2', 'wallet:4', 'address:new', 'wallet:1', 'hot:new'])
+          for (final id in ['wallet:2', 'wallet:4', 'vault:new', 'address:new', 'wallet:1', 'hot:new'])
             tester.getTopLeft(find.byKey(Key('rescue-destination-$id'))).dy,
         ];
-        expect(ids, [...ids]..sort(), reason: '보기 전용(MFP 있음) → MFP 없음 → 주소 입력 → 이 기기 지갑 → 이 기기 새 핫월렛(SafetyAssist 순서)');
+        expect(
+          ids,
+          [...ids]..sort(),
+          reason: '보기 전용(MFP 있음) → MFP 없음 → 볼트 새 지갑 → 주소 입력 → 이 기기 지갑 → 이 기기 새 핫월렛(Assist 순서)',
+        );
         expect(find.byKey(const Key('rescue-destination-off')), findsNothing, reason: '목적지가 없으면 끄기도 없다');
         expect(find.byKey(const Key('rescue-destination-premium-note')), findsNothing, reason: '구독 중에는 흐린 줄도 안내도 없다');
         expect(
@@ -515,7 +524,7 @@ void main() {
         expect(item('wallet:2').isSelected, isTrue, reason: '지금 목적지는 선택된 채로');
         expect(item('wallet:2').isDisabled, isFalse);
         expect(item('off').isDisabled, isFalse);
-        for (final id in ['wallet:4', 'address:new', 'wallet:6', 'hot:new']) {
+        for (final id in ['wallet:4', 'vault:new', 'address:new', 'wallet:6', 'hot:new']) {
           expect(item(id).isDisabled, isTrue, reason: id);
         }
         // 흐린 이유를 중립 한 줄로(버튼·가격 없음)
@@ -595,6 +604,26 @@ void main() {
     });
   }
 
+  testWidgets('직접 비교로 확인한 목적지는 검증된 것처럼 보이지 않는다(R21)', (tester) async {
+    await pumpScreen(
+      tester,
+      CoconutThemeVariant.light,
+      safety: SafetyState(
+        watchOnlyVerifications: {
+          2: verification(wallets.walletItemList[1], VerificationResult.match, method: VerificationMethod.user),
+        },
+      ),
+    );
+    await tester.tap(find.byKey(const Key('rescue-wallet-6')));
+    await tester.pumpAndSettle();
+    final option = find.byKey(const Key('rescue-destination-wallet:2'));
+    final copy = t.premium.destination;
+    final confirmed = find.descendant(of: option, matching: plainText(copy.confirmed_on(date: '26.10.20')));
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors;
+    expect(textOf(tester, confirmed).style!.color, isNot(colors.success), reason: '초록 검증 표시 아님');
+    expect(find.descendant(of: option, matching: plainText(copy.verified_on(date: '26.10.20'))), findsNothing);
+  });
+
   testWidgets('검증 기록이 없거나 디스크립터가 바뀐 기록이면 미검증 안내(경보 아님, H8)', (tester) async {
     await pumpScreen(
       tester,
@@ -644,6 +673,43 @@ void main() {
     premium.emit(const PremiumState(PremiumStatus.expired));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('rescue-premium-note')), findsOneWidget, reason: '만료가 확인되면 보인다');
+  });
+
+  testWidgets('볼트 새 지갑: 안내 → 추가된 지갑을 목적지로 저장하고 비상 이동 준비로 돌아온다(UI_SPEC §10.8)', (tester) async {
+    await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
+    expect(plainText(t.premium.destination.vault_new_wallet_body), findsOneWidget);
+    await tester.tap(find.byKey(const Key('rescue-destination-vault:new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.premium.rescue.save));
+    await tester.pumpAndSettle();
+    final guide = find.byType(AssistSignerGuideScreen);
+    expect(guide, findsOneWidget);
+    expect(tester.widget<AssistSignerGuideScreen>(guide).sourceWallet.id, 6, reason: '같은 니모닉 거절의 기준');
+
+    // 볼트에서 만든 지갑을 스캔해 추가했다(추가 흐름은 Assist 테스트가 본다). 안내 화면이 받아들이면 onAdded
+    final added = _single(8, 8);
+    wallets.walletItemListNotifier.value = [...wallets.walletItemList, added];
+    tester.widget<AssistSignerGuideScreen>(guide).onAdded(tester.element(guide), added);
+    await tester.pumpAndSettle();
+    expect(find.byType(AssistSignerGuideScreen), findsNothing);
+    expect(find.byKey(const Key('rescue-ready-screen')), findsOneWidget);
+    expect(rescue.destinationOf(6)?.walletId, 8);
+    expect(find.text(t.premium.rescue.saved_toast), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('볼트 새 지갑 안내에서 그냥 돌아오면 목적지를 바꾸지 않고 다시 고를 수 있다', (tester) async {
+    await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
+    await tester.tap(find.byKey(const Key('rescue-destination-vault:new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.premium.rescue.save));
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byType(AssistSignerGuideScreen))).pop();
+    await tester.pumpAndSettle();
+    expect(rescue.destinationOf(6), isNull);
+    await tester.tap(find.byKey(const Key('rescue-wallet-6')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rescue-destination-vault:new')), findsOneWidget, reason: '시트가 다시 열린다(막힘 없음)');
   });
 
   testWidgets('제외 지갑 도출 확인이 실패하면 주소를 받지 않는다(실패 시 거절)', (tester) async {

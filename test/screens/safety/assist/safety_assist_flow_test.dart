@@ -994,16 +994,21 @@ void main() {
     });
   });
 
-  for (final verified in [false, true]) {
-    testWidgets('Grok §5: 받는 지갑의 서명 기기 검증 상태를 주소 위에(${verified ? '검증됨·날짜' : '미검증'})', (tester) async {
+  // Grok §5 + POLISH H8/R21: 받는 지갑 검증 줄은 목적지 줄과 검토 둘 다, 확인 방법으로 고른다(직접 비교는 검증처럼 보이지 않게)
+  for (final (name, method, text, asset) in [
+    ('미검증', null, t.premium.destination.not_verified, 'circle-info.svg'),
+    ('주소 QR 일치', VerificationMethod.qr, t.premium.destination.verified_on(date: '26.10.19'), 'shield-check.svg'),
+    ('직접 비교', VerificationMethod.user, t.premium.destination.confirmed_on(date: '26.10.19'), 'circle-check.svg'),
+  ]) {
+    testWidgets('Grok §5·R21: 받는 지갑 검증 상태를 확인 방법대로($name)', (tester) async {
       final env = await pump(
         tester,
         utxos: [_utxo(incident, 1, 50000)],
         conflicts: const [],
         verifications: {
-          if (verified)
+          if (method != null)
             2: WatchOnlyVerification(
-              method: VerificationMethod.qr,
+              method: method,
               result: VerificationResult.match,
               descriptorHash: WalletVerification.descriptorHash(destination.descriptor),
               at: DateTime(2026, 10, 19),
@@ -1014,41 +1019,24 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('safety-guide-button')));
       await tester.pumpAndSettle();
-      // H8: 목적지 줄 아래에도 같은 검증 표시(확인됨 shieldCheck, 미확인 circleInfo)
+      Finder iconIn(Finder of, String file) => find.descendant(
+        of: of,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is SvgPicture &&
+              w.bytesLoader is SvgAssetLoader &&
+              (w.bytesLoader as SvgAssetLoader).assetName.endsWith(file),
+        ),
+      );
       final row = find.byKey(const Key('safety-assist-destination-wallet-2'));
-      expect(
-        find.descendant(
-          of: row,
-          matching: _koText(
-            verified ? t.premium.destination.verified_on(date: '26.10.19') : t.premium.destination.not_verified,
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: row,
-          matching: find.byWidgetPredicate(
-            (w) =>
-                w is SvgPicture &&
-                w.bytesLoader is SvgAssetLoader &&
-                (w.bytesLoader as SvgAssetLoader).assetName.endsWith(verified ? 'shield-check.svg' : 'circle-info.svg'),
-          ),
-        ),
-        findsWidgets,
-      );
+      expect(find.descendant(of: row, matching: _koText(text)), findsOneWidget);
+      expect(iconIn(row, asset), findsWidgets);
+      if (method == VerificationMethod.user) expect(iconIn(row, 'shield-check.svg'), findsNothing); // 검증 아이콘 아님
       await tester.tap(row);
       await tester.pumpAndSettle();
       final line = find.byKey(const Key('safety-assist-review-verification'));
-      expect(
-        find.descendant(
-          of: line,
-          matching: _koTextContaining(
-            verified ? t.premium.destination.verified_on(date: '26.10.19') : t.premium.destination.not_verified,
-          ),
-        ),
-        findsOneWidget,
-      );
+      expect(find.descendant(of: line, matching: _koText(text)), findsOneWidget);
+      expect(iconIn(line, asset), findsOneWidget);
     });
   }
 

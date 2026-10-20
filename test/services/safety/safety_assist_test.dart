@@ -355,6 +355,47 @@ void main() {
           {4},
         );
       });
+
+      test('R21: 확인 방법을 함께 돌려준다(주소 QR·직접 비교·BSMS). 지금 디스크립터와 맞지 않거나 불일치면 null', () {
+        SafetyVerification? of(SafetyState state, WalletItemBase w) => SafetyAssist.verification(state, w);
+        final byQr = SafetyState.initial().copyWith(watchOnlyVerifications: {4: watch(VerificationResult.match)});
+        expect(of(byQr, watchOnly), (at: at, by: SafetyVerifiedBy.qr));
+
+        final byUser = SafetyState.initial().copyWith(
+          watchOnlyVerifications: {
+            4: WatchOnlyVerification(
+              method: VerificationMethod.user,
+              result: VerificationResult.match,
+              descriptorHash: hash(watchOnly),
+              at: at,
+            ),
+          },
+        );
+        expect(of(byUser, watchOnly), (at: at, by: SafetyVerifiedBy.user));
+
+        final byBsms = SafetyState.initial().copyWith(
+          bsms: {8: BsmsVerification(matched: true, configHash: hash(multisig), at: at)},
+        );
+        expect(of(byBsms, multisig), (at: at, by: SafetyVerifiedBy.bsms));
+
+        for (final state in [
+          SafetyState.initial(),
+          SafetyState.initial().copyWith(watchOnlyVerifications: {4: watch(VerificationResult.mismatch)}),
+          SafetyState.initial().copyWith(
+            watchOnlyVerifications: {4: watch(VerificationResult.match, descriptorHash: 'old')},
+          ),
+        ]) {
+          expect(of(state, watchOnly), isNull);
+        }
+        for (final state in [
+          SafetyState.initial().copyWith(
+            bsms: {8: BsmsVerification(matched: false, configHash: hash(multisig), at: at)},
+          ),
+          SafetyState.initial().copyWith(bsms: {8: BsmsVerification(matched: true, configHash: 'old', at: at)}),
+        ]) {
+          expect(of(state, multisig), isNull);
+        }
+      });
     });
 
     test('사고 지갑에 MFP가 없으면 어떤 지갑도 같은 시드인지 확인할 수 없음', () {

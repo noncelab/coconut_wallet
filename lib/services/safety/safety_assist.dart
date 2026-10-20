@@ -75,6 +75,11 @@ class AssistDestinationRejected implements Exception {
   String toString() => 'AssistDestinationRejected(${problem.name})';
 }
 
+/// 받는 지갑을 어떻게 확인했는지(POLISH R21): 서명 기기 주소 QR 일치, 사용자가 직접 비교, BSMS 백업과 구성 일치
+enum SafetyVerifiedBy { qr, user, bsms }
+
+typedef SafetyVerification = ({DateTime at, SafetyVerifiedBy by});
+
 /// Premium Safety Assist: 목적지 고르기와 기존 보내기 확인 파이프라인으로 넘기기.
 /// 서명·전송하지 않는다. 확인 화면(sendConfirm) 이후는 기존 흐름 그대로다
 abstract final class SafetyAssist {
@@ -193,17 +198,19 @@ abstract final class SafetyAssist {
   }
 
   /// 목적지 지갑의 지금 받기 주소(아직 생성 전이면 다음 인덱스를 직접 도출)
-  /// 받는 지갑의 서명 기기 검증 시각(Grok §5, POLISH H8/I6: Assist·Rescue 한 규칙). 지금 디스크립터 기준으로 맞았을 때만,
-  /// 미검증·불일치·디스크립터가 바뀐 기록은 null. 보기 전용은 watchOnlyVerifications(match), 다중서명은 BSMS(matched + configHash).
-  /// 이 기기 핫월렛은 해당 없음(부르는 쪽이 거른다)
-  static DateTime? verifiedAt(SafetyState? state, WalletItemBase wallet) {
+  /// 받는 지갑을 언제·어떻게 확인했는지(Grok §5, POLISH H8/I6/R21: Assist·Rescue 한 규칙). 지금 디스크립터 기준으로 맞았을 때만,
+  /// 미검증·불일치·디스크립터가 바뀐 기록은 null. 보기 전용은 watchOnlyVerifications(match, 방법 QR·직접 비교),
+  /// 다중서명은 BSMS(matched + configHash). 이 기기 핫월렛은 해당 없음(부르는 쪽이 거른다)
+  static SafetyVerification? verification(SafetyState? state, WalletItemBase wallet) {
     final hash = WalletVerification.descriptorHash(wallet.descriptor);
     if (wallet.walletType == WalletType.multiSignature) {
       final bsms = state?.bsms[wallet.id];
-      return bsms != null && bsms.matched && bsms.configHash == hash ? bsms.at : null;
+      return bsms != null && bsms.matched && bsms.configHash == hash ? (at: bsms.at, by: SafetyVerifiedBy.bsms) : null;
     }
     final v = state?.watchOnlyVerifications[wallet.id];
-    return v != null && v.descriptorHash == hash && v.result == VerificationResult.match ? v.at : null;
+    if (v == null || v.descriptorHash != hash || v.result != VerificationResult.match) return null;
+    // 직접 비교는 검증과 다르게 보인다(REQ §19.11: "직접 확인함"이 "검증됨"으로 읽히면 안 됨)
+    return (at: v.at, by: v.method == VerificationMethod.user ? SafetyVerifiedBy.user : SafetyVerifiedBy.qr);
   }
 
   static String receiveAddressOf(WalletProvider walletProvider, WalletItemBase wallet) {

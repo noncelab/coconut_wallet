@@ -420,19 +420,21 @@ void main() {
   });
 
   group('목적지', () {
-    test('후보: 이 지갑·같은 니모닉·사용 주의·위급 사건 지갑 제외, 보기 전용 먼저, MFP 없음 표시, 볼트 새 지갑 없음', () {
+    test('후보: 이 지갑·같은 니모닉·사용 주의·위급 사건 지갑 제외, 보기 전용 → 볼트 새 지갑 → 주소 → 새 핫월렛(Assist 순서)', () {
       store.state = store.state.copyWith(
         incidents: [SafetyIncident(walletId: 6, txid: _attackTxid, detectedAt: DateTime(2026, 10, 20))],
       );
       final options = build().destinationOptions(1);
 
-      expect(options.map((o) => o.wallet?.id), [2, 4, null, null]);
+      expect(options.map((o) => o.wallet?.id), [2, 4, null, null, null]);
       expect(options.map((o) => o.kind), [
         AssistDestinationKind.watchOnlyWallet,
         AssistDestinationKind.watchOnlyWallet,
+        AssistDestinationKind.vaultNewWallet, // 안내 → 지갑 추가 스캔 뒤 그 지갑을 목적지로(UI_SPEC §10.8)
         AssistDestinationKind.manualAddress,
         AssistDestinationKind.newHotWallet, // 맨 아래, 미리 고르지 않음
       ]);
+      expect(options[2].canPreselect, isFalse, reason: '볼트 새 지갑은 미리 고르지 않는다');
       expect(options.last.canPreselect, isFalse);
       final mfpLess = options[1];
       expect(mfpLess.cannotVerifySeed, isTrue);

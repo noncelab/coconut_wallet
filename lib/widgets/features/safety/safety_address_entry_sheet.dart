@@ -9,6 +9,7 @@ import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show safetyKoText;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -134,7 +135,8 @@ class _SafetyAddressEntryState extends State<SafetyAddressEntry> {
             suffixIconColor: colors.primaryText,
             onSuffixPressed: _scan,
             isError: error != null,
-            errorText: error,
+            // 오류·안내 문장도 한국어 단어 안에서 줄을 바꾸지 않는다(R1). 부르는 쪽은 원문을 넘긴다
+            errorText: error == null ? null : safetyKoText(error),
             isErrorTextMultiline: true,
           ),
           CoconutLayout.spacing_300h,
@@ -153,7 +155,7 @@ class _SafetyAddressEntryState extends State<SafetyAddressEntry> {
               CoconutLayout.spacing_100w,
               Expanded(
                 child: Text(
-                  t.premium.destination.external_warning,
+                  safetyKoText(t.premium.destination.external_warning),
                   style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                 ),
               ),

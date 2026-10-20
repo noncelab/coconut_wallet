@@ -1286,7 +1286,7 @@ SafetyVerificationLine? _verificationLine(BuildContext context, WalletItemBase? 
         ? null
         : SafetyVerificationLine(
           key: key,
-          verifiedAt: SafetyAssist.verifiedAt(context.read<SafetyProvider?>()?.state, wallet),
+          verification: SafetyAssist.verification(context.read<SafetyProvider?>()?.state, wallet),
         );
 
 class _InfoLine extends StatelessWidget {
