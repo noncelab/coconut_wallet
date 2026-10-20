@@ -188,6 +188,7 @@ Future<void> _openWidgetsTab(
   Key? captureKey,
   bool cupertinoShell = false,
   Color? sourceMarkerColor,
+  DateTime? dataNow,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -196,7 +197,7 @@ Future<void> _openWidgetsTab(
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
-  final now = DateTime.now();
+  final now = dataNow ?? DateTime.now();
   final wallets =
       walletList ?? [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createMultiSigWalletItem(id: 2)];
   final transactions = [
@@ -240,6 +241,7 @@ Future<void> _openWidgetsTab(
         priceProvider: _Prices(available: pricesAvailable),
         targetSatsOf: (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
+        now: dataNow == null ? null : () => dataNow,
       );
   Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
   if (sourceMarkerColor != null) {
@@ -1209,7 +1211,7 @@ void main() {
     testWidgets('balance chart opens Hero detail, preserves period, toggles focus and zooms while focused', (
       tester,
     ) async {
-      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await _openWidgetsTab(tester, fake: false, screen: insights, dataNow: DateTime(2026, 10, 20, 12));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const ValueKey('hodl-insights-period-month')).first);
       await tester.pump();
