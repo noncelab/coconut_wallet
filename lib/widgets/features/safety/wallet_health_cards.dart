@@ -257,7 +257,9 @@ String safetyRecommendedName(BuildContext context, RecommendedItem item) {
   if (check != null) return safetyCheckName(check.id);
   return switch (item.id) {
     RecommendedCheckId.hotPhysicalBackup => r.mnemonic_stored,
-    RecommendedCheckId.hotSafeStorage || RecommendedCheckId.multisigBackupSeparation => r.recovery_separate,
+    // 핫월렛 보관과 다중 서명 분리 보관은 다른 점검이라 제목도 따로(같은 지갑 집합에서 같은 줄이 두 번 나오지 않게)
+    RecommendedCheckId.hotSafeStorage => r.safe_storage,
+    RecommendedCheckId.multisigBackupSeparation => r.recovery_separate,
     RecommendedCheckId.hotPassphraseOffline => r.passphrase_recoverable,
     RecommendedCheckId.multisigQuorumAccess => r.signer_access(
       // 여러 다중 서명 지갑이면 가장 많이 필요한 서명 수
