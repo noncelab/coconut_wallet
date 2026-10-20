@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
@@ -16,6 +17,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/safety_store.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -168,13 +171,19 @@ class BroadcastingViewModel extends ChangeNotifier {
       throw ArgumentError('Invalid inherited tag selection');
     }
     _tagInheritanceFailed = false;
-    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
+    final store = SafetyStore(SharedPrefsRepository());
+    // 메모리 기록 후 디스크는 최대 500ms만 기다리며 실패해도 전송한다.
+    await store
+        .recordAppCreatedTxid(_walletId!, _signedTx!.transactionHash)
+        .timeout(const Duration(milliseconds: 500))
+        .catchError((_) {});
     final result = await _nodeProvider.broadcast(_signedTx!);
     if (result.isFailure) return result;
+    unawaited(store.recordBroadcastSucceeded(_walletId!, _signedTx!.transactionHash).catchError((_) {}));
 
     try {
       final applied = await _utxoRepository.applyInheritedTags(

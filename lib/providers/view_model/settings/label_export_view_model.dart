@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_wallet/core/bip/329/bip329_converter.dart';
@@ -5,6 +6,8 @@ import 'package:coconut_wallet/core/bip/329/bip329_record.dart';
 import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/safety_store.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/label_file_service.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -53,7 +56,9 @@ class LabelExportViewModel extends ChangeNotifier {
     }
 
     final jsonLString = _converter.encodeToJsonL(records);
-    return _fileService.saveLabelFile(jsonLString);
+    final xFile = await _fileService.saveLabelFile(jsonLString);
+    _recordMetadataExport([walletId], records);
+    return xFile;
   }
 
   /// Exports labels for multiple wallets and returns single XFile.
@@ -70,7 +75,25 @@ class LabelExportViewModel extends ChangeNotifier {
 
     final jsonLString = _converter.encodeToJsonL(allRecords);
     final xFile = await _fileService.saveLabelFile(jsonLString);
+    _recordMetadataExport(walletIds, allRecords);
     return LabelExportResult(xFile: xFile);
+  }
+
+  /// 메모·태그 백업 기준(Wallet Health 점검)은 라벨이 있는 지갑을 모두 내보냈을 때만 남긴다.
+  /// 점검은 모든 지갑의 라벨 수와 비교하므로, 일부만 내보내면 이전 기록을 그대로 둔다
+  void _recordMetadataExport(List<int> exportedWalletIds, List<Bip329Record> records) {
+    final coversAllLabels = _walletProvider.walletItemList.every(
+      (wallet) => exportedWalletIds.contains(wallet.id) || !hasExportableLabelsForWallet(wallet.id),
+    );
+    if (!coversAllLabels) return;
+    unawaited(
+      SafetyStore(SharedPrefsRepository())
+          .recordMetadataExport(
+            tagCount: records.where((r) => r.type == Bip329Type.output && (r.label?.isNotEmpty ?? false)).length,
+            memoCount: records.where((r) => r.type == Bip329Type.tx && (r.label?.isNotEmpty ?? false)).length,
+          )
+          .catchError((_) {}),
+    );
   }
 
   /// Exports labels for all wallets.

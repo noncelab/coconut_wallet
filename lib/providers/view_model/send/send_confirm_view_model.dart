@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/safety_store.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
@@ -115,7 +119,15 @@ class SendConfirmViewModel extends ChangeNotifier {
   void setTxWaitingForSign() {
     assert(_unsignedPsbt != null);
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
+    _recordAppCreated();
   }
+
+  // Segwit의 미서명 txid는 서명·전송 뒤에도 같다.
+  void _recordAppCreated() => unawaited(
+    SafetyStore(SharedPrefsRepository())
+        .recordAppCreatedTxid(_walletListItemBase.id, _unsignedPsbt!.unsignedTransaction!.transactionHash)
+        .catchError((_) {}),
+  );
 
   Future<void> signHotWallet({Uint8List? passphrase}) async {
     final metadata = _walletListItemBase.hotWalletMetadata;
@@ -126,6 +138,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     final unsignedPsbt = _unsignedPsbt!.serialize();
     _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
+    _recordAppCreated();
     final signedPsbt = await _hotWalletSigningService.sign((
       storageKey: metadata.secureStorageKey,
       passphrase: passphrase,
