@@ -283,12 +283,16 @@ class _RecognizeSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            strings.title,
+            safetyKoText(strings.title),
             textAlign: TextAlign.center,
             style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
           ),
           CoconutLayout.spacing_200h,
-          Text(body, textAlign: TextAlign.center, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+          Text(
+            safetyKoText(body),
+            textAlign: TextAlign.center,
+            style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+          ),
           // 잔액 숨김·가짜 잔액이거나 설정을 모르면 금액·주소를 보이지 않는다(안전 화면 공용 규칙)
           if (facts != null && !safetyHidesAmounts(context)) ...[CoconutLayout.spacing_400h, _FactsBox(facts: facts!)],
           CoconutLayout.spacing_500h,
@@ -315,11 +319,12 @@ class _RecognizeSheet extends StatelessWidget {
           if (signedElsewhere) ...[
             CoconutLayout.spacing_300h,
             // 사실과 선택지보다 작은 보조 안내(지원 사칭이 "내 거래예요"로 이끄는 말로 쓰이지 않게)
+            // 꼭 읽어야 하는 작은 글이라 코코넛에서도 대비가 서는 secondaryTextStrong(R5), 크기는 선택지 글보다 작게
             Text(
-              strings.signed_elsewhere,
+              safetyKoText(strings.signed_elsewhere),
               key: const Key('incident-recognize-signed-elsewhere'),
               textAlign: TextAlign.center,
-              style: CoconutTypography.caption_10.setColor(colors.secondaryText),
+              style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
             ),
           ],
           // 지원을 사칭해 "내 거래예요"를 누르게 하는 말에 맞서, 같은 화면에 "절대 묻지·시키지 않아요"
@@ -365,11 +370,19 @@ class _FactsBox extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // 이름표와 값 모두 폭 안에서: 이름표는 줄을 바꾸고, 금액은 한 줄 그대로 줄여 맞춘다(자릿수를 자르지 않는다)
           Row(
             children: [
-              Text(strings.amount_sent, style: label),
-              const Spacer(),
-              Text(facts.amount, style: CoconutTypography.body3_12_NumberBold.setColor(colors.primaryText)),
+              Flexible(flex: 2, child: Text(safetyKoText(strings.amount_sent), style: label)),
+              CoconutLayout.spacing_400w,
+              Expanded(
+                flex: 3,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(facts.amount, style: CoconutTypography.body3_12_NumberBold.setColor(colors.primaryText)),
+                ),
+              ),
             ],
           ),
           // 받는 곳이 모두 내 주소(자기 앞 전송)면 줄을 뺀다
@@ -377,26 +390,34 @@ class _FactsBox extends StatelessWidget {
             Divider(color: colors.divider, height: 17),
             Row(
               children: [
-                Text(strings.recipient, style: label),
+                Flexible(flex: 2, child: Text(safetyKoText(strings.recipient), style: label)),
                 CoconutLayout.spacing_400w,
+                // 주소는 끝 글자까지 알아봐야 하므로 말줄임 대신 "외 N개"와 함께 한 줄로 줄여 맞춘다
                 Expanded(
-                  child: Text(
-                    _middleShort(recipients.first),
-                    key: const Key('incident-recognize-recipient'),
-                    textAlign: TextAlign.end,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+                  flex: 3,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _middleShort(recipients.first),
+                          key: const Key('incident-recognize-recipient'),
+                          style: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+                        ),
+                        if (recipients.length > 1) ...[
+                          CoconutLayout.spacing_100w,
+                          Text(
+                            strings.recipient_more(n: recipients.length - 1),
+                            key: const Key('incident-recognize-recipient-more'),
+                            style: label,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-                if (recipients.length > 1) ...[
-                  CoconutLayout.spacing_100w,
-                  Text(
-                    strings.recipient_more(n: recipients.length - 1),
-                    key: const Key('incident-recognize-recipient-more'),
-                    style: label,
-                  ),
-                ],
               ],
             ),
           ],
@@ -434,7 +455,14 @@ class _WhatToDoSheet extends StatelessWidget {
       children: [
         ListView(
           controller: controller,
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+          // 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이) + 아래 안전 영역
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            safetyFooterClearance(context, hasSubWidget: rescueDestination != null) +
+                MediaQuery.paddingOf(context).bottom,
+          ),
           children: [
             Center(
               child: Container(
@@ -458,13 +486,13 @@ class _WhatToDoSheet extends StatelessWidget {
             ),
             CoconutLayout.spacing_400h,
             Text(
-              strings.title,
+              safetyKoText(strings.title),
               textAlign: TextAlign.center,
               style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
             ),
             CoconutLayout.spacing_200h,
             Text(
-              strings.body,
+              safetyKoText(strings.body),
               textAlign: TextAlign.center,
               style: CoconutTypography.body2_14.setColor(colors.secondaryText),
             ),
@@ -493,7 +521,10 @@ class _WhatToDoSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(strings.what_to_do, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                  Text(
+                    safetyKoText(strings.what_to_do),
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  ),
                   CoconutLayout.spacing_400h,
                   for (var i = 0; i < steps.length; i++) ...[
                     if (i > 0) CoconutLayout.spacing_400h,
@@ -507,6 +538,7 @@ class _WhatToDoSheet extends StatelessWidget {
         if (rescueDestination == null)
           FixedBottomButton(
             buttonKey: const Key('incident-what-to-do-start'),
+            surroundingsKey: const Key('incident-what-to-do-fade'),
             text: strings.get_started,
             surroundingsColor: colors.surfaceBottomSheet,
             onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.guide),
@@ -514,6 +546,7 @@ class _WhatToDoSheet extends StatelessWidget {
         else
           FixedBottomButton(
             buttonKey: const Key('incident-what-to-do-move-now'),
+            surroundingsKey: const Key('incident-what-to-do-fade'),
             text: t.premium.rescue.move_now,
             surroundingsColor: colors.surfaceBottomSheet,
             onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.moveNow),

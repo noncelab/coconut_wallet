@@ -203,71 +203,85 @@ class _IncidentRow extends StatelessWidget {
       onTap: () => _open(context),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          children: [
-            SafetyIconCircle(
-              size: 36,
-              background: iconBackground,
-              icon: SvgPicture.asset(
-                iconPath,
-                width: 18,
-                height: 18,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-              ),
-            ),
-            CoconutLayout.spacing_300w,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: LayoutBuilder(
+          builder:
+              (context, constraints) => Row(
                 children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Padding(
-                        // 점 자리(오른쪽 -8)가 글자와 겹치지 않게
-                        padding: EdgeInsets.only(right: showDot ? 10 : 0),
-                        child: Text(
-                          incident.isInfo
-                              ? t.wallet_health.incident.dropped_title
-                              : t.wallet_health.incident.outgoing_title,
-                          style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
-                        ),
-                      ),
-                      if (showDot)
-                        Positioned(
-                          top: -1,
-                          right: 0,
-                          child: AnimatedOpacity(
-                            key: Key('safety-alert-unread-${incident.id}'),
-                            opacity: dotVisible ? 1 : 0,
-                            duration: safetyReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 220),
-                            child: Semantics(
-                              label: t.wallet_health.alerts.unread_a11y,
-                              child: Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
+                  SafetyIconCircle(
+                    size: 36,
+                    background: iconBackground,
+                    icon: SvgPicture.asset(
+                      iconPath,
+                      width: 18,
+                      height: 18,
+                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                    ),
+                  ),
+                  CoconutLayout.spacing_300w,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Padding(
+                              // 점 자리(오른쪽 -8)가 글자와 겹치지 않게
+                              padding: EdgeInsets.only(right: showDot ? 10 : 0),
+                              child: Text(
+                                safetyKoText(
+                                  incident.isInfo
+                                      ? t.wallet_health.incident.dropped_title
+                                      : t.wallet_health.incident.outgoing_title,
+                                ),
+                                style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
                               ),
                             ),
-                          ),
+                            if (showDot)
+                              Positioned(
+                                top: -1,
+                                right: 0,
+                                child: AnimatedOpacity(
+                                  key: Key('safety-alert-unread-${incident.id}'),
+                                  opacity: dotVisible ? 1 : 0,
+                                  duration:
+                                      safetyReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 220),
+                                  child: Semantics(
+                                    label: t.wallet_health.alerts.unread_a11y,
+                                    child: Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
+                        CoconutLayout.spacing_50h,
+                        Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                      ],
+                    ),
                   ),
-                  CoconutLayout.spacing_50h,
-                  Text(subtitle, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  CoconutLayout.spacing_200w,
+                  // 상태 칩은 줄 폭의 35%까지(긴 독일어·큰 글자면 가운데 정렬로 줄을 바꾼다). 제목 열은 남는 폭을 다 받는다
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.35),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: chipBackground,
+                        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                      ),
+                      child: Text(
+                        chip,
+                        textAlign: TextAlign.center,
+                        style: CoconutTypography.caption_10_Bold.setColor(chipColor),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            CoconutLayout.spacing_200w,
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: chipBackground,
-                borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-              ),
-              child: Text(chip, style: CoconutTypography.caption_10_Bold.setColor(chipColor)),
-            ),
-          ],
         ),
       ),
     );
@@ -313,13 +327,13 @@ class _EmptyAlerts extends StatelessWidget {
             ),
             CoconutLayout.spacing_500h,
             Text(
-              strings.empty_title,
+              safetyKoText(strings.empty_title),
               textAlign: TextAlign.center,
               style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
             ),
             CoconutLayout.spacing_200h,
             Text(
-              strings.empty_body,
+              safetyKoText(strings.empty_body),
               textAlign: TextAlign.center,
               style: CoconutTypography.body2_14.setColor(colors.secondaryText),
             ),

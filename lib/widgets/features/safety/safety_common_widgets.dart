@@ -11,15 +11,25 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// POLISH R1: 한국어는 단어 중간에서 줄을 바꾸지 않는다(앱 방식 `TextUtils.preventLineBreakInsideWords`).
 /// 줄바꿈될 수 있는 제목·배너·카드 글에만 쓴다. 주소·금액·숫자에는 쓰지 않는다(글자 사이 이음 문자가 복사·비교를 바꾼다).
-/// 두 번 감싸도 한 번과 같다(이미 든 이음 문자를 걷고 다시 넣는다): 스스로 감싸는 공용 행·배너에 감싼 글을 넘겨도 된다
+/// 두 번 감싸도 한 번과 같다(이미 든 이음 문자를 걷고 다시 넣는다): 스스로 감싸는 공용 행·배너에 감싼 글을 넘겨도 된다.
+/// 한글이 든 글만 감싼다: 영문만 있는 글·주소만 있는 줄은 그대로 지나간다(읽기 라벨·검색에도 그대로)
 String safetyKoText(String text) =>
-    LocaleSettings.currentLocale == AppLocale.ko
+    LocaleSettings.currentLocale == AppLocale.ko && _hangul.hasMatch(text)
         ? TextUtils.preventLineBreakInsideWords(text.replaceAll('\u2060', ''))
         : text;
+
+/// 한글이 없는 글(영문 고유명사만 있는 줄 등)에는 넣지 않는다: 읽기 라벨·검색에 그대로 남는다
+final _hangul = RegExp('[\uAC00-\uD7A3]');
 
 /// 동작 줄이기(앱 공통 기준)
 bool safetyReduceMotion(BuildContext context) =>
     MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+
+/// FixedBottomButton 위 페이드를 비켜 가는 스크롤 아래 여백(R4: 160, 부가 줄이 있으면 184).
+/// 버튼과 부가 줄은 본문 글처럼 커지므로 본문 크기(14)의 배율만큼 늘린다. 160을 글자 크기로 키우면 큰 글자를 덜 키우는
+/// 비선형 배율(Android 14+)에서 모자란다(선택 시트 common_bottom_sheets.dart와 같은 계산)
+double safetyFooterClearance(BuildContext context, {bool hasSubWidget = false}) =>
+    (hasSubWidget ? 184 : 160) * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, double.infinity);
 
 /// 이 경로의 들어오는 전환이 끝나면 [onSettled]를 한 번 부른다(경로가 이미 떠 있으면 첫 프레임 뒤).
 /// 새 경로의 첫 프레임은 Hero 측정용 offstage라 그때의 animation은 '끝남'으로 보이므로 프레임 뒤에 판단한다.
@@ -91,6 +101,7 @@ class SafetyChoiceRow extends StatelessWidget {
     this.backgroundColor,
     this.subtitleColor,
     this.below,
+    this.keepWords = true,
   });
 
   final String title;
@@ -104,6 +115,9 @@ class SafetyChoiceRow extends StatelessWidget {
 
   /// 부제 아래 한 줄 더(예: 이 기기 핫월렛 경고, 같은 시드인지 확인할 수 없음)
   final Widget? below;
+
+  /// 한국어 단어 가운데 줄바꿈 막기(R1). 주소·금액 같은 값이 든 줄이면 false(제목·부제를 주어진 그대로)
+  final bool keepWords;
 
   @override
   Widget build(BuildContext context) {
@@ -126,10 +140,16 @@ class SafetyChoiceRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                  Text(
+                    keepWords ? safetyKoText(title) : title,
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  ),
                   if (subtitle != null) ...[
                     CoconutLayout.spacing_50h,
-                    Text(subtitle!, style: CoconutTypography.body3_12.setColor(subtitleColor ?? colors.secondaryText)),
+                    Text(
+                      keepWords ? safetyKoText(subtitle!) : subtitle!,
+                      style: CoconutTypography.body3_12.setColor(subtitleColor ?? colors.secondaryText),
+                    ),
                   ],
                   if (below != null) ...[CoconutLayout.spacing_100h, below!],
                 ],
@@ -393,10 +413,10 @@ class SafetyNumberedRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: titleStyle.setColor(colors.primaryText)),
+                Text(safetyKoText(title), style: titleStyle.setColor(colors.primaryText)),
                 if (description != null) ...[
                   CoconutLayout.spacing_50h,
-                  Text(description!, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  Text(safetyKoText(description!), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                 ],
               ],
             ),
@@ -450,13 +470,15 @@ class SafetyStatusBanner extends StatelessWidget {
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
               CoconutLayout.spacing_200w,
-              Expanded(child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText))),
+              Expanded(
+                child: Text(safetyKoText(title), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+              ),
             ],
           ),
           CoconutLayout.spacing_150h,
           Padding(
             padding: const EdgeInsets.only(left: 28),
-            child: Text(body, style: CoconutTypography.body3_12.setColor(colors.primaryText)),
+            child: Text(safetyKoText(body), style: CoconutTypography.body3_12.setColor(colors.primaryText)),
           ),
           if (hasLink) ...[
             CoconutLayout.spacing_200h,
@@ -489,7 +511,10 @@ class SafetySectionTitle extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(4, top, 0, 12),
       child: Semantics(
         header: true,
-        child: Text(text, style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText)),
+        child: Text(
+          safetyKoText(text),
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+        ),
       ),
     );
   }

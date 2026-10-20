@@ -4,6 +4,8 @@ import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../screens/safety/safety_test_harness.dart';
+
 Widget _app(CoconutThemeVariant variant, Widget child) => MaterialApp(
   theme: buildCoconutThemeData(variant: variant),
   home: Scaffold(body: SingleChildScrollView(child: child)),
@@ -15,7 +17,7 @@ double _contrast(Color a, Color b) {
   return x > y ? x / y : y / x;
 }
 
-Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(find.text(text)).style!.color!;
+Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(findText(text)).style!.color!;
 
 BoxDecoration _decoration(WidgetTester tester, Type widget) =>
     tester
@@ -45,11 +47,11 @@ void main() {
             SizedBox(width: 320, child: SafetyChoiceRow(title: title, subtitle: 'sub', onTap: () => taps++)),
           ),
         );
-        expect(find.ancestor(of: find.text(title), matching: find.byType(FittedBox)), findsNothing);
-        expect(tester.getSize(find.text(title)).height, greaterThan(20)); // 두 줄
+        expect(find.ancestor(of: findText(title), matching: find.byType(FittedBox)), findsNothing);
+        expect(tester.getSize(findText(title)).height, greaterThan(20)); // 두 줄
         expect(_textColor(tester, title), colors.primaryText);
         expect(_textColor(tester, 'sub'), colors.secondaryText);
-        await tester.tap(find.text(title));
+        await tester.tap(findText(title));
         await tester.pumpAndSettle();
         expect(taps, 1);
       });
@@ -84,10 +86,10 @@ void main() {
             ),
           ),
         );
-        expect(find.text('1'), findsOneWidget);
-        expect(find.text('2'), findsOneWidget);
-        expect(tester.widget<Text>(find.text('Plain')).style!.fontWeight, isNot(FontWeight.w700));
-        expect(tester.widget<Text>(find.text('Titled')).style!.fontWeight, FontWeight.w700);
+        expect(findText('1'), findsOneWidget);
+        expect(findText('2'), findsOneWidget);
+        expect(tester.widget<Text>(findText('Plain')).style!.fontWeight, isNot(FontWeight.w700));
+        expect(tester.widget<Text>(findText('Titled')).style!.fontWeight, FontWeight.w700);
         expect(_textColor(tester, 'More'), colors.secondaryText);
         expect(_textColor(tester, '1'), colors.background);
       });
@@ -122,14 +124,14 @@ void main() {
         expect(find.byType(CoconutUnderlinedButton), findsOneWidget);
         expect(_textColor(tester, 'Body'), colors.primaryText);
         expect(_contrast(colors.primaryText, colors.dangerSurface), greaterThanOrEqualTo(4.5));
-        await tester.tap(find.text('Review'));
+        await tester.tap(findText('Review'));
         expect(links, 1);
       });
 
       testWidgets('SafetySectionTitle is a header', (tester) async {
         final handle = tester.ensureSemantics();
         await tester.pumpWidget(_app(variant, const SafetySectionTitle('Section')));
-        expect(tester.getSemantics(find.text('Section')), matchesSemantics(label: 'Section', isHeader: true));
+        expect(tester.getSemantics(findText('Section')), matchesSemantics(label: 'Section', isHeader: true));
         expect(_textColor(tester, 'Section'), colors.primaryText);
         handle.dispose();
       });

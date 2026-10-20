@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../screens/safety/safety_test_harness.dart';
+
 Widget _app(CoconutThemeVariant variant, Widget home, {bool reduceMotion = false}) => MaterialApp(
   theme: buildCoconutThemeData(variant: variant),
   builder:
@@ -33,7 +35,7 @@ Future<void> _push(WidgetTester tester, CoconutThemeVariant variant, Widget page
       ),
     ),
   );
-  await tester.tap(find.text('open'));
+  await tester.tap(findText('open'));
   if (settle) {
     await tester.pumpAndSettle();
   } else {
@@ -93,10 +95,10 @@ void main() {
           ),
         );
         for (final text in ['Title', 'Description', 'Card', 'Moved', 'Later']) {
-          expect(find.text(text), findsOneWidget);
+          expect(findText(text), findsOneWidget);
         }
         expect(_fill(tester), 0.25);
-        await tester.tap(find.text('Moved'));
+        await tester.tap(findText('Moved'));
         await tester.tap(find.byKey(const Key('safety-guide-later')));
         expect((pressed, later), (1, 1));
       });
@@ -107,7 +109,7 @@ void main() {
           variant,
           const SafetyGuidePage(progress: 0.04, title: 'Step 1', buttonText: '', children: [Text('Rows')]),
         );
-        expect(find.text('Rows'), findsOneWidget);
+        expect(findText('Rows'), findsOneWidget);
         expect(find.byType(FixedBottomButton), findsNothing);
       });
 
@@ -125,7 +127,7 @@ void main() {
             reduceMotion: true,
           ),
         );
-        expect(find.text('Go'), findsOneWidget);
+        expect(findText('Go'), findsOneWidget);
         expect(_fill(tester), 0.75);
         final opacities = tester.widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity));
         expect(opacities.every((o) => o.opacity == 1), isTrue);
@@ -139,8 +141,8 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
         expect(find.byKey(const ValueKey('done')), findsOneWidget);
         expect(find.byKey(const ValueKey('pending')), findsOneWidget);
-        expect(tester.widget<Text>(find.text('C')).style!.color, colors.secondaryText);
-        expect(tester.widget<Text>(find.text('A')).style!.color, colors.primaryText);
+        expect(tester.widget<Text>(findText('C')).style!.color, colors.secondaryText);
+        expect(tester.widget<Text>(findText('A')).style!.color, colors.primaryText);
 
         await tester.pumpWidget(
           _app(variant, const Scaffold(body: SafetyStepList(steps: ['A', 'B', 'C'], activeIndex: 1, failed: true))),
@@ -166,7 +168,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('custom-result-icon')), findsOneWidget);
         expect(find.byType(Lottie), findsNothing);
-        expect(find.text('Pending'), findsOneWidget);
+        expect(findText('Pending'), findsOneWidget);
       });
 
       testWidgets('result page shows the outcome, blocks back and runs its button', (tester) async {
@@ -183,15 +185,67 @@ void main() {
             children: const [Text('Extra')],
           ),
         );
-        expect(find.text('Finished'), findsOneWidget);
-        expect(find.text('Extra'), findsOneWidget);
+        expect(findText('Finished'), findsOneWidget);
+        expect(findText('Extra'), findsOneWidget);
         expect(_fill(tester), 1);
-        await tester.tap(find.text('Done'));
+        await tester.tap(findText('Done'));
         expect(done, 1);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
-        expect(find.text('Finished'), findsOneWidget); // PopScope가 뒤로 가기를 막는다
+        expect(findText('Finished'), findsOneWidget); // PopScope가 뒤로 가기를 막는다
       });
+    });
+  }
+
+  // D4/M10: 320dp·2.0배에서 버튼이 두 줄이 되고 부가 줄이 붙어도 마지막 내용이 버튼 묶음 위로 스크롤된다
+  for (final withSub in [false, true]) {
+    testWidgets('guide and result pages scroll their last content clear of the footer at 2.0x (subWidget: $withSub)', (
+      tester,
+    ) async {
+      useSmallPhone(tester, 2.0);
+      const button = 'Continue the security review';
+      final rows = [
+        for (var i = 0; i < 6; i++) SizedBox(height: 120, child: Text('row $i')),
+        const Text('last', key: Key('last')),
+      ];
+      final pages = [
+        (
+          SafetyResultPage(
+            title: 'Finished',
+            description: 'Body',
+            buttonText: button,
+            onButton: () {},
+            subWidget: withSub ? const Text('Back up the new wallet now') : null,
+            children: rows,
+          ),
+          'safety-result',
+        ),
+        (
+          SafetyGuidePage(
+            progress: 0.25,
+            title: 'Step',
+            buttonText: button,
+            onButton: () {},
+            laterText: withSub ? 'Do it later on another day' : null,
+            onLater: withSub ? () {} : null,
+            children: rows,
+          ),
+          'safety-guide',
+        ),
+      ];
+      for (final (page, footer) in pages) {
+        await tester.pumpWidget(const SizedBox()); // 앞 화면의 경로 쌓임을 비운다
+        await _push(tester, CoconutThemeVariant.light, page);
+        final scroll = find.descendant(of: find.byWidget(page), matching: find.byType(SingleChildScrollView));
+        // 2.0배에서는 버튼 묶음이 스크롤 영역 가운데를 덮으므로 위쪽에서 끈다
+        await tester.dragFrom(tester.getTopLeft(scroll) + const Offset(40, 24), const Offset(0, -8000));
+        await tester.pumpAndSettle();
+        // 버튼 묶음(부가 줄 포함)과 그 위 페이드 모두 비켜 간다
+        final last = tester.getRect(find.byKey(const Key('last'))).bottom;
+        expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(Key('$footer-button'))).top));
+        expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(Key('$footer-fade'))).top));
+        expect(tester.takeException(), isNull);
+      }
     });
   }
 
@@ -234,5 +288,23 @@ void main() {
     );
     expect(tester.getSemantics(find.bySemanticsLabel('A')), matchesSemantics(label: 'A', value: t.done));
     handle.dispose();
+  });
+
+  // G10: 결과 화면 아이콘과 제목 사이 표시(Premium 구매 완료의 칩). 없으면 자리도 없다
+  testWidgets('the result page shows an optional badge between the icon and the title', (tester) async {
+    await _push(
+      tester,
+      CoconutThemeVariant.light,
+      SafetyResultPage(
+        title: 'Finished',
+        description: 'Body',
+        buttonText: 'Done',
+        onButton: () {},
+        badge: const Text('Badge', key: Key('result-badge')),
+      ),
+    );
+    final badge = tester.getRect(find.byKey(const Key('result-badge')));
+    expect(badge.top, greaterThan(tester.getRect(find.byType(Lottie)).bottom));
+    expect(badge.bottom, lessThan(tester.getRect(findText('Finished')).top));
   });
 }

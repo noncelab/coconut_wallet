@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/incident_sheets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/transaction_safety_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,17 +27,17 @@ void main() {
     await tester.pumpWidget(safetyTestApp(_detail(), safety: safety));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(strings.tx_banner.review));
+    await tester.tap(findText(strings.tx_banner.review));
     await tester.pumpAndSettle();
-    expect(find.text(strings.recognize.title), findsOneWidget);
-    expect(find.text(strings.recognize.signed_elsewhere), findsNothing);
+    expect(findText(strings.recognize.title), findsOneWidget);
+    expect(findText(strings.recognize.signed_elsewhere), findsNothing);
     await tester.tap(find.byKey(const Key('incident-recognize-yes')));
     await tester.pumpAndSettle();
 
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.recognized);
     expect(safety.state.recognizedTxids, contains(kTxid));
     expect(find.byKey(const Key('transaction-safety-banner-recognized')), findsOneWidget);
-    expect(find.text(strings.recognize.recognized_toast), findsOneWidget);
+    expect(findText(strings.recognize.recognized_toast), findsOneWidget);
     await settleToasts(tester);
   });
 
@@ -46,18 +47,18 @@ void main() {
     await tester.pumpWidget(safetyTestApp(_detail(), safety: safety));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(strings.tx_banner.review));
+    await tester.tap(findText(strings.tx_banner.review));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('incident-recognize-no')));
     await tester.pumpAndSettle();
 
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.responding);
     expect(safety.incidentFor(kWalletId, kTxid)!.responseMode, IncidentResponseMode.free);
-    expect(find.text(strings.unknown.what_to_do), findsOneWidget);
+    expect(findText(strings.unknown.what_to_do), findsOneWidget);
     for (final step in [strings.unknown.step1_title, strings.unknown.step4_title]) {
-      expect(find.text(step), findsOneWidget);
+      expect(findText(step), findsOneWidget);
     }
-    await tester.tap(find.text(strings.unknown.get_started));
+    await tester.tap(findText(strings.unknown.get_started));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-step1')), findsOneWidget);
@@ -69,15 +70,15 @@ void main() {
     final rescue = FakeRescue();
     await tester.pumpWidget(safetyTestApp(_detail(), safety: fixedSafety(incidents: [testIncident()]), rescue: rescue));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.tx_banner.review));
+    await tester.tap(findText(strings.tx_banner.review));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('incident-recognize-no')));
     await tester.pumpAndSettle();
 
-    expect(find.text(t.premium.rescue.destination_line(destination: rescue.destination)), findsOneWidget);
-    expect(find.text(strings.unknown.get_started), findsNothing);
-    expect(find.text(strings.unknown.step_by_step), findsOneWidget);
-    await tester.tap(find.text(t.premium.rescue.move_now));
+    expect(findText(t.premium.rescue.destination_line(destination: rescue.destination)), findsOneWidget);
+    expect(findText(strings.unknown.get_started), findsNothing);
+    expect(findText(strings.unknown.step_by_step), findsOneWidget);
+    await tester.tap(findText(t.premium.rescue.move_now));
     await tester.pumpAndSettle();
     expect(rescue.moves, 1);
   });
@@ -92,9 +93,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.tx_banner.review));
+    await tester.tap(findText(strings.tx_banner.review));
     await tester.pumpAndSettle();
-    expect(find.text(strings.recognize.signed_elsewhere), findsOneWidget);
+    expect(findText(strings.recognize.signed_elsewhere), findsOneWidget);
   });
 
   testWidgets('openSafetyIncident opens the detail and asks once the transition has settled', (tester) async {
@@ -111,12 +112,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     expect(find.byKey(const Key('transaction-safety-banner-unreviewed')), findsOneWidget);
-    expect(find.text(strings.recognize.title), findsNothing); // 전환 중에는 아직
+    expect(findText(strings.recognize.title), findsNothing); // 전환 중에는 아직
 
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
-    expect(find.text(strings.recognize.title), findsOneWidget);
+    expect(findText(strings.recognize.title), findsOneWidget);
   });
 
   testWidgets('without autoReview the detail opens quietly; a vanished transaction goes straight to the sheet', (
@@ -136,13 +137,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('transaction-safety-banner-unreviewed')), findsOneWidget);
-    expect(find.text(strings.recognize.title), findsNothing);
+    expect(findText(strings.recognize.title), findsNothing);
 
     Navigator.of(tester.element(find.byKey(const Key('origin')).last)).pop();
     await tester.pumpAndSettle();
     unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: 'gone'));
     await tester.pumpAndSettle();
-    expect(find.text(strings.recognize.title), findsOneWidget);
+    expect(findText(strings.recognize.title), findsOneWidget);
   });
 
   group('a pending send from before the wallet was added (no incident yet)', () {
@@ -177,10 +178,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
-      expect(find.text(strings.recognize.title), findsOneWidget);
+      expect(findText(strings.recognize.title), findsOneWidget);
       final review = t.wallet_health.review;
-      expect(find.text(selfTransfer ? review.self_transfer.body : review.recent_at_add.body), findsOneWidget);
-      expect(find.text(strings.recognize.body), findsNothing);
+      expect(findText(selfTransfer ? review.self_transfer.body : review.recent_at_add.body), findsOneWidget);
+      expect(findText(strings.recognize.body), findsNothing);
       return safety;
     }
 
@@ -207,7 +208,7 @@ void main() {
       await tester.tap(find.byKey(const Key('incident-recognize-no')));
       await tester.pumpAndSettle();
       expect(safety.incidentFor(kWalletId, pending)!.state, IncidentState.responding);
-      expect(find.text(strings.unknown.what_to_do), findsOneWidget);
+      expect(findText(strings.unknown.what_to_do), findsOneWidget);
     });
   });
 
@@ -221,7 +222,7 @@ void main() {
 
       expect(find.byKey(Key('transaction-safety-banner-${state.name}')), findsOneWidget);
       expect(
-        find.text(strings.tx_banner.review_guide),
+        findText(strings.tx_banner.review_guide),
         state == IncidentState.completed ? findsOneWidget : findsNothing,
       );
       expect(safety.incidentFor(kWalletId, kTxid)!.state, state);
@@ -234,8 +235,13 @@ void main() {
     WidgetTester tester, {
     PreferenceProvider? preferences,
     List<TransactionAddress>? outputs,
+    double? smallPhoneScale,
   }) async {
-    usePhoneSize(tester);
+    if (smallPhoneScale == null) {
+      usePhoneSize(tester);
+    } else {
+      useSmallPhone(tester, smallPhoneScale);
+    }
     await tester.pumpWidget(
       safetyTestApp(
         origin(),
@@ -249,7 +255,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
-    expect(find.text(strings.recognize.title), findsOneWidget);
+    expect(findText(t.safety_guide.recognize.title), findsOneWidget);
   }
 
   String short(String address) => '${address.substring(0, 10)}…${address.substring(address.length - 8)}';
@@ -259,20 +265,82 @@ void main() {
   testWidgets('the recognize sheet shows amount and recipient before the choices, with a smaller hint', (tester) async {
     await openRecognize(tester, preferences: FakePreferences());
 
-    expect(find.text(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)), findsOneWidget);
+    expect(findText(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)), findsOneWidget);
     expect(recipientText(tester), short(kRecipient)); // 가운데 줄임
-    expect(find.text(strings.recognize.recipient), findsOneWidget);
+    expect(findText(strings.recognize.recipient), findsOneWidget);
     expect(find.byKey(const Key('incident-recognize-recipient-more')), findsNothing);
-    expect(find.textContaining(kChange.substring(0, 10)), findsNothing); // 거스름(내 주소)은 받는 주소가 아니다
+    expect(findTextContaining(kChange.substring(0, 10)), findsNothing); // 거스름(내 주소)은 받는 주소가 아니다
     double top(Finder finder) => tester.getTopLeft(finder).dy;
     final facts = find.byKey(const Key('incident-recognize-facts'));
     final hint = find.byKey(const Key('incident-recognize-signed-elsewhere'));
     expect(top(facts), lessThan(top(find.byKey(const Key('incident-recognize-yes')))));
     expect(top(hint), greaterThan(top(find.byKey(const Key('incident-recognize-no')))));
-    final yesTitle = tester.widget<Text>(find.text(strings.recognize.yes_title));
+    final yesTitle = tester.widget<Text>(findText(strings.recognize.yes_title));
     expect(tester.widget<Text>(hint).style!.fontSize, lessThan(yesTitle.style!.fontSize!));
-    expect(find.text(strings.help_center.never_asks), findsOneWidget); // 같은 화면에 "절대 묻지·시키지 않아요"
-    expect(top(find.text(strings.help_center.never_asks)), greaterThan(top(hint)));
+    expect(findText(strings.help_center.never_asks), findsOneWidget); // 같은 화면에 "절대 묻지·시키지 않아요"
+    expect(top(findText(strings.help_center.never_asks)), greaterThan(top(hint)));
+  });
+
+  // D3/M5: 320dp · 1.3/2.0배 · 독일어에서도 사실 상자가 넘치지 않고, 금액과 주소("외 N개" 포함)를 자르지 않는다
+  for (final scale in [1.3, 2.0]) {
+    testWidgets('the facts box fits 320dp at ${scale}x in German without cutting the amount or address', (
+      tester,
+    ) async {
+      useLocale(AppLocale.de);
+      await openRecognize(
+        tester,
+        preferences: FakePreferences(),
+        smallPhoneScale: scale,
+        outputs: [
+          TransactionAddress(kRecipient, 30000),
+          TransactionAddress('bcrt1qsecond00000000000000000000000000000000', 20000),
+          TransactionAddress(kChange, 10000),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+      final box = tester.getRect(find.byKey(const Key('incident-recognize-facts')));
+      for (final part in [
+        findText(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)),
+        find.byKey(const Key('incident-recognize-recipient')),
+        find.byKey(const Key('incident-recognize-recipient-more')),
+      ]) {
+        expect(part, findsOneWidget);
+        final rect = tester.getRect(part);
+        expect(rect.left >= box.left && rect.right <= box.right, isTrue);
+      }
+      expect(recipientText(tester), short(kRecipient)); // 줄여 맞출 뿐 끝 글자까지 그대로
+    });
+  }
+
+  // D5/M10: 비상 이동 초안이 있는 "지금 할 일"(버튼 + 부가 줄)도 320dp·2.0배에서 마지막 줄이 버튼 위로 올라온다
+  testWidgets('the what-to-do sheet scrolls its last step clear of the footer at 2.0x on 320dp', (tester) async {
+    useSmallPhone(tester, 2.0);
+    useLocale(AppLocale.de);
+    await tester.pumpWidget(
+      safetyTestApp(_detail(), safety: fixedSafety(incidents: [testIncident()]), rescue: FakeRescue()),
+    );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, findText(t.safety_guide.tx_banner.review)); // 2.0배에서는 배너 링크가 화면 아래에 있다
+    await tapVisible(tester, find.byKey(const Key('incident-recognize-no')));
+    final footer = find.byKey(const Key('incident-what-to-do-move-now'));
+    expect(footer, findsOneWidget);
+    // 2.0배에서는 단계 목록이 아직 만들어지지 않을 만큼 아래에 있다. 늘 있는 제목으로 스크롤 영역을 먼저 잡고(제목은
+    // 스크롤되면 사라진다), 지연 목록의 끝이 아이템이 만들어질 때마다 늘어나므로 더 늘지 않을 때까지 끝으로 옮긴다
+    final positions = [
+      for (final element
+          in find.ancestor(of: findText(t.safety_guide.unknown.title), matching: find.byType(Scrollable)).evaluate())
+        ((element as StatefulElement).state as ScrollableState).position,
+    ];
+    for (var i = 0; i < 10 && positions.any((p) => p.pixels < p.maxScrollExtent); i++) {
+      for (final position in positions) {
+        position.jumpTo(position.maxScrollExtent);
+      }
+      await tester.pumpAndSettle();
+    }
+    final last = tester.getRect(find.byType(SafetyNumberedRow).last).bottom;
+    expect(last, lessThanOrEqualTo(tester.getRect(footer).top));
+    expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('incident-what-to-do-fade'))).top));
+    expect(tester.takeException(), isNull);
   });
 
   // R1-M3: 잔액 숨김·가짜 잔액·설정 없음이면 사실 상자(금액·받는 주소)를 통째로 뺀다
@@ -288,8 +356,8 @@ void main() {
 
       final shown = showsFacts ? findsOneWidget : findsNothing;
       expect(find.byKey(const Key('incident-recognize-facts')), shown);
-      expect(find.text(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)), shown);
-      expect(find.text(short(kRecipient)), shown);
+      expect(findText(BitcoinUnit.btc.displayBitcoinAmount(50000, withUnit: true)), shown);
+      expect(findText(short(kRecipient)), shown);
       expect(find.byKey(const Key('incident-recognize-yes')), findsOneWidget); // 선택지는 그대로
     });
   }
@@ -309,8 +377,8 @@ void main() {
         ],
       );
       expect(recipientText(tester), short(kRecipient));
-      expect(find.text(strings.recognize.recipient_more(n: 1)), findsOneWidget);
-      expect(find.text(short(second)), findsNothing);
+      expect(findText(strings.recognize.recipient_more(n: 1)), findsOneWidget);
+      expect(findText(short(second)), findsNothing);
     });
 
     testWidgets('a leading script output (no address) is skipped', (tester) async {
@@ -330,7 +398,7 @@ void main() {
         outputs: [TransactionAddress('', 0), TransactionAddress(kChange, 50000)],
       );
       expect(find.byKey(const Key('incident-recognize-facts')), findsOneWidget);
-      expect(find.text(strings.recognize.recipient), findsNothing);
+      expect(findText(strings.recognize.recipient), findsNothing);
       expect(find.byKey(const Key('incident-recognize-recipient')), findsNothing);
     });
   });
@@ -350,19 +418,19 @@ void main() {
     Future<void> chooseMine() async {
       await tester.tap(find.byKey(const Key('incident-recognize-yes')));
       await tester.pumpAndSettle();
-      expect(find.text(strings.recognize.shared_title), findsOneWidget);
-      expect(find.textContaining('savings2'), findsOneWidget);
+      expect(findText(strings.recognize.shared_title), findsOneWidget);
+      expect(findTextContaining('savings2'), findsOneWidget);
     }
 
-    await tester.tap(find.text(strings.tx_banner.review));
+    await tester.tap(findText(strings.tx_banner.review));
     await tester.pumpAndSettle();
     await chooseMine();
-    await tester.tap(find.text(t.cancel));
+    await tester.tap(findText(t.cancel));
     await tester.pumpAndSettle();
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.detected); // 취소하면 그대로
 
     await chooseMine(); // 취소하면 인지 시트에 남아 바로 다시 고를 수 있다
-    await tester.tap(find.text(strings.recognize.shared_confirm));
+    await tester.tap(findText(strings.recognize.shared_confirm));
     await tester.pumpAndSettle();
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.recognized);
     expect(safety.incidentFor(2, kTxid)!.state, IncidentState.recognized); // 같은 txid는 함께 닫힌다
@@ -405,23 +473,23 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_health.review.recent_at_add.body), findsOneWidget);
+    expect(findText(t.wallet_health.review.recent_at_add.body), findsOneWidget);
     expect(safety.incidentFor(other, kTxid), isNull); // 이 지갑에는 사건이 없다
 
     await tester.tap(find.byKey(const Key('incident-recognize-yes')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('daily1'), findsOneWidget); // 함께 닫힐 다른 지갑
-    await tester.tap(find.text(t.cancel));
+    expect(findTextContaining('daily1'), findsOneWidget); // 함께 닫힐 다른 지갑
+    await tester.tap(findText(t.cancel));
     await tester.pumpAndSettle();
 
-    expect(find.text(strings.recognize.shared_title), findsNothing);
+    expect(findText(strings.recognize.shared_title), findsNothing);
     expect(find.byKey(const Key('incident-recognize-yes')), findsOneWidget); // 선택지가 그대로 있다
     expect(find.byKey(const Key('incident-recognize-no')), findsOneWidget);
     expect(safety.state, before);
 
     await tester.tap(find.byKey(const Key('incident-recognize-yes')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.recognize.shared_confirm));
+    await tester.tap(findText(strings.recognize.shared_confirm));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('incident-recognize-yes')), findsNothing);
     expect(safety.state.recognizedTxids, contains(kTxid));
@@ -463,10 +531,10 @@ void main() {
 
       await tester.tap(find.byKey(const Key('incident-recognize-yes')));
       await tester.pumpAndSettle();
-      expect(find.text(strings.recognize.shared_title), findsOneWidget);
-      expect(find.textContaining('savings2'), findsOneWidget);
-      expect(find.textContaining('daily1'), findsNothing); // 지금 지갑은 이름에 넣지 않는다
-      await tester.tap(find.text(t.cancel));
+      expect(findText(strings.recognize.shared_title), findsOneWidget);
+      expect(findTextContaining('savings2'), findsOneWidget);
+      expect(findTextContaining('daily1'), findsNothing); // 지금 지갑은 이름에 넣지 않는다
+      await tester.tap(findText(t.cancel));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('incident-recognize-yes')), findsOneWidget); // 인지 시트로 돌아온다

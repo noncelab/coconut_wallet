@@ -119,6 +119,7 @@ class SafetyGuidePage extends StatefulWidget {
     required this.progress,
     this.iconPath,
     this.icon,
+    this.hero,
     required this.title,
     this.description,
     this.children = const [],
@@ -135,6 +136,9 @@ class SafetyGuidePage extends StatefulWidget {
 
   /// 아이콘 원 안에 [iconPath] 대신 넣을 위젯
   final Widget? icon;
+
+  /// 제 모양을 가진 머리 그림(예: PremiumHero). 있으면 회색 72 원 대신 그대로 그린다
+  final Widget? hero;
   final String title;
   final String? description;
   final List<Widget> children;
@@ -195,6 +199,7 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final hasButton = widget.onButton != null;
+    final hasSubWidget = widget.footer != null || (widget.laterText != null && widget.onLater != null);
     return Scaffold(
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background),
@@ -207,10 +212,20 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
                 SafetyGuideProgressBar(value: widget.progress),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(20, 40, 20, hasButton ? 160 : 40),
+                    // 아래 버튼 묶음과 그 위 페이드를 비켜 간다(R4, 버튼 글이 커지는 만큼 같이)
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      40,
+                      20,
+                      hasButton ? safetyFooterClearance(context, hasSubWidget: hasSubWidget) : 40,
+                    ),
                     child: Column(
                       children: [
-                        if (widget.iconPath != null || widget.icon != null) ...[
+                        if (widget.hero != null) ...[
+                          // 제 모양을 가진 머리 그림(예: PremiumHero)은 회색 원 없이 그대로
+                          _SequentialEntry(visible: _visible > 0, child: widget.hero!),
+                          CoconutLayout.spacing_400h,
+                        ] else if (widget.iconPath != null || widget.icon != null) ...[
                           _SequentialEntry(
                             visible: _visible > 0,
                             child: SafetyIconCircle(
@@ -233,7 +248,7 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
                           child: Semantics(
                             header: true,
                             child: Text(
-                              widget.title,
+                              safetyKoText(widget.title),
                               textAlign: TextAlign.center,
                               style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
                             ),
@@ -244,7 +259,7 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
                           _SequentialEntry(
                             visible: _visible > 2,
                             child: Text(
-                              widget.description!,
+                              safetyKoText(widget.description!),
                               textAlign: TextAlign.center,
                               style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                             ),
@@ -274,6 +289,7 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
     final colors = context.coconutColors;
     final button = FixedBottomButton(
       buttonKey: const Key('safety-guide-button'),
+      surroundingsKey: const Key('safety-guide-fade'),
       onButtonClicked: widget.onButton!,
       text: widget.buttonText,
       isActive: widget.buttonEnabled,
@@ -416,7 +432,7 @@ class SafetyStepList extends StatelessWidget {
             CoconutLayout.spacing_400w,
             Expanded(
               child: Text(
-                steps[index],
+                safetyKoText(steps[index]),
                 style: CoconutTypography.body1_16_Bold.setColor(
                   isDone || isActive ? colors.primaryText : colors.secondaryText,
                 ),
@@ -441,6 +457,7 @@ class SafetyResultPage extends StatefulWidget {
     this.subWidget,
     this.progress,
     this.icon,
+    this.badge,
   });
 
   final String title;
@@ -453,6 +470,9 @@ class SafetyResultPage extends StatefulWidget {
 
   /// 체크 대신 보여 줄 64 아이콘(결제 대기 등). 있으면 체크 애니메이션과 진동을 하지 않는다
   final Widget? icon;
+
+  /// 아이콘과 제목 사이 표시(예: Premium 구매 완료의 PremiumChip). 없으면 자리도 없다
+  final Widget? badge;
 
   @override
   State<SafetyResultPage> createState() => _SafetyResultPageState();
@@ -502,19 +522,25 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
                           (context, constraints) => SingleChildScrollView(
                             child: ConstrainedBox(
                               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                              // 위 52·아래 108: 내용이 짧으면 원래 화면처럼 가운데에서 28 위, 길면 버튼 위까지 스크롤
+                              // 내용이 짧으면 가운데에서 28 위, 길면 버튼 묶음과 그 위 페이드를 비켜 스크롤(R4, 버튼 글이 커지는 만큼 같이)
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(20, 52, 20, 108),
+                                padding: EdgeInsets.fromLTRB(
+                                  20,
+                                  widget.subWidget == null ? 104 : 128,
+                                  20,
+                                  safetyFooterClearance(context, hasSubWidget: widget.subWidget != null),
+                                ),
                                 child: Center(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       widget.icon ?? _checkMark(context),
                                       CoconutLayout.spacing_600h,
+                                      if (widget.badge != null) ...[widget.badge!, CoconutLayout.spacing_300h],
                                       Semantics(
                                         header: true,
                                         child: Text(
-                                          widget.title,
+                                          safetyKoText(widget.title),
                                           textAlign: TextAlign.center,
                                           style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
                                         ),
@@ -523,7 +549,7 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 12),
                                         child: Text(
-                                          widget.description,
+                                          safetyKoText(widget.description),
                                           textAlign: TextAlign.center,
                                           style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                                         ),
@@ -544,6 +570,7 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
               ),
               FixedBottomButton(
                 buttonKey: const Key('safety-result-button'),
+                surroundingsKey: const Key('safety-result-fade'),
                 onButtonClicked: widget.onButton,
                 text: widget.buttonText,
                 surroundingsColor: colors.background,

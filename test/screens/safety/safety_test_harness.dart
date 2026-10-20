@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
@@ -157,6 +158,36 @@ void usePhoneSize(WidgetTester tester) {
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 }
+
+/// 320×640 작은 휴대폰 + 시스템 글자 배율 [scale](POLISH §5·GPT adaptive 검사 조건)
+void useSmallPhone(WidgetTester tester, double scale) {
+  tester.view.physicalSize = const Size(320 * 3, 640 * 3);
+  tester.view.devicePixelRatio = 3;
+  tester.platformDispatcher.textScaleFactorTestValue = scale;
+  addTearDown(tester.view.reset);
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+}
+
+/// 이 테스트 동안만 [locale](긴 독일어 등). 문구는 테스트 안에서 `t.…`로 읽는다
+void useLocale(AppLocale locale) {
+  final before = LocaleSettings.currentLocale;
+  LocaleSettings.setLocaleSync(locale);
+  addTearDown(() => LocaleSettings.setLocaleSync(before));
+}
+
+/// 화면 글로 찾되 R1 이음 문자(U+2060)는 뺀다. 한국어 제목·본문은 단어 가운데 줄바꿈을 막으려고 글자 사이에 넣는다
+Finder findText(String text, {bool skipOffstage = true}) => find.byWidgetPredicate(
+  (widget) => widget is Text && _plainText(widget) == text,
+  description: 'text "$text"',
+  skipOffstage: skipOffstage,
+);
+
+Finder findTextContaining(String text) => find.byWidgetPredicate(
+  (widget) => widget is Text && (_plainText(widget)?.contains(text) ?? false),
+  description: 'text containing "$text"',
+);
+
+String? _plainText(Text widget) => (widget.data ?? widget.textSpan?.toPlainText())?.replaceAll('\u2060', '');
 
 /// 보이게 스크롤한 뒤 누른다
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -126,9 +127,10 @@ class HelpCenterNeverAsksNote extends StatelessWidget {
         ),
         CoconutLayout.spacing_150w,
         Expanded(
+          // 사기 예방 문장은 꼭 읽어야 하므로 코코넛에서도 대비가 서는 secondaryTextStrong(R5)
           child: Text(
-            t.safety_guide.help_center.never_asks,
-            style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+            safetyKoText(t.safety_guide.help_center.never_asks),
+            style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
           ),
         ),
       ],

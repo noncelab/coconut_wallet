@@ -67,8 +67,8 @@ void main() {
     expect(_dot(tester, detected.id), 0);
     expect(find.byKey(Key('safety-alert-unread-${recognized.id}')), findsNothing);
     expect(find.byKey(Key('safety-alert-unread-${dropped.id}')), findsNothing); // 사라짐은 점 없음
-    expect(find.text(strings.incident.dropped_title), findsOneWidget); // 정보 행 제목
-    expect(find.textContaining(strings.incident.dropped_subtitle), findsOneWidget);
+    expect(findText(strings.incident.dropped_title), findsOneWidget); // 정보 행 제목
+    expect(findTextContaining(strings.incident.dropped_subtitle), findsOneWidget);
     for (final text in [
       strings.incident.state.dropped,
       strings.alerts.section_security,
@@ -77,7 +77,7 @@ void main() {
       strings.incident.state.responding,
       strings.incident.state.recognized,
     ]) {
-      expect(find.text(text), findsOneWidget, reason: text);
+      expect(findText(text), findsOneWidget, reason: text);
     }
     expect(find.byKey(const Key('safety-alerts-empty')), findsNothing);
   });
@@ -103,8 +103,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('safety-alerts-empty')), findsOneWidget);
-      expect(find.text(strings.alerts.empty_title), findsOneWidget);
-      expect(tester.widget<Text>(find.text(strings.alerts.empty_body)).style!.color, colors.secondaryText);
+      expect(findText(strings.alerts.empty_title), findsOneWidget);
+      expect(tester.widget<Text>(findText(strings.alerts.empty_body)).style!.color, colors.secondaryText);
       expect(
         tester.widget<Scaffold>(find.byKey(const Key('safety-alerts-screen'))).backgroundColor,
         colors.homeBackground,
@@ -124,7 +124,7 @@ void main() {
     await tester.tap(find.byKey(Key('safety-alert-incident-${incident.id}')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);
-    expect(find.text(t.safety_guide.recognize.title), findsNothing);
+    expect(findText(t.safety_guide.recognize.title), findsNothing);
     expect(safety.incidentFor(kWalletId, kTxid)!.guideStep, 4);
   });
 
@@ -136,12 +136,12 @@ void main() {
       unawaited(SafetyAlertsScreen.open(originContext(tester)));
       await tester.pumpAndSettle();
 
-      expect(find.text(strings.alerts.section_security), findsNothing);
-      expect(find.text(strings.alerts.section_earlier), findsOneWidget);
+      expect(findText(strings.alerts.section_security), findsNothing);
+      expect(findText(strings.alerts.section_earlier), findsOneWidget);
       expect(find.byKey(Key('safety-alert-incident-${incident.id}')), findsOneWidget);
-      expect(find.text(strings.incident.state.dropped), findsOneWidget);
+      expect(findText(strings.incident.state.dropped), findsOneWidget);
       if (txState == IncidentTxState.replaced) {
-        expect(find.textContaining(strings.incident.tx_state.replaced), findsOneWidget);
+        expect(findTextContaining(strings.incident.tx_state.replaced), findsOneWidget);
       }
     });
   }
@@ -163,7 +163,7 @@ void main() {
     unawaited(SafetyAlertsScreen.open(originContext(tester)));
     await tester.pumpAndSettle();
 
-    expect(find.text(strings.alerts.section_attention), findsOneWidget);
+    expect(findText(strings.alerts.section_attention), findsOneWidget);
     expect(find.byType(SafetyReviewRow), findsOneWidget);
     expect(find.byKey(const Key('safety-alerts-empty')), findsNothing);
   });
@@ -216,4 +216,32 @@ void main() {
       expect(safety.hasUnreadAlerts, isFalse);
     });
   });
+
+  // D6/M8: 상태 칩은 줄 폭의 35%까지(긴 독일어·큰 글자면 줄을 바꾼다). 제목 열이 먼저 폭을 받는다
+  for (final scale in [1.3, 2.0]) {
+    testWidgets('the incident status chip stays within its share of the row at ${scale}x on 320dp (German)', (
+      tester,
+    ) async {
+      useSmallPhone(tester, scale);
+      useLocale(AppLocale.de);
+      final recognized = testIncident(state: IncidentState.recognized);
+      final safety = SafetyProvider.fixed(
+        WalletHealthReport(
+          status: WalletHealthStatus.scored,
+          profile: WeightProfile.hotFunded,
+          evaluatedAt: DateTime(2026, 10, 20, 9),
+        ),
+        state: SafetyState(incidents: [recognized]),
+      );
+      await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+      unawaited(SafetyAlertsScreen.open(originContext(tester)));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final row = find.byKey(Key('safety-alert-incident-${recognized.id}'));
+      final chip = find.descendant(of: row, matching: findText(t.wallet_health.incident.state.recognized));
+      expect(chip, findsOneWidget); // 줄을 바꿀 뿐 글자를 자르지 않는다
+      expect(tester.getRect(chip).width, lessThanOrEqualTo(tester.getRect(row).width * 0.35));
+    });
+  }
 }

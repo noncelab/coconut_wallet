@@ -4,11 +4,9 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
-import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
@@ -25,12 +23,11 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart' show safetyHidesAmounts;
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -145,7 +142,7 @@ class _Step1 extends StatelessWidget {
         Divider(color: colors.divider, height: 1),
         CoconutLayout.spacing_600h,
         Text(
-          strings.question,
+          safetyKoText(strings.question),
           textAlign: TextAlign.center,
           style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
         ),
@@ -193,11 +190,11 @@ class _Step2 extends StatelessWidget {
       laterText: t.safety_guide.do_it_later,
       onLater: () => guide.close(context),
       children: [
-        _GuideWalletCard(walletId: guide.walletId),
+        SafetyWalletCard(walletId: guide.walletId),
         if (balance == 0) ...[
           CoconutLayout.spacing_300h,
           Text(
-            strings.nothing_to_move,
+            safetyKoText(strings.nothing_to_move),
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
           ),
@@ -309,7 +306,9 @@ class _PremiumAssistRow extends StatelessWidget {
                   CoconutLayout.spacing_200w,
                   Expanded(
                     child: Text(
-                      premium.isActive ? t.premium.card.active_incident_body : t.premium.incident_chip.body,
+                      safetyKoText(
+                        premium.isActive ? t.premium.card.active_incident_body : t.premium.incident_chip.body,
+                      ),
                       style: CoconutTypography.body3_12.setColor(colors.primaryText),
                     ),
                   ),
@@ -410,7 +409,7 @@ class _Submitted extends StatelessWidget {
         if (unbacked != null) ...[
           CoconutLayout.spacing_400h,
           Text(
-            strings.backup_reminder,
+            safetyKoText(strings.backup_reminder),
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.setColor(colors.secondaryText),
           ),
@@ -477,7 +476,7 @@ class _Step3Marked extends StatelessWidget {
       buttonText: t.safety_guide.next_step,
       // 결과 화면은 뒤로 갈 수 없으므로 STEP4로 바꿔 끼운다(STEP4의 ←는 STEP3)
       onButton: () => Navigator.of(context).pushReplacement(_route('step4', _Step4(guide: guide))),
-      children: [_GuideWalletCard(walletId: guide.walletId, animateBadge: true)],
+      children: [SafetyWalletCard(walletId: guide.walletId, animateBadge: true)],
     );
   }
 }
@@ -607,10 +606,24 @@ class _PremiumSummary extends StatelessWidget {
         children: [
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0) CoconutLayout.spacing_300h,
+            // 이름표와 값 모두 폭 안에서 줄을 바꾼다(긴 독일어 값이 줄을 넘지 않게, WalletSafetyStatusRow와 같은 배치)
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(rows[i].$1, style: CoconutTypography.body2_14.setColor(colors.secondaryText))),
-                Text(rows[i].$2, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                Expanded(
+                  child: Text(
+                    safetyKoText(rows[i].$1),
+                    style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                  ),
+                ),
+                CoconutLayout.spacing_300w,
+                Expanded(
+                  child: Text(
+                    safetyKoText(rows[i].$2),
+                    textAlign: TextAlign.end,
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  ),
+                ),
               ],
             ),
           ],
@@ -636,63 +649,13 @@ class _GuideCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+          Text(safetyKoText(title), style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
           CoconutLayout.spacing_400h,
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0) CoconutLayout.spacing_300h,
             SafetyNumberedRow(number: i + 1, title: items[i]),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// 가이드 안 지갑 카드(Epic 2 WalletCard, 4×2 홈 타일 높이). 잔액은 앱 잔액 표시 설정(숨김·가짜 잔액)을 따른다
-class _GuideWalletCard extends StatelessWidget {
-  const _GuideWalletCard({required this.walletId, this.animateBadge = false});
-
-  final int walletId;
-  final bool animateBadge;
-
-  @override
-  Widget build(BuildContext context) {
-    final wallets = context.watch<WalletProvider?>();
-    final wallet = wallets?.walletItemList.firstWhereOrNull((w) => w.id == walletId);
-    if (wallets == null || wallet == null) return const SizedBox.shrink();
-    final preferences = context.watch<PreferenceProvider?>();
-    String? balance;
-    if (preferences != null && !preferences.isBalanceHidden) {
-      final sats =
-          preferences.isFakeBalanceActive
-              ? preferences.getFakeBalance(walletId).round()
-              : wallets.getWalletBalance(walletId).total;
-      balance = preferences.currentUnit.displayBitcoinAmount(sats, withUnit: true);
-    }
-    var badge = safetyCautionBadgeFor(context, walletId);
-    if (badge != null && animateBadge && !safetyReduceMotion(context)) {
-      badge = badge.scaleInAnimation(delay: const Duration(milliseconds: 300));
-    }
-    final colors = context.coconutColors;
-    return SizedBox(
-      height: 148,
-      child: DecoratedBox(
-        position: DecorationPosition.foreground,
-        // 라이트는 카드(homeSurface)와 단계 화면 바탕이 같은 흰색이라 얇은 테두리로 카드 경계를 남긴다
-        decoration:
-            colors.homeSurface == colors.background
-                ? BoxDecoration(
-                  border: Border.all(color: colors.border.withValues(alpha: 0.21)),
-                  borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
-                )
-                : const BoxDecoration(),
-        child: WalletCard(
-          wallet: wallet,
-          appearance: WalletAppearance.of(wallet),
-          size: WalletCardSize.wide,
-          balanceDisplay: balance,
-          statusBadge: badge,
-        ),
       ),
     );
   }

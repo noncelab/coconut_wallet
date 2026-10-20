@@ -1,8 +1,11 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/home/home_item_definition.dart' show kHomeTileMaxTextScale;
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,18 +27,18 @@ void main() {
       final safety = fixedSafety(caution: {kWalletId});
       await tester.pumpWidget(safetyTestApp(_walletDetailLike(), safety: safety, variant: variant));
       expect(find.byKey(const Key('safety-caution-banner')), findsOneWidget);
-      expect(find.text(strings.badge), findsNWidgets(2)); // 배너 제목 + 배지
+      expect(findText(strings.badge), findsNWidgets(2)); // 배너 제목 + 배지
 
-      await tester.tap(find.text(strings.remove_link));
+      await tester.tap(findText(strings.remove_link));
       await tester.pumpAndSettle();
-      expect(find.text(strings.remove_title), findsOneWidget);
-      await tester.tap(find.text(strings.remove_confirm));
+      expect(findText(strings.remove_title), findsOneWidget);
+      await tester.tap(findText(strings.remove_confirm));
       await tester.pumpAndSettle();
 
       expect(safety.isCaution(kWalletId), isFalse);
       expect(find.byKey(const Key('safety-caution-banner')), findsNothing);
-      expect(find.text(strings.badge), findsNothing);
-      expect(find.text(strings.removed_toast), findsOneWidget);
+      expect(findText(strings.badge), findsNothing);
+      expect(findText(strings.removed_toast), findsOneWidget);
       await settleToasts(tester);
     });
   }
@@ -43,9 +46,9 @@ void main() {
   testWidgets('cancel keeps the caution', (tester) async {
     final safety = fixedSafety(caution: {kWalletId});
     await tester.pumpWidget(safetyTestApp(_walletDetailLike(), safety: safety));
-    await tester.tap(find.text(strings.remove_link));
+    await tester.tap(findText(strings.remove_link));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(t.cancel));
+    await tester.tap(findText(t.cancel));
     await tester.pumpAndSettle();
     expect(safety.isCaution(kWalletId), isTrue);
     expect(find.byKey(const Key('safety-caution-banner')), findsOneWidget);
@@ -85,39 +88,112 @@ void main() {
       ),
     );
     expect(noProvider, isNull);
-    expect(find.text(strings.badge), findsNothing);
+    expect(findText(strings.badge), findsNothing);
   });
 
-  // 큰 글자에서는 지갑 목록 카드가 설명 줄을 아래로 내린다(placeTrailingBelow). 그때도 배지가 보여야 한다
-  for (final (layout, below, scale) in [('one-line', false, 1.0), ('large-text', true, 2.0)]) {
-    testWidgets('wallet list card shows the caution badge in the $layout layout (text scale $scale)', (tester) async {
+  // D1: 지갑 목록 카드의 배지는 이름 줄을 밀지 않고 신원 열 끝 자기 줄에 있다(큰 글자면 설명 줄이 아래로 내려간다)
+  for (final (below, scale) in [(false, 1.0), (false, 1.3), (true, 2.0)]) {
+    testWidgets('wallet list card puts the caution badge on its own line (320dp, ${scale}x, German)', (tester) async {
+      useSmallPhone(tester, scale);
+      useLocale(AppLocale.de);
+      final wallet = WalletMock.createSingleSigWalletItem(id: kWalletId);
       Widget card(Set<int> caution) => safetyTestApp(
-        Builder(
-          builder:
-              (context) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
-                child: Scaffold(
-                  body: WalletItemCard(
-                    walletItem: WalletMock.createSingleSigWalletItem(id: kWalletId),
-                    animatedBalanceData: AnimatedBalanceData(100000, 100000),
-                    currentUnit: BitcoinUnit.btc,
-                    isLastItem: true,
-                    placeTrailingBelow: below,
-                    rightWidget: const SizedBox(),
-                    onPressed: () {},
-                  ),
-                ),
-              ),
+        Scaffold(
+          body: WalletItemCard(
+            walletItem: wallet,
+            animatedBalanceData: AnimatedBalanceData(100000, 100000),
+            currentUnit: BitcoinUnit.btc,
+            isLastItem: true,
+            placeTrailingBelow: below,
+            rightWidget: const SizedBox(),
+            onPressed: () {},
+          ),
         ),
         safety: fixedSafety(caution: caution),
       );
 
       await tester.pumpWidget(card({kWalletId}));
-      expect(find.text(strings.badge), findsOneWidget);
       expect(tester.takeException(), isNull);
+      final badge = findText(t.safety_guide.caution.badge);
+      expect(badge, findsOneWidget);
+      expect(tester.getRect(badge).top, greaterThanOrEqualTo(tester.getRect(findText(wallet.name)).bottom));
+      expect(tester.getRect(find.byType(SafetyCautionBadge)).right, lessThanOrEqualTo(320));
 
+      // 사용 주의가 아니면 배지도 그 위 간격도 없다(기존 카드 높이 그대로)
       await tester.pumpWidget(card(const {}));
-      expect(find.text(strings.badge), findsNothing);
+      expect(badge, findsNothing);
+      expect(tester.getSize(find.byType(SafetyCautionBadge)), Size.zero);
     });
   }
+
+  // D2: 2×2 홈 카드용 아이콘 원(글자 없이 20, 뜻은 의미 라벨로)
+  testWidgets('the compact badge is a 20dp icon circle carrying the caution label', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      safetyTestApp(
+        const Center(child: SafetyCautionBadge(walletId: kWalletId, compact: true)),
+        safety: fixedSafety(caution: {kWalletId}),
+      ),
+    );
+    expect(findText(t.safety_guide.caution.badge), findsNothing);
+    expect(tester.getSize(find.byType(SafetyCautionBadge)), const Size(20, 20));
+    expect(find.bySemanticsLabel(t.safety_guide.caution.badge_a11y), findsOneWidget);
+    semantics.dispose();
+  });
+
+  // M2/D9: WalletCard 머리 줄은 배지 폭을 묶지 않는다(Expanded 이름 열 + 배지). 배지가 스스로 줄여 맞춘다
+  for (final scale in [1.3, 2.0]) {
+    testWidgets('the WalletCard slot badge stays within its width at ${scale}x in German', (tester) async {
+      useSmallPhone(tester, scale);
+      useLocale(AppLocale.de);
+      await tester.pumpWidget(
+        safetyTestApp(
+          Scaffold(
+            body: Builder(
+              builder:
+                  (context) =>
+                      Row(children: [const Expanded(child: Text('name')), safetyCautionBadgeFor(context, kWalletId)!]),
+            ),
+          ),
+          safety: fixedSafety(caution: {kWalletId}),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byType(SafetyCautionBadge)).width, lessThanOrEqualTo(kSafetyCautionSlotMaxWidth));
+      expect(findText(t.safety_guide.caution.badge), findsOneWidget); // 글자는 줄이지만 자르지 않는다
+    });
+  }
+
+  testWidgets('a wide WalletCard with the slot badge fits 320dp at the home 1.2x cap in German', (tester) async {
+    useSmallPhone(tester, 2.0);
+    useLocale(AppLocale.de);
+    final wallet = WalletMock.createSingleSigWalletItem(id: kWalletId);
+    await tester.pumpWidget(
+      safetyTestApp(
+        Scaffold(
+          body: Center(
+            child: Builder(
+              builder:
+                  (context) => MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: kHomeTileMaxTextScale,
+                    child: SizedBox(
+                      width: 280,
+                      height: 148,
+                      child: WalletCard(
+                        wallet: wallet,
+                        appearance: WalletAppearance.of(wallet),
+                        size: WalletCardSize.wide,
+                        statusBadge: safetyCautionBadgeFor(context, kWalletId),
+                      ),
+                    ),
+                  ),
+            ),
+          ),
+        ),
+        safety: fixedSafety(caution: {kWalletId}),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(findText(t.safety_guide.caution.badge), findsOneWidget);
+  });
 }

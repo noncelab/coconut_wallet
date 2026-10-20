@@ -52,7 +52,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('transaction-safety-banner-info')), findsOneWidget);
         expect(tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner)).background, colors.surface);
-        expect(find.text(t.safety_guide.tx_banner.continue_guide), findsOneWidget);
+        expect(findText(t.safety_guide.tx_banner.continue_guide), findsOneWidget);
       });
     }
     for (final (name, incident, background, hasLink) in cases) {
@@ -82,9 +82,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('transaction-safety-banner-info')), findsOneWidget);
-    expect(find.textContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsOneWidget);
+    expect(findTextContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsOneWidget);
 
-    await tester.tap(find.text(t.safety_guide.tx_banner.view_alerts));
+    await tester.tap(findText(t.safety_guide.tx_banner.view_alerts));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-alerts-screen')), findsOneWidget);
   });
@@ -97,7 +97,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsNothing);
-    expect(find.text(t.safety_guide.tx_banner.view_alerts), findsNothing);
+    expect(findTextContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsNothing);
+    expect(findText(t.safety_guide.tx_banner.view_alerts), findsNothing);
   });
 }

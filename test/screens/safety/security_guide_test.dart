@@ -11,6 +11,7 @@ import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 import 'package:coconut_wallet/widgets/features/safety/transaction_safety_banner.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -57,34 +58,34 @@ void main() {
     for (final task in ['create', 'utxo', 'send']) {
       expect(find.byKey(Key('safety-guide-step2-$task')), findsOneWidget);
     }
-    await tester.tap(find.text(strings.step2.moved));
+    await tester.tap(findText(strings.step2.moved));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.step2.moved_confirm));
+    await tester.tap(findText(strings.step2.moved_confirm));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-step3')), findsOneWidget);
     expect(incident().guideStep, 3);
-    await tester.tap(find.text(strings.step3.mark));
+    await tester.tap(findText(strings.step3.mark));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-step3-marked')), findsOneWidget);
     expect(safety.isCaution(kWalletId), isTrue);
     expect(incident().guideStep, 4);
-    expect(find.text(strings.caution.badge), findsOneWidget); // 지갑 카드 배지
-    await tester.tap(find.text(strings.next_step));
+    expect(findText(strings.caution.badge), findsOneWidget); // 지갑 카드 배지
+    await tester.tap(findText(strings.next_step));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);
-    expect(find.text(strings.step4.watch_only_title), findsOneWidget); // 보기 전용 지갑
-    await tester.tap(find.text(strings.step4.complete));
+    expect(findText(strings.step4.watch_only_title), findsOneWidget); // 보기 전용 지갑
+    await tester.tap(findText(strings.step4.complete));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-done')), findsOneWidget);
     expect(incident().state, IncidentState.completed);
-    expect(find.text(strings.complete.free_body_marked), findsOneWidget);
-    expect(find.text(strings.help_center.never_asks), findsOneWidget);
+    expect(findText(strings.complete.free_body_marked), findsOneWidget);
+    expect(findText(strings.help_center.never_asks), findsOneWidget);
     expect(find.byKey(const Key('safety-guide-help')), findsNothing); // 도움 받기 행은 Premium만
-    await tester.tap(find.text(t.done));
+    await tester.tap(findText(t.done));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('origin')), findsOneWidget);
@@ -131,14 +132,14 @@ void main() {
     final safety = fixedSafety(incidents: [testIncident(state: IncidentState.responding, guideStep: 4)]);
     await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
     await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
-    expect(find.text(strings.step4.hot_title), findsOneWidget); // 지갑 정보가 없으면 핫월렛 문구
+    expect(findText(strings.step4.hot_title), findsOneWidget); // 지갑 정보가 없으면 핫월렛 문구
 
     await tester.tap(find.byKey(const Key('safety-guide-later')));
     await tester.pumpAndSettle();
-    expect(find.text(strings.exposure.no_reuse_title), findsOneWidget);
-    expect(find.text(strings.help_center.never_asks), findsOneWidget);
+    expect(findText(strings.exposure.no_reuse_title), findsOneWidget);
+    expect(findText(strings.help_center.never_asks), findsOneWidget);
     await tapVisible(tester, find.byKey(const Key('safety-exposure-got-it')));
-    expect(find.text(strings.exposure.no_reuse_title), findsNothing);
+    expect(findText(strings.exposure.no_reuse_title), findsNothing);
     expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);
   });
 
@@ -150,7 +151,7 @@ void main() {
       safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.tx_banner.review_guide));
+    await tester.tap(findText(strings.tx_banner.review_guide));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-guide-step1')), findsOneWidget);
@@ -167,17 +168,38 @@ void main() {
     );
     await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
     await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
-    await tester.tap(find.text(strings.step4.complete));
+    await tester.tap(findText(strings.step4.complete));
     await tester.pumpAndSettle();
 
-    expect(find.text(strings.complete.premium_title), findsOneWidget);
-    expect(find.text(strings.complete.none), findsOneWidget); // 대응 거래 없음
-    expect(find.text(strings.complete.wallet_normal), findsOneWidget);
-    expect(find.text(strings.help_center.subtitle), findsOneWidget);
+    expect(findText(strings.complete.premium_title), findsOneWidget);
+    expect(findText(strings.complete.none), findsOneWidget); // 대응 거래 없음
+    expect(findText(strings.complete.wallet_normal), findsOneWidget);
+    expect(findText(strings.help_center.subtitle), findsOneWidget);
     await tapVisible(tester, find.byKey(const Key('safety-guide-help')));
     expect(find.byKey(const Key('help-channel-discord')), findsOneWidget);
     expect(find.byKey(const Key('help-channel-email')), findsOneWidget);
-    expect(find.text(strings.help_center.never_asks), findsNWidgets(2)); // 완료 화면 + 시트
+    expect(findText(strings.help_center.never_asks), findsNWidgets(2)); // 완료 화면 + 시트
+  });
+
+  // M4: 가이드의 지갑 카드는 홈 지갑 카드 모양이라 홈 타일과 같은 1.2배 상한을 둔다(둘레 글은 시스템 배율 그대로)
+  testWidgets('the guide wallet card keeps the home 1.2x cap at 2.0x on 320dp', (tester) async {
+    useSmallPhone(tester, 2.0);
+    final safety = fixedSafety(incidents: [testIncident(state: IncidentState.responding, guideStep: 2)]);
+    await tester.pumpWidget(
+      safetyTestApp(
+        origin(),
+        safety: safety,
+        wallets: FakeWallets([WalletMock.createSingleSigWalletItem(id: kWalletId)], balance: 123456),
+        preferences: FakePreferences(),
+      ),
+    );
+    await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+    expect(find.byKey(const Key('safety-guide-step2')), findsOneWidget);
+    final card = find.byType(WalletCard);
+    expect(card, findsOneWidget);
+    expect(MediaQuery.textScalerOf(tester.element(card)).scale(10), closeTo(12, 0.001));
+    expect(MediaQuery.textScalerOf(tester.element(findText(strings.step2.title))).scale(10), closeTo(20, 0.001));
+    expect(tester.takeException(), isNull);
   });
 
   group('resume after a Premium move was sent', () {
@@ -209,7 +231,7 @@ void main() {
       expect(find.byKey(const Key('safety-guide-submitted')), findsOneWidget);
       expect(find.byKey(const Key('safety-guide-back-up-now')), findsNothing);
       expect(safety.incidentFor(kWalletId, kTxid)!.guideStep, 3);
-      await tester.tap(find.text(strings.continue_review));
+      await tester.tap(findText(strings.continue_review));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('safety-guide-step3')), findsOneWidget);
     });
@@ -250,7 +272,57 @@ void main() {
       await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
 
       expect(find.byKey(const Key('safety-guide-back-up-now')), findsOneWidget);
-      expect(find.text(strings.move.backup_reminder), findsOneWidget);
+      expect(findText(strings.move.backup_reminder), findsOneWidget);
+    });
+
+    // M10/R4: 큰 글자에서 버튼이 두 줄이 되고 "지금 백업하기"가 붙어도 마지막 안내가 버튼과 페이드 위로 스크롤된다
+    testWidgets('the submitted page scrolls the backup reminder clear of the footer at 2.0x on 320dp', (tester) async {
+      useSmallPhone(tester, 2.0);
+      useLocale(AppLocale.en);
+      final hot = SinglesigWalletItem(
+        id: 2,
+        name: 'new',
+        colorIndex: 0,
+        iconIndex: 0,
+        descriptor: WalletMock.createSingleSigWalletItem().descriptor,
+        hotWalletMetadata: HotWalletMetadata(
+          walletId: 2,
+          secureStorageKey: 'key',
+          masterFingerprint: 'D45AA182',
+          derivationPath: "m/84'/1'/0'",
+          accountIndex: 0,
+          backupVerified: false,
+          enterPassphraseWhenSigning: false,
+          createdAt: assistAt.add(const Duration(minutes: 1)),
+        ),
+      );
+      await tester.pumpWidget(
+        safetyTestApp(
+          origin(),
+          safety: sentAfterAssist(),
+          wallets: FakeWallets(
+            [hot],
+            records: {'move'},
+            owned: {
+              2: {kRecipient},
+            },
+          ),
+          // 금액 없는 요약 줄(앱 공용 TransactionItemCard는 2.0배·320dp에서 따로 넘친다: 리드에 보고)
+          preferences: FakePreferences(isBalanceHidden: true),
+        ),
+      );
+      await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+      expect(find.byKey(const Key('safety-guide-back-up-now')), findsOneWidget);
+      final scroll = find.descendant(
+        of: find.byKey(const Key('safety-guide-submitted')),
+        matching: find.byType(SingleChildScrollView),
+      );
+      await tester.dragFrom(tester.getTopLeft(scroll) + const Offset(40, 24), const Offset(0, -8000)); // 버튼 묶음 위에서 끈다
+      await tester.pumpAndSettle();
+      final last = tester.getRect(findText(t.safety_guide.move.backup_reminder)).bottom;
+      expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-button'))).top));
+      expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-fade'))).top));
+      expect(tester.takeException(), isNull);
     });
 
     // R1-M3: 보낸 거래 요약도 잔액 숨김·가짜 잔액·설정 없음이면 금액 없이 "보낸 거래 · 지갑 이름"
@@ -278,9 +350,9 @@ void main() {
 
         expect(find.byKey(const Key('safety-guide-submitted-tx')), findsOneWidget);
         expect(find.byType(TransactionItemCard), showsAmount ? findsOneWidget : findsNothing);
-        expect(find.text(BitcoinUnit.btc.displayBitcoinAmount(-50000)), showsAmount ? findsOneWidget : findsNothing);
-        expect(find.text(t.wallet_health.critical.sent_transaction), showsAmount ? findsNothing : findsOneWidget);
-        expect(find.textContaining('daily'), showsAmount ? findsNothing : findsOneWidget);
+        expect(findText(BitcoinUnit.btc.displayBitcoinAmount(-50000)), showsAmount ? findsOneWidget : findsNothing);
+        expect(findText(t.wallet_health.critical.sent_transaction), showsAmount ? findsNothing : findsOneWidget);
+        expect(findTextContaining('daily'), showsAmount ? findsNothing : findsOneWidget);
       });
     }
   });
@@ -323,11 +395,11 @@ void main() {
         );
         await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
         await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
-        await tester.tap(find.text(strings.step4.complete));
+        await tester.tap(findText(strings.step4.complete));
         await tester.pumpAndSettle();
 
-        expect(find.text(strings.complete.sent), sent ? findsOneWidget : findsNothing);
-        expect(find.text(strings.complete.none), sent ? findsNothing : findsOneWidget);
+        expect(findText(strings.complete.sent), sent ? findsOneWidget : findsNothing);
+        expect(findText(strings.complete.none), sent ? findsNothing : findsOneWidget);
       });
     }
   });
@@ -341,22 +413,22 @@ void main() {
       safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.tx_banner.review_guide));
+    await tester.tap(findText(strings.tx_banner.review_guide));
     await tester.pumpAndSettle();
 
     await tapVisible(tester, find.byKey(const Key('safety-guide-step1-not-found')));
-    expect(find.text(strings.step2.moved), findsNothing); // "완료했어요" 확인 없이
-    await tester.tap(find.text(strings.next_step));
+    expect(findText(strings.step2.moved), findsNothing); // "완료했어요" 확인 없이
+    await tester.tap(findText(strings.next_step));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-guide-step3')), findsOneWidget);
-    expect(find.text(strings.step3.mark), findsNothing);
-    await tester.tap(find.text(strings.next_step));
+    expect(findText(strings.step3.mark), findsNothing);
+    await tester.tap(findText(strings.next_step));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-guide-step3-marked')), findsNothing);
     expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);
-    await tester.tap(find.text(strings.step4.complete));
+    await tester.tap(findText(strings.step4.complete));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(t.done));
+    await tester.tap(findText(t.done));
     await tester.pumpAndSettle();
 
     expect(safety.state, before);
@@ -375,10 +447,43 @@ void main() {
     await _openGuide(tester, (context) => SecurityGuide.start(context, kIncidentId));
     await tapVisible(tester, find.byKey(const Key('safety-guide-step1-found')));
 
-    expect(find.text(strings.recognize.shared_title), findsOneWidget);
-    await tester.tap(find.text(t.cancel));
+    expect(findText(strings.recognize.shared_title), findsOneWidget);
+    await tester.tap(findText(t.cancel));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-guide-step1')), findsOneWidget);
     expect(safety.incidentFor(kWalletId, kTxid)!.state, IncidentState.responding);
   });
+
+  // D10/M9: 완료 화면 Premium 요약의 값도 폭 안에서 줄을 바꾼다(긴 독일어 "Mit Vorsicht nutzen")
+  for (final scale in [1.3, 2.0]) {
+    testWidgets('the Premium done summary fits 320dp at ${scale}x in German', (tester) async {
+      useSmallPhone(tester, scale);
+      useLocale(AppLocale.de);
+      final safety = SafetyProvider.fixed(
+        null,
+        state: SafetyState(
+          incidents: [
+            SafetyIncident(
+              walletId: kWalletId,
+              txid: kTxid,
+              detectedAt: DateTime(2026, 10, 20, 9),
+              state: IncidentState.responding,
+              responseMode: IncidentResponseMode.premium,
+              guideStep: 4,
+              assistStartedAt: DateTime(2026, 10, 20, 10),
+            ),
+          ],
+          cautionWalletIds: const {kWalletId},
+        ),
+      );
+      await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+      await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+      await tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+      expect(find.byKey(const Key('safety-guide-done')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      final value = findText(t.safety_guide.caution.badge);
+      expect(value, findsOneWidget);
+      expect(tester.getRect(value).right, lessThanOrEqualTo(320));
+    });
+  }
 }
