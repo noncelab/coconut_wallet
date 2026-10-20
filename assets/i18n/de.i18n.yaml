@@ -2265,7 +2265,7 @@ wallet_health:
       one: "+1 weiterer"
       other: "+${n} weitere"
     outgoing_short: "Ausgang erkannt"
-    no_wallet: "Füge eine Wallet hinzu, um mit der Prüfung zu beginnen"
+    no_wallet: "Prüfung startet mit einer Wallet"
     a11y: "Widget Sicherheitsstatus, ${status}"
   summary:
     check_again: "Erneut prüfen"

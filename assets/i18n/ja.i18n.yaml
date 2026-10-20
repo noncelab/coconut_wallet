@@ -2275,7 +2275,7 @@ wallet_health:
       one: "ほか1件"
       other: "ほか${n}件"
     outgoing_short: "出金を検出"
-    no_wallet: "ウォレットを追加するとチェックを始めます"
+    no_wallet: "ウォレット追加で点検開始"
     a11y: "安全ステータスウィジェット、${status}"
   summary:
     check_again: "再チェック"

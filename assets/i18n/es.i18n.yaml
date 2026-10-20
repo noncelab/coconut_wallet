@@ -2278,7 +2278,7 @@ wallet_health:
       one: "y 1 más"
       other: "y ${n} más"
     outgoing_short: "Salida detectada"
-    no_wallet: "Añade una billetera para empezar a revisar"
+    no_wallet: "Primero, añade una billetera"
     a11y: "Widget Estado de seguridad, ${status}"
   summary:
     check_again: "Revisar de nuevo"
