@@ -182,8 +182,8 @@ void main() {
       await tester.pumpWidget(host(InlineActionButton(text: 'Continue', isActive: false, onPressed: () => taps++)));
       final node = tester.getSemantics(find.byType(ShrinkAnimationButton)).getSemanticsData();
       expect(node.flagsCollection.isButton, isTrue);
-      expect(node.flagsCollection.hasEnabledState, isTrue);
-      expect(node.flagsCollection.isEnabled, isFalse);
+      expect(node.flagsCollection.isEnabled, isNot(ui.Tristate.none));
+      expect(node.flagsCollection.isEnabled, isNot(ui.Tristate.isTrue));
       expect(node.hasAction(SemanticsAction.tap), isFalse);
       await tester.tap(find.text('Continue'));
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
@@ -304,7 +304,7 @@ void main() {
       for (final selected in [true, false]) {
         await tester.pumpWidget(host(SelectableSettingsRow(title: 'Theme', isSelected: selected, onTap: () {})));
         final node = tester.getSemantics(find.byType(ShrinkAnimationButton)).getSemanticsData();
-        expect(node.flagsCollection.isSelected, selected);
+        expect(node.flagsCollection.isSelected == ui.Tristate.isTrue, selected);
         expect(node.flagsCollection.isButton, isTrue);
       }
       semantics.dispose();

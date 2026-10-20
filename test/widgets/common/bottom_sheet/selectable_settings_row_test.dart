@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +42,8 @@ void main() {
           expect(numericStyle.fontWeight, defaultStyle.fontWeight);
           expect(numericStyle.color, resolveCoconutThemeExtension(variant: variant).colors.primaryText);
           expect(
-            tester.getSemantics(find.bySemanticsLabel('1,234,567.89')).getSemanticsData().flagsCollection.isSelected,
+            tester.getSemantics(find.bySemanticsLabel('1,234,567.89')).getSemanticsData().flagsCollection.isSelected ==
+                Tristate.isTrue,
             selected,
           );
           expect(tester.takeException(), isNull);

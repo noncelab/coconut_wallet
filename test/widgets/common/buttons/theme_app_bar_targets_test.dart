@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -180,7 +182,7 @@ void main() {
       await tester.pumpWidget(host(false));
       final data = tester.getSemantics(find.byType(TextButton)).getSemanticsData();
       expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.isEnabled, isFalse);
+      expect(data.flagsCollection.isEnabled, isNot(Tristate.isTrue));
       expect(data.hasAction(SemanticsAction.tap), isFalse);
       await tester.tap(find.text('Next'));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
