@@ -71,7 +71,10 @@ class AddressSearchViewModel extends ChangeNotifier {
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      if (recipient.startsWith('1') || recipient.startsWith('3') || recipient.startsWith('bc1')) {
+      if (recipient.startsWith('1') ||
+          recipient.startsWith('3') ||
+          recipient.startsWith('bc1') ||
+          recipient.startsWith('bcrt1')) {
         throw notTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {

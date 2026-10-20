@@ -170,7 +170,11 @@ class AddressValidator {
     }
 
     if (networkType == NetworkType.testnet) {
-      if (normalized.startsWith('1') || normalized.startsWith('3') || normalized.startsWith('bc1')) {
+      // coconut_lib은 testnet과 regtest를 같은 테스트넷으로 보므로 bcrt1(regtest)도 여기서 거른다
+      if (normalized.startsWith('1') ||
+          normalized.startsWith('3') ||
+          normalized.startsWith('bc1') ||
+          normalized.startsWith('bcrt1')) {
         return AddressValidationError.notTestnetAddress;
       }
     } else if (networkType == NetworkType.mainnet) {
