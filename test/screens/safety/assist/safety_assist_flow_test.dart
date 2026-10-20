@@ -1386,12 +1386,28 @@ void main() {
       }
     });
 
-    testWidgets('X2: 2.0배 검토의 네트워크 수수료·보낼 금액은 금액+단위가 한 덩어리로 한 줄', (tester) async {
-      await openOptions(tester, 2);
+    /// 대응 방법 → 대체 거래 준비 → 받는 지갑 → 검토
+    Future<void> openReviewFromOptions(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('safety-guide-button'))); // 대체 거래 준비
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
       await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+    }
+
+    testWidgets('X1: 2.0배 검토 화면에서 페이드의 불투명한 아래 절반이 수수료 줄 위에서 시작(실제 화면)', (tester) async {
+      await openOptions(tester, 2);
+      await openReviewFromOptions(tester);
+      // 페이드는 위 투명 → 높이 절반에서 불투명(stops 0·0.5). 수수료 줄은 그 불투명한 구간 안에 있어야 지나가는 내용과 겹쳐 보이지 않는다
+      final fade = tester.getRect(find.byKey(const Key('safety-guide-fade')));
+      final fee = tester.getRect(find.byKey(const Key('safety-assist-review-fee')));
+      expect(fade.top + fade.height / 2, lessThanOrEqualTo(fee.top), reason: 'fade $fade, fee $fee');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('X2: 2.0배 검토의 네트워크 수수료·보낼 금액은 금액+단위가 한 덩어리로 한 줄', (tester) async {
+      await openOptions(tester, 2);
+      await openReviewFromOptions(tester);
       for (final key in ['safety-assist-review-fee', 'safety-assist-review-amount']) {
         // 금액(숫자 묶음 사이 빈칸 포함)으로 끝나는 글이 하나, 그 글은 한 줄로 그려진다
         final amount = find.descendant(
