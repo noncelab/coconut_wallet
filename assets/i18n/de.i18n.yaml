@@ -1078,6 +1078,11 @@ utxo_tag_screen:
   add_tag: "Drücken Sie die +-Taste, um Ihr erstes Tag zu erstellen"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "Wählen Sie eine Beobachtungs-Wallet aus, um Bitcoin zu empfangen."
+  vault_unused_title: "Dieser Tresor hat keinen Transaktionsverlauf"
+  vault_unused_description: "Dieser Tresor hat keinen Transaktionsverlauf. Prüfe die Empfangsadresse auf deiner Hardware-Wallet, bevor du fortfährst, um eine falsche Überweisung zu vermeiden."
+  vault_unused_continue: "Nach Prüfung fortfahren"
+  vault_sync_required_title: "Tresor zuerst synchronisieren"
+  vault_sync_required_description: "Transaktionsverlauf und Empfangsadresse konnten noch nicht geprüft werden. Prüfe die Verbindung und den Synchronisierungsstatus und wähle den Tresor nach Abschluss erneut aus."
   vault_select_receiving_wallet: "Empfangstresor auswählen"
   vault_connect_watch_only_wallet: "Wallet zur Tresorüberwachung verbinden"
   vault_watch_only_description: "Registrieren Sie eine „Wallet zur Tresorüberwachung (nur zum Beobachten)“ in der App. So können Sie Ihre Bitcoin sicher in Echtzeit überprüfen, ohne Ihr dediziertes Gerät jedes Mal einzuschalten."
