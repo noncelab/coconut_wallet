@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutSwitch;
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
@@ -15,9 +16,12 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart' show InlineActionButton;
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, rootBundle;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -165,8 +169,23 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Border? planBorder(WidgetTester tester, PremiumPeriod period) =>
-      tester.widget<ShrinkAnimationButton>(find.byKey(Key('premium-plan-${period.name}'))).border;
+  final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors;
+
+  /// 고른 플랜 카드만 로고 그라데이션 링, 안 고른 카드는 같은 두께의 투명 링
+  Gradient? planRing(WidgetTester tester, PremiumPeriod period) =>
+      tester.widget<ShrinkAnimationButton>(find.byKey(Key('premium-plan-${period.name}'))).borderGradient;
+
+  /// 줄바꿈을 막는 보이지 않는 문자(단어 이음·줄바꿈 없는 공백)를 걷어 낸 글
+  String plain(String text) => text.replaceAll('\u2060', '').replaceAll('\u00A0', ' ');
+
+  /// 버튼 위 플랜 줄 + 갱신 줄(Text.rich 하나)
+  String planText(WidgetTester tester) =>
+      plain(tester.widget<Text>(find.byKey(const Key('premium-paywall-selected-plan'))).textSpan!.toPlainText());
+
+  bool isAsset(Widget w, String asset) =>
+      w is SvgPicture && w.bytesLoader is SvgAssetLoader && (w.bytesLoader as SvgAssetLoader).assetName == asset;
+
+  ColorFilter tint(Color color) => ColorFilter.mode(color, BlendMode.srcIn);
 
   group('페이월', () {
     testWidgets('스토어 가격 그대로·연간 기본 선택·자동 갱신 고지·약관·개인정보·복원', variant: TargetPlatformVariant.only(TargetPlatform.iOS), (
@@ -179,8 +198,8 @@ void main() {
       expect(find.text('US\$ 4,99'), findsOneWidget);
       expect(find.text(t.premium.paywall.period_year), findsOneWidget);
       expect(find.text(t.premium.paywall.compare_note), findsOneWidget);
-      expect(planBorder(tester, PremiumPeriod.yearly)!.top.color, isNot(Colors.transparent));
-      expect(planBorder(tester, PremiumPeriod.monthly)!.top.color, Colors.transparent);
+      expect(planRing(tester, PremiumPeriod.yearly), colors.mainnetLogoGradient);
+      expect((planRing(tester, PremiumPeriod.monthly)! as LinearGradient).colors, everyElement(Colors.transparent));
       expect(find.text('${t.premium.store_notice.apple} ${t.premium.paywall.platform_note}'), findsOneWidget);
       expect(find.text(t.app_info_screen.terms_of_service), findsOneWidget);
       expect(find.text(t.app_info_screen.privacy_policy), findsOneWidget);
@@ -213,20 +232,28 @@ void main() {
         expect(rect.bottom, lessThanOrEqualTo(button.top));
       }
 
-      String plan(String period, String price) => '${t.premium.name} · $period · $price';
-      expectAboveButton(find.text(plan(t.premium.paywall.period_year, '₩39,000')));
-      expectAboveButton(find.text(t.premium.paywall.renew_line(store: 'Google Play')));
+      String plan(String period, String price) =>
+          '${t.premium.name} · $period · $price\n${t.premium.paywall.renew_line(store: 'Google Play')}';
+      final planLine = find.byKey(const Key('premium-paywall-selected-plan'));
+      expect(planText(tester), plan(t.premium.paywall.period_year, '₩39,000'));
+      expectAboveButton(planLine);
       expectAboveButton(find.text(t.app_info_screen.terms_of_service));
       expectAboveButton(find.text(t.app_info_screen.privacy_policy));
       expectAboveButton(find.text(t.premium.paywall.restore));
       expect(button.bottom, lessThanOrEqualTo(640));
+      // 구매 복원은 법적 링크 사이가 아니라 버튼 바로 위 따로 한 줄(UI_SPEC §10.3)
+      expect(
+        tester.getRect(find.byKey(const Key('premium-paywall-restore'))).top,
+        greaterThanOrEqualTo(tester.getRect(find.byKey(const Key('premium-paywall-terms'))).bottom),
+      );
 
       // 플랜을 바꾸면 버튼 위 줄도 그 플랜의 가격·기간으로 바뀐다
       await tester.ensureVisible(find.byKey(const Key('premium-plan-monthly')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('premium-plan-monthly')));
       await tester.pumpAndSettle();
-      expectAboveButton(find.text(plan(t.premium.paywall.period_month, 'US\$ 4,99')));
+      expect(planText(tester), plan(t.premium.paywall.period_month, 'US\$ 4,99'));
+      expectAboveButton(planLine);
     });
 
     testWidgets('가이드·도움말 줄은 도움 받기 시트를 연다', (tester) async {
@@ -254,15 +281,15 @@ void main() {
       expect(find.text(t.premium.paywall.start_trial), findsOneWidget);
       expect(find.textContaining(t.premium.store_notice.google_trial), findsOneWidget);
       expect(
-        find.text('${t.premium.name} · ${t.premium.paywall.period_year} · ₩39,000 · ${t.premium.paywall.trial(n: 7)}'),
-        findsOneWidget,
+        planText(tester).split('\n').first,
+        '${t.premium.name} · ${t.premium.paywall.period_year} · ₩39,000 · ${t.premium.paywall.trial(n: 7)}',
       );
 
       await tester.ensureVisible(find.byKey(const Key('premium-plan-monthly')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('premium-plan-monthly')));
       await tester.pumpAndSettle();
-      expect(planBorder(tester, PremiumPeriod.monthly)!.top.color, isNot(Colors.transparent));
+      expect(planRing(tester, PremiumPeriod.monthly), colors.mainnetLogoGradient);
       expect(find.text(t.premium.paywall.subscribe), findsOneWidget);
       expect(find.textContaining(t.premium.store_notice.google_trial), findsNothing);
     });
@@ -354,6 +381,105 @@ void main() {
       expect(premium.state.value.status, PremiumStatus.none);
       expect(find.text(t.premium.purchased.title), findsNothing);
     });
+
+    testWidgets('POLISH G3·G5·G6·G7·G8: 히어로, 비교표 머리, 판매표 체크 색, 가치 행 아이콘, 플랜 고름 표시', (tester) async {
+      await pumpPaywall(tester, FakeEntitlementService(products: _products));
+
+      expect(find.byType(PremiumHero), findsOneWidget);
+      // 고정 칸의 열 제목은 줄여서 한 줄, Premium 열 제목 앞에 젬 12
+      final premiumHeader = find.ancestor(of: find.text(t.premium.badge), matching: find.byType(FittedBox));
+      expect(premiumHeader, findsOneWidget);
+      expect(
+        tester.widget<PremiumMark>(find.descendant(of: premiumHeader, matching: find.byType(PremiumMark))).size,
+        12,
+      );
+      expect(find.ancestor(of: find.text(t.premium.paywall.free), matching: find.byType(FittedBox)), findsOneWidget);
+      // 판매표에는 초록이 없다: 무료 열 iconPrimary, Premium 열 premiumText, "–"는 iconSecondary
+      final checks = tester.widgetList<SvgPicture>(
+        find.byWidgetPredicate((w) => isAsset(w, CommonActionIconPath.check)),
+      );
+      expect(checks.map((c) => c.colorFilter).toSet(), {tint(colors.iconPrimary), tint(colors.premiumText)});
+      expect(tester.widgetList<Text>(find.text('–')).map((d) => d.style!.color).toSet(), {colors.iconSecondary});
+      // 가치 행 아이콘은 premiumText
+      for (final icon in [
+        FeatureShortcutIconPath.transactionDraft,
+        CommonActionIconPath.arrowReload,
+        FeatureShortcutIconPath.tutorial,
+      ]) {
+        expect(
+          tester.widget<SvgPicture>(find.byWidgetPredicate((w) => isAsset(w, icon))).colorFilter,
+          tint(colors.premiumText),
+        );
+      }
+      // 고름 표시는 UtxoSelectionCard와 같은 circleCheck(고름 borderStrong, 안 고름 iconSecondary)
+      ColorFilter? marker(PremiumPeriod period) =>
+          tester
+              .widget<SvgPicture>(
+                find.descendant(
+                  of: find.byKey(Key('premium-plan-${period.name}')),
+                  matching: find.byWidgetPredicate((w) => isAsset(w, CommonFormIconPath.circleCheck)),
+                ),
+              )
+              .colorFilter;
+      expect(marker(PremiumPeriod.yearly), tint(colors.borderStrong));
+      expect(marker(PremiumPeriod.monthly), tint(colors.iconSecondary));
+      expect(tester.widget<ShrinkAnimationButton>(find.byKey(const Key('premium-plan-yearly'))).borderWidth, 1.5);
+      expect(tester.widget<ShrinkAnimationButton>(find.byKey(const Key('premium-plan-monthly'))).borderWidth, 1.5);
+    });
+
+    testWidgets('POLISH G4: 점 없는 법적 링크, 복원은 버튼 바로 위, 본문 끝 페이드, 기간·가격은 줄 사이로 갈리지 않는다', (tester) async {
+      await pumpPaywall(tester, FakeEntitlementService(products: _products));
+
+      expect(find.text(' · '), findsNothing);
+      final legal = find.ancestor(of: find.byKey(const Key('premium-paywall-terms')), matching: find.byType(Wrap));
+      expect(find.descendant(of: legal, matching: find.byKey(const Key('premium-paywall-privacy'))), findsOneWidget);
+      expect(find.descendant(of: legal, matching: find.byKey(const Key('premium-paywall-restore'))), findsNothing);
+      final restore = tester.getRect(find.byKey(const Key('premium-paywall-restore')));
+      final button = tester.getRect(find.byKey(const Key('premium-paywall-subscribe')));
+      expect(restore.bottom, lessThanOrEqualTo(button.top));
+      expect(restore.top, greaterThanOrEqualTo(tester.getRect(legal).bottom));
+      // 본문 아래 24 페이드(누름은 통과)
+      final fade = find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).gradient ==
+                LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [colors.background.withValues(alpha: 0), colors.background],
+                ),
+      );
+      expect(fade, findsOneWidget);
+      expect(tester.getSize(fade).height, 24);
+      expect(find.ancestor(of: fade, matching: find.byType(IgnorePointer)), findsWidgets);
+      // "1년"·가격 안에서는 줄이 바뀌지 않는다(글자 사이 이음 문자, 가격의 공백은 줄바꿈 없는 공백)
+      // 플랜 줄(첫 줄)만: 갱신 줄의 " · "는 보통 문장이다
+      final raw =
+          tester
+              .widget<Text>(find.byKey(const Key('premium-paywall-selected-plan')))
+              .textSpan!
+              .toPlainText()
+              .split('\n')
+              .first;
+      final year = t.premium.paywall.period_year;
+      expect(raw, contains(year.runes.map(String.fromCharCode).join('\u2060').replaceAll(' ', '\u00A0')));
+      expect(raw, isNot(contains(' ·')));
+    });
+
+    testWidgets('POLISH G4: 아래 고정 묶음은 글자를 1.3배에서 멈추고 본문은 그대로 커진다', (tester) async {
+      await pumpPaywall(tester, FakeEntitlementService(products: _products), textScale: 2);
+      double scaleOf(Finder richText) => tester.widget<RichText>(richText).textScaler.scale(10);
+      final plan = find.descendant(
+        of: find.byKey(const Key('premium-paywall-selected-plan')),
+        matching: find.byType(RichText),
+      );
+      expect(scaleOf(plan), moreOrLessEquals(13));
+      final headline = find.byWidgetPredicate(
+        (w) => w is RichText && plain(w.text.toPlainText()) == t.premium.paywall.headline,
+      );
+      expect(scaleOf(headline), moreOrLessEquals(20));
+    });
   });
 
   group('구독 관리', () {
@@ -417,6 +543,16 @@ void main() {
       expect(find.text(t.premium.subscription.active_title), findsOneWidget);
       expect(find.text(t.premium.subscription.yearly_plan), findsOneWidget);
       expect(find.byKey(const Key('premium-subscription-see-plans')), findsNothing);
+      // POLISH G9: 사용 중은 Premium 바탕(r24, 링 1) + 젬 20, 제목 premiumText, 플랜 줄 secondaryTextStrong
+      final active = tester.widget<PremiumSurface>(find.byKey(const Key('premium-status-active')));
+      expect((active.radius, active.ringWidth), (24.0, 1.0));
+      final activeMark = tester.widget<PremiumMark>(find.byType(PremiumMark));
+      expect((activeMark.size, activeMark.muted), (20.0, false));
+      expect(tester.widget<Text>(find.text(t.premium.subscription.active_title)).style!.color, colors.premiumText);
+      expect(
+        tester.widget<Text>(find.text(t.premium.subscription.yearly_plan)).style!.color,
+        colors.secondaryTextStrong,
+      );
 
       premium.emit(PremiumState(PremiumStatus.expired, expiresAt: DateTime(2026, 9, 1)));
       await tester.pump();
@@ -427,6 +563,11 @@ void main() {
       premium.emit(const PremiumState(PremiumStatus.none));
       await tester.pump();
       expect(find.text(t.premium.subscription.none_title), findsOneWidget);
+      // 없음·만료는 surface r24 + 빛 꺼진 젬
+      final none = tester.widget<Container>(find.byKey(const Key('premium-status-none')));
+      expect((none.decoration! as BoxDecoration).borderRadius, BorderRadius.circular(24));
+      expect((none.decoration! as BoxDecoration).color, colors.surface);
+      expect(tester.widget<PremiumMark>(find.byType(PremiumMark)).muted, isTrue);
       await tester.tap(find.text(t.premium.card.explore));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('premium-paywall')), findsOneWidget);
@@ -461,6 +602,14 @@ void main() {
       final row = find.byKey(const Key('app-settings-premium'));
       expect(find.descendant(of: row, matching: find.text(t.premium.name)), findsOneWidget);
       expect(find.descendant(of: row, matching: find.text(t.premium.subscription.active)), findsOneWidget);
+      // POLISH G11: 사용 중일 때만 부제 premiumText, 아니면 다른 행과 같은 기본 부제
+      SingleButton rowButton() =>
+          tester.widget<SingleButton>(find.descendant(of: row, matching: find.byType(SingleButton)));
+      expect(rowButton().subtitleStyle!.color, colors.premiumText);
+      premium.emit(const PremiumState(PremiumStatus.none));
+      await tester.pump();
+      expect(rowButton().subtitle, t.premium.subscription.not_subscribed);
+      expect(rowButton().subtitleStyle, isNull);
 
       // 테스트는 디버그 빌드라 강제 켜기가 보인다(메인넷 릴리즈 조건은 서비스 테스트에서 고정)
       final toggle = find.descendant(
@@ -504,7 +653,7 @@ void main() {
     for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
       for (final locale in AppLocale.values) {
         testWidgets(
-          '${locale.name}: 1배는 한 줄, 1.3배도 두 줄 이내로 버튼 위에 다 보인다',
+          '${locale.name}: 플랜·갱신 줄은 1배 두 줄, 1.3배 네 줄 이내로 버튼 위에 보이고, 2배도 1.3배와 같은 높이(상한)',
           variant: TargetPlatformVariant.only(platform),
           (tester) async {
             tester.view.physicalSize = const Size(320, 640);
@@ -512,11 +661,12 @@ void main() {
             addTearDown(tester.view.reset);
             LocaleSettings.setLocaleSync(locale);
             final store = platform == TargetPlatform.android ? 'Google Play' : 'App Store';
+            final blockHeights = <double, double>{};
 
-            for (final (scale, maxLines) in [(1.0, 1), (1.3, 2)]) {
+            for (final (scale, maxLines) in [(1.0, 2), (1.3, 4), (2.0, 4)]) {
               await pumpPaywall(tester, FakeEntitlementService(products: _products), textScale: scale);
-              final line = find.byKey(const Key('premium-paywall-renew-line'));
-              expect(tester.widget<Text>(line).data, t.premium.paywall.renew_line(store: store));
+              final line = find.byKey(const Key('premium-paywall-selected-plan'));
+              expect(planText(tester).split('\n').last, t.premium.paywall.renew_line(store: store));
               expect(lineCount(tester, line), lessThanOrEqualTo(maxLines), reason: '$scale');
               final rect = tester.getRect(line);
               expect(rect.top, greaterThanOrEqualTo(0));
@@ -524,9 +674,14 @@ void main() {
                 rect.bottom,
                 lessThanOrEqualTo(tester.getRect(find.byKey(const Key('premium-paywall-subscribe'))).top),
               );
+              blockHeights[scale] = tester.getSize(find.byKey(const Key('premium-paywall-bottom'))).height;
               expect(tester.takeException(), isNull);
               await tester.pumpWidget(const SizedBox()); // 다음 배율은 새 화면 스택에서
             }
+            // 2.0배·320dp에서도 고정 묶음은 1.3배 그대로라 본문 창이 남는다(전에는 화면의 54%)
+            expect(blockHeights[2.0], moreOrLessEquals(blockHeights[1.3]!));
+            // 가장 긴 de·es에서 46%(상한 전 54%)
+            expect(blockHeights[2.0]! / 640, lessThan(0.5), reason: '${blockHeights[2.0]}');
           },
         );
       }

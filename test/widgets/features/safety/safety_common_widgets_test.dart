@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
@@ -61,13 +60,6 @@ void main() {
         expect(bg, colors.warningSurface);
         expect(_textColor(tester, 'Review'), colors.warningText);
         expect(_contrast(colors.warningText, bg), greaterThanOrEqualTo(4.5));
-      });
-
-      testWidgets('PremiumChip shows the Premium badge on the premium gradient', (tester) async {
-        await tester.pumpWidget(_app(variant, const Center(child: PremiumChip())));
-        expect(_textColor(tester, t.premium.badge), colors.premiumText);
-        final box = _decoration(tester, PremiumChip);
-        expect(box.gradient, colors.premiumSurfaceGradient);
       });
 
       testWidgets('SafetyIconCircle is a circle of the given size', (tester) async {

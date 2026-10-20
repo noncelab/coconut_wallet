@@ -4,14 +4,13 @@ import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/safety/help_channels_sheet.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToast, CoconutToastLevel;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
-import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -26,6 +25,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+
+/// 줄 사이로 갈리면 안 되는 짧은 값(플랜 줄의 "1년"·가격)
+String _unbroken(String text) => TextUtils.preventLineBreakInsideWords(text).replaceAll(' ', '\u00A0');
 
 /// Coconut Premium 페이월(PA1 소개 → PA2 무료와 비교 → PA3 플랜을 한 화면에). Premium 카드·칩·설정에서만 연다
 class PremiumPaywallScreen extends StatefulWidget {
@@ -169,16 +171,51 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
         isBottom: true,
         backgroundColor: colors.background,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [..._intro(context), ..._compare(context), ..._plans(context)],
-        ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            // 아래 24는 페이드 자리
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [..._intro(context), ..._compare(context), ..._plans(context)],
+            ),
+          ),
+          // 본문이 고정 묶음 앞에서 칼로 자른 듯 끊기지 않게(FixedBottomButton 둘레와 같은 페이드)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 24,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [colors.background.withValues(alpha: 0), colors.background],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      // 구독 버튼을 누를 수 있으면 고른 플랜의 가격·기간과 약관·개인정보 링크가 늘 버튼 바로 위에 보인다
-      // (Apple 3.1.2(c)·Schedule 2, Play 구독 정책: 조건을 스크롤 아래에 숨기지 않는다). 전체 고지는 본문 끝에 그대로
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: _bottom(context, trial),
+    );
+  }
+
+  /// 구독 버튼을 누를 수 있으면 고른 플랜의 가격·기간·자동 갱신과 약관·개인정보 링크가 늘 버튼 바로 위에 보인다
+  /// (Apple 3.1.2(c)·Schedule 2, Play 구독 정책: 조건을 스크롤 아래에 숨기지 않는다). 구매 복원은 버튼 바로 위 따로 한 줄(UI_SPEC §10.3).
+  /// 이 묶음만 글자를 1.3배에서 멈춘다(2.0배·320dp에서 화면 절반을 넘겨 본문이 안 보였다). 전체 고지는 본문 끝에 상한 없이 그대로
+  Widget _bottom(BuildContext context, bool trial) {
+    final colors = context.coconutColors;
+    final selected = _selected;
+    final store = defaultTargetPlatform == TargetPlatform.android ? 'Google Play' : 'App Store';
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: SafeArea(
+        key: const Key('premium-paywall-bottom'),
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -186,30 +223,41 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (_selected case final selected?) ...[
-                Text(
-                  _planLine(selected),
+              if (selected != null) ...[
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: _planLine(selected),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                      ),
+                      TextSpan(
+                        text: '\n${t.premium.paywall.renew_line(store: store)}',
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                      ),
+                    ],
+                  ),
                   key: const Key('premium-paywall-selected-plan'),
                   textAlign: TextAlign.center,
-                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  t.premium.paywall.renew_line(
-                    store: defaultTargetPlatform == TargetPlatform.android ? 'Google Play' : 'App Store',
-                  ),
-                  key: const Key('premium-paywall-renew-line'),
-                  textAlign: TextAlign.center,
-                  style: CoconutTypography.body3_12.setColor(colors.secondaryText),
-                ),
-                CoconutLayout.spacing_100h,
+                CoconutLayout.spacing_200h,
               ],
-              _links(context),
+              _legalLinks(context),
+              CoconutLayout.spacing_200h,
+              Center(
+                child: CoconutUnderlinedButton(
+                  key: const Key('premium-paywall-restore'),
+                  text: t.premium.paywall.restore,
+                  textStyle: CoconutTypography.body3_12_Bold,
+                  defaultColor: colors.secondaryTextStrong,
+                  onTap: _restore,
+                ),
+              ),
               CoconutLayout.spacing_300h,
               InlineActionButton(
                 key: const Key('premium-paywall-subscribe'),
                 text: trial ? t.premium.paywall.start_trial : t.premium.paywall.subscribe,
-                isActive: _selected != null && !_busy && _premium.isAvailable,
+                isActive: selected != null && !_busy && _premium.isAvailable,
                 onPressed: _subscribe,
               ),
             ],
@@ -219,26 +267,27 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     );
   }
 
-  /// Coconut Premium · 1년 · {스토어 가격 그대로}(· N일 무료 체험: 스토어 상품에 있을 때만)
+  /// Coconut Premium · 1년 · {스토어 가격 그대로}(· N일 무료 체험: 스토어 상품에 있을 때만).
+  /// 기간·가격은 줄 사이로 갈리지 않고, 줄은 "·" 뒤에서만 바뀐다(줄 앞에 점이 오지 않게)
   String _planLine(PremiumProduct product) {
     final paywall = t.premium.paywall;
     final trialDays = product.freeTrialDays;
     return [
       t.premium.name,
-      product.config.period == PremiumPeriod.yearly ? paywall.period_year : paywall.period_month,
-      product.price,
-      if (trialDays != null) paywall.trial(n: trialDays),
-    ].join(' · ');
+      _unbroken(product.config.period == PremiumPeriod.yearly ? paywall.period_year : paywall.period_month),
+      _unbroken(product.price),
+      if (trialDays != null) safetyKoText(paywall.trial(n: trialDays)),
+    ].join(' · ');
   }
 
-  /// 이용약관 · 개인정보 처리방침 · 구매 복원(늘 보인다)
-  Widget _links(BuildContext context) {
+  /// 이용약관 · 개인정보 처리방침(점 없이: 줄이 바뀌어도 줄 앞뒤에 점이 남지 않는다)
+  Widget _legalLinks(BuildContext context) {
     final colors = context.coconutColors;
-    final style = CoconutTypography.body3_12_Bold;
-    final dot = Text(' · ', style: CoconutTypography.body3_12.setColor(colors.secondaryText));
+    final style = CoconutTypography.caption_10_Bold;
     return Wrap(
       alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 4,
       children: [
         CoconutUnderlinedButton(
           key: const Key('premium-paywall-terms'),
@@ -247,21 +296,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           defaultColor: colors.secondaryText,
           onTap: () => launchURL(context, TERMS_OF_SERVICE_URL, destination: ExternalLinkDestination.termsOfService),
         ),
-        dot,
         CoconutUnderlinedButton(
           key: const Key('premium-paywall-privacy'),
           text: t.app_info_screen.privacy_policy,
           textStyle: style,
           defaultColor: colors.secondaryText,
           onTap: () => launchURL(context, PRIVACY_POLICY_URL, destination: ExternalLinkDestination.privacyPolicy),
-        ),
-        dot,
-        CoconutUnderlinedButton(
-          key: const Key('premium-paywall-restore'),
-          text: t.premium.paywall.restore,
-          textStyle: style,
-          defaultColor: colors.secondaryTextStrong,
-          onTap: _restore,
         ),
       ],
     );
@@ -271,20 +311,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   List<Widget> _intro(BuildContext context) {
     final colors = context.coconutColors;
     return [
-      Center(
-        child: Container(
-          width: 72,
-          height: 72,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(gradient: colors.premiumSurfaceGradient, shape: BoxShape.circle),
-          child: SvgPicture.asset(
-            CustomWalletIcons.diamond,
-            width: 32,
-            height: 32,
-            colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
-          ),
-        ),
-      ),
+      const Center(child: PremiumHero()),
       CoconutLayout.spacing_500h,
       Text(
         t.premium.assist_name,
@@ -295,7 +322,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       Semantics(
         header: true,
         child: Text(
-          t.premium.paywall.headline,
+          safetyKoText(t.premium.paywall.headline),
           textAlign: TextAlign.center,
           style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
         ),
@@ -337,15 +364,29 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           children: [
             _CompareRow(
               label: '',
-              free: Text(
-                paywall.free,
-                textAlign: TextAlign.center,
-                style: CoconutTypography.body3_12_Bold.setColor(colors.secondaryText),
+              // 고정 칸의 열 제목은 줄여서 한 줄로("Kostenlos"가 단어 중간에서 끊기지 않게)
+              free: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  paywall.free,
+                  maxLines: 1,
+                  style: CoconutTypography.body3_12_Bold.setColor(colors.secondaryText),
+                ),
               ),
-              premium: Text(
-                t.premium.badge,
-                textAlign: TextAlign.center,
-                style: CoconutTypography.body3_12_Bold.setColor(colors.premiumText),
+              premium: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const PremiumMark(size: 12),
+                    CoconutLayout.spacing_50w,
+                    Text(
+                      t.premium.badge,
+                      maxLines: 1,
+                      style: CoconutTypography.body3_12_Bold.setColor(colors.premiumText),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Premium 칸은 늘 ✓. 무료도 직접 대응할 수 있다는 줄을 먼저 둔다
@@ -463,7 +504,7 @@ class _ValueRow extends StatelessWidget {
                 iconPath,
                 width: 24,
                 height: 24,
-                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
               ),
             ),
           ),
@@ -472,9 +513,9 @@ class _ValueRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
-                const SizedBox(height: 2),
-                Text(body, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                Text(safetyKoText(title), style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
+                CoconutLayout.spacing_50h,
+                Text(safetyKoText(body), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
               ],
             ),
           ),
@@ -518,7 +559,12 @@ class _CompareRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Expanded(child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText))),
+            Expanded(
+              child: Text(
+                safetyKoText(label),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+              ),
+            ),
             SizedBox(width: 56, child: Center(child: free)),
             SizedBox(width: 64, child: Center(child: premium)),
           ],
@@ -528,7 +574,7 @@ class _CompareRow extends StatelessWidget {
   }
 }
 
-/// ✓(포함) 또는 –(포함 안 됨). tertiaryText는 라이트·코코넛 대비가 낮아 secondaryText를 쓴다
+/// ✓(포함) 또는 –(포함 안 됨). 판매표에는 초록(Health의 "통과")을 쓰지 않는다: 무료 열 iconPrimary, Premium 열 premiumText
 class _Mark extends StatelessWidget {
   const _Mark({required this.included, this.premium = false});
 
@@ -548,9 +594,9 @@ class _Mark extends StatelessWidget {
                   CommonActionIconPath.check,
                   width: 14,
                   height: 14,
-                  colorFilter: ColorFilter.mode(premium ? colors.premiumText : colors.success, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(premium ? colors.premiumText : colors.iconPrimary, BlendMode.srcIn),
                 )
-                : Text('–', style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                : Text('–', style: CoconutTypography.body3_12.setColor(colors.iconSecondary)),
       ),
     );
   }
@@ -569,18 +615,6 @@ class _PlanCard extends StatelessWidget {
     final paywall = t.premium.paywall;
     final yearly = product.config.period == PremiumPeriod.yearly;
     final trialDays = product.freeTrialDays;
-    final check = Container(
-      width: 22,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: colors.primaryText, shape: BoxShape.circle),
-      child: SvgPicture.asset(
-        CommonActionIconPath.check,
-        width: 12,
-        height: 12,
-        colorFilter: ColorFilter.mode(colors.background, BlendMode.srcIn),
-      ),
-    );
     return Semantics(
       selected: selected,
       inMutuallyExclusiveGroup: true,
@@ -594,8 +628,10 @@ class _PlanCard extends StatelessWidget {
         pressedOverlayColor: colors.surfacePressOverlay,
         pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
         borderRadius: 16,
-        // 두께를 같게 둬서 선택해도 내용이 밀리지 않는다
-        border: Border.all(color: selected ? colors.borderStrong : Colors.transparent, width: 1.5),
+        // 고른 카드는 로고 그라데이션 링, 안 고른 카드는 같은 두께의 투명 링(고를 때 크기가 흔들리지 않게).
+        // 링의 시안 끝은 밝은 바탕에서 1.9:1이라 고름은 오른쪽 체크가 알리고 링은 장식이다
+        borderGradient: selected ? colors.mainnetLogoGradient : _noRing,
+        borderWidth: 1.5,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -608,11 +644,11 @@ class _PlanCard extends StatelessWidget {
                       yearly ? paywall.period_year : paywall.period_month,
                       style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
                     ),
-                    const SizedBox(height: 4),
+                    CoconutLayout.spacing_100h,
                     // 스토어 현지 가격 문자열 그대로(재포맷·월 환산 금지)
                     Text(product.price, style: CoconutTypography.body2_14_Number.setColor(colors.primaryText)),
                     if (trialDays != null) ...[
-                      const SizedBox(height: 4),
+                      CoconutLayout.spacing_100h,
                       Text(
                         paywall.trial(n: trialDays),
                         style: CoconutTypography.body3_12_Bold.setColor(colors.success),
@@ -622,19 +658,13 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               CoconutLayout.spacing_300w,
-              if (selected)
-                safetyReduceMotion(context)
-                    ? check
-                    : check.scaleInAnimation(duration: const Duration(milliseconds: 300))
-              else
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colors.border, width: 1.5),
-                  ),
-                ),
+              // UtxoSelectionCard와 같은 고름 표시
+              SvgPicture.asset(
+                CommonFormIconPath.circleCheck,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(selected ? colors.borderStrong : colors.iconSecondary, BlendMode.srcIn),
+              ),
             ],
           ),
         ),
@@ -642,6 +672,9 @@ class _PlanCard extends StatelessWidget {
     );
   }
 }
+
+/// 안 고른 플랜 카드의 링(고른 카드와 같은 두께, 투명)
+const _noRing = LinearGradient(colors: [Colors.transparent, Colors.transparent]);
 
 class _PlanSkeleton extends StatelessWidget {
   const _PlanSkeleton();

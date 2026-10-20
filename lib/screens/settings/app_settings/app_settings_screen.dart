@@ -16,6 +16,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -404,12 +405,22 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         ValueListenableBuilder<PremiumState>(
                           key: const Key('app-settings-premium'),
                           valueListenable: premium.state,
-                          builder:
-                              (context, state, _) => _buildAnimatedButton(
-                                title: t.premium.name,
-                                subtitle: premiumStatusLabel(state),
-                                onPressed: () => PremiumSubscriptionScreen.open(context),
-                              ),
+                          builder: (context, state, _) {
+                            final label = premiumStatusLabel(state);
+                            return _buildAnimatedButton(
+                              title: t.premium.name,
+                              subtitle: label,
+                              // 사용 중일 때만 "Premium이라고 말하는 짧은 표시"(POLISH §2.2). 글꼴은 다른 행 부제와 같다
+                              subtitleStyle:
+                                  state.isActive && label != null
+                                      ? (label.containsCJK
+                                              ? CoconutTypography.body3_12
+                                              : CoconutTypography.body3_12_Number)
+                                          .setColor(context.coconutColors.premiumText)
+                                      : null,
+                              onPressed: () => PremiumSubscriptionScreen.open(context),
+                            );
+                          },
                         ),
                     ],
                   ),
@@ -547,6 +558,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     required String title,
     required VoidCallback onPressed,
     String? subtitle,
+    TextStyle? subtitleStyle,
     bool isVerticalSubtitle = false,
   }) {
     return SingleButton(
@@ -555,6 +567,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       animationEndValue: 0.97,
       title: title,
       subtitle: subtitle,
+      subtitleStyle: subtitleStyle,
       onPressed: onPressed,
     );
   }

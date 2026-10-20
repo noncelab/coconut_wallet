@@ -3,10 +3,16 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+/// POLISH R1: 한국어는 단어 중간에서 줄을 바꾸지 않는다(앱 방식 `TextUtils.preventLineBreakInsideWords`).
+/// 줄바꿈될 수 있는 제목·배너·카드 글에만 쓴다. 주소·금액·숫자에는 쓰지 않는다(글자 사이 이음 문자가 복사·비교를 바꾼다)
+String safetyKoText(String text) =>
+    LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(text) : text;
 
 /// 동작 줄이기(앱 공통 기준)
 bool safetyReduceMotion(BuildContext context) =>
@@ -155,29 +161,167 @@ class SafetyActionPill extends StatelessWidget {
   }
 }
 
+/// Premium 브랜드 표시(POLISH §2.3): 다이아를 로고 그라데이션으로 칠한다(`CoconutLogoIcon`과 같은 ShaderMask).
+/// 크기는 12·20·32뿐. [muted]는 구독 없음·만료 카드에만 쓰는 단색 `iconSecondary`
+class PremiumMark extends StatelessWidget {
+  const PremiumMark({super.key, required this.size, this.muted = false})
+    : assert(size == 12 || size == 20 || size == 32);
+
+  final double size;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final diamond = SvgPicture.asset(
+      CustomWalletIcons.diamond,
+      width: size,
+      height: size,
+      colorFilter: ColorFilter.mode(muted ? colors.iconSecondary : Colors.white, BlendMode.srcIn),
+    );
+    if (muted) return diamond;
+    return ShaderMask(
+      shaderCallback: colors.mainnetLogoGradient.createShader,
+      blendMode: BlendMode.srcIn,
+      child: diamond,
+    );
+  }
+}
+
+/// Premium 바탕(POLISH §2.3): 바깥 로고 그라데이션 링 [ringWidth] + 안쪽 `premiumSurfaceGradient`(토스트와 같은 2겹).
+/// [onPressed]가 있으면 카드 전체가 버튼 하나(의미 라벨도 하나)
+class PremiumSurface extends StatelessWidget {
+  const PremiumSurface({
+    super.key,
+    required this.child,
+    required this.radius,
+    required this.ringWidth,
+    this.padding = EdgeInsets.zero,
+    this.onPressed,
+  });
+
+  final Widget child;
+  final double radius;
+  final double ringWidth;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final onPressed = this.onPressed;
+    // 누를 수 있으면 ShrinkAnimationButton이 링을 그리고(바깥 반지름 radius + 2, 안쪽 radius), 칠은 안쪽 단색 위에 깐다
+    final innerRadius = onPressed == null ? radius - ringWidth : radius;
+    final fill = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: colors.premiumSurfaceGradient,
+        borderRadius: BorderRadius.circular(innerRadius),
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+    if (onPressed != null) {
+      return MergeSemantics(
+        child: ShrinkAnimationButton(
+          onPressed: onPressed,
+          borderGradient: colors.mainnetLogoGradient,
+          borderWidth: ringWidth,
+          borderRadius: radius,
+          child: fill,
+        ),
+      );
+    }
+    return Container(
+      padding: EdgeInsets.all(ringWidth),
+      decoration: BoxDecoration(gradient: colors.mainnetLogoGradient, borderRadius: BorderRadius.circular(radius)),
+      child: fill,
+    );
+  }
+}
+
+/// "Premium" 알약. 보통 바탕(목록 줄·지갑 정보 행·화면 머리말)에만 두고 Premium 바탕 위에는 두지 않는다
 class PremiumChip extends StatelessWidget {
   const PremiumChip({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
+    return PremiumSurface(
+      radius: 20,
+      ringWidth: 1,
       padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: 3),
-      decoration: BoxDecoration(
-        gradient: colors.premiumSurfaceGradient,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
-      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(
-            CustomWalletIcons.diamond,
-            width: 10,
-            height: 10,
-            colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
-          ),
+          const PremiumMark(size: 12),
           CoconutLayout.spacing_50w,
-          Text(t.premium.badge, style: CoconutTypography.caption_10_Bold.setColor(colors.premiumText)),
+          Text(t.premium.badge, style: CoconutTypography.caption_10_Bold.setColor(context.coconutColors.premiumText)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Premium "순간" 화면 머리(페이월 PA1, Assist 비상 이동 준비): 72 원 + 1.5 링 + PremiumMark 32
+class PremiumHero extends StatelessWidget {
+  const PremiumHero({super.key});
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.square(
+    dimension: 72,
+    child: PremiumSurface(radius: 36, ringWidth: 1.5, child: Center(child: PremiumMark(size: 32))),
+  );
+}
+
+/// Premium으로 할 수 있는 다음 행동 카드(WH S3 "지금 이동"·"대응 준비", Assist "준비된 이동 있음").
+/// 위급 화면의 주 버튼보다 튀지 않게 링 없이 `premiumSurfaceGradient`만 깐다
+class PremiumActionCard extends StatelessWidget {
+  const PremiumActionCard({
+    super.key,
+    required this.title,
+    required this.body,
+    required this.button,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String body;
+  final String button;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: colors.premiumSurfaceGradient, borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const PremiumMark(size: 20),
+              CoconutLayout.spacing_200w,
+              Expanded(child: Text(title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText))),
+            ],
+          ),
+          CoconutLayout.spacing_200h,
+          Text(body, style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
+          CoconutLayout.spacing_400h,
+          // homeSurface는 그라데이션 위에서 1.00~1.07이라 버튼이 사라진다. background는 1.14~1.25
+          ShrinkAnimationButton(
+            onPressed: onPressed,
+            defaultColor: colors.background,
+            borderRadius: 12,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+              child: Center(
+                child: Text(
+                  button,
+                  textAlign: TextAlign.center,
+                  style: CoconutTypography.body2_14_Bold.setColor(colors.premiumText),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

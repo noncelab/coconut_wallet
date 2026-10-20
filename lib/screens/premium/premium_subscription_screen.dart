@@ -6,7 +6,6 @@ import 'package:coconut_wallet/screens/premium/premium_paywall_screen.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToast, CoconutToastLevel;
-import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -136,6 +135,14 @@ class _StatusCard extends StatelessWidget {
     final subscription = t.premium.subscription;
     final title = CoconutTypography.body1_16_Bold.setColor(colors.primaryText);
     final detail = CoconutTypography.body3_12.setColor(colors.secondaryText);
+    // 구독 없음·만료는 빛 꺼진 젬 + 제목
+    Widget mutedTitle(String text) => Row(
+      children: [
+        const PremiumMark(size: 20, muted: true),
+        CoconutLayout.spacing_200w,
+        Expanded(child: Text(text, style: title)),
+      ],
+    );
     final expiresAt = state.expiresAt;
     final plan = switch (state.period) {
       PremiumPeriod.yearly => subscription.yearly_plan,
@@ -152,20 +159,24 @@ class _StatusCard extends StatelessWidget {
       PremiumStatus.active => [
         Row(
           children: [
-            SvgPicture.asset(
-              CustomWalletIcons.diamond,
-              width: 20,
-              height: 20,
-              colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
-            ),
+            const PremiumMark(size: 20),
             CoconutLayout.spacing_200w,
-            Expanded(child: Text(subscription.active_title, style: title)),
+            Expanded(
+              child: Text(
+                subscription.active_title,
+                style: CoconutTypography.body1_16_Bold.setColor(colors.premiumText),
+              ),
+            ),
           ],
         ),
-        if (plan != null) ...[CoconutLayout.spacing_200h, Text(plan, style: detail)],
+        if (plan != null) ...[
+          CoconutLayout.spacing_200h,
+          // Premium 바탕 위 보조 글은 secondaryTextStrong(코코넛 secondaryText는 3.1:1)
+          Text(plan, style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
+        ],
       ],
       PremiumStatus.expired => [
-        Text(subscription.expired_title, style: title),
+        mutedTitle(subscription.expired_title),
         if (expiresAt != null) ...[
           CoconutLayout.spacing_200h,
           Text(subscription.expired_on(date: DateFormat('yyyy.MM.dd').format(expiresAt)), style: detail),
@@ -174,7 +185,7 @@ class _StatusCard extends StatelessWidget {
         plans(subscription.resubscribe),
       ],
       PremiumStatus.none => [
-        Text(subscription.none_title, style: title),
+        mutedTitle(subscription.none_title),
         CoconutLayout.spacing_400h,
         plans(t.premium.card.explore),
       ],
@@ -195,15 +206,22 @@ class _StatusCard extends StatelessWidget {
         ),
       ],
     };
+    final content = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+    // 아래 ButtonGroup과 같은 r24. 사용 중일 때만 Premium 바탕(1px 링)
+    if (state.status == PremiumStatus.active) {
+      return PremiumSurface(
+        key: Key('premium-status-${state.status.name}'),
+        radius: 24,
+        ringWidth: 1,
+        padding: const EdgeInsets.all(20),
+        child: content,
+      );
+    }
     return Container(
       key: Key('premium-status-${state.status.name}'),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: state.isActive ? null : colors.surface,
-        gradient: state.isActive ? colors.premiumSurfaceGradient : null,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(24)),
+      child: content,
     );
   }
 }
