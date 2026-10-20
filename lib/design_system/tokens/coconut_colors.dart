@@ -133,6 +133,16 @@ class CoconutColors {
   final Color appLockWarningForeground;
   final Color unbackedWarningForeground;
 
+  /// Wallet Health 상태 글자·바탕. warning·danger는 글자색으로 쓰지 않는다
+  final Color warningText;
+  final Color warningSurface;
+  final Color dangerSurface;
+  final Color successSurface;
+
+  /// Coconut Premium 글자와 카드·칩 바탕(로고 그라데이션의 보라 끝)
+  final Color premiumText;
+  final Gradient premiumSurfaceGradient;
+
   /// 구분선
   final Color divider;
   final Color dividerStrong;
@@ -387,6 +397,12 @@ class CoconutColors {
     required this.appLockWarningBackground,
     required this.appLockWarningForeground,
     required this.unbackedWarningForeground,
+    required this.warningText,
+    required this.warningSurface,
+    required this.dangerSurface,
+    required this.successSurface,
+    required this.premiumText,
+    required this.premiumSurfaceGradient,
     required this.divider,
     required this.dividerStrong,
     required this.priceUp,
@@ -576,6 +592,12 @@ class CoconutColors {
       appLockWarningBackground: Color.lerp(a.appLockWarningBackground, b.appLockWarningBackground, t)!,
       appLockWarningForeground: Color.lerp(a.appLockWarningForeground, b.appLockWarningForeground, t)!,
       unbackedWarningForeground: Color.lerp(a.unbackedWarningForeground, b.unbackedWarningForeground, t)!,
+      warningText: _lerpForeground(a.warningText, b.warningText, a.background, b.background, t),
+      warningSurface: Color.lerp(a.warningSurface, b.warningSurface, t)!,
+      dangerSurface: Color.lerp(a.dangerSurface, b.dangerSurface, t)!,
+      successSurface: Color.lerp(a.successSurface, b.successSurface, t)!,
+      premiumText: _lerpForeground(a.premiumText, b.premiumText, a.background, b.background, t),
+      premiumSurfaceGradient: Gradient.lerp(a.premiumSurfaceGradient, b.premiumSurfaceGradient, t)!,
       divider: Color.lerp(a.divider, b.divider, t)!,
       dividerStrong: Color.lerp(a.dividerStrong, b.dividerStrong, t)!,
       priceUp: Color.lerp(a.priceUp, b.priceUp, t)!,
@@ -824,6 +846,16 @@ class CoconutColors {
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
+      warningText: kCoconutWarning,
+      warningSurface: const Color(0xFF3D3215),
+      dangerSurface: const Color(0xFF3A1E25),
+      successSurface: const Color(0xFF22362A),
+      premiumText: const Color(0xFFB9A5FF),
+      premiumSurfaceGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2A2440), Color(0xFF1F2A3D)],
+      ),
       divider: ds.CoconutColors.gray800,
       dividerStrong: ds.CoconutColors.gray700,
       priceUp: kCoconutPriceUp,
@@ -984,6 +1016,16 @@ class CoconutColors {
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
+      warningText: const Color(0xFF9A5B00),
+      warningSurface: const Color(0xFFFFF3BE),
+      dangerSurface: const Color(0xFFFBE8EB),
+      successSurface: const Color(0xFFE5EEE8),
+      premiumText: const Color(0xFF6A3FD0),
+      premiumSurfaceGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFF3EEFF), Color(0xFFE9F1FF)],
+      ),
       divider: ds.CoconutColors.gray200,
       dividerStrong: ds.CoconutColors.gray300,
       priceUp: kCoconutPriceUp,
@@ -1163,6 +1205,16 @@ class CoconutColors {
       appLockWarningBackground: kCoconutWarning,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
+      warningText: const Color(0xFF8A4E00),
+      warningSurface: const Color(0xFFFBE7B5),
+      dangerSurface: const Color(0xFFF6E2E1),
+      successSurface: const Color(0xFFE1E8DE),
+      premiumText: const Color(0xFF5B3FB8),
+      premiumSurfaceGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFEFE7F3), Color(0xFFE4EEF7)],
+      ),
       divider: lagoon.withAlpha(30),
       dividerStrong: lagoon.withAlpha(60),
       priceUp: kCoconutPriceUp,

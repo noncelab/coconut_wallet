@@ -101,6 +101,8 @@ abstract final class CommonStateIconPath {
   static const String questionMark = 'assets/svg/common/state/question-mark.svg';
   static const String searchNotFound = 'assets/svg/common/state/search-not-found.svg';
   static const String shieldWarning = 'assets/svg/common/state/shield-warning.svg';
+  static const String shieldCheck = 'assets/svg/brand/motifs/shield-check.svg';
+  static const String siren = 'assets/svg/common/state/siren.svg';
   static const String starFilled = 'assets/svg/common/state/star-filled.svg';
   static const String starOutlined = 'assets/svg/common/state/star-outlined.svg';
   static const String starOutlinedBold = 'assets/svg/common/state/star-outlined-bold.svg';
