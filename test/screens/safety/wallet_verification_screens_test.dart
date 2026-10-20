@@ -33,6 +33,7 @@ import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.da
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -206,6 +207,7 @@ void main() {
     Widget screen, {
     bool provider = true,
     Size viewport = const Size(320, 844),
+    double textScale = 1.3,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -223,7 +225,7 @@ void main() {
               (context, child) => MediaQuery(
                 data: MediaQuery.of(
                   context,
-                ).copyWith(disableAnimations: true, textScaler: const TextScaler.linear(1.3)),
+                ).copyWith(disableAnimations: true, textScaler: TextScaler.linear(textScale)),
                 child: child!,
               ),
           home: LoaderOverlay(child: screen),
@@ -500,6 +502,32 @@ void main() {
     final clearance = safetyFooterClearance(tester.element(footer), hasSubWidget: true);
     expect(clearance, greaterThan(184)); // 1.3배
     expect(button.surroundingsPadding, EdgeInsets.fromLTRB(16, clearance, 16, 40));
+  });
+
+  testWidgets('X1: at 320 dp × 2.0 the fade is opaque behind the link even when the button label wraps', (
+    tester,
+  ) async {
+    for (final locale in [AppLocale.ko, AppLocale.en]) {
+      LocaleSettings.setLocaleSync(locale);
+      await tester.pumpWidget(const SizedBox());
+      await mount(tester, CoconutThemeVariant.light, const WatchOnlyVerificationScreen(walletId: 1), textScale: 2.0);
+      // 버튼 글이 두 줄 이상(공식 여백만으로는 링크가 반투명 띠에 걸치던 경우)
+      final label = find.descendant(
+        of: find.byKey(const Key('watch-only-verification-primary')),
+        matching: find.byType(RichText),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(label.first);
+      final lines =
+          paragraph
+              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: paragraph.text.toPlainText().length))
+              .map((box) => box.top.round())
+              .toSet();
+      expect(lines.length, greaterThan(1), reason: locale.name);
+      final fade = tester.getRect(find.byKey(const Key('watch-only-verification-fade')));
+      final link = tester.getRect(find.byKey(const Key('watch-only-verification-secondary')));
+      expect(fade.top + fade.height / 2, lessThanOrEqualTo(link.top), reason: locale.name); // stops [0, 0.5]
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('BSMS bounds accumulated unique UR bytes and resets for a valid backup', (tester) async {

@@ -179,140 +179,148 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
       key: const Key('watch-only-verification-screen'),
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, title: copy.title, backgroundColor: colors.background),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            // 아래 고정 버튼(스캔 + 직접 비교 글 버튼)과 그 위 흐림을 비켜 간다. 글자 배율을 따른다(POLISH R4·C37)
-            padding: EdgeInsets.fromLTRB(20, 24, 20, safetyFooterClearance(context, hasSubWidget: true)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      // 버튼 묶음(링크 + 버튼)을 그린 뒤 재서, 큰 글자에서 버튼 글이 감겨도 본문 여백과 페이드가 비켜 간다(X1)
+      body: SafetyFooterScope(
+        builder:
+            (context) => Stack(
               children: [
-                Text(
-                  safetyKoText(copy.heading),
-                  style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
-                ),
-                CoconutLayout.spacing_300h,
-                Text(safetyKoText(copy.description), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
-                CoconutLayout.spacing_600h,
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
+                SingleChildScrollView(
+                  // 아래 고정 버튼(스캔 + 직접 비교 글 버튼)과 그 위 흐림을 비켜 간다. 글자 배율을 따른다(POLISH R4·C37)
+                  padding: EdgeInsets.fromLTRB(20, 24, 20, safetyFooterClearance(context, hasSubWidget: true)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        safetyKoText(copy.address_label),
-                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                        safetyKoText(copy.heading),
+                        style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText),
                       ),
-                      CoconutLayout.spacing_200h,
-                      // 4글자씩 묶어 보인다. 글자를 넣지 않고 묶음 끝 글자 뒤만 넓혀서 복사하면 원래 주소 그대로(POLISH C31)
-                      SelectableText.rich(
-                        _groupedAddress(wallet.walletBase.getAddress(0)),
-                        style: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
-                      ),
-                      CoconutLayout.spacing_100h,
+                      CoconutLayout.spacing_300h,
                       Text(
-                        '${wallet.walletBase.derivationPath}/0/0',
-                        style: CoconutTypography.caption_10.setColor(colors.secondaryText),
+                        safetyKoText(copy.description),
+                        style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                       ),
+                      CoconutLayout.spacing_600h,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              safetyKoText(copy.address_label),
+                              style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                            ),
+                            CoconutLayout.spacing_200h,
+                            // 4글자씩 묶어 보인다. 글자를 넣지 않고 묶음 끝 글자 뒤만 넓혀서 복사하면 원래 주소 그대로(POLISH C31)
+                            SelectableText.rich(
+                              _groupedAddress(wallet.walletBase.getAddress(0)),
+                              style: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
+                            ),
+                            CoconutLayout.spacing_100h,
+                            Text(
+                              '${wallet.walletBase.derivationPath}/0/0',
+                              style: CoconutTypography.caption_10.setColor(colors.secondaryText),
+                            ),
+                          ],
+                        ),
+                      ),
+                      CoconutLayout.spacing_400h,
+                      if (fingerprintMissing && _result == null)
+                        SafetyStatusBanner(
+                          background: colors.surface,
+                          iconPath: CommonStateIconPath.circleInfo,
+                          iconColor: colors.iconSecondary,
+                          title: copy.no_mfp_title,
+                          body: copy.no_mfp,
+                        ),
+                      AnimatedSwitcher(
+                        duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
+                        child:
+                            _result == null
+                                ? const SizedBox.shrink()
+                                : SafetyStatusBanner(
+                                  key: ValueKey((_result, _method)),
+                                  background:
+                                      confirmedMismatch
+                                          ? colors.dangerSurface
+                                          : mismatch
+                                          ? colors.warningSurface
+                                          : manual
+                                          ? colors.surface
+                                          : colors.successSurface,
+                                  iconPath:
+                                      mismatch || confirmedMismatch
+                                          ? CommonStateIconPath.triangleWarning
+                                          : manual
+                                          ? CommonFormIconPath.circleCheck
+                                          : CommonStateIconPath.shieldCheck,
+                                  iconColor:
+                                      confirmedMismatch
+                                          ? colors.danger
+                                          : mismatch
+                                          ? colors.warningText
+                                          : manual
+                                          ? colors.iconSecondary
+                                          : colors.success,
+                                  title:
+                                      mismatch || confirmedMismatch
+                                          ? copy.mismatch_title
+                                          : manual
+                                          ? copy.user_confirmed_title
+                                          : copy.match_title,
+                                  body:
+                                      confirmedMismatch
+                                          ? copy.mismatch_body
+                                          : mismatch
+                                          ? copy.mismatch_retry_body
+                                          : manual
+                                          ? copy.user_confirmed_body
+                                          : copy.match_at_index(index: _matchedIndex ?? 0),
+                                ),
+                      ),
+                      if (_error != null) ...[
+                        CoconutLayout.spacing_300h,
+                        Text(
+                          safetyKoText(_error!),
+                          key: const Key('watch-only-verification-error'),
+                          style: CoconutTypography.body2_14.setColor(colors.dangerText),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                CoconutLayout.spacing_400h,
-                if (fingerprintMissing && _result == null)
-                  SafetyStatusBanner(
-                    background: colors.surface,
-                    iconPath: CommonStateIconPath.circleInfo,
-                    iconColor: colors.iconSecondary,
-                    title: copy.no_mfp_title,
-                    body: copy.no_mfp,
+                FixedBottomButton(
+                  buttonKey: const Key('watch-only-verification-primary'),
+                  text:
+                      complete
+                          ? t.confirm
+                          : mismatch
+                          ? copy.scan_again
+                          : copy.scan,
+                  isActive: !_busy,
+                  onButtonClicked: complete ? () => Navigator.pop(context) : _scan,
+                  // 페이드의 불투명한 아래 절반이 링크 줄 위에서 시작하게, 글자 배율만큼 높인다(POLISH X1·R4)
+                  surroundingsKey: const Key('watch-only-verification-fade'),
+                  surroundingsPadding: EdgeInsets.fromLTRB(
+                    16,
+                    safetyFooterClearance(context, hasSubWidget: !complete),
+                    16,
+                    40,
                   ),
-                AnimatedSwitcher(
-                  duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
-                  child:
-                      _result == null
-                          ? const SizedBox.shrink()
-                          : SafetyStatusBanner(
-                            key: ValueKey((_result, _method)),
-                            background:
-                                confirmedMismatch
-                                    ? colors.dangerSurface
-                                    : mismatch
-                                    ? colors.warningSurface
-                                    : manual
-                                    ? colors.surface
-                                    : colors.successSurface,
-                            iconPath:
-                                mismatch || confirmedMismatch
-                                    ? CommonStateIconPath.triangleWarning
-                                    : manual
-                                    ? CommonFormIconPath.circleCheck
-                                    : CommonStateIconPath.shieldCheck,
-                            iconColor:
-                                confirmedMismatch
-                                    ? colors.danger
-                                    : mismatch
-                                    ? colors.warningText
-                                    : manual
-                                    ? colors.iconSecondary
-                                    : colors.success,
-                            title:
-                                mismatch || confirmedMismatch
-                                    ? copy.mismatch_title
-                                    : manual
-                                    ? copy.user_confirmed_title
-                                    : copy.match_title,
-                            body:
-                                confirmedMismatch
-                                    ? copy.mismatch_body
-                                    : mismatch
-                                    ? copy.mismatch_retry_body
-                                    : manual
-                                    ? copy.user_confirmed_body
-                                    : copy.match_at_index(index: _matchedIndex ?? 0),
+                  subWidget:
+                      complete
+                          ? null
+                          : CoconutUnderlinedButton(
+                            key: const Key('watch-only-verification-secondary'),
+                            text: mismatch ? copy.confirm_device : copy.compared_manually,
+                            defaultColor: colors.secondaryTextStrong,
+                            isActive: !_busy,
+                            onTap: () => _confirm(mismatch: mismatch),
                           ),
                 ),
-                if (_error != null) ...[
-                  CoconutLayout.spacing_300h,
-                  Text(
-                    safetyKoText(_error!),
-                    key: const Key('watch-only-verification-error'),
-                    style: CoconutTypography.body2_14.setColor(colors.dangerText),
-                  ),
-                ],
               ],
             ),
-          ),
-          FixedBottomButton(
-            buttonKey: const Key('watch-only-verification-primary'),
-            text:
-                complete
-                    ? t.confirm
-                    : mismatch
-                    ? copy.scan_again
-                    : copy.scan,
-            isActive: !_busy,
-            onButtonClicked: complete ? () => Navigator.pop(context) : _scan,
-            // 페이드의 불투명한 아래 절반이 링크 줄 위에서 시작하게, 글자 배율만큼 높인다(POLISH X1·R4)
-            surroundingsPadding: EdgeInsets.fromLTRB(
-              16,
-              safetyFooterClearance(context, hasSubWidget: !complete),
-              16,
-              40,
-            ),
-            subWidget:
-                complete
-                    ? null
-                    : CoconutUnderlinedButton(
-                      key: const Key('watch-only-verification-secondary'),
-                      text: mismatch ? copy.confirm_device : copy.compared_manually,
-                      defaultColor: colors.secondaryTextStrong,
-                      isActive: !_busy,
-                      onTap: () => _confirm(mismatch: mismatch),
-                    ),
-          ),
-        ],
       ),
     );
   }
