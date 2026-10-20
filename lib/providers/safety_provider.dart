@@ -478,6 +478,13 @@ class SafetyProvider extends ChangeNotifier {
         s.copyWith(bsms: {...s.bsms, walletId: BsmsVerification(matched: matched, configHash: configHash, at: _now())}),
   );
 
+  /// 다중서명 지갑의 BSMS를 보여 줬다(지갑 백업 데이터). 검증이 아니다: 지금 구성 해시를 남겨 엔진이 "내보냄 · 검증 전"과
+  /// "갱신 필요"를 가른다(REQ A.1 2). 해시는 BSMS 검증·입력 수집기와 같은 원본 디스크립터 해시
+  Future<void> recordBsmsExport(int walletId) {
+    final hash = WalletVerification.descriptorHash(_wallets!.getWalletById(walletId).descriptor);
+    return _change((s) => s.copyWith(bsmsExports: {...s.bsmsExports, walletId: (configHash: hash, at: _now())}));
+  }
+
   Future<void> setRecommendedDone(RecommendedCheckId id, bool done) => _change((s) {
     final values = {...s.recommendedDoneAt};
     done ? values[id.key] = _now() : values.remove(id.key);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
@@ -10,6 +11,8 @@ import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_inputs.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
@@ -476,6 +479,39 @@ void main() {
     expect(provider.showsHomeHint, isFalse);
     expect(store.state.hintDismissed, isTrue);
   });
+  testWidgets(
+    'BSMS export keeps the collector\'s descriptor hash, shows exported · not verified, never verifies (R30)',
+    (tester) async {
+      final keys = [
+        for (final byte in [1, 2])
+          KeyStore.fromSeed(Seed.fromEntropy(Uint8List.fromList(List.filled(16, byte))), AddressType.p2wsh),
+      ];
+      final multisig = MultisigWalletItem(
+        id: 1,
+        name: 'Multi',
+        colorIndex: 0,
+        iconIndex: 0,
+        descriptor: MultisignatureVault.fromKeyStoreList(keys, 2).descriptor,
+        signers: [MultisigSigner(), MultisigSigner()],
+        requiredSignatureCount: 2,
+      );
+      wallets.walletItemListNotifier.value = [multisig];
+      create(tester);
+      await settle(tester);
+      await provider.recordBsmsExport(1);
+      final inputs = SafetyInputsCollector(
+        walletProvider: wallets,
+        nodeProvider: node,
+        authProvider: auth,
+        connectivityProvider: connectivity,
+        realmManager: realm,
+      ).collect(state: provider.state, now: DateTime(2026));
+      expect(store.state.bsmsExports[1]!.configHash, inputs.wallets.single.descriptorHash);
+      expect(store.state.bsms, isEmpty, reason: 'an export is not a verification');
+      final bsms = provider.report!.reviewItems.singleWhere((item) => item.id == SafetyCheckId.bsmsBackup);
+      expect(bsms.detail, SafetyCheckDetail.exportedNotVerified);
+    },
+  );
   testWidgets('h-notation descriptor hashes match the original stored wallet descriptor', (tester) async {
     final body = wallets.walletItemList.single.descriptor.split('#').first.replaceAll("'", 'h');
     final descriptor = '$body#${Checksum.getChecksum(body)}';

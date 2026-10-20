@@ -191,8 +191,9 @@ abstract final class SafetyEngine {
     for (final id in RecommendedCheckId.values) {
       final applies = switch (id) {
         RecommendedCheckId.hotPhysicalBackup || RecommendedCheckId.hotSafeStorage => hasHot,
+        // 기기에 저장한 패스프레이즈는 앱이 알 수 없어(메타데이터에 표시 없음) 자금·이력이 있는 핫월렛 모두에 권한다(R14)
         RecommendedCheckId.hotPassphraseOffline => wallets.any(
-          (w) => w.kind == SafetyWalletKind.hot && w.passphraseOnSigning,
+          (w) => w.kind == SafetyWalletKind.hot && (w.balanceSats > 0 || w.txs.isNotEmpty),
         ),
         RecommendedCheckId.multisigQuorumAccess || RecommendedCheckId.multisigBackupSeparation => hasMultisig,
         RecommendedCheckId.metadataStoredOffsite => state.metadataExport != null,
@@ -373,6 +374,10 @@ abstract final class SafetyEngine {
         // 다중서명 = 구성 50 + BSMS 50. 자금·사용 이력이 있는데 구성이 불일치하면 위급
         final config = w.multisigConfig ?? MultisigConfigStatus.incomplete;
         final bsms = state.bsms[w.id];
+        // 내보내기는 검증이 아니다(REQ A.1 2). 검증보다 나중에 내보냈으면 그때 구성 해시로 "내보냄 · 검증 전"과 "갱신 필요"를 가르고,
+        // 더 나중에 한 검증(불일치 포함)이 있으면 그 결과를 보인다
+        final latest = state.bsmsExports[w.id];
+        final export = latest != null && (bsms == null || latest.at.isAfter(bsms.at)) ? latest : null;
         return [
           check(
             SafetyCheckId.multisigConfig,
@@ -389,7 +394,11 @@ abstract final class SafetyEngine {
             50,
             passed: bsms != null && bsms.matched && bsms.configHash == w.descriptorHash,
             detail:
-                bsms == null
+                export != null
+                    ? export.configHash == w.descriptorHash
+                        ? SafetyCheckDetail.exportedNotVerified
+                        : SafetyCheckDetail.updateRequired
+                    : bsms == null
                     ? SafetyCheckDetail.notVerified
                     : !bsms.matched
                     ? SafetyCheckDetail.mismatch

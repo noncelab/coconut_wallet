@@ -70,8 +70,11 @@ enum SafetyCheckDetail {
   /// 다중서명 구성 정보 일부 없음
   incomplete,
 
-  /// BSMS 검증 뒤 지갑 구성이 바뀜
+  /// BSMS를 검증하거나 내보낸 뒤 지갑 구성이 바뀜
   updateRequired,
+
+  /// 지금 구성의 BSMS를 내보냈지만 다시 불러와 검증하지 않음(내보내기는 검증이 아니다, REQ A.1 2)
+  exportedNotVerified,
 
   /// 메모·태그를 내보낸 적 없음
   neverExported,

@@ -132,6 +132,9 @@ class BsmsVerification extends Equatable {
   List<Object?> get props => [matched, configHash, at];
 }
 
+/// BSMS를 보여 주거나 공유한 기록: 그때 구성 해시와 시각. 검증이 아니다(REQ A.1 2)
+typedef BsmsExport = ({String configHash, DateTime at});
+
 /// 비상 이동 목적지. [walletId]면 구성할 때 그 지갑의 받기 주소를 쓴다.
 class RescueDestination extends Equatable {
   const RescueDestination({this.walletId, this.address, required this.setAt});
@@ -252,6 +255,7 @@ class SafetyState extends Equatable {
     this.watchOnlyVerifications = const {},
     this.passphraseVerifiedAt = const {},
     this.bsms = const {},
+    this.bsmsExports = const {},
     this.recommendedDoneAt = const {},
     this.metadataExport,
     this.incomingWatch = const {},
@@ -283,6 +287,9 @@ class SafetyState extends Equatable {
   final Map<int, DateTime> passphraseVerifiedAt;
   final Map<int, BsmsVerification> bsms;
 
+  /// 지갑마다 마지막 BSMS 내보내기(검증 기록 [bsms]와 따로 둔다)
+  final Map<int, BsmsExport> bsmsExports;
+
   /// key = [RecommendedCheckId.key]('rec.<name>')
   final Map<String, DateTime> recommendedDoneAt;
   final ({DateTime at, int tagCount, int memoCount})? metadataExport;
@@ -309,6 +316,7 @@ class SafetyState extends Equatable {
     Map<int, WatchOnlyVerification>? watchOnlyVerifications,
     Map<int, DateTime>? passphraseVerifiedAt,
     Map<int, BsmsVerification>? bsms,
+    Map<int, BsmsExport>? bsmsExports,
     Map<String, DateTime>? recommendedDoneAt,
     ({DateTime at, int tagCount, int memoCount})? metadataExport,
     Map<int, Map<String, IncomingWatchEntry>>? incomingWatch,
@@ -328,6 +336,7 @@ class SafetyState extends Equatable {
     watchOnlyVerifications: watchOnlyVerifications ?? this.watchOnlyVerifications,
     passphraseVerifiedAt: passphraseVerifiedAt ?? this.passphraseVerifiedAt,
     bsms: bsms ?? this.bsms,
+    bsmsExports: bsmsExports ?? this.bsmsExports,
     recommendedDoneAt: recommendedDoneAt ?? this.recommendedDoneAt,
     metadataExport: metadataExport ?? this.metadataExport,
     incomingWatch: incomingWatch ?? this.incomingWatch,
@@ -358,6 +367,7 @@ class SafetyState extends Equatable {
       watchOnlyVerifications: drop(watchOnlyVerifications),
       passphraseVerifiedAt: drop(passphraseVerifiedAt),
       bsms: drop(bsms),
+      bsmsExports: drop(bsmsExports),
       recommendedDoneAt: recommendedDoneAt,
       metadataExport: metadataExport,
       incomingWatch: drop(incomingWatch),
@@ -387,6 +397,7 @@ class SafetyState extends Equatable {
     'watchOnlyVerifications': _byWallet(watchOnlyVerifications, (v) => v.toJson()),
     'passphraseVerifiedAt': _byWallet(passphraseVerifiedAt, (at) => at.toIso8601String()),
     'bsms': _byWallet(bsms, (v) => v.toJson()),
+    'bsmsExports': _byWallet(bsmsExports, (e) => {'configHash': e.configHash, 'at': e.at.toIso8601String()}),
     'recommendedDoneAt': recommendedDoneAt.map((k, at) => MapEntry(k, at.toIso8601String())),
     'metadataExport':
         metadataExport == null
@@ -429,6 +440,10 @@ class SafetyState extends Equatable {
         watchOnlyVerifications: _walletMap(j['watchOnlyVerifications'], (v) => WatchOnlyVerification.fromJson(_obj(v))),
         passphraseVerifiedAt: _walletMap(j['passphraseVerifiedAt'], _date),
         bsms: _walletMap(j['bsms'], (v) => BsmsVerification.fromJson(_obj(v))),
+        bsmsExports: _walletMap(
+          j['bsmsExports'],
+          (v) => (configHash: _obj(v)['configHash'] as String, at: _date(_obj(v)['at'])),
+        ),
         recommendedDoneAt: {for (final e in _obj(j['recommendedDoneAt'] ?? const {}).entries) e.key: _date(e.value)},
         metadataExport: j['metadataExport'] == null ? null : _exportFromJson(_obj(j['metadataExport'])),
         incomingWatch: _walletMap(
@@ -472,6 +487,7 @@ class SafetyState extends Equatable {
     watchOnlyVerifications,
     passphraseVerifiedAt,
     bsms,
+    bsmsExports,
     recommendedDoneAt,
     metadataExport,
     // 레코드의 ==는 Set을 내용으로 비교하지 않아 목록으로 바꿔 비교한다

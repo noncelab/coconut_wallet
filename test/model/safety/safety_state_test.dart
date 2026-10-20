@@ -41,6 +41,7 @@ void main() {
     },
     passphraseVerifiedAt: {1: at},
     bsms: {3: BsmsVerification(matched: true, configHash: 'c', at: at)},
+    bsmsExports: {3: (configHash: 'c2', at: at)},
     recommendedDoneAt: {RecommendedCheckId.hotSafeStorage.key: at},
     metadataExport: (at: at, tagCount: 2, memoCount: 5),
     incomingWatch: {
@@ -132,6 +133,14 @@ void main() {
     expect(decode(old), old);
   });
 
+  test('a state saved before BSMS export records loads with none and round-trips (R30)', () {
+    final json = jsonDecode(jsonEncode(full().toJson())) as Map<String, Object?>..remove('bsmsExports');
+    final old = SafetyState.fromJson(json);
+    expect(old.bsmsExports, isEmpty);
+    expect(old.bsms, full().bsms, reason: 'not treated as corrupt');
+    expect(decode(old), old);
+  });
+
   test('missing keys read as empty', () {
     expect(SafetyState.fromJson(const {'version': SafetyState.version}), SafetyState.initial());
   });
@@ -159,6 +168,7 @@ void main() {
     // 다른 지갑 기록은 그대로
     expect(s.watchOnlyVerifications.keys, [2]);
     expect(s.bsms.keys, [3]);
+    expect(s.bsmsExports.keys, [3]);
     expect(s.recognizedTxids, {'r1'});
     expect(s.serverCert, full().serverCert);
     // 앱 생성 txid는 지갑에 묶이지 않아 그대로(같은 디스크립터의 다른 지갑 보호, F9)
@@ -170,6 +180,7 @@ void main() {
     expect(other.lastBroadcast, full().lastBroadcast);
     expect(other.watchOnlyVerifications, isEmpty);
     expect(other.rescue.keys, [3], reason: 'wallet 1 pointed at wallet 2 as destination');
+    expect(full().withoutWallet(3).bsmsExports, isEmpty);
   });
 
   test('copyWith changes only the given fields', () {

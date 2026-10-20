@@ -313,6 +313,52 @@ void main() {
       expect(detail(SafetyCheckId.bsmsBackup, MultisigConfigStatus.complete, bsms()), isNull);
     });
 
+    test('BSMS export: exported · not verified, update required, never counts as verified (R30)', () {
+      final multisig = wallet(
+        1,
+        kind: SafetyWalletKind.multisig,
+        balance: btc,
+        txs: [_received],
+        multisigConfig: MultisigConfigStatus.complete,
+      );
+      BsmsExport exported(String hash, {int minutes = 0}) => (
+        configHash: hash,
+        at: testNow.add(Duration(minutes: minutes)),
+      );
+      BsmsVerification verified({bool matched = true, String hash = 'descriptor-1'}) =>
+          BsmsVerification(matched: matched, configHash: hash, at: testNow);
+      (SafetyOutcome, SafetyCheckDetail?) bsms(SafetyState s) {
+        final r = _find(_evaluate([multisig], state: s), SafetyCheckId.bsmsBackup, walletId: 1);
+        return (r.outcome, r.detail);
+      }
+
+      // 지금 구성으로 내보내기만 함 → 검증 전, BSMS 점수 0(구성 50만)
+      final now = SafetyState(bsmsExports: {1: exported('descriptor-1')});
+      expect(bsms(now), (SafetyOutcome.failed, SafetyCheckDetail.exportedNotVerified));
+      expect(_score(_evaluate([multisig], state: now), SafetyCategory.recovery), 50);
+      // 내보낸 뒤 구성이 바뀜 → 갱신 필요
+      expect(bsms(SafetyState(bsmsExports: {1: exported('old')})), (
+        SafetyOutcome.failed,
+        SafetyCheckDetail.updateRequired,
+      ));
+      // 검증 뒤 구성이 바뀌어 새 구성으로 다시 내보냄 → 검증 전
+      expect(
+        bsms(SafetyState(bsms: {1: verified(hash: 'old')}, bsmsExports: {1: exported('descriptor-1', minutes: 1)})),
+        (SafetyOutcome.failed, SafetyCheckDetail.exportedNotVerified),
+      );
+      // 내보낸 뒤에 한 검증이 불일치 → 나중 결과인 불일치
+      expect(
+        bsms(SafetyState(bsms: {1: verified(matched: false)}, bsmsExports: {1: exported('descriptor-1', minutes: -1)})),
+        (SafetyOutcome.failed, SafetyCheckDetail.mismatch),
+      );
+      // 검증된 지갑은 나중에 내보내도 그대로 검증됨, 기록이 없으면 지금처럼 검증 전
+      expect(bsms(SafetyState(bsms: {1: verified()}, bsmsExports: {1: exported('descriptor-1', minutes: 1)})), (
+        SafetyOutcome.passed,
+        null,
+      ));
+      expect(bsms(const SafetyState()), (SafetyOutcome.failed, SafetyCheckDetail.notVerified));
+    });
+
     test('wallet weight: funded 1 + type + min(3, log10(1 + sats/1e5)), unfunded 0.5', () {
       final r = _evaluate([
         _hot(1, balance: 100000),
@@ -766,6 +812,17 @@ void main() {
         ],
       );
     });
+  });
+
+  test('hotPassphraseOffline: every hot wallet with funds or history, a stored passphrase is invisible (R14)', () {
+    bool offered(List<SafetyWalletSnapshot> wallets) =>
+        _evaluate(wallets).recommended.any((i) => i.id == RecommendedCheckId.hotPassphraseOffline);
+    expect(offered([_hot(1)]), isTrue, reason: 'no passphrase on signing, funds');
+    expect(offered([_hot(1, balance: 0)]), isTrue, reason: 'history only');
+    expect(offered([_hot(1, passphrase: true)]), isTrue);
+    expect(offered([wallet(1)]), isFalse, reason: 'no funds, no history');
+    expect(offered([wallet(1, passphrase: true)]), isFalse, reason: 'empty even with a passphrase on signing');
+    expect(offered([_watchOnly(1, balance: btc, used: true)]), isFalse);
   });
 
   test('review items: severity, then check order, then wallet (app first)', () {
