@@ -122,6 +122,8 @@ void main() {
           ),
         );
         expect(find.byType(CoconutUnderlinedButton), findsOneWidget);
+        // D11: 밑줄 링크는 누르는 높이 44 이상(R7)
+        expect(tester.getSize(find.byType(CoconutUnderlinedButton)).height, greaterThanOrEqualTo(44));
         expect(_textColor(tester, 'Body'), colors.primaryText);
         expect(_contrast(colors.primaryText, colors.dangerSurface), greaterThanOrEqualTo(4.5));
         await tester.tap(findText('Review'));

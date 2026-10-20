@@ -136,6 +136,9 @@ void main() {
 
     await tester.tap(find.byKey(const Key('safety-guide-later')));
     await tester.pumpAndSettle();
+    // D8: 시트 제목은 짧게, 상황 문장은 본문 머리 제목으로
+    expect(findText(strings.exposure.sheet_title), findsOneWidget);
+    expect(tester.widget<Text>(findText(strings.exposure.title)).style!.fontSize, 18);
     expect(findText(strings.exposure.no_reuse_title), findsOneWidget);
     expect(findText(strings.help_center.never_asks), findsOneWidget);
     await tapVisible(tester, find.byKey(const Key('safety-exposure-got-it')));
@@ -486,4 +489,96 @@ void main() {
       expect(tester.getRect(value).right, lessThanOrEqualTo(320));
     });
   }
+
+  // R33: STEP4의 복구 자료 자가 점검 기록과, 다시 열었을 때의 상태 줄
+  group('recovery-material self-review', () {
+    SafetyIncident step4({RecoveryReviewStatus review = RecoveryReviewStatus.notChecked, IncidentState? state}) =>
+        SafetyIncident(
+          walletId: kWalletId,
+          txid: kTxid,
+          detectedAt: DateTime(2026, 10, 20, 9),
+          state: state ?? IncidentState.responding,
+          responseMode: IncidentResponseMode.free,
+          guideStep: 4,
+          recoveryReview: review,
+        );
+
+    Future<_ReviewRecorder> openStep4(WidgetTester tester, SafetyIncident incident) async {
+      usePhoneSize(tester);
+      final safety = _ReviewRecorder(SafetyState(incidents: [incident]));
+      await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+      await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+      return safety;
+    }
+
+    testWidgets('"Finish the security review" records it as reviewed by the user', (tester) async {
+      final safety = await openStep4(tester, step4());
+      await tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+      expect(safety.reviews, [RecoveryReviewStatus.completedByUser]);
+      expect(find.byKey(const Key('safety-guide-done')), findsOneWidget);
+    });
+
+    testWidgets('the exposure link records a suspected exposure and opens only the exposure guidance', (tester) async {
+      final safety = await openStep4(tester, step4());
+      await tapVisible(tester, find.byKey(const Key('safety-guide-later')));
+      expect(safety.reviews, [RecoveryReviewStatus.exposureSuspected]);
+      expect(find.byKey(const Key('safety-exposure-got-it')), findsOneWidget);
+      await tapVisible(tester, find.byKey(const Key('safety-exposure-got-it')));
+      expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget); // 자금 이동 단계로 되돌리지 않는다
+      expect(find.byKey(const Key('safety-guide-step2')), findsNothing);
+    });
+
+    testWidgets('finishing after a suspected exposure keeps that mark', (tester) async {
+      final safety = await openStep4(tester, step4(review: RecoveryReviewStatus.exposureSuspected));
+      await tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+      expect(safety.reviews, isEmpty);
+    });
+
+    for (final (review, text) in [
+      (RecoveryReviewStatus.notChecked, null),
+      (RecoveryReviewStatus.completedByUser, t.safety_guide.step4.status_reviewed),
+      (RecoveryReviewStatus.exposureSuspected, t.safety_guide.step4.status_exposure_suspected),
+    ]) {
+      testWidgets('reopening STEP4 shows the saved status (${review.name})', (tester) async {
+        await openStep4(tester, step4(review: review));
+        final line = find.byKey(const Key('safety-guide-step4-review-status'));
+        expect(line, text == null ? findsNothing : findsOneWidget);
+        if (text != null) expect(find.descendant(of: line, matching: findText(text)), findsOneWidget);
+      });
+    }
+
+    testWidgets('reviewing a finished incident records nothing', (tester) async {
+      usePhoneSize(tester);
+      final safety = _ReviewRecorder(
+        SafetyState(incidents: [step4(state: IncidentState.completed, review: RecoveryReviewStatus.completedByUser)]),
+      );
+      await tester.pumpWidget(
+        safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findText(strings.tx_banner.review_guide));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byKey(const Key('safety-guide-step1-not-found')));
+      await tester.tap(findText(strings.next_step));
+      await tester.pumpAndSettle();
+      await tester.tap(findText(strings.next_step));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-guide-step4')), findsOneWidget);
+      expect(find.byKey(const Key('safety-guide-step4-review-status')), findsOneWidget); // 저장된 상태는 보인다
+      await tapVisible(tester, find.byKey(const Key('safety-guide-later')));
+      await tapVisible(tester, find.byKey(const Key('safety-exposure-got-it')));
+      await tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+      expect(safety.reviews, isEmpty);
+    });
+  });
+}
+
+/// 복구 자료 점검 기록만 받아 두는 제공자(고정 제공자에는 지갑 목록이 없어 실제 기록은 지갑 종류를 알 수 없다)
+class _ReviewRecorder extends SafetyProvider {
+  _ReviewRecorder(SafetyState state) : super.fixed(null, state: state);
+
+  final reviews = <RecoveryReviewStatus>[];
+
+  @override
+  Future<void> recordRecoveryReview(String id, RecoveryReviewStatus status) async => reviews.add(status);
 }

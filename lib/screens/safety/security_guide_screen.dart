@@ -504,8 +504,13 @@ class _Step4 extends StatelessWidget {
       buttonText: strings.complete,
       onButton: () => _complete(context),
       laterText: strings.maybe_exposed,
-      onLater: () => showExposureSheet(context),
+      // 노출이 의심된다고 표시하고 대응 안내만 연다(자금 이동 단계로 되돌리지 않는다)
+      onLater: () async {
+        await _recordReview(context, RecoveryReviewStatus.exposureSuspected);
+        if (context.mounted) await showExposureSheet(context);
+      },
       children: [
+        _ReviewStatusLine(incidentId: guide.incidentId),
         _GuideCard(
           title: strings.consider_title,
           items: [strings.consider_photo, strings.consider_cloud, strings.consider_entered, strings.consider_access],
@@ -517,9 +522,62 @@ class _Step4 extends StatelessWidget {
   Future<void> _complete(BuildContext context) async {
     final provider = context.read<SafetyProvider?>();
     final incident = provider?.state.incidents.firstWhereOrNull((i) => i.id == guide.incidentId);
+    // 직접 점검을 마쳤다는 기록. 앞서 노출 의심으로 표시했으면 그 표시를 지킨다(더 조심할 쪽을 남긴다)
+    if (incident?.recoveryReview != RecoveryReviewStatus.exposureSuspected && context.mounted) {
+      await _recordReview(context, RecoveryReviewStatus.completedByUser);
+    }
     if (incident?.state == IncidentState.responding) await provider!.completeIncident(guide.incidentId);
     if (!context.mounted) return;
     await Navigator.of(context).push(_route('done', _Done(guide: guide)));
+  }
+
+  /// 복구 자료 자가 점검 기록(R33). 끝난 사건 다시 보기는 아무것도 바꾸지 않는다.
+  /// 기록은 덧붙임일 뿐이라, 실패해도(그사이 지갑·사건이 사라짐 등) 가이드는 그대로 이어 간다
+  Future<void> _recordReview(BuildContext context, RecoveryReviewStatus status) async {
+    if (guide.review) return;
+    try {
+      await context.read<SafetyProvider?>()?.recordRecoveryReview(guide.incidentId, status);
+    } catch (_) {}
+  }
+}
+
+/// 다시 열었을 때 이 사건의 복구 자료 점검 상태(직접 점검함 / 노출 의심으로 표시함). 아직 없으면 그리지 않는다.
+/// 차분하게: 보조 글과 회색 아이콘(검증했다고 말하지 않는다)
+class _ReviewStatusLine extends StatelessWidget {
+  const _ReviewStatusLine({required this.incidentId});
+
+  final String incidentId;
+
+  @override
+  Widget build(BuildContext context) {
+    final incident = context.watch<SafetyProvider?>()?.state.incidents.firstWhereOrNull((i) => i.id == incidentId);
+    final strings = t.safety_guide.step4;
+    final (icon, text) = switch (incident?.recoveryReview) {
+      RecoveryReviewStatus.completedByUser => (CommonFormIconPath.circleCheck, strings.status_reviewed),
+      RecoveryReviewStatus.exposureSuspected => (CommonStateIconPath.circleInfo, strings.status_exposure_suspected),
+      _ => (null, null),
+    };
+    if (icon == null || text == null) return const SizedBox.shrink();
+    final colors = context.coconutColors;
+    return Padding(
+      key: const Key('safety-guide-step4-review-status'),
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            icon,
+            width: 16,
+            height: 16,
+            colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_150w,
+          Flexible(
+            child: Text(safetyKoText(text), style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

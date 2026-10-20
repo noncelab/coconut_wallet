@@ -455,7 +455,8 @@ class SafetyStatusBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       // 링크는 자체 여백 4가 있어서 아래 여백을 줄인다
-      padding: EdgeInsets.fromLTRB(16, 16, 16, hasLink ? 12 : 16),
+      // 링크는 누르는 높이 44를 위해 위아래 14를 품는다(R7). 그만큼 바깥 아래 여백을 줄여 보이는 간격은 그대로
+      padding: EdgeInsets.fromLTRB(16, 16, 16, hasLink ? 2 : 16),
       decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(CoconutStyles.radius_200)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,18 +481,17 @@ class SafetyStatusBanner extends StatelessWidget {
             padding: const EdgeInsets.only(left: 28),
             child: Text(safetyKoText(body), style: CoconutTypography.body3_12.setColor(colors.primaryText)),
           ),
-          if (hasLink) ...[
-            CoconutLayout.spacing_200h,
+          if (hasLink)
             Align(
               alignment: Alignment.centerRight,
               child: CoconutUnderlinedButton(
                 text: linkText!,
                 onTap: onLink!,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
                 textStyle: CoconutTypography.body3_12_Bold,
                 defaultColor: colors.primaryText,
               ),
             ),
-          ],
         ],
       ),
     );

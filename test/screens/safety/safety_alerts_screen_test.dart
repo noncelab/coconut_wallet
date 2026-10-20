@@ -244,4 +244,27 @@ void main() {
       expect(tester.getRect(chip).width, lessThanOrEqualTo(tester.getRect(row).width * 0.35));
     });
   }
+
+  // D7: "완료"·"사라짐" 칩 글자는 꼭 읽어야 하는 작은 글이라 secondaryTextStrong(R5)
+  testWidgets('finished and dropped chips use the strong secondary text', (tester) async {
+    usePhoneSize(tester);
+    final completed = testIncident(txid: 'a', state: IncidentState.completed);
+    final dropped = testIncident(txid: 'b', txState: IncidentTxState.dropped);
+    final safety = SafetyProvider.fixed(
+      WalletHealthReport(
+        status: WalletHealthStatus.scored,
+        profile: WeightProfile.hotFunded,
+        infoIncidents: [dropped],
+        evaluatedAt: DateTime(2026, 10, 20, 9),
+      ),
+      state: SafetyState(incidents: [completed, dropped]),
+    );
+    await tester.pumpWidget(safetyTestApp(origin(), safety: safety, variant: CoconutThemeVariant.coconutTheme));
+    unawaited(SafetyAlertsScreen.open(originContext(tester)));
+    await tester.pumpAndSettle();
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.coconutTheme).colors;
+    for (final chip in [strings.incident.state.completed, strings.incident.state.dropped]) {
+      expect(tester.widget<Text>(findText(chip)).style!.color, colors.secondaryTextStrong);
+    }
+  });
 }

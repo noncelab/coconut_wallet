@@ -567,7 +567,7 @@ Future<void> showExposureSheet(BuildContext context) {
   final strings = t.safety_guide.exposure;
   return CommonBottomSheets.showBottomSheet<void>(
     context: context,
-    title: strings.title,
+    title: strings.sheet_title,
     screenName: '/safety-guide/exposure',
     showDragHandle: true,
     showCloseButton: true,
@@ -578,6 +578,13 @@ Future<void> showExposureSheet(BuildContext context) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 시트 제목은 짧게, 상황을 말하는 문장은 본문 머리에(POLISH D8)
+                Text(
+                  safetyKoText(strings.title),
+                  textAlign: TextAlign.center,
+                  style: CoconutTypography.heading4_18_Bold.setColor(sheetContext.coconutColors.primaryText),
+                ),
+                CoconutLayout.spacing_500h,
                 SafetyNumberedRow(number: 1, title: strings.no_reuse_title, description: strings.no_reuse_body),
                 CoconutLayout.spacing_400h,
                 SafetyNumberedRow(

@@ -481,22 +481,36 @@ class SafetyResultPage extends StatefulWidget {
 class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerProviderStateMixin {
   // icon이 있으면 체크를 그리지 않아도 dispose에서 처음 만들어지지 않게 미리 만든다
   late final AnimationController _check;
+  VoidCallback? _cancelSettle;
+  bool _settled = false;
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
     _check = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    if (widget.icon == null) vibrateLight();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (safetyReduceMotion(context)) _check.value = 1;
+    // 화면이 다 밀려 들어온 뒤에 체크를 그리고 진동한다(전환 중에 끝나 버리지 않게, POLISH D13)
+    _cancelSettle ??= whenRouteSettled(context, () {
+      if (!mounted) return;
+      _settled = true;
+      if (widget.icon == null) vibrateLight();
+      _startCheck();
+    });
+  }
+
+  void _startCheck() {
+    if (_settled && _loaded && mounted && !safetyReduceMotion(context)) _check.forward();
   }
 
   @override
   void dispose() {
+    _cancelSettle?.call();
     _check.dispose();
     super.dispose();
   }
@@ -601,8 +615,8 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
         controller: _check,
         repeat: false,
         onLoaded: (_) {
-          if (!mounted || safetyReduceMotion(context)) return;
-          _check.forward();
+          _loaded = true;
+          _startCheck();
         },
         delegates: LottieDelegates(
           values: [

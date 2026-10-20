@@ -307,4 +307,19 @@ void main() {
     expect(badge.top, greaterThan(tester.getRect(find.byType(Lottie)).bottom));
     expect(badge.bottom, lessThan(tester.getRect(findText('Finished')).top));
   });
+
+  // D13: 결과 화면 체크 애니메이션(과 진동)은 화면이 다 밀려 들어온 뒤에 시작한다(전환 중에 끝나 버리지 않게)
+  testWidgets('the result check animation waits until the route has settled', (tester) async {
+    await _push(
+      tester,
+      CoconutThemeVariant.light,
+      SafetyResultPage(title: 'Finished', description: 'Body', buttonText: 'Done', onButton: () {}),
+      settle: false,
+    );
+    await tester.pump(const Duration(milliseconds: 100)); // 아직 밀려 들어오는 중
+    final check = tester.widget<Lottie>(find.byType(Lottie)).controller!;
+    expect(check.value, 0);
+    await tester.pumpAndSettle();
+    expect(check.value, 1);
+  });
 }

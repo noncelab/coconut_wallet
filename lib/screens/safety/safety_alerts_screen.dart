@@ -156,7 +156,7 @@ class _IncidentRow extends StatelessWidget {
         CommonFormIconPath.circleCheck,
         colors.iconSecondary,
         states.completed,
-        colors.secondaryText,
+        colors.secondaryTextStrong, // 칩 글자는 꼭 읽어야 하는 작은 글(R5)
         colors.surfaceInfoChip,
       ),
       _ when incident.isInfo => (
@@ -164,7 +164,7 @@ class _IncidentRow extends StatelessWidget {
         CommonStateIconPath.circleInfo,
         colors.iconSecondary,
         states.dropped,
-        colors.secondaryText,
+        colors.secondaryTextStrong,
         colors.surfaceInfoChip,
       ),
       IncidentState.responding => (
