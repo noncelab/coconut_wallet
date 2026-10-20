@@ -68,6 +68,22 @@ void main() {
       });
     });
 
+    test('recent self transfers the app did not make go to the self-transfer review at baseline (Grok G3)', () {
+      final w = wallet(
+        1,
+        txs: [
+          tx('selfPending', type: TransactionType.self),
+          tx('selfRecent', type: TransactionType.self, height: 990, timestamp: day(-2)),
+          tx('selfOld', type: TransactionType.self, height: 900, timestamp: day(-8)),
+          tx('selfMine', type: TransactionType.self),
+        ],
+      );
+      final b = detect([w], state: SafetyState(appTxidPrefixes: {p('selfMine')})).baselines[1]!;
+      expect(b.unexpectedSelfTxids, {'selfPending', 'selfRecent'});
+      expect(b.pendingSentAtBaseline, isEmpty, reason: 'self is not outgoing');
+      expect(b.knownTxids, containsAll([p('selfPending'), p('selfRecent'), p('selfOld'), p('selfMine')]));
+    });
+
     test('the run that creates the baseline creates no incident', () {
       expect(
         detect([

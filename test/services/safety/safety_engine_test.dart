@@ -611,6 +611,28 @@ void main() {
       expect(s.isAppCreated(t), isTrue);
     });
 
+    test('a recent self transfer found at re-import stays a review item until recognized (Grok G3)', () {
+      // 시드를 가진 쪽이 다시 가져오기 직전에 잔액 대부분을 수수료로 태운 자기 앞 전송
+      final burn = 'aa' * 32;
+      SafetyWalletSnapshot w({int height = 0}) => wallet(
+        1,
+        balance: btc,
+        backupVerified: true,
+        txs: [tx(burn, type: TransactionType.self, height: height, timestamp: testNow)],
+      );
+      var s = const SafetyState();
+      for (final (height, snapshot) in [(1000, w()), (1001, w(height: 1001)), (1002, w(height: 1001))]) {
+        s = IncidentDetector.detect(inputs(wallets: [snapshot], state: s, height: height)).applyTo(s);
+        final r = SafetyEngine.evaluate(inputs(wallets: [snapshot], state: s, height: height));
+        expect(_find(r, SafetyCheckId.unexpectedSelfTransfer, walletId: 1).subjects, [burn], reason: '$height');
+        expect(r.criticalIncidents, isEmpty);
+      }
+      final recognized = SafetyEngine.evaluate(
+        inputs(wallets: [w(height: 1001)], state: s.copyWith(recognizedTxids: {burn}), height: 1002),
+      );
+      expect(_all(recognized).where((c) => c.id == SafetyCheckId.unexpectedSelfTransfer), isEmpty);
+    });
+
     test('self transfers the app did not make: action needed until recognized (red team §7)', () {
       final state = SafetyState(
         baselines: {

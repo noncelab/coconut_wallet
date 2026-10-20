@@ -75,7 +75,9 @@ abstract final class IncidentDetector {
   // 그런 지갑에서만 그 높이 이하로 적힌 새 출금(서버가 꾸민 높이·깊은 리오그)을 놓칠 수 있다
   static const maxKnownTxids = 20000;
 
-  /// 기준점 때 이 기간 안에 확정된 출금도 검토 항목으로 남긴다(지갑을 다시 넣기 직전에 확정된 도난, 레드팀 §2)
+  /// 기준점 때 이 기간 안에 확정된 출금과 앱이 만들지 않은 자기 앞 전송도 검토 항목으로 남긴다
+  /// (지갑을 다시 넣기 직전에 확정된 도난·수수료 소각, 레드팀 §2·Grok G3)
+  // ponytail: 이 창은 서버가 준 블록 시각을 믿는다. 시각을 속이는 악성 서버는 거래 자체도 숨길 수 있어 따로 막지 않는다
   static const recentOutgoingWindow = Duration(days: 7);
   static const strikeInterval = Duration(minutes: 10);
   static const conflictStrikes = 2;
@@ -96,7 +98,7 @@ abstract final class IncidentDetector {
       final baseline = state.baselines[w.id];
       if (baseline == null) {
         // 높이 0(첫 블록 조회 전)이나 동기화 중엔 기준점을 만들지 않는다(ARCH F5). 만든 실행에선 판정하지 않는다
-        if (w.isSettled && heightKnown) baselines[w.id] = _baseline(w, inputs.currentBlockHeight, inputs.now);
+        if (w.isSettled && heightKnown) baselines[w.id] = _baseline(w, state, inputs.currentBlockHeight, inputs.now);
       } else if (w.isSettled) {
         final unexpectedSelf = <String>{};
         for (final tx in w.txs) {
@@ -160,9 +162,10 @@ abstract final class IncidentDetector {
       tx.type == TransactionType.sent ||
       (tx.type == TransactionType.received && w.pendingSpentByTxids.contains(tx.txid));
 
-  static WalletBaseline _baseline(SafetyWalletSnapshot w, int height, DateTime now) {
+  static WalletBaseline _baseline(SafetyWalletSnapshot w, SafetyState state, int height, DateTime now) {
     final known = _known(w);
     final recentSince = now.subtract(recentOutgoingWindow);
+    bool recent(SafetyTx tx) => tx.blockHeight == 0 || tx.timestamp.isAfter(recentSince);
     final listed = {for (final tx in w.txs) tx.txid};
     return WalletBaseline(
       height: height,
@@ -171,9 +174,14 @@ abstract final class IncidentDetector {
       knownBelowHeight: known.belowHeight,
       pendingSentAtBaseline: {
         for (final tx in w.txs)
-          if (_isOutgoing(tx, w) && (tx.blockHeight == 0 || tx.timestamp.isAfter(recentSince))) tx.txid,
+          if (_isOutgoing(tx, w) && recent(tx)) tx.txid,
         for (final txid in w.pendingSpentByTxids)
           if (!listed.contains(txid)) txid,
+      },
+      // 출력이 모두 내 주소여도 큰 수수료로 잔액을 태울 수 있다(G3). 기준점 뒤의 자기 앞 전송과 같은 검토로 남긴다
+      unexpectedSelfTxids: {
+        for (final tx in w.txs)
+          if (tx.type == TransactionType.self && recent(tx) && !state.isAppCreated(tx.txid)) tx.txid,
       },
     );
   }
