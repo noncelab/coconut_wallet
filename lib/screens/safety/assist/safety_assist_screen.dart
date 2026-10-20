@@ -34,6 +34,8 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart' show safetyHidesAmounts;
+import 'package:coconut_wallet/model/home/home_item_definition.dart' show kHomeTileMaxTextScale;
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
@@ -536,7 +538,8 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
           CoconutLayout.spacing_300h,
           row(
             t.premium.assist.remaining_bitcoin,
-            context.read<PreferenceProvider>().isBalanceHidden
+            // 잔액 숨김·가짜 잔액이면 실제 금액을 보이지 않는다(H1)
+            safetyHidesAmounts(context)
                 ? t.premium.assist.hidden
                 : unit.displayBitcoinAmount(remainingSats, withUnit: true),
           ),
@@ -767,9 +770,10 @@ class AssistDestinationScreen extends StatelessWidget {
     String? walletSubtitle(WalletItemBase w) {
       final parts = [
         if (d.isRescueDestination && d.onThisDevice) t.premium.rescue.destination,
+        // 이미 있는 지갑: 핫월렛은 종류만(새 니모닉 안내는 새 핫월렛 줄에만, H5)
         if (!d.cannotVerifySeed)
           w.hasLocalKey
-              ? strings.new_hot_wallet_body
+              ? t.wallet_home_screen.wallet_filter.hot
               : '${strings.watch_only_wallets_body} · ${w.walletImportSource.displayName}',
       ];
       return parts.isEmpty ? null : parts.join(' · ');
@@ -1322,18 +1326,23 @@ class AssistWalletCard extends StatelessWidget {
     final walletProvider = context.read<WalletProvider>();
     return SizedBox(
       height: 148,
-      child: WalletCard(
-        wallet: wallet,
-        appearance: WalletAppearance.of(wallet),
-        size: WalletCardSize.wide,
-        balanceDisplay:
-            preference.isBalanceHidden
-                ? null
-                : preference.currentUnit.displayBitcoinAmount(
-                  walletProvider.getWalletBalance(wallet.id).total,
-                  withUnit: true,
-                ),
-        statusBadge: statusBadge,
+      // 높이가 고정된 카드라 홈 타일과 같은 배율에서 멈춘다(GPT M4: 큰 글자에서 넘침)
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: kHomeTileMaxTextScale,
+        child: WalletCard(
+          wallet: wallet,
+          appearance: WalletAppearance.of(wallet),
+          size: WalletCardSize.wide,
+          // 잔액 숨김·가짜 잔액이면 실제 잔액을 보이지 않는다(H1)
+          balanceDisplay:
+              safetyHidesAmounts(context)
+                  ? null
+                  : preference.currentUnit.displayBitcoinAmount(
+                    walletProvider.getWalletBalance(wallet.id).total,
+                    withUnit: true,
+                  ),
+          statusBadge: statusBadge,
+        ),
       ),
     );
   }
@@ -1392,7 +1401,7 @@ class _AddressCheck extends StatelessWidget {
                   ),
               ],
             ),
-            maxLines: 3,
+            // 줄 수 제한 없음: 서명 기기와 대조할 끝 글자가 큰 글자·좁은 폭에서도 잘리지 않게(H2)
           ),
           CoconutLayout.spacing_300h,
           _InfoLine(text: signingDevice ? t.premium.assist.address_check : t.premium.assist.address_check_hot),

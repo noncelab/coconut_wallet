@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -37,6 +38,7 @@ import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -49,6 +51,28 @@ SinglesigWalletItem _wallet(int id, int seed) => SinglesigWalletItem(
   iconIndex: 0,
   descriptor: SingleSignatureVault.fromEntropy(Uint8List.fromList(List.filled(16, seed))).descriptor,
 );
+
+/// 이 기기에 이미 있는 다른 시드 핫월렛
+SinglesigWalletItem _hotWallet(int id, int seed) {
+  final vault = SingleSignatureVault.fromEntropy(Uint8List.fromList(List.filled(16, seed)));
+  return SinglesigWalletItem(
+    id: id,
+    name: 'Wallet $id',
+    colorIndex: 0,
+    iconIndex: 0,
+    descriptor: vault.descriptor,
+    hotWalletMetadata: HotWalletMetadata(
+      walletId: id,
+      secureStorageKey: 'k$id',
+      masterFingerprint: vault.keyStore.masterFingerprint,
+      derivationPath: vault.derivationPath,
+      accountIndex: 0,
+      backupVerified: true,
+      enterPassphraseWhenSigning: false,
+      createdAt: DateTime(2026, 10, 20),
+    ),
+  );
+}
 
 UtxoState _utxo(WalletItemBase w, int i, int amount, {UtxoStatus status = UtxoStatus.unspent, String? spentBy}) =>
     UtxoState(
@@ -89,8 +113,10 @@ class _Wallets extends Fake implements WalletProvider {
   TransactionRecord? getTransactionRecord(int walletId, String transactionHash) =>
       walletId == 1 ? records[transactionHash] : null;
 
+  final balances = <int, int>{};
+
   @override
-  Balance getWalletBalance(int walletId) => Balance(0, 0);
+  Balance getWalletBalance(int walletId) => Balance(balances[walletId] ?? 0, 0);
 
   final events = StreamController<WalletLifecycleEvent>.broadcast();
 
@@ -134,10 +160,15 @@ class _Analyzer extends Fake implements ConflictAnalyzer {
 }
 
 class _Preferences extends ChangeNotifier implements PreferenceProvider {
+  _Preferences({this.hidden = true, this.fake = false});
+  final bool hidden, fake;
+
   @override
   BitcoinUnit get currentUnit => BitcoinUnit.btc;
   @override
-  bool get isBalanceHidden => true;
+  bool get isBalanceHidden => hidden;
+  @override
+  bool get isFakeBalanceActive => fake;
   @override
   FiatCode get selectedFiat => FiatCode.USD;
   @override
@@ -224,6 +255,8 @@ void main() {
     Map<int, WatchOnlyVerification> verifications = const {},
     bool withIncident = true,
     Map<int, WalletBaseline> baselines = const {},
+    _Preferences? preferences,
+    double textScale = 1,
   }) async {
     final auth = _Auth();
     final rescueProvider = rescueReady == null ? null : _Rescue(rescueReady, ready: rescueCanMoveNow);
@@ -260,7 +293,7 @@ void main() {
           Provider<AnalyticsService>.value(value: _Analytics()),
           if (rescueProvider != null) InheritedProvider<RescueReadyProvider>.value(value: rescueProvider),
           InheritedProvider<NodeProvider>.value(value: _ThrowingNode()),
-          ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
+          ChangeNotifierProvider<PreferenceProvider>.value(value: preferences ?? _Preferences()),
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
           ChangeNotifierProvider<TransactionProvider>.value(value: TransactionProvider(_TxRepo())),
           ChangeNotifierProvider<SafetyProvider>.value(value: safety),
@@ -271,6 +304,11 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
+          builder:
+              (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+                child: child!,
+              ),
           navigatorObservers: [routeObserver],
           home: Builder(
             builder: (context) {
@@ -1005,5 +1043,107 @@ void main() {
       expect(line('safety-assist-review-excludes', t.premium.assist.excludes_suspicious), findsOneWidget);
       expect(line('safety-assist-review-excludes-review', t.premium.assist.excludes_under_review), findsOneWidget);
     });
+  });
+
+  group('H1: 잔액 숨김·가짜 잔액이면 Assist에 실제 금액을 보이지 않음(safetyHidesAmounts)', () {
+    for (final (mode, hidden, fake) in const [('표시', false, false), ('가짜 잔액', false, true), ('잔액 숨김', true, false)]) {
+      testWidgets(mode, (tester) async {
+        final shows = !hidden && !fake;
+        final env = await pump(
+          tester,
+          utxos: [
+            _utxo(incident, 0, 90000, status: UtxoStatus.outgoing, spentBy: _attackTxid),
+            _utxo(incident, 1, 30000, status: UtxoStatus.locked),
+          ],
+          conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true)],
+          preferences: _Preferences(hidden: hidden, fake: fake),
+        );
+        env.wallets.balances[1] = 120000;
+        env.start();
+        await tester.pumpAndSettle();
+        // P2 요약의 남은 비트코인(잠긴 30,000)
+        expect(
+          find.text(BitcoinUnit.btc.displayBitcoinAmount(30000, withUnit: true)),
+          shows ? findsOneWidget : findsNothing,
+        );
+        expect(find.text(t.premium.assist.hidden), shows ? findsNothing : findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('safety-guide-button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
+        await tester.pumpAndSettle();
+        // 검토의 보내는 지갑 카드 잔액
+        expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+        expect(
+          find.text(BitcoinUnit.btc.displayBitcoinAmount(120000, withUnit: true)),
+          shows ? findsOneWidget : findsNothing,
+        );
+      });
+    }
+  });
+
+  testWidgets('H2: 받는 주소는 줄 수 제한 없이 끝까지(320dp·2.0배 글자에서도 대조할 마지막 글자가 남음)', (tester) async {
+    tester.view.physicalSize = const Size(320 * 3, 2000 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], textScale: 2);
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // 대체 없음(P6) → 남은 비트코인
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
+    await tester.pumpAndSettle();
+
+    final address = find.descendant(
+      of: find.byKey(const Key('safety-assist-review-address')),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is RichText &&
+            RegExp(r'^(bc|tb|bcrt)1[02-9ac-hj-np-z]{8,}$').hasMatch(w.text.toPlainText().replaceAll(' ', '')),
+      ),
+    );
+    expect(address, findsOneWidget);
+    await tester.ensureVisible(address);
+    await tester.pumpAndSettle();
+    final paragraph = tester.renderObject<RenderParagraph>(address);
+    expect(tester.widget<RichText>(address).maxLines, isNull);
+    expect(paragraph.didExceedMaxLines, isFalse);
+    // 여러 줄로 감싸여도 마지막 묶음(굵게)까지 그려진다
+    final last = tester.widget<RichText>(address).text.toPlainText().split(' ').last;
+    expect(
+      paragraph.getBoxesForSelection(
+        TextSelection(
+          baseOffset: paragraph.text.toPlainText().length - last.length,
+          extentOffset: paragraph.text.toPlainText().length,
+        ),
+      ),
+      isNotEmpty,
+    );
+  });
+
+  testWidgets('H5: 이미 있는 다른 시드 핫월렛 목적지의 부제는 지갑 종류(새 니모닉 안내 아님)', (tester) async {
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      wallets: [incident, destination, _hotWallet(3, 3)],
+    );
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const Key('safety-assist-destination-wallet-3'));
+    expect(row, findsOneWidget);
+    expect(find.descendant(of: row, matching: find.text(t.wallet_home_screen.wallet_filter.hot)), findsOneWidget);
+    expect(find.descendant(of: row, matching: find.text(t.premium.destination.new_hot_wallet_body)), findsNothing);
+    // 새 핫월렛 줄은 그대로 새 니모닉 안내
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('safety-assist-destination-new-hot')),
+        matching: find.textContaining(t.premium.destination.new_hot_wallet_body),
+      ),
+      findsOneWidget,
+    );
   });
 }
