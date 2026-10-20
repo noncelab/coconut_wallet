@@ -134,7 +134,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                         ),
                       )
                       : null,
-              // 승인 대기는 아직 Premium이 아니라 비상 이동 안내가 없다
+              // 승인 대기는 아직 Premium이 아니라 칩·비상 이동 안내가 없다
+              badge: pending ? null : const PremiumChip(),
               buttonText: t.confirm,
               onButton: () => Navigator.of(resultContext).pop(),
               children: [
