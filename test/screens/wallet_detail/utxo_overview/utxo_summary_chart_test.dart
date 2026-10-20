@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -338,6 +339,7 @@ void main() {
             await tester.pumpWidget(
               MultiProvider(
                 providers: [
+                  Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
                   ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences()),
                   ChangeNotifierProvider<WalletProvider>(create: (_) => wallets),
                   ChangeNotifierProvider<TransactionProvider>(create: (_) => _Transactions()),
@@ -392,6 +394,7 @@ void main() {
             await tester.pumpWidget(
               MultiProvider(
                 providers: [
+                  Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
                   ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences()),
                   ChangeNotifierProvider<WalletProvider>(create: (_) => wallets),
                   ChangeNotifierProvider<TransactionProvider>(create: (_) => _Transactions()),
@@ -452,6 +455,7 @@ void main() {
         await tester.pumpWidget(
           MultiProvider(
             providers: [
+              Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
               ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences()),
               ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets()),
               ChangeNotifierProvider<TransactionProvider>(create: (_) => _Transactions()),
@@ -547,7 +551,7 @@ void main() {
           if (populated) {
             expect(metrics['summaryHeight'], UtxoSummaryChart.estimatedHeight);
           } else {
-            expect(metrics['chipTop'], 20);
+            expect(metrics['chipTop'], 16, reason: 'The hidden balance header uses compact top padding.');
             expect(metrics['summaryHeight']! - metrics['chipBottom']!, 24);
             expect(metrics['summaryHeight'], lessThan(UtxoSummaryChart.estimatedHeight));
           }

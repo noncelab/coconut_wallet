@@ -137,6 +137,30 @@ void main() {
     expect(results.first.matchedPath, hasLength(2));
   });
 
+  test('number format labels and natural aliases resolve to app settings in every locale', () {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    const aliases = {
+      AppLocale.ko: ['숫자 형식', '숫자 구분', '천 단위', '소수점'],
+      AppLocale.en: ['number format', 'thousands', 'decimal'],
+      AppLocale.ja: ['数値形式', '桁区切り', '小数点'],
+      AppLocale.es: ['formato numérico', 'miles', 'decimales'],
+      AppLocale.de: ['Zahlenformat', 'Tausendertrennzeichen', 'Dezimaltrennzeichen'],
+    };
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      for (final query in [t.settings_screen.number_format, ...aliases[locale]!]) {
+        final results = registry.search(query);
+        expect(results, isNotEmpty, reason: '${locale.languageCode}: $query');
+        final result = results.first;
+        expect(result.item.id, FeatureIds.appSettings, reason: query);
+        expect(result.matchedItem.id, 'app_settings.number_format', reason: query);
+        expect(result.matchedPath, [t.feature_registry.app_settings, t.settings_screen.number_format]);
+        expect(result.matchedItem.context, FeatureContext.none);
+        expect(result.matchedItem.launch, isNotNull);
+      }
+    }
+  });
+
   test('all registered sub-features have their own launch action', () {
     for (final item in registry.all.where((item) => !item.isTopLevel)) {
       expect(item.launch, isNotNull, reason: item.id);

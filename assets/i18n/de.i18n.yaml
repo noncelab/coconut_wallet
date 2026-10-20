@@ -295,6 +295,7 @@ feature_search:
   app_settings_fiat: "Währung"
   app_settings_language: "Sprache"
   app_settings_theme: "Dunkelmodus, Hellmodus"
+  app_settings_number_format: "Zahlenformat, Tausendertrennzeichen, Dezimaltrennzeichen, Gruppierung"
   app_settings_utxo_selection: "Coin-Auswahl, Coin Control"
   app_settings_electrum: "Node, Server, Port"
   app_settings_explorer: "Explorer"

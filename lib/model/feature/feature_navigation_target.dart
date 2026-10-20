@@ -6,6 +6,7 @@ enum AppSettingsTarget {
   fiat,
   language,
   theme,
+  numberFormat,
   utxoSelection,
   electrum,
   explorer,

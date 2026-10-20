@@ -296,6 +296,7 @@ feature_search:
   app_settings_fiat: "moneda"
   app_settings_language: "idioma"
   app_settings_theme: "modo oscuro, modo claro"
+  app_settings_number_format: "formato numérico, miles, decimales, separador"
   app_settings_utxo_selection: "selección de monedas, control de monedas"
   app_settings_electrum: "nodo, servidor, puerto"
   app_settings_explorer: "explorador"

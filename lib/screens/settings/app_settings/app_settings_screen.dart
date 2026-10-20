@@ -51,7 +51,11 @@ class AppSettingsScreen extends StatefulWidget {
     CoconutThemeVariant? highlightTheme,
   }) async {
     final selectionSheet = switch (target) {
-      AppSettingsTarget.unit || AppSettingsTarget.fiat || AppSettingsTarget.language || AppSettingsTarget.theme => true,
+      AppSettingsTarget.unit ||
+      AppSettingsTarget.fiat ||
+      AppSettingsTarget.language ||
+      AppSettingsTarget.theme ||
+      AppSettingsTarget.numberFormat => true,
       _ => false,
     };
     if (!selectionSheet) return _openTarget(context, target, highlightTheme: highlightTheme);
@@ -169,6 +173,13 @@ class AppSettingsScreen extends StatefulWidget {
           screenName: AnalyticsScreenNames.appSettingsThemeSheet,
           heightRatio: 0.5,
           child: ThemeBottomSheet(highlightVariant: highlightTheme),
+        );
+      case AppSettingsTarget.numberFormat:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
+          heightRatio: 0.4,
+          child: NumberFormatBottomSheet(),
         );
       case AppSettingsTarget.electrum:
         await Navigator.pushNamed(context, AppRouteNames.electrumServer);
@@ -380,12 +391,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.settings_screen.number_format,
                             subtitle: preset.displayLabel,
                             onPressed: () {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
-                                heightRatio: 0.4,
-                                child: NumberFormatBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.numberFormat);
                             },
                           );
                         },

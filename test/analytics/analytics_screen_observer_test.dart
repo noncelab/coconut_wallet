@@ -351,9 +351,9 @@ void main() {
     await harness.mount(tester);
 
     for (final (mode, screenName) in [
-      (WalletAddDialogMode.walletType, AnalyticsScreenNames.walletAddMenuSheet),
-      (WalletAddDialogMode.watchOnlySource, AnalyticsScreenNames.walletAddWatchOnlySourcesSheet),
-      (WalletAddDialogMode.hotWalletAction, AnalyticsScreenNames.walletAddHotWalletActionsSheet),
+      (WalletAddDialogMode.walletType, AnalyticsScreenNames.walletHomeAddWalletTypeSheet),
+      (WalletAddDialogMode.watchOnlySource, AnalyticsScreenNames.walletHomeAddWatchOnlySourceSheet),
+      (WalletAddDialogMode.hotWalletAction, AnalyticsScreenNames.walletHomeAddHotWalletActionSheet),
     ]) {
       unawaited(WalletAddDialog.showTopSheet(harness.context, mode));
       await tester.pumpAndSettle();

@@ -294,6 +294,7 @@ feature_search:
   app_settings_fiat: "通貨, 円"
   app_settings_language: "言語"
   app_settings_theme: "ダークモード, ライトモード, 画面モード"
+  app_settings_number_format: "数値形式, 桁区切り, 小数点, 区切り文字"
   app_settings_utxo_selection: "コイン選択, コインコントロール"
   app_settings_electrum: "ノード, サーバー, ポート"
   app_settings_explorer: "メンプール"

@@ -34,17 +34,20 @@ void main() {
           );
 
           final style = tester.widget<AppBar>(find.byType(AppBar)).systemOverlayStyle!;
+          final backgroundColor = resolveCoconutThemeExtension(variant: theme.variant).colors.background;
           expect(style.statusBarBrightness, theme.background);
           expect(style.statusBarIconBrightness, theme.icons);
-          expect(style.statusBarColor, isNull);
-          expect(style.systemNavigationBarColor, isNull);
+          expect(style.statusBarColor, Colors.transparent);
+          expect(style.systemNavigationBarColor, backgroundColor);
+          expect(style.systemNavigationBarDividerColor, backgroundColor);
+          expect(style.systemNavigationBarIconBrightness, theme.icons);
           expect(tester.takeException(), isNull);
         }
       });
     }
   }
 
-  testWidgets('theme changes update iOS status brightness and preserve Android bar colors', (tester) async {
+  testWidgets('theme changes preserve status transparency, brightness and navigation colors', (tester) async {
     final overlays = <Map<dynamic, dynamic>>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'SystemChrome.setSystemUIOverlayStyle') {
@@ -62,7 +65,7 @@ void main() {
       final color = resolveCoconutThemeExtension(variant: theme.variant).colors.background.toARGB32();
       expect(style['statusBarBrightness'], theme.background.toString());
       expect(style['statusBarIconBrightness'], theme.icons.toString());
-      expect(style['statusBarColor'], color);
+      expect(style['statusBarColor'], Colors.transparent.toARGB32());
       expect(style['systemNavigationBarColor'], color);
       expect(style['systemNavigationBarDividerColor'], color);
       expect(style['systemNavigationBarIconBrightness'], theme.icons.toString());

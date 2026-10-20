@@ -295,6 +295,7 @@ feature_search:
   app_settings_fiat: "통화, 원화"
   app_settings_language: "언어"
   app_settings_theme: "다크 모드, 라이트 모드, 화면 모드"
+  app_settings_number_format: "숫자 형식, 숫자 구분, 천 단위, 소수점, 구분자"
   app_settings_utxo_selection: "코인 선택, 코인 컨트롤"
   app_settings_electrum: "노드, 서버, 포트"
   app_settings_explorer: "멤풀, 익스플로러"

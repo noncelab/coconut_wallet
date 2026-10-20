@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -22,7 +23,8 @@ void main() {
     await numberFont.load();
   });
   for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
-    for (final separator in ['.', ',']) {
+    for (final preset in [NumberFormatPreset.dotDecimal, NumberFormatPreset.commaDecimal]) {
+      final separator = preset.decimalSeparator;
       testWidgets(
         'premium fits editing, blur and offline mirror with $separator on $platform',
         (tester) async {
@@ -31,8 +33,12 @@ void main() {
           addTearDown(tester.view.resetPhysicalSize);
           addTearDown(tester.view.resetDevicePixelRatio);
           final originalSeparator = NumberFormatConfig.instance.decimalSeparator;
-          NumberFormatConfig.instance.decimalSeparator = separator;
-          addTearDown(() => NumberFormatConfig.instance.decimalSeparator = originalSeparator);
+          final originalGroupingSeparator = NumberFormatConfig.instance.groupingSeparator;
+          addTearDown(() {
+            NumberFormatConfig.instance.decimalSeparator = originalSeparator;
+            NumberFormatConfig.instance.groupingSeparator = originalGroupingSeparator;
+          });
+          NumberFormatConfig.instance.applyPreset(preset);
           await tester.pumpWidget(
             MultiProvider(
               providers: [
