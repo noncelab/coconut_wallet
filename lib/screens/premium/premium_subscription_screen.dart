@@ -73,7 +73,7 @@ class PremiumSubscriptionScreen extends StatelessWidget {
                       if (state.status == PremiumStatus.expired) ...[
                         CoconutLayout.spacing_300h,
                         Text(
-                          t.premium.subscription.expired_note,
+                          safetyKoText(t.premium.subscription.expired_note),
                           style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                         ),
                       ],
@@ -107,7 +107,7 @@ class PremiumSubscriptionScreen extends StatelessWidget {
             ),
             CoconutLayout.spacing_400h,
             Text(
-              t.premium.subscription.manage_note,
+              safetyKoText(t.premium.subscription.manage_note),
               style: CoconutTypography.caption_10.setColor(colors.secondaryText),
             ),
           ],
@@ -140,7 +140,7 @@ class _StatusCard extends StatelessWidget {
       children: [
         const PremiumMark(size: 20, muted: true),
         CoconutLayout.spacing_200w,
-        Expanded(child: Text(text, style: title)),
+        Expanded(child: Text(safetyKoText(text), style: title)),
       ],
     );
     final expiresAt = state.expiresAt;
@@ -163,7 +163,7 @@ class _StatusCard extends StatelessWidget {
             CoconutLayout.spacing_200w,
             Expanded(
               child: Text(
-                subscription.active_title,
+                safetyKoText(subscription.active_title),
                 style: CoconutTypography.body1_16_Bold.setColor(colors.premiumText),
               ),
             ),
@@ -189,7 +189,7 @@ class _StatusCard extends StatelessWidget {
         CoconutLayout.spacing_400h,
         plans(t.premium.card.explore),
       ],
-      PremiumStatus.pending => [Text(t.premium.purchased.pending_title, style: title)],
+      PremiumStatus.pending => [Text(safetyKoText(t.premium.purchased.pending_title), style: title)],
       PremiumStatus.verifying => [
         Shimmer.fromColors(
           enabled: !safetyReduceMotion(context),

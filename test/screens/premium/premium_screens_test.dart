@@ -187,6 +187,10 @@ void main() {
 
   ColorFilter tint(Color color) => ColorFilter.mode(color, BlendMode.srcIn);
 
+  /// R1(safetyKoText)로 한국어 글자 사이에 이음 문자가 들어가도 원문으로 찾는다
+  Finder findText(String value) =>
+      find.byWidgetPredicate((w) => w is Text && plain(w.data ?? w.textSpan?.toPlainText() ?? '') == value);
+
   group('페이월', () {
     testWidgets('스토어 가격 그대로·연간 기본 선택·자동 갱신 고지·약관·개인정보·복원', variant: TargetPlatformVariant.only(TargetPlatform.iOS), (
       tester,
@@ -194,17 +198,17 @@ void main() {
       final premium = FakeEntitlementService(products: _products);
       await pumpPaywall(tester, premium);
 
-      expect(find.text('₩39,000'), findsOneWidget);
-      expect(find.text('US\$ 4,99'), findsOneWidget);
-      expect(find.text(t.premium.paywall.period_year), findsOneWidget);
-      expect(find.text(t.premium.paywall.compare_note), findsOneWidget);
+      expect(findText('₩39,000'), findsOneWidget);
+      expect(findText('US\$ 4,99'), findsOneWidget);
+      expect(findText(t.premium.paywall.period_year), findsOneWidget);
+      expect(findText(t.premium.paywall.compare_note), findsOneWidget);
       expect(planRing(tester, PremiumPeriod.yearly), colors.mainnetLogoGradient);
       expect((planRing(tester, PremiumPeriod.monthly)! as LinearGradient).colors, everyElement(Colors.transparent));
-      expect(find.text('${t.premium.store_notice.apple} ${t.premium.paywall.platform_note}'), findsOneWidget);
-      expect(find.text(t.app_info_screen.terms_of_service), findsOneWidget);
-      expect(find.text(t.app_info_screen.privacy_policy), findsOneWidget);
-      expect(find.text(t.premium.paywall.subscribe), findsOneWidget);
-      expect(find.text(t.premium.paywall.trial(n: 7)), findsNothing);
+      expect(findText('${t.premium.store_notice.apple} ${t.premium.paywall.platform_note}'), findsOneWidget);
+      expect(findText(t.app_info_screen.terms_of_service), findsOneWidget);
+      expect(findText(t.app_info_screen.privacy_policy), findsOneWidget);
+      expect(findText(t.premium.paywall.subscribe), findsOneWidget);
+      expect(findText(t.premium.paywall.trial(n: 7)), findsNothing);
       // 스토어가 체험을 주지 않으면 체험 문구는 어디에도 없다(고지 포함)
       expect(find.textContaining(t.premium.store_notice.apple_trial), findsNothing);
       expect(find.textContaining(t.premium.paywall.start_trial), findsNothing);
@@ -212,7 +216,7 @@ void main() {
       await tester.tap(find.byKey(const Key('premium-paywall-restore')));
       await tester.pump();
       expect(premium.restoreCount, 1);
-      expect(find.text(t.premium.toast.nothing_to_restore), findsOneWidget);
+      expect(findText(t.premium.toast.nothing_to_restore), findsOneWidget);
       await waitToast(tester);
     });
 
@@ -237,9 +241,9 @@ void main() {
       final planLine = find.byKey(const Key('premium-paywall-selected-plan'));
       expect(planText(tester), plan(t.premium.paywall.period_year, '₩39,000'));
       expectAboveButton(planLine);
-      expectAboveButton(find.text(t.app_info_screen.terms_of_service));
-      expectAboveButton(find.text(t.app_info_screen.privacy_policy));
-      expectAboveButton(find.text(t.premium.paywall.restore));
+      expectAboveButton(findText(t.app_info_screen.terms_of_service));
+      expectAboveButton(findText(t.app_info_screen.privacy_policy));
+      expectAboveButton(findText(t.premium.paywall.restore));
       expect(button.bottom, lessThanOrEqualTo(640));
       // 구매 복원은 법적 링크 사이가 아니라 버튼 바로 위 따로 한 줄(UI_SPEC §10.3)
       expect(
@@ -256,20 +260,21 @@ void main() {
       expectAboveButton(planLine);
     });
 
-    testWidgets('가이드·도움말 줄은 도움 받기 시트를 연다', (tester) async {
+    testWidgets('POLISH G15: 비교표 아래 도움 링크가 도움 받기 시트를 연다', (tester) async {
       await pumpPaywall(tester, FakeEntitlementService(products: _products));
       await tester.ensureVisible(find.byKey(const Key('premium-paywall-help')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('premium-paywall-help')));
       await tester.pumpAndSettle();
 
-      expect(find.text(t.safety_guide.help_center.open), findsOneWidget);
+      // 가치 행은 정적이고 비교표 아래 링크가 도움 받기 시트를 연다(링크 글과 시트 버튼 글이 같아 채널 키로 본다)
+      expect(find.byKey(const Key('help-channel-discord')), findsOneWidget);
     });
 
     testWidgets('Android는 Google Play 고지', variant: TargetPlatformVariant.only(TargetPlatform.android), (tester) async {
       await pumpPaywall(tester, FakeEntitlementService(products: _products));
 
-      expect(find.text('${t.premium.store_notice.google} ${t.premium.paywall.platform_note}'), findsOneWidget);
+      expect(findText('${t.premium.store_notice.google} ${t.premium.paywall.platform_note}'), findsOneWidget);
     });
 
     testWidgets('무료 체험은 스토어 상품에 있을 때만', (tester) async {
@@ -277,8 +282,10 @@ void main() {
         tester,
         FakeEntitlementService(products: [_product(PremiumPeriod.yearly, '₩39,000', trialDays: 7), _products.last]),
       );
-      expect(find.text(t.premium.paywall.trial(n: 7)), findsOneWidget);
-      expect(find.text(t.premium.paywall.start_trial), findsOneWidget);
+      expect(findText(t.premium.paywall.trial(n: 7)), findsOneWidget);
+      // 체험은 Premium 상품의 속성: premiumText(초록 아님)
+      expect(tester.widget<Text>(findText(t.premium.paywall.trial(n: 7))).style!.color, colors.premiumText);
+      expect(findText(t.premium.paywall.start_trial), findsOneWidget);
       expect(find.textContaining(t.premium.store_notice.google_trial), findsOneWidget);
       expect(
         planText(tester).split('\n').first,
@@ -290,7 +297,7 @@ void main() {
       await tester.tap(find.byKey(const Key('premium-plan-monthly')));
       await tester.pumpAndSettle();
       expect(planRing(tester, PremiumPeriod.monthly), colors.mainnetLogoGradient);
-      expect(find.text(t.premium.paywall.subscribe), findsOneWidget);
+      expect(findText(t.premium.paywall.subscribe), findsOneWidget);
       expect(find.textContaining(t.premium.store_notice.google_trial), findsNothing);
     });
 
@@ -298,12 +305,17 @@ void main() {
       final premium = FakeEntitlementService(products: _products);
       final result = await pumpPaywall(tester, premium);
 
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
-      expect(find.text(t.premium.purchased.title), findsOneWidget);
+      expect(findText(t.premium.purchased.title), findsOneWidget);
       expect(premium.state.value.period, PremiumPeriod.yearly);
+      // POLISH G10: 제목 위 Premium 칩
+      expect(
+        tester.getRect(find.byType(PremiumChip)).bottom,
+        lessThanOrEqualTo(tester.getRect(findText(t.premium.purchased.title)).top),
+      );
 
-      await tester.tap(find.text(t.confirm));
+      await tester.tap(findText(t.confirm));
       await tester.pumpAndSettle();
       expect(result.value, isTrue);
       expect(find.byKey(const Key('premium-paywall')), findsNothing);
@@ -313,15 +325,15 @@ void main() {
       final premium = FakeEntitlementService(products: _products, purchaseOutcome: PurchaseOutcome.cancelled);
       await pumpPaywall(tester, premium);
 
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('premium-paywall')), findsOneWidget);
-      expect(find.text(t.premium.toast.failed), findsNothing);
+      expect(findText(t.premium.toast.failed), findsNothing);
 
       premium.purchaseOutcome = PurchaseOutcome.failed;
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pump();
-      expect(find.text(t.premium.toast.failed), findsOneWidget);
+      expect(findText(t.premium.toast.failed), findsOneWidget);
       expect(premium.state.value.isActive, isFalse);
       await waitToast(tester);
     });
@@ -330,14 +342,15 @@ void main() {
       final premium = FakeEntitlementService(products: _products, purchaseOutcome: PurchaseOutcome.pending);
       final result = await pumpPaywall(tester, premium);
 
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('premium-result-pending')), findsOneWidget);
-      expect(find.text(t.premium.purchased.pending_title), findsOneWidget);
-      expect(find.text(t.premium.purchased.pending_body), findsOneWidget);
+      expect(find.byType(PremiumChip), findsNothing); // 승인 전에는 Premium이 아니다
+      expect(findText(t.premium.purchased.pending_title), findsOneWidget);
+      expect(findText(t.premium.purchased.pending_body), findsOneWidget);
       expect(result.value, isNull); // 확인 전에는 닫히지 않는다
 
-      await tester.tap(find.text(t.confirm));
+      await tester.tap(findText(t.confirm));
       await tester.pumpAndSettle();
       expect(result.value, isFalse);
       expect(find.byKey(const Key('premium-paywall')), findsNothing);
@@ -347,13 +360,13 @@ void main() {
       final premium = _ThrowingPremium(products: _products);
       await pumpPaywall(tester, premium);
 
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pump();
-      expect(find.text(t.premium.toast.failed), findsOneWidget);
+      expect(findText(t.premium.toast.failed), findsOneWidget);
       expect(find.byType(FullscreenLoadingIndicator), findsNothing);
       await waitToast(tester);
 
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pump();
       expect(premium.purchases, 2);
       await waitToast(tester);
@@ -374,32 +387,34 @@ void main() {
       await pumpPaywall(tester, premium);
 
       expect(find.byKey(const Key('premium-paywall-unavailable')), findsOneWidget);
-      expect(find.text(t.premium.paywall.store_unavailable), findsOneWidget);
-      expect(find.text(t.retry), findsOneWidget);
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      expect(findText(t.premium.paywall.store_unavailable), findsOneWidget);
+      expect(findText(t.retry), findsOneWidget);
+      await tester.tap(findText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
       expect(premium.state.value.status, PremiumStatus.none);
-      expect(find.text(t.premium.purchased.title), findsNothing);
+      expect(findText(t.premium.purchased.title), findsNothing);
     });
 
     testWidgets('POLISH G3·G5·G6·G7·G8: 히어로, 비교표 머리, 판매표 체크 색, 가치 행 아이콘, 플랜 고름 표시', (tester) async {
       await pumpPaywall(tester, FakeEntitlementService(products: _products));
 
       expect(find.byType(PremiumHero), findsOneWidget);
+      // G15: 가치 행 셋은 모두 정적(화살표·누름 없음)
+      expect(find.byIcon(Icons.keyboard_arrow_right_rounded), findsNothing);
       // 고정 칸의 열 제목은 줄여서 한 줄, Premium 열 제목 앞에 젬 12
-      final premiumHeader = find.ancestor(of: find.text(t.premium.badge), matching: find.byType(FittedBox));
+      final premiumHeader = find.ancestor(of: findText(t.premium.badge), matching: find.byType(FittedBox));
       expect(premiumHeader, findsOneWidget);
       expect(
         tester.widget<PremiumMark>(find.descendant(of: premiumHeader, matching: find.byType(PremiumMark))).size,
         12,
       );
-      expect(find.ancestor(of: find.text(t.premium.paywall.free), matching: find.byType(FittedBox)), findsOneWidget);
+      expect(find.ancestor(of: findText(t.premium.paywall.free), matching: find.byType(FittedBox)), findsOneWidget);
       // 판매표에는 초록이 없다: 무료 열 iconPrimary, Premium 열 premiumText, "–"는 iconSecondary
       final checks = tester.widgetList<SvgPicture>(
         find.byWidgetPredicate((w) => isAsset(w, CommonActionIconPath.check)),
       );
       expect(checks.map((c) => c.colorFilter).toSet(), {tint(colors.iconPrimary), tint(colors.premiumText)});
-      expect(tester.widgetList<Text>(find.text('–')).map((d) => d.style!.color).toSet(), {colors.iconSecondary});
+      expect(tester.widgetList<Text>(findText('–')).map((d) => d.style!.color).toSet(), {colors.iconSecondary});
       // 가치 행 아이콘은 premiumText
       for (final icon in [
         FeatureShortcutIconPath.transactionDraft,
@@ -430,7 +445,7 @@ void main() {
     testWidgets('POLISH G4: 점 없는 법적 링크, 복원은 버튼 바로 위, 본문 끝 페이드, 기간·가격은 줄 사이로 갈리지 않는다', (tester) async {
       await pumpPaywall(tester, FakeEntitlementService(products: _products));
 
-      expect(find.text(' · '), findsNothing);
+      expect(findText(' · '), findsNothing);
       final legal = find.ancestor(of: find.byKey(const Key('premium-paywall-terms')), matching: find.byType(Wrap));
       expect(find.descendant(of: legal, matching: find.byKey(const Key('premium-paywall-privacy'))), findsOneWidget);
       expect(find.descendant(of: legal, matching: find.byKey(const Key('premium-paywall-restore'))), findsNothing);
@@ -438,6 +453,16 @@ void main() {
       final button = tester.getRect(find.byKey(const Key('premium-paywall-subscribe')));
       expect(restore.bottom, lessThanOrEqualTo(button.top));
       expect(restore.top, greaterThanOrEqualTo(tester.getRect(legal).bottom));
+      // 작은 링크도 누름 높이 24 이상(WCAG 2.5.8), 법적 링크 사이 12
+      for (final key in [
+        'premium-paywall-terms',
+        'premium-paywall-privacy',
+        'premium-paywall-restore',
+        'premium-paywall-help',
+      ]) {
+        expect(tester.getSize(find.byKey(Key(key))).height, greaterThanOrEqualTo(24), reason: key);
+      }
+      expect(tester.widget<Wrap>(legal).spacing, 12);
       // 본문 아래 24 페이드(누름은 통과)
       final fade = find.byWidgetPredicate(
         (w) =>
@@ -496,7 +521,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('open'));
+      await tester.tap(findText('open'));
       await tester.pumpAndSettle();
     }
 
@@ -514,8 +539,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
       expect(tester.takeException(), isNull);
-      expect(find.text(t.premium.toast.restored), findsNothing);
-      expect(find.text('open'), findsOneWidget);
+      expect(findText(t.premium.toast.restored), findsNothing);
+      expect(findText('open'), findsOneWidget);
     });
 
     testWidgets('m6: 스토어 구독 관리를 열지 못하면 경고 토스트', (tester) async {
@@ -523,7 +548,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('premium-subscription-manage')));
       await tester.pump();
-      expect(find.text(t.premium.toast.manage_failed), findsOneWidget);
+      expect(findText(t.premium.toast.manage_failed), findsOneWidget);
       await waitToast(tester);
     });
 
@@ -540,35 +565,35 @@ void main() {
         initial: const PremiumState(PremiumStatus.active, period: PremiumPeriod.yearly),
       );
       await pumpManage(tester, premium);
-      expect(find.text(t.premium.subscription.active_title), findsOneWidget);
-      expect(find.text(t.premium.subscription.yearly_plan), findsOneWidget);
+      expect(findText(t.premium.subscription.active_title), findsOneWidget);
+      expect(findText(t.premium.subscription.yearly_plan), findsOneWidget);
       expect(find.byKey(const Key('premium-subscription-see-plans')), findsNothing);
       // POLISH G9: 사용 중은 Premium 바탕(r24, 링 1) + 젬 20, 제목 premiumText, 플랜 줄 secondaryTextStrong
       final active = tester.widget<PremiumSurface>(find.byKey(const Key('premium-status-active')));
       expect((active.radius, active.ringWidth), (24.0, 1.0));
       final activeMark = tester.widget<PremiumMark>(find.byType(PremiumMark));
       expect((activeMark.size, activeMark.muted), (20.0, false));
-      expect(tester.widget<Text>(find.text(t.premium.subscription.active_title)).style!.color, colors.premiumText);
+      expect(tester.widget<Text>(findText(t.premium.subscription.active_title)).style!.color, colors.premiumText);
       expect(
-        tester.widget<Text>(find.text(t.premium.subscription.yearly_plan)).style!.color,
+        tester.widget<Text>(findText(t.premium.subscription.yearly_plan)).style!.color,
         colors.secondaryTextStrong,
       );
 
       premium.emit(PremiumState(PremiumStatus.expired, expiresAt: DateTime(2026, 9, 1)));
       await tester.pump();
-      expect(find.text(t.premium.subscription.expired_on(date: '2026.09.01')), findsOneWidget);
-      expect(find.text(t.premium.subscription.resubscribe), findsOneWidget);
-      expect(find.text(t.premium.subscription.expired_note), findsOneWidget);
+      expect(findText(t.premium.subscription.expired_on(date: '2026.09.01')), findsOneWidget);
+      expect(findText(t.premium.subscription.resubscribe), findsOneWidget);
+      expect(findText(t.premium.subscription.expired_note), findsOneWidget);
 
       premium.emit(const PremiumState(PremiumStatus.none));
       await tester.pump();
-      expect(find.text(t.premium.subscription.none_title), findsOneWidget);
+      expect(findText(t.premium.subscription.none_title), findsOneWidget);
       // 없음·만료는 surface r24 + 빛 꺼진 젬
       final none = tester.widget<Container>(find.byKey(const Key('premium-status-none')));
       expect((none.decoration! as BoxDecoration).borderRadius, BorderRadius.circular(24));
       expect((none.decoration! as BoxDecoration).color, colors.surface);
       expect(tester.widget<PremiumMark>(find.byType(PremiumMark)).muted, isTrue);
-      await tester.tap(find.text(t.premium.card.explore));
+      await tester.tap(findText(t.premium.card.explore));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('premium-paywall')), findsOneWidget);
     });
@@ -580,7 +605,7 @@ void main() {
       await tester.tap(find.byKey(const Key('premium-subscription-restore')));
       await tester.pump();
       expect(premium.restoreCount, 1);
-      expect(find.text(t.premium.toast.restored), findsOneWidget);
+      expect(findText(t.premium.toast.restored), findsOneWidget);
       await waitToast(tester);
 
       await tester.tap(find.byKey(const Key('premium-subscription-manage')));
@@ -600,8 +625,8 @@ void main() {
       await tester.pumpWidget(app(premium, const AppSettingsScreen()));
       await tester.pumpAndSettle();
       final row = find.byKey(const Key('app-settings-premium'));
-      expect(find.descendant(of: row, matching: find.text(t.premium.name)), findsOneWidget);
-      expect(find.descendant(of: row, matching: find.text(t.premium.subscription.active)), findsOneWidget);
+      expect(find.descendant(of: row, matching: findText(t.premium.name)), findsOneWidget);
+      expect(find.descendant(of: row, matching: findText(t.premium.subscription.active)), findsOneWidget);
       // POLISH G11: 사용 중일 때만 부제 premiumText, 아니면 다른 행과 같은 기본 부제
       SingleButton rowButton() =>
           tester.widget<SingleButton>(find.descendant(of: row, matching: find.byType(SingleButton)));

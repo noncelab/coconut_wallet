@@ -119,8 +119,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
         builder:
             (resultContext) => SafetyResultPage(
               key: Key(pending ? 'premium-result-pending' : 'premium-result-purchased'),
-              title: pending ? t.premium.purchased.pending_title : t.premium.purchased.title,
-              description: pending ? t.premium.purchased.pending_body : t.premium.purchased.body,
+              title: safetyKoText(pending ? t.premium.purchased.pending_title : t.premium.purchased.title),
+              description: safetyKoText(pending ? t.premium.purchased.pending_body : t.premium.purchased.body),
               icon:
                   pending
                       ? SafetyIconCircle(
@@ -134,6 +134,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                         ),
                       )
                       : null,
+              // 승인 대기는 아직 Premium이 아니라 칩이 없다
+              badge: pending ? null : const PremiumChip(),
               buttonText: t.confirm,
               onButton: () => Navigator.of(resultContext).pop(),
             ),
@@ -250,6 +252,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                   text: t.premium.paywall.restore,
                   textStyle: CoconutTypography.body3_12_Bold,
                   defaultColor: colors.secondaryTextStrong,
+                  padding: _linkPadding,
                   onTap: _restore,
                 ),
               ),
@@ -294,6 +297,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           text: t.app_info_screen.terms_of_service,
           textStyle: style,
           defaultColor: colors.secondaryText,
+          padding: _linkPadding,
           onTap: () => launchURL(context, TERMS_OF_SERVICE_URL, destination: ExternalLinkDestination.termsOfService),
         ),
         CoconutUnderlinedButton(
@@ -301,6 +305,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           text: t.app_info_screen.privacy_policy,
           textStyle: style,
           defaultColor: colors.secondaryText,
+          padding: _linkPadding,
           onTap: () => launchURL(context, PRIVACY_POLICY_URL, destination: ExternalLinkDestination.privacyPolicy),
         ),
       ],
@@ -342,11 +347,9 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       ),
       CoconutLayout.spacing_300h,
       _ValueRow(
-        key: const Key('premium-paywall-help'),
         iconPath: FeatureShortcutIconPath.tutorial,
         title: t.premium.paywall.value_guide_title,
         body: t.premium.paywall.value_guide_body,
-        onTap: () => showHelpChannelsSheet(context),
       ),
     ];
   }
@@ -409,7 +412,20 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
         ),
       ),
       CoconutLayout.spacing_300h,
-      Text(paywall.compare_note, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+      Text(safetyKoText(paywall.compare_note), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+      CoconutLayout.spacing_200h,
+      // 가치 행은 모두 정적이고, 도움 채널은 결제 없이 여기서 연다(도움은 무료)
+      Align(
+        alignment: Alignment.centerLeft,
+        child: CoconutUnderlinedButton(
+          key: const Key('premium-paywall-help'),
+          text: t.safety_guide.help_center.open,
+          textStyle: CoconutTypography.body3_12_Bold,
+          defaultColor: colors.secondaryTextStrong,
+          padding: _linkPadding,
+          onTap: () => showHelpChannelsSheet(context),
+        ),
+      ),
     ];
   }
 
@@ -428,8 +444,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           background: colors.surface,
           iconPath: CommonStateIconPath.circleInfo,
           iconColor: colors.iconSecondary,
-          title: t.premium.paywall.store_unavailable,
-          body: t.premium.paywall.store_unavailable_body,
+          title: safetyKoText(t.premium.paywall.store_unavailable),
+          body: safetyKoText(t.premium.paywall.store_unavailable_body),
           linkText: t.retry,
           onLink: _load,
         )
@@ -481,65 +497,48 @@ Future<bool> restorePremiumPurchases(BuildContext context, EntitlementService pr
   return restored;
 }
 
-/// WalletOnboardingView 항목 행과 같은 비율. [onTap]이 있으면 누를 수 있는 행(오른쪽 화살표)
+/// WalletOnboardingView 항목 행과 같은 비율. 세 행 모두 같은 모양의 정적 행(도움 채널 링크는 비교표 아래)
 class _ValueRow extends StatelessWidget {
-  const _ValueRow({super.key, required this.iconPath, required this.title, required this.body, this.onTap});
+  const _ValueRow({required this.iconPath, required this.title, required this.body});
 
   final String iconPath;
   final String title;
   final String body;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      child: Row(
-        children: [
-          SizedBox.square(
-            dimension: 28,
-            child: Center(
-              child: SvgPicture.asset(
-                iconPath,
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
+    return DecoratedBox(
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 28,
+              child: Center(
+                child: SvgPicture.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
+                ),
               ),
             ),
-          ),
-          CoconutLayout.spacing_400w,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(safetyKoText(title), style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
-                CoconutLayout.spacing_50h,
-                Text(safetyKoText(body), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-              ],
+            CoconutLayout.spacing_400w,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(safetyKoText(title), style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
+                  CoconutLayout.spacing_50h,
+                  Text(safetyKoText(body), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                ],
+              ),
             ),
-          ),
-          if (onTap != null) ...[
-            CoconutLayout.spacing_200w,
-            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],
-        ],
+        ),
       ),
-    );
-    final tap = onTap;
-    if (tap == null) {
-      return DecoratedBox(
-        decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
-        child: content,
-      );
-    }
-    return ShrinkAnimationButton(
-      onPressed: tap,
-      defaultColor: colors.surface,
-      pressedOverlayColor: colors.surfacePressOverlay,
-      pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
-      borderRadius: 16,
-      child: content,
     );
   }
 }
@@ -651,7 +650,8 @@ class _PlanCard extends StatelessWidget {
                       CoconutLayout.spacing_100h,
                       Text(
                         paywall.trial(n: trialDays),
-                        style: CoconutTypography.body3_12_Bold.setColor(colors.success),
+                        // Premium 상품의 속성이라 premiumText(초록은 다른 곳에서 "통과"라는 뜻)
+                        style: CoconutTypography.body3_12_Bold.setColor(colors.premiumText),
                       ),
                     ],
                   ],
@@ -672,6 +672,9 @@ class _PlanCard extends StatelessWidget {
     );
   }
 }
+
+/// 작은 링크(법적 링크·구매 복원·도움 받기)도 누름 높이 24 이상(WCAG 2.5.8 AA). 고정 묶음은 키우지 않는다
+const _linkPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 5);
 
 /// 안 고른 플랜 카드의 링(고른 카드와 같은 두께, 투명)
 const _noRing = LinearGradient(colors: [Colors.transparent, Colors.transparent]);
