@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -22,7 +23,11 @@ import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -199,14 +204,27 @@ void main() {
         expect(textOf(tester, find.text(copy.description)).style!.color, colors.secondaryText);
         expect(find.text(copy.on_device), findsOneWidget);
 
-        final fee = BitcoinUnit.btc.displayBitcoinAmount(1410, withUnit: true);
-        final ready = find.descendant(
-          of: find.byKey(const Key('rescue-wallet-1')),
-          matching: find.textContaining('→ w2 · ${copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))}'),
+        // 모든 사용자에게 제목 위 Premium 칩
+        expect(find.byType(PremiumChip), findsOneWidget);
+        expect(
+          tester.getBottomLeft(find.byType(PremiumChip)).dy,
+          lessThan(tester.getTopLeft(find.text(copy.wallets_title)).dy),
         );
-        expect(ready, findsOneWidget);
-        expect(textOf(tester, ready).data, contains('${t.estimated_fee} $fee'));
+
+        // 상태 줄과 수수료 줄은 따로(숫자가 줄 사이로 갈리지 않게, POLISH I4)
+        final row = find.byKey(const Key('rescue-wallet-1'));
+        final ready = find.descendant(
+          of: row,
+          matching: find.text('→ w2 · ${copy.draft_ready(time: t.relative_time.minutes_ago(n: 3))}'),
+        );
         expect(textOf(tester, ready).style!.color, colors.secondaryText);
+        final fee = find.descendant(
+          of: row,
+          matching: find.text('${t.estimated_fee} ${BitcoinUnit.btc.displayBitcoinAmount(1410, withUnit: true)}'),
+        );
+        expect(textOf(tester, fee).style!.color, colors.secondaryText);
+        expect(find.ancestor(of: fee, matching: find.byType(FittedBox)), findsOneWidget);
+        expect(tester.getTopLeft(fee).dy, greaterThan(tester.getBottomLeft(ready).dy));
         expect(
           find.descendant(of: find.byKey(const Key('rescue-wallet-6')), matching: find.text(copy.not_set)),
           findsOneWidget,
@@ -255,7 +273,7 @@ void main() {
         await tester.pump(const Duration(seconds: 4));
       });
 
-      testWidgets('주소 불일치 지갑은 목적지에서 빠지고, 정해 둔 목적지면 다시 정하라고 보인다. 검증된 지갑은 표시 없음', (tester) async {
+      testWidgets('주소 불일치 지갑은 목적지에서 빠지고, 정해 둔 목적지면 다시 정하라고 보인다. 검증된 지갑은 검증 날짜', (tester) async {
         store.state = store.state.copyWith(
           watchOnlyVerifications: {
             2: verification(wallets.walletItemList[1], VerificationResult.mismatch),
@@ -272,21 +290,19 @@ void main() {
         await tester.tap(find.byKey(const Key('rescue-wallet-6')));
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('rescue-destination-wallet:2')), findsNothing);
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('rescue-destination-wallet:4')),
-            matching: find.text(t.wallet_health.check.watch_only_verify.not_verified),
-          ),
-          findsNothing,
+        final copy = t.premium.destination;
+        final verified = find.descendant(
+          of: find.byKey(const Key('rescue-destination-wallet:4')),
+          matching: find.text(copy.verified_on(date: '26.10.20')),
         );
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('rescue-destination-wallet:1')),
-            matching: find.text(t.wallet_health.check.watch_only_verify.not_verified),
-          ),
-          findsNothing,
-          reason: '핫월렛은 보기 전용 검증 대상이 아니다',
-        );
+        expect(textOf(tester, verified).style!.color, colors.success, reason: 'H8: 확인됨은 success');
+        for (final text in [copy.verified_on(date: '26.10.20'), copy.not_verified]) {
+          expect(
+            find.descendant(of: find.byKey(const Key('rescue-destination-wallet:1')), matching: find.text(text)),
+            findsNothing,
+            reason: '핫월렛은 서명 기기 검증 대상이 아니다',
+          );
+        }
       });
 
       testWidgets('지금 목적지는 미리 선택되고 끄기로 지울 수 있다', (tester) async {
@@ -378,10 +394,7 @@ void main() {
           findsOneWidget,
         );
         final moveNow = find.byKey(const Key('rescue-move-now-1'));
-        expect(
-          textOf(tester, find.descendant(of: moveNow, matching: find.byType(Text))).style!.color,
-          colors.premiumText,
-        );
+        expect(tester.widget(moveNow), isA<InlineActionButton>(), reason: '앱 표준 버튼(POLISH I3)');
         await tester.tap(moveNow);
         await tester.pumpAndSettle();
         expect(rescue.moves, [1]);
@@ -435,7 +448,7 @@ void main() {
         });
       }
 
-      testWidgets('페이월이 true를 돌려줘도 지금 권한이 없으면 목적지를 정하지 않는다(G-R4)', (tester) async {
+      testWidgets('페이월이 true를 돌려줘도 지금 권한이 없으면 시트를 열지 않고, 실제로 켜지면 이어서 연다(G-R4·D8)', (tester) async {
         premium.emit(const PremiumState(PremiumStatus.none));
         await pumpScreen(tester, variant);
         // 목적지 없는 지갑: 시트 전에 페이월
@@ -446,39 +459,44 @@ void main() {
         expect(find.text(t.premium.rescue.destination), findsNothing, reason: '시트를 열지 않는다');
         expect(rescue.destinationOf(6), isNull);
 
-        // 정해 둔 목적지 바꾸기: 고른 뒤 페이월
-        premium.emit(const PremiumState(PremiumStatus.expired));
+        await tester.tap(find.byKey(const Key('rescue-wallet-6')));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('rescue-wallet-1')));
+        premium.emit(const PremiumState(PremiumStatus.active));
+        Navigator.of(tester.element(find.byType(PremiumPaywallScreen))).pop(true);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('rescue-destination-wallet:4')));
+        expect(find.byKey(const Key('rescue-destination-wallet:2')), findsOneWidget, reason: '결제하면 이어서 시트');
+        // 고른 뒤 저장에서는 다시 막지 않는다
+        await tester.tap(find.byKey(const Key('rescue-destination-wallet:2')));
         await tester.pumpAndSettle();
         await tester.tap(find.text(t.premium.rescue.save));
         await tester.pumpAndSettle();
-        Navigator.of(tester.element(find.byType(PremiumPaywallScreen))).pop(true);
-        await tester.pumpAndSettle();
-        expect(rescue.destinationOf(1)?.walletId, 2, reason: '바꾸지 않는다');
-        expect(find.text(t.premium.rescue.saved_toast), findsNothing);
+        expect(find.byType(PremiumPaywallScreen), findsNothing);
+        expect(rescue.destinationOf(6)?.walletId, 2);
+        await tester.pump(const Duration(seconds: 4));
       });
 
-      testWidgets('구독이 끝나도 정해 둔 목적지는 페이월 없이 지울 수 있고, 다른 곳으로 바꾸면 페이월(G-R6)', (tester) async {
+      testWidgets('구독이 끝나면 시트는 페이월 없이 열리고 지우기만 고를 수 있다(G-R6·D8)', (tester) async {
         premium.emit(const PremiumState(PremiumStatus.expired));
         await pumpScreen(tester, variant);
         await tester.tap(find.byKey(const Key('rescue-wallet-1')));
         await tester.pumpAndSettle();
         expect(find.byType(PremiumPaywallScreen), findsNothing);
+        SelectableBottomSheetTextItem item(String id) =>
+            tester.widget<SelectableBottomSheetTextItem>(find.byKey(Key('rescue-destination-$id')));
+        expect(item('wallet:2').isSelected, isTrue, reason: '지금 목적지는 선택된 채로');
+        expect(item('wallet:2').isDisabled, isFalse);
+        expect(item('off').isDisabled, isFalse);
+        for (final id in ['wallet:4', 'address:new', 'wallet:6', 'hot:new']) {
+          expect(item(id).isDisabled, isTrue, reason: id);
+        }
+        // 다른 목적지는 눌러도 고르지 않고, 저장에서 페이월도 없다
         await tester.tap(find.byKey(const Key('rescue-destination-wallet:4')));
         await tester.pumpAndSettle();
         await tester.tap(find.text(t.premium.rescue.save));
         await tester.pumpAndSettle();
-        expect(find.byType(PremiumPaywallScreen), findsOneWidget, reason: '바꾸기는 Premium');
-        // 페이월을 구독 없이 닫는다(닫기 버튼과 같은 결과)
-        Navigator.of(tester.element(find.byType(PremiumPaywallScreen))).pop(false);
-        await tester.pumpAndSettle();
-        expect(rescue.destinationOf(1)?.walletId, 2, reason: '구독하지 않으면 그대로');
+        expect(find.byType(PremiumPaywallScreen), findsNothing);
+        expect(rescue.destinationOf(1)?.walletId, 2);
 
-        await tester.tap(find.byKey(const Key('rescue-wallet-1')));
-        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('rescue-destination-off')));
         await tester.pumpAndSettle();
         await tester.tap(find.text(t.premium.rescue.save));
@@ -544,7 +562,7 @@ void main() {
     });
   }
 
-  testWidgets('검증 기록이 없거나 디스크립터가 바뀐 기록이면 미검증', (tester) async {
+  testWidgets('검증 기록이 없거나 디스크립터가 바뀐 기록이면 미검증 안내(경보 아님, H8)', (tester) async {
     await pumpScreen(
       tester,
       CoconutThemeVariant.light,
@@ -556,12 +574,51 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('rescue-wallet-6')));
     await tester.pumpAndSettle();
-    final notVerified = t.wallet_health.check.watch_only_verify.not_verified;
-    final warningText = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors.warningText;
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.light).colors;
     for (final id in ['wallet:2', 'wallet:4']) {
-      final caption = find.descendant(of: find.byKey(Key('rescue-destination-$id')), matching: find.text(notVerified));
-      expect(textOf(tester, caption).style!.color, warningText, reason: id);
+      final option = find.byKey(Key('rescue-destination-$id'));
+      final caption = find.descendant(of: option, matching: find.text(t.premium.destination.not_verified));
+      expect(textOf(tester, caption).style!.color, colors.secondaryText, reason: id);
+      final icons = [
+        for (final svg in tester.widgetList<SvgPicture>(find.descendant(of: option, matching: find.byType(SvgPicture))))
+          (svg.bytesLoader as SvgAssetLoader).assetName,
+      ];
+      expect(icons, contains(CommonStateIconPath.circleInfo), reason: id);
+      expect(icons, isNot(contains(CommonStateIconPath.triangleWarning)), reason: id);
     }
+  });
+
+  testWidgets('Premium이 아니고 목적지도 없으면 walletId로 열어도 페이월·시트 없이 화면만(D8)', (tester) async {
+    premium.emit(const PremiumState(PremiumStatus.none));
+    await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
+    expect(find.byType(PremiumPaywallScreen), findsNothing);
+    expect(find.text(t.premium.rescue.destination), findsNothing);
+    expect(find.byType(PremiumChip), findsOneWidget);
+  });
+
+  testWidgets('주소 직접 입력 시트: 320dp · 글자 2배 · 키보드가 올라와도 넘치지 않는다(GPT M3)', (tester) async {
+    await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
+    await tester.tap(find.byKey(const Key('rescue-destination-address:new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.premium.rescue.save));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rescue-address-field')), findsOneWidget);
+
+    // 시트를 연 채 작은 화면·큰 글자·키보드(pumpScreen의 view.reset이 되돌린다)
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(of: find.byKey(const Key('rescue-address-field')), matching: find.byType(EditableText)),
+      'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq',
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.byKey(const Key('rescue-address-save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rescue-address-save')).hitTestable(), findsOneWidget, reason: '스크롤해서 닿는다');
   });
 
   testWidgets('지갑 정보에서 구독이 끝난 뒤 열어도 정해 둔 목적지 시트가 열리고 지울 수 있다(G-R6)', (tester) async {

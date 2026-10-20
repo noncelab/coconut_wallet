@@ -1,5 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
-    show CoconutLayout, CoconutStyles, CoconutTypography, Sizes, TextColorExtension;
+    show CoconutLayout, CoconutTypography, Sizes, TextColorExtension;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -20,9 +20,9 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
@@ -38,7 +38,7 @@ import 'package:provider/provider.dart';
 class RescueReadyScreen extends StatefulWidget {
   const RescueReadyScreen({super.key, this.walletId});
 
-  /// 지갑 정보 "비상 목적지" 행에서 열면 그 지갑의 목적지 시트를 바로 연다
+  /// 지갑 정보 "비상 목적지" 행에서 열면 그 지갑의 목적지 시트를 바로 연다(구독 중이거나 목적지가 있을 때만)
   final int? walletId;
 
   static Future<void> open(BuildContext context, {int? walletId}) => Navigator.of(context).push(
@@ -60,9 +60,13 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
     super.initState();
     final walletId = widget.walletId;
     if (walletId != null) {
+      // 열자마자 페이월을 띄우지 않는다(POLISH D8). 무료 사용자는 화면을 보고, 지갑을 누르면 그때 페이월
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final rescue = context.read<RescueReadyProvider?>();
         final wallet = context.read<WalletProvider?>()?.walletItemList.firstWhereOrNull((w) => w.id == walletId);
-        if (mounted && wallet != null) _choose(wallet);
+        if (rescue == null || wallet == null) return;
+        if (rescue.isPremiumActive || rescue.destinationOf(walletId) != null) _choose(wallet);
       });
     }
   }
@@ -72,11 +76,12 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
     if (rescue == null || _busy) return;
     _busy = true;
     try {
-      // 목적지 정하기·바꾸기는 Premium만(새 자동화). 정해 둔 목적지 지우기(정하지 않음)는 구독과 무관하게 언제나.
-      // 만료돼도 초안·지금 이동은 그대로
+      // 목적지 정하기·바꾸기는 Premium만(새 자동화): 목적지가 없으면 페이월이 시트보다 먼저, 저장에서는 막지 않는다(D8).
+      // 정해 둔 목적지 지우기(정하지 않음)는 구독과 무관하게 언제나(G-R6). 만료돼도 초안·지금 이동은 그대로
       final current = rescue.destinationOf(wallet.id);
       if (current == null && !await ensurePremium(context)) return;
       if (!mounted) return;
+      final canChange = rescue.isPremiumActive;
       final options = [
         for (final d in rescue.destinationOptions(wallet.id)) _DestinationOption(d),
         if (current != null) const _DestinationOption(null),
@@ -94,13 +99,14 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
             (context, option, isSelected, onTap) => SelectableBottomSheetTextItem(
               key: Key('rescue-destination-${option.id}'),
               isSelected: isSelected,
+              // 구독이 끝났으면 지우기만(지금 목적지는 선택된 채로 보인다). 자물쇠·경고색 없이 흐리게만
+              isDisabled: !canChange && option.assist != null && option.id != initial,
               onTap: onTap,
               reserveCheckIconSpace: true,
               child: _DestinationOptionView(option),
             ),
       );
       if (picked == null || !mounted) return;
-      if (picked.assist != null && !await ensurePremium(context)) return;
 
       final RescueDestination? next;
       switch (picked.assist) {
@@ -216,6 +222,9 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // 모든 사용자에게 같은 머리(POLISH §2.4). 무료 사용자 안내 한 줄(premium_note)은 문구가 오면 설명 아래에
+              const Align(alignment: AlignmentDirectional.centerStart, child: PremiumChip()),
+              CoconutLayout.spacing_200h,
               Text(copy.wallets_title, style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText)),
               CoconutLayout.spacing_300h,
               Text(copy.description, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
@@ -237,13 +246,20 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
                       isHotWallet: wallet.hasLocalKey,
                     ),
                     title: wallet.name,
-                    subtitle: _statusLine(rescue, wallet.id, status, unit),
+                    subtitle: _statusLine(rescue, wallet.id, status),
                     subtitleColor: _needsAttention.contains(status) ? colors.warningText : null,
+                    below:
+                        status == RescueStatus.ready ? _FeeLine(fee: rescue.drafts[wallet.id]?.fee, unit: unit) : null,
                     onTap: () => _choose(wallet),
                   ),
+                  // 사고 때만. 이 화면에서 겨루는 버튼이 없어 앱 표준 버튼(POLISH I3)
                   if (rescue.canMoveNow(wallet.id) && rescue.hasCriticalIncident(wallet.id)) ...[
                     CoconutLayout.spacing_200h,
-                    _MoveNowButton(walletId: wallet.id, onPressed: () => _moveNow(wallet.id)),
+                    InlineActionButton(
+                      key: Key('rescue-move-now-${wallet.id}'),
+                      text: copy.move_now,
+                      onPressed: () => _moveNow(wallet.id),
+                    ),
                   ],
                   CoconutLayout.spacing_200h,
                 ],
@@ -264,8 +280,8 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
     RescueStatus.unavailable,
   };
 
-  /// 행 부제: "→ 목적지 · 초안 상태"
-  String _statusLine(RescueReadyProvider rescue, int walletId, RescueStatus status, BitcoinUnit unit) {
+  /// 행 부제: "→ 목적지 · 초안 상태". 준비된 초안의 수수료는 아래 따로 한 줄([_FeeLine])
+  String _statusLine(RescueReadyProvider rescue, int walletId, RescueStatus status) {
     final copy = t.premium.rescue;
     if (status == RescueStatus.notSet) return copy.not_set;
     final draft = rescue.drafts[walletId];
@@ -276,9 +292,7 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
       RescueStatus.paused => time == null ? copy.draft_paused_none : copy.draft_paused(time: time),
       RescueStatus.pending => copy.draft_pending,
       RescueStatus.failed => copy.draft_failed,
-      // 수수료는 초안을 만들 때의 값. 잔액 숨김이어도 보인다(잔액이 아님)
-      RescueStatus.ready =>
-        '${copy.draft_ready(time: time ?? '')} · ${t.estimated_fee} ${unit.displayBitcoinAmount(draft?.fee, withUnit: true)}',
+      RescueStatus.ready => copy.draft_ready(time: time ?? ''),
       RescueStatus.noBalance => copy.draft_no_balance,
       RescueStatus.tooSmall => copy.draft_too_small,
       RescueStatus.unavailable =>
@@ -291,37 +305,23 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
   }
 }
 
-/// 사고 때만 보이는 [지금 이동]. 주 버튼보다 낮은 무게(UI_SPEC §4.7 비상 이동 카드 버튼)
-class _MoveNowButton extends StatelessWidget {
-  const _MoveNowButton({required this.walletId, required this.onPressed});
+/// 준비된 초안의 예상 수수료 한 줄. 숫자가 줄 사이로 갈리지 않게 줄여 맞춘다(POLISH R2).
+/// 초안을 만들 때의 값이고, 잔액 숨김이어도 보인다(잔액이 아님)
+class _FeeLine extends StatelessWidget {
+  const _FeeLine({required this.fee, required this.unit});
 
-  final int walletId;
-  final VoidCallback onPressed;
+  final int? fee;
+  final BitcoinUnit unit;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: colors.premiumSurfaceGradient,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      padding: const EdgeInsets.all(Sizes.size4),
-      child: ShrinkAnimationButton(
-        key: Key('rescue-move-now-$walletId'),
-        onPressed: onPressed,
-        defaultColor: colors.surface,
-        pressedOverlayColor: colors.surfacePressOverlay,
-        borderRadius: CoconutStyles.radius_200,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          child: Center(
-            child: Text(t.premium.rescue.move_now, style: CoconutTypography.body2_14_Bold.setColor(colors.premiumText)),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: AlignmentDirectional.centerStart,
+    child: Text(
+      '${t.estimated_fee} ${unit.displayBitcoinAmount(fee, withUnit: true)}',
+      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+    ),
+  );
 }
 
 /// 목적지 시트 한 줄. [assist]가 null이면 "정하지 않음"
@@ -373,7 +373,9 @@ class _DestinationOptionView extends StatelessWidget {
       AssistDestination(address: _?) => copy.enter_address,
       _ => null,
     };
-    final unverified = _isUnverifiedWatchOnly(context.watch<SafetyProvider?>()?.state, d?.wallet);
+    final wallet = d?.wallet;
+    final checkable = wallet != null && !wallet.hasLocalKey;
+    final verifiedAt = checkable ? _verifiedAt(context.watch<SafetyProvider?>()?.state, wallet) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,56 +406,81 @@ class _DestinationOptionView extends StatelessWidget {
             text: copy.new_hot_wallet_warning,
             textColor: colors.warningText,
           ),
-        if (unverified)
-          _NoteLine(
-            iconPath: CommonStateIconPath.triangleWarning,
-            iconColor: colors.warningText,
-            text: t.wallet_health.check.watch_only_verify.not_verified,
-            textColor: colors.warningText,
-          ),
+        // 서명 기기 검증 표시(POLISH H8, Assist와 같은 규칙). 미확인은 경보가 아니라 안내
+        if (checkable)
+          verifiedAt != null
+              ? _NoteLine(
+                iconPath: CommonStateIconPath.shieldCheck,
+                iconSize: 14,
+                iconColor: colors.success,
+                text: copy.verified_on(date: DateTimeUtil.formatTimestamp(verifiedAt)[0]),
+                textColor: colors.success,
+              )
+              : _NoteLine(
+                iconPath: CommonStateIconPath.circleInfo,
+                iconSize: 14,
+                iconColor: colors.iconSecondary,
+                text: copy.not_verified,
+                textColor: colors.secondaryText,
+              ),
       ],
     );
   }
 
-  /// 보기 전용 검증(서명 기기 주소와 대조)을 아직 안 한 보기 전용 목적지. xpub이 바꿔치기된 지갑으로 옮기지 않게 표시한다.
-  /// 검증 규칙은 엔진과 같다(디스크립터가 바뀐 기록은 무효). 불일치 지갑은 목적지 후보에서 이미 빠진다
-  static bool _isUnverifiedWatchOnly(SafetyState? state, WalletItemBase? wallet) {
-    if (state == null || wallet == null || wallet.hasLocalKey || wallet.walletType == WalletType.multiSignature) {
-      return false;
+  /// 보기 전용 목적지를 서명 기기로 검증한 때(xpub이 바꿔치기된 지갑으로 옮기지 않게). 다중서명은 BSMS 대조.
+  /// 검증 규칙은 엔진·Assist와 같다(디스크립터가 바뀐 기록은 무효). 불일치 지갑은 목적지 후보에서 이미 빠진다
+  static DateTime? _verifiedAt(SafetyState? state, WalletItemBase wallet) {
+    final hash = WalletVerification.descriptorHash(wallet.descriptor);
+    if (wallet.walletType == WalletType.multiSignature) {
+      final bsms = state?.bsms[wallet.id];
+      return bsms != null && bsms.matched && bsms.configHash == hash ? bsms.at : null;
     }
-    final v = state.watchOnlyVerifications[wallet.id];
-    return v == null ||
-        v.result != VerificationResult.match ||
-        v.descriptorHash != WalletVerification.descriptorHash(wallet.descriptor);
+    final v = state?.watchOnlyVerifications[wallet.id];
+    return v != null && v.descriptorHash == hash && v.result == VerificationResult.match ? v.at : null;
   }
 }
 
 class _NoteLine extends StatelessWidget {
-  const _NoteLine({required this.iconPath, required this.iconColor, required this.text, required this.textColor});
+  const _NoteLine({
+    required this.iconPath,
+    this.iconSize = 12,
+    required this.iconColor,
+    required this.text,
+    required this.textColor,
+  });
 
   final String iconPath;
+  final double iconSize;
   final Color iconColor;
   final String text;
   final Color textColor;
 
   @override
   Widget build(BuildContext context) {
+    const style = CoconutTypography.body3_12;
+    // 아이콘을 첫 줄 가운데에 맞춘다(글자 배율 반영, POLISH R3·SafetyNumberedRow와 같은 계산)
+    final lineHeight = MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
     return Padding(
       padding: const EdgeInsets.only(top: Sizes.size4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 2),
+            padding: EdgeInsets.only(top: ((lineHeight - iconSize) / 2).clamp(0.0, double.infinity)),
             child: SvgPicture.asset(
               iconPath,
-              width: 12,
-              height: 12,
+              width: iconSize,
+              height: iconSize,
               colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
           ),
           CoconutLayout.spacing_100w,
-          Expanded(child: Text(text, style: CoconutTypography.body3_12.setColor(textColor))),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: ((iconSize - lineHeight) / 2).clamp(0.0, double.infinity)),
+              child: Text(text, style: style.setColor(textColor)),
+            ),
+          ),
         ],
       ),
     );
@@ -524,10 +551,10 @@ class _AddressEntryState extends State<_AddressEntry> {
     final colors = context.coconutColors;
     final error = _error;
     final canSave = _controller.text.trim().isNotEmpty && error == null && !_checking;
-    return Padding(
+    // 키보드가 올라와 시트가 줄어도 넘치지 않게 스크롤(GPT M3). H6 공용 시트가 오면 바꿔 끼운다
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           CoconutTextField(
