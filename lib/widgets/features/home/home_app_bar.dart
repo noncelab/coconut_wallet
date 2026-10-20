@@ -212,7 +212,7 @@ class _AlertsIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         SvgPicture.asset(
-          'assets/svg/bold-bell.svg',
+          CommonCommunicationIconPath.boldBell,
           width: 24,
           height: 24,
           colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

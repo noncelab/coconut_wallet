@@ -305,7 +305,7 @@ class _EmptyAlerts extends StatelessWidget {
               size: 72,
               background: colors.homeSurface,
               icon: SvgPicture.asset(
-                'assets/svg/bold-bell.svg',
+                CommonCommunicationIconPath.boldBell,
                 width: 32,
                 height: 32,
                 colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),

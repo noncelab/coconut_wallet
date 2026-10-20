@@ -46,6 +46,7 @@ abstract final class CommonActionIconPath {
 
 abstract final class CommonCommunicationIconPath {
   static const String bell = 'assets/svg/common/communication/bell.svg';
+  static const String boldBell = 'assets/svg/common/communication/bold-bell.svg';
   static const String clip = 'assets/svg/common/communication/clip.svg';
   static const String githubLogo = 'assets/svg/common/communication/github-logo.svg';
   static const String githubLogoWhite = 'assets/svg/common/communication/github-logo-white.svg';
@@ -60,7 +61,6 @@ abstract final class CommonDividerIconPath {
 abstract final class CommonFormIconPath {
   static const String circle = 'assets/svg/common/form/circle.svg';
   static const String circleCheck = 'assets/svg/common/form/circle-check.svg';
-  static const String circleCheckFilled = 'assets/svg/common/form/circle-check-filled.svg';
   static const String circleCheckOutline = 'assets/svg/common/form/circle-check-outline.svg';
   static const String circleMinus = 'assets/svg/common/form/circle-minus.svg';
   static const String circlePick = 'assets/svg/common/form/circle-pick.svg';

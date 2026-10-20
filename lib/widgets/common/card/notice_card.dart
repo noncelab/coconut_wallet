@@ -72,7 +72,7 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
               Row(
                 children: [
                   SvgPicture.asset(
-                    'assets/svg/bold-bell.svg',
+                    CommonCommunicationIconPath.boldBell,
                     width: 16,
                     height: 16,
                     colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
