@@ -212,6 +212,13 @@ class _IncidentRow extends StatelessWidget {
             ? null
             : t.wallet_health.alerts.detected_at(time: formatHomeRelativeTime(incident.detectedAt, now));
 
+    final chipBelow = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.3;
+    final chipBox = Container(
+      key: Key('safety-alert-chip-${incident.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: chipBackground, borderRadius: BorderRadius.circular(CoconutStyles.radius_200)),
+      child: Text(chip, textAlign: TextAlign.center, style: CoconutTypography.caption_10_Bold.setColor(chipColor)),
+    );
     return SafetyPressRow(
       key: Key('safety-alert-incident-${incident.id}'),
       background: colors.homeSurface,
@@ -284,26 +291,16 @@ class _IncidentRow extends StatelessWidget {
                             safetyKoText(detected),
                             style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                           ),
+                        // 큰 글자(1.3배~)에서는 칩이 제목·부제를 좁히지 않게 부제 아래로(X8)
+                        if (chipBelow) ...[CoconutLayout.spacing_100h, chipBox],
                       ],
                     ),
                   ),
-                  CoconutLayout.spacing_200w,
-                  // 상태 칩은 줄 폭의 35%까지(긴 독일어·큰 글자면 가운데 정렬로 줄을 바꾼다). 제목 열은 남는 폭을 다 받는다
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.35),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: chipBackground,
-                        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-                      ),
-                      child: Text(
-                        chip,
-                        textAlign: TextAlign.center,
-                        style: CoconutTypography.caption_10_Bold.setColor(chipColor),
-                      ),
-                    ),
-                  ),
+                  if (!chipBelow) ...[
+                    CoconutLayout.spacing_200w,
+                    // 상태 칩은 줄 폭의 35%까지(긴 독일어면 가운데 정렬로 줄을 바꾼다). 제목 열은 남는 폭을 다 받는다
+                    ConstrainedBox(constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.35), child: chipBox),
+                  ],
                 ],
               ),
         ),

@@ -339,7 +339,8 @@ void main() {
     }
     final last = tester.getRect(find.byType(SafetyNumberedRow).last).bottom;
     expect(last, lessThanOrEqualTo(tester.getRect(footer).top));
-    expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('incident-what-to-do-fade'))).top));
+    final fade = tester.getRect(find.byKey(const Key('incident-what-to-do-fade')));
+    expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
     expect(tester.takeException(), isNull);
   });
 

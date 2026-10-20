@@ -218,32 +218,43 @@ void main() {
     });
   });
 
-  // D6/M8: 상태 칩은 줄 폭의 35%까지(긴 독일어·큰 글자면 줄을 바꾼다). 제목 열이 먼저 폭을 받는다
-  for (final scale in [1.3, 2.0]) {
-    testWidgets('the incident status chip stays within its share of the row at ${scale}x on 320dp (German)', (
-      tester,
-    ) async {
-      useSmallPhone(tester, scale);
-      useLocale(AppLocale.de);
-      final recognized = testIncident(state: IncidentState.recognized);
-      final safety = SafetyProvider.fixed(
-        WalletHealthReport(
-          status: WalletHealthStatus.scored,
-          profile: WeightProfile.hotFunded,
-          evaluatedAt: DateTime(2026, 10, 20, 9),
-        ),
-        state: SafetyState(incidents: [recognized]),
-      );
-      await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
-      unawaited(SafetyAlertsScreen.open(originContext(tester)));
-      await tester.pumpAndSettle();
+  // D6/M8 + X8: 1.0배에서는 칩이 오른쪽(줄 폭 35%까지), 1.3배부터는 제목·부제를 좁히지 않게 부제 아래로
+  for (final (scale, below) in [(1.0, false), (1.3, true), (2.0, true)]) {
+    testWidgets(
+      'the incident status chip sits ${below ? 'under the subtitle' : 'on the right'} at ${scale}x on 320dp (German)',
+      (tester) async {
+        useSmallPhone(tester, scale);
+        useLocale(AppLocale.de);
+        final recognized = testIncident(state: IncidentState.recognized);
+        final safety = SafetyProvider.fixed(
+          WalletHealthReport(
+            status: WalletHealthStatus.scored,
+            profile: WeightProfile.hotFunded,
+            evaluatedAt: DateTime(2026, 10, 20, 9),
+          ),
+          state: SafetyState(incidents: [recognized]),
+        );
+        await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+        unawaited(SafetyAlertsScreen.open(originContext(tester)));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      final row = find.byKey(Key('safety-alert-incident-${recognized.id}'));
-      final chip = find.descendant(of: row, matching: findText(t.wallet_health.incident.state.recognized));
-      expect(chip, findsOneWidget); // 줄을 바꿀 뿐 글자를 자르지 않는다
-      expect(tester.getRect(chip).width, lessThanOrEqualTo(tester.getRect(row).width * 0.35));
-    });
+        expect(tester.takeException(), isNull);
+        final row = find.byKey(Key('safety-alert-incident-${recognized.id}'));
+        final chip = find.byKey(Key('safety-alert-chip-${recognized.id}'));
+        final title = tester.getRect(findText(t.wallet_health.incident.outgoing_title));
+        expect(
+          find.descendant(of: chip, matching: findText(t.wallet_health.incident.state.recognized)),
+          findsOneWidget,
+        );
+        if (below) {
+          expect(tester.getRect(chip).top, greaterThan(title.bottom));
+          expect(tester.getRect(chip).left, closeTo(title.left, 1));
+        } else {
+          expect(tester.getRect(chip).left, greaterThan(title.right));
+          expect(tester.getRect(chip).width, lessThanOrEqualTo(tester.getRect(row).width * 0.35));
+        }
+      },
+    );
   }
 
   // D7: "완료"·"사라짐" 칩 글자는 꼭 읽어야 하는 작은 글이라 secondaryTextStrong(R5)

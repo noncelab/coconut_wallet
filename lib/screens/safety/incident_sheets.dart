@@ -549,6 +549,7 @@ class _WhatToDoSheet extends StatelessWidget {
             surroundingsKey: const Key('incident-what-to-do-fade'),
             text: t.premium.rescue.move_now,
             surroundingsColor: colors.surfaceBottomSheet,
+            surroundingsPadding: safetySubLineFadePadding(context),
             onButtonClicked: () => Navigator.pop(context, _WhatToDoChoice.moveNow),
             subWidget: CoconutUnderlinedButton(
               key: const Key('incident-what-to-do-step-by-step'),

@@ -8,6 +8,8 @@ import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/widgets/features/safety/transaction_safety_banner.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
@@ -329,7 +331,8 @@ void main() {
       await tester.pumpAndSettle();
       final last = tester.getRect(findText(t.safety_guide.move.backup_reminder)).bottom;
       expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-button'))).top));
-      expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-fade'))).top));
+      final fade = tester.getRect(find.byKey(const Key('safety-result-fade')));
+      expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
       expect(tester.takeException(), isNull);
     });
 
@@ -576,6 +579,29 @@ void main() {
       expect(safety.reviews, isEmpty);
     });
   });
+  // X7: STEP2 Premium 줄은 큰 글자(1.3배~)에서 칩을 글 위에, 보통 크기에서는 나란히
+  for (final (scale, stacked) in [(1.0, false), (2.0, true)]) {
+    testWidgets(
+      'the STEP2 Premium row ${stacked ? 'stacks the chip above the text' : 'keeps chip and text side by side'} at ${scale}x',
+      (tester) async {
+        useSmallPhone(tester, scale);
+        final safety = fixedSafety(incidents: [testIncident(state: IncidentState.responding, guideStep: 2)]);
+        await tester.pumpWidget(safetyTestApp(origin(), safety: safety, entitlement: FakeEntitlementService()));
+        await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+        final row = find.byKey(const Key('safety-guide-step2-premium'));
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        final chip = tester.getRect(find.descendant(of: row, matching: find.byType(PremiumChip)));
+        final text = tester.getRect(find.byKey(const Key('safety-guide-step2-premium-text')));
+        if (stacked) {
+          expect(text.top, greaterThanOrEqualTo(chip.bottom));
+        } else {
+          expect(text.left, greaterThan(chip.right));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }
 
 /// 복구 자료 점검 기록만 받아 두는 제공자(고정 제공자에는 지갑 목록이 없어 실제 기록은 지갑 종류를 알 수 없다)

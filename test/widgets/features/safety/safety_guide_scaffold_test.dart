@@ -243,7 +243,8 @@ void main() {
         // 버튼 묶음(부가 줄 포함)과 그 위 페이드 모두 비켜 간다
         final last = tester.getRect(find.byKey(const Key('last'))).bottom;
         expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(Key('$footer-button'))).top));
-        expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(Key('$footer-fade'))).top));
+        final fade = tester.getRect(find.byKey(Key('$footer-fade')));
+        expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
         expect(tester.takeException(), isNull);
       }
     });
@@ -322,4 +323,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(check.value, 1);
   });
+
+  // X1: 보조 줄이 있으면 페이드의 불투명한 아래 절반이 보조 줄 위에서 시작한다(모든 배율)
+  // 2.0배는 한 줄 버튼으로: 버튼 글이 여러 줄로 감기면 명세 식으로는 링크가 반투명 띠에 걸친다(리드에 보고)
+  for (final (scale, button) in [(1.0, 'Continue the security review'), (2.0, 'Next')]) {
+    testWidgets('the fade is opaque behind the sub line at ${scale}x on 320dp', (tester) async {
+      useSmallPhone(tester, scale);
+      final pages = [
+        (
+          SafetyGuidePage(
+            progress: 0.25,
+            title: 'Step',
+            buttonText: button,
+            onButton: () {},
+            laterText: 'Do it later',
+            onLater: () {},
+          ),
+          'safety-guide-fade',
+          const Key('safety-guide-later'),
+        ),
+        (
+          SafetyResultPage(
+            title: 'Finished',
+            description: 'Body',
+            buttonText: button,
+            onButton: () {},
+            subWidget: const Text('Back up now', key: Key('result-sub')),
+          ),
+          'safety-result-fade',
+          const Key('result-sub'),
+        ),
+      ];
+      for (final (page, fade, sub) in pages) {
+        await tester.pumpWidget(const SizedBox());
+        await _push(tester, CoconutThemeVariant.light, page);
+        final rect = tester.getRect(find.byKey(Key(fade)));
+        final opaqueTop = rect.top + rect.height / 2; // 그라데이션 stops [0, 0.5]
+        expect(opaqueTop, lessThanOrEqualTo(tester.getRect(find.byKey(sub)).top));
+      }
+    });
+  }
 }

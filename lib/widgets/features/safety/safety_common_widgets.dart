@@ -38,6 +38,11 @@ bool safetyReduceMotion(BuildContext context) =>
 double safetyFooterClearance(BuildContext context, {bool hasSubWidget = false}) =>
     (hasSubWidget ? 184 : 160) * (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, double.infinity);
 
+/// 보조 줄(링크·수수료 줄)이 있는 FixedBottomButton의 페이드 여백: 불투명한 아래 절반이 보조 줄 위에서 시작하고,
+/// 아래 여백(R4)과 같은 배율로 커진다(POLISH X1). `surroundingsPadding`에 넘긴다
+EdgeInsets safetySubLineFadePadding(BuildContext context) =>
+    EdgeInsets.fromLTRB(16, safetyFooterClearance(context, hasSubWidget: true), 16, 40);
+
 /// 이 경로의 들어오는 전환이 끝나면 [onSettled]를 한 번 부른다(경로가 이미 떠 있으면 첫 프레임 뒤).
 /// 새 경로의 첫 프레임은 Hero 측정용 offstage라 그때의 animation은 '끝남'으로 보이므로 프레임 뒤에 판단한다.
 /// 돌려준 함수를 dispose에서 부르면 기다림을 취소한다

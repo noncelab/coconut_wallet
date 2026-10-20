@@ -287,6 +287,16 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
 
   Widget _bottomButton(BuildContext context) {
     final colors = context.coconutColors;
+    final subWidget =
+        widget.footer ??
+        (widget.laterText != null && widget.onLater != null
+            ? CoconutUnderlinedButton(
+              key: const Key('safety-guide-later'),
+              text: widget.laterText!,
+              onTap: widget.onLater!,
+              defaultColor: colors.secondaryTextStrong,
+            )
+            : null);
     final button = FixedBottomButton(
       buttonKey: const Key('safety-guide-button'),
       surroundingsKey: const Key('safety-guide-fade'),
@@ -294,16 +304,9 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
       text: widget.buttonText,
       isActive: widget.buttonEnabled,
       surroundingsColor: colors.background,
-      subWidget:
-          widget.footer ??
-          (widget.laterText != null && widget.onLater != null
-              ? CoconutUnderlinedButton(
-                key: const Key('safety-guide-later'),
-                text: widget.laterText!,
-                onTap: widget.onLater!,
-                defaultColor: colors.secondaryTextStrong,
-              )
-              : null),
+      // 보조 줄이 있으면 페이드의 불투명한 절반이 그 줄 위에서 시작한다(X1)
+      surroundingsPadding: subWidget == null ? null : safetySubLineFadePadding(context),
+      subWidget: subWidget,
     );
     if (safetyReduceMotion(context)) return button;
     return button.slideUpAnimation(
@@ -588,6 +591,7 @@ class _SafetyResultPageState extends State<SafetyResultPage> with SingleTickerPr
                 onButtonClicked: widget.onButton,
                 text: widget.buttonText,
                 surroundingsColor: colors.background,
+                surroundingsPadding: widget.subWidget == null ? null : safetySubLineFadePadding(context),
                 subWidget: widget.subWidget,
               ),
             ],

@@ -304,6 +304,13 @@ class _PremiumAssistRow extends StatelessWidget {
     final service = context.read<EntitlementService?>();
     if (service == null) return const SizedBox.shrink();
     final colors = context.coconutColors;
+    // 큰 글자(1.3배~)에서는 칩을 글 위에 둔다: 나란히면 칩이 폭을 크게 차지해 글이 여러 줄로 좁아진다(X7)
+    final stacked = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.3;
+    Widget text(PremiumState premium) => Text(
+      safetyKoText(premium.isActive ? t.premium.card.active_incident_body : t.premium.incident_chip.body),
+      key: const Key('safety-guide-step2-premium-text'),
+      style: CoconutTypography.body3_12.setColor(colors.primaryText),
+    );
     return ValueListenableBuilder<PremiumState>(
       valueListenable: service.state,
       builder:
@@ -316,15 +323,20 @@ class _PremiumAssistRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  const PremiumChip(),
-                  CoconutLayout.spacing_200w,
                   Expanded(
-                    child: Text(
-                      safetyKoText(
-                        premium.isActive ? t.premium.card.active_incident_body : t.premium.incident_chip.body,
-                      ),
-                      style: CoconutTypography.body3_12.setColor(colors.primaryText),
-                    ),
+                    child:
+                        stacked
+                            ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [const PremiumChip(), CoconutLayout.spacing_100h, text(premium)],
+                            )
+                            : Row(
+                              children: [
+                                const PremiumChip(),
+                                CoconutLayout.spacing_200w,
+                                Expanded(child: text(premium)),
+                              ],
+                            ),
                   ),
                   Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
                 ],
