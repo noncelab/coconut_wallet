@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -10,16 +10,19 @@ import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
-import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart'
+    show safetyWalletIcon, safetyWalletKindText;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' show MobileScannerController;
 import 'package:provider/provider.dart';
 import 'package:ur/cbor_lite.dart';
 import 'package:ur/fountain_encoder.dart';
@@ -100,7 +103,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
     }
   }
 
-  Widget _comparisonRow(String title, bool? matched, {String? value}) {
+  Widget _comparisonRow(String title, bool? matched, {String? value, bool small = false}) {
     final colors = context.coconutColors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -126,7 +129,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                   ? colors.iconSecondary
                   : matched
                   ? colors.success
-                  : colors.dangerText,
+                  : colors.danger,
               BlendMode.srcIn,
             ),
           ),
@@ -142,7 +145,13 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                       ? t.wallet_health.bsms_verify.match
                       : t.wallet_health.bsms_verify.mismatch),
               textAlign: TextAlign.end,
-              style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
+              // 값(정족수·지문·경로)만 숫자 글꼴, 일치·불일치 같은 글은 본문 글꼴(숫자 글꼴에는 한글이 없다)
+              style: (value == null
+                      ? CoconutTypography.body3_12
+                      : small
+                      ? CoconutTypography.caption_10_Number
+                      : CoconutTypography.body3_12_Number)
+                  .setColor(colors.secondaryText),
             ),
           ),
         ],
@@ -181,26 +190,26 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                     children: [
                       Row(
                         children: [
-                          WalletIconSmall(
-                            walletImportSource: wallet.walletImportSource,
-                            colorIndex: wallet.colorIndex,
-                            iconIndex: wallet.iconIndex,
-                          ),
+                          // 다른 안전 화면과 같은 아이콘(다중서명은 서명자 그라데이션)
+                          safetyWalletIcon(wallet),
                           CoconutLayout.spacing_300w,
+                          // 이름 아래 "2/3 다중 서명"(POLISH C34)
                           Expanded(
-                            child: Text(
-                              wallet.name,
-                              style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(wallet.name, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                                Text(
+                                  '${base.requiredSignature}/${base.totalSigner} ${safetyWalletKindText(wallet)}',
+                                  style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                                ),
+                              ],
                             ),
-                          ),
-                          Text(
-                            '${base.requiredSignature}/${base.totalSigner}',
-                            style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
                           ),
                         ],
                       ),
                       CoconutLayout.spacing_400h,
-                      Divider(color: colors.border.withValues(alpha: 0.21), height: 1),
+                      Divider(color: colors.divider, height: 1),
                       CoconutLayout.spacing_200h,
                       _comparisonRow(
                         copy.quorum,
@@ -211,6 +220,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                         copy.signer_fingerprints,
                         comparison?.fingerprints,
                         value: wallet.signerBsmsList.map((signer) => signer.fingerprint).join('\n'),
+                        small: true,
                       ),
                       _comparisonRow(
                         copy.derivation_paths,
@@ -240,7 +250,7 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                                 comparison.matched
                                     ? CommonStateIconPath.shieldCheck
                                     : CommonStateIconPath.triangleWarning,
-                            iconColor: comparison.matched ? colors.success : colors.dangerText,
+                            iconColor: comparison.matched ? colors.success : colors.danger,
                             title: comparison.matched ? copy.verified_title : copy.mismatch_title,
                             body: comparison.matched ? copy.verified_body : copy.mismatch_body,
                           ),
@@ -277,42 +287,59 @@ class _BsmsScannerScreen extends StatefulWidget {
 
 class _BsmsScannerScreenState extends State<_BsmsScannerScreen> {
   final _handler = _BsmsQrDataHandler();
+  MobileScannerController? _controller;
   bool _completed = false;
-  bool _invalid = false;
+
+  /// 실패 안내가 떠 있는 동안 들어온 프레임은 버린다(서명 PSBT 스캐너와 같은 흐름)
+  bool _showingError = false;
+
+  /// 실패하면 팝업으로 알리고, 닫으면 조립을 처음부터 다시 하고 카메라를 다시 켠다
+  Future<void> _failed() async {
+    if (_completed || _showingError) return;
+    _showingError = true;
+    _handler.reset();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => CoconutPopup(
+              key: const Key('bsms-verification-scan-error'),
+              languageCode: LocaleSettings.currentLocale.languageCode,
+              title: t.alert.scan_failed,
+              description: t.wallet_health.bsms_verify.error_parse,
+              rightButtonText: t.OK,
+              onTapRight: () => Navigator.pop(dialogContext),
+            ),
+      );
+    } finally {
+      if (mounted) {
+        _handler.reset();
+        _showingError = false;
+        try {
+          await _controller?.start();
+        } catch (_) {
+          // 이미 켜져 있으면 그대로 둔다
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.coconutColors.background,
     appBar: CoconutAppBar.build(context: context, title: t.wallet_health.bsms_verify.scan),
-    body: Stack(
-      children: [
-        CoconutQrScanner(
-          key: const Key('bsms-verification-scanner'),
-          setMobileScannerController: (_) {},
-          qrDataHandler: _handler,
-          onComplete: (value) {
-            if (_completed) return;
-            _completed = true;
-            Navigator.pop(context, value as String);
-          },
-          onFailed: (_, __) {
-            _handler.reset();
-            setState(() => _invalid = true);
-          },
-        ),
-        if (_invalid)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              color: context.coconutColors.surface,
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                t.wallet_health.bsms_verify.error_parse,
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.dangerText),
-              ),
-            ),
-          ),
-      ],
+    body: SafeArea(
+      child: CoconutQrScanner(
+        key: const Key('bsms-verification-scanner'),
+        setMobileScannerController: (controller) => _controller = controller,
+        qrDataHandler: _handler,
+        onComplete: (value) {
+          if (_completed || _showingError) return;
+          _completed = true;
+          Navigator.pop(context, value as String);
+        },
+        onFailed: (_, __) => _failed(),
+      ),
     ),
   );
 }

@@ -88,7 +88,8 @@ Future<void> openSafetyCheckAction(BuildContext context, SafetyCheckResult item)
 Future<void> showWalletHealthAboutSheet(BuildContext context) => CommonBottomSheets.showDraggableBottomSheet<void>(
   context: context,
   screenName: '/wallet-health/about',
-  title: t.wallet_health.about.title,
+  // 시트 제목은 짧게, 문장 제목은 본문 첫 줄로(인지 시트 방식, POLISH C16)
+  title: t.wallet_health.title,
   minChildSize: 0.6,
   maxChildSize: 0.9,
   initialChildSize: 0.9,
@@ -115,7 +116,11 @@ class _AboutSheet extends StatelessWidget {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       children: [
-        _SheetTitle(report?.score != null ? s.meaning_title : t.wallet_health.hero.no_score, top: 8),
+        Semantics(
+          header: true,
+          child: Text(safetyKoText(s.title), style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText)),
+        ),
+        _SheetTitle(report?.score != null ? s.meaning_title : t.wallet_health.hero.no_score, top: 16),
         Text(
           report?.score != null ? s.meaning_body : s.no_score_body,
           style: CoconutTypography.body2_14.setColor(colors.secondaryText),
@@ -268,12 +273,13 @@ class _RangeRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 5),
+            padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body2_14_Number, 10)),
             child: Container(width: 10, height: 10, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
           ),
           CoconutLayout.spacing_300w,
+          // 글자를 키우면 열도 같이 넓힌다(POLISH R3)
           SizedBox(
-            width: 56,
+            width: MediaQuery.textScalerOf(context).scale(56),
             child: Text(range, style: CoconutTypography.body2_14_Number.setColor(colors.secondaryText)),
           ),
           CoconutLayout.spacing_200w,
@@ -307,14 +313,14 @@ class _IncludedGrid extends StatelessWidget {
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [box(SafetyCategory.recovery), const SizedBox(width: 12), box(SafetyCategory.activity)],
+            children: [box(SafetyCategory.recovery), CoconutLayout.spacing_300w, box(SafetyCategory.activity)],
           ),
         ),
-        const SizedBox(height: 12),
+        CoconutLayout.spacing_300h,
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [box(SafetyCategory.app), const SizedBox(width: 12), box(SafetyCategory.privacy)],
+            children: [box(SafetyCategory.app), CoconutLayout.spacing_300w, box(SafetyCategory.privacy)],
           ),
         ),
       ],
@@ -367,16 +373,16 @@ class _IncludedBox extends StatelessWidget {
                 Text('${percent.round()}%', style: CoconutTypography.body3_12_Bold.setColor(colors.secondaryText)),
             ],
           ),
-          const SizedBox(height: 8),
+          CoconutLayout.spacing_200h,
           if (names.isEmpty)
             Text(t.wallet_health.category.waiting, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
           for (final (i, name) in names.indexed) ...[
-            if (i > 0) const SizedBox(height: 4),
+            if (i > 0) CoconutLayout.spacing_100h,
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 3),
+                  padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body3_12, 12)),
                   child: SvgPicture.asset(
                     CommonActionIconPath.check,
                     width: 12,
@@ -426,9 +432,10 @@ class _ContributionRow extends StatelessWidget {
           ),
         ),
         CoconutLayout.spacing_200w,
+        // 글자가 섞인 문장이라 본문 글꼴(숫자 글꼴에는 한글이 없다)
         Text(
           t.wallet_health.about.wallet_recovery(score: contribution.score),
-          style: CoconutTypography.body2_14_NumberBold.setColor(colors.primaryText),
+          style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
         ),
       ],
     );
@@ -491,7 +498,7 @@ class _Bullet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 7),
+          padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body3_12, 3)),
           child: Container(
             width: 3,
             height: 3,
@@ -581,7 +588,12 @@ class _CategorySheet extends StatelessWidget {
           _Box(
             padding: EdgeInsets.zero,
             child: Column(
-              children: [for (final item in checks) _CheckRow(item: item, opener: opener, showWallet: true)],
+              children: [
+                for (final (i, item) in checks.indexed) ...[
+                  if (i > 0) Divider(color: colors.divider, height: 1, indent: 16, endIndent: 16),
+                  _CheckRow(item: item, opener: opener, showWallet: true),
+                ],
+              ],
             ),
           ),
         CoconutLayout.spacing_300h,
@@ -660,7 +672,7 @@ class _WalletHeader extends StatelessWidget {
     return Row(
       children: [
         safetyWalletIcon(wallet),
-        const SizedBox(width: 12),
+        CoconutLayout.spacing_300w,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,14 +754,19 @@ class _CheckRow extends StatelessWidget {
             ),
           ),
           CoconutLayout.spacing_200w,
-          Flexible(
-            child: Text(result, textAlign: TextAlign.end, style: CoconutTypography.body3_12.setColor(resultColor)),
+          // 결과는 오른쪽 끝, 할 일 알약은 결과 아래 줄(좁은 폭·긴 언어에서 결과 글이 밀리지 않게, POLISH C7)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(result, textAlign: TextAlign.end, style: CoconutTypography.body3_12.setColor(resultColor)),
+                if (failed && !showWallet) ...[CoconutLayout.spacing_100h, SafetyActionPill(text: safetyCtaText(item))],
+              ],
+            ),
           ),
-          if (failed) ...[
+          if (failed && showWallet) ...[
             CoconutLayout.spacing_200w,
-            showWallet
-                ? Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary)
-                : SafetyActionPill(text: safetyCtaText(item)),
+            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],
         ],
       ),
@@ -799,10 +816,14 @@ class _WalletSheet extends StatelessWidget {
         if (i.walletId == walletId) i,
     ];
     final secondary = CoconutTypography.body3_12.setColor(colors.secondaryText);
-    return ListView(
+    // 전체 지갑 상태로 가는 버튼을 시트 아래에 고정한다(고르기 시트의 확인 버튼과 같은 방식). 목록은 그 높이만큼 비켜 둔다
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final buttonArea =
+        FixedBottomButton.fixedBottomButtonDefaultHeight * textScale.clamp(1.0, double.infinity) + 3 + 12;
+    final list = ListView(
       key: const Key('wallet-health-wallet-sheet'),
       controller: controller,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       children: [
         if (wallet != null) ...[
           _WalletHeader(wallet: wallet, score: report?.recovery.firstWhereOrNull((r) => r.walletId == walletId)?.score),
@@ -854,21 +875,35 @@ class _WalletSheet extends StatelessWidget {
           ),
         CoconutLayout.spacing_300h,
         Text(t.wallet_health.about.wallets_note, style: secondary),
-        CoconutLayout.spacing_400h,
-        // 지갑 정보에서 열었을 때 전체 지갑 상태로(UI_SPEC §7.5)
-        Center(
-          child: CoconutUnderlinedButton(
-            key: const Key('wallet-health-view-all'),
-            text: t.wallet_health.wallet_info.view_all,
-            textStyle: CoconutTypography.body3_12_Bold,
-            defaultColor: colors.secondaryTextStrong,
-            onTap: () {
-              Navigator.pop(context);
-              if (opener.mounted) WalletHealthScreen.open(opener);
-            },
-          ),
-        ),
       ],
+    );
+    return SafeArea(
+      top: false,
+      child: Stack(
+        children: [
+          Positioned.fill(bottom: buttonArea, child: list),
+          // 지갑 정보·지갑 상세에서 열었을 때 전체 지갑 상태로(UI_SPEC §7.5, POLISH §3)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SizedBox(
+              height: buttonArea + 5,
+              child: FixedBottomButton(
+                buttonKey: const Key('wallet-health-view-all'),
+                text: t.wallet_health.wallet_info.view_all,
+                isVisibleAboveKeyboard: false,
+                bottomPadding: 16,
+                surroundingsColor: Colors.transparent,
+                onButtonClicked: () {
+                  Navigator.pop(context);
+                  if (opener.mounted) WalletHealthScreen.open(opener);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -879,7 +914,8 @@ Future<void> showSafetyReviewItemSheet(BuildContext context, SafetyCheckResult i
     CommonBottomSheets.showBottomSheet<void>(
       context: context,
       screenName: '/wallet-health/review',
-      title: _reviewTitle(item),
+      // 시트 제목은 점검 이름으로 짧게, 문장 제목은 본문 첫 줄로(POLISH C16)
+      title: safetyCheckName(item.id),
       showDragHandle: true,
       showCloseButton: true,
       child: _ReviewSheet(item: item, opener: context),
@@ -1028,7 +1064,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         bodies = [r.metadata.body];
         final exported = context.read<SafetyProvider?>()?.state.metadataExport?.at;
         rows = [
-          _KeyValueRow(label: safetyCheckName(item.id), value: safetyFailedResultText(item)),
+          _KeyValueRow(label: safetyCheckName(item.id), value: safetyFailedResultText(item), number: false),
           // 시각은 데이터라 저장 상태에서 읽는다(문구는 detail로 고른다)
           if (exported != null)
             _KeyValueRow(
@@ -1054,6 +1090,16 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_reviewTitle(item) != safetyCheckName(item.id)) ...[
+            Semantics(
+              header: true,
+              child: Text(
+                safetyKoText(_reviewTitle(item)),
+                style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
+              ),
+            ),
+            CoconutLayout.spacing_200h,
+          ],
           for (final (i, body) in bodies.indexed) ...[
             if (i > 0) CoconutLayout.spacing_200h,
             Text(body, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
@@ -1200,10 +1246,13 @@ class _DustRow extends StatelessWidget {
 }
 
 class _KeyValueRow extends StatelessWidget {
-  const _KeyValueRow({required this.label, required this.value});
+  const _KeyValueRow({required this.label, required this.value, this.number = true});
 
   final String label;
   final String value;
+
+  /// 숫자·주소·지문만 숫자 글꼴(SpaceGrotesk에는 한글이 없다)
+  final bool number;
 
   @override
   Widget build(BuildContext context) {
@@ -1215,7 +1264,12 @@ class _KeyValueRow extends StatelessWidget {
         children: [
           Text(label, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
           CoconutLayout.spacing_50h,
-          Text(value, style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
+          Text(
+            value,
+            style: (number ? CoconutTypography.body3_12_Number : CoconutTypography.body3_12).setColor(
+              colors.primaryText,
+            ),
+          ),
         ],
       ),
     );
@@ -1247,7 +1301,7 @@ Future<void> showSafetyRecommendedSheet(BuildContext context, RecommendedItem it
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                safetyRecommendedName(context, item),
+                safetyKoText(safetyRecommendedName(context, item)),
                 style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
               ),
               CoconutLayout.spacing_200h,

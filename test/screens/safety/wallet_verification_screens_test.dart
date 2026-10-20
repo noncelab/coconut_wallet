@@ -29,6 +29,7 @@ import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,6 +43,10 @@ import 'package:ur/fountain_encoder.dart';
 import 'package:ur/fountain_utils.dart';
 import 'package:ur/ur.dart';
 import 'package:ur/ur_encoder.dart';
+
+/// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
+Finder _text(String text) =>
+    find.byWidgetPredicate((w) => w is Text && (w.data ?? w.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text);
 
 class _Wallets extends ChangeNotifier implements WalletProvider {
   _Wallets(this.walletItemList);
@@ -228,7 +233,7 @@ void main() {
   }
 
   Future<void> startScan(WidgetTester tester, String text) async {
-    await tester.tap(find.text(text));
+    await tester.tap(_text(text));
     await tester.pumpAndSettle();
     expect(find.byType(QrScannerView), findsOneWidget);
   }
@@ -247,10 +252,14 @@ void main() {
         testWidgets('watch-only shows the comparison heading and description', (tester) async {
           final copy = t.wallet_health.watch_only_verify;
           await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 1));
-          expect(find.text(copy.heading), findsOneWidget);
-          expect(find.text(copy.description), findsOneWidget);
+          expect(_text(copy.heading), findsOneWidget);
+          expect(_text(copy.description), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsNothing);
           expect(safety.watch, isEmpty);
+          // C31: 4글자씩 묶어 보이지만 고를 수 있는 글(복사 내용)은 원래 주소 그대로
+          final address = tester.widget<SelectableText>(find.byType(SelectableText)).textSpan!;
+          expect(address.toPlainText(), single.walletBase.getAddress(0));
+          expect(address.children!.length, greaterThan(2));
           expect(tester.takeException(), isNull);
         });
 
@@ -276,8 +285,8 @@ void main() {
             ),
           );
           await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 3));
-          expect(find.text(copy.no_mfp_title), findsOneWidget);
-          expect(find.text(copy.no_mfp), findsOneWidget);
+          expect(_text(copy.no_mfp_title), findsOneWidget);
+          expect(_text(copy.no_mfp), findsOneWidget);
           await tester.ensureVisible(find.byType(SafetyStatusBanner));
           await tester.pumpAndSettle();
           final banner = tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner));
@@ -286,15 +295,15 @@ void main() {
           expect(banner.iconPath, CommonStateIconPath.circleInfo);
           expect(banner.iconColor, colors.iconSecondary);
           expect(safety.watch, isEmpty);
-          await tester.tap(find.text(copy.compared_manually));
+          await tester.tap(_text(copy.compared_manually));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(copy.confirm_match));
+          await tester.tap(_text(copy.confirm_match));
           await tester.pumpAndSettle();
           expect(safety.watch.single.id, 3);
           expect(safety.watch.single.method, VerificationMethod.user);
           expect(safety.watch.single.result, VerificationResult.match);
-          expect(find.text(copy.no_mfp_title), findsNothing);
-          expect(find.text(copy.user_confirmed_title), findsOneWidget);
+          expect(_text(copy.no_mfp_title), findsNothing);
+          expect(_text(copy.user_confirmed_title), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsOneWidget);
           expect(tester.takeException(), isNull);
         });
@@ -306,7 +315,7 @@ void main() {
           expect(safety.watch.single.result, VerificationResult.match);
           expect(safety.watch.single.method, VerificationMethod.qr);
           expect(safety.watch.single.index, 19);
-          expect(find.text(t.wallet_health.watch_only_verify.match_at_index(index: 19)), findsOneWidget);
+          expect(_text(t.wallet_health.watch_only_verify.match_at_index(index: 19)), findsOneWidget);
           final banner = tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner));
           expect(banner.background, resolveCoconutThemeExtension(variant: theme).colors.successSurface);
           expect(tester.takeException(), isNull);
@@ -325,14 +334,14 @@ void main() {
           await startScan(tester, copy.scan_again);
           await capture(tester, single.walletBase.getAddress(0, isChange: true));
           expect(safety.watch.length, 2);
-          await tester.tap(find.text(copy.confirm_device));
+          await tester.tap(_text(copy.confirm_device));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(t.cancel));
+          await tester.tap(_text(t.cancel));
           await tester.pumpAndSettle();
           expect(safety.watch.length, 2);
-          await tester.tap(find.text(copy.confirm_device));
+          await tester.tap(_text(copy.confirm_device));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(copy.confirm_device_yes));
+          await tester.tap(_text(copy.confirm_device_yes));
           await tester.pumpAndSettle();
           expect(safety.watch.last.result, VerificationResult.confirmedMismatch);
           expect(safety.watch.last.index, isNull);
@@ -346,16 +355,16 @@ void main() {
         testWidgets('manual comparison is confirmed and uses neutral result tokens', (tester) async {
           final copy = t.wallet_health.watch_only_verify;
           await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 1));
-          await tester.tap(find.text(copy.compared_manually));
+          await tester.tap(_text(copy.compared_manually));
           await tester.pumpAndSettle();
           expect(safety.watch, isEmpty);
-          await tester.tap(find.text(copy.confirm_match));
+          await tester.tap(_text(copy.confirm_match));
           await tester.pumpAndSettle();
           expect(safety.watch.single.method, VerificationMethod.user);
           expect(safety.watch.single.result, VerificationResult.match);
           final banner = tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner));
           expect(banner.background, resolveCoconutThemeExtension(variant: theme).colors.surface);
-          expect(find.text(copy.user_confirmed_title), findsOneWidget);
+          expect(_text(copy.user_confirmed_title), findsOneWidget);
           expect(tester.takeException(), isNull);
         });
 
@@ -365,7 +374,7 @@ void main() {
           await startScan(tester, copy.scan);
           await capture(tester, 'invalid QR');
           expect(safety.watch, isEmpty);
-          expect(find.text(copy.error_not_address), findsOneWidget);
+          expect(_text(copy.error_not_address), findsOneWidget);
           await startScan(tester, copy.scan);
           Navigator.pop(tester.element(find.byType(QrScannerView)));
           await tester.pumpAndSettle();
@@ -379,7 +388,7 @@ void main() {
           final address = single.walletBase.getAddress(0);
           await capture(tester, ' BITCOIN:B${address.substring(1)}?amount=1 ');
           expect(safety.watch, isEmpty);
-          expect(find.text(copy.error_not_address), findsOneWidget);
+          expect(_text(copy.error_not_address), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsNothing);
         });
 
@@ -388,7 +397,7 @@ void main() {
           await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 1));
           await startScan(tester, t.wallet_health.watch_only_verify.scan);
           await capture(tester, single.walletBase.getAddress(0));
-          expect(find.text(t.wallet_health.save_failed), findsOneWidget);
+          expect(_text(t.wallet_health.save_failed), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsNothing);
           expect(safety.watch, isEmpty);
         });
@@ -400,8 +409,13 @@ void main() {
           await capture(tester, UREncoder(UR('bytes', encoder.getBytes()), 2000).nextPart());
           expect(safety.bsms.single.matched, isTrue);
           expect(safety.bsms.single.hash == WalletVerification.descriptorHash(multi.descriptor), isTrue);
-          expect(find.text(t.wallet_health.bsms_verify.verified_title), findsOneWidget);
+          expect(_text(t.wallet_health.bsms_verify.verified_title), findsOneWidget);
           expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('BSMS header shows the shared wallet icon with the signer gradient (C10)', (tester) async {
+          await mount(tester, theme, const BsmsVerificationScreen(walletId: 2));
+          expect(tester.widget<WalletIconSmall>(find.byType(WalletIconSmall).first).gradientColors, isNotNull);
         });
 
         testWidgets('BSMS mismatch can be retried and corrected', (tester) async {
@@ -413,12 +427,12 @@ void main() {
             'BSMS 1.0\n${multi.descriptor.split('#').first.replaceFirst('sortedmulti(2,', 'sortedmulti(1,')}',
           );
           expect(safety.bsms.single.matched, isFalse);
-          expect(find.text(copy.mismatch_title), findsOneWidget);
+          expect(_text(copy.mismatch_title), findsOneWidget);
           await startScan(tester, copy.scan);
           await capture(tester, 'BSMS 1.0\n${multi.descriptor}');
           expect(safety.bsms.length, 2);
           expect(safety.bsms.last.matched, isTrue);
-          expect(find.text(copy.verified_title), findsOneWidget);
+          expect(_text(copy.verified_title), findsOneWidget);
           expect(tester.takeException(), isNull);
         });
 
@@ -428,12 +442,12 @@ void main() {
           await startScan(tester, copy.scan);
           await capture(tester, 'invalid backup');
           expect(safety.bsms, isEmpty);
-          expect(find.text(copy.error_parse), findsOneWidget);
+          expect(_text(copy.error_parse), findsOneWidget);
           safety.failSave = true;
           await startScan(tester, copy.scan);
           await capture(tester, 'BSMS 1.0\n${multi.descriptor}');
           expect(safety.bsms, isEmpty);
-          expect(find.text(t.wallet_health.save_failed), findsOneWidget);
+          expect(_text(t.wallet_health.save_failed), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsNothing);
         });
 
@@ -468,7 +482,7 @@ void main() {
       final part = FountainEncoderPart(1, header.count, header.length, 0, Uint8List.fromList([0]));
       await capture(tester, UREncoder.encodePart('bytes', part));
       expect(safety.bsms, isEmpty);
-      expect(find.text(t.wallet_health.bsms_verify.error_parse), findsOneWidget);
+      expect(_text(t.wallet_health.bsms_verify.error_parse), findsOneWidget);
       expect(find.byType(QrScannerView), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -489,11 +503,19 @@ void main() {
         for (var repeat = 0; repeat < 10; repeat++) {
           await capture(tester, frame);
         }
-        expect(find.text(t.wallet_health.bsms_verify.error_parse), findsNothing);
+        expect(_text(t.wallet_health.bsms_verify.error_parse), findsNothing);
       }
     }
     expect(safety.bsms, isEmpty);
-    expect(find.text(t.wallet_health.bsms_verify.error_parse), findsOneWidget);
+    expect(_text(t.wallet_health.bsms_verify.error_parse), findsOneWidget);
+    // C21: 실패는 팝업으로 알리고(그동안 들어온 프레임은 버린다), 닫으면 조립을 처음부터 다시 한다
+    final popup = find.byKey(const Key('bsms-verification-scan-error'));
+    expect(popup, findsOneWidget);
+    await capture(tester, 'BSMS 1.0\n${multi.descriptor}');
+    expect(safety.bsms, isEmpty);
+    await tester.tap(find.descendant(of: popup, matching: _text(t.OK)));
+    await tester.pumpAndSettle();
+    expect(popup, findsNothing);
     await capture(tester, 'BSMS 1.0\n${multi.descriptor}');
     expect(safety.bsms.single.matched, isTrue);
     expect(tester.takeException(), isNull);
@@ -528,9 +550,9 @@ void main() {
             type == WalletType.singleSignature
                 ? t.wallet_health.watch_only_verify.title
                 : t.wallet_health.bsms_verify.title;
-        expect(find.text(label), provider ? findsOneWidget : findsNothing);
+        expect(_text(label), provider ? findsOneWidget : findsNothing);
         if (provider) {
-          final lastMenu = find.text(
+          final lastMenu = _text(
             type == WalletType.singleSignature
                 ? t.wallet_info_screen.extended_public_key
                 : t.wallet_info_screen.view_wallet_backup_data,
@@ -539,7 +561,7 @@ void main() {
           expect(tester.getTopLeft(safetyRow).dy, greaterThan(tester.getBottomLeft(lastMenu).dy));
           expect(
             tester.getBottomLeft(safetyRow).dy,
-            lessThan(tester.getTopLeft(find.text(t.wallet_info_screen.target_quantity)).dy),
+            lessThan(tester.getTopLeft(_text(t.wallet_info_screen.target_quantity)).dy),
           );
         }
         expect(tester.takeException(), isNull);
@@ -574,12 +596,12 @@ void main() {
     entitlement.emit(const PremiumState(PremiumStatus.active));
     await tester.pumpAndSettle();
     expect(row, findsOneWidget);
-    expect(find.text(t.premium.rescue.destination), findsOneWidget);
-    expect(find.text(t.premium.rescue.not_set), findsOneWidget);
+    expect(_text(t.premium.rescue.destination), findsOneWidget);
+    expect(_text(t.premium.rescue.not_set), findsOneWidget);
     expect(tester.getTopLeft(row).dy, tester.getBottomLeft(find.byKey(const Key('wallet-safety-status-row'))).dy);
     rescue.rename('Emergency wallet');
     await tester.pumpAndSettle();
-    expect(find.text('Emergency wallet'), findsOneWidget);
+    expect(_text('Emergency wallet'), findsOneWidget);
     for (final status in [PremiumStatus.verifying, PremiumStatus.pending, PremiumStatus.expired, PremiumStatus.none]) {
       entitlement.emit(PremiumState(status));
       await tester.pumpAndSettle();

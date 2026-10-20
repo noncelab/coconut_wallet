@@ -111,6 +111,27 @@ void main() {
     await tester.pumpWidget(const SizedBox()); // 반복 애니메이션 정리
   });
 
+  testWidgets('C8: score and checking labels stay on one line and scale down; S0/S4 captions may use two', (
+    tester,
+  ) async {
+    Text label(String text) => tester.widget<Text>(find.text(text));
+    // de "Handlungsbedarf"가 가장 긴 라벨
+    Future<void> pump(WalletHealthReport report, {bool checking = false}) => pumpWalletHealthApp(
+      tester,
+      Scaffold(body: Center(child: HealthGauge(report: report, isChecking: checking))),
+      locale: AppLocale.de,
+    );
+    await pump(scoredReport(score: 42));
+    final scored = walletHealthLabelText(WalletHealthLabel.of(42));
+    expect(label(scored).maxLines, 1);
+    expect(find.ancestor(of: find.text(scored), matching: find.byType(FittedBox)), findsNWidgets(2)); // 안쪽 원 + 라벨
+    await pump(scoredReport(score: 86), checking: true);
+    expect(label(t.wallet_health.summary.checking).maxLines, 1);
+    await pump(noWalletReport());
+    expect(label(t.wallet_health.hero.no_wallet_title).maxLines, 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('compact is 72 wide with the number only', (tester) async {
     await _pump(tester, scoredReport(score: 86), compact: true);
     expect(tester.getSize(find.byType(HealthGauge)).width, 72);

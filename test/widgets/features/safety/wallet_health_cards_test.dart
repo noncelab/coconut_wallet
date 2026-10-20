@@ -1,7 +1,9 @@
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/material.dart';
@@ -90,21 +92,34 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets('Free Premium card: chip, three value lines, no monitoring promise', (tester) async {
-        var taps = 0;
-        await _pump(tester, WalletHealthPremiumCard(onTap: () => taps++), variant: variant);
-        expect(find.byType(PremiumChip), findsOneWidget);
-        expect(find.text(t.premium.card.point_prepare), findsOneWidget);
-        expect(find.text(t.premium.card.point_rescue), findsOneWidget);
-        expect(find.text(t.premium.card.point_guide), findsOneWidget);
-        expect(_textColor(tester, t.premium.card.title), colors.premiumText);
-        for (final text in tester.widgetList<Text>(find.byType(Text))) {
-          expect(text.data ?? '', isNot(contains('모니터링')));
-        }
-        await tester.tap(find.text(t.premium.card.explore));
-        await tester.pumpAndSettle();
-        expect(taps, 1);
-      });
+      testWidgets(
+        'Free Premium card (C4): gem, three value lines, the whole card is the button, no monitoring promise',
+        (tester) async {
+          var taps = 0;
+          await _pump(tester, WalletHealthPremiumCard(onTap: () => taps++), variant: variant);
+          expect(find.byType(PremiumChip), findsNothing); // Premium 바탕 위에는 칩을 두지 않는다
+          expect(find.byType(PremiumMark), findsOneWidget);
+          expect(tester.widget<PremiumSurface>(find.byType(PremiumSurface)).ringWidth, 1);
+          expect(find.text(t.premium.card.point_prepare), findsOneWidget);
+          expect(find.text(t.premium.card.point_rescue), findsOneWidget);
+          expect(find.text(t.premium.card.point_guide), findsOneWidget);
+          expect(_textColor(tester, t.premium.card.title), colors.primaryText);
+          expect(_textColor(tester, t.premium.card.point_rescue), colors.secondaryTextStrong);
+          for (final text in tester.widgetList<Text>(find.byType(Text))) {
+            expect(text.data ?? '', isNot(contains('모니터링')));
+          }
+          // 안쪽 버튼은 없다: 카드 어디를 눌러도 같은 한 동작
+          expect(find.byType(ShrinkAnimationButton), findsOneWidget);
+          await tester.tap(find.text(t.premium.card.point_rescue));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(t.premium.card.explore));
+          await tester.pumpAndSettle();
+          expect(taps, 2);
+
+          await _pump(tester, WalletHealthPremiumCard(critical: true, onTap: () {}), variant: variant);
+          expect(tester.widget<PremiumSurface>(find.byType(PremiumSurface)).ringWidth, 0); // 위급(S3)은 링 없이
+        },
+      );
     });
   }
 
@@ -146,8 +161,99 @@ void main() {
       ),
     );
     expect(find.byKey(const Key('wallet-health-card-skeleton')), findsNWidgets(4));
-    expect(find.text('80'), findsNothing);
+    // 지난 결과는 틀(크기)로만 남고 보이지 않는다(C14)
+    expect(
+      tester.widget<Visibility>(find.ancestor(of: find.text('80'), matching: find.byType(Visibility))).visible,
+      isFalse,
+    );
     expect(find.text(t.wallet_health.summary.checking), findsNWidgets(2)); // 게이지 라벨 + 버튼
+  });
+
+  testWidgets('C14: re-checking keeps each card the size of its last result (no layout jump)', (tester) async {
+    Widget grid({required bool checking}) =>
+        WalletHealthCategoryGrid(report: scoredReport(), isChecking: checking, onTap: (_) {});
+    final card = find.byKey(const Key('wallet-health-category-recovery'));
+    await _pump(tester, grid(checking: false));
+    final settled = tester.getSize(card);
+    await _pump(tester, grid(checking: true));
+    expect(tester.getSize(card), settled);
+    expect(find.descendant(of: card, matching: find.byKey(const Key('wallet-health-card-skeleton'))), findsOneWidget);
+    // 첫 검사(결과 없음)는 스켈레톤만
+    await _pump(tester, WalletHealthCategoryGrid(report: null, isChecking: true, onTap: (_) {}));
+    expect(find.byType(Visibility), findsNothing);
+  });
+
+  testWidgets('C13: skeleton bars use surfaceMuted so they show on homeSurface (reduce motion too)', (tester) async {
+    for (final variant in CoconutThemeVariant.values) {
+      await _pump(tester, WalletHealthCategoryGrid(report: null, isChecking: true, onTap: (_) {}), variant: variant);
+      final bar = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const Key('wallet-health-card-skeleton')).first,
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(
+        (bar.decoration! as BoxDecoration).color,
+        resolveCoconutThemeExtension(variant: variant).colors.surfaceMuted,
+      );
+    }
+  });
+
+  testWidgets('C9/C22: the big value and the category name scale down on one line instead of wrapping', (tester) async {
+    await _pump(tester, WalletHealthCategoryGrid(report: scoredReport(), isChecking: false, onTap: (_) {}));
+    for (final text in ['80', safetyCategoryName(SafetyCategory.recovery)]) {
+      final fitted = find.ancestor(of: find.text(text), matching: find.byType(FittedBox));
+      expect(fitted, findsOneWidget);
+      expect(tester.widget<FittedBox>(fitted).fit, BoxFit.scaleDown);
+    }
+  });
+
+  testWidgets('C6: the passed value sits at the right end of its row', (tester) async {
+    await _pump(
+      tester,
+      const SafetyListCard(
+        rows: [SafetyPassedRow(item: SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.passed))],
+      ),
+    );
+    final row = tester.getRect(find.byType(SafetyPassedRow));
+    final value = tester.getRect(find.text(t.wallet_health.check.app_lock.enabled));
+    expect(value.right, closeTo(row.right - 20, 0.5)); // 행 안쪽 여백 20
+    expect(tester.widget<Text>(find.text(t.wallet_health.check.app_lock.enabled)).textAlign, TextAlign.end);
+  });
+
+  testWidgets('C25: icons and dots stay centred on the first line as text grows', (tester) async {
+    final tops = <double>[];
+    for (final scale in [1.0, 2.0]) {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+          child: Builder(
+            builder: (context) {
+              tops.add(safetyFirstLineTop(context, CoconutTypography.body3_12, 14));
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+    }
+    expect(tops[0], closeTo((12 * 1.4 - 14) / 2, 1e-9)); // 1.0×: 예전 고정값 2와 거의 같다
+    expect(tops[1], closeTo((24 * 1.4 - 14) / 2, 1e-9));
+  });
+
+  testWidgets('C12: the not-included band text uses secondaryTextStrong in every theme', (tester) async {
+    for (final variant in CoconutThemeVariant.values) {
+      await _pump(
+        tester,
+        WalletHealthNotIncludedCard(items: const [], footer: t.wallet_health.section.not_included_footer_usage),
+        variant: variant,
+      );
+      expect(
+        _textColor(tester, t.wallet_health.section.not_included_footer_usage),
+        resolveCoconutThemeExtension(variant: variant).colors.secondaryTextStrong,
+      );
+    }
   });
 
   testWidgets('review copy comes from the engine detail: rescan, BSMS update, cert days, notes changed', (

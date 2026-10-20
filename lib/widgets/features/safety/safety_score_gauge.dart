@@ -286,8 +286,10 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
     final dimmed = AnimatedBuilder(
       animation: Listenable.merge([_number, _checking]),
       builder:
-          (context, child) =>
-              Opacity(opacity: (scored ? _number.value : 1) * (1 - 0.6 * _checking.value), child: child),
+          (context, child) => Opacity(
+            opacity: (scored ? Curves.easeOut.transform(_number.value) : 1) * (1 - 0.6 * _checking.value),
+            child: child,
+          ),
       child: top,
     );
     if (compact) return dimmed;
@@ -309,14 +311,23 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
           scored || checking ? CoconutLayout.spacing_50h : CoconutLayout.spacing_200h,
           AnimatedSwitcher(
             duration: _still ? Duration.zero : _fade,
-            child: Text(
-              text,
-              key: ValueKey(text),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: style,
-            ),
+            // 점수 라벨·검사 중은 한 줄로 줄여 맞춘다(de "Handlungsbedarf"가 단어 중간에서 끊기지 않게, POLISH R2).
+            // S0·S4 설명만 두 줄
+            child:
+                scored || checking
+                    ? FittedBox(
+                      key: ValueKey(text),
+                      fit: BoxFit.scaleDown,
+                      child: Text(text, maxLines: 1, style: style),
+                    )
+                    : Text(
+                      text,
+                      key: ValueKey(text),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
           ),
         ],
       ],

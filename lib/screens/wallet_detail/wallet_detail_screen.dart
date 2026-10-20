@@ -48,6 +48,7 @@ import 'package:coconut_wallet/widgets/features/wallet/badge/wallet_type_badge.d
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_safety_status_row.dart' show WalletSafetyStatusPill;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -159,6 +160,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         const SizedBox(height: 20),
                         for (final child in [
                           _buildBalanceHeader(),
+                          // 잔액 머리(단위 바꾸기 탭)와 따로: 이 지갑의 안전 상태 → 이 지갑 시트·사건 상세(POLISH §3)
+                          WalletSafetyStatusPill(
+                            walletId: widget.id,
+                            onPressed: () => _logAction(WalletDetailAction.safetyStatus),
+                          ),
                           CoconutLayout.spacing_500h,
                           SafetyCautionBanner(walletId: widget.id),
                           _buildSecurityWarning(),

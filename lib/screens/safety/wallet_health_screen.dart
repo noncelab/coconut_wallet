@@ -23,11 +23,9 @@ import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
-import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
@@ -106,7 +104,14 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     setState(() => _checking = false);
     if (failed) {
       vibrateLightDouble();
-      CoconutToast.showToast(context: context, text: t.wallet_health.toast.check_failed, isVisibleIcon: true);
+      // 실패는 경고 토스트(지갑 상세의 요청 실패와 같은 모양)
+      CoconutToast.showToast(
+        context: context,
+        text: t.wallet_health.toast.check_failed,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        level: CoconutToastLevel.warning,
+      );
       return;
     }
     vibrateLight();
@@ -153,11 +158,14 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 진행 표시는 게이지 스윕이 대신한다
+            // 진행 표시는 게이지 스윕이 대신한다. 위급(S3) 머리는 사이렌이라 스윕이 없어 기본 당김 표시를 쓴다(POLISH C15)
             CupertinoSliverRefreshControl(
               onRefresh: _checkAgain,
               refreshTriggerPullDistance: 80,
-              builder: (_, _, _, _, _) => const SizedBox.shrink(),
+              builder:
+                  report?.isCritical ?? false
+                      ? CupertinoSliverRefreshControl.buildRefreshIndicator
+                      : (_, _, _, _, _) => const SizedBox.shrink(),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
@@ -217,10 +225,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       if (report != null) ...[
         ..._reviewSection(report),
         // 판매 카드는 지갑이 없을 때(S0)만 뺀다. S4에서도 Premium 줄과 비상 이동 준비(자금 없음 상태 포함)를 연다
-        if (!noWallet && context.read<EntitlementService?>() != null) ...[
-          CoconutLayout.spacing_600h,
-          ..._premiumSection(),
-        ],
+        if (!noWallet && context.read<EntitlementService?>() != null)
+          ..._premiumSection(notEnoughData: status == WalletHealthStatus.notEnoughData),
         if (report.allGoodItems.isNotEmpty) ...[
           SafetySectionTitle(waiting ? s.available_now : s.all_good),
           SafetyListCard(rows: [for (final item in _uniqueById(report.allGoodItems)) SafetyPassedRow(item: item)]),
@@ -235,7 +241,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             ),
           ],
           // "더 많은 점검을 하려면"은 지갑이 없을 때만(UI 브리프 WH-S0)
-          if (noWallet) ...[CoconutLayout.spacing_600h, const WalletHealthUnlockCard()],
+          if (noWallet) ...[CoconutLayout.spacing_800h, const WalletHealthUnlockCard()],
         ],
         ..._recommendedSection(report),
       ],
@@ -279,45 +285,55 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     ];
   }
 
-  /// Free: Premium 카드 / Premium: 사용 중 줄. 그 아래 "비상 이동 준비" 줄(점수 밖, 구독이 끝나도 정해 둔 목적지가 있으면 "멈춤" 줄)
-  List<Widget> _premiumSection() {
+  /// Coconut Premium 구역(POLISH §4 D1·D4·D5·D6). 상태가 먼저, 판매는 그다음:
+  /// [구독 중이면 "Premium 사용 중" 줄, 비상 이동 줄(무료에게도 자리를 보인다)] → 판매 카드.
+  /// 판매 카드는 무료일 때만, 데이터 부족(S4)·구독 확인 중·만료 뒤 멈춘 목적지가 있으면 빼고
+  List<Widget> _premiumSection({required bool notEnoughData}) {
     final entitlement = context.read<EntitlementService>();
-    final freeCard = WalletHealthPremiumCard(onTap: () => PremiumPaywallScreen.open(context));
     return [
       ValueListenableBuilder<PremiumState>(
         valueListenable: entitlement.state,
         builder: (context, premium, _) {
+          final colors = context.coconutColors;
           final rescue = context.watch<RescueReadyProvider?>();
+          final verifying = premium.status == PremiumStatus.verifying;
           final line = rescue == null ? null : _rescueLine(rescue, premium.isActive);
+          // 구독이 끝나도 정해 둔 목적지가 남으면 멈춤 줄(지우기·지금 이동은 그대로). 그 옆에 판매 카드는 두지 않는다
+          final paused = !premium.isActive && line != null;
+          final rows = <Widget>[
+            if (premium.isActive)
+              _PremiumRow(
+                key: const Key('wallet-health-premium-active'),
+                leading: const PremiumMark(size: 20),
+                title: t.premium.subscription.active_title,
+                subtitle: t.premium.card.active_body,
+                onTap: () => PremiumSubscriptionScreen.open(context),
+              ),
+            if (rescue != null)
+              _PremiumRow(
+                key: const Key('wallet-health-rescue-ready'),
+                leading: SvgPicture.asset(
+                  CommonActionIconPath.arrowReload,
+                  width: 18,
+                  height: 18,
+                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                ),
+                title: line?.title ?? t.premium.rescue.name,
+                // TODO(copy): premium.rescue.free_body(무료, 목적지 없음) · premium.rescue.verifying(구독 확인 중)
+                subtitle: line?.subtitle,
+                warning: line?.warning ?? false,
+                chip: line == null && !verifying,
+                onTap: () => RescueReadyScreen.open(context),
+              ),
+          ];
+          final sales = !premium.isActive && !notEnoughData && !verifying && !paused;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (premium.isActive)
-                SafetyListCard(
-                  rows: [
-                    _PremiumRow(
-                      key: const Key('wallet-health-premium-active'),
-                      title: t.premium.card.active_title,
-                      subtitle: t.premium.card.active_body,
-                      onTap: () => PremiumSubscriptionScreen.open(context),
-                    ),
-                  ],
-                )
-              else
-                freeCard,
-              if (line != null) ...[
-                SafetySectionTitle(t.premium.rescue.name),
-                SafetyListCard(
-                  rows: [
-                    _PremiumRow(
-                      key: const Key('wallet-health-rescue-ready'),
-                      title: line.title,
-                      subtitle: line.subtitle,
-                      warning: line.warning,
-                      onTap: () => RescueReadyScreen.open(context),
-                    ),
-                  ],
-                ),
+              if (rows.isNotEmpty) ...[SafetySectionTitle(t.premium.name), SafetyListCard(rows: rows)],
+              if (sales) ...[
+                if (rows.isEmpty) CoconutLayout.spacing_600h else CoconutLayout.spacing_300h,
+                WalletHealthPremiumCard(onTap: () => PremiumPaywallScreen.open(context)),
               ],
             ],
           );
@@ -376,7 +392,18 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
   List<Widget> _recommendedSection(WalletHealthReport report) {
     if (report.recommended.isEmpty) return const [];
     return [
-      SafetySectionTitle(t.wallet_health.section.recommended),
+      // 제목 아래 4에 진행 부제, 그 아래 12(POLISH C28). SafetySectionTitle은 아래 12가 고정이라 여기서 짠다
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 32, 0, 0),
+        child: Semantics(
+          header: true,
+          child: Text(
+            safetyKoText(t.wallet_health.section.recommended),
+            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          ),
+        ),
+      ),
+      CoconutLayout.spacing_100h,
       Padding(
         padding: const EdgeInsets.fromLTRB(4, 0, 0, 12),
         child: Text(
@@ -465,7 +492,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       if (incident != null) ...[
         CoconutLayout.spacing_400h,
         _IncidentCard(incident: incident),
-        if (incidents.length > 1)
+        if (incidents.length > 1) ...[
+          CoconutLayout.spacing_200h,
           Center(
             child: CoconutUnderlinedButton(
               text: c.more_alerts(n: incidents.length - 1),
@@ -474,6 +502,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
               defaultColor: colors.secondaryTextStrong,
             ),
           ),
+        ],
       ],
       CoconutLayout.spacing_300h,
       // 빨간 버튼은 흰 글자 대비가 4.5에 못 미쳐 앱 표준 주 버튼을 쓴다
@@ -522,7 +551,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     if (rescue != null && rescue.canMoveNow(incident.walletId)) {
       final r = t.premium.rescue;
       final updated = rescue.drafts[incident.walletId]?.preparedAt;
-      return _PremiumActionCard(
+      return PremiumActionCard(
         key: const Key('wallet-health-rescue-card'),
         title: r.card_title,
         body: [
@@ -535,9 +564,9 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     }
     if (premium == null) return null;
     if (premium.isActive) {
-      return _PremiumActionCard(
+      return PremiumActionCard(
         key: const Key('wallet-health-assist-card'),
-        title: t.premium.card.active_title,
+        title: t.premium.subscription.active_title,
         body: t.premium.card.active_incident_body,
         button: t.premium.card.prepare_response,
         onPressed: () => SafetyAssistFlow.start(context, incident.id),
@@ -728,10 +757,23 @@ class _InfoIncidentRow extends StatelessWidget {
 }
 
 class _PremiumRow extends StatelessWidget {
-  const _PremiumRow({super.key, required this.title, this.subtitle, this.warning = false, required this.onTap});
+  const _PremiumRow({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.subtitle,
+    this.warning = false,
+    this.chip = false,
+    required this.onTap,
+  });
 
+  /// "Premium 사용 중"은 PremiumMark 20, 비상 이동 줄은 기능 아이콘 arrowReload 18
+  final Widget leading;
   final String title;
   final String? subtitle;
+
+  /// 무료 비상 이동 줄: 오른쪽에 PremiumChip(POLISH §4 D1)
+  final bool chip;
 
   /// 갱신 실패 등 확인이 필요한 줄(제목 warningText)
   final bool warning;
@@ -747,12 +789,7 @@ class _PremiumRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            SvgPicture.asset(
-              CustomWalletIcons.diamond,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
-            ),
+            leading,
             CoconutLayout.spacing_300w,
             Expanded(
               child: Column(
@@ -769,69 +806,10 @@ class _PremiumRow extends StatelessWidget {
                 ],
               ),
             ),
+            if (chip) ...[CoconutLayout.spacing_200w, const PremiumChip()],
             Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Premium 위급 카드(비상 이동 초안 있음 = 지금 이동 / 없음 = 대응 준비). 주 버튼보다 낮은 무게
-class _PremiumActionCard extends StatelessWidget {
-  const _PremiumActionCard({
-    super.key,
-    required this.title,
-    required this.body,
-    required this.button,
-    required this.onPressed,
-  });
-
-  final String title;
-  final String body;
-  final String button;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(gradient: colors.premiumSurfaceGradient, borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              SvgPicture.asset(
-                CustomWalletIcons.diamond,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
-              ),
-              CoconutLayout.spacing_200w,
-              Expanded(child: Text(title, style: CoconutTypography.body1_16_Bold.setColor(colors.premiumText))),
-            ],
-          ),
-          CoconutLayout.spacing_200h,
-          Text(body, style: CoconutTypography.body3_12.setColor(colors.primaryText)),
-          CoconutLayout.spacing_400h,
-          ShrinkAnimationButton(
-            onPressed: onPressed,
-            defaultColor: colors.homeSurface,
-            borderRadius: 12,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-              child: Center(
-                child: Text(
-                  button,
-                  textAlign: TextAlign.center,
-                  style: CoconutTypography.body2_14_Bold.setColor(colors.premiumText),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -931,7 +909,7 @@ class _RecommendedRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    safetyRecommendedName(context, item),
+                    safetyKoText(safetyRecommendedName(context, item)), // "확인하 / 기" 방지(POLISH R1)
                     style: CoconutTypography.body2_14.setColor(colors.primaryText),
                   ),
                   Text(subtitle, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),

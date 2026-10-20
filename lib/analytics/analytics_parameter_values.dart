@@ -31,6 +31,7 @@ enum WalletDetailAction {
   txDetail,
   txMore,
   backupBanner,
+  safetyStatus,
 }
 
 /// `segment` (screen_view `/utxo-organizer`): 정리하기 화면에서 보이는 탭 (합치기 / 나누기)
