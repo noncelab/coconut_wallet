@@ -58,6 +58,41 @@ class MempoolApi {
     throw Exception('HTTP ${res.statusCode}: ${res.body}');
   }
 
+  /// 출력마다 `{spent, txid?, vin?, status?}` (멤풀 자손 거래 찾기)
+  Future<List<Map<String, dynamic>>> fetchOutspends(
+    String txid, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    _validateTxid(txid);
+
+    final uri = _uri('/api/tx/$txid/outspends');
+    final res = await _client
+        .get(uri, headers: {'Accept': 'application/json', 'User-Agent': 'coconut-wallet/1.0'})
+        .timeout(timeout);
+
+    if (res.statusCode == 200) {
+      final body = res.body.trim();
+      if (body.isEmpty) throw Exception('Empty response');
+      final decoded = jsonDecode(body);
+      if (decoded is! List) throw const FormatException('Outspends must be a list');
+      return [for (final e in decoded) _checkOutspend(e)];
+    }
+
+    throw Exception('HTTP ${res.statusCode}: ${res.body}');
+  }
+
+  /// 쓰였으면 쓴 거래 txid(64 hex)와 입력 번호가 있어야 한다. 아니면 FormatException(자손 조회 실패로 처리)
+  static Map<String, dynamic> _checkOutspend(Object? entry) {
+    if (entry is! Map || entry['spent'] is! bool) throw const FormatException('Invalid outspend');
+    if (entry['spent'] == true) {
+      final txid = entry['txid'], vin = entry['vin'];
+      if (txid is! String || !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(txid) || vin is! int || vin < 0) {
+        throw const FormatException('Invalid outspend spender');
+      }
+    }
+    return Map<String, dynamic>.from(entry);
+  }
+
   void close() => _client.close();
 
   void _validateTxid(String txid) {
