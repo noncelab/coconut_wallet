@@ -37,10 +37,24 @@ import 'package:coconut_wallet/services/safety/conflict_analyzer.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show PremiumActionCard, PremiumChip;
+import 'package:coconut_wallet/screens/safety/help_channels_sheet.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
+import 'package:coconut_wallet/widgets/features/safety/safety_address_entry_sheet.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
+/// R1(한국어 단어 안 줄바꿈 막기)의 이음 문자를 빼고 비교한다. 공용 부품이 글을 감싸는지와 무관하게 같은 글을 찾는다
+String _plain(String text) => text.replaceAll('\u2060', '');
+Finder _koText(String text) =>
+    find.byWidgetPredicate((w) => w is RichText && _plain(w.text.toPlainText()) == _plain(text));
+Finder _koTextContaining(String text) =>
+    find.byWidgetPredicate((w) => w is RichText && _plain(w.text.toPlainText()).contains(_plain(text)));
 
 const _attackTxid = 'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
 
@@ -125,10 +139,14 @@ class _Wallets extends Fake implements WalletProvider {
 }
 
 class _Rescue extends Fake implements RescueReadyProvider {
-  _Rescue(this.destination, {this.ready = false});
+  _Rescue(this.destination, {this.ready = false, this.draft});
   final RescueDestination destination;
   final bool ready;
+  final RescueDraftSummary? draft;
   int moves = 0;
+
+  @override
+  Map<int, RescueDraftSummary> get drafts => {if (draft != null) 1: draft!};
 
   @override
   RescueDestination? destinationOf(int walletId) => walletId == 1 ? destination : null;
@@ -169,6 +187,8 @@ class _Preferences extends ChangeNotifier implements PreferenceProvider {
   bool get isBalanceHidden => hidden;
   @override
   bool get isFakeBalanceActive => fake;
+  @override
+  double getFakeBalance(int walletId) => 777;
   @override
   FiatCode get selectedFiat => FiatCode.USD;
   @override
@@ -257,9 +277,11 @@ void main() {
     Map<int, WalletBaseline> baselines = const {},
     _Preferences? preferences,
     double textScale = 1,
+    RescueDraftSummary? rescueDraft,
   }) async {
     final auth = _Auth();
-    final rescueProvider = rescueReady == null ? null : _Rescue(rescueReady, ready: rescueCanMoveNow);
+    final rescueProvider =
+        rescueReady == null ? null : _Rescue(rescueReady, ready: rescueCanMoveNow, draft: rescueDraft);
     final analyzer = _Analyzer(conflicts);
     SafetyAssistFlow.analyzerOverride = (_) => analyzer;
     SafetyAssistFlow.fastFeeRateOverride = () async => fastFee;
@@ -349,6 +371,15 @@ void main() {
 
     expect(find.byKey(const Key('safety-assist-options')), findsOneWidget);
     expect(find.text(t.premium.assist.available), findsOneWidget);
+    // H7: 도움 받기 부제 + 완료 화면과 같은 사기 예방 줄
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('safety-assist-help')),
+        matching: _koText((t.safety_guide.help_center.subtitle)),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(HelpCenterNeverAsksNote), findsOneWidget);
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
 
@@ -388,7 +419,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-assist-unavailable')), findsOneWidget);
-    expect(find.textContaining(t.premium.protect.reason_confirmed), findsOneWidget);
+    // H11: 이유는 따로 한 줄
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('safety-assist-unavailable-reason')),
+        matching: _koText((t.premium.protect.reason_confirmed)),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
@@ -430,7 +468,7 @@ void main() {
     final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], fastFee: null);
     env.start();
     await tester.pumpAndSettle();
-    expect(find.text(t.safety_guide.move.prepare_failed), findsOneWidget);
+    expect(_koText((t.safety_guide.move.prepare_failed)), findsOneWidget);
     expect(find.byKey(const Key('safety-guide-button')), findsOneWidget);
     expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
   });
@@ -445,7 +483,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
-    expect(find.text(t.premium.rescue.recalculated), findsOneWidget);
+    expect(_koText((t.premium.rescue.recalculated)), findsOneWidget);
     expect(find.byKey(const Key('safety-assist-review-excludes')), findsNothing); // 빠진 코인 없음
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
@@ -484,7 +522,18 @@ void main() {
         conflicts: const [],
         fastFeeRate: 2,
       );
-    Navigator.of(env.host()).push(assistRoute('add-wallet', AssistAddWalletScreen(session: session)));
+    Navigator.of(env.host()).push(
+      assistRoute(
+        'add-wallet',
+        AssistAddWalletScreen(
+          sourceWallet: session.wallet,
+          onAdded:
+              (context, wallet) => Navigator.of(
+                context,
+              ).pushReplacement(assistRoute('wallet-added', AssistWalletAddedScreen(session: session, wallet: wallet))),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     Future<void> addViaScanner(int walletId) async {
@@ -501,7 +550,7 @@ void main() {
     final banner = find.byKey(const Key('safety-assist-add-same-seed'));
     expect(banner, findsOneWidget);
     for (final text in [t.premium.destination.excluded_wallet_title, t.premium.destination.excluded_wallet_body]) {
-      expect(find.descendant(of: banner, matching: find.text(text)), findsOneWidget);
+      expect(find.descendant(of: banner, matching: _koText((text))), findsOneWidget);
     }
     expect(find.byKey(const Key('safety-assist-wallet-added')), findsNothing);
 
@@ -547,7 +596,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
-    expect(find.text(t.premium.rescue.recalculated), findsNothing);
+    expect(_koText((t.premium.rescue.recalculated)), findsNothing);
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
     expect(env.sendInfo.feeRate, greaterThanOrEqualTo(4));
@@ -562,12 +611,16 @@ void main() {
     );
     env.start();
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('safety-assist-rescue-card')), findsOneWidget);
+    // H3: Health S3와 같은 Premium 행동 카드, 칩·밑줄 버튼 없음
+    final card = find.byKey(const Key('safety-assist-rescue-card'));
+    expect(tester.widget(card), isA<PremiumActionCard>());
+    expect(find.descendant(of: card, matching: find.byType(PremiumChip)), findsNothing);
+    expect(find.descendant(of: card, matching: find.byType(CoconutUnderlinedButton)), findsNothing);
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
 
     final row = find.byKey(const Key('safety-assist-destination-wallet-2'));
-    expect(find.descendant(of: row, matching: find.text(t.safety_guide.step2.move_to_rescue)), findsOneWidget);
+    expect(find.descendant(of: row, matching: _koText((t.safety_guide.step2.move_to_rescue))), findsOneWidget);
     await tester.tap(row);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('safety-guide-button')));
@@ -578,12 +631,12 @@ void main() {
   group('G-R4: 페이월 결과가 true여도 그 사이 만료되면 새 자동화를 시작하지 않음', () {
     Future<void> subscribeThenExpire(WidgetTester tester, FakeEntitlementService premium) async {
       expect(find.byKey(const Key('premium-paywall')), findsOneWidget);
-      await tester.tap(find.text(t.premium.paywall.subscribe));
+      await tester.tap(_koText(t.premium.paywall.subscribe));
       await tester.pumpAndSettle();
-      expect(find.text(t.premium.purchased.title), findsOneWidget);
+      expect(_koText(t.premium.purchased.title), findsOneWidget);
       // 결과 화면이 열린 사이 갱신 확인에서 만료·취소
       premium.emit(const PremiumState(PremiumStatus.expired));
-      await tester.tap(find.text(t.confirm));
+      await tester.tap(_koText(t.confirm));
       await tester.pumpAndSettle();
     }
 
@@ -712,7 +765,7 @@ void main() {
     final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], fastFee: -1);
     env.start();
     await tester.pumpAndSettle();
-    expect(find.text(t.safety_guide.move.prepare_failed), findsOneWidget);
+    expect(_koText((t.safety_guide.move.prepare_failed)), findsOneWidget);
     expect(find.byKey(const Key('safety-guide-button')), findsOneWidget);
   });
 
@@ -767,7 +820,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-assist-unavailable')), findsOneWidget);
     expect(find.byKey(const Key('safety-assist-review')), findsNothing);
-    expect(find.textContaining(t.premium.protect.reason_confirmed), findsOneWidget);
+    expect(_koText((t.premium.protect.reason_confirmed)), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('safety-guide-button'))); // 남은 비트코인 보호 → 바로 검토
     await tester.pumpAndSettle();
@@ -852,7 +905,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('safety-assist-review-replacement-fee-high')),
-          matching: find.text(t.premium.assist.replacement_fee_high(percent: percent)),
+          matching: _koText((t.premium.assist.replacement_fee_high(percent: percent))),
         ),
         findsOneWidget,
       );
@@ -961,13 +1014,36 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('safety-guide-button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
+      // H8: 목적지 줄 아래에도 같은 검증 표시(확인됨 shieldCheck, 미확인 circleInfo)
+      final row = find.byKey(const Key('safety-assist-destination-wallet-2'));
+      expect(
+        find.descendant(
+          of: row,
+          matching: _koText(
+            verified ? t.premium.destination.verified_on(date: '26.10.19') : t.premium.destination.not_verified,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is SvgPicture &&
+                w.bytesLoader is SvgAssetLoader &&
+                (w.bytesLoader as SvgAssetLoader).assetName.endsWith(verified ? 'shield-check.svg' : 'circle-info.svg'),
+          ),
+        ),
+        findsWidgets,
+      );
+      await tester.tap(row);
       await tester.pumpAndSettle();
       final line = find.byKey(const Key('safety-assist-review-verification'));
       expect(
         find.descendant(
           of: line,
-          matching: find.textContaining(
+          matching: _koTextContaining(
             verified ? t.premium.destination.verified_on(date: '26.10.19') : t.premium.destination.not_verified,
           ),
         ),
@@ -994,7 +1070,7 @@ void main() {
       110,
       DateTime(2026, 10, 1),
     );
-    Finder line(String key, String text) => find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
+    Finder line(String key, String text) => find.descendant(of: find.byKey(Key(key)), matching: _koText((text)));
     Future<void> moveNow(WidgetTester tester, BuildContext host) async {
       SafetyAssistFlow.moveNow(
         host,
@@ -1072,11 +1148,15 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
         await tester.pumpAndSettle();
-        // 검토의 보내는 지갑 카드 잔액
+        // 검토의 보내는 지갑 카드 잔액. 가짜 잔액이면 실제 대신 가짜 금액(앱 잔액 표시 설정과 같게)
         expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
         expect(
           find.text(BitcoinUnit.btc.displayBitcoinAmount(120000, withUnit: true)),
           shows ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.text(BitcoinUnit.btc.displayBitcoinAmount(777, withUnit: true)),
+          fake ? findsWidgets : findsNothing,
         );
       });
     }
@@ -1135,15 +1215,118 @@ void main() {
 
     final row = find.byKey(const Key('safety-assist-destination-wallet-3'));
     expect(row, findsOneWidget);
-    expect(find.descendant(of: row, matching: find.text(t.wallet_home_screen.wallet_filter.hot)), findsOneWidget);
-    expect(find.descendant(of: row, matching: find.text(t.premium.destination.new_hot_wallet_body)), findsNothing);
+    expect(find.descendant(of: row, matching: _koText((t.wallet_home_screen.wallet_filter.hot))), findsOneWidget);
+    expect(find.descendant(of: row, matching: _koText((t.premium.destination.new_hot_wallet_body))), findsNothing);
     // 새 핫월렛 줄은 그대로 새 니모닉 안내
     expect(
       find.descendant(
         of: find.byKey(const Key('safety-assist-destination-new-hot')),
-        matching: find.textContaining(t.premium.destination.new_hot_wallet_body),
+        matching: _koTextContaining((t.premium.destination.new_hot_wallet_body)),
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('H3: 준비된 이동 카드의 버튼은 비상 목적지로 바로 검토', (tester) async {
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      rescueReady: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+    );
+    env.start();
+    await tester.pumpAndSettle();
+    final button = find.descendant(
+      of: find.byKey(const Key('safety-assist-rescue-card')),
+      matching: _koText((t.premium.rescue.move_now)),
+    );
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pumpAndSettle();
+    expect(env.sendInfo.transaction!.outputs.single.getAddress(), destination.walletBase.getAddress(0));
+  });
+
+  testWidgets('H12: 준비된 비상 이동 단계는 초안 있음 → 마지막 갱신 · 검토할 때 다시 계산', (tester) async {
+    final preparedAt = DateTime.now().subtract(const Duration(minutes: 3));
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      rescueReady: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+      rescueCanMoveNow: true,
+      rescueDraft: RescueDraftSummary(
+        destinationAddress: destination.walletBase.getAddress(0),
+        amount: 49000,
+        fee: 1000,
+        inputCount: 1,
+        feeRate: 3,
+        preparedAt: preparedAt,
+      ),
+    );
+    env.start();
+    await tester.pumpAndSettle();
+    final r = t.premium.rescue;
+    final description = [
+      r.card_body,
+      [r.last_updated(time: formatHomeRelativeTime(preparedAt, DateTime.now())), r.recalc_note].join(' · '),
+    ].join('\n');
+    expect(
+      find.descendant(of: find.byKey(const Key('safety-assist-rescue-ready')), matching: _koText((description))),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('H6: 주소 직접 입력은 공용 시트(형식이 틀리면 확인 비활성, 맞으면 활성)', (tester) async {
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // P6 → 목적지
+    await tester.pumpAndSettle();
+    final manual = find.byKey(const Key('safety-assist-destination-address'));
+    await tester.ensureVisible(manual);
+    await tester.pumpAndSettle();
+    await tester.tap(manual);
+    await tester.pumpAndSettle();
+    expect(find.byType(SafetyAddressEntry), findsOneWidget);
+    bool confirmActive() =>
+        tester.widget<InlineActionButton>(find.byKey(const Key('safety-assist-address-confirm'))).isActive;
+
+    await tester.enterText(find.byKey(const Key('safety-assist-address-field')), 'nope');
+    await tester.pump();
+    expect(confirmActive(), isFalse);
+    await tester.enterText(
+      find.byKey(const Key('safety-assist-address-field')),
+      'bcrt1qxa3vg30kvqsd73knsv0dj8z26jx223chv8fzcx',
+    );
+    await tester.pump();
+    expect(confirmActive(), isTrue);
+    expect(env.analyzer.calls, 1);
+  });
+
+  testWidgets('GPT M6: 독일어·2.0배·320dp에서도 Assist 요약 줄이 넘치지 않음', (tester) async {
+    final previous = LocaleSettings.currentLocale;
+    LocaleSettings.setLocaleSync(AppLocale.de);
+    addTearDown(() => LocaleSettings.setLocaleSync(previous));
+    tester.view.physicalSize = const Size(320 * 3, 2400 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final env = await pump(
+      tester,
+      utxos: [
+        _utxo(incident, 0, 90000, status: UtxoStatus.outgoing, spentBy: _attackTxid),
+        _utxo(incident, 1, 30000, status: UtxoStatus.locked),
+      ],
+      conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true)],
+      preferences: _Preferences(hidden: false),
+      textScale: 2,
+    );
+    env.start();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-assist-options')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

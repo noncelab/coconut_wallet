@@ -193,6 +193,19 @@ abstract final class SafetyAssist {
   }
 
   /// 목적지 지갑의 지금 받기 주소(아직 생성 전이면 다음 인덱스를 직접 도출)
+  /// 받는 지갑의 서명 기기 검증 시각(Grok §5, POLISH H8/I6: Assist·Rescue 한 규칙). 지금 디스크립터 기준으로 맞았을 때만,
+  /// 미검증·불일치·디스크립터가 바뀐 기록은 null. 보기 전용은 watchOnlyVerifications(match), 다중서명은 BSMS(matched + configHash).
+  /// 이 기기 핫월렛은 해당 없음(부르는 쪽이 거른다)
+  static DateTime? verifiedAt(SafetyState? state, WalletItemBase wallet) {
+    final hash = WalletVerification.descriptorHash(wallet.descriptor);
+    if (wallet.walletType == WalletType.multiSignature) {
+      final bsms = state?.bsms[wallet.id];
+      return bsms != null && bsms.matched && bsms.configHash == hash ? bsms.at : null;
+    }
+    final v = state?.watchOnlyVerifications[wallet.id];
+    return v != null && v.descriptorHash == hash && v.result == VerificationResult.match ? v.at : null;
+  }
+
   static String receiveAddressOf(WalletProvider walletProvider, WalletItemBase wallet) {
     try {
       return walletProvider.getReceiveAddress(wallet.id).address;

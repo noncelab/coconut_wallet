@@ -19,6 +19,7 @@ import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -112,6 +113,8 @@ class _AssistNewHotWalletScreenState extends State<AssistNewHotWalletScreen> {
       buttonText: t.retry,
       onButton: _failed ? _run : null,
       children: [
+        // 제목 → 목록 40(쪽 틀의 24 + 16, POLISH H13)
+        CoconutLayout.spacing_400h,
         SafetyStepList(
           steps: [strings.step_create_wallet, strings.step_address, strings.step_prepare, strings.step_finalize],
           activeIndex: _step,
@@ -133,25 +136,33 @@ class _AssistNewHotWalletScreenState extends State<AssistNewHotWalletScreen> {
   }
 }
 
-/// 서명 기기에서 새 지갑 만들기 안내(signer-new-wallet)
-class AssistSignerGuideScreen extends StatelessWidget {
-  const AssistSignerGuideScreen({super.key, required this.session});
+/// 새 지갑을 추가하고 목적지로 쓸 수 있을 때. Assist는 "새 지갑 추가됨"으로, Rescue는 비상 목적지로 저장(POLISH I7)
+typedef AssistWalletAdded = void Function(BuildContext context, WalletItemBase added);
 
-  final AssistSession session;
+/// 서명 기기에서 새 지갑 만들기 안내(signer-new-wallet). Assist·Rescue 공용(세션 없이 [sourceWallet]만)
+class AssistSignerGuideScreen extends StatelessWidget {
+  const AssistSignerGuideScreen({super.key, required this.sourceWallet, required this.onAdded});
+
+  /// 사고 지갑(Rescue는 목적지를 정하는 지갑): 같은 종류 서명 기기·이름 안내와 같은 니모닉 거절의 기준
+  final WalletItemBase sourceWallet;
+  final AssistWalletAdded onAdded;
 
   @override
   Widget build(BuildContext context) {
     final strings = t.safety_guide.step2_watch_only;
     final colors = context.coconutColors;
-    final isVault = session.wallet.walletImportSource == WalletImportSource.coconutVault;
+    final isVault = sourceWallet.walletImportSource == WalletImportSource.coconutVault;
     return SafetyGuidePage(
       key: const Key('safety-assist-signer-guide'),
       progress: 0.25,
       iconPath: FeatureWalletIconPath.walletAddDefault,
       title: isVault ? strings.vault_title : strings.device_guide_title,
-      description: strings.no_reuse(wallet: session.wallet.name),
+      description: strings.no_reuse(wallet: sourceWallet.name),
       buttonText: strings.created,
-      onButton: () => Navigator.of(context).push(assistRoute('add-wallet', AssistAddWalletScreen(session: session))),
+      onButton:
+          () => Navigator.of(
+            context,
+          ).push(assistRoute('add-wallet', AssistAddWalletScreen(sourceWallet: sourceWallet, onAdded: onAdded))),
       children: [
         Container(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -176,9 +187,10 @@ class AssistSignerGuideScreen extends StatelessWidget {
 /// 새 지갑 추가(add-wallet) → 기존 지갑 추가 스캔 흐름. 추가가 끝나 이 화면으로 돌아오면 "새 지갑 추가됨"으로.
 /// 사고 지갑과 같은 니모닉(MFP)이면 받지 않는다
 class AssistAddWalletScreen extends StatefulWidget {
-  const AssistAddWalletScreen({super.key, required this.session});
+  const AssistAddWalletScreen({super.key, required this.sourceWallet, required this.onAdded});
 
-  final AssistSession session;
+  final WalletItemBase sourceWallet;
+  final AssistWalletAdded onAdded;
 
   @override
   State<AssistAddWalletScreen> createState() => _AssistAddWalletScreenState();
@@ -232,8 +244,8 @@ class _AssistAddWalletScreenState extends State<AssistAddWalletScreen> with Rout
       return;
     }
     final allowed = SafetyAssist.destinations(
-      incidentWallet: widget.session.wallet,
-      wallets: [widget.session.wallet, wallet],
+      incidentWallet: widget.sourceWallet,
+      wallets: [widget.sourceWallet, wallet],
       safetyState: context.read<SafetyProvider?>()?.state,
     ).any((d) => d.wallet?.id == id);
     if (!allowed) {
@@ -241,16 +253,14 @@ class _AssistAddWalletScreenState extends State<AssistAddWalletScreen> with Rout
       setState(() => _sameSeed = true);
       return;
     }
-    Navigator.of(
-      context,
-    ).pushReplacement(assistRoute('wallet-added', AssistWalletAddedScreen(session: widget.session, wallet: wallet)));
+    widget.onAdded(context, wallet);
   }
 
   void _openAddFlow() {
     setState(() => _sameSeed = false);
     // 핫월렛 사고면 볼트에서, 보기 전용이면 같은 종류의 서명 기기에서 만든 새 지갑을 추가한다
     final source =
-        widget.session.wallet.hasLocalKey ? WalletImportSource.coconutVault : widget.session.wallet.walletImportSource;
+        widget.sourceWallet.hasLocalKey ? WalletImportSource.coconutVault : widget.sourceWallet.walletImportSource;
     WalletAddActions.openSource(context, Navigator.of(context), source);
   }
 
@@ -312,7 +322,7 @@ class AssistWalletAddedScreen extends StatelessWidget {
               ),
             ),
           ),
-      children: [AssistWalletCard(wallet: wallet)],
+      children: [SafetyWalletCard(walletId: wallet.id)],
     );
   }
 }

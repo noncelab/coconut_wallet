@@ -9,7 +9,6 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -23,21 +22,18 @@ import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/safety/conflict_analyzer.dart';
 import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
-import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToast, CoconutToastLevel;
-import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
-import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_address_entry_sheet.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
+import 'package:coconut_wallet/widgets/features/safety/safety_verification_line.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart' show safetyHidesAmounts;
-import 'package:coconut_wallet/model/home/home_item_definition.dart' show kHomeTileMaxTextScale;
 import 'package:coconut_wallet/widgets/features/safety/safety_guide_scaffold.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
@@ -384,7 +380,7 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
     final strings = t.premium;
     switch (_phase) {
       case _Phase.rescueReady:
-        final destination = resolveRescueDestination(context, _session);
+        final updated = context.read<RescueReadyProvider?>()?.drafts[_session.wallet.id]?.preparedAt;
         return SafetyGuidePage(
           key: const Key('safety-assist-rescue-ready'),
           progress: 0.25,
@@ -395,7 +391,14 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
             colorFilter: ColorFilter.mode(context.coconutColors.premiumText, BlendMode.srcIn),
           ),
           title: strings.rescue.incident_ready,
-          description: [if (destination != null) destination.label, strings.rescue.recalc_note].join(' · '),
+          // 초안 있음 → 마지막 갱신 · 검토할 때 다시 계산(POLISH H12, Health S3와 같은 말)
+          description: [
+            strings.rescue.card_body,
+            [
+              if (updated != null) strings.rescue.last_updated(time: formatHomeRelativeTime(updated, DateTime.now())),
+              strings.rescue.recalc_note,
+            ].join(' · '),
+          ].join('\n'),
           buttonText: strings.rescue.move_now,
           onButton: _moveViaRescueReady,
           footer: CoconutUnderlinedButton(
@@ -462,15 +465,20 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
           progress: 0.25,
           iconPath: CommonStateIconPath.circleInfo,
           title: strings.protect.unavailable_title,
-          // 이유 → (의심 거래가 있으면) 그 코인은 되돌릴 수 없음 → 남은 코인은 옮길 수 있음(Grok §3)
+          // (의심 거래가 있으면) 그 코인은 되돌릴 수 없음 + 빈 줄 + 남은 코인은 옮길 수 있음. 이유는 맨 위 따로 한 줄(Grok §3, POLISH H11)
           description: [
-            _unavailableReason(),
             if (_session.conflicts.isNotEmpty) strings.assist.blocked_explain,
             strings.protect.unavailable_body,
-          ].join('\n'),
+          ].join('\n\n'),
           buttonText: strings.assist.protect_remaining,
           onButton: () => _choose(replace: false),
-          children: [..._rescueCard(context), _summary(context), ..._help(context)],
+          children: [
+            _InfoLine(key: const Key('safety-assist-unavailable-reason'), text: _unavailableReason()),
+            CoconutLayout.spacing_400h,
+            ..._rescueCard(context),
+            _summary(context),
+            ..._help(context),
+          ],
         );
       case _Phase.nothingToMove:
         return SafetyGuidePage(
@@ -510,20 +518,39 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
     final colors = context.coconutColors;
     final unit = context.read<PreferenceProvider>().currentUnit;
     final remainingSats = _session.remaining?.inputs.fold<int>(0, (sum, u) => sum + u.amount) ?? 0;
-    Widget row(String label, String value, {Color? valueColor, Key? key}) => Row(
-      key: key,
-      children: [
-        Text(label, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
-        CoconutLayout.spacing_300w,
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: CoconutTypography.body2_14_Bold.setColor(valueColor ?? colors.primaryText),
-          ),
-        ),
-      ],
-    );
+    // 이름은 Flexible, 값은 Expanded(끝 정렬). 지금 글자 배율로 한 줄에 둘이 안 들어가면 이름 위·값 아래로 쌓는다
+    // (값이 숫자 기둥처럼 갈리지 않게, GPT M6·POLISH H14)
+    Widget row(String label, String value, {Color? valueColor, Key? key}) {
+      final labelStyle = CoconutTypography.body2_14.setColor(colors.secondaryText);
+      final valueStyle = CoconutTypography.body2_14_Bold.setColor(valueColor ?? colors.primaryText);
+      final labelText = Text(safetyKoText(label), style: labelStyle);
+      final valueText = Text(value, textAlign: TextAlign.end, style: valueStyle);
+      return LayoutBuilder(
+        key: key,
+        builder: (context, constraints) {
+          double width(String text, TextStyle style) {
+            final painter = TextPainter(
+              text: TextSpan(text: text, style: style),
+              textScaler: MediaQuery.textScalerOf(context),
+              textDirection: Directionality.of(context),
+              maxLines: 1,
+            )..layout();
+            final width = painter.width;
+            painter.dispose();
+            return width;
+          }
+
+          final fits = width(label, labelStyle) + 12 + width(value, valueStyle) <= constraints.maxWidth;
+          return fits
+              ? Row(children: [Flexible(child: labelText), CoconutLayout.spacing_300w, Expanded(child: valueText)])
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [labelText, CoconutLayout.spacing_100h, valueText],
+              );
+        },
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(CoconutStyles.radius_250)),
@@ -552,7 +579,7 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
     final colors = context.coconutColors;
     return [
       CoconutLayout.spacing_400h,
-      Text(t.premium.assist.sweep_note, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+      Text(safetyKoText(t.premium.assist.sweep_note), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
       if (_session.replacement?.anyConflictNonSignalling ?? false) ...[
         CoconutLayout.spacing_200h,
         _InfoLine(text: t.premium.replace.no_rbf_signal),
@@ -564,60 +591,23 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
   List<Widget> _rescueCard(BuildContext context) {
     final destination = resolveRescueDestination(context, _session);
     if (destination == null || _session.isMoveNow) return const [];
-    final colors = context.coconutColors;
+    // Health S3와 같은 Premium 행동 카드(POLISH H3). 칩·밑줄 버튼 없이 카드 안 버튼 하나
     return [
-      Container(
+      PremiumActionCard(
         key: const Key('safety-assist-rescue-card'),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: colors.premiumSurfaceGradient,
-          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const PremiumChip(),
-                CoconutLayout.spacing_200w,
-                Expanded(
-                  child: Text(
-                    t.premium.rescue.incident_ready,
-                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
-                  ),
-                ),
-              ],
+        title: safetyKoText(t.premium.rescue.incident_ready),
+        // 목적지 이름이 주소일 수 있어 문구 부분에만 줄바꿈 규칙(R1)
+        body: '${destination.label} · ${safetyKoText(t.premium.rescue.recalc_note)}',
+        button: safetyKoText(t.premium.rescue.move_now),
+        onPressed: () {
+          _session.replace = _session.canReplace;
+          Navigator.of(context).push(
+            assistRoute(
+              'move-review',
+              AssistReviewScreen(session: _session, destination: destination, recalculated: _session.feeRecalculated),
             ),
-            CoconutLayout.spacing_200h,
-            Text(
-              '${destination.label} · ${t.premium.rescue.recalc_note}',
-              style: CoconutTypography.body3_12.setColor(colors.secondaryText),
-            ),
-            CoconutLayout.spacing_300h,
-            Align(
-              alignment: Alignment.centerLeft,
-              child: CoconutUnderlinedButton(
-                key: const Key('safety-assist-rescue-move-now'),
-                text: t.premium.rescue.move_now,
-                onTap: () {
-                  _session.replace = _session.canReplace;
-                  Navigator.of(context).push(
-                    assistRoute(
-                      'move-review',
-                      AssistReviewScreen(
-                        session: _session,
-                        destination: destination,
-                        recalculated: _session.feeRecalculated,
-                      ),
-                    ),
-                  );
-                },
-                textStyle: CoconutTypography.body2_14_Bold,
-                defaultColor: colors.premiumText,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
       CoconutLayout.spacing_400h,
     ];
@@ -634,10 +624,12 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
         colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
       ),
       title: t.safety_guide.help_center.open,
+      subtitle: t.safety_guide.help_center.subtitle,
       onTap: () => showHelpChannelsSheet(context),
     ),
-    CoconutLayout.spacing_200h,
-    _InfoLine(text: t.safety_guide.help_center.never_asks, iconPath: CommonStateIconPath.shieldWarning),
+    // 완료 화면과 같은 사기 예방 줄(POLISH H7)
+    CoconutLayout.spacing_300h,
+    const HelpCenterNeverAsksNote(),
   ];
 }
 
@@ -721,7 +713,7 @@ class AssistDestinationScreen extends StatelessWidget {
         children.add(
           Padding(
             padding: EdgeInsets.only(top: children.isEmpty ? 0 : 24, bottom: 8),
-            child: Text(heading, style: CoconutTypography.body2_14_Bold.setColor(colors.secondaryText)),
+            child: Text(safetyKoText(heading), style: CoconutTypography.body2_14_Bold.setColor(colors.secondaryText)),
           ),
         );
         section = heading;
@@ -763,8 +755,17 @@ class AssistDestinationScreen extends StatelessWidget {
     final strings = t.premium.destination;
     final wallet = d.wallet;
     final notes = [
+      // 서명 기기 검증 상태도 줄 아래에(POLISH H8: 검토 화면과 같은 한 규칙)
+      if (_verificationLine(context, wallet) case final line?) line,
       if (d.cannotVerifySeed) _InfoLine(text: strings.unknown_seed, iconSize: 12),
-      if (d.onThisDevice) _WarningLine(text: strings.new_hot_wallet_warning),
+      // 새 핫월렛 줄만 "여기 만든 지갑도", 이미 있는 이 기기 핫월렛은 "키가 나갔다면 이 지갑도"(POLISH H16)
+      if (d.onThisDevice)
+        _WarningLine(
+          text:
+              d.kind == AssistDestinationKind.newHotWallet
+                  ? strings.new_hot_wallet_warning
+                  : strings.existing_hot_wallet_warning,
+        ),
     ];
     // 이 기기 비상 목적지는 맨 위로 올리지 않아서 부제 앞에 표시한다
     String? walletSubtitle(WalletItemBase w) {
@@ -793,7 +794,9 @@ class AssistDestinationScreen extends StatelessWidget {
             ? notes.single
             : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [notes[0], CoconutLayout.spacing_100h, notes[1]],
+              children: [
+                for (var i = 0; i < notes.length; i++) ...[if (i > 0) CoconutLayout.spacing_100h, notes[i]],
+              ],
             );
     return switch (d.kind) {
       AssistDestinationKind.watchOnlyWallet || AssistDestinationKind.otherWallet => SafetyChoiceRow(
@@ -826,8 +829,19 @@ class AssistDestinationScreen extends StatelessWidget {
         title: strings.vault_new_wallet,
         subtitle: strings.vault_new_wallet_body,
         onTap:
-            () =>
-                Navigator.of(context).push(assistRoute('signer-new-wallet', AssistSignerGuideScreen(session: session))),
+            () => Navigator.of(context).push(
+              assistRoute(
+                'signer-new-wallet',
+                AssistSignerGuideScreen(
+                  sourceWallet: session.wallet,
+                  // 추가한 지갑으로 "새 지갑 추가됨" → 거래 만들기(지금과 같음)
+                  onAdded:
+                      (context, wallet) => Navigator.of(context).pushReplacement(
+                        assistRoute('wallet-added', AssistWalletAddedScreen(session: session, wallet: wallet)),
+                      ),
+                ),
+              ),
+            ),
       ),
       AssistDestinationKind.manualAddress when d.address != null => SafetyChoiceRow(
         key: const Key('safety-assist-destination-rescue-address'),
@@ -859,141 +873,42 @@ class AssistDestinationScreen extends StatelessWidget {
       Navigator.of(context).push(assistRoute('move-review', AssistReviewScreen(session: session, destination: target)));
 
   Future<void> _enterAddress(BuildContext context) async {
-    final address = await CommonBottomSheets.showBottomSheet<String>(
-      context: context,
-      title: t.premium.destination.enter_address,
+    final walletProvider = context.read<WalletProvider>();
+    SafetyState? safetyState() => context.read<SafetyProvider?>()?.state;
+    final address = await showSafetyAddressEntrySheet(
+      context,
       screenName: '/safety-guide/move-destination/address',
-      showCloseButton: true,
-      child: _AddressInput(session: session),
+      actionText: t.next,
+      fieldKey: const Key('safety-assist-address-field'),
+      actionKey: const Key('safety-assist-address-confirm'),
+      // 사고 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑의 주소는 직접 입력으로도 받지 않는다(넘길 때도 다시 확인)
+      validate: (address) {
+        final format = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
+        if (format != null) return format.message;
+        return switch (SafetyAssist.checkDestination(
+          walletProvider,
+          incidentWallet: session.wallet,
+          address: address,
+          safetyState: safetyState(),
+        )) {
+          null => null,
+          DestinationProblem.invalidAddress => t.errors.address_error.invalid,
+          _ => t.premium.destination.error_affected_address,
+        };
+      },
+      // 제외 지갑의 받기·잔돈 주소 앞 1,000개씩과도 비교한다(한 번, 비동기, Grok §5). 확인하지 못하면 받지 않는다
+      confirm: (address) async {
+        final excluded = await SafetyAssist.derivesFromExcludedWallet(
+          walletProvider,
+          incidentWallet: session.wallet,
+          address: address,
+          safetyState: safetyState(),
+        ).catchError((_) => true);
+        return excluded ? t.premium.destination.error_affected_address : null;
+      },
     );
     if (address == null || !context.mounted) return;
     _toReview(context, AssistTarget(address: address, isExternal: true));
-  }
-}
-
-/// 주소 직접 입력(붙여넣기·QR 스캔). 형식 오류·사고 지갑 주소는 받지 않는다
-class _AddressInput extends StatefulWidget {
-  const _AddressInput({required this.session});
-
-  final AssistSession session;
-
-  @override
-  State<_AddressInput> createState() => _AddressInputState();
-}
-
-class _AddressInputState extends State<_AddressInput> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
-  String? _error;
-  bool _checking = false;
-
-  /// 다음: 제외 지갑의 받기·잔돈 주소 앞 1,000개씩과도 비교한다(한 번, 비동기, Grok §5)
-  Future<void> _submit(String address) async {
-    setState(() => _checking = true);
-    final excluded = await SafetyAssist.derivesFromExcludedWallet(
-      context.read<WalletProvider>(),
-      incidentWallet: widget.session.wallet,
-      address: address,
-      safetyState: context.read<SafetyProvider?>()?.state,
-    ).catchError((_) => true); // 확인하지 못하면 받지 않는다
-    if (!mounted) return;
-    if (excluded) {
-      setState(() {
-        _checking = false;
-        _error = t.premium.destination.error_affected_address;
-      });
-      return;
-    }
-    Navigator.pop(context, address);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  String? _validate(String raw) {
-    final address = AssistAddress.normalize(raw);
-    if (address.isEmpty) return null;
-    final error = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
-    if (error != null) return error.message;
-    // 사고 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑의 주소는 직접 입력으로도 받지 않는다(넘길 때도 다시 확인)
-    return switch (SafetyAssist.checkDestination(
-      context.read<WalletProvider>(),
-      incidentWallet: widget.session.wallet,
-      address: address,
-      safetyState: context.read<SafetyProvider?>()?.state,
-    )) {
-      null => null,
-      DestinationProblem.invalidAddress => t.errors.address_error.invalid,
-      _ => t.premium.destination.error_affected_address,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final text = _controller.text.trim();
-    final valid = text.isNotEmpty && _error == null && !_checking;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CoconutTextField(
-            key: const Key('safety-assist-address-field'),
-            controller: _controller,
-            focusNode: _focusNode,
-            backgroundColor: colors.inputSurface,
-            height: 52,
-            padding: const EdgeInsets.only(left: 16, right: 0),
-            maxLines: 1,
-            placeholderText: t.premium.destination.address_hint,
-            isError: _error != null,
-            onChanged: (value) => setState(() => _error = _validate(value)),
-            clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
-            onClear:
-                () => setState(() {
-                  _controller.clear();
-                  _error = null;
-                }),
-            suffixIconAsset: CommonActionIconPath.scan,
-            suffixSemanticLabel: t.send_address_screen.text2,
-            suffixIconColor: colors.primaryText,
-            onSuffixPressed: () async {
-              final scanned = await showAddressScannerBottomSheet(context, title: '');
-              if (scanned == null || !mounted) return;
-              final address = scanned.toLowerCase().startsWith('bitcoin:') ? parseBip21Uri(scanned).address : scanned;
-              setState(() {
-                _controller.text = AddressValidator.normalizeAddress(address);
-                _error = _validate(_controller.text);
-              });
-            },
-          ),
-          CoconutLayout.spacing_200h,
-          Text(
-            _error ?? t.premium.destination.external_warning,
-            style: CoconutTypography.body3_12.setColor(_error != null ? colors.dangerText : colors.secondaryText),
-          ),
-          CoconutLayout.spacing_400h,
-          CoconutButton(
-            key: const Key('safety-assist-address-confirm'),
-            onPressed: valid ? () => _submit(AssistAddress.normalize(text)) : () {},
-            isActive: valid,
-            text: t.next,
-            height: 50,
-            textStyle: CoconutTypography.body2_14_Bold,
-            backgroundColor: colors.buttonPrimaryBackground,
-            foregroundColor: colors.buttonPrimaryForeground,
-            disabledBackgroundColor: colors.buttonPrimaryDisabledBackground,
-            disabledForegroundColor: colors.buttonPrimaryDisabledForeground,
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -1105,24 +1020,6 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
     _updated = true;
   });
 
-  /// 받는 지갑의 서명 기기 검증 상태(Grok §5). 이 기기 핫월렛·직접 입력 주소는 없음
-  String? _verificationText(BuildContext context, WalletItemBase? wallet) {
-    if (wallet == null || wallet.hasLocalKey) return null;
-    final state = context.read<SafetyProvider?>()?.state;
-    final hash = WalletVerification.descriptorHash(wallet.descriptor);
-    final DateTime? verifiedAt;
-    if (wallet.walletType == WalletType.multiSignature) {
-      final bsms = state?.bsms[wallet.id];
-      verifiedAt = bsms != null && bsms.matched && bsms.configHash == hash ? bsms.at : null;
-    } else {
-      final v = state?.watchOnlyVerifications[wallet.id];
-      verifiedAt = v != null && v.descriptorHash == hash && v.result == VerificationResult.match ? v.at : null;
-    }
-    return verifiedAt == null
-        ? t.premium.destination.not_verified
-        : t.premium.destination.verified_on(date: DateTimeUtil.formatTimestamp(verifiedAt)[0]);
-  }
-
   void _warn(String text) {
     vibrateLightDouble();
     CoconutToast.showToast(
@@ -1166,7 +1063,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
       onButton: blocked ? _lowerFee : _confirm,
       buttonEnabled: !blocked || canLower,
       footer: Text(
-        '${strings.network_fee} ${unit.displayBitcoinAmount(plan.fee, withUnit: true)}',
+        '${safetyKoText(strings.network_fee)} ${unit.displayBitcoinAmount(plan.fee, withUnit: true)}',
         key: const Key('safety-assist-review-fee'),
         style: CoconutTypography.body3_12.setColor(colors.secondaryText),
       ),
@@ -1177,7 +1074,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         ],
         if (widget.recalculated && !_updated) ...[
           Text(
-            t.premium.rescue.recalculated,
+            safetyKoText(t.premium.rescue.recalculated),
             key: const Key('safety-assist-review-recalculated'),
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.setColor(colors.secondaryText),
@@ -1185,7 +1082,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
           CoconutLayout.spacing_400h,
         ],
         _label(context, strings.from),
-        AssistWalletCard(wallet: session.wallet),
+        SafetyWalletCard(walletId: session.wallet.id),
         CoconutLayout.spacing_300h,
         Center(
           child: SvgPicture.asset(
@@ -1197,10 +1094,13 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         ),
         CoconutLayout.spacing_300h,
         _label(context, strings.to),
-        if (target.wallet != null) AssistWalletCard(wallet: target.wallet!) else _AddressBox(address: target.address),
+        if (target.wallet != null)
+          SafetyWalletCard(walletId: target.wallet!.id)
+        else
+          _AddressBox(address: target.address),
         CoconutLayout.spacing_400h,
         Text(
-          '${t.send_amount} ${unit.displayBitcoinAmount(plan.amount, withUnit: true)}',
+          '${safetyKoText(t.send_amount)} ${unit.displayBitcoinAmount(plan.amount, withUnit: true)}',
           key: const Key('safety-assist-review-amount'),
           textAlign: TextAlign.center,
           style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
@@ -1258,8 +1158,9 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
           ),
         ],
         CoconutLayout.spacing_600h,
-        if (_verificationText(context, target.wallet) case final verification?) ...[
-          _InfoLine(key: const Key('safety-assist-review-verification'), text: verification),
+        if (_verificationLine(context, target.wallet, key: const Key('safety-assist-review-verification'))
+            case final line?) ...[
+          line,
           CoconutLayout.spacing_200h,
         ],
         _AddressCheck(address: target.address, signingDevice: !isHot, isNewWallet: target.isNewWallet),
@@ -1299,7 +1200,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         ],
         CoconutLayout.spacing_400h,
         Text(
-          strings.review_note,
+          safetyKoText(strings.review_note),
           textAlign: TextAlign.center,
           style: CoconutTypography.body3_12.setColor(colors.secondaryText),
         ),
@@ -1309,43 +1210,8 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
 
   Widget _label(BuildContext context, String text) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 8),
-    child: Text(text, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+    child: Text(safetyKoText(text), style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
   );
-}
-
-/// 가이드 안 지갑 카드(UI_SPEC §9.6): Epic 2 WalletCard wide, 4×2 타일 높이
-class AssistWalletCard extends StatelessWidget {
-  const AssistWalletCard({super.key, required this.wallet, this.statusBadge});
-
-  final WalletItemBase wallet;
-  final Widget? statusBadge;
-
-  @override
-  Widget build(BuildContext context) {
-    final preference = context.read<PreferenceProvider>();
-    final walletProvider = context.read<WalletProvider>();
-    return SizedBox(
-      height: 148,
-      // 높이가 고정된 카드라 홈 타일과 같은 배율에서 멈춘다(GPT M4: 큰 글자에서 넘침)
-      child: MediaQuery.withClampedTextScaling(
-        maxScaleFactor: kHomeTileMaxTextScale,
-        child: WalletCard(
-          wallet: wallet,
-          appearance: WalletAppearance.of(wallet),
-          size: WalletCardSize.wide,
-          // 잔액 숨김·가짜 잔액이면 실제 잔액을 보이지 않는다(H1)
-          balanceDisplay:
-              safetyHidesAmounts(context)
-                  ? null
-                  : preference.currentUnit.displayBitcoinAmount(
-                    walletProvider.getWalletBalance(wallet.id).total,
-                    withUnit: true,
-                  ),
-          statusBadge: statusBadge,
-        ),
-      ),
-    );
-  }
 }
 
 /// 직접 입력한 받는 주소 상자(지갑 카드 대신)
@@ -1387,7 +1253,7 @@ class _AddressCheck extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isNewWallet ? t.safety_guide.move.receive_address_label : t.premium.replace.destination,
+            safetyKoText(isNewWallet ? t.safety_guide.move.receive_address_label : t.premium.replace.destination),
             style: CoconutTypography.body3_12.setColor(colors.secondaryText),
           ),
           CoconutLayout.spacing_200h,
@@ -1404,19 +1270,40 @@ class _AddressCheck extends StatelessWidget {
             // 줄 수 제한 없음: 서명 기기와 대조할 끝 글자가 큰 글자·좁은 폭에서도 잘리지 않게(H2)
           ),
           CoconutLayout.spacing_300h,
-          _InfoLine(text: signingDevice ? t.premium.assist.address_check : t.premium.assist.address_check_hot),
+          _InfoLine(
+            text: signingDevice ? t.premium.assist.address_check : t.premium.assist.address_check_hot,
+            strong: true,
+          ),
         ],
       ),
     );
   }
 }
 
+/// 받는 지갑의 서명 기기 검증 줄(Grok §5, POLISH H8). 이 기기 핫월렛·직접 입력 주소는 없음
+SafetyVerificationLine? _verificationLine(BuildContext context, WalletItemBase? wallet, {Key? key}) =>
+    wallet == null || wallet.hasLocalKey
+        ? null
+        : SafetyVerificationLine(
+          key: key,
+          verifiedAt: SafetyAssist.verifiedAt(context.read<SafetyProvider?>()?.state, wallet),
+        );
+
 class _InfoLine extends StatelessWidget {
-  const _InfoLine({super.key, required this.text, this.iconPath = CommonStateIconPath.circleInfo, this.iconSize = 14});
+  const _InfoLine({
+    super.key,
+    required this.text,
+    this.iconPath = CommonStateIconPath.circleInfo,
+    this.iconSize = 14,
+    this.strong = false,
+  });
 
   final String text;
   final String iconPath;
   final double iconSize;
+
+  /// 꼭 읽어야 하는 안내(다른 곳에서 서명·대조)는 코코넛에서도 읽히게 `secondaryTextStrong`(POLISH R5)
+  final bool strong;
 
   @override
   Widget build(BuildContext context) {
@@ -1434,7 +1321,12 @@ class _InfoLine extends StatelessWidget {
           ),
         ),
         CoconutLayout.spacing_150w,
-        Expanded(child: Text(text, style: CoconutTypography.body3_12.setColor(colors.secondaryText))),
+        Expanded(
+          child: Text(
+            safetyKoText(text),
+            style: CoconutTypography.body3_12.setColor(strong ? colors.secondaryTextStrong : colors.secondaryText),
+          ),
+        ),
       ],
     );
   }
@@ -1461,7 +1353,7 @@ class _WarningLine extends StatelessWidget {
           ),
         ),
         CoconutLayout.spacing_100w,
-        Expanded(child: Text(text, style: CoconutTypography.body3_12.setColor(colors.warningText))),
+        Expanded(child: Text(safetyKoText(text), style: CoconutTypography.body3_12.setColor(colors.warningText))),
       ],
     );
   }
