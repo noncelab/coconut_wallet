@@ -168,7 +168,8 @@ class _AboutSheet extends StatelessWidget {
           CoconutLayout.spacing_300h,
           Text(safetyKoText(s.wallets_note), style: secondary),
         ],
-        if (notIncluded.isNotEmpty) ...[
+        // 지갑이 없으면 위 "지갑을 추가하면…" 목록과 겹치므로 뺀다(C47)
+        if (notIncluded.isNotEmpty && report?.status != WalletHealthStatus.noWallet) ...[
           _SheetTitle(s.not_included_title),
           _Box(
             radius: 12,

@@ -1060,10 +1060,13 @@ void main() {
       expect(names.take(4), safetyNoWalletCheckNames()); // 앞 넷은 화면 S0와 같은 순서(C41)
       final tops = [for (final name in names) tester.getTopLeft(find.descendant(of: card, matching: _text(name))).dy];
       expect(tops, [...tops]..sort());
+      // "점수에 포함되지 않은 항목"은 지갑이 없으면 위 목록과 겹치므로 없다
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.about.not_included_title)), findsNothing);
 
       await openAbout(tester, scoredReport());
       expect(find.descendant(of: about, matching: _text(t.wallet_health.section.after_adding_wallet)), findsNothing);
       expect(find.descendant(of: about, matching: find.byType(WalletHealthNotIncludedCard)), findsNothing);
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.about.not_included_title)), findsOneWidget);
     });
 
     testWidgets('C46: offline, the header says why under the offline line, in the home chip words', (tester) async {
