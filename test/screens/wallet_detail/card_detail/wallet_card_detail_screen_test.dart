@@ -31,8 +31,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:provider/provider.dart';

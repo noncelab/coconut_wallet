@@ -76,12 +76,11 @@ class HodlInsightsViewModel extends ChangeNotifier {
   List<int> get chartBalances => sampleEvenly(_dailyBalances, maxChartPoints);
 
   /// [chartBalances]의 각 점이 가리키는 날
-  List<DateTime> get chartBalanceDays =>
-      sampleEvenly(HomeWidgetMath.lastDays(DateTime.now(), balanceDays), maxChartPoints);
+  List<DateTime> get chartBalanceDays => sampleEvenly(HomeWidgetMath.lastDays(_data.now, balanceDays), maxChartPoints);
 
   /// 그래프 아래 날짜 7개
   List<DateTime> get chartDays {
-    final days = HomeWidgetMath.lastDays(DateTime.now(), balanceDays);
+    final days = HomeWidgetMath.lastDays(_data.now, balanceDays);
     return sampleEvenly(days, 7);
   }
 

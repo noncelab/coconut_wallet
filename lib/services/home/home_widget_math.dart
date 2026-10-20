@@ -20,13 +20,29 @@ class HomeWidgetMath {
   /// 각 날의 마지막 잔액
   static List<int> dailyBalances(List<TransactionRecord> transactions, int currentBalance, DateTime now, int days) {
     final daysList = lastDays(now, days);
-    return [
-      for (final day in daysList)
-        currentBalance -
-            transactions
-                .where((tx) => !tx.timestamp.isBefore(DateTime(day.year, day.month, day.day + 1)))
-                .fold<int>(0, (sum, tx) => sum + tx.amount),
-    ];
+    if (daysList.isEmpty) return [];
+    final ends = [for (final day in daysList) DateTime(day.year, day.month, day.day + 1).microsecondsSinceEpoch];
+    final deltas = List<int>.filled(daysList.length + 1, 0);
+    for (final tx in transactions) {
+      final timestamp = tx.timestamp.microsecondsSinceEpoch;
+      var first = 0;
+      var last = ends.length;
+      // A transaction is subtracted from every day whose end is <= its timestamp.
+      // Search actual local-midnight instants: UTC records, DST and unsorted input
+      // retain the same boundaries as the original end-of-day reconstruction.
+      while (first < last) {
+        final middle = (first + last) ~/ 2;
+        if (ends[middle] <= timestamp) {
+          first = middle + 1;
+        } else {
+          last = middle;
+        }
+      }
+      deltas[0] += tx.amount;
+      deltas[first] -= tx.amount;
+    }
+    var futureAmount = 0;
+    return [for (var i = 0; i < daysList.length; i++) currentBalance - (futureAmount += deltas[i])];
   }
 
   static double? changeRate(num from, num to) => from == 0 ? null : (to - from) / from;

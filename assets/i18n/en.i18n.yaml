@@ -828,6 +828,13 @@ wallet_add_scanner_screen:
   
 # lib/screens/wallet_list
 wallet_list:
+  balance_history_detail:
+    wallets_at_date: "Wallets at this point"
+    no_wallets: "No wallets to show at this point"
+    changed_wallets_only: "Show changed wallets only"
+    transaction_count(cardinal):
+      one: "${n} transaction"
+      other: "${n} transactions"
   header:
     total_amount: "Total balance"
     balance_history: "Balance change"

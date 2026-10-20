@@ -285,6 +285,9 @@ class CoconutColors {
   /// homeSurface 위에 놓이는 원형 버튼 바탕
   final Color homeSurfaceButton;
 
+  /// Edit Home 화면(homeBackground) 위의 선택되지 않은 칩 바탕
+  final Color editHomeChipUnselectedBackground;
+
   /// 홈 위젯의 추이 그래프 선
   final Color homeChartLine;
 
@@ -468,6 +471,7 @@ class CoconutColors {
     required this.homeSurfacePressOverlay,
     required this.homeSurfacePressOverlayOpacity,
     required this.homeSurfaceButton,
+    required this.editHomeChipUnselectedBackground,
     required this.homeChartLine,
     required this.homeWidgetShadow,
     required this.utxoOverviewChartSurface,
@@ -732,6 +736,8 @@ class CoconutColors {
       homeSurfacePressOverlayOpacity:
           a.homeSurfacePressOverlayOpacity + (b.homeSurfacePressOverlayOpacity - a.homeSurfacePressOverlayOpacity) * t,
       homeSurfaceButton: Color.lerp(a.homeSurfaceButton, b.homeSurfaceButton, t)!,
+      editHomeChipUnselectedBackground:
+          Color.lerp(a.editHomeChipUnselectedBackground, b.editHomeChipUnselectedBackground, t)!,
       homeChartLine: Color.lerp(a.homeChartLine, b.homeChartLine, t)!,
       homeWidgetShadow: Color.lerp(a.homeWidgetShadow, b.homeWidgetShadow, t)!,
       utxoOverviewChartSurface: Color.lerp(a.utxoOverviewChartSurface, b.utxoOverviewChartSurface, t)!,
@@ -909,6 +915,7 @@ class CoconutColors {
       homeSurfacePressOverlay: ds.CoconutColors.gray800,
       homeSurfacePressOverlayOpacity: 0.5,
       homeSurfaceButton: ds.CoconutColors.gray750,
+      editHomeChipUnselectedBackground: ds.CoconutColors.gray800,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: const Color.fromARGB(12, 255, 255, 255),
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
@@ -1071,6 +1078,7 @@ class CoconutColors {
       homeSurfacePressOverlay: ds.CoconutColors.gray700,
       homeSurfacePressOverlayOpacity: 0.2,
       homeSurfaceButton: ds.CoconutColors.gray300,
+      editHomeChipUnselectedBackground: ds.CoconutColors.white,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: ds.CoconutColors.gray600.withValues(alpha: 0.3),
       utxoOverviewChartSurface: ds.CoconutColors.white,
@@ -1250,6 +1258,7 @@ class CoconutColors {
       homeSurfacePressOverlay: golenSun,
       homeSurfacePressOverlayOpacity: 0.2,
       homeSurfaceButton: sand,
+      editHomeChipUnselectedBackground: cream,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: huskDeep.withValues(alpha: 0.18),
       utxoOverviewChartSurface: shell,

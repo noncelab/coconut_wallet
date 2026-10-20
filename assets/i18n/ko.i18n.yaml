@@ -956,6 +956,13 @@ wallet_connect_screen:
     
 # lib/screens/wallet_list
 wallet_list:
+  balance_history_detail:
+    wallets_at_date: "이 시점의 지갑"
+    no_wallets: "이 시점에 표시할 지갑이 없어요"
+    changed_wallets_only: "변동이 있는 지갑만 보기"
+    transaction_count(cardinal):
+      one: "거래 ${n}건"
+      other: "거래 ${n}건"
   header:
     total_amount: "총 잔액"
     balance_history: "잔액 변화"

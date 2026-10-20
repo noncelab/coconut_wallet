@@ -35,6 +35,10 @@ class WalletItemCard extends StatelessWidget {
   final int? index;
   final VoidCallback? onLongPressed;
   final Widget rightWidget;
+
+  /// Lays [rightWidget] under the identity row at the full content width.
+  /// Default keeps the trailing slot on the identity row.
+  final bool placeTrailingBelow;
   final VoidCallback onPressed;
   final int? watchedAddressCount;
 
@@ -60,6 +64,7 @@ class WalletItemCard extends StatelessWidget {
     this.index,
     this.onLongPressed,
     required this.rightWidget,
+    this.placeTrailingBelow = false,
     required this.onPressed,
     this.watchedAddressCount,
   });
@@ -125,37 +130,38 @@ class WalletItemCard extends StatelessWidget {
     ];
     final hasStarButton = isStarVisible && onTapStar != null;
 
-    return Container(
-      padding: contentPadding ?? EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
-      child: Row(
-        children: [
-          if (hasStarButton)
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                onTapStar((!isFavorite, walletItem.id));
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SvgPicture.asset(
-                  isFavorite ? CommonStateIconPath.starFilled : CommonStateIconPath.starOutlined,
-                  colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-                ),
+    final row = Row(
+      children: [
+        if (hasStarButton)
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              onTapStar((!isFavorite, walletItem.id));
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SvgPicture.asset(
+                isFavorite ? CommonStateIconPath.starFilled : CommonStateIconPath.starOutlined,
+                colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
               ),
             ),
-          WalletIconSmall(
-            walletImportSource: walletItem.walletImportSource,
-            iconIndex: walletItem.iconIndex,
-            colorIndex: walletItem.colorIndex,
-            gradientColors: iconGradientColors,
-            isHotWallet: walletItem.hasLocalKey,
-            badgeBorderColor: backgroundColor,
           ),
-          CoconutLayout.spacing_200w,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        WalletIconSmall(
+          walletImportSource: walletItem.walletImportSource,
+          iconIndex: walletItem.iconIndex,
+          colorIndex: walletItem.colorIndex,
+          gradientColors: iconGradientColors,
+          isHotWallet: walletItem.hasLocalKey,
+          badgeBorderColor: backgroundColor,
+        ),
+        CoconutLayout.spacing_200w,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (placeTrailingBelow)
+                _readableBalance(context, displayFakeBalance)
+              else
                 isBalanceHidden
                     ? Text(
                       t.view_balance,
@@ -242,6 +248,16 @@ class WalletItemCard extends StatelessWidget {
                         ],
                       ),
                     ),
+              if (placeTrailingBelow)
+                Text(
+                  walletDescriptionParts.join(' • '),
+                  style: CoconutTypography.body3_12.setColor(
+                    shouldWarnUnbackedHotWallet == true
+                        ? context.coconutColors.danger
+                        : context.coconutColors.secondaryText,
+                  ),
+                )
+              else
                 Row(
                   children: [
                     Expanded(
@@ -260,9 +276,10 @@ class WalletItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
-            ),
+            ],
           ),
+        ),
+        if (!placeTrailingBelow) ...[
           CoconutLayout.spacing_200w,
           isEditMode
               ? Row(
@@ -303,7 +320,89 @@ class WalletItemCard extends StatelessWidget {
               )
               : rightWidget,
         ],
-      ),
+      ],
     );
+    return Container(
+      padding: contentPadding ?? EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
+      child:
+          placeTrailingBelow
+              ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [row, const SizedBox(height: 8), _belowCues(context, editing: isEditMode, index: index)],
+              )
+              : row,
+    );
+  }
+
+  /// Full-size balance. Used only when the trailing slot moves below, so a long
+  /// amount wraps instead of scaling down inside a few pixels.
+  Widget _readableBalance(BuildContext context, String displayFakeBalance) {
+    if (isBalanceHidden) {
+      return Text(
+        t.view_balance,
+        style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.mutedText),
+      );
+    }
+    final style = CoconutTypography.body2_14_NumberBold.setColor(
+      shouldWarnUnbackedHotWallet ? context.coconutColors.danger : context.coconutColors.primaryText,
+    );
+    if (fakeBalance != null) {
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (currentUnit.isPrefixSymbol) ...[Text(currentUnit.symbol, style: style), CoconutLayout.spacing_50w],
+          Text(displayFakeBalance, style: style),
+          if (!currentUnit.isPrefixSymbol) ...[Text(' ${currentUnit.symbol}', style: style), CoconutLayout.spacing_50w],
+        ],
+      );
+    }
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (currentUnit.isPrefixSymbol) ...[Text(currentUnit.symbol, style: style), CoconutLayout.spacing_50w],
+        AnimatedBalance(
+          prevValue: animatedBalanceData.previous,
+          value: animatedBalanceData.current,
+          currentUnit: currentUnit,
+          textStyle: style,
+        ),
+        if (!currentUnit.isPrefixSymbol) ...[CoconutLayout.spacing_50w, Text(currentUnit.symbol, style: style)],
+      ],
+    );
+  }
+
+  Widget _belowCues(BuildContext context, {required bool editing, required int? index}) {
+    final warning = SvgPicture.asset(
+      CommonStateIconPath.triangleWarning,
+      colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+    );
+    if (editing) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (shouldWarnUnbackedHotWallet) ...[warning, CoconutLayout.spacing_200w],
+          ReorderableDragStartListener(
+            index: index!,
+            child: GestureDetector(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: SvgPicture.asset(
+                  CommonMenuIconPath.hamburger,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    if (shouldWarnUnbackedHotWallet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [warning, CoconutLayout.spacing_200w, Expanded(child: rightWidget)],
+      );
+    }
+    return rightWidget;
   }
 }

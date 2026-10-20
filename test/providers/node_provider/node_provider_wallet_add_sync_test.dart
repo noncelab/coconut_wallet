@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
@@ -476,6 +477,78 @@ void main() {
     expect(isolate.blockRequestCount, blockRequests);
   });
 
+  for (final crossErrorZone in [false, true]) {
+    test('overlapping initialization retries StateError across error zones=$crossErrorZone', () async {
+      connectivity.online = false;
+      createProvider();
+      connectivity.online = true;
+      final firstStarted = Completer<void>();
+      final releaseFirst = Completer<void>();
+      final firstDone = Completer<void>();
+      final secondDone = Completer<bool>();
+      final failure = StateError('first initialization failed');
+      final failureStack = StackTrace.fromString('original initialization failure stack');
+      final uncaught = <Object>[];
+      Object? firstError;
+      StackTrace? firstStack;
+      Object? secondError;
+      isolate.onInitialize = () async {
+        if (isolate.initializationCount == 1) {
+          firstStarted.complete();
+          await releaseFirst.future;
+          Error.throwWithStackTrace(failure, failureStack);
+        }
+      };
+      late Zone creationZone;
+      runZonedGuarded(() {
+        creationZone = Zone.current;
+        unawaited(() async {
+          try {
+            await provider!.initialize();
+          } catch (error, stack) {
+            firstError = error;
+            firstStack = stack;
+          } finally {
+            firstDone.complete();
+          }
+        }());
+      }, (error, _) => uncaught.add(error));
+      await firstStarted.future;
+      final consumerZone =
+          crossErrorZone
+              ? creationZone.fork(
+                specification: ZoneSpecification(handleUncaughtError: (_, __, ___, error, ____) => uncaught.add(error)),
+              )
+              : creationZone;
+      expect(creationZone.inSameErrorZone(consumerZone), !crossErrorZone);
+      consumerZone.run(() async {
+        try {
+          await provider!.initialize();
+        } catch (error) {
+          secondError = error;
+        } finally {
+          secondDone.complete(true);
+        }
+      });
+      expect(isolate.initializationCount, 1, reason: 'the concurrent caller first waits for the pending attempt');
+      releaseFirst.complete();
+      await firstDone.future.timeout(const Duration(seconds: 2));
+      final settled = await secondDone.future.timeout(const Duration(seconds: 2), onTimeout: () => false);
+
+      expect(firstError, same(failure));
+      expect(firstStack.toString(), failureStack.toString());
+      expect(uncaught, isEmpty);
+      expect(settled, true, reason: 'the waiting caller must retry without hanging');
+      expect(secondError, isNull);
+      expect(isolate.initializationCount, 2);
+      expect(isolate.initialized, true);
+      expect(provider!.isInitialized, true);
+      expect(provider!.hasConnectionError, false);
+      await provider!.closeConnection();
+      expect(isolate.initialized, false, reason: 'the retried connection remains owned and can be closed');
+    });
+  }
+
   test('active initialization failures still propagate to their caller', () async {
     connectivity.online = false;
     createProvider();
@@ -484,6 +557,47 @@ void main() {
 
     await expectLater(provider!.initialize(), throwsStateError);
     expect(provider!.hasConnectionError, true);
+  });
+
+  // Nobody awaits these initializations: a failure they leave unhandled is an uncaught error, which fails the test.
+  group('a self-started initialization handles its own failure', () {
+    test('at construction', () async {
+      isolate.onInitialize = () async => throw StateError('test initialization failure');
+      createProvider();
+      await pumpEventQueue();
+
+      expect(isolate.initializationCount, 1);
+      expect(provider!.hasConnectionError, true);
+      expect(provider!.state.nodeSyncState, NodeSyncState.failed);
+    });
+
+    test('when connectivity returns, and does not reconnect after it', () async {
+      connectivity.online = false;
+      createProvider();
+      isolate.onInitialize = () async => throw StateError('test initialization failure');
+      connectivity.setOnline(true);
+      await pumpEventQueue();
+
+      expect(isolate.initializationCount, 1, reason: 'reconnect only follows a successful initialization');
+      expect(provider!.hasConnectionError, true);
+      expect(provider!.state.nodeSyncState, NodeSyncState.failed);
+    });
+
+    test('when going offline closes the connection before it completes', () async {
+      final initialization = Completer<void>();
+      connectivity.online = false;
+      createProvider();
+      isolate.onInitialize = () => initialization.future;
+      connectivity.setOnline(true);
+      await pumpEventQueue();
+      connectivity.setOnline(false);
+      await pumpEventQueue();
+      initialization.completeError(Exception('Isolate was closed before initialization completed'));
+      await pumpEventQueue();
+
+      expect(isolate.initializationCount, 1);
+      expect(provider!.hasConnectionError, true);
+    });
   });
 
   group('wallet_bulk_sync_completed counts only real bulk syncs', () {

@@ -14,6 +14,7 @@ import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,9 @@ class _SampleWidget extends HomeItemDefinition {
   @override
   Widget build(BuildContext context, HomeItem item) => const ColoredBox(color: Colors.grey);
 }
+
+/// 위젯 카탈로그의 이름은 어절 중간에서 줄을 바꾸지 않도록 word joiner가 들어간 문자열로 그려진다.
+Finder _catalogName(String name) => find.text(TextUtils.preventLineBreakInsideWords(name));
 
 final _calculatorId = HomeItemIds.shortcut(FeatureIds.calculator);
 final _receiveId = HomeItemIds.shortcut(FeatureIds.receive);
@@ -120,10 +124,10 @@ void main() {
     expect(tester.widget<Text>(added).style!.fontSize, greaterThanOrEqualTo(12));
     expect(find.ancestor(of: name, matching: find.byType(FittedBox)), findsNothing);
     expect(tester.widget<Text>(added).textScaler, isNot(TextScaler.noScaling));
-    expect(
-      tester.getSize(find.byKey(const ValueKey('home-edit-remove-sample_widget'))).shortestSide,
-      greaterThanOrEqualTo(48),
-    );
+    final remove = find.byKey(const ValueKey('home-edit-remove-sample_widget'));
+    expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
+    final icon = find.descendant(of: remove, matching: find.byType(Icon));
+    expect(tester.getRect(icon).left - tester.getRect(added).right, closeTo(4, 0.5));
     for (final scale in [1.3, 2.0]) {
       tester.view.physicalSize = const Size(320, 900);
       tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -351,7 +355,7 @@ void main() {
     await tester.tap(find.text(t.home_edit.widgets));
     await _settle(tester);
 
-    expect(find.text('Sample Widget'), findsOneWidget);
+    expect(_catalogName('Sample Widget'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('home-edit-add-sample_widget')));
     await _settle(tester);
@@ -381,7 +385,7 @@ void main() {
     expect(find.byKey(const ValueKey('home-edit-category-wallets')), findsNothing);
     expect(find.byKey(const ValueKey('home-edit-category-safety')), findsNothing);
     expect(
-      tester.getTopLeft(find.text('Balance Widget')).dy,
+      tester.getTopLeft(_catalogName('Balance Widget')).dy,
       lessThan(tester.getTopLeft(find.byKey(const ValueKey('home-edit-category-hodl'))).dy),
     );
   });
@@ -410,13 +414,13 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('home-edit-chip-hodl')));
     await _settle(tester);
-    expect(find.text('Hodl Widget'), findsOneWidget);
-    expect(find.text('Balance Widget'), findsNothing);
+    expect(_catalogName('Hodl Widget'), findsOneWidget);
+    expect(_catalogName('Balance Widget'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('home-edit-chip-all')));
     await _settle(tester);
-    expect(find.text('Hodl Widget'), findsOneWidget);
-    expect(find.text('Balance Widget'), findsOneWidget);
+    expect(_catalogName('Hodl Widget'), findsOneWidget);
+    expect(_catalogName('Balance Widget'), findsOneWidget);
 
     await tester.tap(find.text(t.home_edit.shortcuts));
     await _settle(tester);

@@ -1,5 +1,5 @@
 name: coconut_wallet
-description: "비트코인을 주고 받기 위해 코코넛 볼트와 함께 사용하는 보기 전용 지갑 앱"
+description: "YOUR BITCOIN. YOUR WAY."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -18,9 +18,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.20.0+90
 app_versions:
-  ios_regtest: 5.0.0+1
+  ios_regtest: 4.0.0+1
   ios_mainnet: 1.0.0+1
-  aos_regtest: 5.0.0+103
+  aos_regtest: 4.0.0+103
   aos_mainnet: 1.0.0+94
 
 environment:
@@ -74,8 +74,10 @@ dependencies:
   package_info_plus: ^8.0.1
   realm: 20.2.0
   cryptography: ^2.7.0
-  slang: ^4.7.0
-  slang_flutter: ^4.7.0
+  # 생성되는 번역 클래스 이름이 버전마다 달라(4.14 TranslationsFeatureRegistryKo, 4.19 Translations$feature_registry$ko)
+  # 모두 같은 코드를 생성하도록 고정한다. 올릴 때는 builtin_features.dart의 타입 이름도 함께 바꾼다.
+  slang: 4.14.0
+  slang_flutter: 4.14.0
   async: ^2.11.0
   decimal: ^3.0.2
   tuple: ^2.0.2

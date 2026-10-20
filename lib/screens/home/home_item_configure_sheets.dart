@@ -26,19 +26,15 @@ class HomeItemConfigureSheets {
     if (data == null) return null;
     return (span) => ChangeNotifierProvider.value(
       value: data,
-      child: Builder(
-        builder:
-            (context) => definition.build(
-              context,
-              HomeItem(
-                id: 'preview-${definition.id}',
-                definitionId: definition.id,
-                kind: definition.kind,
-                order: 0,
-                span: span,
-                configuration: item?.configuration ?? const {},
-              ),
-            ),
+      child: definition.buildTile(
+        HomeItem(
+          id: 'preview-${definition.id}',
+          definitionId: definition.id,
+          kind: definition.kind,
+          order: 0,
+          span: span,
+          configuration: item?.configuration ?? const {},
+        ),
       ),
     );
   }

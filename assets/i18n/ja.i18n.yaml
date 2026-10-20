@@ -827,6 +827,13 @@ wallet_add_scanner_screen:
   
 # lib/screens/wallet_list
 wallet_list:
+  balance_history_detail:
+    wallets_at_date: "この時点のウォレット"
+    no_wallets: "この時点で表示できるウォレットはありません"
+    changed_wallets_only: "残高が変動したウォレットのみ"
+    transaction_count(cardinal):
+      one: "取引${n}件"
+      other: "取引${n}件"
   header:
     total_amount: "合計残高"
     balance_history: "残高の推移"

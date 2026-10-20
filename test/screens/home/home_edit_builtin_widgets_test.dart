@@ -33,6 +33,10 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/home_edit_screen.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
@@ -184,6 +188,7 @@ Future<void> _openWidgetsTab(
   Key? captureKey,
   bool cupertinoShell = false,
   Color? sourceMarkerColor,
+  DateTime? dataNow,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -192,7 +197,7 @@ Future<void> _openWidgetsTab(
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
-  final now = DateTime.now();
+  final now = dataNow ?? DateTime.now();
   final wallets =
       walletList ?? [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createMultiSigWalletItem(id: 2)];
   final transactions = [
@@ -236,6 +241,7 @@ Future<void> _openWidgetsTab(
         priceProvider: _Prices(available: pricesAvailable),
         targetSatsOf: (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
+        now: dataNow == null ? null : () => dataNow,
       );
   Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
   if (sourceMarkerColor != null) {
@@ -253,6 +259,7 @@ Future<void> _openWidgetsTab(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(wallets, transactions, loadState: loadState)),
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences(isFakeBalanceActive: fake)),
         ChangeNotifierProvider.value(value: homeViewModel),
         ChangeNotifierProvider.value(value: widgetsViewModel),
@@ -424,18 +431,19 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(ValueKey('home-edit-widget-${definition.id}')),
-            matching: find.text(definition.displayName()),
+            matching: find.text(TextUtils.preventLineBreakInsideWords(definition.displayName())),
           ),
           findsAtLeastNWidgets(1),
           reason: definition.id,
         );
       }
-      expect(find.text(t.home_widgets.recent_transactions), findsOneWidget);
+      expect(find.text(TextUtils.preventLineBreakInsideWords(t.home_widgets.recent_transactions)), findsOneWidget);
       for (final definition in builtinHomeWidgets()) {
         final name = find.byKey(ValueKey('home-edit-widget-name-${definition.id}'));
         final title = tester.widget<Text>(name);
         final paragraph = tester.renderObject<RenderParagraph>(name);
-        expect(title.data, definition.displayName(), reason: definition.id);
+        // 어절 중간에서 줄을 바꾸지 않도록 단어 안에 word joiner를 넣는다.
+        expect(title.data, TextUtils.preventLineBreakInsideWords(definition.displayName()), reason: definition.id);
         expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize, reason: definition.id);
         expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily, reason: definition.id);
         expect(title.maxLines, isNull, reason: definition.id);
@@ -452,8 +460,17 @@ void main() {
           expect(box.bottom, lessThanOrEqualTo(paragraph.size.height + 0.1), reason: definition.id);
         }
         final add = find.byKey(ValueKey('home-edit-add-${definition.id}'));
-        expect(tester.getRect(add).top, greaterThanOrEqualTo(tester.getRect(name).bottom), reason: definition.id);
+        expect(tester.getRect(add).left, greaterThanOrEqualTo(tester.getRect(name).right), reason: definition.id);
+        expect(tester.getCenter(add).dy, closeTo(tester.getCenter(name).dy, 0.5), reason: definition.id);
         expect(tester.getSize(add).shortestSide, greaterThanOrEqualTo(48), reason: definition.id);
+        // 이름의 왼쪽 시작과 + 아이콘의 오른쪽 끝은 카드 가장자리에서 같은 거리에 놓인다.
+        final cardRect = tester.getRect(find.byKey(ValueKey('home-edit-widget-${definition.id}')));
+        final iconRect = tester.getRect(find.descendant(of: add, matching: find.byType(Icon)));
+        expect(
+          cardRect.right - iconRect.right,
+          closeTo(tester.getRect(name).left - cardRect.left, 0.5),
+          reason: definition.id,
+        );
       }
       await _close(tester);
     });
@@ -525,86 +542,103 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('an added built-in widget wraps its title above a scaled, tappable status footer', (tester) async {
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await _openWidgetsTab(
-      tester,
-      fake: false,
-      size: const Size(320, 6000),
-      widgetDefinitions: [builtinHomeWidgets().singleWhere((definition) => definition.id == HomeItemIds.fiatValues)],
-    );
-    final viewModel = tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
-    final definition = viewModel.registry.byId(HomeItemIds.fiatValues)!;
-    final add = find.byKey(const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
-    final name = find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.fiatValues}'));
-    final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.fiatValues}'));
-    final remove = find.byKey(const ValueKey('home-edit-remove-${HomeItemIds.fiatValues}'));
+  testWidgets(
+    'an added built-in widget keeps its title, status and preview on one line with text capped at the tile scale',
+    (tester) async {
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        size: const Size(320, 6000),
+        widgetDefinitions: [builtinHomeWidgets().singleWhere((definition) => definition.id == HomeItemIds.fiatValues)],
+      );
+      final viewModel = tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
+      final definition = viewModel.registry.byId(HomeItemIds.fiatValues)!;
+      final add = find.byKey(const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
+      final name = find.byKey(const ValueKey('home-edit-widget-name-${HomeItemIds.fiatValues}'));
+      final added = find.byKey(const ValueKey('home-edit-added-${HomeItemIds.fiatValues}'));
+      final remove = find.byKey(const ValueKey('home-edit-remove-${HomeItemIds.fiatValues}'));
 
-    await tester.ensureVisible(add);
-    await tester.tap(add);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(find.byKey(const Key('widget-configure-submit')), findsOneWidget);
-    for (final fiat in [FiatCode.USD, FiatCode.JPY, FiatCode.EUR]) {
-      await tester.tap(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')));
-      await tester.pump();
-    }
-    await tester.tap(find.byKey(const Key('widget-configure-submit')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(viewModel.isOnHome(definition), isTrue);
-    expect(viewModel.itemOf(definition)!.configuration['fiats'], ['KRW']);
-
-    for (final scale in [1.3, 2.0]) {
-      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      await tester.ensureVisible(add);
+      await tester.tap(add);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      await tester.ensureVisible(remove);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      final title = tester.widget<Text>(name);
-      final status = tester.widget<Text>(added);
-      final titleParagraph = tester.renderObject<RenderParagraph>(name);
-      final statusParagraph = tester.renderObject<RenderParagraph>(added);
-      final footerRect = tester.getRect(remove).expandToInclude(tester.getRect(added));
-      final cardRect = tester.getRect(find.byKey(const ValueKey('home-edit-widget-${HomeItemIds.fiatValues}')));
-
-      expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize);
-      expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily);
-      expect(status.style!.fontSize, CoconutTypography.body3_12.fontSize);
-      expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
-      expect(titleParagraph.textScaler.scale(14), closeTo(14 * scale, 0.01));
-      expect(statusParagraph.textScaler.scale(12), closeTo(12 * scale, 0.01));
-      expect(titleParagraph.text.toPlainText(), definition.displayName());
-      expect(titleParagraph.didExceedMaxLines, isFalse);
-      expect(statusParagraph.didExceedMaxLines, isFalse);
-      expect(footerRect.top, greaterThanOrEqualTo(tester.getRect(name).bottom));
-      expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
-      expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
-      expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
-      if (scale == 2) {
-        expect(
-          titleParagraph
-              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: definition.displayName().length))
-              .length,
-          greaterThan(1),
-          reason: 'the narrow catalog wraps the complete title instead of shrinking it',
-        );
+      expect(find.byKey(const Key('widget-configure-submit')), findsOneWidget);
+      for (final fiat in [FiatCode.USD, FiatCode.JPY, FiatCode.EUR]) {
+        await tester.tap(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')));
+        await tester.pump();
       }
-      expect(tester.takeException(), isNull, reason: 'scale $scale');
-    }
-    tester.platformDispatcher.clearTextScaleFactorTestValue();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.tap(remove);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(viewModel.isOnHome(definition), isFalse);
-    expect(added, findsNothing);
-    expect(add, findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await _close(tester);
-  });
+      await tester.tap(find.byKey(const Key('widget-configure-submit')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(viewModel.isOnHome(definition), isTrue);
+      expect(viewModel.itemOf(definition)!.configuration['fiats'], ['KRW']);
+
+      for (final scale in [1.3, 2.0]) {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.ensureVisible(remove);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        final title = tester.widget<Text>(name);
+        final status = tester.widget<Text>(added);
+        final titleParagraph = tester.renderObject<RenderParagraph>(name);
+        final statusParagraph = tester.renderObject<RenderParagraph>(added);
+        final footerRect = tester.getRect(remove).expandToInclude(tester.getRect(added));
+        final cardRect = tester.getRect(find.byKey(const ValueKey('home-edit-widget-${HomeItemIds.fiatValues}')));
+
+        expect(title.style!.fontSize, CoconutTypography.body2_14.fontSize);
+        expect(title.style!.fontFamily, CoconutTypography.body2_14.fontFamily);
+        expect(status.style!.fontSize, CoconutTypography.body3_12.fontSize);
+        expect(status.style!.fontFamily, CoconutTypography.body3_12.fontFamily);
+        // 고정 크기 타일과 그 이름 줄은 시스템 글자 배율을 kHomeTileMaxTextScale에서 멈춘다.
+        final tileScale = math.min(scale, kHomeTileMaxTextScale);
+        expect(titleParagraph.textScaler.scale(14), closeTo(14 * tileScale, 0.01));
+        expect(statusParagraph.textScaler.scale(12), closeTo(12 * tileScale, 0.01));
+        final previewText = find.descendant(
+          of: find.byKey(const ValueKey('home-edit-widget-shadow-${HomeItemIds.fiatValues}')),
+          matching: find.byType(Text),
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(previewText.first).textScaler.scale(10),
+          closeTo(10 * tileScale, 0.01),
+        );
+        expect(titleParagraph.text.toPlainText(), TextUtils.preventLineBreakInsideWords(definition.displayName()));
+        expect(titleParagraph.didExceedMaxLines, isFalse);
+        expect(statusParagraph.didExceedMaxLines, isFalse);
+        expect(footerRect.left, greaterThanOrEqualTo(tester.getRect(name).right));
+        expect(tester.getCenter(remove).dy, closeTo(tester.getCenter(name).dy, 0.5));
+        expect(tester.getCenter(added).dy, closeTo(tester.getCenter(name).dy, 0.5));
+        expect(footerRect.left, greaterThanOrEqualTo(cardRect.left));
+        expect(footerRect.right, lessThanOrEqualTo(cardRect.right));
+        expect(tester.getSize(remove).shortestSide, greaterThanOrEqualTo(48));
+        if (scale == 2) {
+          expect(
+            titleParagraph
+                .getBoxesForSelection(
+                  TextSelection(baseOffset: 0, extentOffset: titleParagraph.text.toPlainText().length),
+                )
+                .length,
+            greaterThan(1),
+            reason: 'the narrow catalog wraps the complete title instead of shrinking it',
+          );
+        }
+        expect(tester.takeException(), isNull, reason: 'scale $scale');
+      }
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(remove);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(viewModel.isOnHome(definition), isFalse);
+      expect(added, findsNothing);
+      expect(add, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    },
+  );
 
   for (final preset in builtinHomePresets()) {
     testWidgets('the ${preset.id} preset preview renders the real home grid', (tester) async {
@@ -1201,22 +1235,84 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('touching the balance chart shows that day\'s balance until the finger lifts', (tester) async {
-      await _openWidgetsTab(tester, fake: false, screen: insights);
+    testWidgets('balance chart opens Hero detail, preserves period, toggles focus and zooms while focused', (
+      tester,
+    ) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, dataNow: DateTime(2026, 10, 20, 12));
       await tester.pump(const Duration(milliseconds: 300));
-      final chart = find.byKey(const Key('hodl-insights-balance-chart'));
-
-      final gesture = await tester.startGesture(tester.getCenter(chart));
-      await tester.pump(const Duration(milliseconds: 150));
-      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
-      await gesture.moveBy(const Offset(60, 0));
-      await gesture.moveBy(const Offset(60, 0));
+      await tester.tap(find.byKey(const ValueKey('hodl-insights-period-month')).first);
       await tester.pump();
-      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
-
-      await gesture.up();
-      await tester.pump();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletBalanceHistoryScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<BalanceHistoryPeriodChips>(
+              find.descendant(
+                of: find.byType(WalletBalanceHistoryScreen),
+                matching: find.byType(BalanceHistoryPeriodChips),
+              ),
+            )
+            .selected,
+        HomeWidgetPeriod.month,
+      );
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsNothing);
+      await tester.tap(chart);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      final bounds = tester.getRect(chart);
+      final one = await tester.startGesture(bounds.center - const Offset(30, 0), pointer: 1);
+      final two = await tester.startGesture(bounds.center + const Offset(30, 0), pointer: 2);
+      await one.moveBy(const Offset(-30, 0));
+      await two.moveBy(const Offset(30, 0));
+      await tester.pump();
+      await one.moveBy(const Offset(-90, 0));
+      await two.moveBy(const Offset(90, 0));
+      await tester.pump();
+      await one.up();
+      await two.up();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      expect(
+        tester
+            .widget<BalanceHistoryPeriodChips>(
+              find.descendant(
+                of: find.byType(WalletBalanceHistoryScreen),
+                matching: find.byType(BalanceHistoryPeriodChips),
+              ),
+            )
+            .selected,
+        HomeWidgetPeriod.week,
+      );
+      await tester.tap(chart);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsNothing);
+      final chips = find.descendant(
+        of: find.byType(WalletBalanceHistoryScreen),
+        matching: find.byType(BalanceHistoryPeriodChips),
+      );
+      for (final period in HomeWidgetPeriod.values) {
+        final chip = find.descendant(of: chips, matching: find.byKey(ValueKey('hodl-insights-period-${period.name}')));
+        await tester.ensureVisible(chip);
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+        expect(tester.widget<BalanceHistoryPeriodChips>(chips).selected, period);
+      }
+      final latest = tester.getRect(chart);
+      await tester.tapAt(Offset(latest.right - 1, latest.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletItemCard), findsWidgets);
+      await tester.tap(find.byType(WalletItemCard).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(TransactionItemCard), findsWidgets);
+      await tester.tap(find.byType(WalletItemCard).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(TransactionItemCard), findsNothing);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
+      expect(find.byKey(const Key('hodl-insights-balance-chart')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _close(tester);
     });
@@ -1396,6 +1492,13 @@ void main() {
       final insights = tester.element(find.byKey(const Key('hodl-insights-list'))).read<HodlInsightsViewModel>();
       expect(insights.walletIds, [1]);
       expect(insights.balancePeriod, HomeWidgetPeriod.month);
+
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletBalanceHistoryScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
 
       Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
       await tester.pump();
