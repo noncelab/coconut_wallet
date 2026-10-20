@@ -2219,6 +2219,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String walletName,
     String derivationPath, {
     required bool isCurrentWallet,
+    bool isSelected = false,
   }) {
     return ShrinkAnimationButton(
       onPressed: () {
@@ -2260,22 +2261,36 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.only(left: 14, right: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              CoconutLayout.spacing_100h,
-              Text(
-                shortenAddress(address, head: 12, tail: 14),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CoconutLayout.spacing_100h,
+                    Text(
+                      shortenAddress(address, head: 12, tail: 14),
+                      style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                    ),
+                    _buildAddressRowSubtitle(
+                      context,
+                      walletName,
+                      derivationPath,
+                      isCurrentWallet,
+                      addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
+                    ),
+                    CoconutLayout.spacing_100h,
+                  ],
+                ),
               ),
-              _buildAddressRowSubtitle(
-                context,
-                walletName,
-                derivationPath,
-                isCurrentWallet,
-                addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
-              ),
-              CoconutLayout.spacing_100h,
+              if (isSelected)
+                SvgPicture.asset(
+                  CommonActionIconPath.check,
+                  key: ValueKey('vault-address-selected-$address'),
+                  width: 12,
+                  height: 12,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                ),
             ],
           ),
         ),
@@ -2387,6 +2402,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   _receivingVaultName,
                                   address.derivationPath,
                                   isCurrentWallet: false,
+                                  isSelected:
+                                      selection.item1 < selection.item2.length &&
+                                      selection.item2[selection.item1] == address.address,
                                 );
                               },
                             );

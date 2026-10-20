@@ -189,12 +189,22 @@ void main() {
       expect(find.text(t.send_screen.vault_addresses(name: 'Test')), findsOneWidget);
       expect(find.text(t.view_more), findsNothing);
       expect(viewModel.showAddressBoard, isTrue);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(0)}')), findsOneWidget);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(1)}')), findsNothing);
       await tester.tap(find.text(shortenAddress(vault.getAddress(1), head: 12, tail: 14)));
       await tester.pump();
       await tester.pump(); // address selection updates the view model after the frame
       expect(tester.widget<VaultReceivingAddressField>(fieldFinder).address, vault.getAddress(1));
       expect(viewModel.recipientList.first.address, vault.getAddress(1));
       expect(viewModel.showAddressBoard, isFalse);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(fieldFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(1)}')), findsOneWidget);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(0)}')), findsNothing);
+      viewModel.setShowAddressBoard(false);
+      await tester.pump();
       tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
       await tester.pump();
       await tester.tap(find.text(t.send_screen.add_recipient));
