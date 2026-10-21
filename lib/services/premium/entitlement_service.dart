@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/iap_entitlement_service.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
 /// 상품 유형. 구독 심사가 거절되면 비소모성 일회 구매로 바꿀 수 있게 나눠 둔다(SPEC v2)
@@ -99,10 +100,45 @@ class PremiumProduct {
   /// 스토어 현지 가격 문자열 그대로(재포맷·월 환산 금지)
   final String price;
 
+  /// 비교 가능한 정기 요금의 스토어 숫자 가격·통화. 불확실하면 null
+  final double? rawPrice;
+  final String? currencyCode;
+
   /// 무료 체험 일수. 스토어 상품에 있고 이 사용자가 받을 수 있을 때만
   final int? freeTrialDays;
 
-  const PremiumProduct({required this.config, required this.price, this.freeTrialDays});
+  const PremiumProduct({
+    required this.config,
+    required this.price,
+    this.rawPrice,
+    this.currencyCode,
+    this.freeTrialDays,
+  });
+}
+
+/// 같은 통화의 월간 정기 요금 대비 연간 할인율. 표시 문자열과 체험 가격은 계산에 쓰지 않는다
+int? annualDiscountPercent(Iterable<PremiumProduct> products) {
+  final subscriptions = products.where((p) => p.config.kind == PremiumProductKind.subscription);
+  final monthly = subscriptions.where((p) => p.config.period == PremiumPeriod.monthly).singleOrNull;
+  final yearly = subscriptions.where((p) => p.config.period == PremiumPeriod.yearly).singleOrNull;
+  final monthlyPrice = monthly?.rawPrice;
+  final yearlyPrice = yearly?.rawPrice;
+  final currency = monthly?.currencyCode;
+  if (currency == null ||
+      currency.trim().isEmpty ||
+      currency != yearly?.currencyCode ||
+      monthlyPrice == null ||
+      !monthlyPrice.isFinite ||
+      monthlyPrice <= 0 ||
+      yearlyPrice == null ||
+      !yearlyPrice.isFinite ||
+      yearlyPrice <= 0) {
+    return null;
+  }
+  // 십진 가격의 정수 할인 경계가 부동소수점 오차로 한 단계 낮아지지 않게 한다.
+  final annualized = Decimal.parse(monthlyPrice.toString()) * Decimal.fromInt(12);
+  final discount = ((annualized - Decimal.parse(yearlyPrice.toString())) * Decimal.fromInt(100) / annualized).floor();
+  return discount > BigInt.zero ? discount.toInt() : null;
 }
 
 enum PurchaseOutcome { purchased, pending, cancelled, failed, unavailable }

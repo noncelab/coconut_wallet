@@ -54,11 +54,14 @@ class _Auth extends ChangeNotifier implements AuthProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-PremiumProduct _product(PremiumPeriod period, String price, {int? trialDays}) => PremiumProduct(
-  config: kAppStorePremiumProducts.firstWhere((c) => c.period == period),
-  price: price,
-  freeTrialDays: trialDays,
-);
+PremiumProduct _product(PremiumPeriod period, String price, {int? trialDays, double? rawPrice, String? currencyCode}) =>
+    PremiumProduct(
+      config: kAppStorePremiumProducts.firstWhere((c) => c.period == period),
+      price: price,
+      freeTrialDays: trialDays,
+      rawPrice: rawPrice,
+      currencyCode: currencyCode,
+    );
 
 final _products = [_product(PremiumPeriod.yearly, '₩39,000'), _product(PremiumPeriod.monthly, 'US\$ 4,99')];
 
@@ -673,6 +676,59 @@ void main() {
             ..addFont(rootBundle.load('assets/fonts/Pretendard-Regular.ttf'))
             ..addFont(rootBundle.load('assets/fonts/Pretendard-Bold.ttf'));
       await font.load();
+    });
+
+    for (final (locale, expected) in [
+      (AppLocale.ko, '월간보다 33% 저렴'),
+      (AppLocale.en, '33% less than monthly'),
+      (AppLocale.ja, '月額プランより33%お得'),
+      (AppLocale.es, '33\u00a0% menos que el plan mensual'),
+      (AppLocale.de, '33\u00a0% günstiger als monatlich'),
+    ]) {
+      testWidgets('${locale.name}: 할인은 연간 카드에서만, 320dp·글자 2배에서도 줄바꿈하여 표시', (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        LocaleSettings.setLocaleSync(locale);
+        await pumpPaywall(
+          tester,
+          FakeEntitlementService(
+            products: [
+              _product(PremiumPeriod.yearly, 'annual-store-price', rawPrice: 24, currencyCode: 'USD', trialDays: 7),
+              _product(PremiumPeriod.monthly, 'monthly-store-price', rawPrice: 3, currencyCode: 'USD'),
+            ],
+          ),
+          textScale: 2,
+        );
+        final label = find.byKey(const Key('premium-plan-yearly-discount'));
+        await tester.ensureVisible(label);
+        await tester.pumpAndSettle();
+        expect(tester.widget<Text>(label).data, expected);
+        expect(find.descendant(of: find.byKey(const Key('premium-plan-yearly')), matching: label), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(const Key('premium-plan-monthly')), matching: find.text(expected)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: find.byKey(const Key('premium-paywall-bottom')), matching: find.text(expected)),
+          findsNothing,
+        );
+        final card = tester.getRect(find.byKey(const Key('premium-plan-yearly')));
+        final text = tester.getRect(label);
+        expect(card.contains(text.topLeft) && card.contains(text.bottomRight), isTrue);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('비교할 숫자 가격이 없으면 할인 문구 없이 기존 가격과 구매 선택을 유지', (tester) async {
+      await pumpPaywall(tester, FakeEntitlementService(products: _products));
+      expect(find.byKey(const Key('premium-plan-yearly-discount')), findsNothing);
+      expect(find.text(_products.first.price), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('premium-plan-monthly')));
+      await tester.tap(find.byKey(const Key('premium-plan-monthly')));
+      await tester.pumpAndSettle();
+      expect(planRing(tester, PremiumPeriod.monthly), colors.mainnetLogoGradient);
+      expect(tester.takeException(), isNull);
     });
 
     /// 그려진 RichText와 같은 글·글꼴·배율·너비로 줄 수를 센다

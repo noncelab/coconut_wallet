@@ -448,6 +448,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     final colors = context.coconutColors;
     final products = _products;
     final android = defaultTargetPlatform == TargetPlatform.android;
+    final discount = products == null ? null : annualDiscountPercent(products);
     return [
       _sectionTitle(context, t.premium.paywall.plans_title),
       if (products == null)
@@ -466,7 +467,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       else
         for (final (index, product) in products.indexed) ...[
           if (index > 0) CoconutLayout.spacing_300h,
-          _PlanCard(product: product, selected: product == _selected, onTap: () => setState(() => _selected = product)),
+          _PlanCard(
+            product: product,
+            selected: product == _selected,
+            discountPercent: product.config.period == PremiumPeriod.yearly ? discount : null,
+            onTap: () => setState(() => _selected = product),
+          ),
         ],
       CoconutLayout.spacing_400h,
       // 전체 고지(약관·개인정보 링크는 아래 고정 영역에 늘 보인다). 체험 문장은 고른 상품에 스토어 체험이 있을 때만.
@@ -619,11 +625,12 @@ class _Mark extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  const _PlanCard({required this.product, required this.selected, required this.onTap});
+  const _PlanCard({required this.product, required this.selected, required this.onTap, this.discountPercent});
 
   final PremiumProduct product;
   final bool selected;
   final VoidCallback onTap;
+  final int? discountPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -663,6 +670,14 @@ class _PlanCard extends StatelessWidget {
                     CoconutLayout.spacing_100h,
                     // 스토어 현지 가격 문자열 그대로(재포맷·월 환산 금지)
                     Text(product.price, style: CoconutTypography.body2_14_Number.setColor(colors.primaryText)),
+                    if (discountPercent != null) ...[
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        paywall.cheaper_than_monthly(percent: discountPercent!),
+                        key: const Key('premium-plan-yearly-discount'),
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                      ),
+                    ],
                     if (trialDays != null) ...[
                       CoconutLayout.spacing_100h,
                       Text(

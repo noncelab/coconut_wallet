@@ -5,17 +5,22 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/screens/premium/premium_paywall_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/premium/iap_entitlement_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/billing_client_wrappers.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// InAppPurchase.instance 대신. restorePurchases는 Android처럼 끝나기 전에 [owned](검증된 소유 거래)를 스트림에 넣는다
@@ -108,15 +113,28 @@ PurchaseDetails _sk(
   status: status,
 )..pendingCompletePurchase = status == PurchaseStatus.purchased;
 
-ProductDetails _iosProduct(String id, String price) =>
-    ProductDetails(id: id, title: 'Coconut Premium', description: '', price: price, rawPrice: 0, currencyCode: 'KRW');
+ProductDetails _iosProduct(String id, String price, {double rawPrice = 0, String currencyCode = 'KRW'}) =>
+    ProductDetails(
+      id: id,
+      title: 'Coconut Premium',
+      description: '',
+      price: price,
+      rawPrice: rawPrice,
+      currencyCode: currencyCode,
+    );
 
-PricingPhaseWrapper _phase(String price, int micros, String period, RecurrenceMode mode) => PricingPhaseWrapper(
+PricingPhaseWrapper _phase(
+  String price,
+  int micros,
+  String period,
+  RecurrenceMode mode, {
+  String currencyCode = 'KRW',
+}) => PricingPhaseWrapper(
   billingCycleCount: mode == RecurrenceMode.infiniteRecurring ? 0 : 1,
   billingPeriod: period,
   formattedPrice: price,
   priceAmountMicros: micros,
-  priceCurrencyCode: 'KRW',
+  priceCurrencyCode: currencyCode,
   recurrenceMode: mode,
 );
 
@@ -130,7 +148,10 @@ SubscriptionOfferDetailsWrapper _offer(String basePlanId, List<PricingPhaseWrapp
     );
 
 /// Play가 base plan·혜택마다 하나씩 주는 상품 목록
-List<GooglePlayProductDetails> _playProducts() => GooglePlayProductDetails.fromProductDetails(
+List<GooglePlayProductDetails> _playProducts({
+  bool includeYearlyBase = true,
+  List<PricingPhaseWrapper>? yearlyBasePhases,
+}) => GooglePlayProductDetails.fromProductDetails(
   ProductDetailsWrapper(
     description: '',
     name: 'Coconut Premium',
@@ -138,7 +159,8 @@ List<GooglePlayProductDetails> _playProducts() => GooglePlayProductDetails.fromP
     productType: ProductType.subs,
     title: 'Coconut Premium',
     subscriptionOfferDetails: [
-      _offer('yearly', [_phase('₩39,000', 39000000000, 'P1Y', RecurrenceMode.infiniteRecurring)]),
+      if (includeYearlyBase)
+        _offer('yearly', yearlyBasePhases ?? [_phase('₩39,000', 39000000000, 'P1Y', RecurrenceMode.infiniteRecurring)]),
       _offer('yearly', offerId: 'trial', [
         _phase('무료', 0, 'P1W', RecurrenceMode.finiteRecurring),
         _phase('₩39,000', 39000000000, 'P1Y', RecurrenceMode.infiniteRecurring),
@@ -246,6 +268,34 @@ void main() {
       expect(products.map((p) => p.config.period), [PremiumPeriod.yearly, PremiumPeriod.monthly]);
       expect(products.map((p) => p.price), ['US\$ 29,99', '\$2.99']);
       expect(products.first.freeTrialDays, isNull);
+    });
+
+    testWidgets('연간 카드에 스토어 숫자 가격으로 계산한 할인율을 표시한다', (tester) async {
+      try {
+        LocaleSettings.setLocaleSync(AppLocale.ko);
+        iap.products = [
+          _iosProduct('coconut_premium_yearly', '스토어 연간 가격', rawPrice: 24),
+          _iosProduct('coconut_premium_monthly', '스토어 월간 가격', rawPrice: 3),
+        ];
+        await tester.pumpWidget(
+          Provider<EntitlementService>.value(
+            value: create(),
+            child: MaterialApp(
+              theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
+              home: const PremiumPaywallScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(of: find.byKey(const Key('premium-plan-yearly')), matching: find.text('월간보다 33% 저렴')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     test('G-B1: purchased 이벤트만으로는 열지 않는다. 검증된 소유 조회에 그 거래가 있어야 active·완료·기록', () async {
@@ -625,6 +675,49 @@ void main() {
 
   group('Android', () {
     setUp(() => iap.products = _playProducts());
+
+    test('체험 혜택은 유지하고 기본 요금제로 할인율을 비교', () async {
+      final service = create();
+      final products = await service.loadProducts();
+      expect(products.first.freeTrialDays, 7);
+      expect(annualDiscountPercent(products), 33);
+      iap.buyResult = false;
+      expect(await service.purchase(products.first), PurchaseOutcome.failed);
+      expect((iap.bought.single.productDetails as GooglePlayProductDetails).offerToken, 'yearly-trial-token');
+    });
+
+    test('비교용 기본 요금제가 없으면 할인율만 숨김', () async {
+      iap.products = _playProducts(includeYearlyBase: false);
+      final products = await create().loadProducts();
+      expect(products, hasLength(2));
+      expect(products.first.freeTrialDays, 7);
+      expect(annualDiscountPercent(products), isNull);
+    });
+
+    for (final (name, phases) in <(String, List<PricingPhaseWrapper>)>[
+      (
+        '여러 가격 단계',
+        [
+          _phase('intro', 0, 'P1W', RecurrenceMode.finiteRecurring),
+          _phase('regular', 39000000000, 'P1Y', RecurrenceMode.infiniteRecurring),
+        ],
+      ),
+      ('정기 결제가 아님', [_phase('finite', 39000000000, 'P1Y', RecurrenceMode.finiteRecurring)]),
+      ('선택 혜택과 정기 가격이 다름', [_phase('different', 38000000000, 'P1Y', RecurrenceMode.infiniteRecurring)]),
+      (
+        '선택 혜택과 통화가 다름',
+        [_phase('different', 39000000000, 'P1Y', RecurrenceMode.infiniteRecurring, currencyCode: 'USD')],
+      ),
+      ('선택 혜택과 기간이 다름', [_phase('different', 39000000000, 'P1M', RecurrenceMode.infiniteRecurring)]),
+    ]) {
+      test('기본 요금제 $name: 불확실한 할인율은 숨김', () async {
+        iap.products = _playProducts(yearlyBasePhases: phases);
+        final products = await create().loadProducts();
+        expect(products, hasLength(2));
+        expect(products.first.freeTrialDays, 7);
+        expect(annualDiscountPercent(products), isNull);
+      });
+    }
 
     test('base plan별 상품: 체험 혜택을 고르고, 가격은 정기 결제 단계 문자열 그대로', () async {
       final service = create();

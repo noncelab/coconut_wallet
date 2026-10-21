@@ -14,7 +14,7 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/billing_client_wrappers.dart'
-    show PricingPhaseWrapper, PurchaseStateWrapper, SubscriptionOfferDetailsWrapper;
+    show PricingPhaseWrapper, PurchaseStateWrapper, RecurrenceMode, SubscriptionOfferDetailsWrapper;
 import 'package:in_app_purchase_android/in_app_purchase_android.dart'
     show GooglePlayProductDetails, GooglePlayPurchaseDetails;
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart' show AppStoreProduct2Details;
@@ -646,8 +646,15 @@ class InAppPurchaseEntitlementService with WidgetsBindingObserver implements Ent
         final details = _storeProductFor(config, response.productDetails);
         if (details == null) continue;
         _storeProducts[config] = details;
+        final regular = _comparisonPriceFor(config, details, response.productDetails);
         products.add(
-          PremiumProduct(config: config, price: _recurringPrice(details), freeTrialDays: await _freeTrialDays(details)),
+          PremiumProduct(
+            config: config,
+            price: _recurringPrice(details),
+            rawPrice: regular?.rawPrice,
+            currencyCode: regular?.currencyCode,
+            freeTrialDays: await _freeTrialDays(details),
+          ),
         );
       }
       return products;
@@ -671,6 +678,37 @@ class InAppPurchaseEntitlementService with WidgetsBindingObserver implements Ent
   static SubscriptionOfferDetailsWrapper? _offerOf(GooglePlayProductDetails d) {
     final index = d.subscriptionIndex;
     return index == null ? null : d.productDetails.subscriptionOfferDetails?[index];
+  }
+
+  /// Play의 rawPrice는 첫 가격 단계라 체험 상품 대신 같은 기본 요금제의 숫자 가격을 비교한다.
+  static ProductDetails? _comparisonPriceFor(
+    PremiumProductConfig config,
+    ProductDetails selected,
+    List<ProductDetails> all,
+  ) {
+    if (selected is! GooglePlayProductDetails || config.basePlanId == null) return selected;
+    final base =
+        all
+            .whereType<GooglePlayProductDetails>()
+            .where(
+              (d) =>
+                  d.id == config.storeId &&
+                  _offerOf(d)?.basePlanId == config.basePlanId &&
+                  _offerOf(d)?.offerId == null,
+            )
+            .singleOrNull;
+    final basePhase = base == null ? null : _offerOf(base)?.pricingPhases.singleOrNull;
+    final selectedPhase = _offerOf(selected)?.pricingPhases.lastOrNull;
+    if (basePhase == null ||
+        selectedPhase == null ||
+        basePhase.recurrenceMode != RecurrenceMode.infiniteRecurring ||
+        selectedPhase.recurrenceMode != RecurrenceMode.infiniteRecurring ||
+        basePhase.priceAmountMicros != selectedPhase.priceAmountMicros ||
+        basePhase.priceCurrencyCode != selectedPhase.priceCurrencyCode ||
+        basePhase.billingPeriod != selectedPhase.billingPeriod) {
+      return null;
+    }
+    return base;
   }
 
   static PricingPhaseWrapper? _trialPhaseOf(GooglePlayProductDetails d) =>
