@@ -56,6 +56,11 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoApp, CupertinoPageScaffold, CupertinoScrollBehavior, DefaultCupertinoLocalizations;
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
+import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
+import 'package:coconut_wallet/model/wallet/wallet_background.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -189,12 +194,22 @@ Future<void> _openWidgetsTab(
   bool cupertinoShell = false,
   Color? sourceMarkerColor,
   DateTime? dataNow,
+  Map<int, WalletBackground> walletBackgrounds = const {},
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
+  final appearanceRepository = WalletAppearanceRepository(prefs);
+  for (final entry in walletBackgrounds.entries) {
+    await appearanceRepository.setBackground(entry.key, entry.value);
+  }
+  final appearances = WalletAppearanceProvider(
+    repository: appearanceRepository,
+    photoStore: WalletBackgroundPhotoStore(),
+  );
+  addTearDown(appearances.dispose);
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
   final now = dataNow ?? DateTime.now();
@@ -259,6 +274,7 @@ Future<void> _openWidgetsTab(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<WalletAppearanceProvider>.value(value: appearances),
         ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(wallets, transactions, loadState: loadState)),
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences(isFakeBalanceActive: fake)),
         ChangeNotifierProvider.value(value: homeViewModel),
@@ -1314,6 +1330,68 @@ void main() {
       expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
       expect(find.byKey(const Key('hodl-insights-balance-chart')), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('balance history wallet chips filter chart without changing parent scope', (tester) async {
+      final now = DateTime(2026, 10, 20, 12);
+      const background = WalletColorBackground(0xFFBFDFFF);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        dataNow: now,
+        walletBackgrounds: {1: background},
+        captureKey: const ValueKey('chip-capture'),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final screen = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+      final vm = screen.viewModel;
+      final originalScope = vm.walletIds == null ? null : List<int>.of(vm.walletIds!);
+      final wallet = vm.data.wallets.first;
+      final chips = find.descendant(
+        of: find.byType(WalletBalanceHistoryScreen),
+        matching: find.byType(BalanceHistoryPeriodChips),
+      );
+      final walletChip = find.byKey(ValueKey('balance-history-wallet-${wallet.id}'));
+      final chipMaterial = find.ancestor(of: walletChip, matching: find.byType(Material)).first;
+      final chipBackground = find.descendant(of: chipMaterial, matching: find.byType(WalletCardBackground));
+      expect(tester.widget<WalletCardBackground>(chipBackground).background, background);
+      expect(tester.getSize(chipBackground).width, greaterThan(0));
+      expect(tester.getSize(chipBackground).height, greaterThan(0));
+      final sample = tester.getRect(walletChip).topCenter + const Offset(0, 3);
+      await tester.runAsync(() async {
+        final image =
+            await tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('chip-capture'))).toImage();
+        final bytes = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!.buffer.asUint8List();
+        final offset = (sample.dy.floor() * image.width + sample.dx.floor()) * 4;
+        expect(bytes.sublist(offset, offset + 4), [191, 223, 255, 255]);
+        image.dispose();
+      });
+
+      expect(tester.getRect(walletChip).bottom, lessThan(tester.getRect(chips).top));
+      await tester.tap(walletChip);
+      await tester.pumpAndSettle();
+      final sparkline = find.descendant(
+        of: find.byType(WalletBalanceHistoryScreen),
+        matching: find.byType(HomeSparkline),
+      );
+      expect(
+        tester.widget<HomeSparkline>(sparkline).values,
+        vm.data.dailyBalances(walletIds: [wallet.id], days: vm.balancePeriod.days, asOf: now),
+      );
+      await tester.tap(find.byKey(const ValueKey('balance-history-wallet-all')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<HomeSparkline>(sparkline).values,
+        vm.data.dailyBalances(days: vm.balancePeriod.days, asOf: now),
+      );
+      expect(vm.walletIds, originalScope);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
       await _close(tester);
     });
 

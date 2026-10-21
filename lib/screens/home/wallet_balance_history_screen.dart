@@ -14,6 +14,11 @@ import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_per
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
@@ -73,6 +78,7 @@ class WalletBalanceHistoryScreen extends StatefulWidget {
 
 class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen> with WidgetsBindingObserver {
   late HomeWidgetPeriod _period;
+  List<int>? _walletIds;
   late DateTime _today;
   late int _days;
   late int _allDays;
@@ -90,7 +96,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   HodlInsightsViewModel get vm => widget.viewModel;
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
-  List<int> get _balances => vm.data.dailyBalances(walletIds: vm.walletIds, days: _days, asOf: _today);
+  List<int> get _balances => vm.data.dailyBalances(walletIds: _walletIds, days: _days, asOf: _today);
   TextStyle get _dateStyle => CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText);
 
   int get _first => (_end - _span + 1).round().clamp(0, _days - 1);
@@ -99,6 +105,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   @override
   void initState() {
     super.initState();
+    _walletIds = vm.walletIds == null ? null : List.of(vm.walletIds!);
     _readAnchor();
     _period = vm.balancePeriod;
     _span = (_period == HomeWidgetPeriod.all ? _allDays : _period.days).toDouble();
@@ -109,7 +116,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   void _readAnchor() {
     _today = vm.data.now;
-    _allDays = math.max(2, vm.data.daysSinceFirstTransaction(walletIds: vm.walletIds, asOf: _today));
+    _allDays = math.max(2, vm.data.daysSinceFirstTransaction(walletIds: _walletIds, asOf: _today));
     _days = math.max(365, _allDays);
   }
 
@@ -199,88 +206,192 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
         top: false,
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          padding: const EdgeInsets.only(top: 16, bottom: 12),
           child: Column(
             children: [
-              Text(
-                selected == null ? t.hodl_insights.total_balance : DateFormat('yyyy.MM.dd').format(dates[selected]),
-                style: _dateStyle,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  selected == null ? t.hodl_insights.total_balance : DateFormat('yyyy.MM.dd').format(dates[selected]),
+                  style: _dateStyle,
+                ),
               ),
               const SizedBox(height: 8),
-              FittedBox(
-                child: Text(
-                  unit.displayBitcoinAmount(balances[selected ?? balances.length - 1], withUnit: true),
-                  style: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FittedBox(
+                  child: Text(
+                    unit.displayBitcoinAmount(balances[selected ?? balances.length - 1], withUnit: true),
+                    style: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: BalanceHistoryPeriodChips(selected: _period, onSelected: _selectPeriod),
-              ),
+              SingleChildScrollView(scrollDirection: Axis.horizontal, child: _walletChips()),
               const SizedBox(height: 16),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxHeight = constraints.maxHeight;
-                    const listGap = 12.0;
-                    final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
-                    var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
-                    var chartTarget = preferredChart;
-                    // A below-layout card can be a few pixels taller than the 52% leftover.
-                    // Yield chart height until that card fits. The floor keeps the plot visible.
-                    if (selected != null && _cardExtent > listHeight) {
-                      final minChart = math.max(120.0, maxHeight * 0.36);
-                      listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
-                      chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
-                    }
-                    // Lay the list out at its final height for the whole shrink.
-                    // A bottom-pinned slot is shorter than the header mid-tween and overflows.
-                    return TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 360),
-                      curve: Curves.easeInOutCubic,
-                      tween: Tween(end: chartTarget),
-                      child: selected == null || listHeight <= 0 ? null : _wallets(dates[selected]),
-                      builder:
-                          (context, chartHeight, wallets) => SizedBox(
-                            height: constraints.maxHeight,
-                            width: constraints.maxWidth,
-                            child: Stack(
-                              clipBehavior: Clip.hardEdge,
-                              children: [
-                                SizedBox(
-                                  height: chartHeight,
-                                  width: double.infinity,
-                                  child: Hero(
-                                    tag: walletBalanceHistoryHeroTag,
-                                    flightShuttleBuilder: walletBalanceHistoryFlight,
-                                    child: Material(
-                                      color: colors.homeSurface,
-                                      borderRadius: BorderRadius.circular(20),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: _chart(balances, dates),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxHeight = constraints.maxHeight;
+                      const listGap = 12.0;
+                      final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
+                      var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
+                      var chartTarget = preferredChart;
+                      // A below-layout card can be a few pixels taller than the 52% leftover.
+                      // Yield chart height until that card fits. The floor keeps the plot visible.
+                      if (selected != null && _cardExtent > listHeight) {
+                        final minChart = math.max(120.0, maxHeight * 0.36);
+                        listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
+                        chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
+                      }
+                      // Lay the list out at its final height for the whole shrink.
+                      // A bottom-pinned slot is shorter than the header mid-tween and overflows.
+                      return TweenAnimationBuilder<double>(
+                        duration: const Duration(milliseconds: 360),
+                        curve: Curves.easeInOutCubic,
+                        tween: Tween(end: chartTarget),
+                        child: selected == null || listHeight <= 0 ? null : _wallets(dates[selected]),
+                        builder:
+                            (context, chartHeight, wallets) => SizedBox(
+                              height: constraints.maxHeight,
+                              width: constraints.maxWidth,
+                              child: Stack(
+                                clipBehavior: Clip.hardEdge,
+                                children: [
+                                  SizedBox(
+                                    height: chartHeight,
+                                    width: double.infinity,
+                                    child: Hero(
+                                      tag: walletBalanceHistoryHeroTag,
+                                      flightShuttleBuilder: walletBalanceHistoryFlight,
+                                      child: Material(
+                                        color: colors.homeSurface,
+                                        borderRadius: BorderRadius.circular(20),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: _chart(balances, dates),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (wallets != null)
-                                  Positioned(
-                                    top: chartHeight + listGap,
-                                    left: 0,
-                                    right: 0,
-                                    height: listHeight,
-                                    child: wallets,
-                                  ),
-                              ],
+                                  if (wallets != null)
+                                    Positioned(
+                                      top: chartHeight + listGap,
+                                      left: 0,
+                                      right: 0,
+                                      height: listHeight,
+                                      child: wallets,
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _selectWallet(int? walletId) {
+    setState(() {
+      if (walletId == null) {
+        _walletIds = null;
+      } else if (_walletIds == null) {
+        _walletIds = [walletId];
+      } else if (_walletIds!.contains(walletId)) {
+        if (_walletIds!.length == 1) return;
+        _walletIds!.remove(walletId);
+      } else {
+        _walletIds!.add(walletId);
+      }
+      _expanded.clear();
+      _cardExtents.clear();
+      _cardExtent = 0;
+    });
+    _reanchor();
+  }
+
+  Widget _walletChips() {
+    final colors = context.coconutColors;
+    final appearances = context.watchWalletAppearance();
+    Widget chip(int? id, String label, {WalletItemBase? wallet}) {
+      final background =
+          wallet == null ? null : (appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet)).background;
+      final selected = id == null ? _walletIds == null : _walletIds?.contains(id) == true;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: Semantics(
+          selected: selected,
+          button: true,
+          child: Material(
+            color: selected ? colors.primaryText : colors.homeSurface,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                if (wallet != null)
+                  Positioned.fill(
+                    child: WalletCardBackground(
+                      background: background,
+                      photoFile: appearances?.photoFileFor(wallet.id),
+                    ),
+                  ),
+                WalletContentTheme(
+                  background: background,
+                  child: Builder(
+                    builder:
+                        (chipContext) => InkWell(
+                          key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => _selectWallet(id),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (wallet != null) ...[
+                                  Icon(
+                                    selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                    size: 14,
+                                    color: chipContext.coconutColors.primaryText,
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Text(
+                                  label,
+                                  style: CoconutTypography.body3_12.copyWith(
+                                    color:
+                                        wallet != null
+                                            ? chipContext.coconutColors.primaryText
+                                            : selected
+                                            ? colors.background
+                                            : colors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chip(null, t.home_edit.all_wallets),
+        for (final wallet in vm.data.wallets) chip(wallet.id, wallet.name, wallet: wallet),
+      ],
     );
   }
 
@@ -292,9 +403,18 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final selected = _selected;
     final localSelected = selected != null && selected >= _first && selected <= _last ? selected - _first : null;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 58, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: BalanceHistoryPeriodChips(selected: _period, onSelected: _selectPeriod),
+            ),
+          ),
+          const SizedBox(height: 46),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(vm.data.unit.symbol, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
@@ -430,7 +550,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final states =
         [
           for (final wallet in vm.data.wallets)
-            if (vm.walletIds == null || vm.walletIds!.contains(wallet.id))
+            if (_walletIds == null || _walletIds!.contains(wallet.id))
               () {
                 final all = vm.data.transactionRecordsOf(wallet.id);
                 final today =
