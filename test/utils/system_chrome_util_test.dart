@@ -62,6 +62,7 @@ void main() {
                                           isArranging: false,
                                           addWalletButtonLink: LayerLink(),
                                           onArrangeDone: () {},
+                                          onEdit: () {},
                                           onAddWallet: () {},
                                           onSettings: () {},
                                         ),

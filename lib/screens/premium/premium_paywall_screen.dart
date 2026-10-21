@@ -355,7 +355,8 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       ),
       CoconutLayout.spacing_300h,
       _ValueRow(
-        iconPath: CommonActionIconPath.arrowReload,
+        iconPath: FeatureWalletHealthIconPath.ambulance,
+        tint: false,
         title: t.premium.rescue.name,
         body: t.premium.paywall.value_rescue_body,
       ),
@@ -522,9 +523,12 @@ Future<bool> restorePremiumPurchases(BuildContext context, EntitlementService pr
 
 /// WalletOnboardingView 항목 행과 같은 비율. 세 행 모두 같은 모양의 정적 행(도움 채널 링크는 비교표 아래)
 class _ValueRow extends StatelessWidget {
-  const _ValueRow({required this.iconPath, required this.title, required this.body});
+  const _ValueRow({required this.iconPath, required this.title, required this.body, this.tint = true});
 
   final String iconPath;
+
+  /// false면 컬러 아이콘을 원래 색 그대로
+  final bool tint;
   final String title;
   final String body;
 
@@ -544,7 +548,7 @@ class _ValueRow extends StatelessWidget {
                   iconPath,
                   width: 24,
                   height: 24,
-                  colorFilter: ColorFilter.mode(colors.premiumText, BlendMode.srcIn),
+                  colorFilter: tint ? ColorFilter.mode(colors.premiumText, BlendMode.srcIn) : null,
                 ),
               ),
             ),

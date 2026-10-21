@@ -71,7 +71,7 @@ void main() {
   });
 
   test('normalize keeps items whose definition is not registered yet', () {
-    final config = HomeConfiguration(items: [_widget('a', HomeItemIds.safetyStatusWide, 0, HomeSpan.wide)]);
+    final config = HomeConfiguration(items: [_widget('a', HomeItemIds.safetyStatus, 0, HomeSpan.wide)]);
 
     expect(config.normalize(HomeItemRegistry().byId).items, hasLength(1));
   });

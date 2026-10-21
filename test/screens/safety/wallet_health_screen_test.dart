@@ -20,6 +20,7 @@ import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -121,9 +122,8 @@ void main() {
         expect(_text(t.wallet_health.check.watch_only_verify.issue_not_verified), findsOneWidget);
         expect(_text(t.wallet_health.category.addresses_reused(n: 2)), findsNWidgets(2)); // 카드 상태 줄 + 행
         expect(_premiumCard, findsOneWidget);
-        // C4: 판매 카드 안에는 칩이 없다(Premium 바탕 위에서 묻히고 젬이 두 번 나온다). 머리 줄은 PremiumMark 20
+        // C4: 판매 카드 안에는 칩이 없다(Premium 바탕 위에서 묻히고 젬이 두 번 나온다)
         expect(find.descendant(of: _premiumCard, matching: find.byType(PremiumChip)), findsNothing);
-        expect(find.descendant(of: _premiumCard, matching: find.byType(PremiumMark)), findsOneWidget);
         expect(_text(t.wallet_health.section.all_good), findsOneWidget);
         expect(_text(t.wallet_health.section.recommended), findsOneWidget);
         expect(_text(t.wallet_health.recommended.mnemonic_stored), findsOneWidget);
@@ -173,11 +173,10 @@ void main() {
         expect(_text(t.wallet_health.section.not_included_footer_no_wallet), findsOneWidget);
         expect(_premiumCard, findsNothing);
         expect(find.byKey(const Key('wallet-health-premium-active')), findsNothing);
-        // 할 일 안내: 세 줄 모두 중립 동그라미, 완료 체크는 없다
+        // 할 일 안내: 시안대로 세 줄 모두 체크
         final unlock = find.byType(WalletHealthUnlockCard);
         expect(unlock, findsOneWidget);
-        expect(find.descendant(of: unlock, matching: _svg(CommonActionIconPath.check)), findsNothing);
-        expect(find.descendant(of: unlock, matching: _svg(CommonFormIconPath.circle)), findsNWidgets(3));
+        expect(find.descendant(of: unlock, matching: _svg(FeatureWalletHealthIconPath.check)), findsNWidgets(3));
       });
 
       testWidgets('S3 critical: siren hero, incident card, [거래 검토] above the Premium variant, other checks', (
@@ -763,22 +762,28 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-health-info')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-about-sheet')), findsOneWidget);
-    // C16: 시트 제목은 짧게(화면 제목과 같은 "지갑 상태"), 문장 제목은 본문 첫 줄 18 Bold
-    expect(_text(t.wallet_health.title), findsNWidgets(2)); // 화면 앱바 + 시트 머리
-    final heading = find.descendant(
-      of: find.byKey(const Key('wallet-health-about-sheet')),
-      matching: _text(t.wallet_health.about.title),
-    );
+    // 시트 머리가 "About Wallet Health Score"(18 Bold), 본문에는 같은 제목을 다시 쓰지 않는다
+    final heading = _text(t.wallet_health.about.title);
     expect(heading, findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('wallet-health-about-sheet')), matching: heading), findsNothing);
     expect(tester.widget<Text>(heading).style!.fontSize, 18);
+    // 좁은 앱바 제목 칸에서 말줄임 대신 한 줄로 줄여 맞춘다
+    expect(tester.widget<Text>(heading).overflow, isNot(TextOverflow.ellipsis));
+    expect(find.ancestor(of: heading, matching: find.byType(FittedBox)), findsOneWidget);
     for (final label in WalletHealthLabel.values) {
       expect(_text(walletHealthLabelText(label)), findsWidgets);
     }
-    expect(_text('45%'), findsOneWidget);
     expect(_textContaining('pts'), findsNothing);
-    expect(_text(t.wallet_health.about.coverage_body), findsOneWidget);
+    // 비중은 포함 점검 카드 제목 옆, 계산식은 점수 × 비중 = 기여와 합계(최종 점수)
+    expect(_text('45%'), findsOneWidget);
+    expect(_text(t.wallet_health.about.formula_title), findsOneWidget);
+    expect(_textContaining('80 × '), findsOneWidget);
+    expect(_text(t.wallet_health.about.formula_total), findsOneWidget);
+    expect(_text('${scoredReport().score}'), findsWidgets);
+    expect(_text(t.wallet_health.about.included_title), findsOneWidget);
     expect(_text(t.wallet_health.about.data_note), findsOneWidget);
-    expect(_text(t.wallet_health.about.weight_largest_wallet), findsOneWidget);
+    expect(_text(t.wallet_health.about.weighting_title), findsNothing);
+    expect(_text(t.wallet_health.about.wallets_title), findsNothing);
   });
 
   testWidgets('category card opens its detail sheet; a failing row inside it opens the review sheet', (tester) async {
@@ -863,11 +868,6 @@ void main() {
       for (final text in [t.wallet_health.check.watch_only_verify.issue_not_verified, t.premium.card.body]) {
         expect(find.ancestor(of: _text(text), matching: find.byType(FittedBox)), findsNothing, reason: text);
       }
-      // 한 줄 이름·숫자만 줄여 맞춘다(POLISH R2·C22): 카드 머리 폭에서 단어 중간에 줄이 바뀌지 않게
-      expect(
-        find.ancestor(of: _text(t.wallet_health.category.recovery_readiness), matching: find.byType(FittedBox)),
-        findsOneWidget,
-      );
       await tester.tap(find.byKey(const Key('wallet-health-info')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
@@ -976,17 +976,20 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('C43: own titles for hot storage and multisig separation; title, guide, then the common intro', (
+    testWidgets('C43: own short sheet titles for hot storage and multisig separation; guide, then the common intro', (
       tester,
     ) async {
       final r = t.wallet_health.recommended;
+      Finder inSheet(String text) => find.descendant(of: find.byType(BottomSheet), matching: _text(text));
       await openRecommended(tester, RecommendedCheckId.hotSafeStorage);
-      expect(_text(r.safe_storage), findsOneWidget);
+      // 시트 머리는 짧은 제목, 목록의 긴 문장은 시트에서 되풀이하지 않는다
+      expect(inSheet(r.sheet_title.safe_storage), findsOneWidget);
+      expect(inSheet(r.safe_storage), findsNothing);
       expect(tester.getTopLeft(_text(r.safe_storage_body)).dy, lessThan(tester.getTopLeft(_text(r.intro)).dy));
       await openRecommended(tester, RecommendedCheckId.multisigBackupSeparation);
-      expect(_text(r.recovery_separate), findsOneWidget);
+      expect(inSheet(r.sheet_title.recovery_separate), findsOneWidget);
       expect(_text(r.recovery_separate_body), findsOneWidget);
-      expect(r.safe_storage, isNot(r.recovery_separate));
+      expect(r.sheet_title.safe_storage, isNot(r.sheet_title.recovery_separate));
     });
 
     testWidgets('C38: at 320×568 and 2.0× the recommended sheet scrolls to its button', (tester) async {
@@ -1045,7 +1048,17 @@ void main() {
         safetyCheckName(SafetyCheckId.unrecognizedOutgoing),
         t.wallet_health.category.recovery_readiness,
       ];
-      expect(find.descendant(of: card, matching: find.byIcon(CupertinoIcons.clock)), findsNWidgets(4));
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is SvgPicture &&
+                (w.bytesLoader as SvgAssetLoader).assetName == FeatureWalletHealthIconPath.clockFilled,
+          ),
+        ),
+        findsNWidgets(4),
+      );
       final tops = [for (final name in names) tester.getTopLeft(find.descendant(of: card, matching: _text(name))).dy];
       expect(tops, [...tops]..sort());
       expect(find.descendant(of: card, matching: _text(safetyCheckName(SafetyCheckId.txConflict))), findsNothing);
@@ -1156,14 +1169,15 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('X3: category card status lines wrap at 2.0× instead of ending in "…"', (tester) async {
-      for (final report in [notEnoughDataReport(), noWalletReport()]) {
+    testWidgets('X3: at 2.0× the category cards keep their fixed text size without overflow', (tester) async {
+      for (final report in [scoredReport(), notEnoughDataReport(), noWalletReport()]) {
         await _pump(tester, report, width: 375, textScale: 2.0);
         for (final category in SafetyCategory.values) {
           final card = find.byKey(Key('wallet-health-category-${category.name}'));
-          for (final text in tester.widgetList<Text>(find.descendant(of: card, matching: find.byType(Text)))) {
-            expect(text.overflow, isNot(TextOverflow.ellipsis), reason: category.name);
-            expect(text.maxLines, isNot(2), reason: category.name);
+          for (final paragraph in tester.renderObjectList<RenderParagraph>(
+            find.descendant(of: card, matching: find.byType(RichText)),
+          )) {
+            expect(paragraph.textScaler.scale(10), 10, reason: category.name);
           }
         }
         expect(tester.takeException(), isNull);
@@ -1196,7 +1210,7 @@ void main() {
     // X13: 큰 글자(1.3배~)에서는 칩을 부제 아래 왼쪽에(나란히면 칩이 폭의 35%를 차지해 글이 여섯 줄로 좁아진다)
     for (final locale in [AppLocale.ko, AppLocale.de]) {
       testWidgets(
-        'X13 ${locale.name}: the free rescue row chip sits beside the text at 1.0× and under the subtitle from 1.3×',
+        'X13 ${locale.name}: the free rescue row chip sits beside the title at 1.0× and under the subtitle from 1.3×',
         (tester) async {
           for (final scale in [1.0, 1.3, 2.0]) {
             await _pump(
@@ -1211,8 +1225,11 @@ void main() {
             final row = find.byKey(const Key('wallet-health-rescue-ready'));
             final chip = tester.getRect(find.descendant(of: row, matching: find.byType(PremiumChip)));
             final subtitle = tester.getRect(find.descendant(of: row, matching: _text(t.premium.rescue.free_body)));
+            final title = tester.getRect(find.descendant(of: row, matching: _text(t.premium.rescue.name)));
             if (scale < 1.3) {
-              expect(chip.left, greaterThanOrEqualTo(subtitle.right), reason: '$scale');
+              // 제목 바로 옆
+              expect(chip.left, greaterThanOrEqualTo(title.right), reason: '$scale');
+              expect(chip.bottom, lessThanOrEqualTo(subtitle.top + 0.5), reason: '$scale');
             } else {
               expect(chip.top, greaterThanOrEqualTo(subtitle.bottom), reason: '$scale');
               expect(chip.left, closeTo(subtitle.left, 0.5), reason: '$scale');

@@ -171,16 +171,11 @@ void main() {
     expect(find.text(safetyKoText(t.wallet_health.widget.no_wallet)), findsOneWidget);
   }, timeout: _timeout);
 
-  test('two Safety Status widgets, one size each, in the safety category', () {
+  test('one Safety Status widget with a 4×2 or 2×2 size choice, in the safety category', () {
     final definitions = safetyHomeWidgets();
-    expect(definitions.map((definition) => definition.id), [
-      HomeItemIds.safetyStatusSmall,
-      HomeItemIds.safetyStatusWide,
-    ]);
-    expect(definitions.map((definition) => definition.supportedSpans), [
-      [HomeSpan.small],
-      [HomeSpan.wide],
-    ]);
+    expect(definitions.map((definition) => definition.id), [HomeItemIds.safetyStatus]);
+    expect(definitions.single.supportedSpans, [HomeSpan.small, HomeSpan.wide]);
+    expect(definitions.single.settings.sizes, [HomeSpan.wide, HomeSpan.small]);
     expect(definitions.every((definition) => definition.category == HomeItemCategory.safety), isTrue);
   });
 
@@ -237,7 +232,7 @@ void main() {
             definitionId: definition.id,
             kind: HomeItemKind.widget,
             order: 0,
-            span: definition.supportedSpans.single,
+            span: definition.supportedSpans.first,
           ),
         );
         await tester.pump();

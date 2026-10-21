@@ -18,7 +18,7 @@ import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart'
-    show safetyWalletIcon, safetyWalletKindText;
+    show safetyTitleLineTop, safetyWalletIcon, safetyWalletKindText;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -105,53 +105,62 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
 
   Widget _comparisonRow(String title, bool? matched, {String? value, bool small = false}) {
     final colors = context.coconutColors;
+    final health = context.walletHealthColors;
+    final valueStyle =
+        value == null
+            ? CoconutTypography.body3_12
+            : small
+            ? CoconutTypography.caption_10_Number
+            : CoconutTypography.body3_12_Number;
+    final valueLine = MediaQuery.textScalerOf(context).scale(valueStyle.fontSize!) * valueStyle.height!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(
-            matched == null
-                ? CommonFormIconPath.circle
-                : matched
-                ? CommonFormIconPath.circleCheck
-                : CommonStateIconPath.triangleWarning,
-            width: 18,
-            height: 18,
-            semanticsLabel:
-                matched == null
-                    ? t.wallet_health.evidence.not_checked
-                    : matched
-                    ? t.wallet_health.bsms_verify.match
-                    : t.wallet_health.bsms_verify.mismatch,
-            colorFilter: ColorFilter.mode(
+          Padding(
+            padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20)),
+            child: SvgPicture.asset(
               matched == null
-                  ? colors.iconSecondary
+                  ? FeatureWalletHealthIconPath.circleEmpty
                   : matched
-                  ? colors.success
-                  : colors.danger,
-              BlendMode.srcIn,
-            ),
-          ),
-          CoconutLayout.spacing_300w,
-          Expanded(child: Text(safetyKoText(title), style: CoconutTypography.body2_14.setColor(colors.primaryText))),
-          CoconutLayout.spacing_300w,
-          Flexible(
-            child: Text(
-              value ??
-                  (matched == null
+                  ? FeatureWalletHealthIconPath.checkCircleFilled
+                  : FeatureWalletHealthIconPath.triangleWarningFilled,
+              width: 20,
+              height: 20,
+              semanticsLabel:
+                  matched == null
                       ? t.wallet_health.evidence.not_checked
                       : matched
                       ? t.wallet_health.bsms_verify.match
-                      : t.wallet_health.bsms_verify.mismatch),
-              textAlign: TextAlign.end,
-              // 값(정족수·지문·경로)만 숫자 글꼴, 일치·불일치 같은 글은 본문 글꼴(숫자 글꼴에는 한글이 없다)
-              style: (value == null
-                      ? CoconutTypography.body3_12
-                      : small
-                      ? CoconutTypography.caption_10_Number
-                      : CoconutTypography.body3_12_Number)
-                  .setColor(colors.secondaryText),
+                      : t.wallet_health.bsms_verify.mismatch,
+              colorFilter: ColorFilter.mode(
+                matched == null
+                    ? colors.iconSecondary
+                    : matched
+                    ? health.good
+                    : health.critical,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+          CoconutLayout.spacing_200w,
+          Expanded(child: Text(safetyKoText(title), style: CoconutTypography.body2_14.setColor(colors.primaryText))),
+          CoconutLayout.spacing_300w,
+          Flexible(
+            child: Padding(
+              padding: EdgeInsets.only(top: safetyTitleLineTop(context, valueLine)),
+              child: Text(
+                value ??
+                    (matched == null
+                        ? t.wallet_health.evidence.not_checked
+                        : matched
+                        ? t.wallet_health.bsms_verify.match
+                        : t.wallet_health.bsms_verify.mismatch),
+                textAlign: TextAlign.end,
+                // 값(정족수·지문·경로)만 숫자 글꼴, 일치·불일치 같은 글은 본문 글꼴(숫자 글꼴에는 한글이 없다)
+                style: valueStyle.setColor(colors.secondaryText),
+              ),
             ),
           ),
         ],
@@ -225,7 +234,12 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                       _comparisonRow(
                         copy.signer_fingerprints,
                         comparison?.fingerprints,
-                        value: wallet.signerBsmsList.map((signer) => signer.fingerprint).join('\n'),
+                        value: wallet.signerBsmsList
+                            .map(
+                              (signer) =>
+                                  signer.fingerprint.replaceAllMapped(RegExp(r'(.{4})(?=.)'), (m) => '${m[1]} '),
+                            )
+                            .join('\n'),
                         small: true,
                       ),
                       _comparisonRow(
@@ -254,9 +268,12 @@ class _BsmsVerificationScreenState extends State<BsmsVerificationScreen> {
                             background: comparison.matched ? colors.successSurface : colors.dangerSurface,
                             iconPath:
                                 comparison.matched
-                                    ? CommonStateIconPath.shieldCheck
-                                    : CommonStateIconPath.triangleWarning,
-                            iconColor: comparison.matched ? colors.success : colors.danger,
+                                    ? FeatureWalletHealthIconPath.checkCircleFilled
+                                    : FeatureWalletHealthIconPath.triangleWarningFilled,
+                            iconColor:
+                                comparison.matched
+                                    ? context.walletHealthColors.good
+                                    : context.walletHealthColors.critical,
                             title: comparison.matched ? copy.verified_title : copy.mismatch_title,
                             body: comparison.matched ? copy.verified_body : copy.mismatch_body,
                           ),

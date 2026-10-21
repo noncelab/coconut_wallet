@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 enum HomeSafetyStatusKind { critical, connectionProblem, actionNeeded, reconnected, updating, noIssues, upToDate }
 
 class HomeSafetyStatus extends Equatable {
-  const HomeSafetyStatus(this.kind, {this.count = 0, this.networkStatus = NetworkStatus.online});
+  const HomeSafetyStatus(this.kind, {this.count = 0, this.networkStatus = NetworkStatus.online, this.label});
 
   final HomeSafetyStatusKind kind;
 
@@ -16,8 +16,11 @@ class HomeSafetyStatus extends Equatable {
   /// [HomeSafetyStatusKind.connectionProblem]일 때 문구를 고르는 데 쓴다
   final NetworkStatus networkStatus;
 
+  /// [HomeSafetyStatusKind.noIssues]일 때 점수 라벨(매우 좋음·양호 색을 나눈다)
+  final WalletHealthLabel? label;
+
   @override
-  List<Object?> get props => [kind, count, networkStatus];
+  List<Object?> get props => [kind, count, networkStatus, label];
 }
 
 HomeSafetyStatus resolveHomeSafetyStatus({
@@ -27,7 +30,7 @@ HomeSafetyStatus resolveHomeSafetyStatus({
   required bool isSyncing,
 }) {
   HomeSafetyStatus status(HomeSafetyStatusKind kind, [int count = 0]) =>
-      HomeSafetyStatus(kind, count: count, networkStatus: networkStatus);
+      HomeSafetyStatus(kind, count: count, networkStatus: networkStatus, label: report?.label);
 
   if (report?.isCritical ?? false) return status(HomeSafetyStatusKind.critical);
   if (networkStatus != NetworkStatus.online) return status(HomeSafetyStatusKind.connectionProblem);

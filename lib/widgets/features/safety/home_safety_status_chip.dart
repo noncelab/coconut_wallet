@@ -5,6 +5,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -14,11 +15,11 @@ import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// 홈 앱바 왼쪽 상태칩(아이콘 + 문구 + 꺾쇠). 누르면 Wallet Health.
-/// 문구가 0.85배(글자를 키웠으면 1배 크기)까지 줄여도 안 들어가면 짧은 꼴(아이콘·꺾쇠, 조치 필요는 건수만)로 바꾼다.
+/// 글자 크기는 시스템 글꼴 배율과 관계없이 고정, 문구가 안 들어가면 짧은 꼴(아이콘·꺾쇠, 조치 필요는 건수만)로 바꾼다.
 /// 의미 라벨은 늘 전체 문구.
 class HomeSafetyStatusChip extends StatelessWidget {
-  /// 아이콘 16 + 간격 6 + 4 + 꺾쇠 6
-  static const _chromeWidth = 32.0;
+  /// 아이콘 18 + 간격 4 + 8 + 꺾쇠 6
+  static const _chromeWidth = 36.0;
 
   /// 앱바 leading 슬롯(56 - 위아래 8)을 꽉 채운 누름 높이. UI_SPEC의 44보다 작지만 더 키우면 글자 2배에서 앱바가 넘친다(WCAG 2.2 최소 24는 넘음, lead 확인)
   static const _tapHeight = 40.0;
@@ -45,29 +46,38 @@ class HomeSafetyStatusChip extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => MediaQuery.withNoTextScaling(
+    child: LayoutBuilder(builder: (context, constraints) => _build(context, math.min(maxWidth, constraints.maxWidth))),
+  );
+
+  Widget _build(BuildContext context, double maxWidth) {
     final colors = context.coconutColors;
     // 동작 줄이기: 전환 없이 바로 바꾸고, 업데이트 중 표시는 돌지 않는 원호로
     final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
-    Widget svg(String path, Color? color) => safetyStateIcon(path, 16, color);
+    final health = context.walletHealthColors;
+    final okColor = status.label == WalletHealthLabel.excellent ? health.excellent : health.good;
+    Widget svg(String path, Color? color) => safetyStateIcon(path, 18, color);
     final (icon, color) = switch (status.kind) {
-      HomeSafetyStatusKind.critical => (svg(CommonStateIconPath.siren, colors.danger), colors.dangerText),
+      HomeSafetyStatusKind.critical => (
+        svg(FeatureWalletHealthIconPath.lightEmergencyOn, health.critical),
+        health.critical,
+      ),
       HomeSafetyStatusKind.connectionProblem => (
         svg(FeatureConnectivityIconPath.cloudDisconnected, null),
         colors.dangerText,
       ),
       HomeSafetyStatusKind.actionNeeded => (
-        svg(CommonStateIconPath.triangleWarning, colors.warningText),
-        colors.warningText,
+        svg(FeatureWalletHealthIconPath.triangleWarningFilled, health.warning),
+        health.warning,
       ),
       HomeSafetyStatusKind.reconnected => (svg(CommonFormIconPath.circleCheck, colors.success), colors.success),
       HomeSafetyStatusKind.updating => (
         // 16 상자 안의 14: 다른 상태로 바뀔 때 글이 옆으로 튀지 않게
         SizedBox.square(
-          dimension: 16,
+          dimension: 18,
           child: Center(
             child: SizedBox.square(
-              dimension: 14,
+              dimension: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: colors.secondaryText,
@@ -78,47 +88,45 @@ class HomeSafetyStatusChip extends StatelessWidget {
         ),
         colors.secondaryTextStrong,
       ),
-      HomeSafetyStatusKind.noIssues => (
-        svg(CommonStateIconPath.shieldCheck, colors.secondaryTextStrong),
-        colors.secondaryTextStrong,
-      ),
+      HomeSafetyStatusKind.noIssues => (svg(FeatureWalletHealthIconPath.checkCircleFilled, okColor), okColor),
       HomeSafetyStatusKind.upToDate => (
         svg(CommonFormIconPath.circleCheck, colors.secondaryTextStrong),
         colors.secondaryTextStrong,
       ),
     };
     final text = _text;
-    final style = CoconutTypography.body3_12_Bold.copyWith(color: color);
-    // 1.3×에서 정상 상태 글이 사라지지 않게, 키운 만큼은 1배 크기까지 줄여 보인다
-    final minScale = math.min(0.85, 1 / MediaQuery.textScalerOf(context).scale(1));
-    final fits = measureHomeText(context, text, style) * minScale <= maxWidth - _chromeWidth;
+    final style = CoconutTypography.body2_14_Bold.copyWith(
+      color: color,
+      leadingDistribution: TextLeadingDistribution.even,
+    );
+    final fits = measureHomeText(context, text, style) <= maxWidth - _chromeWidth;
     final label =
         fits
-            ? Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(text, maxLines: 1, style: style),
-              ),
-            )
+            ? Text(text, maxLines: 1, style: style)
             : status.kind == HomeSafetyStatusKind.actionNeeded
             ? Text('${status.count}', maxLines: 1, style: style)
             : null;
 
-    final row = Row(
+    final row = FittedBox(
       key: ValueKey((status, label == null)),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        icon,
-        if (label != null) ...[CoconutLayout.spacing_150w, label],
-        CoconutLayout.spacing_100w,
-        SvgPicture.asset(
-          CommonNavigationIconPath.arrowRight,
-          width: 6,
-          height: 10,
-          colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
-        ),
-      ],
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          if (label != null) ...[CoconutLayout.spacing_100w, label],
+          if (status.kind != HomeSafetyStatusKind.updating) ...[
+            CoconutLayout.spacing_200w,
+            SvgPicture.asset(
+              CommonNavigationIconPath.arrowRight,
+              width: 6,
+              height: 10,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
+          ],
+        ],
+      ),
     );
     return Semantics(
       button: true,

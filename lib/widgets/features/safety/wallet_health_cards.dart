@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart'
     show CoconutLayout, CoconutTypography, TextColorExtension;
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -11,6 +13,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_sheets.dart' show openSafetyCheckAction;
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -35,15 +38,35 @@ String safetyCategoryName(SafetyCategory category) => switch (category) {
 
 /// 피그마 아이콘이 앱에 없어서 뜻이 같은 기존 아이콘을 쓴다
 String safetyCategoryIconPath(SafetyCategory category) => switch (category) {
-  SafetyCategory.recovery => FeatureWalletIconPath.vault,
-  SafetyCategory.activity => FeatureTransactionIconPath.transaction,
-  SafetyCategory.app => CommonSecurityIconPath.lock,
-  SafetyCategory.privacy => CommonVisibilityIconPath.eyeCrossed,
+  SafetyCategory.recovery => FeatureWalletHealthIconPath.secureBackup,
+  SafetyCategory.activity => FeatureWalletHealthIconPath.walletActivity,
+  SafetyCategory.app => FeatureWalletHealthIconPath.passwordLock,
+  SafetyCategory.privacy => FeatureWalletHealthIconPath.incognito,
 };
 
 /// [style] 글의 첫 줄 가운데에 [size] 아이콘·점을 두는 위 여백. 글자 배율을 따른다(POLISH R3, SafetyNumberedRow 방식)
 double safetyFirstLineTop(BuildContext context, TextStyle style, double size) =>
     ((MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height! - size) / 2).clamp(0.0, double.infinity);
+
+double _titleLineHeight(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(CoconutTypography.body2_14.fontSize!) * CoconutTypography.body2_14.height!;
+
+/// 줄에서 가장 큰 것([tallest])이 제목(body2_14) 한 줄보다 크면 글 묶음을 내리는 만큼
+double safetyTitleLineShift(BuildContext context, double tallest) =>
+    math.max(0.0, (tallest - _titleLineHeight(context)) / 2);
+
+/// 목록 행의 아이콘·버튼·값을 제목 첫 줄 가운데에 두는 위 여백. [above]는 제목 위 한 줄(지갑 이름·상태 문구),
+/// [height]는 맞출 것의 그려지는 높이, [tallest]는 그 줄에서 가장 큰 것의 높이(글 묶음은 [safetyTitleLineShift]만큼 내린다)
+double safetyTitleLineTop(BuildContext context, double height, {TextStyle? above, double tallest = 0}) {
+  final aboveHeight = above == null ? 0.0 : MediaQuery.textScalerOf(context).scale(above.fontSize!) * above.height!;
+  return math.max(0.0, aboveHeight + safetyTitleLineShift(context, tallest) + (_titleLineHeight(context) - height) / 2);
+}
+
+/// [SafetyActionPill]의 그려지는 높이(글 한 줄 + 위아래 4 + 테두리)
+double safetyActionPillHeight(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(CoconutTypography.body3_12_Bold.fontSize!) *
+        CoconutTypography.body3_12_Bold.height! +
+    10;
 
 String safetyCheckName(SafetyCheckId id) {
   final c = t.wallet_health.check;
@@ -302,6 +325,19 @@ List<String> safetyNoWalletCheckNames({bool about = false}) => [
   ],
 ];
 
+/// 권장 점검 시트 머리의 짧은 제목
+String safetyRecommendedSheetTitle(RecommendedCheckId id) {
+  final r = t.wallet_health.recommended.sheet_title;
+  return switch (id) {
+    RecommendedCheckId.hotPhysicalBackup => r.mnemonic_stored,
+    RecommendedCheckId.hotSafeStorage => r.safe_storage,
+    RecommendedCheckId.multisigBackupSeparation => r.recovery_separate,
+    RecommendedCheckId.hotPassphraseOffline => r.passphrase_recoverable,
+    RecommendedCheckId.multisigQuorumAccess => r.signer_access,
+    RecommendedCheckId.metadataStoredOffsite => r.metadata_stored,
+  };
+}
+
 /// 권장 점검 시트의 한 줄 안내(제목 아래, 공통 안내 위). 점검마다 무엇을 확인하는지 말한다(R41)
 String safetyRecommendedBody(RecommendedCheckId id) {
   final r = t.wallet_health.recommended;
@@ -326,13 +362,13 @@ String safetyRecommendedBody(RecommendedCheckId id) {
   final summary = t.wallet_health.summary;
   final score = report.categories[category];
   if (report.status == WalletHealthStatus.noWallet && category == SafetyCategory.app) {
-    return (text: c.reason_checks_available, color: colors.success);
+    return (text: c.reason_checks_available, color: context.walletHealthColors.good);
   }
   if (score?.score == null) {
     return (text: safetyWaitingText(category, score?.waitingReason), color: colors.secondaryText);
   }
   final issues = score!.issueCount;
-  if (issues == 0) return (text: summary.no_issues_found, color: colors.success);
+  if (issues == 0) return (text: summary.no_issues_found, color: context.walletHealthColors.good);
   final items = report.reviewItems.where((r) => r.id.category == category);
   int subjects(SafetyCheckId id) => items.where((r) => r.id == id).fold(0, (sum, r) => sum + r.subjects.length);
   final reused = subjects(SafetyCheckId.addressReuse);
@@ -346,7 +382,7 @@ String safetyRecommendedBody(RecommendedCheckId id) {
     SafetyCategory.recovery when wallets > 1 => summary.wallets_need_attention(n: wallets),
     _ => summary.items_need_attention(n: issues),
   };
-  return (text: text, color: colors.warningText);
+  return (text: text, color: context.walletHealthColors.warning);
 }
 
 // ── 위젯 ──
@@ -400,18 +436,20 @@ class WalletHealthHeaderCard extends StatelessWidget {
     final noWallet = report?.status == WalletHealthStatus.noWallet;
     final hero = t.wallet_health.hero;
     final lineStyle = CoconutTypography.body3_12.setColor(colors.secondaryText);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-      decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Column(
         children: [
           HealthGauge(report: report, isChecking: isChecking),
-          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_150h,
           noWallet
               ? _AddWalletButton(onTap: onAddWallet)
-              : _CheckAgainButton(isChecking: isChecking, onTap: onCheckAgain),
+              : SizedBox(
+                width: HealthGauge.arcEndSpan(),
+                child: _CheckAgainButton(isChecking: isChecking, onTap: onCheckAgain),
+              ),
           if (report != null) ...[
-            CoconutLayout.spacing_200h,
+            CoconutLayout.spacing_100h,
             Text(
               safetyKoText(
                 t.wallet_health.summary.last_checked(time: formatHomeRelativeTime(report.evaluatedAt, DateTime.now())),
@@ -479,33 +517,39 @@ class _CheckAgainButton extends StatelessWidget {
       disabledColor: colors.homeBackground,
       pressedOverlayColor: colors.homeSurfacePressOverlay,
       pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 12,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 44), // 누르는 높이 44(POLISH R7)
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isChecking) ...[
-                SizedBox.square(
-                  dimension: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.secondaryText,
-                    value: safetyReduceMotion(context) ? 0.25 : null,
+      borderRadius: 8,
+      child: DecoratedBox(
+        decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: BorderRadius.circular(8)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 32),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isChecking) ...[
+                  SizedBox.square(
+                    dimension: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.secondaryText,
+                      value: safetyReduceMotion(context) ? 0.25 : null,
+                    ),
+                  ),
+                  CoconutLayout.spacing_200w,
+                ],
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      isChecking ? t.wallet_health.summary.checking : t.wallet_health.summary.check_again,
+                      maxLines: 1,
+                      style: CoconutTypography.body1_16.setColor(colors.primaryText),
+                    ),
                   ),
                 ),
-                CoconutLayout.spacing_200w,
               ],
-              Flexible(
-                child: Text(
-                  isChecking ? t.wallet_health.summary.checking : t.wallet_health.summary.check_again,
-                  textAlign: TextAlign.center,
-                  style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -610,47 +654,70 @@ class _CategoryCard extends StatelessWidget {
               : score == null
               ? t.wallet_health.category.waiting
               : '$score';
-      // 한 줄 이름·숫자는 줄여 맞춘다(POLISH R2): 좁은 카드에서 단어 중간에 줄이 바뀌지 않게
-      final big = FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(
-          bigText,
-          style:
-              available
-                  ? CoconutTypography.heading3_21_Bold.setColor(colors.primaryText)
-                  : score == null
-                  ? CoconutTypography.heading3_21_Bold.setColor(colors.secondaryText)
-                  : CoconutTypography.heading3_21_NumberBold.setColor(colors.primaryText),
+      final big = SizedBox(
+        height: 32,
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: Text(
+            bigText,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style:
+                score != null && !available
+                    ? CoconutTypography.heading1_32_NumberBold.copyWith(height: 1).setColor(colors.primaryText)
+                    : CoconutTypography.heading4_18_Bold
+                        .copyWith(height: 1.2)
+                        .setColor(available ? colors.primaryText : colors.secondaryText),
+          ),
         ),
       );
       result = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HomeWidgetHeader와 같은 모양
           Row(
             children: [
               SvgPicture.asset(
                 safetyCategoryIconPath(category),
-                width: 16,
-                height: 16,
-                colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
               ),
-              CoconutLayout.spacing_150w,
+              CoconutLayout.spacing_200w,
               Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(name, style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText)),
+                child: SizedBox(
+                  height: 20,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: CoconutTypography.body2_14.copyWith(height: 1.2).setColor(colors.secondaryText),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           CoconutLayout.spacing_200h,
-          big,
-          CoconutLayout.spacing_50h,
-          // 큰 글자에서도 말줄임 없이 줄을 바꾼다(같은 줄 카드는 IntrinsicHeight로 같은 높이, POLISH X3)
-          Text(safetyKoText(status.text), style: CoconutTypography.body3_12.setColor(status.color)),
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                big,
+                CoconutLayout.spacing_200h,
+                Text(
+                  safetyKoText(status.text),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: CoconutTypography.body3_12.copyWith(height: 1.2).setColor(status.color),
+                ),
+              ],
+            ),
+          ),
         ],
       );
       if (!isChecking) {
@@ -678,16 +745,21 @@ class _CategoryCard extends StatelessWidget {
                 const Positioned.fill(child: _CardSkeleton()),
               ],
             );
-    return ShrinkAnimationButton(
-      key: Key('wallet-health-category-${category.name}'),
-      onPressed: () => onTap(category),
-      defaultColor: colors.homeSurface,
-      pressedOverlayColor: colors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 20,
-      child: Semantics(
-        label: semantics,
-        child: ExcludeSemantics(child: Padding(padding: const EdgeInsets.all(16), child: content)),
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), boxShadow: safetyCardShadow(context)),
+      child: ShrinkAnimationButton(
+        key: Key('wallet-health-category-${category.name}'),
+        onPressed: () => onTap(category),
+        defaultColor: colors.homeSurface,
+        pressedOverlayColor: colors.homeSurfacePressOverlay,
+        pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
+        borderRadius: 20,
+        child: Semantics(
+          label: semantics,
+          child: ExcludeSemantics(
+            child: MediaQuery.withNoTextScaling(child: Padding(padding: const EdgeInsets.all(16), child: content)),
+          ),
+        ),
       ),
     );
   }
@@ -740,39 +812,53 @@ class SafetyReviewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final wallet = safetyWalletLine(context, check.walletId);
+    final aboveStyle = wallet == null ? null : CoconutTypography.body3_12;
+    final pillHeight = safetyActionPillHeight(context);
     return SafetyPressRow(
       key: Key('wallet-health-review-${check.key}'),
       background: colors.homeSurface,
       onTap: onTap ?? () => openSafetyCheckAction(context, check),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: iconBox ?? 16,
-              child: Center(
-                child: SvgPicture.asset(
-                  CommonStateIconPath.triangleWarning,
-                  width: 16,
-                  colorFilter: ColorFilter.mode(colors.warningText, BlendMode.srcIn),
+            Padding(
+              padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20, above: aboveStyle, tallest: pillHeight)),
+              child: SizedBox(
+                width: iconBox ?? 20,
+                child: Center(
+                  child: SvgPicture.asset(
+                    FeatureWalletHealthIconPath.triangleWarningFilled,
+                    width: 20,
+                    colorFilter: ColorFilter.mode(context.walletHealthColors.warning, BlendMode.srcIn),
+                  ),
                 ),
               ),
             ),
-            CoconutLayout.spacing_300w,
+            iconBox == null ? CoconutLayout.spacing_200w : CoconutLayout.spacing_300w,
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-                  Text(
-                    safetyKoText(safetyIssueText(check)),
-                    style: CoconutTypography.body2_14.setColor(colors.primaryText),
-                  ),
-                ],
+              child: Padding(
+                padding: EdgeInsets.only(top: safetyTitleLineShift(context, pillHeight)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (wallet != null) Text(wallet, style: aboveStyle!.setColor(colors.secondaryText)),
+                    Text(
+                      safetyKoText(safetyIssueText(check)),
+                      style: CoconutTypography.body2_14.setColor(colors.primaryText),
+                    ),
+                  ],
+                ),
               ),
             ),
             CoconutLayout.spacing_200w,
-            SafetyActionPill(text: safetyCtaText(check)),
+            Padding(
+              padding: EdgeInsets.only(
+                top: safetyTitleLineTop(context, pillHeight, above: aboveStyle, tallest: pillHeight),
+              ),
+              child: SafetyActionPill(text: safetyCtaText(check)),
+            ),
           ],
         ),
       ),
@@ -790,19 +876,23 @@ class SafetyPassedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final result = safetyPassedText(item);
-    final color = result.byUser ? colors.secondaryText : colors.success;
+    final color = result.byUser ? colors.secondaryText : context.walletHealthColors.good;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(
-            CommonFormIconPath.circleCheck,
-            width: 18,
-            height: 18,
-            semanticsLabel: safetyEvidenceA11y(byUser: result.byUser),
-            colorFilter: ColorFilter.mode(result.byUser ? colors.iconSecondary : colors.success, BlendMode.srcIn),
+          Padding(
+            padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20)),
+            child: SvgPicture.asset(
+              FeatureWalletHealthIconPath.checkCircleFilled,
+              width: 20,
+              height: 20,
+              semanticsLabel: safetyEvidenceA11y(byUser: result.byUser),
+              colorFilter: ColorFilter.mode(result.byUser ? colors.iconSecondary : color, BlendMode.srcIn),
+            ),
           ),
-          CoconutLayout.spacing_300w,
+          CoconutLayout.spacing_200w,
           Expanded(
             child: Text(
               safetyKoText(safetyCheckName(item.id)),
@@ -812,10 +902,26 @@ class SafetyPassedRow extends StatelessWidget {
           CoconutLayout.spacing_200w,
           // 값은 오른쪽 끝(느슨한 Flexible이면 줄 가운데에 멈춘다)
           Expanded(
-            child: Text(
-              safetyKoText(result.text),
-              textAlign: TextAlign.end,
-              style: CoconutTypography.body3_12.setColor(color),
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: safetyTitleLineTop(
+                  context,
+                  MediaQuery.textScalerOf(context).scale(CoconutTypography.body3_12.fontSize!) *
+                      CoconutTypography.body3_12.height!,
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    safetyKoText(result.text),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: CoconutTypography.body3_12.setColor(color),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -856,14 +962,19 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
             for (final item in items) (safetyCheckName(item.id), showReasons ? item.reason : null),
         ])
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 아이콘은 이름 첫 줄 가운데(R3)
                 Padding(
                   padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body2_14, 18)),
-                  child: Icon(CupertinoIcons.clock, size: 18, color: colors.iconSecondary),
+                  child: SvgPicture.asset(
+                    FeatureWalletHealthIconPath.clockFilled,
+                    width: 18,
+                    height: 18,
+                    colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
+                  ),
                 ),
                 CoconutLayout.spacing_300w,
                 Expanded(
@@ -890,7 +1001,7 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
               : Container(
                 width: double.infinity,
                 color: colors.surfaceMuted,
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 // 꼭 읽어야 하는 띠 글: 코코넛 secondaryText는 이 바탕에서 2.65:1(POLISH R5)
                 child: Text(
                   safetyKoText(footer!),
@@ -910,18 +1021,22 @@ class WalletHealthUnlockCard extends StatelessWidget {
     final colors = context.coconutColors;
     final s = t.wallet_health.section;
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SvgPicture.asset(
-                CommonStateIconPath.bulb,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              Padding(
+                padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20)),
+                child: SvgPicture.asset(
+                  FeatureWalletHealthIconPath.watering,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                ),
               ),
               CoconutLayout.spacing_200w,
               Expanded(
@@ -934,53 +1049,33 @@ class WalletHealthUnlockCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_300h,
           for (final (i, text) in [s.unlock_add_wallet, s.unlock_verify_watch_only, s.unlock_use_bitcoin].indexed) ...[
-            if (i > 0) CoconutLayout.spacing_150h,
-            _CheckLine(text: text, color: colors.iconSecondary, iconPath: CommonFormIconPath.circle),
+            if (i > 0) CoconutLayout.spacing_200h,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body2_14, 10)),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        FeatureWalletHealthIconPath.check,
+                        width: 10,
+                        height: 10,
+                        colorFilter: ColorFilter.mode(context.walletHealthColors.good, BlendMode.srcIn),
+                      ),
+                    ),
+                  ),
+                ),
+                CoconutLayout.spacing_200w,
+                Expanded(
+                  child: Text(safetyKoText(text), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                ),
+              ],
+            ),
           ],
         ],
       ),
-    );
-  }
-}
-
-/// 아이콘 + 한 줄. Premium 혜택 목록은 체크, 지갑 0개 안내는 중립 동그라미
-class _CheckLine extends StatelessWidget {
-  const _CheckLine({
-    required this.text,
-    required this.color,
-    this.iconPath = CommonActionIconPath.check,
-    this.textColor,
-  });
-
-  final String text;
-  final Color color;
-  final String iconPath;
-
-  /// 없으면 primaryText(Premium 바탕 위 보조 글은 secondaryTextStrong)
-  final Color? textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body3_12, 14)),
-          child: SvgPicture.asset(
-            iconPath,
-            width: 14,
-            height: 14,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          ),
-        ),
-        CoconutLayout.spacing_200w,
-        Expanded(
-          child: Text(
-            safetyKoText(text),
-            style: CoconutTypography.body3_12.setColor(textColor ?? context.coconutColors.primaryText),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -992,66 +1087,87 @@ class WalletHealthPremiumCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool critical;
 
-  /// Free 판매 카드(POLISH §2.4): 카드 전체가 버튼 하나(의미 라벨도 하나). 평소에는 1px 로고 링, 위급(S3)은 링 없이
+  /// Free 판매 카드(POLISH §2.4): 카드 전체가 버튼 하나(의미 라벨도 하나)
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
+    final health = context.walletHealthColors;
     final card = t.premium.card;
-    final secondary = CoconutTypography.body3_12.setColor(colors.secondaryTextStrong);
+    final body = CoconutTypography.body3_12.setColor(health.premiumBody);
     return PremiumSurface(
       key: const Key('wallet-health-premium-card'),
       radius: 20,
-      ringWidth: critical ? 0 : 1,
-      padding: const EdgeInsets.all(20),
+      ringWidth: 0,
+      gradient: LinearGradient(colors: health.premiumGradient),
+      padding: const EdgeInsets.all(16),
       onPressed: onTap,
       animate: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 칩은 없다(Premium 바탕 위에서는 묻히고 젬이 두 번 나온다)
           Row(
             children: [
-              const PremiumMark(size: 20),
+              SvgPicture.asset(
+                CustomWalletIcons.diamond,
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(health.premiumTitle, BlendMode.srcIn),
+              ),
               CoconutLayout.spacing_200w,
               Expanded(
                 child: Text(
                   safetyKoText(critical ? card.critical_title : card.title),
-                  style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
+                  style: CoconutTypography.body1_16_Bold.setColor(health.premiumTitle),
                 ),
               ),
             ],
           ),
           CoconutLayout.spacing_300h,
-          if (critical) Text(safetyKoText(card.critical_body), style: secondary),
-          if (!critical) ...[
+          if (critical)
+            Padding(
+              padding: const EdgeInsets.only(left: 28),
+              child: Text(safetyKoText(card.critical_body), style: body),
+            )
+          else
             for (final (i, text) in [card.point_prepare, card.point_rescue, card.point_guide].indexed) ...[
-              if (i > 0) CoconutLayout.spacing_150h,
-              _CheckLine(text: text, color: colors.premiumText, textColor: colors.secondaryTextStrong),
+              if (i > 0) CoconutLayout.spacing_200h,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body3_12, 10)),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          FeatureWalletHealthIconPath.check,
+                          width: 10,
+                          height: 10,
+                          colorFilter: ColorFilter.mode(health.premiumCheck, BlendMode.srcIn),
+                        ),
+                      ),
+                    ),
+                  ),
+                  CoconutLayout.spacing_200w,
+                  Expanded(child: Text(safetyKoText(text), style: body)),
+                ],
+              ),
             ],
-          ],
-          CoconutLayout.spacing_300h,
-          // 오른쪽 아래 꼬리표: 안쪽 버튼 대신(카드 전체가 버튼)
+          CoconutLayout.spacing_400h,
           Align(
             alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 큰 글자에서는 오른쪽 정렬로 줄을 바꾼다(320dp × 2.0에서 넘치지 않게)
-                Flexible(
-                  child: Text(
-                    safetyKoText(card.explore),
-                    textAlign: TextAlign.end,
-                    style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
-                  ),
-                ),
-                CoconutLayout.spacing_100w,
-                SvgPicture.asset(
-                  CommonNavigationIconPath.arrowRight,
-                  width: 6,
-                  height: 10,
-                  colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
-                ),
-              ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: health.premiumButtonBackground,
+                border: Border.all(color: health.premiumButtonBorder),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              // 큰 글자에서는 오른쪽 정렬로 줄을 바꾼다(320dp × 2.0에서 넘치지 않게)
+              child: Text(
+                safetyKoText(card.explore),
+                textAlign: TextAlign.end,
+                style: CoconutTypography.body3_12_Bold.setColor(health.premiumButtonText),
+              ),
             ),
           ),
         ],

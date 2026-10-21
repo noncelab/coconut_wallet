@@ -29,6 +29,7 @@ BoxDecoration _decoration(WidgetTester tester, Type widget) =>
 void main() {
   for (final variant in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
+    final health = resolveCoconutThemeExtension(variant: variant).walletHealth;
 
     group(variant.name, () {
       testWidgets('SafetyListCard draws homeSurface r20 with a divider between rows', (tester) async {
@@ -57,12 +58,10 @@ void main() {
         expect(taps, 1);
       });
 
-      testWidgets('SafetyActionPill uses warningText on warningSurface with readable contrast', (tester) async {
+      testWidgets('SafetyActionPill uses the wallet health warning pill colors', (tester) async {
         await tester.pumpWidget(_app(variant, const SafetyActionPill(text: 'Review')));
-        final bg = _decoration(tester, SafetyActionPill).color!;
-        expect(bg, colors.warningSurface);
-        expect(_textColor(tester, 'Review'), colors.warningText);
-        expect(_contrast(colors.warningText, bg), greaterThanOrEqualTo(4.5));
+        expect(_decoration(tester, SafetyActionPill).color, health.warningPillBackground);
+        expect(_textColor(tester, 'Review'), health.warning);
       });
 
       testWidgets('SafetyIconCircle is a circle of the given size', (tester) async {

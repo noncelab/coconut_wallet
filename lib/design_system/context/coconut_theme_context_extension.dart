@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
+import 'package:coconut_wallet/design_system/tokens/wallet_health_colors.dart';
 import 'package:flutter/material.dart';
 
 extension CoconutThemeContextExtension on BuildContext {
@@ -10,4 +11,6 @@ extension CoconutThemeContextExtension on BuildContext {
   }
 
   CoconutColors get coconutColors => coconutTheme.colors;
+
+  WalletHealthColors get walletHealthColors => coconutTheme.walletHealth;
 }

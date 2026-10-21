@@ -95,13 +95,10 @@ void main() {
       isTrue,
     );
     expect(definitions.where((definition) => definition.category == HomeItemCategory.safety).map((d) => d.id), [
-      HomeItemIds.safetyStatusSmall,
-      HomeItemIds.safetyStatusWide,
+      HomeItemIds.safetyStatus,
     ]);
-    expect(definitions.firstWhere((definition) => definition.id == HomeItemIds.safetyStatusSmall).supportedSpans, [
+    expect(definitions.firstWhere((definition) => definition.id == HomeItemIds.safetyStatus).supportedSpans, [
       HomeSpan.small,
-    ]);
-    expect(definitions.firstWhere((definition) => definition.id == HomeItemIds.safetyStatusWide).supportedSpans, [
       HomeSpan.wide,
     ]);
     for (final id in [HomeItemIds.recentTransactions, HomeItemIds.transactionActivity]) {

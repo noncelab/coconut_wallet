@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
@@ -134,6 +135,10 @@ VoidCallback whenRouteSettled(BuildContext context, VoidCallback onSettled) {
   };
 }
 
+List<BoxShadow> safetyCardShadow(BuildContext context) => [
+  BoxShadow(color: context.coconutColors.shadowSubtle, blurRadius: 12, offset: const Offset(0, 2)),
+];
+
 /// 대시보드 바탕(homeBackground) 위 목록 카드. ButtonGroup과 같은 구분선 규칙을 homeSurface r20 카드에 쓴다
 class SafetyListCard extends StatelessWidget {
   const SafetyListCard({super.key, required this.rows, this.backgroundColor, this.footer});
@@ -153,13 +158,14 @@ class SafetyListCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? colors.homeSurface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+        boxShadow: backgroundColor == null ? safetyCardShadow(context) : null,
       ),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size20),
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
                 child: Divider(color: colors.border.withValues(alpha: 0.21), height: 1),
               ),
             rows[i],
@@ -169,6 +175,21 @@ class SafetyListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 목록 행 오른쪽 꺾쇠(6×10, 둘레 여백 없음)
+class SafetyChevron extends StatelessWidget {
+  const SafetyChevron({super.key});
+
+  static const height = 10.0;
+
+  @override
+  Widget build(BuildContext context) => SvgPicture.asset(
+    CommonNavigationIconPath.arrowRight,
+    width: 6,
+    height: height,
+    colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+  );
 }
 
 /// 선택지 행. SingleButton과 같은 겉모습이지만 긴 문구를 글자 크기를 줄이지 않고 줄바꿈한다
@@ -245,7 +266,7 @@ class SafetyChoiceRow extends StatelessWidget {
               ),
             ),
             CoconutLayout.spacing_200w,
-            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+            const SafetyChevron(),
           ],
         ),
       ),
@@ -259,17 +280,18 @@ class SafetyActionPill extends StatelessWidget {
 
   final String text;
 
-  /// 사건처럼 위급한 줄: dangerSurface + dangerText(알림 화면 "확인 필요" 칩과 같은 짝, POLISH C23)
+  /// 사건처럼 위급한 줄: 경고 알약과 같은 모양에 위급 색(알림 화면 "확인 필요" 칩과 같은 짝, POLISH C23)
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
+    final health = context.walletHealthColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size6),
+      padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
       decoration: BoxDecoration(
-        color: danger ? colors.dangerSurface : colors.warningSurface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        color: danger ? health.critical.withValues(alpha: 0.12) : health.warningPillBackground,
+        border: Border.all(color: danger ? health.critical.withValues(alpha: 0.32) : health.warningPillBorder),
+        borderRadius: BorderRadius.circular(100),
       ),
       // 긴 언어에서도 옆 글을 밀어내지 않게 폭을 정하고 한 줄로 줄여 맞춘다(POLISH C7)
       child: ConstrainedBox(
@@ -279,7 +301,7 @@ class SafetyActionPill extends StatelessWidget {
           child: Text(
             text,
             maxLines: 1,
-            style: CoconutTypography.body3_12_Bold.setColor(danger ? colors.dangerText : colors.warningText),
+            style: CoconutTypography.body3_12_Bold.setColor(danger ? health.critical : health.warning),
           ),
         ),
       ),
@@ -325,11 +347,15 @@ class PremiumSurface extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.onPressed,
     this.animate = false,
+    this.gradient,
   });
 
   final Widget child;
   final double radius;
   final double ringWidth;
+
+  /// 없으면 premiumSurfaceGradient
+  final Gradient? gradient;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onPressed;
   final bool animate;
@@ -343,7 +369,7 @@ class PremiumSurface extends StatelessWidget {
     final content = Padding(padding: padding, child: child);
     final fill = DecoratedBox(
       decoration: BoxDecoration(
-        gradient: colors.premiumSurfaceGradient,
+        gradient: gradient ?? colors.premiumSurfaceGradient,
         borderRadius: BorderRadius.circular(innerRadius),
       ),
       child:
@@ -362,7 +388,7 @@ class PremiumSurface extends StatelessWidget {
       return MergeSemantics(
         child: ShrinkAnimationButton(
           onPressed: onPressed,
-          borderGradient: colors.mainnetLogoGradient,
+          borderGradient: ringWidth > 0 ? colors.mainnetLogoGradient : null,
           borderWidth: ringWidth,
           borderRadius: radius,
           child: fill,
@@ -498,7 +524,7 @@ class PremiumActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(gradient: colors.premiumSurfaceGradient, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -2,6 +2,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
@@ -16,18 +17,15 @@ void _open(BuildContext context, HomeItem _) {
   critical == null ? WalletHealthScreen.open(context) : critical.open(context);
 }
 
-/// Safety Status 위젯 2×2·4×2. 크기마다 다른 위젯(id)이다.
+/// Safety Status 위젯. 추가할 때 2×2·4×2 중에서 고른다.
 List<HomeItemDefinition> safetyHomeWidgets() => [
-  for (final (id, span) in [
-    (HomeItemIds.safetyStatusSmall, HomeSpan.small),
-    (HomeItemIds.safetyStatusWide, HomeSpan.wide),
-  ])
-    BuiltinHomeWidget(
-      id: id,
-      span: span,
-      category: HomeItemCategory.safety,
-      name: () => t.wallet_health.widget.name,
-      onTap: _open,
-      builder: (context, viewModel, item) => SafetyStatusWidgetView(span: span),
-    ),
+  BuiltinHomeWidget(
+    id: HomeItemIds.safetyStatus,
+    spans: const [HomeSpan.small, HomeSpan.wide],
+    category: HomeItemCategory.safety,
+    settings: const HomeWidgetSettingsSpec(sizes: [HomeSpan.wide, HomeSpan.small]),
+    name: () => t.wallet_health.widget.name,
+    onTap: _open,
+    builder: (context, viewModel, item) => SafetyStatusWidgetView(span: item.span),
+  ),
 ];

@@ -20,7 +20,7 @@ List<FeatureItem> safetyFeatures() => [
     category: FeatureCategory.safety,
     label: () => t.wallet_health.safety_check,
     shortLabel: () => t.wallet_health.feature.safety_check_short,
-    iconPath: CommonStateIconPath.shieldCheck,
+    iconPath: FeatureWalletHealthIconPath.walletCheck,
     shortcutEligible: true,
     localizedKeywords: () => _keywords(t.wallet_health.feature.safety_check_search),
     launch: (context, _) => WalletHealthScreen.open(context, startCheck: true),

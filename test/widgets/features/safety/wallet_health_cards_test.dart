@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,6 +30,7 @@ Future<void> _pump(WidgetTester tester, Widget child, {CoconutThemeVariant varia
 void main() {
   for (final variant in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
+    final health = resolveCoconutThemeExtension(variant: variant).walletHealth;
 
     group(variant.name, () {
       testWidgets('category cards: score + biggest cause, waiting reason, no-wallet "사용 가능"', (tester) async {
@@ -38,10 +40,10 @@ void main() {
           variant: variant,
         );
         expect(_text('80'), findsOneWidget);
-        expect(_textColor(tester, t.wallet_health.category.addresses_reused(n: 2)), colors.warningText);
-        expect(_textColor(tester, t.wallet_health.summary.items_need_attention(n: 1)), colors.warningText);
+        expect(_textColor(tester, t.wallet_health.category.addresses_reused(n: 2)), health.warning);
+        expect(_textColor(tester, t.wallet_health.summary.items_need_attention(n: 1)), health.warning);
         expect(_text(t.wallet_health.summary.no_issues_found), findsNWidgets(2));
-        expect(_textColor(tester, t.wallet_health.summary.no_issues_found), colors.success);
+        expect(_textColor(tester, t.wallet_health.summary.no_issues_found), health.good);
 
         await _pump(
           tester,
@@ -68,7 +70,7 @@ void main() {
           variant: variant,
         );
         expect(_text(t.wallet_health.check.app_lock.issue), findsOneWidget);
-        expect(_textColor(tester, t.wallet_health.cta.set_up), colors.warningText);
+        expect(_textColor(tester, t.wallet_health.cta.set_up), health.warning);
         await tester.tap(_text(t.wallet_health.check.app_lock.issue));
         await tester.pumpAndSettle();
         expect(taps, 1);
@@ -94,7 +96,7 @@ void main() {
           ),
           variant: variant,
         );
-        expect(_textColor(tester, t.wallet_health.check.app_lock.enabled), colors.success);
+        expect(_textColor(tester, t.wallet_health.check.app_lock.enabled), health.good);
         expect(_textColor(tester, t.wallet_health.evidence.completed_by_you), colors.secondaryText);
         // 색만으로 구분하지 않게 체크 아이콘에도 의미 라벨
         expect(find.bySemanticsLabel(t.wallet_health.evidence.verified_a11y), findsOneWidget);
@@ -108,13 +110,13 @@ void main() {
           var taps = 0;
           await _pump(tester, WalletHealthPremiumCard(onTap: () => taps++), variant: variant);
           expect(find.byType(PremiumChip), findsNothing); // Premium 바탕 위에는 칩을 두지 않는다
-          expect(find.byType(PremiumMark), findsOneWidget);
-          expect(tester.widget<PremiumSurface>(find.byType(PremiumSurface)).ringWidth, 1);
+          expect(find.byType(PremiumMark), findsNothing); // 젬은 제목 색 단색
+          expect(tester.widget<PremiumSurface>(find.byType(PremiumSurface)).ringWidth, 0);
           expect(_text(t.premium.card.point_prepare), findsOneWidget);
           expect(_text(t.premium.card.point_rescue), findsOneWidget);
           expect(_text(t.premium.card.point_guide), findsOneWidget);
-          expect(_textColor(tester, t.premium.card.title), colors.primaryText);
-          expect(_textColor(tester, t.premium.card.point_rescue), colors.secondaryTextStrong);
+          expect(_textColor(tester, t.premium.card.title), health.premiumTitle);
+          expect(_textColor(tester, t.premium.card.point_rescue), health.premiumBody);
           for (final text in tester.widgetList<Text>(find.byType(Text))) {
             expect((text.data ?? '').replaceAll('\u2060', ''), isNot(contains('모니터링')));
           }
@@ -211,12 +213,52 @@ void main() {
     }
   });
 
-  testWidgets('C9/C22: the big value and the category name scale down on one line instead of wrapping', (tester) async {
-    await _pump(tester, WalletHealthCategoryGrid(report: scoredReport(), isChecking: false, onTap: (_) {}));
-    for (final text in ['80', safetyCategoryName(SafetyCategory.recovery)]) {
-      final fitted = find.ancestor(of: _text(text), matching: find.byType(FittedBox));
-      expect(fitted, findsOneWidget);
-      expect(tester.widget<FittedBox>(fitted).fit, BoxFit.scaleDown);
+  testWidgets('C9/C22: the four cards share one text size, so paired cards line up their score and status', (
+    tester,
+  ) async {
+    await pumpWalletHealthApp(
+      tester,
+      Scaffold(body: WalletHealthCategoryGrid(report: scoredReport(), isChecking: false, onTap: (_) {})),
+      width: 320,
+      textScale: 2,
+    );
+    expect(find.ancestor(of: _text('80'), matching: find.byType(FittedBox)), findsNothing);
+    // 긴 제목은 높이가 고정된 칸 안에서만 줄여 맞춰 아래 점수 위치가 흔들리지 않는다
+    expect(
+      find.ancestor(of: _text(safetyCategoryName(SafetyCategory.recovery)), matching: find.byType(FittedBox)),
+      findsOneWidget,
+    );
+    double top(String text) => tester.getTopLeft(_text(text).first).dy;
+    expect(top('80'), top('90'));
+    expect(top(t.wallet_health.summary.items_need_attention(n: 1)), top(t.wallet_health.summary.no_issues_found));
+  });
+
+  testWidgets('check again spans the gauge arc ends and its label shrinks to fit instead of overflowing', (
+    tester,
+  ) async {
+    for (final locale in [AppLocale.ko, AppLocale.de]) {
+      await pumpWalletHealthApp(
+        tester,
+        Scaffold(
+          body: SingleChildScrollView(
+            child: WalletHealthHeaderCard(
+              report: scoredReport(),
+              isChecking: false,
+              onCheckAgain: () {},
+              onAddWallet: () {},
+            ),
+          ),
+        ),
+        locale: locale,
+        width: 320,
+        textScale: 2,
+      );
+      final button = tester.getRect(find.byKey(const Key('wallet-health-check-again')));
+      expect(button.width, moreOrLessEquals(HealthGauge.arcEndSpan(), epsilon: 0.5));
+      final label = tester.getRect(find.text(t.wallet_health.summary.check_again));
+      expect(label.left, greaterThanOrEqualTo(button.left));
+      expect(label.right, lessThanOrEqualTo(button.right));
+      expect(tester.takeException(), isNull);
     }
   });
 
@@ -229,8 +271,7 @@ void main() {
     );
     final row = tester.getRect(find.byType(SafetyPassedRow));
     final value = tester.getRect(_text(t.wallet_health.check.app_lock.enabled));
-    expect(value.right, closeTo(row.right - 20, 0.5)); // 행 안쪽 여백 20
-    expect(tester.widget<Text>(_text(t.wallet_health.check.app_lock.enabled)).textAlign, TextAlign.end);
+    expect(value.right, closeTo(row.right - 16, 0.5)); // 행 안쪽 여백 16
   });
 
   testWidgets('C25: icons and dots stay centred on the first line as text grows', (tester) async {
@@ -357,7 +398,7 @@ void main() {
     tester,
   ) async {
     await _pump(tester, const SafetyActionPill(text: 'Escanear de nuevo otra vez'));
-    expect(tester.getSize(find.byType(SafetyActionPill)).width, lessThanOrEqualTo(96 + 24)); // 글 96 + 좌우 여백
+    expect(tester.getSize(find.byType(SafetyActionPill)).width, lessThanOrEqualTo(96 + 24 + 2)); // 글 96 + 좌우 여백 + 테두리
     expect(tester.widget<Text>(_text('Escanear de nuevo otra vez')).maxLines, 1);
     expect(tester.takeException(), isNull);
   });

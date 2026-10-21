@@ -157,11 +157,11 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     _followCritical(report?.isCritical ?? false);
     return Scaffold(
       key: const Key('wallet-health-screen'),
-      backgroundColor: colors.homeBackground,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         context: context,
         title: t.wallet_health.title,
-        backgroundColor: colors.homeBackground,
+        backgroundColor: colors.background,
         actionButtonList: [
           CoconutAppBarActionButton(
             buttonKey: const Key('wallet-health-info'),
@@ -241,7 +241,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
           ),
         ],
       ],
-      CoconutLayout.spacing_600h,
+      CoconutLayout.spacing_400h,
       WalletHealthCategoryGrid(
         report: report,
         isChecking: checking,
@@ -342,7 +342,6 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       ValueListenableBuilder<PremiumState>(
         valueListenable: entitlement.state,
         builder: (context, premium, _) {
-          final colors = context.coconutColors;
           final rescue = context.watch<RescueReadyProvider?>();
           final verifying = premium.status == PremiumStatus.verifying;
           final line = rescue == null ? null : _rescueLine(rescue, premium.isActive);
@@ -363,12 +362,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             if (rescue != null)
               _PremiumRow(
                 key: const Key('wallet-health-rescue-ready'),
-                leading: SvgPicture.asset(
-                  CommonActionIconPath.arrowReload,
-                  width: 18,
-                  height: 18,
-                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
-                ),
+                leading: SvgPicture.asset(FeatureWalletHealthIconPath.ambulance, width: 20, height: 20),
                 title: line?.title ?? t.premium.rescue.name,
                 // 구독 확인 중이고 목적지가 있으면 확인 중 안내, 그 밖의 무료는 이 기능이 하는 일(POLISH §4 D1·D6)
                 subtitle:
@@ -514,9 +508,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
     }
 
     return [
-      Container(
+      Padding(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-        decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
         child: Column(
           children: [
             HealthGauge(report: report, isChecking: checking),
@@ -692,13 +685,8 @@ class _CriticalCheckCard extends StatelessWidget {
           background: colors.homeSurface,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Expanded(child: content),
-                Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(children: [Expanded(child: content), CoconutLayout.spacing_200w, const SafetyChevron()]),
           ),
         ),
       ],
@@ -738,7 +726,7 @@ class _IncidentCard extends StatelessWidget {
           background: colors.homeSurface,
           onTap: open,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               children: [
                 Expanded(
@@ -762,7 +750,8 @@ class _IncidentCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+                CoconutLayout.spacing_200w,
+                const SafetyChevron(),
               ],
             ),
           ),
@@ -788,7 +777,7 @@ class _InfoIncidentRow extends StatelessWidget {
       // 사라진 거래는 거래 상세 대신 사건 시트로(D가 처리)
       onTap: () => openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid, autoReview: false),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
             SvgPicture.asset(
@@ -829,12 +818,12 @@ class _PremiumRow extends StatelessWidget {
     required this.onTap,
   });
 
-  /// "Premium 사용 중"은 PremiumMark 20, 비상 이동 줄은 기능 아이콘 arrowReload 18
+  /// "Premium 사용 중"은 PremiumMark 20, 비상 이동 줄은 컬러 구급차 아이콘 20
   final Widget leading;
   final String title;
   final String? subtitle;
 
-  /// 무료 비상 이동 줄: 오른쪽에 PremiumChip(POLISH §4 D1)
+  /// 무료 비상 이동 줄: 제목 옆에 PremiumChip(POLISH §4 D1)
   final bool chip;
   final bool highlighted;
 
@@ -851,36 +840,48 @@ class _PremiumRow extends StatelessWidget {
       background: highlighted ? Colors.transparent : colors.homeSurface,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            leading,
-            CoconutLayout.spacing_300w,
+            Padding(padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20, tallest: 20)), child: leading),
+            CoconutLayout.spacing_200w,
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    safetyKoText(title),
-                    style: (highlighted ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14).setColor(
-                      warning ? colors.warningText : colors.primaryText,
+              child: Padding(
+                padding: EdgeInsets.only(top: safetyTitleLineShift(context, 20)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            safetyKoText(title),
+                            style: (highlighted ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14)
+                                .setColor(warning ? colors.warningText : colors.primaryText),
+                          ),
+                        ),
+                        if (chip && !chipBelow) ...[CoconutLayout.spacing_150w, const PremiumChip()],
+                      ],
                     ),
-                  ),
-                  if (subtitle != null) ...[
-                    CoconutLayout.spacing_50h,
-                    Text(
-                      safetyKoText(subtitle!),
-                      style: CoconutTypography.body3_12.setColor(
-                        highlighted ? colors.secondaryTextStrong : colors.secondaryText,
+                    if (subtitle != null) ...[
+                      CoconutLayout.spacing_50h,
+                      Text(
+                        safetyKoText(subtitle!),
+                        style: CoconutTypography.body3_12.setColor(
+                          highlighted ? colors.secondaryTextStrong : colors.secondaryText,
+                        ),
                       ),
-                    ),
+                    ],
+                    if (chipBelow) ...[CoconutLayout.spacing_100h, const PremiumChip()],
                   ],
-                  if (chipBelow) ...[CoconutLayout.spacing_100h, const PremiumChip()],
-                ],
+                ),
               ),
             ),
-            if (chip && !chipBelow) ...[CoconutLayout.spacing_200w, const PremiumChip()],
-            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+            Padding(
+              padding: EdgeInsets.only(top: safetyTitleLineTop(context, SafetyChevron.height, tallest: 20)),
+              child: const SafetyChevron(),
+            ),
           ],
         ),
       ),
@@ -905,7 +906,7 @@ class _OtherCheckRow extends StatelessWidget {
       background: colors.homeSurface,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
             SvgPicture.asset(
@@ -973,30 +974,44 @@ class _RecommendedRow extends StatelessWidget {
       background: colors.homeSurface,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SvgPicture.asset(
-              item.done ? CommonFormIconPath.circleCheck : CommonFormIconPath.circle,
-              width: 18,
-              height: 18,
-              semanticsLabel: item.done ? safetyEvidenceA11y(byUser: true) : null,
-              colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
-            ),
-            CoconutLayout.spacing_300w,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    safetyKoText(safetyRecommendedName(context, item)), // "확인하 / 기" 방지(POLISH R1)
-                    style: CoconutTypography.body2_14.setColor(colors.primaryText),
-                  ),
-                  Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-                ],
+            Padding(
+              padding: EdgeInsets.only(
+                top: safetyTitleLineTop(context, 20, above: CoconutTypography.body3_12, tallest: 20),
+              ),
+              child: SvgPicture.asset(
+                item.done ? FeatureWalletHealthIconPath.checkCircleFilled : FeatureWalletHealthIconPath.circleEmpty,
+                width: 20,
+                height: 20,
+                semanticsLabel: item.done ? safetyEvidenceA11y(byUser: true) : null,
+                colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
               ),
             ),
-            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+            CoconutLayout.spacing_200w,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(top: safetyTitleLineShift(context, 20)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(safetyKoText(subtitle), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                    Text(
+                      safetyKoText(safetyRecommendedName(context, item)), // "확인하 / 기" 방지(POLISH R1)
+                      style: CoconutTypography.body2_14.setColor(colors.primaryText),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: safetyTitleLineTop(context, SafetyChevron.height, above: CoconutTypography.body3_12, tallest: 20),
+              ),
+              child: const SafetyChevron(),
+            ),
           ],
         ),
       ),

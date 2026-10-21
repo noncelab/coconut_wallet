@@ -9,6 +9,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -20,13 +21,14 @@ String walletHealthLabelText(WalletHealthLabel label) => switch (label) {
   WalletHealthLabel.actionNeeded => t.wallet_health.score_label.action_needed,
 };
 
-/// 라벨 글자색. 원호는 점수와 관계없이 같은 그라데이션(빨간 원호는 실제 사건에만)
+/// 라벨 글자색
 Color walletHealthLabelColor(BuildContext context, WalletHealthLabel label) {
-  final colors = context.coconutColors;
+  final colors = context.walletHealthColors;
   return switch (label) {
-    WalletHealthLabel.excellent || WalletHealthLabel.good => colors.success,
-    WalletHealthLabel.needsAttention => colors.warningText,
-    WalletHealthLabel.actionNeeded => colors.dangerText,
+    WalletHealthLabel.excellent => colors.excellent,
+    WalletHealthLabel.good => colors.good,
+    WalletHealthLabel.needsAttention => colors.warning,
+    WalletHealthLabel.actionNeeded => colors.critical,
   };
 }
 
@@ -50,13 +52,15 @@ class HealthGauge extends StatefulWidget {
   const HealthGauge({
     super.key,
     required this.report,
-    this.size = 176,
+    this.size = 208,
     this.animateEntry = true,
     this.isChecking = false,
   });
 
   /// 4×2 홈 위젯용. 라벨 없이 숫자만, 채움 애니메이션 없이 최종 값만
-  const HealthGauge.compact({super.key, required this.report}) : size = 72, animateEntry = false, isChecking = false;
+  const HealthGauge.compact({super.key, required this.report, this.size = 72})
+    : animateEntry = false,
+      isChecking = false;
 
   /// null = 첫 평가 전(트랙만)
   final WalletHealthReport? report;
@@ -65,6 +69,12 @@ class HealthGauge extends StatefulWidget {
   final bool isChecking;
 
   bool get _compact => size < 100;
+
+  /// 원호 양 끝(둥근 끝의 가운데) 사이 거리. 아래 버튼 폭을 이것에 맞춘다
+  static double arcEndSpan([double size = 208]) {
+    final stroke = (size / 7).roundToDouble();
+    return (size - stroke) * math.sqrt1_2;
+  }
 
   @override
   State<HealthGauge> createState() => _HealthGaugeState();
@@ -202,7 +212,7 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
     final report = widget.report;
     final critical = report?.isCritical ?? false;
     final size = widget.size;
-    final stroke = (size / 11).roundToDouble(); // 176 → 16, 72 → 7
+    final stroke = (size / 7).roundToDouble(); // 208 → 30, 72 → 10
     final radius = (size - stroke) / 2;
     final inner = 2 * radius - stroke - (widget._compact ? 8 : 16);
     return Semantics(
@@ -221,9 +231,9 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
                       (context, _) => CustomPaint(
                         painter: _GaugePainter(
                           stroke: stroke,
-                          track: colors.surfaceMuted,
-                          start: colors.targetProgressGradientStart,
-                          end: colors.targetProgressGradientEnd,
+                          track: context.walletHealthColors.gaugeTrack,
+                          fill: context.walletHealthColors.gaugeColors,
+                          stops: context.walletHealthColors.gaugeStops,
                           critical: critical ? colors.danger.withValues(alpha: 0.28) : null,
                           progress: _value,
                           fillOpacity: 1 - 0.65 * _checking.value,
@@ -233,22 +243,95 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
                       ),
                 ),
               ),
-              Positioned(
-                left: (size - inner) / 2,
-                top: (size - inner) / 2,
-                width: inner,
-                height: inner,
-                // 글자를 키워도 원호를 넘지 않게 안쪽 지름에 맞춰 줄인다
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SizedBox(width: inner, child: _center(context, report, critical)),
+              if (!widget._compact && !critical && (_scored(report) || widget.isChecking))
+                ..._scoreAndLabel(context, report, radius - stroke / 2)
+              else
+                Positioned(
+                  left: (size - inner) / 2,
+                  top: (size - inner) / 2,
+                  width: inner,
+                  height: inner,
+                  // 글자를 키워도 원호를 넘지 않게 안쪽 지름에 맞춰 줄인다
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(width: inner, child: _center(context, report, critical)),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 점수는 원 중심보다 조금 위, 라벨은 아래쪽 열린 곳. 라벨은 그 높이의 원호 안쪽 폭을 넘지 않게 줄인다
+  List<Widget> _scoreAndLabel(BuildContext context, WalletHealthReport? report, double innerRadius) {
+    final size = widget.size;
+    final checking = widget.isChecking;
+    final label = report?.label;
+    final labelOffset = size * 0.2;
+    final labelHalf = MediaQuery.textScalerOf(context).scale(_labelStyle.fontSize!) * _labelStyle.height! / 2;
+    final labelTop = math.max(0.0, labelOffset - labelHalf);
+    final labelWidth = 2 * math.sqrt(math.max(0.0, innerRadius * innerRadius - labelTop * labelTop)) - 16;
+    final text = checking ? t.wallet_health.summary.checking : walletHealthLabelText(label!);
+    final style = _labelStyle.setColor(
+      checking ? context.coconutColors.secondaryText : walletHealthLabelColor(context, label!),
+    );
+    Widget at(double dy, double maxWidth, Widget child) => Positioned(
+      left: 0,
+      top: 0,
+      width: size,
+      height: size,
+      child: Center(
+        child: Transform.translate(
+          offset: Offset(0, dy),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: FittedBox(fit: BoxFit.scaleDown, child: child),
+          ),
+        ),
+      ),
+    );
+    return [
+      at(-size * 0.03, innerRadius * 1.7, _scoreNumber(context, report)),
+      at(
+        labelOffset,
+        labelWidth,
+        AnimatedSwitcher(
+          duration: _still ? Duration.zero : _fade,
+          child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
+        ),
+      ),
+    ];
+  }
+
+  static final _labelStyle = CoconutTypography.heading3_21.copyWith(fontSize: 22, height: 1.2);
+
+  Widget _scoreNumber(BuildContext context, WalletHealthReport? report) {
+    final colors = context.coconutColors;
+    final scored = _scored(report);
+    return AnimatedBuilder(
+      animation: Listenable.merge([_number, _checking, _fill]),
+      builder:
+          (context, child) => Opacity(
+            opacity: (scored ? Curves.easeOut.transform(_number.value) : 1) * (1 - 0.6 * _checking.value),
+            child:
+                scored
+                    ? Text(
+                      '${(_value * 100).round()}',
+                      textAlign: TextAlign.center,
+                      style: CoconutTypography.heading1_32_NumberBold
+                          .copyWith(fontSize: 64, height: 1, fontFeatures: const [FontFeature.tabularFigures()])
+                          .setColor(colors.primaryText),
+                    )
+                    : child,
+          ),
+      child: Container(
+        width: 20,
+        height: 4,
+        decoration: BoxDecoration(color: colors.primaryText, borderRadius: BorderRadius.circular(2)),
       ),
     );
   }
@@ -265,15 +348,13 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
         colorFilter: ColorFilter.mode(colors.danger, BlendMode.srcIn),
       );
     }
-    final label = report?.label;
     final scored = _scored(report);
     final top =
         scored
             ? Text(
               '${report!.score}',
               textAlign: TextAlign.center,
-              style: (compact ? CoconutTypography.heading4_18_NumberBold : CoconutTypography.heading1_32_NumberBold)
-                  .setColor(colors.primaryText),
+              style: CoconutTypography.heading4_18_NumberBold.setColor(colors.primaryText),
             )
             : Center(
               child: Container(
@@ -293,41 +374,19 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
       child: top,
     );
     if (compact) return dimmed;
-    final checking = widget.isChecking;
     final caption = _caption(report);
-    final String text =
-        checking ? t.wallet_health.summary.checking : (scored ? walletHealthLabelText(label!) : caption);
-    final style =
-        checking || scored
-            ? CoconutTypography.body1_16_Bold.setColor(
-              checking ? colors.secondaryText : walletHealthLabelColor(context, label!),
-            )
-            : CoconutTypography.body3_12.setColor(colors.secondaryText);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         dimmed,
-        if (text.isNotEmpty) ...[
-          scored || checking ? CoconutLayout.spacing_50h : CoconutLayout.spacing_200h,
-          AnimatedSwitcher(
-            duration: _still ? Duration.zero : _fade,
-            // 점수 라벨·검사 중은 한 줄로 줄여 맞춘다(de "Handlungsbedarf"가 단어 중간에서 끊기지 않게, POLISH R2).
-            // S0·S4 설명만 두 줄
-            child:
-                scored || checking
-                    ? FittedBox(
-                      key: ValueKey(text),
-                      fit: BoxFit.scaleDown,
-                      child: Text(text, maxLines: 1, style: style),
-                    )
-                    : Text(
-                      safetyKoText(text),
-                      key: ValueKey(text),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: style,
-                    ),
+        if (caption.isNotEmpty) ...[
+          CoconutLayout.spacing_200h,
+          Text(
+            safetyKoText(caption),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: CoconutTypography.body3_12.setColor(colors.secondaryText),
           ),
         ],
       ],
@@ -343,8 +402,8 @@ class _GaugePainter extends CustomPainter {
   _GaugePainter({
     required this.stroke,
     required this.track,
-    required this.start,
-    required this.end,
+    required this.fill,
+    required this.stops,
     required this.critical,
     required this.progress,
     required this.fillOpacity,
@@ -353,12 +412,25 @@ class _GaugePainter extends CustomPainter {
   });
 
   final double stroke;
-  final Color track, start, end;
+  final Color track;
+  final List<Color> fill;
+  final List<double> stops;
   final Color? critical;
   final double progress, fillOpacity, sweepOpacity;
 
   /// 검사 중 하이라이트 위치(0~1). null이면 그리지 않는다
   final double? sweep;
+
+  /// 원호 위치 [t](0~1)의 구간 색
+  Color _colorAt(double t) {
+    for (var i = 1; i < stops.length; i++) {
+      if (t <= stops[i]) {
+        final span = stops[i] - stops[i - 1];
+        return Color.lerp(fill[i - 1], fill[i], span == 0 ? 0 : (t - stops[i - 1]) / span)!;
+      }
+    }
+    return fill.last;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -377,8 +449,12 @@ class _GaugePainter extends CustomPainter {
 
     // 둥근 끝이 반대쪽 색을 집지 않게 cap 각도만큼 넓힌다. 각도는 회전으로 맞춘다(시작각 > 끝각을 피함)
     final cap = stroke / 2 / radius;
-    Shader gradient(double from, double sweepAngle, List<Color> colors) =>
-        SweepGradient(endAngle: sweepAngle, colors: colors, transform: GradientRotation(from)).createShader(rect);
+    Shader gradient(double from, double sweepAngle, List<Color> colors, [List<double>? stops]) => SweepGradient(
+      endAngle: sweepAngle,
+      colors: colors,
+      stops: stops,
+      transform: GradientRotation(from),
+    ).createShader(rect);
     Color faded(Color color, double opacity) => color.withValues(alpha: color.a * opacity);
 
     if (progress > 0) {
@@ -388,7 +464,9 @@ class _GaugePainter extends CustomPainter {
         _span * progress,
         false,
         paint
-          ..shader = gradient(_startAngle - cap, _span + 2 * cap, [faded(start, fillOpacity), faded(end, fillOpacity)]),
+          ..shader = gradient(_startAngle - cap, _span + 2 * cap, [
+            for (final color in fill) faded(color, fillOpacity),
+          ], stops),
       );
     }
 
@@ -400,7 +478,7 @@ class _GaugePainter extends CustomPainter {
     final from = math.max(0.0, tail);
     final to = math.min(_span, head);
     if (to <= from) return;
-    final color = Color.lerp(start, end, (from + to) / 2 / _span)!;
+    final color = _colorAt((from + to) / 2 / _span);
     Color at(double angle) => faded(color, sweepOpacity * ((angle - tail) / _highlight).clamp(0.0, 1.0));
     canvas.drawArc(
       rect,
@@ -419,7 +497,7 @@ class _GaugePainter extends CustomPainter {
       oldDelegate.sweepOpacity != sweepOpacity ||
       oldDelegate.critical != critical ||
       oldDelegate.track != track ||
-      oldDelegate.start != start ||
-      oldDelegate.end != end ||
+      !listEquals(oldDelegate.fill, fill) ||
+      !listEquals(oldDelegate.stops, stops) ||
       oldDelegate.stroke != stroke;
 }

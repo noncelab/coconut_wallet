@@ -75,7 +75,7 @@ void main() {
                       onArrangeDone: () {},
                       onAddWallet: () {},
                       onSettings: () {},
-                      onAlerts: () {},
+                      onEdit: () {},
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 900)),
                   ],
@@ -100,8 +100,8 @@ void main() {
           }
 
           final actions = [
+            tester.getRect(find.byKey(const Key('home-edit-button'))),
             tester.getRect(find.byKey(const Key('home-add-wallet-button'))),
-            tester.getRect(find.byKey(const Key('home-alerts-button'))),
             tester.getRect(find.byKey(const Key('home-settings-button'))),
           ];
           baseline ??= actions;
@@ -149,7 +149,7 @@ void main() {
                   onArrangeDone: () {},
                   onAddWallet: () {},
                   onSettings: () {},
-                  onAlerts: () {},
+                  onEdit: () {},
                 ),
               ],
             ),
@@ -159,84 +159,57 @@ void main() {
 
       expect(find.byKey(const Key('home-arrange-done')), findsOneWidget);
       expect(find.byType(HomeConnectionStatusIndicator), findsNothing);
-      expect(find.byKey(const Key('home-alerts-button')), findsNothing);
+      expect(find.byKey(const Key('home-edit-button')), findsNothing);
       expect(find.byKey(const Key('home-add-wallet-button')), findsNothing);
       expect(find.byKey(const Key('home-settings-button')), findsNothing);
       expect(tester.takeException(), isNull);
     }
   });
 
-  testWidgets(
-    'layout (A): add wallet, alerts, settings — no edit button in the app bar',
-    (tester) async {
-      await tester.pumpWidget(_bar(onAlerts: () {}));
+  testWidgets('layout: edit, add wallet, settings — no alerts bell', (tester) async {
+    await tester.pumpWidget(_bar());
 
-      expect(find.byKey(const Key('home-edit-button')), findsNothing);
-      final left = [
-        for (final key in ['home-add-wallet-button', 'home-alerts-button', 'home-settings-button'])
-          tester.getRect(find.byKey(Key(key))).left,
-      ];
-      expect(left, orderedEquals([...left]..sort()));
-    },
-    timeout: const Timeout(Duration(seconds: 60)),
-  );
+    expect(find.byKey(const Key('home-alerts-button')), findsNothing);
+    final left = [
+      for (final key in ['home-edit-button', 'home-add-wallet-button', 'home-settings-button'])
+        tester.getRect(find.byKey(Key(key))).left,
+    ];
+    expect(left, orderedEquals([...left]..sort()));
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
-  testWidgets(
-    'the alerts dot shows only with unread alerts and the label says how many',
-    (tester) async {
-      await tester.pumpWidget(_bar(onAlerts: () {}));
-      expect(find.byKey(const Key('home-alerts-unread-dot')), findsNothing);
-      expect(find.byTooltip(t.wallet_health.alerts.title), findsOneWidget);
+  testWidgets('with a safety status the chip replaces the indicator', (tester) async {
+    await tester.pumpWidget(_bar());
+    expect(find.byType(HomeConnectionStatusIndicator), findsOneWidget);
 
-      await tester.pumpWidget(_bar(onAlerts: () {}, unreadAlerts: 2));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byKey(const Key('home-alerts-unread-dot')), findsOneWidget);
-      expect(find.byTooltip(t.wallet_health.alerts.bell_unread_a11y(n: 2)), findsOneWidget);
-    },
-    timeout: const Timeout(Duration(seconds: 60)),
-  );
+    await tester.pumpWidget(_bar(safetyStatus: const HomeSafetyStatus(HomeSafetyStatusKind.noIssues)));
+    expect(find.byType(HomeConnectionStatusIndicator), findsNothing);
+    expect(find.byType(HomeSafetyStatusChip), findsOneWidget);
 
-  testWidgets(
-    'without an alerts handler there is no bell; with a safety status the chip replaces the indicator',
-    (tester) async {
-      await tester.pumpWidget(_bar());
-      expect(find.byKey(const Key('home-alerts-button')), findsNothing);
-      expect(find.byType(HomeConnectionStatusIndicator), findsOneWidget);
-
-      await tester.pumpWidget(_bar(safetyStatus: const HomeSafetyStatus(HomeSafetyStatusKind.noIssues)));
-      expect(find.byType(HomeConnectionStatusIndicator), findsNothing);
-      expect(find.byType(HomeSafetyStatusChip), findsOneWidget);
-
-      await tester.pumpWidget(
-        _bar(safetyStatus: const HomeSafetyStatus(HomeSafetyStatusKind.noIssues), isArranging: true, onAlerts: () {}),
-      );
-      expect(find.byType(HomeSafetyStatusChip), findsNothing);
-      expect(find.byKey(const Key('home-alerts-button')), findsNothing);
-    },
-    timeout: const Timeout(Duration(seconds: 60)),
-  );
+    await tester.pumpWidget(
+      _bar(safetyStatus: const HomeSafetyStatus(HomeSafetyStatusKind.noIssues), isArranging: true),
+    );
+    expect(find.byType(HomeSafetyStatusChip), findsNothing);
+  }, timeout: const Timeout(Duration(seconds: 60)));
 }
 
-Widget _bar({VoidCallback? onAlerts, int unreadAlerts = 0, HomeSafetyStatus? safetyStatus, bool isArranging = false}) =>
-    MaterialApp(
-      theme: buildCoconutThemeData(),
-      home: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            HomeAppBar(
-              networkStatus: NetworkStatus.online,
-              showReconnected: false,
-              isSyncing: false,
-              isArranging: isArranging,
-              addWalletButtonLink: LayerLink(),
-              onArrangeDone: () {},
-              onAddWallet: () {},
-              onSettings: () {},
-              onAlerts: onAlerts,
-              unreadAlerts: unreadAlerts,
-              safetyStatus: safetyStatus,
-            ),
-          ],
+Widget _bar({HomeSafetyStatus? safetyStatus, bool isArranging = false}) => MaterialApp(
+  theme: buildCoconutThemeData(),
+  home: Scaffold(
+    body: CustomScrollView(
+      slivers: [
+        HomeAppBar(
+          networkStatus: NetworkStatus.online,
+          showReconnected: false,
+          isSyncing: false,
+          isArranging: isArranging,
+          addWalletButtonLink: LayerLink(),
+          onArrangeDone: () {},
+          onAddWallet: () {},
+          onSettings: () {},
+          onEdit: () {},
+          safetyStatus: safetyStatus,
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);

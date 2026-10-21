@@ -26,6 +26,7 @@ class HomeAppBar extends StatelessWidget {
   final LayerLink addWalletButtonLink;
   final VoidCallback onArrangeDone;
   final VoidCallback? onUndoArrangement;
+  final VoidCallback onEdit;
   final VoidCallback onAddWallet;
   final VoidCallback onSettings;
 
@@ -35,12 +36,6 @@ class HomeAppBar extends StatelessWidget {
 
   /// 첫 노출 말풍선이 칩 아래에 붙는 자리
   final LayerLink? statusChipLink;
-
-  /// 🔔 알림. 없으면 버튼을 그리지 않는다.
-  final VoidCallback? onAlerts;
-
-  /// 읽지 않은 위급·조치 필요 알림 수. 0보다 크면 🔔에 빨간 점
-  final int unreadAlerts;
 
   const HomeAppBar({
     super.key,
@@ -52,13 +47,12 @@ class HomeAppBar extends StatelessWidget {
     required this.addWalletButtonLink,
     required this.onArrangeDone,
     this.onUndoArrangement,
+    required this.onEdit,
     required this.onAddWallet,
     required this.onSettings,
     this.safetyStatus,
     this.onStatusTap,
     this.statusChipLink,
-    this.onAlerts,
-    this.unreadAlerts = 0,
   });
 
   @override
@@ -72,7 +66,7 @@ class HomeAppBar extends StatelessWidget {
     final iconColor = context.coconutColors.iconPrimary;
     final pressedIconBackground = Color.lerp(context.coconutColors.iconButtonHighlight, iconColor, 0.2)!;
     // CDS reserves 32px for outer padding, 16px around leading, and 4px after the empty title.
-    // Keep the three 48px actions (add wallet, alerts, settings) outside the status indicator's maximum width.
+    // Keep the three 48px actions (edit, add wallet, settings) outside the status indicator's maximum width.
     final statusWidth = math.max(
       0.0,
       MediaQuery.sizeOf(context).width -
@@ -110,6 +104,20 @@ class HomeAppBar extends StatelessWidget {
             child: Text(t.done, style: CoconutTypography.body2_14_Bold.copyWith(color: iconColor)),
           )
         else ...[
+          Material(
+            type: MaterialType.transparency,
+            child: CoconutAppBarActionButton(
+              buttonKey: const Key('home-edit-button'),
+              tooltip: t.home_menu.edit_home_screen,
+              icon: SvgPicture.asset(
+                CommonActionIconPath.editHome,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              ),
+              onPressed: onEdit,
+              color: iconColor,
+              highlightColor: pressedIconBackground,
+            ),
+          ),
           if (addWalletIcon != null)
             CompositedTransformTarget(
               link: addWalletButtonLink,
@@ -124,21 +132,6 @@ class HomeAppBar extends StatelessWidget {
                   color: iconColor,
                   highlightColor: pressedIconBackground,
                 ),
-              ),
-            ),
-          if (onAlerts != null)
-            Material(
-              type: MaterialType.transparency,
-              child: CoconutAppBarActionButton(
-                buttonKey: const Key('home-alerts-button'),
-                tooltip:
-                    unreadAlerts > 0
-                        ? t.wallet_health.alerts.bell_unread_a11y(n: unreadAlerts)
-                        : t.wallet_health.alerts.title,
-                icon: _AlertsIcon(color: iconColor, unread: unreadAlerts > 0),
-                onPressed: onAlerts,
-                color: iconColor,
-                highlightColor: pressedIconBackground,
               ),
             ),
           Material(
@@ -191,58 +184,5 @@ class _RenderVerticalHitSlop extends RenderProxyBox {
     if (position.dy < -_VerticalHitSlop.slop || position.dy > size.height + _VerticalHitSlop.slop) return false;
     // 넓힌 곳의 누름은 칩 가장자리로 옮겨 칩이 받게 한다
     return super.hitTest(result, position: Offset(position.dx, math.min(math.max(position.dy, 0), size.height - 1)));
-  }
-}
-
-class _AlertsIcon extends StatelessWidget {
-  final Color color;
-  final bool unread;
-
-  const _AlertsIcon({required this.color, required this.unread});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
-    final dot = Container(
-      key: const Key('home-alerts-unread-dot'),
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(
-        color: colors.danger,
-        shape: BoxShape.circle,
-        border: Border.all(color: colors.homeBackground, width: 1.5, strokeAlign: BorderSide.strokeAlignOutside),
-      ),
-    );
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        SvgPicture.asset(
-          CommonCommunicationIconPath.boldBell,
-          width: 24,
-          height: 24,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        ),
-        // 생길 때 240ms 커지며, 읽으면 220ms 페이드로 사라진다(동작 줄이기면 바로)
-        Positioned(
-          top: 1,
-          right: 2,
-          child:
-              reduceMotion
-                  ? (unread ? dot : const SizedBox.shrink())
-                  : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
-                    reverseDuration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    transitionBuilder:
-                        (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(animation), child: child),
-                        ),
-                    child: unread ? dot : const SizedBox.shrink(),
-                  ),
-        ),
-      ],
-    );
   }
 }

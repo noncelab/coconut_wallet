@@ -74,11 +74,12 @@ class WalletSafetyStatusRow extends StatelessWidget {
     final provider = context.watch<SafetyProvider?>();
     if (provider == null) return const SizedBox.shrink();
     final colors = context.coconutColors;
+    final health = context.walletHealthColors;
     final status = walletSafetyStatusOf(provider, walletId);
     final color = switch (status.state) {
-      WalletSafetyState.critical || WalletSafetyState.caution => colors.dangerText,
-      WalletSafetyState.needsAttention => colors.warningText,
-      WalletSafetyState.noIssues => colors.success,
+      WalletSafetyState.critical || WalletSafetyState.caution => health.critical,
+      WalletSafetyState.needsAttention => health.warning,
+      WalletSafetyState.noIssues => health.good,
       WalletSafetyState.waiting => colors.secondaryText,
     };
     return _WalletInfoStatusRow(
@@ -109,25 +110,31 @@ class WalletSafetyStatusPill extends StatelessWidget {
     final status = walletSafetyStatusOf(provider, walletId);
     final text = walletSafetyStatusText(status);
     // 아이콘·글자색은 홈 상태칩과 같은 짝, 바탕만 알약용
+    final health = context.walletHealthColors;
     final (icon, iconColor, background, color) = switch (status.state) {
-      WalletSafetyState.critical => (CommonStateIconPath.siren, colors.danger, colors.dangerSurface, colors.dangerText),
+      WalletSafetyState.critical => (
+        FeatureWalletHealthIconPath.lightEmergencyOn,
+        health.critical,
+        health.critical.withValues(alpha: 0.12),
+        health.critical,
+      ),
       WalletSafetyState.caution => (
-        CommonStateIconPath.triangleWarning,
-        colors.danger,
-        colors.dangerSurface,
-        colors.dangerText,
+        FeatureWalletHealthIconPath.triangleWarningFilled,
+        health.critical,
+        health.critical.withValues(alpha: 0.12),
+        health.critical,
       ),
       WalletSafetyState.needsAttention => (
-        CommonStateIconPath.triangleWarning,
-        colors.warningText,
-        colors.warningSurface,
-        colors.warningText,
+        FeatureWalletHealthIconPath.triangleWarningFilled,
+        health.warning,
+        health.warningPillBackground,
+        health.warning,
       ),
       WalletSafetyState.noIssues => (
-        CommonStateIconPath.shieldCheck,
-        colors.secondaryTextStrong,
+        FeatureWalletHealthIconPath.checkCircleFilled,
+        health.good,
         colors.surfaceInfoChip,
-        colors.secondaryTextStrong,
+        health.good,
       ),
       WalletSafetyState.waiting => (
         CommonStateIconPath.shieldCheck,
@@ -291,8 +298,8 @@ class _WalletInfoStatusRow extends StatelessWidget {
                       )
                       : texts,
             ),
-            CoconutLayout.spacing_100w,
-            Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+            CoconutLayout.spacing_200w,
+            const SafetyChevron(),
           ],
         ),
       ),

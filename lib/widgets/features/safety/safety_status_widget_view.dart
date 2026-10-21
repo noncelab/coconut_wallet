@@ -43,7 +43,8 @@ class SafetyStatusWidgetView extends StatelessWidget {
     final issues = report.attentionCount;
     final time = formatHomeRelativeTime(report.evaluatedAt, DateTime.now());
     final detailStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryText);
-    final actionStyle = CoconutTypography.body3_12_Bold.copyWith(color: colors.dangerText);
+    final health = context.walletHealthColors;
+    final actionStyle = CoconutTypography.body3_12_Bold.copyWith(color: health.critical);
     Text line(String text) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: detailStyle);
     // 2×2 아래 줄은 좁아서 시간만, 4×2는 "마지막 검사 · 시간"
     final checked = line(wide ? t.wallet_health.summary.last_checked(time: time) : time);
@@ -65,7 +66,11 @@ class SafetyStatusWidgetView extends StatelessWidget {
               : wide && incidents > 1
               ? t.wallet_health.incident.outgoing_multiple_title(n: incidents)
               : t.wallet_health.widget.outgoing_short;
-      (iconPath, iconColor, titleColor) = (CommonStateIconPath.siren, colors.danger, colors.dangerText);
+      (iconPath, iconColor, titleColor) = (
+        FeatureWalletHealthIconPath.lightEmergencyOn,
+        health.critical,
+        health.critical,
+      );
       final txState =
           incident?.txState == IncidentTxState.confirmed
               ? t.wallet_health.incident.tx_state.confirmed
@@ -97,14 +102,18 @@ class SafetyStatusWidgetView extends StatelessWidget {
               CommonNavigationIconPath.arrowRight,
               width: 6,
               height: 10,
-              colorFilter: ColorFilter.mode(colors.dangerText, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(health.critical, BlendMode.srcIn),
             ),
           ],
         ),
       ];
     } else if (issues > 0) {
       title = t.wallet_health.status_chip.attention(n: issues);
-      (iconPath, iconColor, titleColor) = (CommonStateIconPath.triangleWarning, colors.warningText, colors.warningText);
+      (iconPath, iconColor, titleColor) = (
+        FeatureWalletHealthIconPath.triangleWarningFilled,
+        health.warning,
+        health.warning,
+      );
       final first = ([...report.reviewItems]..sort((a, b) => a.severity.index.compareTo(b.severity.index))).first;
       details = [
         if (wide)
@@ -120,9 +129,13 @@ class SafetyStatusWidgetView extends StatelessWidget {
       final noWallet = report.status == WalletHealthStatus.noWallet;
       title = scored ? t.wallet_health.summary.no_issues_found : t.wallet_health.status_chip.up_to_date;
       (iconPath, iconColor, titleColor) = (
-        scored ? CommonStateIconPath.shieldCheck : CommonFormIconPath.circleCheck,
+        FeatureWalletHealthIconPath.checkCircleFilled,
         // 지갑이 없으면 초록 "정상"이 아니라 중립
-        noWallet ? colors.iconSecondary : colors.success,
+        noWallet
+            ? colors.iconSecondary
+            : report.label == WalletHealthLabel.excellent
+            ? health.excellent
+            : health.good,
         colors.primaryText,
       );
       if (noWallet) noWalletLine = Text(safetyKoText(t.wallet_health.widget.no_wallet), style: detailStyle);
@@ -142,32 +155,35 @@ class SafetyStatusWidgetView extends StatelessWidget {
         wide
             ? Row(
               children: [
-                HealthGauge.compact(report: report),
-                CoconutLayout.spacing_400w,
+                Expanded(flex: 2, child: Center(child: HealthGauge.compact(report: report, size: 88))),
+                CoconutLayout.spacing_300w,
                 Expanded(
-                  child: _ScaleDownColumn(
+                  flex: 3,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    children: [
-                      Row(
-                        children: [
-                          // 위급이면 게이지 가운데에 이미 사이렌이 있다
-                          if (critical == null) ...[
-                            safetyStateIcon(iconPath, 16, iconColor),
-                            CoconutLayout.spacing_150w,
-                          ],
-                          Expanded(
-                            child: Text(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // 위급이면 게이지 가운데에 이미 사이렌이 있다
+                            if (critical == null) ...[
+                              safetyStateIcon(iconPath, 20, iconColor),
+                              CoconutLayout.spacing_150w,
+                            ],
+                            Text(
                               safetyKoText(title),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                               style: CoconutTypography.body2_14_Bold.copyWith(color: titleColor),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      ...details,
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ...details,
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -180,7 +196,7 @@ class SafetyStatusWidgetView extends StatelessWidget {
                   child: _ScaleDownColumn(
                     alignment: const Alignment(-1, 0.2),
                     children: [
-                      safetyStateIcon(iconPath, 24, iconColor),
+                      safetyStateIcon(iconPath, 32, iconColor),
                       const SizedBox(height: 6),
                       // 한 줄에 안 들어가는 제목은 열 전체를 줄이지 않고 제목만 한 단계 작은 글로 두 줄까지
                       LayoutBuilder(
@@ -212,7 +228,7 @@ class SafetyStatusWidgetView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             HomeWidgetHeader(
-              iconPath: FeatureWidgetIconPath.shieldCheck,
+              iconPath: FeatureWalletHealthIconPath.walletCheck,
               title: t.wallet_health.widget.name,
               style: wide ? CoconutTypography.body2_14_Bold : CoconutTypography.body3_12_Bold,
             ),

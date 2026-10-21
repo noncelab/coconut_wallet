@@ -25,7 +25,6 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -125,7 +124,7 @@ HomeItem _widgetItem(String id, String definitionId, HomeSpan span, int order) =
 
 const _safetyTile = HomeItem(
   id: 'safety-1',
-  definitionId: HomeItemIds.safetyStatusSmall,
+  definitionId: HomeItemIds.safetyStatus,
   kind: HomeItemKind.widget,
   order: 0,
   span: HomeSpan.small,
@@ -198,7 +197,7 @@ void main() {
           width: width,
         );
 
-        expect(find.byKey(const Key('home-alerts-button')), withSafety ? findsOneWidget : findsNothing);
+        expect(find.byKey(const Key('home-alerts-button')), findsNothing);
         expect(find.byType(HomeSafetyStatusChip), withSafety ? findsOneWidget : findsNothing);
         expect(find.byType(HomeConnectionStatusIndicator), withSafety ? findsNothing : findsOneWidget);
         expect(tester.getRect(_addWalletHint()).right, lessThanOrEqualTo(width));
@@ -212,25 +211,21 @@ void main() {
     }
   }
 
-  testWidgets('Edit Home sits at the bottom even with no items, opens /home-edit, and hides while arranging', (
-    tester,
-  ) async {
+  testWidgets('the app bar edit button opens /home-edit; no bell and no edit entry under the grid', (tester) async {
     final routes = _Routes();
     await _pumpHome(tester, safety: SafetyProvider.fixed(_scored()), observer: routes);
 
-    final entry = find.byKey(const Key('home-edit-entry'));
-    expect(tester.getRect(entry).bottom, moreOrLessEquals(_height - 16, epsilon: 1));
-    expect(find.byKey(const Key('home-edit-button')), findsNothing);
+    expect(find.byKey(const Key('home-alerts-button')), findsNothing);
+    expect(find.byKey(const Key('home-edit-entry')), findsNothing);
 
     _homeViewModel(tester).startArranging();
     await tester.pump();
-    expect(entry, findsNothing);
+    expect(find.byKey(const Key('home-edit-button')), findsNothing);
     expect(find.byType(HomeSafetyStatusChip), findsNothing);
-    expect(find.byKey(const Key('home-alerts-button')), findsNothing);
 
     _homeViewModel(tester).finishArranging();
     await tester.pump();
-    await tester.tap(entry);
+    await tester.tap(find.byKey(const Key('home-edit-button')));
     expect(routes.names.last, '/home-edit');
     // 편집 화면이 그려지기 전에 정리한다(이 테스트는 진입만 본다)
     await tester.pumpWidget(const SizedBox());
@@ -251,9 +246,9 @@ void main() {
     final hint = find.byKey(const Key('wallet-health-hint'));
     expect(hint, findsOneWidget);
     final chip = tester.getRect(find.byType(HomeSafetyStatusChip));
-    expect(tester.getRect(hint).top, greaterThanOrEqualTo(chip.bottom));
-    // 말풍선은 칩보다 8 왼쪽, 꼬리는 말풍선 왼쪽에서 23
-    expect(tester.getRect(_tailOf(hint)).center.dx - chip.left, moreOrLessEquals(15, epsilon: 0.5));
+    // 꼬리는 칩 가운데, 말풍선은 칩 누름 영역 아래쪽 빈 곳에 8 겹쳐 글자 바로 아래
+    expect(tester.getRect(hint).top, moreOrLessEquals(chip.bottom - 8, epsilon: 0.5));
+    expect(tester.getRect(_tailOf(hint)).center.dx, moreOrLessEquals(chip.center.dx, epsilon: 0.5));
     expect(
       find.bySemanticsLabel('${t.wallet_health.first_hint.title}, ${t.wallet_health.first_hint.description}'),
       findsOneWidget,
@@ -289,23 +284,14 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   }, timeout: _timeout);
 
-  // 회귀: 새 홈은 CupertinoPageScaffold라 Material이 없어서 경고 카드의 닫기 X(InkWell)가 "No Material widget found"로 깨졌다
-  testWidgets('on the real home the backup warning renders, closes from its X and snoozes', (tester) async {
+  testWidgets('the home shows only widgets and shortcuts: no backup warning or safety banner', (tester) async {
     final safety = SafetyProvider.fixed(_scored(), state: SafetyState.initial().copyWith(hintDismissed: true));
     await _pumpHome(tester, safety: safety, wallets: [safetyWallet(id: 1, hot: true)], balances: {1: 100000});
-    // 백업·앱 잠금 경고는 2초 뒤에 나타나 240ms 동안 펼쳐진다
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
-    expect(find.text(safetyKoText(t.wallet_home_screen.unbacked_hot_wallet_warning.title)), findsOneWidget);
-
-    await tester.tap(find.byType(PositionedCardCloseButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
+    expect(find.text(safetyKoText(t.wallet_home_screen.unbacked_hot_wallet_warning.title)), findsNothing);
     expect(find.byType(HomeAlertCard), findsNothing);
-    expect(SharedPrefsRepository().getInt(SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt), greaterThan(0));
     await tester.pumpWidget(const SizedBox());
   }, timeout: _timeout);
 
@@ -317,8 +303,7 @@ void main() {
     final items = [
       _safetyTile,
       _widgetItem('stack-1', HomeItemIds.allWalletStack, HomeSpan.small, 1),
-      _widgetItem('safety-2', HomeItemIds.safetyStatusWide, HomeSpan.wide, 2),
-      _widgetItem('stack-2', HomeItemIds.watchOnlyWalletStack, HomeSpan.wide, 3),
+      _widgetItem('stack-2', HomeItemIds.watchOnlyWalletStack, HomeSpan.wide, 2),
     ];
     Iterable<bool> compactIn(Finder scope) => tester
         .widgetList<SafetyCautionBadge>(find.descendant(of: scope, matching: find.byType(SafetyCautionBadge)))
@@ -326,7 +311,7 @@ void main() {
     for (final scale in [1.3, 2.0]) {
       final safety = SafetyProvider.fixed(
         _critical(),
-        state: SafetyState(incidents: [_incident], cautionWalletIds: const {1}),
+        state: SafetyState(incidents: [_incident], cautionWalletIds: const {1}, hintDismissed: true),
       );
       await _pumpHome(
         tester,
@@ -336,12 +321,11 @@ void main() {
         width: 320,
         textScale: scale,
       );
-      // 위급 배너는 바로 나타나 240ms 동안 펼쳐진다
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull, reason: '×$scale');
-      expect(find.byType(HomeAlertCard), findsOneWidget, reason: '×$scale');
-      expect(find.byType(SafetyStatusWidgetView), findsNWidgets(2), reason: '×$scale');
+      expect(find.byType(HomeAlertCard), findsNothing, reason: '×$scale');
+      expect(find.byType(SafetyStatusWidgetView), findsOneWidget, reason: '×$scale');
       expect(compactIn(find.byType(HomeScreen)), unorderedEquals([true, false]), reason: '×$scale');
       expect(find.text(t.safety_guide.caution.badge), findsOneWidget, reason: '×$scale'); // 4×2만 글자
 
@@ -355,28 +339,5 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'wheel ×$scale');
       await tester.pumpWidget(const SizedBox());
     }
-  }, timeout: _timeout);
-
-  // POLISH E1: 넓은 화면(폴드 펼침 673dp)에서도 배너와 홈 편집 버튼이 그리드 폭(칸 80 × 4 = 356)에 맞춰 가운데
-  testWidgets('on the unfolded Fold the banner and Edit Home line up with the grid instead of the screen', (
-    tester,
-  ) async {
-    await _pumpHome(
-      tester,
-      safety: SafetyProvider.fixed(_critical(), state: SafetyState(incidents: [_incident])),
-      wallets: [safetyWallet(id: 1)],
-      items: [_widgetItem('safety-2', HomeItemIds.safetyStatusWide, HomeSpan.wide, 0)],
-      width: 673,
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    final grid = tester.getRect(find.byType(SafetyStatusWidgetView));
-    expect(grid.width, 356);
-    for (final finder in [find.byType(HomeAlertCard), find.byKey(const Key('home-edit-entry'))]) {
-      final rect = tester.getRect(finder);
-      expect(rect.left, moreOrLessEquals(grid.left), reason: '$finder');
-      expect(rect.right, moreOrLessEquals(grid.right), reason: '$finder');
-    }
-    expect(tester.takeException(), isNull);
   }, timeout: _timeout);
 }

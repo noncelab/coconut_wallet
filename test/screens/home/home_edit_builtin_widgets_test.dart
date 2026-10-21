@@ -1211,8 +1211,7 @@ void main() {
         HomeItemIds.savingsGoal,
         HomeItemIds.utxoStatus,
         HomeItemIds.transactionActivity,
-        HomeItemIds.safetyStatusSmall,
-        HomeItemIds.safetyStatusWide,
+        HomeItemIds.safetyStatus,
       };
       for (final definition in builtinHomeWidgets().whereType<BuiltinHomeWidget>()) {
         expect(definition.onTap != null, opening.contains(definition.id), reason: definition.id);

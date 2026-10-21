@@ -433,17 +433,19 @@ void main() {
       );
       expect(checks.map((c) => c.colorFilter).toSet(), {tint(colors.iconPrimary), tint(colors.premiumText)});
       expect(tester.widgetList<Text>(findText('–')).map((d) => d.style!.color).toSet(), {colors.iconSecondary});
-      // 가치 행 아이콘은 premiumText
-      for (final icon in [
-        FeatureShortcutIconPath.transactionDraft,
-        CommonActionIconPath.arrowReload,
-        FeatureShortcutIconPath.tutorial,
-      ]) {
+      // 가치 행 아이콘은 premiumText, 비상 이동만 컬러 구급차 그대로
+      for (final icon in [FeatureShortcutIconPath.transactionDraft, FeatureShortcutIconPath.tutorial]) {
         expect(
           tester.widget<SvgPicture>(find.byWidgetPredicate((w) => isAsset(w, icon))).colorFilter,
           tint(colors.premiumText),
         );
       }
+      expect(
+        tester
+            .widget<SvgPicture>(find.byWidgetPredicate((w) => isAsset(w, FeatureWalletHealthIconPath.ambulance)))
+            .colorFilter,
+        isNull,
+      );
       // 고름 표시는 UtxoSelectionCard와 같은 circleCheck(고름 borderStrong, 안 고름 iconSecondary)
       ColorFilter? marker(PremiumPeriod period) =>
           tester

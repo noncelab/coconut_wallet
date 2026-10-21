@@ -3,10 +3,6 @@ import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/home/home_preset.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
-import 'package:coconut_wallet/services/feature/safety_features.dart';
-
-/// Safety Check 기능 id(Epic 3의 SafetyFeatureIds.safetyCheck와 같다)
-const safetyCheckFeatureId = SafetyFeatureIds.safetyCheck;
 
 /// 처음 설치했을 때 적용하는 프리셋
 const defaultPresetId = 'default';
@@ -66,15 +62,19 @@ List<HomePreset> builtinHomePresets() => [
     id: 'safety',
     name: () => t.home_presets.safety_name,
     description: () => t.home_presets.safety_description,
-    spans: const {HomeItemIds.watchOnlyWalletStack: HomeSpan.small, HomeItemIds.hotWalletStack: HomeSpan.small},
+    spans: const {
+      HomeItemIds.safetyStatus: HomeSpan.wide,
+      HomeItemIds.watchOnlyWalletStack: HomeSpan.small,
+      HomeItemIds.hotWalletStack: HomeSpan.small,
+    },
     definitionIds: [
-      HomeItemIds.safetyStatusWide,
+      HomeItemIds.safetyStatus,
       HomeItemIds.watchOnlyWalletStack,
       HomeItemIds.hotWalletStack,
-      HomeItemIds.shortcut(safetyCheckFeatureId),
       HomeItemIds.shortcut(FeatureIds.mnemonicWordList),
       HomeItemIds.shortcut(FeatureIds.addresses),
       HomeItemIds.shortcut(FeatureIds.glossary),
+      HomeItemIds.shortcut(FeatureIds.labelManagement),
       HomeItemIds.shortcut(FeatureIds.receive),
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),

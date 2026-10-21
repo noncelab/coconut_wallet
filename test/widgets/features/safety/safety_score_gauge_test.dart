@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/design_system/tokens/wallet_health_colors.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
@@ -49,17 +50,18 @@ Future<void> _pump(
 void main() {
   for (final variant in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
+    final health = resolveCoconutThemeExtension(variant: variant).walletHealth;
 
     group(variant.name, () {
-      testWidgets('scored: number + label, theme gradient on the surfaceMuted track', (tester) async {
+      testWidgets('scored: number + label, wallet health gradient on its track', (tester) async {
         final semantics = tester.ensureSemantics();
         await _pump(tester, scoredReport(score: 86), variant: variant);
         expect(_text('86'), findsOneWidget);
-        expect(_textColor(tester, t.wallet_health.score_label.good), colors.success);
+        expect(_textColor(tester, t.wallet_health.score_label.good), health.good);
         final painter = _painter(tester);
-        expect(painter.track, colors.surfaceMuted);
-        expect(painter.start, colors.targetProgressGradientStart);
-        expect(painter.end, colors.targetProgressGradientEnd);
+        expect(painter.track, health.gaugeTrack);
+        expect(painter.fill, health.gaugeColors);
+        expect(painter.stops, health.gaugeStops);
         expect(painter.critical, isNull);
         expect(painter.progress, closeTo(0.86, 1e-9));
         expect(
@@ -69,12 +71,13 @@ void main() {
         semantics.dispose();
       });
 
-      testWidgets('0–49 reads "조치 필요" in dangerText but the arc stays the normal gradient', (tester) async {
+      testWidgets('0–49 reads "조치 필요" on the range-colored arc, not the incident arc', (tester) async {
         await _pump(tester, scoredReport(score: 42), variant: variant);
         expect(_text('조치 필요'), findsOneWidget);
         expect(_textContaining('Critical'), findsNothing);
-        expect(_textColor(tester, '조치 필요'), colors.dangerText);
+        expect(_textColor(tester, '조치 필요'), health.critical);
         expect(_painter(tester).critical, isNull);
+        expect(_painter(tester).fill, health.gaugeColors);
       });
 
       testWidgets('no wallet and not enough data show the track and a dash, never a number', (tester) async {
@@ -98,12 +101,11 @@ void main() {
     });
   }
 
-  testWidgets('coconut theme gauge: lagoonDeep → palmGreen on a sand track', (tester) async {
+  testWidgets('coconut theme gauge keeps the fixed wallet health colors', (tester) async {
     await _pump(tester, scoredReport(score: 86), variant: CoconutThemeVariant.coconutTheme);
     final painter = _painter(tester);
-    expect(painter.start, const Color(0xFF4FA8B8));
-    expect(painter.end, const Color(0xFF7FB96A));
-    expect(painter.track, const Color(0xFFEAD6B4));
+    expect(painter.fill, WalletHealthColors.base.gaugeColors);
+    expect(painter.track, WalletHealthColors.base.gaugeTrack);
   });
 
   testWidgets('checking dims the previous fill and says "검사 중…"', (tester) async {
@@ -133,7 +135,11 @@ void main() {
     await pump(scoredReport(score: 42));
     final scored = walletHealthLabelText(WalletHealthLabel.of(42));
     expect(label(scored).maxLines, 1);
-    expect(find.ancestor(of: _text(scored), matching: find.byType(FittedBox)), findsNWidgets(2)); // 안쪽 원 + 라벨
+    expect(find.ancestor(of: _text(scored), matching: find.byType(FittedBox)), findsOneWidget);
+    // 라벨은 그 높이의 원호 안쪽 폭을 넘지 않는다
+    final gauge = tester.getRect(find.byType(HealthGauge));
+    final labelRect = tester.getRect(find.ancestor(of: _text(scored), matching: find.byType(FittedBox)));
+    expect(labelRect.width, lessThanOrEqualTo(gauge.width * 0.65));
     await pump(scoredReport(score: 86), checking: true);
     expect(label(t.wallet_health.summary.checking).maxLines, 1);
     await pump(noWalletReport());
@@ -146,7 +152,7 @@ void main() {
     expect(tester.getSize(find.byType(HealthGauge)).width, 72);
     expect(_text('86'), findsOneWidget);
     expect(_text(t.wallet_health.score_label.good), findsNothing);
-    expect(_painter(tester).stroke, 7);
+    expect(_painter(tester).stroke, 10);
   });
 
   testWidgets('entry: waits for the route + 250 ms, then fills 0 → score over 1600 ms', (tester) async {
@@ -158,6 +164,8 @@ void main() {
     final mid = _painter(tester).progress as double;
     expect(mid, greaterThan(0));
     expect(mid, lessThan(0.8));
+    // 숫자도 원호와 함께 올라간다
+    expect(_text('${(mid * 100).round()}'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(_painter(tester).progress, closeTo(0.8, 1e-9));
   });

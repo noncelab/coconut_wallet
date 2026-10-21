@@ -7,6 +7,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
+/// 주소 강조 표기: 접두어(bc1q·bcrt1q)는 굵은 회색, 그다음 4자와 마지막 4자는 굵은 초록, 가운데는 회색
+List<TextSpan> addressHighlightSpans(BuildContext context, String address) {
+  final colors = context.coconutColors;
+  final prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
+  if (address.length <= prefixLength + 8) {
+    return [TextSpan(text: address, style: CoconutTypography.body2_14_Bold.setColor(colors.success))];
+  }
+  return [
+    TextSpan(
+      text: address.substring(0, prefixLength),
+      style: CoconutTypography.body2_14_Bold.setColor(colors.tertiaryText),
+    ),
+    TextSpan(
+      text: address.substring(prefixLength, prefixLength + 4),
+      style: CoconutTypography.body2_14_Bold.setColor(colors.success),
+    ),
+    TextSpan(
+      text: address.substring(prefixLength + 4, address.length - 4),
+      style: CoconutTypography.body2_14.setColor(colors.tertiaryText),
+    ),
+    TextSpan(
+      text: address.substring(address.length - 4),
+      style: CoconutTypography.body2_14_Bold.setColor(colors.success),
+    ),
+  ];
+}
+
 class CopyTextContainer extends StatefulWidget {
   final String text;
   final String? copyText;
@@ -44,7 +71,6 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
   late Color _textColor;
   late Color _buttonColor;
   late Color _iconColor;
-  late int _prefixLength;
   bool _didInitThemeColors = false;
 
   @override
@@ -53,7 +79,6 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     _textColor = Colors.transparent;
     _buttonColor = Colors.transparent;
     _iconColor = Colors.transparent;
-    _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
 
   @override
@@ -173,34 +198,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       );
     }
 
-    if (address.length <= _prefixLength + 8) {
-      spans.add(TextSpan(text: address, style: CoconutTypography.body2_14_Bold.setColor(colors.success)));
-    } else {
-      spans.add(
-        TextSpan(
-          text: address.substring(0, _prefixLength),
-          style: CoconutTypography.body2_14_Bold.setColor(colors.tertiaryText),
-        ),
-      );
-      spans.add(
-        TextSpan(
-          text: address.substring(_prefixLength, _prefixLength + 4),
-          style: CoconutTypography.body2_14_Bold.setColor(colors.success),
-        ),
-      );
-      spans.add(
-        TextSpan(
-          text: address.substring(_prefixLength + 4, address.length - 4),
-          style: CoconutTypography.body2_14.setColor(colors.tertiaryText),
-        ),
-      );
-      spans.add(
-        TextSpan(
-          text: address.substring(address.length - 4),
-          style: CoconutTypography.body2_14_Bold.setColor(colors.success),
-        ),
-      );
-    }
+    spans.addAll(addressHighlightSpans(context, address));
 
     if (queryStartIndex < text.length) {
       spans.add(

@@ -93,7 +93,7 @@ void main() {
         expect(_text(t.wallet_health.wallet_info.waiting), findsOneWidget);
         await mount(tester, SafetyProvider.fixed(_report()));
         final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.no_issues));
-        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.success);
+        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).walletHealth.good);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: only this wallet contributes to the attention count', (
         tester,
@@ -121,7 +121,7 @@ void main() {
           ),
         );
         final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.needs_attention(n: 1)));
-        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.warningText);
+        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).walletHealth.warning);
         expect(tester.takeException(), isNull);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: critical takes priority over caution', (tester) async {
@@ -142,7 +142,7 @@ void main() {
           ),
         );
         final text = tester.widget<Text>(_text(t.wallet_health.wallet_info.critical));
-        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).colors.dangerText);
+        expect(text.style!.color, resolveCoconutThemeExtension(variant: theme).walletHealth.critical);
         expect(_text(t.wallet_health.wallet_info.caution), findsNothing);
       });
       testWidgets('${locale.name} ${theme.name} at 320 dp: caution is visible before a report exists', (tester) async {

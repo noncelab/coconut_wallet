@@ -224,7 +224,7 @@ class _IncidentRow extends StatelessWidget {
       background: colors.homeSurface,
       onTap: () => _open(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: LayoutBuilder(
           builder:
               (context, constraints) => Row(

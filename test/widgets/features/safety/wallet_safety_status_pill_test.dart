@@ -97,6 +97,7 @@ void main() {
 
   for (final theme in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: theme).colors;
+    final health = resolveCoconutThemeExtension(variant: theme).walletHealth;
     final cases = <String, (SafetyProvider Function(), String, String, Color, Color, Color)>{
       'waiting': (
         () => SafetyProvider.fixed(null),
@@ -109,34 +110,34 @@ void main() {
       'no issues': (
         () => SafetyProvider.fixed(_report()),
         t.wallet_health.wallet_info.no_issues,
-        CommonStateIconPath.shieldCheck,
-        colors.secondaryTextStrong,
+        FeatureWalletHealthIconPath.checkCircleFilled,
+        health.good,
         colors.surfaceInfoChip,
-        colors.secondaryTextStrong,
+        health.good,
       ),
       'needs attention': (
         () => SafetyProvider.fixed(_report(issues: [_attention])),
         t.wallet_health.wallet_info.needs_attention(n: 1),
-        CommonStateIconPath.triangleWarning,
-        colors.warningText,
-        colors.warningSurface,
-        colors.warningText,
+        FeatureWalletHealthIconPath.triangleWarningFilled,
+        health.warning,
+        health.warningPillBackground,
+        health.warning,
       ),
       'caution': (
         () => SafetyProvider.fixed(_report(), state: SafetyState.initial().copyWith(cautionWalletIds: {1})),
         t.wallet_health.wallet_info.caution,
-        CommonStateIconPath.triangleWarning,
-        colors.danger,
-        colors.dangerSurface,
-        colors.dangerText,
+        FeatureWalletHealthIconPath.triangleWarningFilled,
+        health.critical,
+        health.critical.withValues(alpha: 0.12),
+        health.critical,
       ),
       'critical': (
         () => SafetyProvider.fixed(_report(issues: [_criticalCheck])),
         t.wallet_health.wallet_info.critical,
-        CommonStateIconPath.siren,
-        colors.danger,
-        colors.dangerSurface,
-        colors.dangerText,
+        FeatureWalletHealthIconPath.lightEmergencyOn,
+        health.critical,
+        health.critical.withValues(alpha: 0.12),
+        health.critical,
       ),
     };
     for (final MapEntry(key: name, value: (safety, text, icon, iconColor, background, textColor)) in cases.entries) {

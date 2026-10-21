@@ -167,6 +167,7 @@ flutter:
     - assets/svg/features/transaction/fee-rate/
     - assets/svg/features/utxo/
     - assets/svg/features/wallet/
+    - assets/svg/features/wallet-health/
     - assets/svg/features/widgets/
     - assets/svg/wallet-catalog/custom-icons/
     - assets/svg/wallet-catalog/hardware-wallets/

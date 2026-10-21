@@ -69,7 +69,7 @@ Future<void> _pumpBar(
               onArrangeDone: () {},
               onAddWallet: () {},
               onSettings: () {},
-              onAlerts: () {},
+              onEdit: () {},
               safetyStatus: status,
               onStatusTap: onStatusTap ?? () {},
             ),
@@ -114,7 +114,7 @@ void main() {
     handle.dispose();
   }, timeout: _timeout);
 
-  testWidgets('text fits as is, shrinks down to 0.85, then turns into the short form', (tester) async {
+  testWidgets('text keeps its size when it fits, otherwise the chip turns into the short form', (tester) async {
     final handle = tester.ensureSemantics();
     for (final status in [_critical, _attention]) {
       final text = _chipText(status);
@@ -122,16 +122,13 @@ void main() {
       final width = measureHomeText(
         tester.element(find.byType(HomeSafetyStatusChip)),
         text,
-        CoconutTypography.body3_12_Bold,
+        CoconutTypography.body2_14_Bold,
       );
 
-      await _pumpChip(tester, status, 32 + width + 1);
+      await _pumpChip(tester, status, 36 + width + 1);
       expect(tester.getRect(find.text(text)).width, moreOrLessEquals(width, epsilon: 0.5));
 
-      await _pumpChip(tester, status, 32 + width * 0.9);
-      expect(tester.getRect(find.text(text)).width, moreOrLessEquals(width * 0.9, epsilon: 1));
-
-      await _pumpChip(tester, status, 32 + width * 0.8);
+      await _pumpChip(tester, status, 36 + width - 1);
       expect(find.text(text), findsNothing);
       expect(_inChip(find.byType(Text)), status == _attention ? findsOneWidget : findsNothing);
       if (status == _attention) expect(find.text('3'), findsOneWidget);
@@ -159,7 +156,6 @@ void main() {
       // 테스트 글꼴은 모든 글자가 1em이라 "Security alert"가 168dp, "Check 3 items"가 156dp:
       // 344dp의 글자 자리 116에는 짧은 꼴, 412dp(184)에는 그대로
       LocaleSettings.setLocaleSync(AppLocale.en);
-      final colors = resolveCoconutThemeExtension(variant: variant).colors;
 
       await _pumpBar(tester, 344, _critical, variant);
       expect(_inChip(find.byType(Text)), findsNothing);
@@ -167,14 +163,15 @@ void main() {
       expect(_inChip(find.byType(Text)), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
 
-      await _pumpBar(tester, 412, _critical, variant);
+      // 테스트 글꼴은 글자 폭이 글자 크기와 같아 넓은 폭에서 전체 문구를 본다
+      await _pumpBar(tester, 480, _critical, variant);
       final text = tester.widget<Text>(find.text(t.wallet_health.status_chip.critical));
-      expect(text.style!.color, colors.dangerText);
+      expect(text.style!.color, resolveCoconutThemeExtension(variant: variant).walletHealth.critical);
 
       for (final width in [344.0, 412.0]) {
         await _pumpBar(tester, width, _critical, variant);
         final actions = [
-          for (final key in ['home-add-wallet-button', 'home-alerts-button', 'home-settings-button'])
+          for (final key in ['home-edit-button', 'home-add-wallet-button', 'home-settings-button'])
             tester.getRect(find.byKey(Key(key))),
         ];
         expect(actions.map((rect) => rect.width), everyElement(48));

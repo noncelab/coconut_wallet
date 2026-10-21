@@ -411,7 +411,7 @@ void main() {
 
   testWidgets('items whose definition is not registered are skipped without error', (tester) async {
     final configuration = HomeConfiguration(
-      items: [_item('x', HomeItemIds.safetyStatusWide, HomeItemKind.widget, 0, HomeSpan.wide)],
+      items: [_item('x', HomeItemIds.safetyStatus, HomeItemKind.widget, 0, HomeSpan.wide)],
     );
 
     await tester.pumpWidget(

@@ -207,6 +207,22 @@ abstract final class FeatureWalletIconPath {
   static const String vault = 'assets/svg/features/wallet/vault.svg'; // 코코넛 볼트 아이콘이 아님. 금고 아이콘
 }
 
+abstract final class FeatureWalletHealthIconPath {
+  static const String ambulance = 'assets/svg/features/wallet-health/ambulance.svg';
+  static const String check = 'assets/svg/features/wallet-health/check.svg';
+  static const String checkCircleFilled = 'assets/svg/features/wallet-health/check-circle-filled.svg';
+  static const String circleEmpty = 'assets/svg/features/wallet-health/circle-empty.svg';
+  static const String clockFilled = 'assets/svg/features/wallet-health/clock-filled.svg';
+  static const String incognito = 'assets/svg/features/wallet-health/incognito.svg';
+  static const String lightEmergencyOn = 'assets/svg/features/wallet-health/light-emergency-on.svg';
+  static const String passwordLock = 'assets/svg/features/wallet-health/password-lock.svg';
+  static const String secureBackup = 'assets/svg/features/wallet-health/secure-backup.svg';
+  static const String triangleWarningFilled = 'assets/svg/features/wallet-health/triangle-warning-filled.svg';
+  static const String walletActivity = 'assets/svg/features/wallet-health/wallet-activity.svg';
+  static const String walletCheck = 'assets/svg/features/wallet-health/wallet-check.svg';
+  static const String watering = 'assets/svg/features/wallet-health/watering.svg';
+}
+
 abstract final class FeatureWidgetIconPath {
   static const String bullseyeArrow = 'assets/svg/features/widgets/bullseye-arrow.svg';
   static const String coinStack = 'assets/svg/features/widgets/coin-stack.svg';

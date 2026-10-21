@@ -17,21 +17,11 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-/// 주소를 4글자 묶음으로 보이게 하는 TextSpan. 묶음 사이는 마지막 글자의 자간으로만 띄운다(복사 내용은 주소 그대로)
-TextSpan _groupedAddress(String address) => TextSpan(
-  children: [
-    for (var i = 0; i < address.length; i += 4) ...[
-      TextSpan(text: address.substring(i, i + 3 < address.length ? i + 3 : address.length)),
-      if (i + 3 < address.length)
-        TextSpan(text: address[i + 3], style: i + 4 < address.length ? const TextStyle(letterSpacing: 6) : null),
-    ],
-  ],
-);
 
 class WatchOnlyVerificationScreen extends StatefulWidget {
   const WatchOnlyVerificationScreen({super.key, required this.walletId});
@@ -212,10 +202,8 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
                               style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                             ),
                             CoconutLayout.spacing_200h,
-                            // 4글자씩 묶어 보인다. 글자를 넣지 않고 묶음 끝 글자 뒤만 넓혀서 복사하면 원래 주소 그대로(POLISH C31)
                             SelectableText.rich(
-                              _groupedAddress(wallet.walletBase.getAddress(0)),
-                              style: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
+                              TextSpan(children: addressHighlightSpans(context, wallet.walletBase.getAddress(0))),
                             ),
                             CoconutLayout.spacing_100h,
                             Text(

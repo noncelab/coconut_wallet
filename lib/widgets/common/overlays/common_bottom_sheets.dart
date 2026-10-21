@@ -295,6 +295,7 @@ class CommonBottomSheets {
     String? title,
     String? subLabel,
     TextStyle? titleTextStyle,
+    bool scaleDownTitle = false,
     List<Widget>? actionList,
     Color? backgroundColor,
     bool adjustForKeyboardInset = true,
@@ -401,15 +402,27 @@ class CommonBottomSheets {
                           child: CoconutAppBar.build(
                             context: context,
                             onBackPressed: null,
-                            customTitle: Text(
-                              title,
-                              style:
-                                  titleTextStyle ??
-                                  CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
+                            customTitle:
+                                scaleDownTitle
+                                    ? FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        title,
+                                        style:
+                                            titleTextStyle ??
+                                            CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                                        maxLines: 1,
+                                      ),
+                                    )
+                                    : Text(
+                                      title,
+                                      style:
+                                          titleTextStyle ??
+                                          CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
                             subLabel: Text(
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),

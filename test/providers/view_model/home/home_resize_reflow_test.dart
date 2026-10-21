@@ -146,6 +146,7 @@ void main() {
       HomeItemIds.hotWalletStack,
       HomeItemIds.watchOnlyWalletStack,
       HomeItemIds.allWalletStack,
+      HomeItemIds.safetyStatus,
     });
     for (final definition in resizable) {
       expect(definition.supportedSpans.toSet(), {HomeSpan.small, HomeSpan.wide});

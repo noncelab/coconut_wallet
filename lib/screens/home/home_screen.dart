@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
-import 'package:coconut_wallet/screens/safety/safety_alerts_screen.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
@@ -41,18 +39,13 @@ import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
-import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
-import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
-import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
-import 'package:coconut_wallet/widgets/features/safety/home_safety_banner.dart';
 import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -67,15 +60,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
 
-  /// 말풍선 오른쪽 끝이 지갑 추가 버튼 오른쪽 끝보다 더 나가는 거리: 오른쪽 버튼(🔔·설정, 🔔가 없으면 설정만) + 4.
-  /// 🔔는 앱바와 같은 조건(SafetyProvider가 있을 때)으로 그린다.
-  static double _addWalletHintRightOverhang(BuildContext context) =>
-      HomeAppBar.addWalletButtonSize * (context.watch<SafetyProvider?>() == null ? 1 : 2) + 4;
-
-  /// 그리드 아래 홈 편집 버튼 높이와 위아래 여백
-  static const _homeEditEntryHeight = 56.0;
-  static const _homeEditEntryTop = 0.0; // 그리드 아래 배지 여백 16이 간격이 된다
-  static const _homeEditEntryBottom = 16.0;
+  static const _addWalletHintRightOverhang = 52.0;
+  static const _safetyHintTailFromLeft = 40.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
   final LayerLink _statusChipLink = LayerLink();
@@ -398,11 +384,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         showWhenUnlinked: false,
                         targetAnchor: Alignment.bottomRight,
                         followerAnchor: Alignment.topRight,
-                        offset: Offset(_addWalletHintRightOverhang(context), 0),
+                        offset: const Offset(_addWalletHintRightOverhang, 0),
                         child: Align(
                           alignment: Alignment.topRight,
                           child: AddWalletHint(
-                            tailFromRight: _addWalletHintRightOverhang(context) + HomeAppBar.addWalletButtonSize / 2,
+                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.addWalletButtonSize / 2,
                             nudges: viewModel.addWalletHintNudges,
                             onClose: viewModel.dismissAddWalletHint,
                           ),
@@ -441,8 +427,8 @@ class _HomeScreenState extends State<HomeScreen> {
           title: title,
           description: description,
           closeLabel: t.wallet_health.first_hint.close_a11y,
-          // 말풍선을 8 왼쪽으로 내고 꼬리를 칩 아이콘 가운데에
-          tailFromRight: AddWalletHint.width - 23,
+          // 꼬리를 칩 가운데에
+          tailFromRight: AddWalletHint.width - _safetyHintTailFromLeft,
           nudges: 0,
           onClose: safety.dismissHomeHint,
         ),
@@ -451,9 +437,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return CompositedTransformFollower(
       link: _statusChipLink,
       showWhenUnlinked: false,
-      targetAnchor: Alignment.bottomLeft,
+      targetAnchor: Alignment.bottomCenter,
       followerAnchor: Alignment.topLeft,
-      offset: const Offset(-8, 4),
+      offset: const Offset(-_safetyHintTailFromLeft, -8),
       child: Align(alignment: Alignment.topLeft, child: _reduceMotion ? hint : hint.fadeInAnimation()),
     );
   }
@@ -462,16 +448,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return CustomScrollView(
       slivers: [
         Builder(builder: _buildAppBar),
-        SliverToBoxAdapter(
-          child: Selector<HomeViewModel, bool>(
-            selector: (_, viewModel) => viewModel.isArranging,
-            builder:
-                (context, arranging, _) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _gridWidth(HomeSafetyBanner(isArranging: arranging)),
-                ),
-          ),
-        ),
         SliverPadding(
           padding: const EdgeInsets.all(16 - _gridBadgeInset),
           sliver: SliverLayoutBuilder(
@@ -497,83 +473,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             constraints.viewportMainAxisExtent -
                                 constraints.precedingScrollExtent -
                                 16 -
-                                _gridBadgeInset -
-                                (viewModel.isArranging ? 0 : _homeEditEntryExtent(context)),
+                                _gridBadgeInset,
                           ),
                         ),
                   ),
                 ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Selector<HomeViewModel, bool>(
-            selector: (_, viewModel) => viewModel.isArranging,
-            builder:
-                (context, arranging, _) =>
-                    arranging ? const SizedBox.shrink() : _gridWidth(_buildHomeEditEntry(context), gutter: 16),
-          ),
-        ),
       ],
     );
   }
-
-  double _homeEditEntryExtent(BuildContext context) =>
-      _homeEditEntryTop + _homeEditEntryHeight + _homeEditEntryBottom + MediaQuery.paddingOf(context).bottom;
-
-  /// 프리셋·위젯·바로가기 카탈로그로 가는 주 진입. 항목이 없어도 화면 맨 아래에 보인다.
-  Widget _buildHomeEditEntry(BuildContext context) {
-    final colors = context.coconutColors;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        _homeEditEntryTop,
-        16,
-        _homeEditEntryBottom + MediaQuery.paddingOf(context).bottom,
-      ),
-      child: HomeWidgetPressable(
-        key: const Key('home-edit-entry'),
-        borderRadius: 16,
-        onTap: () => _openHomeEdit(context),
-        child: Container(
-          height: _homeEditEntryHeight,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(16)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                CommonActionIconPath.editHome,
-                width: 18,
-                height: 18,
-                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
-              ),
-              CoconutLayout.spacing_200w,
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    t.home_edit.title,
-                    maxLines: 1,
-                    style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 넓은 화면(폴드 펼침 등)에서 그리드 최대 폭(칸 80 × 4, 안쪽 좌우 여백 [gutter] 포함)에 맞춰 가운데에 둔다
-  Widget _gridWidth(Widget child, {double gutter = 0}) => Center(
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: HomeGridGeometry.extent(HomeGridLayout.columns, HomeItemsView.cell, HomeItemsView.gap) + gutter * 2,
-      ),
-      child: child,
-    ),
-  );
 
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();
@@ -588,6 +497,7 @@ class _HomeScreenState extends State<HomeScreen> {
       addWalletButtonLink: _addWalletButtonLink,
       onArrangeDone: _finishArranging,
       onUndoArrangement: _viewModel.canUndoArrangement ? _undoArrangement : null,
+      onEdit: () => _openHomeEdit(context),
       onAddWallet: () => _openAddWallet(context),
       onSettings: () => _openAppSettings(context),
       safetyStatus:
@@ -604,9 +514,6 @@ class _HomeScreenState extends State<HomeScreen> {
         safety?.dismissHomeHint();
         WalletHealthScreen.open(context);
       },
-      onAlerts: safety == null ? null : () => SafetyAlertsScreen.open(context),
-      // 점은 읽지 않은 위급·조치 필요(hasUnreadAlerts)만, 건수는 의미 라벨에 쓴다
-      unreadAlerts: safety?.hasUnreadAlerts ?? false ? safety!.alertItems.where((item) => item.unread).length : 0,
     );
   }
 }

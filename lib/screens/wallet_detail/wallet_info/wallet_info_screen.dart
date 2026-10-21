@@ -169,20 +169,15 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
                       children: [
                         if (widget.showWarning) ...[
                           SvgPicture.asset(
-                            CommonStateIconPath.triangleWarning,
+                            FeatureWalletHealthIconPath.triangleWarningFilled,
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(
-                              context.coconutColors.appLockWarningBackground,
-                              BlendMode.srcIn,
-                            ),
+                            colorFilter: ColorFilter.mode(context.walletHealthColors.warning, BlendMode.srcIn),
                           ),
-                          CoconutLayout.spacing_50w,
+                          CoconutLayout.spacing_100w,
                           Text(
                             t.wallet_info_screen.backup_required,
-                            style: CoconutTypography.body2_14_Bold.setColor(
-                              context.coconutColors.appLockWarningBackground,
-                            ),
+                            style: CoconutTypography.body2_14_Bold.setColor(context.walletHealthColors.warning),
                             textAlign: TextAlign.end,
                           ),
                           CoconutLayout.spacing_100w,

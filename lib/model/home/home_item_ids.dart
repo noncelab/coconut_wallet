@@ -14,8 +14,7 @@ class HomeItemIds {
   static const transactionActivity = 'transaction_activity_4x2';
   static const savingsGoal = 'savings_goal_2x2';
   static const utxoStatus = 'utxo_status_2x2';
-  static const safetyStatusSmall = 'safety_status_2x2';
-  static const safetyStatusWide = 'safety_status_4x2';
+  static const safetyStatus = 'safety_status';
 
   static String shortcut(String featureId) => 'shortcut:$featureId';
 }
