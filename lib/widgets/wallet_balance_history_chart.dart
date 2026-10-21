@@ -75,7 +75,7 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
               points: widget.points,
               targetSats: widget.targetSats,
               progress: Curves.easeOutCubic.transform(_controller.value),
-              lineColor: context.coconutColors.primary,
+              lineColor: context.coconutColors.homeChartLine,
               targetColor: context.coconutColors.secondaryText,
             ),
             size: Size.infinite,

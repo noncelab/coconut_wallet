@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography, CoconutChip;
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -1290,6 +1290,11 @@ void main() {
       await two.up();
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      final zoomedSparkline = find.descendant(
+        of: find.byType(WalletBalanceHistoryScreen),
+        matching: find.byType(HomeSparkline),
+      );
+      expect(tester.widget<HomeSparkline>(zoomedSparkline).values.length, greaterThanOrEqualTo(7));
       expect(
         tester
             .widget<BalanceHistoryPeriodChips>(
@@ -1344,11 +1349,15 @@ void main() {
         walletBackgrounds: {1: background},
         captureKey: const ValueKey('chip-capture'),
       );
+      tester.view.padding = const FakeViewPadding(bottom: 34);
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
       await tester.pumpAndSettle();
       final screen = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
       final vm = screen.viewModel;
+      final interactiveChart = find.byKey(const Key('balance-history-interactive-chart'));
+      expect(tester.getRect(interactiveChart).bottom, lessThanOrEqualTo(tester.view.physicalSize.height - 34));
       final originalScope = vm.walletIds == null ? null : List<int>.of(vm.walletIds!);
       final wallet = vm.data.wallets.first;
       final chips = find.descendant(
@@ -1356,7 +1365,8 @@ void main() {
         matching: find.byType(BalanceHistoryPeriodChips),
       );
       final walletChip = find.byKey(ValueKey('balance-history-wallet-${wallet.id}'));
-      final chipMaterial = find.ancestor(of: walletChip, matching: find.byType(Material)).first;
+      expect(tester.widget(walletChip), isA<CoconutChip>());
+      final chipMaterial = find.ancestor(of: walletChip, matching: find.byType(ClipRRect)).first;
       final chipBackground = find.descendant(of: chipMaterial, matching: find.byType(WalletCardBackground));
       expect(tester.widget<WalletCardBackground>(chipBackground).background, background);
       expect(tester.getSize(chipBackground).width, greaterThan(0));
@@ -1382,6 +1392,19 @@ void main() {
         tester.widget<HomeSparkline>(sparkline).values,
         vm.data.dailyBalances(walletIds: [wallet.id], days: vm.balancePeriod.days, asOf: now),
       );
+      final secondWallet = vm.data.wallets[1];
+      final secondChip = find.byKey(ValueKey('balance-history-wallet-${secondWallet.id}'));
+      await tester.tap(secondChip);
+      await tester.pumpAndSettle();
+      expect(tester.widget<CoconutChip>(walletChip).isSelected, isFalse);
+      expect(tester.widget<CoconutChip>(secondChip).isSelected, isTrue);
+      expect(
+        tester.widget<HomeSparkline>(sparkline).values,
+        vm.data.dailyBalances(walletIds: [secondWallet.id], days: vm.balancePeriod.days, asOf: now),
+      );
+      await tester.tap(secondChip);
+      await tester.pumpAndSettle();
+      expect(tester.widget<CoconutChip>(secondChip).isSelected, isTrue);
       await tester.tap(find.byKey(const ValueKey('balance-history-wallet-all')));
       await tester.pumpAndSettle();
       expect(
@@ -1391,6 +1414,30 @@ void main() {
       expect(vm.walletIds, originalScope);
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history builds offscreen wallet chips only as they scroll into view', (tester) async {
+      final wallets = [
+        for (var id = 1; id <= 30; id++) WalletMock.createSingleSigWalletItem(id: id, name: 'Wallet $id'),
+      ];
+      await _openWidgetsTab(tester, fake: false, screen: insights, walletList: wallets);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final list = find.byKey(const Key('balance-history-wallet-chips'));
+      final last = find.byKey(const ValueKey('balance-history-wallet-30'));
+      expect(last, findsNothing);
+      final scrollable = find.descendant(of: list, matching: find.byType(Scrollable));
+      await tester.scrollUntilVisible(last, 400, scrollable: scrollable);
+      await tester.pumpAndSettle();
+      expect(last, findsOneWidget);
+      await tester.tap(last);
+      await tester.pumpAndSettle();
+      expect(tester.widget<CoconutChip>(last).isSelected, isTrue);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(last)).pop();
       await tester.pumpAndSettle();
       await _close(tester);
     });

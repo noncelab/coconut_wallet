@@ -48,6 +48,19 @@ void main() {
     );
   });
 
+  test('balance axis encloses balances using round ticks of at least 100 sats', () {
+    for (final bounds in [(1974, 2083), (100000001, 100000003), (0, 0), (100, 100), (1, 999999)]) {
+      final axis = HomeWidgetMath.balanceAxisRange(bounds.$1, bounds.$2);
+      expect(axis.minimum, lessThanOrEqualTo(bounds.$1));
+      expect(axis.maximum, greaterThanOrEqualTo(bounds.$2));
+      final step = (axis.maximum - axis.minimum) ~/ 4;
+      expect(step, greaterThanOrEqualTo(100));
+      expect(step % 100, 0);
+      expect(axis.minimum % step, 0);
+    }
+    expect(HomeWidgetMath.balanceAxisRange(1974, 2083), (minimum: 1900, maximum: 2300));
+  });
+
   test('last days are midnights ending today, oldest first', () {
     expect(HomeWidgetMath.lastDays(now, 3), [DateTime(2026, 8, 30), DateTime(2026, 8, 31), DateTime(2026, 9, 1)]);
   });

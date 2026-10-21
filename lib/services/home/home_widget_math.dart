@@ -26,6 +26,25 @@ class HomeWidgetMath {
     return HomeWidgetPeriod.all;
   }
 
+  /// 100 sats 이상, 1·2·5 계열 간격의 눈금 다섯 개로 잔액 범위를 감싼다.
+  static ({int minimum, int maximum}) balanceAxisRange(int minimum, int maximum) {
+    final desiredStep = math.max(100.0, (maximum - minimum) / 3);
+    final magnitude = math.pow(10, (math.log(desiredStep) / math.ln10).floor()).toDouble();
+    final fraction = desiredStep / magnitude;
+    final multiplier =
+        fraction <= 1
+            ? 1
+            : fraction <= 2
+            ? 2
+            : fraction <= 5
+            ? 5
+            : 10;
+    final step = (multiplier * magnitude).round();
+    var lower = (minimum / step).floor() * step;
+    if (minimum == maximum && lower >= step) lower -= step;
+    return (minimum: lower, maximum: lower + step * 4);
+  }
+
   static const utxoBucketLowerBounds = [10000000, 1000000, 100000, 0];
 
   /// [today]를 포함해 거꾸로 [days]일의 날짜(자정). 오래된 날부터.

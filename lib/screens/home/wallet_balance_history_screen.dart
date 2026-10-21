@@ -20,6 +20,7 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 
@@ -85,6 +86,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   late double _span;
   late double _end;
   int? _selected;
+  ({int minimum, int maximum})? _axisRange;
   bool _changedOnly = false;
   final Set<int> _expanded = {};
   final Map<int, double> _cardExtents = {};
@@ -105,7 +107,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   @override
   void initState() {
     super.initState();
-    _walletIds = vm.walletIds == null ? null : List.of(vm.walletIds!);
+    _walletIds = vm.walletIds?.length == 1 ? [vm.walletIds!.single] : null;
     _readAnchor();
     _period = vm.balancePeriod;
     _span = (_period == HomeWidgetPeriod.all ? _allDays : _period.days).toDouble();
@@ -139,7 +141,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     setState(() {
       _readAnchor();
       if (followedAll) _span = _allDays.toDouble();
-      _span = _span.clamp(2.0, _days.toDouble());
+      _span = _span.clamp(HomeWidgetPeriod.week.days.toDouble(), _days.toDouble());
       final dayShift = _calendarDistance(previousToday, _localDate(_today));
       if (pinnedToEnd) {
         _end = (_days - 1).toDouble();
@@ -204,7 +206,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
       body: SafeArea(
         top: false,
-        bottom: false,
+        bottom: selected == null,
         child: Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 12),
           child: Column(
@@ -227,7 +229,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              SingleChildScrollView(scrollDirection: Axis.horizontal, child: _walletChips()),
+              _walletChips(),
               const SizedBox(height: 16),
               Expanded(
                 child: Padding(
@@ -299,16 +301,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   void _selectWallet(int? walletId) {
     setState(() {
-      if (walletId == null) {
-        _walletIds = null;
-      } else if (_walletIds == null) {
-        _walletIds = [walletId];
-      } else if (_walletIds!.contains(walletId)) {
-        if (_walletIds!.length == 1) return;
-        _walletIds!.remove(walletId);
-      } else {
-        _walletIds!.add(walletId);
-      }
+      _walletIds = walletId == null ? null : [walletId];
+      _axisRange = null;
       _expanded.clear();
       _cardExtents.clear();
       _cardExtent = 0;
@@ -323,83 +317,108 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       final background =
           wallet == null ? null : (appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet)).background;
       final selected = id == null ? _walletIds == null : _walletIds?.contains(id) == true;
-      return Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Semantics(
-          selected: selected,
-          button: true,
-          child: Material(
-            color: selected ? colors.primaryText : colors.homeSurface,
-            borderRadius: BorderRadius.circular(16),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                if (wallet != null)
-                  Positioned.fill(
-                    child: WalletCardBackground(
-                      background: background,
-                      photoFile: appearances?.photoFileFor(wallet.id),
+      return RepaintBoundary(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Semantics(
+            selected: selected,
+            button: true,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
+              child: Stack(
+                children: [
+                  if (wallet != null)
+                    Positioned.fill(
+                      child: WalletCardBackground(
+                        background: background,
+                        photoFile: appearances?.photoFileFor(wallet.id),
+                        resizePhotoToDisplaySize: true,
+                      ),
                     ),
-                  ),
-                WalletContentTheme(
-                  background: background,
-                  child: Builder(
-                    builder:
-                        (chipContext) => InkWell(
-                          key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => _selectWallet(id),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (wallet != null) ...[
-                                  Icon(
-                                    selected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                    size: 14,
-                                    color: chipContext.coconutColors.primaryText,
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                Text(
-                                  label,
-                                  style: CoconutTypography.body3_12.copyWith(
-                                    color:
-                                        wallet != null
-                                            ? chipContext.coconutColors.primaryText
-                                            : selected
-                                            ? colors.background
-                                            : colors.secondaryText,
-                                  ),
-                                ),
-                              ],
+                  WalletContentTheme(
+                    background: background,
+                    child: Builder(
+                      builder:
+                          (chipContext) => ExcludeSemantics(
+                            child: CoconutChip(
+                              key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
+                              label: label,
+                              labelSize: 12,
+                              minWidth: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isSelected: selected,
+                              color:
+                                  wallet != null
+                                      ? Colors.transparent
+                                      : selected
+                                      ? colors.chipSelectedBackground
+                                      : colors.chipUnselectedBackground,
+                              labelColor:
+                                  wallet != null
+                                      ? chipContext.coconutColors.primaryText
+                                      : selected
+                                      ? colors.chipSelectedText
+                                      : colors.chipUnselectedText,
+                              borderColor:
+                                  wallet != null
+                                      ? chipContext.coconutColors.primaryText
+                                      : selected
+                                      ? colors.chipSelectedText
+                                      : colors.chipUnselectedText,
+                              borderWidth: 0,
+                              selectedBorderWidth: 1,
+                              onTap: () => _selectWallet(id),
                             ),
                           ),
-                        ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        chip(null, t.home_edit.all_wallets),
-        for (final wallet in vm.data.wallets) chip(wallet.id, wallet.name, wallet: wallet),
-      ],
+    final wallets = vm.data.wallets;
+    // 한 줄 칩의 실제 글꼴 배율에 맞춰 가로 뷰포트 높이를 확보한다.
+    final labelHeight = _singleLineHeight(
+      context,
+      'Hg',
+      const TextStyle(fontFamily: CoconutTypography.kTextFontFamily, fontSize: 12, fontWeight: FontWeight.bold),
+    );
+    return SizedBox(
+      height: labelHeight.ceilToDouble() + 18,
+      child: ListView.builder(
+        key: const Key('balance-history-wallet-chips'),
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        cacheExtent: 80,
+        itemCount: wallets.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) return chip(null, t.home_edit.all_wallets);
+          final wallet = wallets[index - 1];
+          return chip(wallet.id, wallet.name, wallet: wallet);
+        },
+      ),
     );
   }
 
   Widget _chart(List<int> balances, List<DateTime> dates) {
     final colors = context.coconutColors;
     final values = balances.sublist(_first, _last + 1);
-    final minimum = values.reduce(math.min);
-    final maximum = values.reduce(math.max);
+    final dataMinimum = values.reduce(math.min);
+    final dataMaximum = values.reduce(math.max);
+    final previous = _axisRange;
+    // 현재 축 안의 작은 변화에는 축을 유지하고, 충분히 확대했을 때만 다시 맞춘다.
+    if (previous == null ||
+        dataMinimum < previous.minimum ||
+        dataMaximum > previous.maximum ||
+        (dataMaximum - dataMinimum) < (previous.maximum - previous.minimum) * 0.2) {
+      _axisRange = HomeWidgetMath.balanceAxisRange(dataMinimum, dataMaximum);
+    }
+    final minimum = _axisRange!.minimum;
+    final maximum = _axisRange!.maximum;
     final selected = _selected;
     final localSelected = selected != null && selected >= _first && selected <= _last ? selected - _first : null;
     return Padding(
@@ -463,7 +482,10 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                   : delta.dy.abs() > delta.dx.abs()
                                   ? math.exp(-delta.dy / 160)
                                   : 1.0;
-                          final span = (_startSpan / zoom).clamp(2.0, _days.toDouble());
+                          final span = (_startSpan / zoom).clamp(
+                            HomeWidgetPeriod.week.days.toDouble(),
+                            _days.toDouble(),
+                          );
                           final anchor =
                               _selected?.toDouble() ?? _startEnd - (_startSpan - 1) * (1 - _startPosition.dx / width);
                           final fraction =
@@ -482,7 +504,32 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            Positioned.fill(child: HomeSparkline(values: values, selectedIndex: localSelected)),
+                            Positioned.fill(
+                              child: CustomPaint(
+                                key: const Key('balance-history-grid'),
+                                painter: _BalanceHistoryGridPainter(
+                                  amounts:
+                                      _axisTickLayout(
+                                        context,
+                                        minimum,
+                                        maximum,
+                                        math.max(0, constraints.maxHeight - 4),
+                                        CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                                      ).amounts,
+                                  minimum: minimum,
+                                  maximum: maximum,
+                                  color: colors.tertiaryText.withValues(alpha: 0.2),
+                                ),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: HomeSparkline(
+                                values: values,
+                                selectedIndex: localSelected,
+                                minimum: minimum,
+                                maximum: maximum,
+                              ),
+                            ),
                             if (localSelected != null)
                               Builder(
                                 builder: (context) {
@@ -793,6 +840,41 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   /// Right-aligned caption ticks. Five labels while their measured heights fit, or while
   /// fitting them stays at least the 1× caption height. Fewer ticks only after that.
   /// A stack of measured slots, not a flex column, so a subpixel miss cannot overflow.
+  ({List<int> amounts, double scale}) _axisTickLayout(
+    BuildContext context,
+    int minimum,
+    int maximum,
+    double maxHeight,
+    TextStyle style,
+  ) {
+    final designHeight = _singleLineHeight(context, '0', style, textScaler: TextScaler.noScaling);
+    var amounts = _axisTickAmounts(minimum, maximum, 4);
+    var scale = 1.0;
+    var accepted = false;
+    for (final intervals in const [4, 2, 1]) {
+      final candidate = _axisTickAmounts(minimum, maximum, intervals);
+      final heights = [
+        for (final amount in candidate) _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amount), style),
+      ];
+      final sum = heights.fold<double>(0, (total, height) => total + height);
+      if (sum <= 0) continue;
+      final candidateScale = sum <= maxHeight ? 1.0 : maxHeight / sum;
+      final shortest = heights.reduce(math.min) * candidateScale;
+      if (candidateScale == 1.0 || shortest >= designHeight) {
+        amounts = candidate;
+        scale = candidateScale;
+        accepted = true;
+        break;
+      }
+    }
+    if (!accepted) {
+      amounts = [maximum.round()];
+      final height = _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amounts.first), style);
+      scale = height <= maxHeight ? 1.0 : maxHeight / height;
+    }
+    return (amounts: amounts, scale: scale);
+  }
+
   Widget _valueAxis(int minimum, int maximum) {
     final style = CoconutTypography.caption_10_Number.copyWith(color: context.coconutColors.tertiaryText);
     return SizedBox(
@@ -810,32 +892,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                 children: [for (final amount in _axisTickAmounts(minimum, maximum, 4)) _axisLabel(amount, style)],
               );
             }
-            final designHeight = _singleLineHeight(context, '0', style, textScaler: TextScaler.noScaling);
-            var amounts = _axisTickAmounts(minimum, maximum, 4);
-            var scale = 1.0;
-            var accepted = false;
-            for (final intervals in const [4, 2, 1]) {
-              final candidate = _axisTickAmounts(minimum, maximum, intervals);
-              final heights = [
-                for (final amount in candidate)
-                  _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amount), style),
-              ];
-              final sum = heights.fold<double>(0, (total, height) => total + height);
-              if (sum <= 0) continue;
-              final candidateScale = sum <= maxHeight ? 1.0 : maxHeight / sum;
-              final shortest = heights.reduce(math.min) * candidateScale;
-              if (candidateScale == 1.0 || shortest >= designHeight) {
-                amounts = candidate;
-                scale = candidateScale;
-                accepted = true;
-                break;
-              }
-            }
-            if (!accepted) {
-              amounts = [maximum.round()];
-              final height = _singleLineHeight(context, vm.data.unit.displayBitcoinAmount(amounts.first), style);
-              scale = height <= maxHeight ? 1.0 : maxHeight / height;
-            }
+            final layout = _axisTickLayout(context, minimum, maximum, maxHeight, style);
+            final amounts = layout.amounts;
+            final scale = layout.scale;
             final boxHeights = [
               for (final amount in amounts)
                 math.min(
@@ -1040,6 +1099,44 @@ List<int> _axisTickAmounts(int minimum, int maximum, int intervals) {
   return {
     for (var tick = intervals; tick >= 0; tick--) (minimum + (maximum - minimum) * tick / intervals).round(),
   }.toList();
+}
+
+class _BalanceHistoryGridPainter extends CustomPainter {
+  final List<int> amounts;
+  final int minimum;
+  final int maximum;
+  final Color color;
+
+  const _BalanceHistoryGridPainter({
+    required this.amounts,
+    required this.minimum,
+    required this.maximum,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1;
+    for (final amount in amounts) {
+      final ratio = maximum == minimum ? 0.5 : (amount - minimum) / (maximum - minimum);
+      // Match HomeSparkline's two-pixel inset and balance scale.
+      final y = 2 + (size.height - 4) * (1 - ratio);
+      for (var x = 0.0; x < size.width; x += 8) {
+        canvas.drawLine(Offset(x, y), Offset(math.min(x + 4, size.width), y), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BalanceHistoryGridPainter oldDelegate) =>
+      oldDelegate.minimum != minimum ||
+      oldDelegate.maximum != maximum ||
+      oldDelegate.color != color ||
+      !listEquals(oldDelegate.amounts, amounts);
 }
 
 class _CardExtent extends SingleChildRenderObjectWidget {

@@ -374,11 +374,21 @@ class HomeSparkline extends StatelessWidget {
   final List<num> values;
   final Color? color;
   final double strokeWidth;
+  final num? minimum;
+  final num? maximum;
 
   /// 손가락으로 짚은 점. 세로 안내선과 점을 그린다.
   final int? selectedIndex;
 
-  const HomeSparkline({super.key, required this.values, this.color, this.strokeWidth = 2, this.selectedIndex});
+  const HomeSparkline({
+    super.key,
+    required this.values,
+    this.color,
+    this.strokeWidth = 2,
+    this.selectedIndex,
+    this.minimum,
+    this.maximum,
+  });
 
   /// [index]번째 값이 [size] 안에서 그려지는 위치
   static Offset pointOf(List<num> values, int index, Size size, {double strokeWidth = 2}) {
@@ -398,6 +408,8 @@ class HomeSparkline extends StatelessWidget {
         color ?? context.coconutColors.homeChartLine,
         strokeWidth,
         selectedIndex: selectedIndex,
+        minimum: minimum?.toDouble(),
+        maximum: maximum?.toDouble(),
         guideColor: context.coconutColors.tertiaryText,
       ),
       size: Size.infinite,
@@ -456,17 +468,27 @@ class _SparklinePainter extends CustomPainter {
   final List<double> values;
   final Color color;
   final double strokeWidth;
+  final double? minimum;
+  final double? maximum;
 
   final int? selectedIndex;
   final Color? guideColor;
 
-  _SparklinePainter(this.values, this.color, this.strokeWidth, {this.selectedIndex, this.guideColor});
+  _SparklinePainter(
+    this.values,
+    this.color,
+    this.strokeWidth, {
+    this.selectedIndex,
+    this.guideColor,
+    this.minimum,
+    this.maximum,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (values.length < 2 || size.isEmpty) return;
-    final minValue = values.reduce(math.min);
-    final maxValue = values.reduce(math.max);
+    final minValue = minimum ?? values.reduce(math.min);
+    final maxValue = maximum ?? values.reduce(math.max);
     final range = maxValue - minValue;
     final inset = strokeWidth;
     Offset point(int i) {
@@ -510,6 +532,8 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter oldDelegate) =>
+      oldDelegate.minimum != minimum ||
+      oldDelegate.maximum != maximum ||
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
       oldDelegate.selectedIndex != selectedIndex ||

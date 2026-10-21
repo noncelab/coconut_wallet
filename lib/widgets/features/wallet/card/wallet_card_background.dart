@@ -13,8 +13,14 @@ import 'package:flutter/material.dart';
 class WalletCardBackground extends StatelessWidget {
   final WalletBackground? background;
   final File? photoFile;
+  final bool resizePhotoToDisplaySize;
 
-  const WalletCardBackground({super.key, required this.background, this.photoFile});
+  const WalletCardBackground({
+    super.key,
+    required this.background,
+    this.photoFile,
+    this.resizePhotoToDisplaySize = false,
+  });
 
   static const double lightPhotoScrimOpacity = 0.4;
   static const double darkPhotoScrimOpacity = 0.5;
@@ -102,6 +108,10 @@ class WalletCardBackground extends StatelessWidget {
                 rect: rect,
                 child: Image.file(
                   file,
+                  cacheWidth:
+                      resizePhotoToDisplaySize
+                          ? (rect.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 4096)
+                          : null,
                   fit: BoxFit.fill,
                   gaplessPlayback: true,
                   errorBuilder: (_, __, ___) => const SizedBox.shrink(),
