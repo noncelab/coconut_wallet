@@ -28,30 +28,35 @@ void main() {
   setUpAll(() => VisibilityDetectorController.instance.updateInterval = Duration.zero);
   tearDownAll(() => VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 500));
 
-  testWidgets('free wallet health card shows a moving sheen and remains tappable', (tester) async {
-    var taps = 0;
-    await tester.pumpWidget(
-      _app(CoconutThemeVariant.light, SizedBox(width: 320, child: WalletHealthPremiumCard(onTap: () => taps++))),
-    );
-    await tester.pump();
-    final effect = find.descendant(of: find.byType(VisibilityDetector), matching: find.byType(DecoratedBox));
-    expect(effect, findsOneWidget);
-    final start = (_box(tester, effect).gradient! as LinearGradient).begin;
-    await tester.pump(const Duration(milliseconds: 800));
-    expect((_box(tester, effect).gradient! as LinearGradient).begin, isNot(start));
-    await tester.tap(find.byType(ShrinkAnimationButton));
-    await tester.pumpAndSettle();
-    expect(taps, 1);
-    expect(tester.binding.transientCallbackCount, 0);
-  });
+  for (final critical in [false, true]) {
+    testWidgets('free wallet health card critical=$critical shows a moving sheen and remains tappable', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        _app(
+          CoconutThemeVariant.light,
+          SizedBox(width: 320, child: WalletHealthPremiumCard(critical: critical, onTap: () => taps++)),
+        ),
+      );
+      await tester.pump();
+      final effect = find.descendant(of: find.byType(VisibilityDetector), matching: find.byType(DecoratedBox));
+      expect(effect, findsOneWidget);
+      final start = (_box(tester, effect).gradient! as LinearGradient).begin;
+      await tester.pump(const Duration(milliseconds: 800));
+      expect((_box(tester, effect).gradient! as LinearGradient).begin, isNot(start));
+      await tester.tap(find.byType(ShrinkAnimationButton));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+      expect(tester.binding.transientCallbackCount, 0);
+    });
+  }
 
   for (final critical in [true, false]) {
-    testWidgets('wallet health card remains static for critical=$critical or reduced motion', (tester) async {
+    testWidgets('wallet health card critical=$critical remains static for reduced motion', (tester) async {
       await tester.pumpWidget(
         _app(
           CoconutThemeVariant.light,
           MediaQuery(
-            data: MediaQueryData(disableAnimations: !critical),
+            data: const MediaQueryData(disableAnimations: true),
             child: SizedBox(width: 320, child: WalletHealthPremiumCard(critical: critical, onTap: () {})),
           ),
         ),
