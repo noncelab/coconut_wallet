@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -19,10 +21,12 @@ class PriceProvider extends ChangeNotifier {
   WebSocketService? _webSocketServiceUsd;
   WebSocketService? _webSocketServiceJpy;
   WebSocketService? _webSocketServiceEur;
+  final List<StreamSubscription<PriceResponse?>> _tickerSubscriptions = [];
 
   late final VoidCallback _connectivityListener;
   late final VoidCallback _preferenceListener;
   bool _isPendingConnection = false;
+  bool _isSuspended = false;
 
   /// 통화별 가격 저장
   int? _bitcoinPriceKrw;
@@ -107,6 +111,8 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void initWebSocketService({bool force = false}) {
+    if (_isSuspended) return;
+
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOn != true) {
       Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
@@ -134,9 +140,11 @@ class PriceProvider extends ChangeNotifier {
       // KRW 웹소켓 (Upbit)
       if (_webSocketServiceKrw == null) {
         _webSocketServiceKrw = _createWebSocket(FiatCode.KRW);
-        _webSocketServiceKrw?.tickerStream.listen(
-          (ticker) => updatePriceForFiat(FiatCode.KRW, ticker),
-          onError: (error) => Logger.error('[KRW WebSocket] 스트림 오류: $error'),
+        _tickerSubscriptions.add(
+          _webSocketServiceKrw!.tickerStream.listen(
+            (ticker) => updatePriceForFiat(FiatCode.KRW, ticker),
+            onError: (error) => Logger.error('[KRW WebSocket] 스트림 오류: $error'),
+          ),
         );
         Logger.log('[KRW WebSocket] Upbit 연결 완료');
       }
@@ -144,9 +152,11 @@ class PriceProvider extends ChangeNotifier {
       // USD 웹소켓 (Binance)
       if (_webSocketServiceUsd == null) {
         _webSocketServiceUsd = _createWebSocket(FiatCode.USD);
-        _webSocketServiceUsd?.tickerStream.listen(
-          (ticker) => updatePriceForFiat(FiatCode.USD, ticker),
-          onError: (error) => Logger.error('[USD WebSocket] 스트림 오류: $error'),
+        _tickerSubscriptions.add(
+          _webSocketServiceUsd!.tickerStream.listen(
+            (ticker) => updatePriceForFiat(FiatCode.USD, ticker),
+            onError: (error) => Logger.error('[USD WebSocket] 스트림 오류: $error'),
+          ),
         );
         Logger.log('[USD WebSocket] Binance 연결 완료');
       }
@@ -154,9 +164,11 @@ class PriceProvider extends ChangeNotifier {
       // JPY 웹소켓 (Bitflyer)
       if (_webSocketServiceJpy == null) {
         _webSocketServiceJpy = _createWebSocket(FiatCode.JPY);
-        _webSocketServiceJpy?.tickerStream.listen(
-          (ticker) => updatePriceForFiat(FiatCode.JPY, ticker),
-          onError: (error) => Logger.error('[JPY WebSocket] 스트림 오류: $error'),
+        _tickerSubscriptions.add(
+          _webSocketServiceJpy!.tickerStream.listen(
+            (ticker) => updatePriceForFiat(FiatCode.JPY, ticker),
+            onError: (error) => Logger.error('[JPY WebSocket] 스트림 오류: $error'),
+          ),
         );
         Logger.log('[JPY WebSocket] Bitflyer 연결 완료');
       }
@@ -164,9 +176,11 @@ class PriceProvider extends ChangeNotifier {
       // EUR 웹소켓 (Binance)
       if (_webSocketServiceEur == null) {
         _webSocketServiceEur = _createWebSocket(FiatCode.EUR);
-        _webSocketServiceEur?.tickerStream.listen(
-          (ticker) => updatePriceForFiat(FiatCode.EUR, ticker),
-          onError: (error) => Logger.error('[EUR WebSocket] 스트림 오류: $error'),
+        _tickerSubscriptions.add(
+          _webSocketServiceEur!.tickerStream.listen(
+            (ticker) => updatePriceForFiat(FiatCode.EUR, ticker),
+            onError: (error) => Logger.error('[EUR WebSocket] 스트림 오류: $error'),
+          ),
         );
         Logger.log('[EUR WebSocket] Binance 연결 완료');
       }
@@ -203,7 +217,22 @@ class PriceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void pauseWebSocketService() {
+    _isSuspended = true;
+    disposeWebSocketService();
+  }
+
+  void resumeWebSocketService({bool force = false}) {
+    _isSuspended = false;
+    initWebSocketService(force: force);
+  }
+
   void disposeWebSocketService() {
+    for (final subscription in _tickerSubscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _tickerSubscriptions.clear();
+
     // KRW WebSocket 정리
     if (_webSocketServiceKrw != null) {
       try {

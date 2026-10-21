@@ -69,6 +69,7 @@ class _AppGuardState extends State<AppGuard> {
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
   DateTime? _pausedAt;
+  int _lifecycleGeneration = 0;
   late final AppLifecycleListener _lifecycleListener;
 
   /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
@@ -100,6 +101,8 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   Future<void> _handleAppLifecycleState(AppLifecycleState state) async {
+    final generation = ++_lifecycleGeneration;
+
     /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
     if (Platform.isAndroid && !_isFirstInactiveSkipped) {
       _isFirstInactiveSkipped = true;
@@ -109,15 +112,16 @@ class _AppGuardState extends State<AppGuard> {
     switch (state) {
       case AppLifecycleState.resumed:
         await _connectivityProvider.refreshConnectivity();
+        if (!mounted || generation != _lifecycleGeneration) return;
         if (_isPaused) {
           setState(() {
             _isPaused = false;
           });
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.initWebSocketService(force: true);
+          _priceProvider.resumeWebSocketService(force: true);
         } else {
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.initWebSocketService();
+          _priceProvider.resumeWebSocketService();
         }
         _handleNodeProviderReconnect();
         for (final wallet in _walletProvider.walletItemList) {
@@ -129,11 +133,12 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.paused:
         _pausedAt = DateTime.now();
-        if (_isPaused) break;
-        setState(() {
-          _isPaused = true;
-        });
-        _priceProvider.disposeWebSocketService();
+        if (!_isPaused) {
+          setState(() {
+            _isPaused = true;
+          });
+        }
+        _priceProvider.pauseWebSocketService();
         _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:

@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -189,8 +190,8 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
-      expect(harness.connectivity.hasListeners, isFalse);
-      expect(harness.preference.hasListeners, isFalse);
+      expect(harness.connectivity.hasRegisteredListeners, isFalse);
+      expect(harness.preference.hasRegisteredListeners, isFalse);
       expect(OwnedSocket.live, 0);
 
       harness.connectivity.pulse();
@@ -210,7 +211,7 @@ void main() {
       final firstConnectivity = first.connectivity;
       first.dispose();
       expect(OwnedSocket.live, 0);
-      expect(firstConnectivity.hasListeners, isFalse);
+      expect(firstConnectivity.hasRegisteredListeners, isFalse);
 
       second = Harness();
       expect(OwnedSocket.live, 4);
@@ -237,6 +238,7 @@ void main() {
       expect(find.text('₩ 100,000,000'), findsOneWidget);
 
       harness.emit(FiatCode.KRW, 99000000);
+      await tester.idle();
       await tester.pump();
       expect(harness.prices.bitcoinPriceKrw, 99000000);
       expect(harness.prices.getFiatPrice(100000000), '₩ 99,000,000');
@@ -246,6 +248,7 @@ void main() {
       harness.preference.select(FiatCode.USD);
       await tester.pump();
       harness.emit(FiatCode.USD, 60000);
+      await tester.idle();
       await tester.pump();
       expect(find.text(r'$ 60,000'), findsOneWidget);
 
@@ -256,6 +259,7 @@ void main() {
 
       harness.connectivity.setOnline(true);
       harness.emit(FiatCode.USD, 61000);
+      await tester.idle();
       await tester.pump();
       expect(find.text(r'$ 61,000'), findsOneWidget);
       expect(OwnedSocket.live, 4);
@@ -326,6 +330,105 @@ void main() {
       expect(session.harness.notes, hasLength(1));
       expect(tester.takeException(), isNull);
     } finally {
+      await releaseGuard(tester, session);
+    }
+  });
+
+  testWidgets('network and preference notifications cannot reopen background sockets', (tester) async {
+    final session = await pumpGuard(tester);
+    try {
+      await enterBackground(tester);
+      expect(OwnedSocket.live, 0);
+      session.harness.connectivity.setOnline(false);
+      session.harness.preference.select(FiatCode.USD);
+      session.harness.connectivity.setOnline(true);
+      await tester.pump();
+      expect(OwnedSocket.live, 0);
+      expect(OwnedSocket.created, 4);
+
+      await enterForeground(tester);
+      expect(OwnedSocket.live, 4);
+      expect(OwnedSocket.created, 8);
+      session.harness.emit(FiatCode.USD, 60000);
+      await tester.pump();
+      expect(session.harness.prices.getFiatPrice(100000000), r'$ 60,000');
+    } finally {
+      await releaseGuard(tester, session);
+    }
+  });
+
+  testWidgets('inactive keeps privacy protection until the current resume finishes', (tester) async {
+    final session = await pumpGuard(tester);
+    final refresh = Completer<void>();
+    session.harness.connectivity.refreshGate = refresh;
+    AppGuard.enablePrivacyScreen();
+    try {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      expect(find.byType(CoconutLogoIcon), findsOneWidget);
+      expect(OwnedSocket.live, 4);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(find.byType(CoconutLogoIcon), findsOneWidget);
+      expect(session.auth.checks, 0);
+
+      refresh.complete();
+      await tester.idle();
+      await tester.pump();
+      expect(find.byType(CoconutLogoIcon), findsNothing);
+      expect(session.auth.checks, 1);
+      expect(OwnedSocket.live, 4);
+    } finally {
+      if (!refresh.isCompleted) refresh.complete();
+      await releaseGuard(tester, session);
+    }
+  });
+
+  testWidgets('a delayed resume cannot reopen sockets after the next background transition', (tester) async {
+    final session = await pumpGuard(tester);
+    final refresh = Completer<void>();
+    session.harness.connectivity.refreshGate = refresh;
+    try {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await enterBackground(tester);
+
+      refresh.complete();
+      await tester.pump();
+      expect(OwnedSocket.live, 0);
+      expect(session.auth.checks, 0);
+
+      await enterForeground(tester);
+      expect(OwnedSocket.live, 4);
+      expect(OwnedSocket.created, 8);
+      expect(session.auth.checks, 1);
+    } finally {
+      if (!refresh.isCompleted) refresh.complete();
+      await releaseGuard(tester, session);
+    }
+  });
+
+  testWidgets('a delayed resume does not use providers after AppGuard is unmounted', (tester) async {
+    final session = await pumpGuard(tester);
+    final refresh = Completer<void>();
+    session.harness.connectivity.refreshGate = refresh;
+    try {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      session.harness.dispose();
+
+      refresh.complete();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(session.auth.checks, 0);
+      expect(OwnedSocket.live, 0);
+      expect(OwnedSocket.created, 4);
+    } finally {
+      if (!refresh.isCompleted) refresh.complete();
       await releaseGuard(tester, session);
     }
   });
@@ -574,6 +677,9 @@ class ScriptedConnectivity extends Fake with ChangeNotifier implements Connectiv
   ScriptedConnectivity({required this.online});
 
   bool online;
+  Completer<void>? refreshGate;
+
+  bool get hasRegisteredListeners => hasListeners;
 
   @override
   bool get isInternetOn => online;
@@ -582,7 +688,7 @@ class ScriptedConnectivity extends Fake with ChangeNotifier implements Connectiv
   bool get isInternetOff => !online;
 
   @override
-  Future<void> refreshConnectivity() async {}
+  Future<void> refreshConnectivity() async => refreshGate?.future;
 
   void setOnline(bool value) {
     online = value;
@@ -597,6 +703,8 @@ class ScriptedPreference extends Fake with ChangeNotifier implements PreferenceP
 
   @override
   FiatCode selectedFiat;
+
+  bool get hasRegisteredListeners => hasListeners;
 
   void select(FiatCode fiat) {
     selectedFiat = fiat;
