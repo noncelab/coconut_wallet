@@ -233,6 +233,7 @@ hodl_insights:
   settings_description: "Wähle die Wallets, die in deine Insights einfließen."
   total_balance: "Gesamtguthaben"
   goal: "Ziel"
+  goal_reached: "Ziel erreicht"
   utxo_summary: "UTXO-Übersicht"
   utxo_ranges_unit: "Bereiche in BTC"
   total_utxos: "Insgesamt ${count} UTXOs"

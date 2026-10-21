@@ -3,9 +3,29 @@ import 'dart:math' as math;
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 
 class HomeWidgetMath {
+  /// 마지막 거래의 전날 잔액까지 포함하는 가장 짧은 기간. 거래가 없으면 전체.
+  static HomeWidgetPeriod balanceHistoryPeriod(List<TransactionRecord> transactions, DateTime now) {
+    final localNow = now.toLocal();
+    DateTime? latest;
+    for (final tx in transactions) {
+      final time = tx.timestamp.toLocal();
+      if (time.isAfter(localNow)) continue;
+      if (latest == null || time.isAfter(latest)) latest = time;
+    }
+    if (latest == null) return HomeWidgetPeriod.all;
+    for (final period in HomeWidgetPeriod.widgetPeriods) {
+      final start = DateTime(localNow.year, localNow.month, localNow.day - period.days + 1);
+      // 첫날 거래는 이미 일별 최종 잔액에 반영되어 있으므로 비교할 전날도 필요하다.
+      final firstTransactionDay = DateTime(start.year, start.month, start.day + 1);
+      if (!latest.isBefore(firstTransactionDay)) return period;
+    }
+    return HomeWidgetPeriod.all;
+  }
+
   static const utxoBucketLowerBounds = [10000000, 1000000, 100000, 0];
 
   /// [today]를 포함해 거꾸로 [days]일의 날짜(자정). 오래된 날부터.

@@ -30,6 +30,9 @@ import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_det
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
+import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
+import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -201,6 +204,66 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('balance history opens with the focused wallet selected and shows its target', (tester) async {
+    await SharedPrefsRepository().setWalletTargetSats(2, 50000000);
+    final firstDay = DateTime.now().subtract(const Duration(days: 100));
+    walletProvider.transactions = [TransactionMock.createMockTransactionRecord(timestamp: firstDay)];
+    await pump(tester, id: 2);
+    await tester.pumpAndSettle();
+    final chart = tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart));
+    expect(chart.targetSats, 50000000);
+    expect(chart.points.last.balance, 20000000);
+    expect(chart.points.length, HomeWidgetPeriod.year.days);
+    final lastDay = chart.points.last.timestamp;
+    expect(
+      chart.points.first.timestamp,
+      DateTime(lastDay.year, lastDay.month, lastDay.day - HomeWidgetPeriod.year.days + 1),
+    );
+    expect(find.byKey(const Key('wallet-detail-balance-goal')), findsOneWidget);
+    expect(tester.widget<RotatedBox>(find.byKey(const Key('wallet-detail-balance-goal-direction'))).quarterTurns, 1);
+    await tester.tap(find.byKey(const Key('wallet-detail-balance-history')));
+    await tester.pumpAndSettle();
+    final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+    expect(history.viewModel.walletIds, [2]);
+    expect(history.viewModel.balancePeriod, HomeWidgetPeriod.year);
+    final chip = find.byKey(const ValueKey('balance-history-wallet-2'));
+    final semantics = tester.widget<Semantics>(find.ancestor(of: chip, matching: find.byType(Semantics)).first);
+    expect(semantics.properties.selected, isTrue);
+    Navigator.of(tester.element(chip)).pop();
+    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const Key('wallet-detail-carousel')), const Offset(300, 0));
+    await tester.pumpAndSettle();
+    final switchedChart = tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart));
+    expect(switchedChart.points.last.balance, 10000000);
+    expect(switchedChart.targetSats, isNull);
+    expect(find.byKey(const Key('wallet-detail-balance-goal')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('goal label shows a simple check at or above the target', (tester) async {
+    await SharedPrefsRepository().setWalletTargetSats(1, 10000000);
+    await pump(tester);
+    await tester.pumpAndSettle();
+    final check = find.byKey(const Key('wallet-detail-balance-goal-reached'));
+    final label = find.byKey(const Key('wallet-detail-balance-goal'));
+    expect(check, findsOneWidget);
+    expect(tester.widget<Text>(label).data, startsWith(t.hodl_insights.goal_reached));
+    for (final balance in [15000000, 5000000]) {
+      walletProvider.balances[1] = balance;
+      walletProvider.walletItemListNotifier.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(check, balance >= 10000000 ? findsOneWidget : findsNothing);
+    }
+    expect(tester.widget<Text>(label).data, startsWith('${t.hodl_insights.goal} ·'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('balance history has no goal when the focused wallet has no target', (tester) async {
+    await pump(tester);
+    expect(tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart)).targetSats, isNull);
+    expect(find.byKey(const Key('wallet-detail-balance-goal')), findsNothing);
   });
 
   testWidgets('opens on the wallet it was entered with', (tester) async {

@@ -4,11 +4,39 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
 import 'package:flutter/material.dart';
 
+/// 목표 때문에 잔액 변화가 눌리지 않도록 축 확장을 잔액 범위의 25%로 제한한다.
+({double minimum, double maximum, bool targetAbove, bool targetBelow}) walletBalanceChartRange(
+  List<num> balances,
+  int? targetSats,
+) {
+  if (balances.isEmpty) return (minimum: 0, maximum: 1, targetAbove: false, targetBelow: false);
+  final values = balances.map((value) => value.toDouble());
+  var minimum = values.reduce((a, b) => a < b ? a : b);
+  var maximum = values.reduce((a, b) => a > b ? a : b);
+  // 잔액이 일정하면 그 값의 ±5%를 기본 범위로 사용한다. 0원도 유효한 축을 갖는다.
+  if (minimum == maximum) {
+    final padding = maximum.abs() * 0.05;
+    minimum -= padding < 1 ? 1 : padding;
+    maximum += padding < 1 ? 1 : padding;
+    if (balances.first >= 0 && minimum < 0) minimum = 0;
+  }
+  final allowance = (maximum - minimum) * 0.25;
+  final validTarget = targetSats != null && targetSats > 0;
+  final targetAbove = validTarget && targetSats > maximum + allowance;
+  final targetBelow = validTarget && targetSats < minimum - allowance;
+  if (validTarget && !targetAbove && !targetBelow) {
+    if (targetSats < minimum) minimum = targetSats.toDouble();
+    if (targetSats > maximum) maximum = targetSats.toDouble();
+  }
+  return (minimum: minimum, maximum: maximum, targetAbove: targetAbove, targetBelow: targetBelow);
+}
+
 class WalletBalanceHistoryChart extends StatefulWidget {
   final List<WalletBalanceHistoryPoint> points;
   final int revision;
+  final int? targetSats;
 
-  const WalletBalanceHistoryChart({super.key, required this.points, required this.revision});
+  const WalletBalanceHistoryChart({super.key, required this.points, required this.revision, this.targetSats});
 
   @override
   State<WalletBalanceHistoryChart> createState() => _WalletBalanceHistoryChartState();
@@ -45,8 +73,10 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
           (context, _) => CustomPaint(
             painter: _WalletBalanceHistoryPainter(
               points: widget.points,
+              targetSats: widget.targetSats,
               progress: Curves.easeOutCubic.transform(_controller.value),
               lineColor: context.coconutColors.primary,
+              targetColor: context.coconutColors.secondaryText,
             ),
             size: Size.infinite,
           ),
@@ -56,22 +86,28 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
 
 class _WalletBalanceHistoryPainter extends CustomPainter {
   final List<WalletBalanceHistoryPoint> points;
+  final int? targetSats;
   final double progress;
   final Color lineColor;
+  final Color targetColor;
 
-  const _WalletBalanceHistoryPainter({required this.points, required this.progress, required this.lineColor});
+  const _WalletBalanceHistoryPainter({
+    required this.points,
+    required this.progress,
+    required this.lineColor,
+    required this.targetColor,
+    this.targetSats,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty || points.isEmpty || progress <= 0) return;
 
     final balances = points.map((point) => point.balance.toDouble()).toList();
-    var minBalance = balances.reduce((a, b) => a < b ? a : b);
-    var maxBalance = balances.reduce((a, b) => a > b ? a : b);
-    if (minBalance == maxBalance) {
-      minBalance -= 1;
-      maxBalance += 1;
-    }
+    final range = walletBalanceChartRange(balances, targetSats);
+    final minBalance = range.minimum;
+    final maxBalance = range.maximum;
+    final target = targetSats;
 
     final chartPath = Path();
     final coordinates = <Offset>[];
@@ -94,6 +130,17 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
       final current = coordinates[index];
       final midpointX = (previous.dx + current.dx) / 2;
       chartPath.cubicTo(midpointX, previous.dy, midpointX, current.dy, current.dx, current.dy);
+    }
+
+    if (target != null && target > 0 && !range.targetAbove && !range.targetBelow) {
+      final y = size.height - (target - minBalance) / (maxBalance - minBalance) * (size.height - 6) - 3;
+      final paint =
+          Paint()
+            ..color = targetColor
+            ..strokeWidth = 1;
+      for (var x = 0.0; x < size.width; x += 10) {
+        canvas.drawLine(Offset(x, y), Offset((x + 5).clamp(0, size.width), y), paint);
+      }
     }
 
     canvas.save();
@@ -126,6 +173,10 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WalletBalanceHistoryPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.points != points || oldDelegate.lineColor != lineColor;
+    return oldDelegate.progress != progress ||
+        oldDelegate.points != points ||
+        oldDelegate.targetSats != targetSats ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.targetColor != targetColor;
   }
 }

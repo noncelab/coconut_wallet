@@ -232,6 +232,7 @@ hodl_insights:
   settings_description: "インサイトに含めるウォレットを選んでください。"
   total_balance: "総残高"
   goal: "目標"
+  goal_reached: "目標達成"
   utxo_summary: "UTXOサマリー"
   utxo_ranges_unit: "BTC単位の範囲"
   total_utxos: "UTXO 合計${count}個"

@@ -49,6 +49,12 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
+import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
+import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
+import 'package:coconut_wallet/services/home/home_widget_math.dart';
+import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -258,6 +264,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
                       _buildMoveToVault(context),
                     const SizedBox(height: 20),
                     _buildSecurityWarning(viewModel.detail),
+                    _buildBalanceHistory(viewModel),
+                    const SizedBox(height: 28),
                     _sectionHeader(
                       context,
                       key: const Key('wallet-detail-utxo-header'),
@@ -332,6 +340,132 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _openBalanceHistory(WalletCardDetailViewModel viewModel) async {
+    final insights = HodlInsightsViewModel(
+      viewModel.widgets.withoutFakeBalance(),
+      walletIds: [viewModel.focusedWallet.id],
+      balancePeriod: viewModel.balanceHistoryPeriod,
+    );
+    try {
+      await WalletBalanceHistoryScreen.open(context, insights);
+    } finally {
+      insights.dispose();
+    }
+  }
+
+  Widget _buildBalanceHistory(WalletCardDetailViewModel viewModel) {
+    final colors = context.coconutColors;
+    final now = viewModel.widgets.now;
+    final period = viewModel.balanceHistoryPeriod;
+    final days =
+        period == HomeWidgetPeriod.all
+            ? viewModel.widgets.daysSinceFirstTransaction(walletIds: [viewModel.focusedWallet.id], asOf: now)
+            : period.days;
+    final dates = HomeWidgetMath.lastDays(now, days);
+    final balances = viewModel.widgets.dailyBalances(
+      walletIds: [viewModel.focusedWallet.id],
+      days: dates.length,
+      asOf: now,
+    );
+    final target = viewModel.detail.targetSats;
+    final targetReached = target != null && target > 0 && viewModel.balanceOf(viewModel.focusedWallet) >= target;
+    final range = walletBalanceChartRange(balances, target);
+    return _lifted(
+      Material(
+        color: colors.homeSurface,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const Key('wallet-detail-balance-history'),
+          onTap: () => _openBalanceHistory(viewModel),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t.wallet_list.header.balance_history,
+                        style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colors.secondaryText, size: 20),
+                  ],
+                ),
+                if (target != null && target > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (targetReached) ...[
+                          SvgPicture.asset(
+                            CommonFormIconPath.circleCheckOutline,
+                            key: const Key('wallet-detail-balance-goal-reached'),
+                            width: 14,
+                            height: 14,
+                            colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
+                          ),
+                          const SizedBox(width: 4),
+                        ] else if (range.targetAbove || range.targetBelow) ...[
+                          RotatedBox(
+                            key: const Key('wallet-detail-balance-goal-direction'),
+                            quarterTurns: range.targetAbove ? 1 : 3,
+                            child: SvgPicture.asset(
+                              CommonNavigationIconPath.arrowBack,
+                              width: 14,
+                              height: 14,
+                              colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Flexible(
+                          child: Text(
+                            '${targetReached ? t.hodl_insights.goal_reached : t.hodl_insights.goal} · ${viewModel.amountText(target)}',
+                            key: const Key('wallet-detail-balance-goal'),
+                            textAlign: TextAlign.end,
+                            style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (target == null || target <= 0) const SizedBox(height: 16),
+                SizedBox(
+                  height: 120,
+                  child: WalletBalanceHistoryChart(
+                    key: ValueKey(viewModel.focusedWallet.id),
+                    points: [
+                      for (var i = 0; i < dates.length; i++)
+                        WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
+                    ],
+                    revision: Object.hashAll(balances),
+                    targetSats: target,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    for (final day in [dates.first, dates.last])
+                      Text(
+                        '${day.year}.${day.month.toString().padLeft(2, '0')}.${day.day.toString().padLeft(2, '0')}',
+                        style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      radius: 20,
     );
   }
 

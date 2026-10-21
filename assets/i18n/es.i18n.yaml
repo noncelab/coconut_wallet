@@ -234,6 +234,7 @@ hodl_insights:
   settings_description: "Elige las billeteras que se incluyen en tus insights."
   total_balance: "Saldo total"
   goal: "Objetivo"
+  goal_reached: "Objetivo alcanzado"
   utxo_summary: "Resumen de UTXO"
   utxo_ranges_unit: "Rangos en BTC"
   total_utxos: "${count} UTXO en total"

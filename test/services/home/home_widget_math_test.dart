@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,43 @@ TransactionRecord _tx(DateTime time, int amount, [TransactionType type = Transac
 
 void main() {
   final now = DateTime(2026, 9, 1, 15, 30);
+
+  test('balance period includes the day before the latest transaction', () {
+    final cases = {
+      0: HomeWidgetPeriod.week,
+      5: HomeWidgetPeriod.week,
+      6: HomeWidgetPeriod.month,
+      7: HomeWidgetPeriod.month,
+      28: HomeWidgetPeriod.month,
+      29: HomeWidgetPeriod.threeMonths,
+      30: HomeWidgetPeriod.threeMonths,
+      88: HomeWidgetPeriod.threeMonths,
+      89: HomeWidgetPeriod.year,
+      90: HomeWidgetPeriod.year,
+      363: HomeWidgetPeriod.year,
+      364: HomeWidgetPeriod.all,
+      365: HomeWidgetPeriod.all,
+    };
+    for (final entry in cases.entries) {
+      final time = DateTime(now.year, now.month, now.day - entry.key);
+      expect(
+        HomeWidgetMath.balanceHistoryPeriod([_tx(time, 1)], now),
+        entry.value,
+        reason: '${entry.key} calendar days ago',
+      );
+    }
+    // 첫날 늦은 시간의 거래도 이전 날을 포함하도록 다음 기간으로 확장한다.
+    expect(
+      HomeWidgetMath.balanceHistoryPeriod([_tx(DateTime(now.year, now.month, now.day - 6, 23), 1)], now),
+      HomeWidgetPeriod.month,
+    );
+    expect(HomeWidgetMath.balanceHistoryPeriod([], now), HomeWidgetPeriod.all);
+    expect(HomeWidgetMath.balanceHistoryPeriod([_tx(now.add(const Duration(days: 1)), 1)], now), HomeWidgetPeriod.all);
+    expect(
+      HomeWidgetMath.balanceHistoryPeriod([_tx(now.subtract(const Duration(days: 400)), 1), _tx(now, -1)], now),
+      HomeWidgetPeriod.week,
+    );
+  });
 
   test('last days are midnights ending today, oldest first', () {
     expect(HomeWidgetMath.lastDays(now, 3), [DateTime(2026, 8, 30), DateTime(2026, 8, 31), DateTime(2026, 9, 1)]);

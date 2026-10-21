@@ -233,6 +233,7 @@ hodl_insights:
   settings_description: "인사이트에 포함할 지갑을 고르세요."
   total_balance: "총 잔액"
   goal: "목표"
+  goal_reached: "목표 달성"
   utxo_summary: "UTXO 요약"
   utxo_ranges_unit: "BTC 기준"
   total_utxos: "전체 UTXO ${count}개"
