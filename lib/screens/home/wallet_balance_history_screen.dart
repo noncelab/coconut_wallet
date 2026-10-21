@@ -197,6 +197,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
       body: SafeArea(
         top: false,
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: Column(
@@ -534,46 +535,75 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       );
     }
 
-    return ListView(
-      padding: EdgeInsets.zero,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _walletSectionHeader(states.length),
-        const SizedBox(height: 10),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          layoutBuilder:
-              (current, previous) => Stack(
-                alignment: Alignment.topCenter,
+        const SizedBox(height: 4),
+        Expanded(
+          child: Stack(
+            children: [
+              ListView(
+                padding: const EdgeInsets.only(top: 8),
                 children: [
-                  for (final outgoing in previous) ExcludeSemantics(child: IgnorePointer(child: outgoing)),
-                  if (current != null) current,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    layoutBuilder:
+                        (current, previous) => Stack(
+                          alignment: Alignment.topCenter,
+                          children: [
+                            for (final outgoing in previous) ExcludeSemantics(child: IgnorePointer(child: outgoing)),
+                            if (current != null) current,
+                          ],
+                        ),
+                    transitionBuilder:
+                        (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
+                            child: child,
+                          ),
+                        ),
+                    child: Column(
+                      key: ValueKey((day, _changedOnly, states.isEmpty)),
+                      children: [
+                        if (states.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Text(
+                              t.wallet_list.balance_history_detail.no_wallets,
+                              textAlign: TextAlign.center,
+                              style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                            ),
+                          )
+                        else
+                          for (var index = 0; index < states.length; index++) ...[
+                            tile(index),
+                            if (index != states.length - 1) const SizedBox(height: 8),
+                          ],
+                        SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-          transitionBuilder:
-              (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
-                  child: child,
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 12,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [colors.homeBackground, colors.homeBackground.withValues(alpha: 0)],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-          child: Column(
-            key: ValueKey((day, _changedOnly, states.isEmpty)),
-            children: [
-              if (states.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    t.wallet_list.balance_history_detail.no_wallets,
-                    textAlign: TextAlign.center,
-                    style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
-                  ),
-                )
-              else
-                for (var index = 0; index < states.length; index++) ...[
-                  tile(index),
-                  if (index != states.length - 1) const SizedBox(height: 8),
-                ],
             ],
           ),
         ),
