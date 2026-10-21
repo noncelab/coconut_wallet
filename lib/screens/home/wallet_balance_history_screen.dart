@@ -91,6 +91,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   HodlInsightsViewModel get vm => widget.viewModel;
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
   List<int> get _balances => vm.data.dailyBalances(walletIds: vm.walletIds, days: _days, asOf: _today);
+  TextStyle get _dateStyle => CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText);
+
   int get _first => (_end - _span + 1).round().clamp(0, _days - 1);
   int get _last => _end.round().clamp(_first, _days - 1);
 
@@ -201,7 +203,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             children: [
               Text(
                 selected == null ? t.hodl_insights.total_balance : DateFormat('yyyy.MM.dd').format(dates[selected]),
-                style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                style: _dateStyle,
               ),
               const SizedBox(height: 8),
               FittedBox(
@@ -289,7 +291,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final selected = _selected;
     final localSelected = selected != null && selected >= _first && selected <= _last ? selected - _first : null;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 48, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 58, 16, 12),
       child: Column(
         children: [
           Align(
@@ -365,12 +367,12 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                 builder: (context) {
                                   final point = HomeSparkline.pointOf(values, localSelected, constraints.biggest);
                                   return Positioned(
-                                    top: -42,
+                                    top: -52,
                                     width: 150,
                                     left: (point.dx - 75).clamp(0.0, math.max(0.0, width - 150)),
                                     child: Container(
                                       key: const Key('hodl-insights-balance-readout'),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: colors.homeBackground,
                                         borderRadius: BorderRadius.circular(8),
@@ -378,18 +380,16 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
+                                          Text(
+                                            DateFormat('yyyy.MM.dd').format(dates[selected!]),
+                                            style: CoconutTypography.body3_12.copyWith(color: colors.tertiaryText),
+                                          ),
                                           FittedBox(
                                             child: Text(
                                               vm.data.unit.displayBitcoinAmount(values[localSelected], withUnit: true),
                                               style: CoconutTypography.body3_12_NumberBold.copyWith(
                                                 color: colors.primaryText,
                                               ),
-                                            ),
-                                          ),
-                                          Text(
-                                            DateFormat('yyyy.MM.dd').format(dates[selected!]),
-                                            style: CoconutTypography.caption_10_Number.copyWith(
-                                              color: colors.tertiaryText,
                                             ),
                                           ),
                                         ],
@@ -414,7 +414,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
               for (final index in {_first, (_first + _last) ~/ 2, _last})
                 Text(
                   DateFormat('yy.MM.dd').format(dates[index]),
-                  style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                  style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
                 ),
             ],
           ),
