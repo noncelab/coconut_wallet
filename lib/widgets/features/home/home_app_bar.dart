@@ -58,7 +58,7 @@ class HomeAppBar extends StatelessWidget {
       context: context,
       isLeadingSvgAssetVisible: !isArranging,
       leadingSvgAsset: Transform.translate(
-        offset: const Offset(-8, 2),
+        offset: const Offset(-6, 2),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: statusWidth),
           child: HomeConnectionStatusIndicator(

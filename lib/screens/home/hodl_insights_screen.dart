@@ -89,7 +89,6 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   };
   bool _movedToInitialSection = false;
   HodlInsightsSection? _highlighted;
-  double _leadingSpace = 0;
   Animation<double>? _routeAnimation;
   bool _cardHeroActive = true;
 
@@ -126,18 +125,6 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   Future<void> _centerInitialSection(HodlInsightsSection section) async {
     final target = _sectionKeys[section]!.currentContext;
     if (target == null || !mounted) return;
-    final scrollable = Scrollable.maybeOf(target);
-    final viewport = scrollable?.context.findRenderObject();
-    final card = target.findRenderObject();
-    if (_leadingSpace == 0 && section != HodlInsightsSection.activity && viewport is RenderBox && card is RenderBox) {
-      final viewportCenter = viewport.localToGlobal(viewport.size.center(Offset.zero)).dy;
-      final cardCenter = card.localToGlobal(card.size.center(Offset.zero)).dy;
-      if (cardCenter < viewportCenter) {
-        setState(() => _leadingSpace = viewportCenter - cardCenter);
-        WidgetsBinding.instance.addPostFrameCallback((_) => _centerInitialSection(section));
-        return;
-      }
-    }
     await Scrollable.ensureVisible(
       target,
       alignment: 0.5,
@@ -227,19 +214,13 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                   key: const Key('hodl-insights-list'),
                   slivers: [
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        0,
-                        widget.heroTag == null ? 8 + _leadingSpace : 0,
-                        0,
-                        _contentBottomPadding,
-                      ),
+                      padding: EdgeInsets.fromLTRB(0, widget.heroTag == null ? 8 : 0, 0, _contentBottomPadding),
                       sliver: _InitialSectionSliver(
                         targetKey:
                             widget.heroTag != null && viewModel.initialSection != HodlInsightsSection.balance
                                 ? _sectionKeys[viewModel.initialSection]
                                 : null,
                         topPadding: widget.heroTag != null ? 8 : 0,
-                        allowLeadingSpace: viewModel.initialSection != HodlInsightsSection.activity,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -346,27 +327,19 @@ class _RenderInitialSectionTarget extends RenderProxyBox {
 class _InitialSectionSliver extends SingleChildRenderObjectWidget {
   final GlobalKey? targetKey;
   final double topPadding;
-  final bool allowLeadingSpace;
 
-  const _InitialSectionSliver({
-    required this.targetKey,
-    required this.topPadding,
-    required this.allowLeadingSpace,
-    required super.child,
-  });
+  const _InitialSectionSliver({required this.targetKey, required this.topPadding, required super.child});
 
   @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderInitialSectionSliver(targetKey, topPadding, allowLeadingSpace);
+  RenderObject createRenderObject(BuildContext context) => _RenderInitialSectionSliver(targetKey, topPadding);
 }
 
 class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
   final GlobalKey? targetKey;
-  final bool allowLeadingSpace;
-  double _leading;
+  final double _leading;
   bool _positioned = false;
 
-  _RenderInitialSectionSliver(this.targetKey, this._leading, this.allowLeadingSpace);
+  _RenderInitialSectionSliver(this.targetKey, this._leading);
 
   @override
   void performLayout() {
@@ -377,8 +350,6 @@ class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
       final target = targetKey!.currentContext?.findRenderObject();
       if (target is _RenderInitialSectionTarget && target.hasSize) {
         final bounds = MatrixUtils.transformRect(target.getTransformTo(child), target.layoutBounds);
-        final desired = bounds.center.dy + _leading - constraints.viewportMainAxisExtent / 2;
-        if (allowLeadingSpace && desired < 0) _leading -= desired;
         final maxOffset = math.max(
           0.0,
           child!.size.height + _leading + _contentBottomPadding - constraints.viewportMainAxisExtent,
@@ -1013,67 +984,72 @@ class _GoalCard extends StatelessWidget {
                 ],
               ),
             )
-          else ...[
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '${_btcNumber(viewModel, goal.balance)} / ${_btcText(viewModel, goal.target)}',
-                style: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
-              ),
-            ),
-            CoconutLayout.spacing_200h,
+          else
             Builder(
               builder: (context) {
-                final percentStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
+                final numberStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
                   color: colors.primaryText,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 );
                 return _OpenProgress(
                   progress: goal.ratio,
                   builder:
-                      (context, ratio) => Row(
+                      (context, ratio) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: SizedBox(
-                                height: 12,
-                                child: Stack(
-                                  children: [
-                                    Container(color: colors.surfaceMuted),
-                                    FractionallySizedBox(
-                                      key: const Key('goal-progress-fill'),
-                                      widthFactor: ratio.clamp(0.0, 1.0),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: colors.success,
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${_btcNumber(viewModel, goal.ratio == 0 ? goal.balance : (goal.balance * ratio / goal.ratio).round())} / ${_btcText(viewModel, goal.target)}',
+                              key: const Key('goal-progress-amount'),
+                              style: numberStyle,
                             ),
                           ),
-                          CoconutLayout.spacing_400w,
-                          SizedBox(
-                            width: measureHomeText(context, goal.percentText, percentStyle) + 1,
-                            child: Text(
-                              formatGoalPercent(ratio),
-                              key: const Key('goal-progress-percent'),
-                              textAlign: TextAlign.right,
-                              maxLines: 1,
-                              style: percentStyle,
-                            ),
+                          CoconutLayout.spacing_200h,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: SizedBox(
+                                    height: 12,
+                                    child: Stack(
+                                      children: [
+                                        Container(color: colors.surfaceMuted),
+                                        FractionallySizedBox(
+                                          key: const Key('goal-progress-fill'),
+                                          widthFactor: ratio.clamp(0.0, 1.0),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: colors.success,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              CoconutLayout.spacing_400w,
+                              SizedBox(
+                                width: measureHomeText(context, goal.percentText, numberStyle) + 1,
+                                child: Text(
+                                  formatGoalPercent(ratio),
+                                  key: const Key('goal-progress-percent'),
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  style: numberStyle,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                 );
               },
             ),
-          ],
         ],
       ),
     );

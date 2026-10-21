@@ -1358,10 +1358,14 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('the goal bar, wallet donut and UTXO summary count up from zero when the screen opens', (tester) async {
+    testWidgets('the goal bar, amount, wallet donut and UTXO summary count up from zero when the screen opens', (
+      tester,
+    ) async {
       await _openWidgetsTab(tester, fake: false, screen: insights);
       await tester.pump();
       double width() => tester.getSize(find.byKey(const Key('goal-progress-fill'))).width;
+      String amount() => tester.widget<Text>(find.byKey(const Key('goal-progress-amount'))).data!.split(' / ').first;
+      final startAmount = amount();
       expect(tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal, 0);
       expect(find.text(t.hodl_insights.total_utxos(count: 0)), findsOneWidget);
 
@@ -1370,8 +1374,13 @@ void main() {
       expect(width(), start, reason: 'waits a moment before filling');
       await tester.pump(const Duration(milliseconds: 600));
       final middle = width();
+      final middleAmount = amount();
       await tester.pump(const Duration(seconds: 2));
       final end = width();
+      final endAmount = amount();
+      double btc(String text) => double.parse(text.replaceAll(RegExp(r'[^0-9.]'), ''));
+      expect(btc(startAmount), 0);
+      expect(btc(middleAmount), allOf(greaterThan(0), lessThan(btc(endAmount))));
 
       expect(start, 0);
       expect(start, lessThan(middle));
@@ -1956,15 +1965,17 @@ void main() {
         if (definition == HomeItemIds.balanceByWallet) {
           final section = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet')));
           final viewportRect = tester.getRect(find.byType(CustomScrollView));
+          final balance = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balance')));
           expect(
-            section.center.dy,
-            closeTo(viewportRect.center.dy, 1),
-            reason: 'leading space centers the measured section',
+            (section.center.dy - viewportRect.center.dy).abs() < 1 ||
+                (position.pixels == position.minScrollExtent && balance.top - viewportRect.top <= 8),
+            isTrue,
+            reason: 'the section is centered, or the list rests at the top with no space above the first card',
           );
           final before = position.pixels;
           await tester.drag(find.byKey(ValueKey(targetKey)), const Offset(0, -80));
           await tester.pump();
-          expect(position.pixels, greaterThan(before), reason: 'synthetic leading space preserves scroll hit testing');
+          expect(position.pixels, greaterThan(before), reason: 'the list still scrolls after initial positioning');
           final sectionFinder = find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet'));
           final shifted = tester.getRect(sectionFinder);
           final expectedOffset = (position.pixels +
@@ -2457,7 +2468,15 @@ void main() {
           final highlight = find.byKey(ValueKey('hodl-insights-highlight-${centeredSection.name}'));
           final section = tester.element(highlight).findAncestorWidgetOfExactType<Column>()!;
           final sectionCenter = tester.getRect(find.byWidget(section)).center.dy;
-          expect((sectionCenter - viewportCenter).abs(), lessThan(10), reason: '${target.$1} should be centered');
+          final list = tester.getRect(find.byKey(const Key('hodl-insights-list')));
+          final balance = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balance')));
+          final position = Scrollable.of(tester.element(highlight)).position;
+          expect(
+            (sectionCenter - viewportCenter).abs() < 10 ||
+                (position.pixels == position.minScrollExtent && balance.top - list.top <= 8),
+            isTrue,
+            reason: '${target.$1} should be centered, or rest at the top with no space above the first card',
+          );
         }
         expect(
           find.byWidgetPredicate((widget) => widget is Hero && widget.tag == insightsHeroTag('source')),
