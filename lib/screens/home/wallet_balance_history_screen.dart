@@ -5,7 +5,6 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -13,12 +12,14 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
+import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart';
@@ -89,6 +90,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   ({int minimum, int maximum})? _axisRange;
   bool _changedOnly = false;
   final Set<int> _expanded = {};
+  final ScrollController _walletScrollController = ScrollController();
+  int _walletScrollRequest = 0;
   final Map<int, double> _cardExtents = {};
   double _cardExtent = 0;
   double _startSpan = 1;
@@ -157,6 +160,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   @override
   void dispose() {
+    _walletScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     vm.data.removeListener(_onData);
     super.dispose();
@@ -238,7 +242,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                     builder: (context, constraints) {
                       final maxHeight = constraints.maxHeight;
                       const listGap = 12.0;
-                      final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
+                      final walletsExpanded = _walletIds == null && _expanded.isNotEmpty;
+                      final preferredChart = selected == null ? maxHeight : maxHeight * (walletsExpanded ? 0.34 : 0.52);
                       var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
                       var chartTarget = preferredChart;
                       // A below-layout card can be a few pixels taller than the 52% leftover.
@@ -248,8 +253,10 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                         listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
                         chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
                       }
-                      // Lay the list out at its final height for the whole shrink.
-                      // A bottom-pinned slot is shorter than the header mid-tween and overflows.
+                      // Let the viewport grow with the chart animation. Expanding it to its
+                      // final size immediately clamps a scrolled list before its rows expand.
+                      // Keep enough layout height for the fixed header during initial reveal;
+                      // the outer stack clips that temporary slot below the screen.
                       return TweenAnimationBuilder<double>(
                         duration: const Duration(milliseconds: 360),
                         curve: Curves.easeInOutCubic,
@@ -281,7 +288,10 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                       top: chartHeight + listGap,
                                       left: 0,
                                       right: 0,
-                                      height: listHeight,
+                                      height: math.min(
+                                        listHeight,
+                                        math.max(120.0, constraints.maxHeight - chartHeight - listGap),
+                                      ),
                                       child: wallets,
                                     ),
                                 ],
@@ -591,7 +601,51 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     );
   }
 
+  Future<void> _toggleWallet(int walletId, DateTime day) async {
+    final request = ++_walletScrollRequest;
+    final opening = !_expanded.contains(walletId);
+    setState(() {
+      if (opening) {
+        _expanded.add(walletId);
+      } else {
+        _expanded.remove(walletId);
+      }
+    });
+    if (!opening) return;
+    // The graph and expanded rows must reach their final sizes before measuring.
+    await Future<void>.delayed(const Duration(milliseconds: 380));
+    if (!mounted ||
+        request != _walletScrollRequest ||
+        !_expanded.contains(walletId) ||
+        _walletIds != null ||
+        _selected == null ||
+        _dates[_selected!] != day ||
+        !_walletScrollController.hasClients)
+      return;
+    _WalletCardAnchorRenderBox? target;
+    void findAnchor(RenderObject object) {
+      if (object is _WalletCardAnchorRenderBox && object.identity == (day, _changedOnly, walletId)) {
+        target = object;
+      }
+      object.visitChildren(findAnchor);
+    }
+
+    final root = _walletScrollController.position.context.storageContext.findRenderObject();
+    if (root == null) return;
+    findAnchor(root);
+    final anchor = target;
+    if (anchor == null || !anchor.attached) return;
+    final position = _walletScrollController.position;
+    final offset = RenderAbstractViewport.of(anchor).getOffsetToReveal(anchor, 0).offset - 12;
+    await _walletScrollController.animateTo(
+      offset.clamp(position.minScrollExtent, position.maxScrollExtent),
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
   Widget _wallets(DateTime day) {
+    if (_walletIds != null) return _transactions(day, _walletIds!.single);
     final colors = context.coconutColors;
     final end = DateTime(day.year, day.month, day.day + 1);
     final states =
@@ -618,87 +672,121 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       _cardExtents.removeWhere((index, _) => index >= states.length);
       _scheduleCardExtent();
     }
+    final appearances = context.watchWalletAppearance();
     Widget tile(int index) {
       final state = states[index];
       final expanded = _expanded.contains(state.wallet.id);
-      final hasTransactions = state.transactions.isNotEmpty;
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final below =
-              hasTransactions &&
-              !_deltaFitsBesideIdentity(
-                context,
-                constraints.maxWidth,
-                state.change,
-                state.transactions.length,
-                state.balance,
-                state.wallet.name,
-              );
-          return Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(12)),
-            child: Column(
-              children: [
-                _CardExtent(
-                  onExtent: (height) => _noteCardExtent(index, height),
-                  child: WalletItemCard(
-                    walletItem: state.wallet,
-                    animatedBalanceData: AnimatedBalanceData(state.balance, state.balance),
-                    fakeBalance: state.balance,
-                    currentUnit: vm.data.unit,
-                    isLastItem: true,
-                    isStarVisible: false,
-                    backgroundColor: colors.homeSurface,
-                    placeTrailingBelow: below,
-                    onPressed: () {
-                      if (!hasTransactions) return;
-                      setState(() {
-                        if (expanded) {
-                          _expanded.remove(state.wallet.id);
-                        } else {
-                          _expanded.add(state.wallet.id);
-                        }
-                      });
-                    },
-                    rightWidget:
-                        hasTransactions
-                            ? _deltaTrailing(state.change, state.transactions.length, expanded, below)
-                            : const SizedBox.shrink(),
+      final appearance = appearances?.appearanceOf(state.wallet) ?? WalletAppearance.of(state.wallet);
+      return _WalletCardAnchor(
+        identity: (day, _changedOnly, state.wallet.id),
+        child: Container(
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border:
+                state.transactions.isNotEmpty
+                    ? Border.all(color: colors.secondaryText.withValues(alpha: 0.25), width: 1)
+                    : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: ColoredBox(
+              color: colors.homeSurface,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 180,
+                    child: WalletCardBackground(
+                      background: appearance.background,
+                      photoFile: appearances?.photoFileFor(state.wallet.id),
+                      resizePhotoToDisplaySize: true,
+                    ),
                   ),
-                ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 280),
-                  alignment: Alignment.topCenter,
-                  child:
-                      expanded
-                          ? Column(
+                  WalletContentTheme(
+                    background: appearance.background,
+                    child: Builder(
+                      builder:
+                          (_) => Column(
                             children: [
-                              for (final tx in state.transactions)
-                                TransactionItemCard(
-                                  tx: tx,
-                                  id: state.wallet.id,
-                                  currentUnit: vm.data.unit,
-                                  compact: true,
-                                  backgroundColor: colors.homeSurface,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                  onPressed:
-                                      () => Navigator.pushNamed(
-                                        context,
-                                        AppRouteNames.transactionDetail,
-                                        arguments: TransactionDetailRouteArgs(
-                                          id: state.wallet.id,
-                                          txHash: tx.transactionHash,
-                                        ),
-                                      ),
+                              _CardExtent(
+                                onExtent: (height) => _noteCardExtent(index, height),
+                                child: SizedBox(
+                                  height: 180,
+                                  child: WalletCard(
+                                    key: ValueKey('balance-history-wallet-card-${state.wallet.id}'),
+                                    wallet: state.wallet,
+                                    appearance: appearance,
+                                    backgroundPhoto: appearances?.photoFileFor(state.wallet.id),
+                                    size: WalletCardSize.small,
+                                    showBackground: false,
+                                    balanceDisplay: vm.data.unit.displayBitcoinAmount(state.balance, withUnit: true),
+                                    secondaryText:
+                                        '${_changeLabel(state.change)} · ${t.wallet_list.balance_history_detail.transaction_count(n: state.transactions.length)}',
+                                    onPressed:
+                                        state.transactions.isEmpty ? null : () => _toggleWallet(state.wallet.id, day),
+                                  ),
                                 ),
+                              ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 280),
+                                alignment: Alignment.topCenter,
+                                child:
+                                    expanded
+                                        ? Theme(
+                                          data: Theme.of(context),
+                                          child: ColoredBox(
+                                            color: colors.homeSurface,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(20),
+                                                child: Column(
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                                      child: Divider(height: 1, color: colors.divider),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    for (final tx in state.transactions)
+                                                      TransactionItemCard(
+                                                        tx: tx,
+                                                        id: state.wallet.id,
+                                                        currentUnit: vm.data.unit,
+                                                        compact: true,
+                                                        backgroundColor: Colors.transparent,
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 20,
+                                                          vertical: 10,
+                                                        ),
+                                                        onPressed:
+                                                            () => Navigator.pushNamed(
+                                                              context,
+                                                              AppRouteNames.transactionDetail,
+                                                              arguments: TransactionDetailRouteArgs(
+                                                                id: state.wallet.id,
+                                                                txHash: tx.transactionHash,
+                                                              ),
+                                                            ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                        : const SizedBox.shrink(),
+                              ),
                             ],
-                          )
-                          : const SizedBox.shrink(),
-                ),
-              ],
+                          ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        },
+          ),
+        ),
       );
     }
 
@@ -711,6 +799,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
           child: Stack(
             children: [
               ListView(
+                controller: _walletScrollController,
                 padding: const EdgeInsets.only(top: 8),
                 children: [
                   AnimatedSwitcher(
@@ -752,6 +841,85 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                       ],
                     ),
                   ),
+                ],
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 12,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [colors.homeBackground, colors.homeBackground.withValues(alpha: 0)],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _transactions(DateTime day, int walletId) {
+    final colors = context.coconutColors;
+    final wallet = vm.data.wallets.firstWhere((wallet) => wallet.id == walletId);
+    final end = DateTime(day.year, day.month, day.day + 1);
+    final records =
+        vm.data
+            .transactionRecordsOf(walletId)
+            .where((tx) => !tx.timestamp.isBefore(day) && tx.timestamp.isBefore(end))
+            .toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final transactions = [
+      for (final tx in records)
+        HomeRecentTransaction(
+          walletId: walletId,
+          walletName: wallet.name,
+          amount: tx.amount,
+          time: tx.timestamp,
+          type: tx.transactionType,
+          status: TransactionUtil.getStatus(tx),
+          txHash: tx.transactionHash,
+        ),
+    ];
+    final history = RecentTransactionsView(
+      key: ValueKey((walletId, day)),
+      transactions: transactions,
+      showAllTransactions: true,
+      emptyMessage: t.wallet_list.balance_history_detail.no_transactions_at_date,
+      amountText: (amount) => vm.data.unit.displayBitcoinAmount(amount, withUnit: true),
+      now: vm.data.now,
+      onTransactionSelected:
+          (tx) => Navigator.pushNamed(
+            context,
+            AppRouteNames.transactionDetail,
+            arguments: TransactionDetailRouteArgs(id: walletId, txHash: tx.txHash!),
+          ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '${t.wallet_list.balance_history_detail.transactions_at_date} · ${transactions.length}',
+          key: const Key('balance-history-transactions-header'),
+          style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: Stack(
+            children: [
+              ListView(
+                padding: const EdgeInsets.only(top: 8),
+                children: [
+                  if (transactions.isEmpty) SizedBox(height: 140, child: history) else history,
+                  SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
                 ],
               ),
               Positioned(
@@ -978,89 +1146,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     });
   }
 
-  bool _deltaFitsBesideIdentity(
-    BuildContext context,
-    double cardWidth,
-    int change,
-    int count,
-    int balance,
-    String name,
-  ) {
-    final deltaWidth = math.max(
-      _singleLineWidth(context, _changeLabel(change), CoconutTypography.body3_12_NumberBold),
-      _singleLineWidth(
-        context,
-        t.wallet_list.balance_history_detail.transaction_count(n: count),
-        CoconutTypography.caption_10,
-      ),
-    );
-    final identityWidth = math.max(
-      _balanceIdentityWidth(context, balance),
-      _singleLineWidth(context, name, CoconutTypography.body3_12),
-    );
-    // Padding 20+20, icon 36, spacing_200w on both sides of the identity, gap 8, chevron 18.
-    const chrome = 40.0 + 36.0 + 8.0 + 8.0 + 8.0 + 18.0;
-    return deltaWidth + identityWidth + chrome + 4 <= cardWidth;
-  }
-
-  /// Full-size balance row, matching WalletItemCard's symbol placement. Not a scaled-down width.
-  double _balanceIdentityWidth(BuildContext context, int balance) {
-    final unit = vm.data.unit;
-    final style = CoconutTypography.body2_14_NumberBold;
-    final number = _singleLineWidth(context, unit.displayBitcoinAmount(balance), style);
-    if (unit.isPrefixSymbol) {
-      return _singleLineWidth(context, unit.symbol, style) + 2 + number;
-    }
-    return number + _singleLineWidth(context, ' ${unit.symbol}', style) + 2;
-  }
-
   String _changeLabel(int change) =>
       '${change > 0 ? '+' : ''}${vm.data.unit.displayBitcoinAmount(change, withUnit: true)}';
-
-  Widget _deltaTrailing(int change, int count, bool expanded, bool below) {
-    final colors = context.coconutColors;
-    final amount = Text(
-      _changeLabel(change),
-      textAlign: TextAlign.right,
-      style: CoconutTypography.body3_12_NumberBold.copyWith(
-        color: homePriceColorOf(context, change.sign.toDouble(), neutral: colors.primaryText),
-      ),
-    );
-    final countText = Text(
-      t.wallet_list.balance_history_detail.transaction_count(n: count),
-      textAlign: TextAlign.right,
-      style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
-    );
-    final chevron = AnimatedRotation(
-      turns: expanded ? 0.5 : 0,
-      duration: const Duration(milliseconds: 220),
-      child: Icon(Icons.expand_more, size: 18, color: colors.iconSecondary),
-    );
-    if (!below) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [amount, countText]),
-          const SizedBox(width: 8),
-          chevron,
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        amount,
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(child: countText),
-            const SizedBox(width: 8),
-            SizedBox(width: Sizes.size44, height: Sizes.size44, child: Center(child: chevron)),
-          ],
-        ),
-      ],
-    );
-  }
 }
 
 DateTime _localDate(DateTime time) {
@@ -1137,6 +1224,26 @@ class _BalanceHistoryGridPainter extends CustomPainter {
       oldDelegate.maximum != maximum ||
       oldDelegate.color != color ||
       !listEquals(oldDelegate.amounts, amounts);
+}
+
+/// A local render marker avoids sharing GlobalKeys with AnimatedSwitcher's outgoing cards.
+class _WalletCardAnchor extends SingleChildRenderObjectWidget {
+  final (DateTime, bool, int) identity;
+
+  const _WalletCardAnchor({required this.identity, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _WalletCardAnchorRenderBox(identity);
+
+  @override
+  void updateRenderObject(BuildContext context, _WalletCardAnchorRenderBox renderObject) {
+    renderObject.identity = identity;
+  }
+}
+
+class _WalletCardAnchorRenderBox extends RenderProxyBox {
+  (DateTime, bool, int) identity;
+  _WalletCardAnchorRenderBox(this.identity);
 }
 
 class _CardExtent extends SingleChildRenderObjectWidget {

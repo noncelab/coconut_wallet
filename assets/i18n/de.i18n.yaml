@@ -958,6 +958,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    no_transactions_at_date: "Keine Transaktionen am gewählten Tag"
+    transactions_at_date: "Transaktionen am gewählten Tag"
     wallets_at_date: "Wallets zu diesem Zeitpunkt"
     no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
     changed_wallets_only: "Nur Wallets mit Änderungen"

@@ -22,6 +22,8 @@ class RecentTransactionsView extends StatelessWidget {
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
   final DateTime now;
+  final bool showAllTransactions;
+  final String? emptyMessage;
   final void Function(int walletId)? onTransactionTap;
 
   /// 지갑 하나만 보여 주는 곳(지갑 상세)에서 거래 자체를 열 때 쓴다. 있으면 [onTransactionTap]보다 먼저 쓴다.
@@ -34,6 +36,8 @@ class RecentTransactionsView extends StatelessWidget {
     required this.now,
     this.onTransactionTap,
     this.onTransactionSelected,
+    this.showAllTransactions = false,
+    this.emptyMessage,
   });
 
   @override
@@ -44,9 +48,39 @@ class RecentTransactionsView extends StatelessWidget {
         key: const Key('recent-transactions-empty'),
         child: Center(
           child: Text(
-            t.home_widgets.no_recent_transactions,
+            emptyMessage ?? t.home_widgets.no_recent_transactions,
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+          ),
+        ),
+      );
+    }
+    if (showAllTransactions) {
+      return SizedBox(
+        height: 16 + transactions.length * 64 + transactions.length - 1,
+        child: HomeWidgetCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (index, tx) in transactions.indexed) ...[
+                if (index > 0)
+                  Container(margin: const EdgeInsets.symmetric(horizontal: 12), height: 1, color: colors.divider),
+                _TransactionRow(
+                  key: ValueKey('recent-transactions-row-$index'),
+                  tx: tx,
+                  amountText: amountText,
+                  now: now,
+                  height: 64,
+                  onTap:
+                      onTransactionSelected != null
+                          ? () => onTransactionSelected!(tx)
+                          : onTransactionTap == null
+                          ? null
+                          : () => onTransactionTap!(tx.walletId),
+                ),
+              ],
+            ],
           ),
         ),
       );

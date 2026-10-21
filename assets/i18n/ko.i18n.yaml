@@ -958,6 +958,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    no_transactions_at_date: "선택한 날짜에 거래 내역이 없어요"
+    transactions_at_date: "이 시점의 거래 내역"
     wallets_at_date: "이 시점의 지갑"
     no_wallets: "이 시점에 표시할 지갑이 없어요"
     changed_wallets_only: "변동이 있는 지갑만 보기"

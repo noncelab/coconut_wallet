@@ -35,6 +35,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart' show WalletCard, WalletCardSize;
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -1323,13 +1324,16 @@ void main() {
       final latest = tester.getRect(chart);
       await tester.tapAt(Offset(latest.right - 1, latest.center.dy));
       await tester.pumpAndSettle();
-      expect(find.byType(WalletItemCard), findsWidgets);
-      await tester.tap(find.byType(WalletItemCard).first);
+      expect(find.byType(WalletCard), findsWidgets);
+      final collapsedChartHeight = tester.getSize(chart).height;
+      await tester.tap(find.byType(WalletCard).first);
       await tester.pumpAndSettle();
       expect(find.byType(TransactionItemCard), findsWidgets);
-      await tester.tap(find.byType(WalletItemCard).first);
+      expect(tester.getSize(chart).height, lessThan(collapsedChartHeight));
+      await tester.tap(find.byType(WalletCard).first);
       await tester.pumpAndSettle();
       expect(find.byType(TransactionItemCard), findsNothing);
+      expect(tester.getSize(chart).height, closeTo(collapsedChartHeight, 1));
       Navigator.of(tester.element(chart)).pop();
       await tester.pumpAndSettle();
       expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
@@ -1405,12 +1409,25 @@ void main() {
       await tester.tap(secondChip);
       await tester.pumpAndSettle();
       expect(tester.widget<CoconutChip>(secondChip).isSelected, isTrue);
+      final chartBounds = tester.getRect(interactiveChart);
+      await tester.tapAt(Offset(chartBounds.right - 1, chartBounds.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('balance-history-transactions-header')), findsOneWidget);
+      expect(find.byType(RecentTransactionsView), findsOneWidget);
+      expect(tester.widget<RecentTransactionsView>(find.byType(RecentTransactionsView)).showAllTransactions, isTrue);
+      expect(find.text(t.wallet_list.balance_history_detail.changed_wallets_only), findsNothing);
+      expect(find.byType(WalletItemCard), findsNothing);
       await tester.tap(find.byKey(const ValueKey('balance-history-wallet-all')));
       await tester.pumpAndSettle();
       expect(
         tester.widget<HomeSparkline>(sparkline).values,
         vm.data.dailyBalances(days: vm.balancePeriod.days, asOf: now),
       );
+      expect(find.byKey(const Key('balance-history-transactions-header')), findsNothing);
+      expect(find.text(t.wallet_list.balance_history_detail.changed_wallets_only), findsOneWidget);
+      final walletCard = find.byKey(ValueKey('balance-history-wallet-card-${wallet.id}'));
+      expect(tester.widget<WalletCard>(walletCard).appearance.background, background);
+      expect(tester.widget<WalletCard>(walletCard).size, WalletCardSize.small);
       expect(vm.walletIds, originalScope);
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
@@ -1438,6 +1455,50 @@ void main() {
       expect(tester.widget<CoconutChip>(last).isSelected, isTrue);
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(last)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('opening the second wallet does not instantly clamp the list scroll position', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 1000),
+        dataNow: DateTime(2026, 10, 20, 12),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final bounds = tester.getRect(chart);
+      await tester.tapAt(Offset(bounds.right - 1, bounds.center.dy));
+      await tester.pumpAndSettle();
+      final secondCard = find.byKey(const ValueKey('balance-history-wallet-card-2'));
+      await tester.ensureVisible(secondCard);
+      await tester.pumpAndSettle();
+      final scrollable = tester.state<ScrollableState>(
+        find.ancestor(of: secondCard, matching: find.byType(Scrollable)).first,
+      );
+      final before = scrollable.position.pixels;
+      expect(before, greaterThan(0));
+      await tester.tap(secondCard);
+      await tester.pump();
+      expect(scrollable.position.pixels, closeTo(before, 1));
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, closeTo(scrollable.position.maxScrollExtent, 1));
+      expect(tester.takeException(), isNull);
+      final selectedBounds = tester.getRect(chart);
+      final drag = await tester.startGesture(selectedBounds.center);
+      for (final fraction in [0.8, 0.5, 0.8, 0.3, 0.8, 0.5]) {
+        await drag.moveTo(Offset(selectedBounds.left + selectedBounds.width * fraction, selectedBounds.center.dy));
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(tester.takeException(), isNull);
+      }
+      await drag.up();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
       await tester.pumpAndSettle();
       await _close(tester);
     });

@@ -959,6 +959,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    no_transactions_at_date: "No hay transacciones en la fecha seleccionada"
+    transactions_at_date: "Transacciones de la fecha seleccionada"
     wallets_at_date: "Carteras en este momento"
     no_wallets: "No hay carteras para mostrar en este momento"
     changed_wallets_only: "Solo carteras con cambios"

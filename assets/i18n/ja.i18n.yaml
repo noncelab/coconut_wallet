@@ -829,6 +829,8 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    no_transactions_at_date: "選択した日に取引はありません"
+    transactions_at_date: "選択した日の取引"
     wallets_at_date: "この時点のウォレット"
     no_wallets: "この時点で表示できるウォレットはありません"
     changed_wallets_only: "残高が変動したウォレットのみ"
