@@ -1004,6 +1004,7 @@ class WalletHealthPremiumCard extends StatelessWidget {
       ringWidth: critical ? 0 : 1,
       padding: const EdgeInsets.all(20),
       onPressed: onTap,
+      animate: !critical,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

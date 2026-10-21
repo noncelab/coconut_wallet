@@ -408,22 +408,31 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           valueListenable: premium.state,
                           builder: (context, state, _) {
                             final label = premiumStatusLabel(state);
-                            return SingleButton(
-                              enableShrinkAnim: true,
-                              animationEndValue: 0.97,
-                              title: t.premium.settings_name,
-                              leftElement: PremiumMark(size: 20, muted: !state.isActive),
-                              subtitle: label,
-                              isVerticalSubtitle: true,
-                              betweenGap: 4,
-                              subtitleStyle:
-                                  state.isActive
-                                      ? (label.containsCJK
-                                              ? CoconutTypography.body3_12
-                                              : CoconutTypography.body3_12_Number)
-                                          .setColor(context.coconutColors.premiumText)
-                                      : null,
-                              onPressed: () => PremiumSubscriptionScreen.open(context),
+                            return LayoutBuilder(
+                              builder:
+                                  (context, constraints) => SingleButton(
+                                    enableShrinkAnim: true,
+                                    animationEndValue: 0.97,
+                                    title: t.premium.settings_name,
+                                    leftElement: PremiumMark(size: 20, muted: !state.isActive),
+                                    rightElement: ConstrainedBox(
+                                      constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.4),
+                                      child: Text(
+                                        label,
+                                        textAlign: TextAlign.end,
+                                        style: (label.containsCJK
+                                                ? CoconutTypography.body3_12.copyWith(height: 1.3)
+                                                : CoconutTypography.body3_12_Number)
+                                            .setColor(
+                                              state.isActive
+                                                  ? context.coconutColors.premiumText
+                                                  : context.coconutColors.tertiaryText,
+                                            ),
+                                      ),
+                                    ),
+                                    showRightArrowWithRightElement: true,
+                                    onPressed: () => PremiumSubscriptionScreen.open(context),
+                                  ),
                             );
                           },
                         ),

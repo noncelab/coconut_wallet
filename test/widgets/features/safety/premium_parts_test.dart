@@ -2,6 +2,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
+import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +27,40 @@ BoxDecoration _box(WidgetTester tester, Finder finder) =>
 void main() {
   setUpAll(() => VisibilityDetectorController.instance.updateInterval = Duration.zero);
   tearDownAll(() => VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 500));
+
+  testWidgets('free wallet health card shows a moving sheen and remains tappable', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      _app(CoconutThemeVariant.light, SizedBox(width: 320, child: WalletHealthPremiumCard(onTap: () => taps++))),
+    );
+    await tester.pump();
+    final effect = find.descendant(of: find.byType(VisibilityDetector), matching: find.byType(DecoratedBox));
+    expect(effect, findsOneWidget);
+    final start = (_box(tester, effect).gradient! as LinearGradient).begin;
+    await tester.pump(const Duration(milliseconds: 800));
+    expect((_box(tester, effect).gradient! as LinearGradient).begin, isNot(start));
+    await tester.tap(find.byType(ShrinkAnimationButton));
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+    expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  for (final critical in [true, false]) {
+    testWidgets('wallet health card remains static for critical=$critical or reduced motion', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          CoconutThemeVariant.light,
+          MediaQuery(
+            data: MediaQueryData(disableAnimations: !critical),
+            child: SizedBox(width: 320, child: WalletHealthPremiumCard(critical: critical, onTap: () {})),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(VisibilityDetector), findsNothing);
+      expect(tester.binding.transientCallbackCount, 0);
+    });
+  }
 
   testWidgets('Premium sheen waits for visibility, permits taps, pauses offscreen and finishes once', (tester) async {
     final scroll = ScrollController();

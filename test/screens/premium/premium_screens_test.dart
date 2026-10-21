@@ -673,14 +673,21 @@ void main() {
       expect(find.descendant(of: row, matching: findText('코코넛 프리미엄')), findsOneWidget);
       expect(find.descendant(of: row, matching: find.byType(PremiumMark)), findsOneWidget);
       expect(find.descendant(of: row, matching: findText(t.premium.subscription.active)), findsOneWidget);
-      // POLISH G11: 사용 중일 때만 부제 premiumText, 아니면 다른 행과 같은 기본 부제
+      // 사용 중이면 premiumText, 그 밖에는 다른 행과 같은 상태 색상.
       SingleButton rowButton() =>
           tester.widget<SingleButton>(find.descendant(of: row, matching: find.byType(SingleButton)));
-      expect(rowButton().subtitleStyle!.color, colors.premiumText);
+      expect(
+        tester.widget<Text>(find.descendant(of: row, matching: findText(t.premium.subscription.active))).style!.color,
+        colors.premiumText,
+      );
+      expect(rowButton().isVerticalSubtitle, isFalse);
       premium.emit(const PremiumState(PremiumStatus.none));
       await tester.pump();
-      expect(rowButton().subtitle, t.premium.subscription.not_subscribed);
-      expect(rowButton().subtitleStyle, isNull);
+      final status = find.descendant(of: row, matching: findText(t.premium.subscription.not_subscribed));
+      expect(tester.widget<Text>(status).style!.color, colors.tertiaryText);
+      final chevron = find.descendant(of: row, matching: find.byIcon(Icons.keyboard_arrow_right_rounded));
+      expect(tester.getCenter(status).dy, closeTo(tester.getCenter(chevron).dy, 1));
+      expect(tester.getTopLeft(chevron).dx - tester.getTopRight(status).dx, lessThanOrEqualTo(8));
 
       // 테스트는 디버그 빌드라 강제 켜기가 보인다(메인넷 릴리즈 조건은 서비스 테스트에서 고정)
       final toggle = find.descendant(
