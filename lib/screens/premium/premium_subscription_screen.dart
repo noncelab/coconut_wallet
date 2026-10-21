@@ -117,10 +117,11 @@ class PremiumSubscriptionScreen extends StatelessWidget {
   }
 }
 
-/// 앱 설정 줄의 상태 값(사용 중 / 사용 안 함). 확인 중이면 null
-String? premiumStatusLabel(PremiumState state) => switch (state.status) {
+/// 앱 설정의 활성화 안내와 스토어 확인 상태.
+String premiumStatusLabel(PremiumState state) => switch (state.status) {
   PremiumStatus.active => t.premium.subscription.active,
-  PremiumStatus.verifying => null,
+  PremiumStatus.verifying => t.premium.subscription.verifying,
+  PremiumStatus.pending => t.premium.subscription.pending,
   _ => t.premium.subscription.not_subscribed,
 };
 
@@ -213,6 +214,7 @@ class _StatusCard extends StatelessWidget {
         key: Key('premium-status-${state.status.name}'),
         radius: 24,
         ringWidth: 1,
+        animate: true,
         padding: const EdgeInsets.all(20),
         child: content,
       );

@@ -357,6 +357,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
                 leading: const PremiumMark(size: 20),
                 title: t.premium.subscription.active_title,
                 subtitle: t.premium.card.active_body,
+                highlighted: true,
                 onTap: () => PremiumSubscriptionScreen.open(context),
               ),
             if (rescue != null)
@@ -374,15 +375,20 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
                     line?.subtitle ??
                     (verifying && hasDestination ? t.premium.rescue.verifying : t.premium.rescue.free_body),
                 warning: line?.warning ?? false,
+                highlighted: premium.isActive,
                 chip: line == null && !verifying,
                 onTap: () => RescueReadyScreen.open(context),
               ),
           ];
+          final group = SafetyListCard(backgroundColor: premium.isActive ? Colors.transparent : null, rows: rows);
           final sales = !premium.isActive && !notEnoughData && !verifying && !paused;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (rows.isNotEmpty) ...[SafetySectionTitle(t.premium.name), SafetyListCard(rows: rows)],
+              if (rows.isNotEmpty) ...[
+                SafetySectionTitle(t.premium.name),
+                if (premium.isActive) PremiumSurface(radius: 20, ringWidth: 1, animate: true, child: group) else group,
+              ],
               if (sales) ...[
                 if (rows.isEmpty) CoconutLayout.spacing_600h else CoconutLayout.spacing_300h,
                 WalletHealthPremiumCard(onTap: () => PremiumPaywallScreen.open(context)),
@@ -819,6 +825,7 @@ class _PremiumRow extends StatelessWidget {
     this.subtitle,
     this.warning = false,
     this.chip = false,
+    this.highlighted = false,
     required this.onTap,
   });
 
@@ -829,6 +836,7 @@ class _PremiumRow extends StatelessWidget {
 
   /// 무료 비상 이동 줄: 오른쪽에 PremiumChip(POLISH §4 D1)
   final bool chip;
+  final bool highlighted;
 
   /// 갱신 실패 등 확인이 필요한 줄(제목 warningText)
   final bool warning;
@@ -840,7 +848,7 @@ class _PremiumRow extends StatelessWidget {
     // 큰 글자(1.3배~)에서는 칩을 부제 아래 왼쪽에: 나란히면 칩이 폭을 크게 차지해 글이 여러 줄로 좁아진다(X13, D의 X7·X8과 같은 기준)
     final chipBelow = chip && MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.3;
     return SafetyPressRow(
-      background: colors.homeSurface,
+      background: highlighted ? Colors.transparent : colors.homeSurface,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -854,11 +862,18 @@ class _PremiumRow extends StatelessWidget {
                 children: [
                   Text(
                     safetyKoText(title),
-                    style: CoconutTypography.body2_14.setColor(warning ? colors.warningText : colors.primaryText),
+                    style: (highlighted ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14).setColor(
+                      warning ? colors.warningText : colors.primaryText,
+                    ),
                   ),
                   if (subtitle != null) ...[
                     CoconutLayout.spacing_50h,
-                    Text(safetyKoText(subtitle!), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                    Text(
+                      safetyKoText(subtitle!),
+                      style: CoconutTypography.body3_12.setColor(
+                        highlighted ? colors.secondaryTextStrong : colors.secondaryText,
+                      ),
+                    ),
                   ],
                   if (chipBelow) ...[CoconutLayout.spacing_100h, const PremiumChip()],
                 ],

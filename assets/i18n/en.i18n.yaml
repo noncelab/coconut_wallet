@@ -2819,6 +2819,7 @@ safety_guide:
     never_asks: "The Coconut team will never ask for your mnemonic, seed, passphrase, or private key. We also never DM you first, send you a wallet QR code or receiving address, or ask you to choose “I recognize it”."
 premium:
   name: "Coconut Premium"
+  settings_name: "Coconut Premium"
   badge: "Premium"
   assist_name: "Safety Assist"
   card:
@@ -2828,7 +2829,7 @@ premium:
     point_rescue: "Rescue-ready (updated every sync)"
     point_guide: "Direct help channels during an incident"
     explore: "Explore Premium"
-    critical_title: "Prepare a response transaction"
+    critical_title: "Prepare a response"
     critical_body: "If the transaction is still unconfirmed, prepare a replacement (RBF) and move your remaining bitcoin to a new wallet."
     active_body: "If an issue is found, Coconut prepares the response for you."
     prepare_response: "Prepare response"
@@ -2927,7 +2928,9 @@ premium:
     pending_body: "Premium turns on automatically once the payment is approved."
   subscription:
     active: "Active"
-    not_subscribed: "Not subscribed"
+    not_subscribed: "Activate"
+    pending: "Pending approval"
+    verifying: "Checking"
     active_title: "Premium is active"
     expired_title: "Premium has expired"
     none_title: "You're not using Premium"

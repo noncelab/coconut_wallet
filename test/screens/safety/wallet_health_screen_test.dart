@@ -24,6 +24,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mock/wallet_mock.dart';
 import 'wallet_health_fixtures.dart';
@@ -105,6 +106,8 @@ final _checkAgain = find.byKey(const Key('wallet-health-check-again'));
 final _addWallet = find.byKey(const Key('wallet-health-add-wallet'));
 
 void main() {
+  setUpAll(() => VisibilityDetectorController.instance.updateInterval = Duration.zero);
+  tearDownAll(() => VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 500));
   for (final variant in CoconutThemeVariant.values) {
     group(variant.name, () {
       testWidgets('S1 scored + review: number, label, review rows, Free Premium card, all good, recommended', (
@@ -633,6 +636,8 @@ void main() {
       final active = find.byKey(const Key('wallet-health-premium-active'));
       expect(find.descendant(of: active, matching: _text(t.premium.subscription.active_title)), findsOneWidget);
       expect(find.descendant(of: active, matching: find.byType(PremiumMark)), findsOneWidget);
+      expect(find.ancestor(of: active, matching: find.byType(PremiumSurface)), findsOneWidget);
+      expect(find.ancestor(of: rescueRow, matching: find.byType(PremiumSurface)), findsOneWidget);
       expect(find.descendant(of: rescueRow, matching: find.byType(PremiumMark)), findsNothing);
       expect(tester.getTopLeft(active).dy, lessThan(tester.getTopLeft(rescueRow).dy));
       expect(_premiumCard, findsNothing);

@@ -2797,6 +2797,7 @@ safety_guide:
     never_asks: "Das Coconut-Team fragt niemals nach deiner Mnemonik, deinem Seed, deiner Passphrase oder deinem privaten Schlüssel. Es schreibt dir auch nie zuerst per Direktnachricht, schickt dir keinen Wallet-QR-Code und keine Empfangsadresse und bittet dich nie, „Ich kenne sie“ zu wählen."
 premium:
   name: "Coconut Premium"
+  settings_name: "Coconut Premium"
   badge: "Premium"
   assist_name: "Safety Assist"
   card:
@@ -2806,7 +2807,7 @@ premium:
     point_rescue: "Notfall-Transfer (bei jeder Synchronisierung aktualisiert)"
     point_guide: "Direkte Hilfekanäle während eines Vorfalls"
     explore: "Premium entdecken"
-    critical_title: "Reaktionstransaktion vorbereiten"
+    critical_title: "Reaktion vorbereiten"
     critical_body: "Ist die Transaktion noch unbestätigt, bereite einen Ersatz (RBF) vor und verschiebe deine restlichen Bitcoin in eine neue Wallet."
     active_body: "Wird ein Problem gefunden, bereitet Coconut die Reaktion für dich vor."
     prepare_response: "Reaktion vorbereiten"
@@ -2905,7 +2906,9 @@ premium:
     pending_body: "Premium wird automatisch aktiviert, sobald die Zahlung bestätigt ist."
   subscription:
     active: "Aktiv"
-    not_subscribed: "Kein Abo"
+    not_subscribed: "Aktivieren"
+    pending: "Genehmigung ausstehend"
+    verifying: "Wird geprüft"
     active_title: "Premium aktiv"
     expired_title: "Premium ist abgelaufen"
     none_title: "Du nutzt Premium nicht"

@@ -5,6 +5,7 @@ import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// POLISH §2.3 공용 Premium 부품: 로고 그라데이션 젬·링, premiumSurfaceGradient 바탕
 Widget _app(CoconutThemeVariant variant, Widget child) =>
@@ -23,6 +24,58 @@ BoxDecoration _box(WidgetTester tester, Finder finder) =>
     tester.widget<DecoratedBox>(finder).decoration as BoxDecoration;
 
 void main() {
+  setUpAll(() => VisibilityDetectorController.instance.updateInterval = Duration.zero);
+  tearDownAll(() => VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 500));
+
+  testWidgets('Premium sheen waits for visibility, permits taps, pauses offscreen and finishes once', (tester) async {
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    var taps = 0;
+    await tester.pumpWidget(
+      _app(
+        CoconutThemeVariant.light,
+        SingleChildScrollView(
+          controller: scroll,
+          child: Column(
+            children: [
+              const SizedBox(height: 1000),
+              PremiumSurface(
+                radius: 20,
+                ringWidth: 1,
+                animate: true,
+                onPressed: () => taps++,
+                child: const SizedBox(width: 300, height: 100, child: Center(child: Text('Premium'))),
+              ),
+              const SizedBox(height: 700),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, 0);
+    scroll.jumpTo(900);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+    await tester.tap(find.text('Premium'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(taps, 1);
+
+    scroll.jumpTo(0);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.binding.transientCallbackCount, 0);
+    scroll.jumpTo(900);
+    await tester.pumpAndSettle();
+    expect(tester.binding.transientCallbackCount, 0);
+    scroll.jumpTo(0);
+    await tester.pump();
+    scroll.jumpTo(900);
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, 0);
+  });
+
   test('safetyKoText keeps Korean words whole and leaves other locales alone', () {
     addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
     LocaleSettings.setLocaleSync(AppLocale.ko);
@@ -44,6 +97,44 @@ void main() {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
 
     group(variant.name, () {
+      testWidgets('sheen keeps text readable over every premium background stop', (tester) async {
+        await tester.pumpWidget(
+          _app(
+            variant,
+            const PremiumSurface(
+              radius: 20,
+              ringWidth: 1,
+              animate: true,
+              child: SizedBox(width: 300, height: 100, child: Text('Premium')),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        final sheen = tester.widget<DecoratedBox>(
+          find.descendant(of: find.byType(VisibilityDetector), matching: find.byType(DecoratedBox)),
+        );
+        final gradient = (sheen.decoration as BoxDecoration).gradient! as LinearGradient;
+        for (final background in (colors.premiumSurfaceGradient as LinearGradient).colors) {
+          for (final highlight in gradient.colors) {
+            final blended = Color.alphaBlend(highlight, background);
+            for (final text in [
+              colors.primaryText,
+              colors.secondaryTextStrong,
+              colors.premiumText,
+              colors.warningText,
+            ]) {
+              expect(
+                _contrast(text, blended),
+                greaterThanOrEqualTo(4.5),
+                reason: '${variant.name}: $text on $background with $highlight',
+              );
+            }
+          }
+        }
+        await tester.pumpAndSettle();
+      });
+
       testWidgets('PremiumMark paints the diamond with the logo gradient; muted is plain iconSecondary', (
         tester,
       ) async {

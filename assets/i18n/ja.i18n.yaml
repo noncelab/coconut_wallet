@@ -2807,6 +2807,7 @@ safety_guide:
     never_asks: "Coconutチームがニーモニック・シード・パスフレーズ・秘密鍵を尋ねることは決してありません。こちらから先にDMを送ったり、ウォレットのQRや受取アドレスを送ったり、「心当たりがあります」を押すよう求めたりすることもありません。"
 premium:
   name: "Coconut Premium"
+  settings_name: "ココナッツプレミアム"
   badge: "Premium"
   assist_name: "Safety Assist"
   card:
@@ -2816,7 +2817,7 @@ premium:
     point_rescue: "緊急移動の準備（同期のたびに更新）"
     point_guide: "対応中にサポート窓口へすぐ接続"
     explore: "Premiumを見る"
-    critical_title: "対応トランザクションを準備する"
+    critical_title: "対応を準備する"
     critical_body: "トランザクションがまだ確認されていなければ、置き換え（RBF）を準備し、残りのビットコインを新しいウォレットに移せます。"
     active_body: "問題が見つかったときに、対応トランザクションを自動で準備します。"
     prepare_response: "対応を準備"
@@ -2914,8 +2915,10 @@ premium:
     pending_title: "支払いの承認を待っています"
     pending_body: "支払いが承認されると、自動的にPremiumが有効になります。"
   subscription:
-    active: "利用中"
-    not_subscribed: "未登録"
+    active: "有効"
+    not_subscribed: "有効にする"
+    pending: "承認待ち"
+    verifying: "確認中"
     active_title: "Premiumを利用中"
     expired_title: "Premiumの期限が切れました"
     none_title: "Premiumを利用していません"

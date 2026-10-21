@@ -35,6 +35,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show PremiumMark;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
@@ -407,12 +408,16 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           valueListenable: premium.state,
                           builder: (context, state, _) {
                             final label = premiumStatusLabel(state);
-                            return _buildAnimatedButton(
-                              title: t.premium.name,
+                            return SingleButton(
+                              enableShrinkAnim: true,
+                              animationEndValue: 0.97,
+                              title: t.premium.settings_name,
+                              leftElement: PremiumMark(size: 20, muted: !state.isActive),
                               subtitle: label,
-                              // 사용 중일 때만 "Premium이라고 말하는 짧은 표시"(POLISH §2.2). 글꼴은 다른 행 부제와 같다
+                              isVerticalSubtitle: true,
+                              betweenGap: 4,
                               subtitleStyle:
-                                  state.isActive && label != null
+                                  state.isActive
                                       ? (label.containsCJK
                                               ? CoconutTypography.body3_12
                                               : CoconutTypography.body3_12_Number)

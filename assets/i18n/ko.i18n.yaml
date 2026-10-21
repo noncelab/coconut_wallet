@@ -2825,6 +2825,7 @@ safety_guide:
     never_asks: "코코넛 팀은 니모닉·시드·패스프레이즈·개인 키를 절대 묻지 않아요. 먼저 DM을 보내거나, 지갑 QR이나 받기 주소를 보내거나, '내 거래예요'를 누르라고 하지도 않아요."
 premium:
   name: "Coconut Premium"
+  settings_name: "코코넛 프리미엄"
   badge: "Premium"
   assist_name: "Safety Assist"
   card:
@@ -2834,10 +2835,10 @@ premium:
     point_rescue: "비상 이동 준비(동기화할 때마다 갱신)"
     point_guide: "사고 대응 중 도움 채널 바로 연결"
     explore: "Premium 알아보기"
-    critical_title: "대응 거래 준비하기"
+    critical_title: "대응 준비하기"
     critical_body: "거래가 아직 승인되지 않았다면 대체 거래(RBF)를 준비하고, 남은 비트코인을 새 지갑으로 옮길 수 있어요."
     active_body: "문제가 발견되면 대응 거래를 자동으로 준비해요."
-    prepare_response: "대응 준비"
+    prepare_response: "대응 준비하기"
     active_incident_body: "대응 분석을 시작할 수 있어요"
   incident_chip:
     body: "새 지갑과 이동 거래를 자동으로 준비해요"
@@ -2932,8 +2933,10 @@ premium:
     pending_title: "결제 승인을 기다리고 있어요"
     pending_body: "결제가 승인되면 Premium이 자동으로 켜져요."
   subscription:
-    active: "사용 중"
-    not_subscribed: "사용 안 함"
+    active: "활성화됨"
+    not_subscribed: "활성화하기"
+    pending: "승인 대기"
+    verifying: "확인 중"
     active_title: "Premium 사용 중"
     expired_title: "Premium이 만료됐어요"
     none_title: "Premium을 사용하고 있지 않아요"

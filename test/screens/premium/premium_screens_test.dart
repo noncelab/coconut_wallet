@@ -25,6 +25,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class _Preferences extends ChangeNotifier implements PreferenceProvider {
   @override
@@ -106,6 +107,8 @@ class _ThrowingPremium extends FakeEntitlementService {
 }
 
 void main() {
+  setUpAll(() => VisibilityDetectorController.instance.updateInterval = Duration.zero);
+  tearDownAll(() => VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 500));
   setUp(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     NetworkType.setNetworkType(NetworkType.regtest);
@@ -630,6 +633,33 @@ void main() {
   });
 
   group('앱 설정', () {
+    test('설정 상태는 활성화 안내와 승인 대기·확인 중을 구분한다', () {
+      expect(premiumStatusLabel(const PremiumState(PremiumStatus.none)), '활성화하기');
+      expect(premiumStatusLabel(const PremiumState(PremiumStatus.expired)), '활성화하기');
+      expect(premiumStatusLabel(const PremiumState(PremiumStatus.active)), '활성화됨');
+      expect(premiumStatusLabel(const PremiumState(PremiumStatus.pending)), '승인 대기');
+      expect(premiumStatusLabel(const PremiumState(PremiumStatus.verifying)), '확인 중');
+    });
+
+    testWidgets('활성 카드 효과는 한 번 끝나며 동작 줄이기에서는 재생하지 않는다', (tester) async {
+      final premium = FakeEntitlementService(initial: const PremiumState(PremiumStatus.active));
+      await tester.pumpWidget(app(premium, const PremiumSubscriptionScreen()));
+      await tester.pump();
+      expect(find.byType(VisibilityDetector), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+      await tester.pumpAndSettle();
+      expect(tester.binding.transientCallbackCount, 0);
+      await tester.pump(const Duration(seconds: 10));
+      expect(tester.binding.transientCallbackCount, 0);
+
+      await tester.pumpWidget(app(premium, const PremiumSubscriptionScreen(), reduceMotion: true));
+      await tester.pumpAndSettle();
+      expect(find.byType(VisibilityDetector), findsNothing);
+      expect(find.byType(PremiumSurface), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0);
+    });
+
     testWidgets('Premium 줄과 강제 켜기는 EntitlementService가 있을 때만', (tester) async {
       await tester.pumpWidget(app(null, const AppSettingsScreen()));
       await tester.pumpAndSettle();
@@ -640,7 +670,8 @@ void main() {
       await tester.pumpWidget(app(premium, const AppSettingsScreen()));
       await tester.pumpAndSettle();
       final row = find.byKey(const Key('app-settings-premium'));
-      expect(find.descendant(of: row, matching: findText(t.premium.name)), findsOneWidget);
+      expect(find.descendant(of: row, matching: findText('코코넛 프리미엄')), findsOneWidget);
+      expect(find.descendant(of: row, matching: find.byType(PremiumMark)), findsOneWidget);
       expect(find.descendant(of: row, matching: findText(t.premium.subscription.active)), findsOneWidget);
       // POLISH G11: 사용 중일 때만 부제 premiumText, 아니면 다른 행과 같은 기본 부제
       SingleButton rowButton() =>

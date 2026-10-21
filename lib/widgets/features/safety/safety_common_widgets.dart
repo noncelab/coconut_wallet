@@ -11,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// POLISH R1: 한국어는 단어 중간에서 줄을 바꾸지 않는다(앱 방식 `TextUtils.preventLineBreakInsideWords`).
 /// 줄바꿈될 수 있는 제목·배너·카드 글에만 쓴다. 주소·금액·숫자에는 쓰지 않는다(글자 사이 이음 문자가 복사·비교를 바꾼다).
@@ -323,6 +324,7 @@ class PremiumSurface extends StatelessWidget {
     required this.ringWidth,
     this.padding = EdgeInsets.zero,
     this.onPressed,
+    this.animate = false,
   });
 
   final Widget child;
@@ -330,6 +332,7 @@ class PremiumSurface extends StatelessWidget {
   final double ringWidth;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onPressed;
+  final bool animate;
 
   @override
   Widget build(BuildContext context) {
@@ -337,12 +340,23 @@ class PremiumSurface extends StatelessWidget {
     final onPressed = this.onPressed;
     // 누를 수 있으면 ShrinkAnimationButton이 링을 그리고(바깥 반지름 radius + 2, 안쪽 radius), 칠은 안쪽 단색 위에 깐다
     final innerRadius = onPressed == null ? radius - ringWidth : radius;
+    final content = Padding(padding: padding, child: child);
     final fill = DecoratedBox(
       decoration: BoxDecoration(
         gradient: colors.premiumSurfaceGradient,
         borderRadius: BorderRadius.circular(innerRadius),
       ),
-      child: Padding(padding: padding, child: child),
+      child:
+          animate && !safetyReduceMotion(context)
+              ? Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(borderRadius: BorderRadius.circular(innerRadius), child: const _PremiumSheen()),
+                  ),
+                  content,
+                ],
+              )
+              : content,
     );
     if (onPressed != null) {
       return MergeSemantics(
@@ -359,6 +373,74 @@ class PremiumSurface extends StatelessWidget {
       padding: EdgeInsets.all(ringWidth),
       decoration: BoxDecoration(gradient: colors.mainnetLogoGradient, borderRadius: BorderRadius.circular(radius)),
       child: fill,
+    );
+  }
+}
+
+/// 카드가 보일 때 배경에만 한 번 빛을 흘리고, 화면 밖에서는 멈춘다.
+class _PremiumSheen extends StatefulWidget {
+  const _PremiumSheen();
+
+  @override
+  State<_PremiumSheen> createState() => _PremiumSheenState();
+}
+
+class _PremiumSheenState extends State<_PremiumSheen> with SingleTickerProviderStateMixin {
+  final _visibilityKey = UniqueKey();
+  late final _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+  bool _visible = false;
+
+  void _updateMotion() {
+    if (_visible && TickerMode.of(context) && !_controller.isCompleted) {
+      _controller.forward();
+    } else {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateMotion();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = context.coconutColors.premiumText.withValues(alpha: 0.03);
+    final highlight = Colors.white.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.6);
+    return VisibilityDetector(
+      key: _visibilityKey,
+      onVisibilityChanged: (info) {
+        if (!mounted) return;
+        _visible = info.visibleFraction >= 0.4;
+        _updateMotion();
+      },
+      child: IgnorePointer(
+        child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final position = -2 + 4 * Curves.easeInOutCubic.transform(_controller.value);
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment(position - 0.7, -0.4),
+                    end: Alignment(position + 0.7, 0.4),
+                    colors: [Colors.transparent, tint, highlight, tint, Colors.transparent],
+                    stops: const [0, 0.3, 0.5, 0.7, 1],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
