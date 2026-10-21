@@ -43,6 +43,9 @@ class HomeItemsView extends StatefulWidget {
   /// 그리드 둘레의 여백. 편집 중 꼭짓점에 걸치는 제거 버튼이 이 안에서 눌리도록 둔다.
   final double badgeInset;
 
+  /// 드래그 중 떠 있는 항목을 감싼다. Overlay에는 없는 화면 Provider를 다시 넣을 때 쓴다.
+  final Widget Function(Widget child)? wrapDragFeedback;
+
   const HomeItemsView({
     super.key,
     required this.configuration,
@@ -57,6 +60,7 @@ class HomeItemsView extends StatefulWidget {
     this.onArrangeStart,
     this.onResize,
     this.badgeInset = 0,
+    this.wrapDragFeedback,
   });
 
   @override
@@ -455,6 +459,11 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     }
   }
 
+  Widget _dragFeedback(Size size, Widget content) {
+    final feedback = Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content));
+    return widget.wrapDragFeedback?.call(feedback) ?? feedback;
+  }
+
   Widget _buildItem(
     BuildContext context,
     HomeItem item,
@@ -492,7 +501,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
               final box = dragContext.findRenderObject()! as RenderBox;
               return _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
             },
-            feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
+            feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
             child: _Jiggle(
               enabled: arranging && !MediaQuery.disableAnimationsOf(context),
@@ -566,7 +575,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
               final box = dragContext.findRenderObject()! as RenderBox;
               return _dragAnchor = box.globalToLocal(point);
             },
-            feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
+            feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width, height: size.height),
             child: box,
           ),

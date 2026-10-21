@@ -38,7 +38,6 @@ import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.d
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -54,6 +53,8 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_sectio
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/multisig_setup_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_setup_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_spend_type_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/mfp_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -486,6 +487,19 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 ),
           ),
         ),
+      if (viewModel.descriptor.isNotEmpty)
+        _walletInfoMenu(
+          title: t.wallet_info_screen.descriptor,
+          onPressed:
+              () => _handleAuthFlow(
+                onComplete:
+                    () => _showQrBottomSheet(
+                      title: t.wallet_info_screen.descriptor,
+                      data: viewModel.descriptor,
+                      screenName: AnalyticsScreenNames.walletInfoDescriptorSheet,
+                    ),
+              ),
+        ),
       _walletInfoMenu(
         title: t.wallet_info_screen.all_addresses,
         subWidget: Text(
@@ -522,11 +536,36 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         ),
       ],
       if (widget.walletType == WalletType.taproot) ...[
-        WalletSignerSection(walletType: widget.walletType),
+        _walletInfoSubheader(t.wallet_info_screen.inheritance_setup),
+        _walletInfoMenu(
+          title: t.wallet_signer_section.title,
+          indent: true,
+          subWidget: Text(
+            viewModel.taprootSpendTypeIndex == 0
+                ? t.wallet_signer_section.segmented_control.parent_key
+                : t.wallet_signer_section.segmented_control.child_key,
+            style: _menuSubTextStyle,
+          ),
+          showArrowRight: viewModel.canSpendBothPaths,
+          onPressed: viewModel.canSpendBothPaths ? () => _showTaprootSpendTypeSheet(viewModel) : null,
+        ),
+        _walletInfoMenu(
+          title: t.wallet_info_screen.taproot_participants,
+          indent: true,
+          subWidget: Text(
+            t.wallet_info_screen.taproot_participant_count(
+              parent: viewModel.taprootParticipantCount.parent,
+              child: viewModel.taprootParticipantCount.child,
+            ),
+            style: _menuSubTextStyle,
+          ),
+          onPressed: () => _showTaprootSetup(viewModel),
+        ),
         _focus(
           WalletInfoTarget.backupData,
           _walletInfoMenu(
-            title: t.wallet_info_screen.view_wallet_backup_data,
+            title: t.wallet_info_screen.backup_data,
+            indent: true,
             onPressed:
                 () => Navigator.pushNamed(
                   context,
@@ -552,22 +591,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             onDisconnect: () async => viewModel.disconnectTrezor(),
           ),
         ),
-      if (viewModel.descriptor.isNotEmpty) ...[
-        _walletInfoSubheader(t.wallet_info_screen.wallet_configuration),
-        _walletInfoMenu(
-          title: t.wallet_info_screen.descriptor,
-          indent: true,
-          onPressed:
-              () => _handleAuthFlow(
-                onComplete:
-                    () => _showQrBottomSheet(
-                      title: t.wallet_info_screen.descriptor,
-                      data: viewModel.descriptor,
-                      screenName: AnalyticsScreenNames.walletInfoDescriptorSheet,
-                    ),
-              ),
-        ),
-      ],
     ];
   }
 
@@ -640,6 +663,31 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         builder:
             (_) =>
                 ChangeNotifierProvider<WalletInfoViewModel>.value(value: viewModel, child: const MultisigSetupScreen()),
+      ),
+    );
+  }
+
+  void _showTaprootSetup(WalletInfoViewModel viewModel) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: TaprootSetupScreen.routeName),
+        builder:
+            (_) =>
+                ChangeNotifierProvider<WalletInfoViewModel>.value(value: viewModel, child: const TaprootSetupScreen()),
+      ),
+    );
+  }
+
+  void _showTaprootSpendTypeSheet(WalletInfoViewModel viewModel) {
+    CommonBottomSheets.showBottomSheet<void>(
+      context: context,
+      title: t.wallet_signer_section.title,
+      screenName: AnalyticsScreenNames.walletInfoTaprootSpendTypeSheet,
+      showCloseButton: true,
+      child: ChangeNotifierProvider<WalletInfoViewModel>.value(
+        value: viewModel,
+        child: const TaprootSpendTypeBottomSheet(),
       ),
     );
   }
@@ -1017,11 +1065,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   Widget _walletInfoSubheader(String title) {
     return SizedBox(
-      height: 40,
+      height: _rowHeight,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Align(
-          alignment: Alignment.bottomLeft,
+          alignment: Alignment.centerLeft,
           child: Text(title, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
         ),
       ),

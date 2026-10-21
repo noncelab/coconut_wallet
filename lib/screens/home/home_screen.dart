@@ -404,6 +404,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           onArrangeDone: _finishArranging,
                           onResize: (item, span) => viewModel.resizeItem(item.id, span),
                           badgeInset: _gridBadgeInset,
+                          wrapDragFeedback:
+                              (child) => MultiProvider(
+                                providers: [
+                                  ChangeNotifierProvider.value(value: _viewModel),
+                                  ChangeNotifierProvider.value(value: _widgetsViewModel),
+                                ],
+                                child: child,
+                              ),
                           minHeight: math.max(
                             0,
                             constraints.viewportMainAxisExtent -

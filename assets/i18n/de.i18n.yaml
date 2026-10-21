@@ -1405,7 +1405,9 @@ wallet_info_screen:
   multisig_setup: "Multisig-Einrichtung"
   quorum: "Quorum"
   bsms: "BSMS"
-  wallet_configuration: "Wallet-Konfiguration"
+  inheritance_setup: "Erbschaftseinrichtung"
+  taproot_participants: "Beteiligte Wallets"
+  taproot_participant_count: "Übergeordnet ${parent} · Untergeordnet ${child}"
   descriptor: "Deskriptor"
   title: "$name Informationen"
   transaction: "Transaktion"
@@ -1438,6 +1440,7 @@ wallet_info_screen:
   export_labels_description: "Exportiert alle im aktuellen Wallet aufgezeichneten Memos in eine JSONL-Datei. Diese Datei kann verwendet werden, um Memos auf anderen Geräten oder Wallet-Software wiederherzustellen."
   view_descriptor: "Deskriptor anzeigen"
   view_wallet_backup_data: "Wallet-Sicherungsdaten anzeigen"
+  backup_data: "Sicherungsdaten"
   backup_update_dialog:
     title: "Hinweis zur Aktualisierung der Sicherungsdaten der Vererbungs-Wallet"
     step1_title: "1. Wenn Sie die Sicherungsphrase einer bestehenden Vererbungs-Wallet an einem anderen Ort gespeichert haben, aktualisieren Sie sie bitte mit der neuen Sicherungsphrase."

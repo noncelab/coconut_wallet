@@ -199,6 +199,12 @@ class WalletInfoViewModel extends ChangeNotifier {
     return taprootWallet.keyStoreList.length == 1;
   }
 
+  ({int parent, int child}) get taprootParticipantCount {
+    final participants = getTaprootParticipants(taprootSpendTypeIndex);
+    final parent = participants.where((participant) => participant.role == TaprootParticipantRole.parent).length;
+    return (parent: parent, child: participants.length - parent);
+  }
+
   List<TaprootParticipantCard> getTaprootParticipants(int currentSegmentIndex) {
     final item = _walletItemBase;
     if (item is! TaprootWalletItem) return [];

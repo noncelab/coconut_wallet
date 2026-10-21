@@ -1457,7 +1457,9 @@ wallet_info_screen:
   multisig_setup: "Configuración multifirma"
   quorum: "Quórum"
   bsms: "BSMS"
-  wallet_configuration: "Configuración de la billetera"
+  inheritance_setup: "Configuración de herencia"
+  taproot_participants: "Participantes"
+  taproot_participant_count: "Padre ${parent} · Hijo ${child}"
   descriptor: "Descriptor"
   title: "Información de $name"
   transaction: "Transacción"
@@ -1490,6 +1492,7 @@ wallet_info_screen:
   export_labels_description: "Exporta todos los memos registrados en la billetera actual a un archivo JSONL. Este archivo se puede usar para restaurar memos en otros dispositivos o software de billetera."
   view_descriptor: "Ver descriptor"
   view_wallet_backup_data: "Ver datos de respaldo de billetera" 
+  backup_data: "Datos de respaldo"
   backup_update_dialog:
     title: "Aviso de actualización de respaldo de la billetera de herencia"
     step1_title: "1. Si guardaste en otro lugar la frase de respaldo de una billetera de herencia existente, actualízala con la nueva frase de respaldo."

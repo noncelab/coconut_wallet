@@ -164,7 +164,10 @@ class WalletDetailCard extends StatelessWidget {
                     key: const Key('wallet-detail-card-name'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: CoconutTypography.body2_14_Bold.copyWith(color: colors.secondaryText),
+                    style: CoconutTypography.body2_14_Bold.copyWith(
+                      color: colors.secondaryText,
+                      leadingDistribution: TextLeadingDistribution.even,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

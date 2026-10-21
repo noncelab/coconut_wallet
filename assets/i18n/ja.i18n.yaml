@@ -1454,7 +1454,9 @@ wallet_info_screen:
   multisig_setup: "マルチシグ構成"
   quorum: "必要署名数"
   bsms: "BSMS"
-  wallet_configuration: "ウォレット構成"
+  inheritance_setup: "相続構成"
+  taproot_participants: "参加ウォレット"
+  taproot_participant_count: "親 ${parent} · 子 ${child}"
   descriptor: "ディスクリプター"
   title: "$name情報"
   transaction: "トランザクション"
@@ -1487,6 +1489,7 @@ wallet_info_screen:
   export_labels_description: "現在のウォレットに記録されているすべてのメモをJSONLファイル形式でエクスポートします。このファイルは、他のデバイスやウォレットソフトウェアでメモを復元するために使用できます。"
   view_descriptor: "ディスクリプタを表示"
   view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  backup_data: "バックアップデータ"
   backup_update_dialog:
     title: "相続ウォレットのバックアップ更新のお知らせ"
     step1_title: "1. 既存の相続ウォレットのバックアップフレーズを別の場所に保存している場合は、新しいバックアップフレーズに更新してください。"

@@ -11,6 +11,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show MaterialApp;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 class _LabelDefinition extends HomeItemDefinition {
   _LabelDefinition(String id, HomeItemKind kind, HomeSpan span)
@@ -18,6 +19,19 @@ class _LabelDefinition extends HomeItemDefinition {
 
   @override
   Widget build(BuildContext context, HomeItem item) => Text('built:$id');
+}
+
+class _ProvidedLabelDefinition extends HomeItemDefinition {
+  _ProvidedLabelDefinition(String id)
+    : super(
+        id: id,
+        kind: HomeItemKind.widget,
+        supportedSpans: const [HomeSpan.small],
+        category: HomeItemCategory.wallets,
+      );
+
+  @override
+  Widget build(BuildContext context, HomeItem item) => Text('provided:${context.watch<String>()}');
 }
 
 HomeItem _item(String id, String definitionId, HomeItemKind kind, int order, HomeSpan span) {
@@ -464,6 +478,38 @@ void main() {
         ..register(_LabelDefinition('w1', HomeItemKind.widget, HomeSpan.small))
         ..register(_LabelDefinition('w2', HomeItemKind.widget, HomeSpan.small))
         ..register(_LabelDefinition('w3', HomeItemKind.widget, HomeSpan.small));
+
+  testWidgets('the drag feedback shows the tile that reads a provider from inside the screen', (tester) async {
+    usePhoneViewport(tester);
+    final registry = HomeItemRegistry()..register(_ProvidedLabelDefinition('provided'));
+    final configuration = HomeConfiguration(items: [_item('p', 'provided', HomeItemKind.widget, 0, HomeSpan.small)]);
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Provider<String>.value(
+          value: 'value',
+          child: SingleChildScrollView(
+            child: HomeItemsView(
+              configuration: configuration,
+              registry: registry,
+              onInsertBefore: (_, __) {},
+              wrapDragFeedback: (child) => Provider<String>.value(value: 'value', child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-p'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveBy(const Offset(0, 40));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('provided:value'), findsOneWidget);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
 
   testWidgets('long-press dragging an item onto another inserts it before the target', (tester) async {
     usePhoneViewport(tester);

@@ -80,6 +80,7 @@ class AnalyticsScreenNames {
   static const String walletInfoEditTargetAmountSheet = 'wallet-info-edit-target-amount-sheet';
   static const String walletInfoEditSheet = 'wallet-info-edit-sheet';
   static const String walletInfoDescriptorSheet = 'wallet-info-descriptor-sheet';
+  static const String walletInfoTaprootSpendTypeSheet = 'wallet-info-taproot-spend-type-sheet';
   static const String walletResyncAuthSheet = 'wallet-resync-auth-sheet';
   static const String hotWalletAuthSheet = 'hot-wallet-auth-sheet';
   static const String hotWalletAppLockGuideSheet = 'hot-wallet-app-lock-guide-sheet';

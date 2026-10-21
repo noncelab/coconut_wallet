@@ -1466,7 +1466,9 @@ wallet_info_screen:
   multisig_setup: "Multisig Setup"
   quorum: "Quorum"
   bsms: "BSMS"
-  wallet_configuration: "Wallet Configuration"
+  inheritance_setup: "Inheritance Setup"
+  taproot_participants: "Participants"
+  taproot_participant_count: "Parent ${parent} · Child ${child}"
   descriptor: "Descriptor"
   title: "$name Information"
   transaction: "Transaction"
@@ -1499,6 +1501,7 @@ wallet_info_screen:
   export_labels_description: "Exports all memos recorded in the current wallet to a JSONL file. This file can be used to restore memos on other devices or wallet software."
   view_descriptor: "View Descriptor"
   view_wallet_backup_data: "View Wallet Backup Data"
+  backup_data: "Backup Data"
   backup_update_dialog:
     title: "Inheritance Wallet Backup Update Notice"
     step1_title: "1. If you have stored the backup phrase for an existing inheritance wallet elsewhere, please update it with the new backup phrase."
