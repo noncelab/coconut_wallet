@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/settings/tools/p2p_calculator_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import 'p2p_calculator_test.dart'
@@ -35,6 +36,124 @@ void main() {
   });
 
   for (final preset in NumberFormatPreset.values) {
+    for (final p2pMode in [false, true]) {
+      testWidgets('BTC ${preset.name} preserves the caret when refocus keeps the text in P2P mode $p2pMode', (
+        tester,
+      ) async {
+        await _pumpCalculator(tester, fiat: FiatCode.KRW);
+        NumberFormatConfig.instance.applyPreset(preset);
+        await _switchToBtcInput(tester);
+        if (p2pMode) {
+          await tester.tap(find.byType(Lottie).first);
+          await tester.pumpAndSettle();
+        }
+        final field = _amountField();
+        final viewModel = _viewModelOf(tester, field);
+        for (final input in ['12', '1${preset.decimalSeparator}2345']) {
+          await _replaceAmount(tester, field, input);
+          final amount = viewModel.inputAmount;
+          final editable = _editable(tester, field);
+          editable.focusNode.unfocus();
+          await tester.pumpAndSettle();
+          editable.controller.selection = const TextSelection.collapsed(offset: 1);
+          editable.focusNode.requestFocus();
+          await tester.pumpAndSettle();
+          expect(editable.controller.text, input);
+          expect(editable.controller.selection, const TextSelection.collapsed(offset: 1));
+          expect(viewModel.inputAmount, amount);
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('BTC ${preset.name} can delete after blur and refocus in P2P mode $p2pMode', (tester) async {
+        await _pumpCalculator(tester, fiat: FiatCode.KRW);
+        NumberFormatConfig.instance.applyPreset(preset);
+        await _switchToBtcInput(tester);
+        if (p2pMode) {
+          await tester.tap(find.byType(Lottie).first);
+          await tester.pumpAndSettle();
+        }
+        final field = _amountField();
+        final viewModel = _viewModelOf(tester, field);
+        expect(viewModel.isOfflineMode, p2pMode);
+        final decimal = preset.decimalSeparator;
+
+        await _replaceAmount(tester, field, '0${decimal}12345678');
+        expect(viewModel.inputAmount, 12345678);
+        _editable(tester, field).focusNode.unfocus();
+        await tester.pumpAndSettle();
+        expect(_textOf(tester, field), '0${decimal}1234 5678');
+
+        await tester.showKeyboard(field);
+        await tester.pumpAndSettle();
+        expect(viewModel.inputAmount, 12345678, reason: 'Refocusing must preserve the amount');
+        final controller = _editable(tester, field).controller;
+        final beforeDelete = controller.text;
+        controller.selection = TextSelection.collapsed(offset: beforeDelete.length);
+        tester.testTextInput.updateEditingValue(
+          TextEditingValue(
+            text: beforeDelete.substring(0, beforeDelete.length - 1),
+            selection: TextSelection.collapsed(offset: beforeDelete.length - 1),
+          ),
+        );
+        await tester.pump();
+        expect(viewModel.inputAmount, 12345670, reason: 'Backspace must remove the final fractional digit');
+        expect(controller.text, '0${decimal}1234567');
+        expect(controller.selection.extentOffset, controller.text.length);
+
+        for (var remaining = 20; controller.text.isNotEmpty && remaining > 0; remaining--) {
+          final next = controller.text.substring(0, controller.text.length - 1);
+          tester.testTextInput.updateEditingValue(
+            TextEditingValue(text: next, selection: TextSelection.collapsed(offset: next.length)),
+          );
+          await tester.pump();
+        }
+        expect(controller.text, isEmpty);
+        expect(viewModel.inputAmount, isNull);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets('BTC ${preset.name} remains editable after swapping the focused fiat input', (tester) async {
+      await _pumpCalculator(tester, fiat: FiatCode.KRW);
+      NumberFormatConfig.instance.applyPreset(preset);
+      await _replaceAmount(tester, _amountField(), '173');
+      await _switchToBtcInput(tester);
+      final field = _amountField();
+      final viewModel = _viewModelOf(tester, field);
+      expect(viewModel.inputAmount, 122);
+      await tester.showKeyboard(field);
+      await tester.pumpAndSettle();
+      final controller = _editable(tester, field).controller;
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+      tester.testTextInput.updateEditingValue(
+        TextEditingValue(
+          text: controller.text.substring(0, controller.text.length - 1),
+          selection: TextSelection.collapsed(offset: controller.text.length - 1),
+        ),
+      );
+      await tester.pump();
+      expect(viewModel.inputAmount, 120);
+      controller.selection = TextSelection(baseOffset: 2, extentOffset: controller.text.length);
+      tester.testTextInput.updateEditingValue(
+        TextEditingValue(
+          text: '0${preset.decimalSeparator}00000001',
+          selection: const TextSelection.collapsed(offset: 10),
+          composing: const TextRange(start: 2, end: 10),
+        ),
+      );
+      await tester.pump();
+      expect(viewModel.inputAmount, 1);
+      expect(controller.text, '0${preset.decimalSeparator}00000001');
+      expect(controller.selection.extentOffset, 10);
+      expect(controller.value.composing, const TextRange(start: 2, end: 10));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('KRW ${preset.name} rejects decimal, signed, and exponent paste', (tester) async {
       await _pumpCalculator(tester, fiat: FiatCode.KRW);
       NumberFormatConfig.instance.applyPreset(preset);
@@ -227,7 +346,9 @@ Finder _amountField() {
       (widget) =>
           widget.key is ValueKey<String> && (widget.key! as ValueKey<String>).value.startsWith('input_textfield_'),
     ),
-    matching: find.byType(EditableText),
+    matching: find.byWidgetPredicate(
+      (widget) => widget is EditableText && widget.focusNode.debugLabel != 'offline_input_mirror',
+    ),
   );
 }
 

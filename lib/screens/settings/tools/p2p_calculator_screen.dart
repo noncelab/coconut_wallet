@@ -159,13 +159,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           curve: Curves.easeOut,
         );
       });
-    } else {
-      // 포커스를 잃었을 때 - BTC 단위면 readable 형식으로 변환 (소수부 4자리씩 공백)
-      if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        final currentInput = _viewModel.inputAmount;
-        if (currentInput != null && currentInput > 0) {
-          final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: false);
+    }
+    if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
+      final currentInput = _viewModel.inputAmount;
+      if (currentInput != null && currentInput > 0) {
+        final formatted = _formatBtcAmountText(currentInput);
 
+        if (_inputController.text != formatted) {
           _isUpdatingController = true;
           _inputController.value = TextEditingValue(
             text: formatted,
@@ -173,12 +173,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           );
           _isUpdatingController = false;
         }
-      } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
-        _stripTrailingZeroDecimalOnFocusLost();
       }
+    } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
+      _stripTrailingZeroDecimalOnFocusLost();
     }
     setState(() {});
   }
+
+  String _formatBtcAmountText(int sats) =>
+      _inputFocusNode.hasFocus ? BalanceFormatUtil.formatSatoshiToBtcInputText(sats) : _viewModel.formatBtc(sats);
 
   /// 소수점 구분자 뒤 소수부가 비어있거나 전부 0이면(예: "50.", "50.0", "50.00")
   /// 포커스 아웃 시 소수점 이하를 통째로 제거한다.
@@ -566,8 +569,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       _isUpdatingController = true;
 
       if (prevIsBasedOnSatoshi && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = _viewModel.formatBtc(currentInput);
+        final formatted = _formatBtcAmountText(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -611,8 +613,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           selection: TextSelection.collapsed(offset: formatted.length),
         );
       } else {
-        // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
-        final formatted = _viewModel.formatBtc(result);
+        final formatted = _formatBtcAmountText(result);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
