@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 class HomeItemsView extends StatefulWidget {
   static const double cell = 80;
@@ -469,6 +471,20 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final box = SizedBox(width: size.width, height: size.height, child: content);
     if (!_draggable) return SizedBox(key: ValueKey('home-item-${item.id}'), child: box);
 
+    // Drag feedback lives in the route overlay, outside the home providers.
+    final widgetsViewModel = context.read<HomeWidgetsViewModel?>();
+    final feedback = Opacity(
+      opacity: 0.7,
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child:
+            widgetsViewModel == null
+                ? content
+                : ChangeNotifierProvider<HomeWidgetsViewModel>.value(value: widgetsViewModel, child: content),
+      ),
+    );
+
     if (widget.menuItemsOf != null) {
       final menuKey = _menuKeys.putIfAbsent(item.id, () => GlobalKey<LongPressedMenuWidgetState>());
       return DragTarget<String>(
@@ -493,7 +509,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
               final box = dragContext.findRenderObject()! as RenderBox;
               return _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
             },
-            feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
+            feedback: feedback,
             childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
             child: _Jiggle(
               enabled: arranging && !MediaQuery.disableAnimationsOf(context),
@@ -567,7 +583,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
               final box = dragContext.findRenderObject()! as RenderBox;
               return _dragAnchor = box.globalToLocal(point);
             },
-            feedback: Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content)),
+            feedback: feedback,
             childWhenDragging: SizedBox(width: size.width, height: size.height),
             child: box,
           ),
