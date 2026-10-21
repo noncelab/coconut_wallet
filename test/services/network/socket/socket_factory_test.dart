@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -66,6 +67,36 @@ List<int> _derBytesFromPem(String pem) {
 }
 
 void main() {
+  test('certificate probe closes its connection without sending application data', () async {
+    final context =
+        SecurityContext()
+          ..useCertificateChainBytes(utf8.encode(_testCertPem))
+          ..usePrivateKeyBytes(utf8.encode(_testKeyPem));
+    final server = await SecureServerSocket.bind(InternetAddress.loopbackIPv4, 0, context);
+    final peerClosed = Completer<void>();
+    final peers = <SecureSocket>[];
+    final received = <int>[];
+    final connections = server.listen((socket) {
+      peers.add(socket);
+      socket.done.ignore();
+      socket.listen(received.addAll, onError: peerClosed.completeError, onDone: peerClosed.complete);
+    }, onError: peerClosed.completeError);
+
+    try {
+      final closed = peerClosed.future.timeout(const Duration(seconds: 2));
+      final cert = await DefaultSocketFactory().peekCertificate('localhost', server.port);
+      expect(cert?.der, _derBytesFromPem(_testCertPem));
+      await closed;
+      expect(received, isEmpty);
+    } finally {
+      for (final socket in peers) {
+        socket.destroy();
+      }
+      await connections.cancel();
+      await server.close();
+    }
+  });
+
   group('DefaultSocketFactory 인증서 핀닝 테스트', () {
     late SecureServerSocket server;
     late String expectedFingerprint;

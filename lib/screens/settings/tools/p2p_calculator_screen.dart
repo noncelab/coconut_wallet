@@ -234,21 +234,26 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   List<TextInputFormatter> _amountInputFormatters() {
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      final decimalDigits = _viewModel.fiatCode.decimalDigits;
-      return decimalDigits > 0
-          ? [FiatAmountInputFormatter(decimalPlaces: decimalDigits)]
-          : [FilteringTextInputFormatter.digitsOnly];
+      return [FiatAmountInputFormatter(decimalPlaces: _viewModel.fiatCode.decimalDigits)];
     }
     if (!_viewModel.currentUnit.isBasedOnSatoshi) {
       return [const BtcAmountInputFormatter()];
     }
-    return [FilteringTextInputFormatter.digitsOnly];
+    return [const SatoshiAmountInputFormatter()];
   }
 
   void _handleAmountInputChanged(String value) {
     if (_isUpdatingController) return; // 무한 루프 방지
 
-    final sanitized = _sanitizeInput(value, _amountInputAllowsDecimal);
+    final String sanitized;
+    if (_amountInputAllowsDecimal) {
+      sanitized = _sanitizeInput(value);
+    } else {
+      // digitsOnly는 '1000.0'의 점을 지워 10000으로 키운다. 정수 필드는 그 입력을 거부한다.
+      final digits = _strictIntegerDigits(value);
+      if (digits == null) return;
+      sanitized = digits;
+    }
 
     if (sanitized.isEmpty) {
       _viewModel.setInputAmount(null);
@@ -288,12 +293,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       }
     }
 
-    // decimalDigits==0인 통화(KRW/JPY)는 입력 필드에 digitsOnly 포매터만 붙어 있어
-    // 그룹 구분자(,)를 스스로 넣어주지 않으므로 매 입력마다 직접 그룹 포맷을 적용해야 한다.
-    // decimalDigits>0인 통화(USD/EUR)는 FiatAmountInputFormatter가 이미 타이핑 중에
-    // 그룹/소수점을 실시간으로 처리하므로, 프로그래매틱 갱신(Quick Add 등)일 때만 갱신한다.
-    if (fiatCode.decimalDigits == 0 || shouldUpdateController) {
-      final formatted = _formatFiatInputText(fiatText);
+    // 정수 통화도 FiatAmountInputFormatter가 그룹과 selection/composing을 만든다.
+    // 표시가 같으면 컨트롤러를 다시 쓰지 않는다. 소수 통화는 퀵 애드처럼 문자열이 다를 때만 갱신한다.
+    final formatted = _formatFiatInputText(fiatText);
+    final updateDisplay = fiatCode.decimalDigits == 0 ? formatted != _inputController.text : shouldUpdateController;
+    if (updateDisplay) {
       _isUpdatingController = true;
       _inputController.value = TextEditingValue(
         text: formatted,
@@ -399,6 +403,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _viewModel.setInputAmount(sats);
 
     final formatted = sats.toThousandsSeparatedString();
+    if (_inputController.text == formatted) return;
     _isUpdatingController = true;
     _inputController.value = TextEditingValue(
       text: formatted,
@@ -618,23 +623,36 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = false;
   }
 
-  String _sanitizeInput(String value, bool allowDecimal) {
-    if (!allowDecimal) {
-      return value.replaceAll(RegExp(r'[^0-9]'), '');
-    } else {
-      final normalizedValue = normalizeNumTextForNumParsing(value);
-      final buffer = StringBuffer();
-      bool dotSeen = false;
-      for (final ch in normalizedValue.split('')) {
-        if (ch == '.' && !dotSeen) {
-          buffer.write('.');
-          dotSeen = true;
-        } else if (RegExp(r'[0-9]').hasMatch(ch)) {
-          buffer.write(ch);
-        }
+  /// 소수 입력만 정규화한다. 정수 필드의 소수점·부호·지수는 [_strictIntegerDigits]가 거부한다.
+  String _sanitizeInput(String value) {
+    final normalizedValue = normalizeNumTextForNumParsing(value);
+    final buffer = StringBuffer();
+    bool dotSeen = false;
+    for (final ch in normalizedValue.split('')) {
+      if (ch == '.' && !dotSeen) {
+        buffer.write('.');
+        dotSeen = true;
+      } else if (RegExp(r'[0-9]').hasMatch(ch)) {
+        buffer.write(ch);
       }
-      return buffer.toString();
     }
+    return buffer.toString();
+  }
+
+  /// 그룹 구분자만 제거한 정수면 그 숫자열을 반환한다. 소수점, 부호, 지수, 깨진 그룹은 null이다.
+  String? _strictIntegerDigits(String value) {
+    final grouping = NumberFormatConfig.instance.groupingSeparator;
+    final decimal = NumberFormatConfig.instance.decimalSeparator;
+    if (value.contains(decimal)) return null;
+    final alternate = decimal == '.' ? ',' : '.';
+    if (grouping != alternate && value.contains(alternate)) return null;
+    if (value.contains(grouping)) {
+      final grouped = RegExp('^[0-9]{1,3}(?:${RegExp.escape(grouping)}[0-9]{3})*\$');
+      if (!grouped.hasMatch(value)) return null;
+    }
+    final digits = value.replaceAll(grouping, '');
+    if (!RegExp(r'^[0-9]*$').hasMatch(digits)) return null;
+    return digits;
   }
 
   String formatResultAmount(int result) {

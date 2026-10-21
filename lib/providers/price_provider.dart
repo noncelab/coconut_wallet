@@ -5,11 +5,13 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
+  final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
   late FiatCode _fiatCode;
 
   /// 통화별 웹소켓 서비스
@@ -47,7 +49,11 @@ class PriceProvider extends ChangeNotifier {
     }
   }
 
-  PriceProvider(this._connectivityProvider, this._preferenceProvider) {
+  PriceProvider(
+    this._connectivityProvider,
+    this._preferenceProvider, {
+    @visibleForTesting WebSocketService Function(FiatCode fiatCode)? webSocketFactory,
+  }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create {
     Logger.log('PriceProvider: Initialized with connectivity provider');
     _fiatCode = _preferenceProvider.selectedFiat;
 
@@ -127,7 +133,7 @@ class PriceProvider extends ChangeNotifier {
 
       // KRW 웹소켓 (Upbit)
       if (_webSocketServiceKrw == null) {
-        _webSocketServiceKrw = WebSocketServiceFactory.create(FiatCode.KRW);
+        _webSocketServiceKrw = _createWebSocket(FiatCode.KRW);
         _webSocketServiceKrw?.tickerStream.listen(
           (ticker) => updatePriceForFiat(FiatCode.KRW, ticker),
           onError: (error) => Logger.error('[KRW WebSocket] 스트림 오류: $error'),
@@ -137,7 +143,7 @@ class PriceProvider extends ChangeNotifier {
 
       // USD 웹소켓 (Binance)
       if (_webSocketServiceUsd == null) {
-        _webSocketServiceUsd = WebSocketServiceFactory.create(FiatCode.USD);
+        _webSocketServiceUsd = _createWebSocket(FiatCode.USD);
         _webSocketServiceUsd?.tickerStream.listen(
           (ticker) => updatePriceForFiat(FiatCode.USD, ticker),
           onError: (error) => Logger.error('[USD WebSocket] 스트림 오류: $error'),
@@ -147,7 +153,7 @@ class PriceProvider extends ChangeNotifier {
 
       // JPY 웹소켓 (Bitflyer)
       if (_webSocketServiceJpy == null) {
-        _webSocketServiceJpy = WebSocketServiceFactory.create(FiatCode.JPY);
+        _webSocketServiceJpy = _createWebSocket(FiatCode.JPY);
         _webSocketServiceJpy?.tickerStream.listen(
           (ticker) => updatePriceForFiat(FiatCode.JPY, ticker),
           onError: (error) => Logger.error('[JPY WebSocket] 스트림 오류: $error'),
@@ -157,7 +163,7 @@ class PriceProvider extends ChangeNotifier {
 
       // EUR 웹소켓 (Binance)
       if (_webSocketServiceEur == null) {
-        _webSocketServiceEur = WebSocketServiceFactory.create(FiatCode.EUR);
+        _webSocketServiceEur = _createWebSocket(FiatCode.EUR);
         _webSocketServiceEur?.tickerStream.listen(
           (ticker) => updatePriceForFiat(FiatCode.EUR, ticker),
           onError: (error) => Logger.error('[EUR WebSocket] 스트림 오류: $error'),

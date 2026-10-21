@@ -42,34 +42,15 @@ class BtcAmountInputFormatter extends TextInputFormatter {
 
   const BtcAmountInputFormatter({this.decimalPlaces = 8});
 
-  // decimalSeparator와 반대 구분자
-  String get _altSeparator => NumberFormatConfig.instance.decimalSeparator == '.' ? ',' : '.';
-
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (oldValue.text == newValue.text) return newValue;
     final decimalSep = NumberFormatConfig.instance.decimalSeparator;
     final groupingSep = NumberFormatConfig.instance.groupingSeparator;
-    final inserted = _insertedText(oldValue, newValue);
-    if (inserted.isNotEmpty) {
-      if (!RegExp(r'^[0-9.,]+$').hasMatch(inserted)) return oldValue;
-
-      // 반대 구분자 입력: 소수점이 아직 없는 경우에만 소수점으로 변환, 있으면 거부
-      if (inserted == _altSeparator) {
-        final alreadyHasDecimal = oldValue.text.contains(decimalSep);
-        if (alreadyHasDecimal) return oldValue;
-        // 소수점으로 대체
-        final newText = newValue.text.substring(0, newValue.text.length - 1) + decimalSep;
-        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
-        return formatEditUpdate(oldValue, next);
-      }
-
-      // groupingSeparator 직접 입력은 거부
-      if (inserted == groupingSep) return oldValue;
-    }
-
-    // groupingSeparator를 먼저 제거한 뒤 마침표/쉼표를 모두 .으로 통일
-    final text = newValue.text.replaceAll(groupingSep, '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
-    if (text.isEmpty) return newValue;
+    final normalized = _normalizeNumericEdit(oldValue, newValue);
+    if (normalized == null) return oldValue;
+    final text = normalized.text;
+    if (text.isEmpty) return normalized;
 
     final parts = text.split('.');
     if (parts.length > 2) return oldValue;
@@ -77,18 +58,13 @@ class BtcAmountInputFormatter extends TextInputFormatter {
     final decimalPart = parts.length > 1 ? parts[1] : '';
     if (decimalPart.length > decimalPlaces) return oldValue;
 
-    final btc = double.tryParse(text);
-    if (btc != null && btc > maxBtc) return oldValue;
+    final integer = int.tryParse(parts[0].isEmpty ? '0' : parts[0]);
+    if (integer == null || integer > maxBtc || (integer == maxBtc && decimalPart.contains(RegExp(r'[1-9]')))) {
+      return oldValue;
+    }
 
     final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
-    final offset = _calculateSelectionOffset(
-      originalText: newValue.text,
-      formattedText: formattedText,
-      baseOffset: newValue.selection.baseOffset,
-      decimalSeparator: decimalSep,
-      groupingSeparator: groupingSep,
-    );
-    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
+    return _formattedEditingValue(normalized, formattedText, groupingSep);
   }
 }
 
@@ -99,30 +75,15 @@ class FiatAmountInputFormatter extends TextInputFormatter {
 
   const FiatAmountInputFormatter({required this.decimalPlaces});
 
-  String get _altSeparator => NumberFormatConfig.instance.decimalSeparator == '.' ? ',' : '.';
-
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (oldValue.text == newValue.text) return newValue;
     final decimalSep = NumberFormatConfig.instance.decimalSeparator;
     final groupingSep = NumberFormatConfig.instance.groupingSeparator;
-    final inserted = _insertedText(oldValue, newValue);
-
-    if (inserted.isNotEmpty) {
-      if (!RegExp(r'^[0-9.,]+$').hasMatch(inserted)) return oldValue;
-
-      if (inserted == _altSeparator) {
-        final alreadyHasDecimal = oldValue.text.contains(decimalSep);
-        if (alreadyHasDecimal || decimalPlaces == 0) return oldValue;
-        final newText = newValue.text.substring(0, newValue.text.length - 1) + decimalSep;
-        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
-        return formatEditUpdate(oldValue, next);
-      }
-
-      if (inserted == groupingSep) return oldValue;
-    }
-
-    final text = newValue.text.replaceAll(groupingSep, '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
-    if (text.isEmpty) return newValue;
+    final normalized = _normalizeNumericEdit(oldValue, newValue);
+    if (normalized == null) return oldValue;
+    final text = normalized.text;
+    if (text.isEmpty) return normalized;
 
     final parts = text.split('.');
     if (parts.length > 2) return oldValue;
@@ -132,14 +93,7 @@ class FiatAmountInputFormatter extends TextInputFormatter {
     if (decimalPart.length > decimalPlaces) return oldValue;
 
     final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
-    final offset = _calculateSelectionOffset(
-      originalText: newValue.text,
-      formattedText: formattedText,
-      baseOffset: newValue.selection.baseOffset,
-      decimalSeparator: decimalSep,
-      groupingSeparator: groupingSep,
-    );
-    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
+    return _formattedEditingValue(normalized, formattedText, groupingSep);
   }
 }
 
@@ -150,24 +104,14 @@ class RateInputFormatter extends TextInputFormatter {
   const RateInputFormatter({this.integerPlaces = 8, this.decimalPlaces = 2});
 
   String get _decimalSep => NumberFormatConfig.instance.decimalSeparator;
-  String get _altSep => _decimalSep == '.' ? ',' : '.';
 
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final inserted = _insertedText(oldValue, newValue);
-    if (inserted.isNotEmpty) {
-      if (!RegExp(r'^[0-9.,]+$').hasMatch(inserted)) return oldValue;
-
-      if (inserted == _altSep) {
-        if (oldValue.text.contains(_decimalSep)) return oldValue;
-        final newText = newValue.text.substring(0, newValue.text.length - 1) + _decimalSep;
-        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
-        return formatEditUpdate(oldValue, next);
-      }
-    }
-
-    var normalized = newValue.text.replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
-    if (normalized.isEmpty) return newValue;
+    if (oldValue.text == newValue.text) return newValue;
+    final normalizedValue = _normalizeNumericEdit(oldValue, newValue, grouping: false);
+    if (normalizedValue == null) return oldValue;
+    var normalized = normalizedValue.text;
+    if (normalized.isEmpty) return normalizedValue;
     // 맨 앞에 소수점이 오면 0.으로 변환
     if (normalized.startsWith('.')) {
       normalized = '0$normalized';
@@ -182,7 +126,7 @@ class RateInputFormatter extends TextInputFormatter {
     }
 
     final formatted = decimalPart != null ? '$integerPart$_decimalSep$decimalPart' : integerPart;
-    return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+    return _formattedEditingValue(normalizedValue, formatted, '');
   }
 }
 
@@ -193,20 +137,18 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (text.isEmpty) return newValue;
+    if (oldValue.text == newValue.text) return newValue;
+    final normalized = _normalizeNumericEdit(oldValue, newValue);
+    if (normalized == null || normalized.text.contains('.')) return oldValue;
+    final text = normalized.text;
+    if (text.isEmpty) return normalized;
 
     final sats = int.tryParse(text);
-    if (sats != null && sats > maxSats) return oldValue;
+    if (sats == null || sats > maxSats) return oldValue;
 
-    final formattedText = formatIntWithGroupingSeparator(text, NumberFormatConfig.instance.groupingSeparator);
-    final offset = _calculateSelectionOffset(
-      originalText: newValue.text,
-      formattedText: formattedText,
-      baseOffset: newValue.selection.baseOffset,
-      groupingSeparator: NumberFormatConfig.instance.groupingSeparator,
-    );
-    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
+    final groupingSep = NumberFormatConfig.instance.groupingSeparator;
+    final formattedText = formatIntWithGroupingSeparator(text.replaceFirst(RegExp(r'^0+(?=\d)'), ''), groupingSep);
+    return _formattedEditingValue(normalized, formattedText, groupingSep);
   }
 }
 
@@ -229,12 +171,72 @@ String? resolveAmountKeyInput(String previous, String current) {
   return null;
 }
 
-String _insertedText(TextEditingValue oldValue, TextEditingValue newValue) {
-  if (newValue.text.length <= oldValue.text.length) return '';
+TextEditingValue? _normalizeNumericEdit(TextEditingValue oldValue, TextEditingValue newValue, {bool grouping = true}) {
+  final decimalSep = NumberFormatConfig.instance.decimalSeparator;
+  final groupingSep = grouping ? NumberFormatConfig.instance.groupingSeparator : '';
+  var start = oldValue.selection.start.clamp(0, oldValue.text.length);
+  var oldEnd = oldValue.selection.end.clamp(start, oldValue.text.length);
+  var end = newValue.text.length - (oldValue.text.length - oldEnd);
+  if (end < start ||
+      !newValue.text.startsWith(oldValue.text.substring(0, start)) ||
+      !newValue.text.endsWith(oldValue.text.substring(oldEnd))) {
+    start = 0;
+    while (start < oldValue.text.length &&
+        start < newValue.text.length &&
+        oldValue.text[start] == newValue.text[start]) {
+      start++;
+    }
+    oldEnd = oldValue.text.length;
+    end = newValue.text.length;
+    while (oldEnd > start && end > start && oldValue.text[oldEnd - 1] == newValue.text[end - 1]) {
+      oldEnd--;
+      end--;
+    }
+  }
 
-  final start = oldValue.selection.baseOffset.clamp(0, oldValue.text.length);
-  final end = (start + (newValue.text.length - oldValue.text.length)).clamp(0, newValue.text.length);
-  return newValue.text.substring(start, end);
+  final inserted = newValue.text.substring(start, end);
+  var inputDecimal = decimalSep;
+  var inputGrouping = '';
+  if (inserted.isNotEmpty) {
+    final groupedAmount =
+        grouping &&
+        RegExp(
+          '^[1-9][0-9]{0,2}(?:${RegExp.escape(groupingSep)}[0-9]{3})+(?:${RegExp.escape(decimalSep)}[0-9]*)?\$',
+        ).hasMatch(inserted);
+    if (groupedAmount) {
+      inputGrouping = groupingSep;
+    } else if (!inserted.contains(decimalSep)) {
+      inputDecimal = decimalSep == '.' ? ',' : '.';
+    }
+    final canonical = inserted.replaceAll(inputGrouping, '').replaceAll(inputDecimal, '.');
+    if (!RegExp(r'^[0-9]*\.?[0-9]*$').hasMatch(canonical)) return null;
+  }
+
+  String normalizePart(String text, String group, String decimal) =>
+      text.replaceAll(group, '').replaceAll(decimal, '.');
+  String normalizePrefix(int offset) {
+    offset = offset.clamp(0, newValue.text.length);
+    return normalizePart(newValue.text.substring(0, offset.clamp(0, start)), groupingSep, decimalSep) +
+        normalizePart(newValue.text.substring(start, offset.clamp(start, end)), inputGrouping, inputDecimal) +
+        normalizePart(newValue.text.substring(end, offset.clamp(end, newValue.text.length)), groupingSep, decimalSep);
+  }
+
+  final text = normalizePrefix(newValue.text.length);
+  if (!RegExp(r'^[0-9]*\.?[0-9]*$').hasMatch(text)) return null;
+  return TextEditingValue(
+    text: text,
+    selection: newValue.selection.copyWith(
+      baseOffset: normalizePrefix(newValue.selection.baseOffset).length,
+      extentOffset: normalizePrefix(newValue.selection.extentOffset).length,
+    ),
+    composing:
+        newValue.composing.isValid
+            ? TextRange(
+              start: normalizePrefix(newValue.composing.start).length,
+              end: normalizePrefix(newValue.composing.end).length,
+            )
+            : TextRange.empty,
+  );
 }
 
 String _formatGroupedDecimalText(String text, {required String decimalSeparator, required String groupingSeparator}) {
@@ -265,38 +267,29 @@ String formatIntWithGroupingSeparator(String integer, String groupingSeparator) 
   return isNegative ? '-${buffer.toString()}' : buffer.toString();
 }
 
-int _calculateSelectionOffset({
-  required String originalText,
-  required String formattedText,
-  required int baseOffset,
-  String decimalSeparator = '.',
-  String groupingSeparator = ',',
-}) {
-  final clampedOffset = baseOffset.clamp(0, originalText.length);
-
-  // .을 입력하면 0.으로 바뀌는 경우(BTC 단위 입력 시 해당) .뒤에 커서를 두기 위해 따로 처리
-  if ((originalText.startsWith('.') || originalText.startsWith(',')) &&
-      formattedText.startsWith('0$decimalSeparator')) {
-    return (clampedOffset + 1).clamp(0, formattedText.length);
-  }
-
-  final textBeforeCursor = originalText.substring(0, clampedOffset);
-  if (textBeforeCursor.endsWith('.') || textBeforeCursor.endsWith(',')) {
-    final decimalOffset = formattedText.indexOf(decimalSeparator) + 1;
-    if (decimalOffset > 0) return decimalOffset;
-  }
-
-  final meaningfulCharCount = textBeforeCursor.replaceAll(groupingSeparator, '').length;
-
-  var seenMeaningfulChars = 0;
-  for (var i = 0; i < formattedText.length; i++) {
-    if (formattedText[i] != groupingSeparator) {
-      seenMeaningfulChars++;
+TextEditingValue _formattedEditingValue(TextEditingValue normalized, String formatted, String groupingSeparator) {
+  final integer = normalized.text.split('.').first;
+  final removedZeros = integer.length - integer.replaceFirst(RegExp(r'^0+(?=\d)'), '').length;
+  int offset(int position) {
+    var remaining = (position - removedZeros).clamp(0, normalized.text.length);
+    if (normalized.text.startsWith('.') && position > 0) remaining++;
+    if (remaining == 0) return 0;
+    for (var i = 0; i < formatted.length; i++) {
+      if (formatted[i] != groupingSeparator) remaining--;
+      if (remaining == 0) return i + 1;
     }
-    if (seenMeaningfulChars >= meaningfulCharCount) {
-      return i + 1;
-    }
+    return formatted.length;
   }
 
-  return formattedText.length;
+  return TextEditingValue(
+    text: formatted,
+    selection: normalized.selection.copyWith(
+      baseOffset: offset(normalized.selection.baseOffset),
+      extentOffset: offset(normalized.selection.extentOffset),
+    ),
+    composing:
+        normalized.composing.isValid
+            ? TextRange(start: offset(normalized.composing.start), end: offset(normalized.composing.end))
+            : TextRange.empty,
+  );
 }

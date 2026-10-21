@@ -802,9 +802,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               FocusScope.of(context).unfocus();
             },
             keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
-            // TODO: balance_format_util의 formatSatoshiToReadableBitcoin을 응용해서 Formatter를 하나 더 추가하기
-            inputFormatters:
-                allowDecimal ? [const BtcAmountInputFormatter()] : [FilteringTextInputFormatter.digitsOnly],
+            inputFormatters: allowDecimal ? [const BtcAmountInputFormatter()] : [const SatoshiAmountInputFormatter()],
           ),
         );
       },
@@ -2696,19 +2694,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       return;
     }
 
-    // 문자가 입력된 경우와 삭제된 경우를 인식한다. (문자열 중간에 입력/삭제 불가)
-    // grouping separator(예: ',')가 포함되어 있으므로 제거 후 비교한다.
-    final keyInput = resolveAmountKeyInput(_previousAmountText, _amountController.text);
-    if (keyInput != null) {
-      _viewModel.onKeyTap(keyInput);
-      // 삭제 버튼을 꾹 누른 경우에 대한 처리
-      if (keyInput == '<' &&
-          _amountController.text.replaceAll(NumberFormatConfig.instance.groupingSeparator, '').isEmpty) {
-        _viewModel.clearAmountText();
-      }
-    }
-
+    if (!_amountController.value.composing.isCollapsed) return;
+    if (_previousAmountText == _amountController.text) return;
     _previousAmountText = _amountController.text;
+    _viewModel.onAmountTextChanged(normalizeNumTextForNumParsing(_amountController.text));
   }
 
   void _addAddressField() {

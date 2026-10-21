@@ -322,7 +322,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
             final wiggleEnvelope = _hasInteractedWithCards ? 0.0 : _wiggleEnvelope(_wiggleController.value);
             final wiggleRotation = wiggleEnvelope * 0.04;
 
-            return Stack(
+            final content = Stack(
               clipBehavior: Clip.none,
               children: [
                 SizedBox(
@@ -425,53 +425,70 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                     },
                   ),
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Builder(
-                    builder: (context) {
-                      final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
-                      final buttonEntranceInterval = intervalFromMs(
-                        ctaStart,
-                        ctaStart + _buttonEntranceMs,
-                        widget.sceneDurationMs,
-                        curve: Curves.linear,
-                      );
-                      final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
-                      final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
-                      return Opacity(
-                        opacity: buttonOpacity,
-                        child: Transform.scale(
-                          scale: buttonT.clamp(0.0, 1.4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedBuilder(
-                                animation: _addedBadgeController,
-                                builder: (context, child) {
-                                  final progress = _addedBadgeController.value;
-                                  if (progress <= 0.001) return const SizedBox.shrink();
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Transform.scale(scale: progress, child: child),
-                                  );
-                                },
-                                child: _AddedGlassBadge(
-                                  label:
-                                      widget.isApplied
-                                          ? t.ccos.first_pow_scene.status_applied
-                                          : t.ccos.first_pow_scene.status_added,
-                                ),
-                              ),
-                              _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
-                            ],
+              ],
+            );
+            final action = Builder(
+              builder: (context) {
+                final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
+                final buttonEntranceInterval = intervalFromMs(
+                  ctaStart,
+                  ctaStart + _buttonEntranceMs,
+                  widget.sceneDurationMs,
+                  curve: Curves.linear,
+                );
+                final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
+                final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
+                return Opacity(
+                  opacity: buttonOpacity,
+                  child: Transform.scale(
+                    scale: buttonT.clamp(0.0, 1.4),
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      runSpacing: 8,
+                      children: [
+                        AnimatedBuilder(
+                          animation: _addedBadgeController,
+                          builder: (context, child) {
+                            final progress = _addedBadgeController.value;
+                            if (progress <= 0.001) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Transform.scale(scale: progress, child: child),
+                            );
+                          },
+                          child: _AddedGlassBadge(
+                            label:
+                                widget.isApplied
+                                    ? t.ccos.first_pow_scene.status_applied
+                                    : t.ccos.first_pow_scene.status_added,
                           ),
                         ),
-                      );
-                    },
+                        _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            // Keep the tilted photos full-bleed while clipping vertical scrolling to the scene.
+            return OverflowBox(
+              minWidth: screenWidth,
+              maxWidth: screenWidth,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: (screenWidth - width) / 2),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [content, Padding(padding: const EdgeInsets.only(top: 26), child: action)],
+                    ),
                   ),
                 ),
-              ],
+              ),
             );
           },
         );
@@ -599,15 +616,17 @@ class _AddThemeButtonState extends State<_AddThemeButton> with SingleTickerProvi
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Text(
-                    widget.isAdded ? t.ccos.first_pow_scene.remove_button : t.ccos.first_pow_scene.add_button,
-                    key: ValueKey(widget.isAdded),
-                    style:
-                        widget.isAdded
-                            ? CoconutTypography.body3_12.setColor(_screenBackground)
-                            : CoconutTypography.body3_12_Bold.setColor(_screenBackground),
+                Flexible(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      widget.isAdded ? t.ccos.first_pow_scene.remove_button : t.ccos.first_pow_scene.add_button,
+                      key: ValueKey(widget.isAdded),
+                      style:
+                          widget.isAdded
+                              ? CoconutTypography.body3_12.setColor(_screenBackground)
+                              : CoconutTypography.body3_12_Bold.setColor(_screenBackground),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -822,15 +841,15 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
           child: Transform.scale(scale: buttonT.clamp(0.0, 1.4), alignment: Alignment.centerRight, child: child),
         );
       },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
         children: [
           if (isAdded)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _AddedGlassBadge(
-                label: isApplied ? t.ccos.first_pow_scene.status_applied : t.ccos.first_pow_scene.status_added,
-              ),
+            _AddedGlassBadge(
+              label: isApplied ? t.ccos.first_pow_scene.status_applied : t.ccos.first_pow_scene.status_added,
             ),
           _AddThemeButton(isAdded: isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
         ],
@@ -839,24 +858,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
   }
 
   Widget _buildFeaturePreview(double progress) {
-    return Flexible(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final height = constraints.maxHeight;
-          final previewWidth = math.min(width, height * 1.04);
-
-          return Align(
-            alignment: Alignment.topCenter,
-            child: SizedBox(
-              width: previewWidth,
-              height: previewWidth / 1.04,
-              child: _FadeSlideIn(progress: progress, child: const _ThemePreviewCluster()),
-            ),
-          );
-        },
-      ),
-    );
+    return _FadeSlideIn(progress: progress, child: const _ThemePreviewCluster());
   }
 
   Widget _buildDeliveryContent({required double group0T, required double stage2T, required double stage3T}) {
@@ -1027,37 +1029,60 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                               left: 20,
                               right: 20,
                               top: 108,
-                              bottom: detail.kind == _FirstPowCardKind.feature ? 96 : 20,
+                              bottom: 20,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (detail.kind == _FirstPowCardKind.feature) ...[
-                                    _FadeSlideIn(
-                                      progress: group0T,
-                                      child: Text(
-                                        localizedFeatureTitle,
-                                        style: CoconutTypography.heading3_21_Bold.setColor(_textPrimary),
+                                    Expanded(
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _FadeSlideIn(
+                                              progress: group0T,
+                                              child: Text(
+                                                localizedFeatureTitle,
+                                                style: CoconutTypography.heading3_21_Bold.setColor(_textPrimary),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            _FadeSlideIn(
+                                              progress: stage2T,
+                                              child: Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                children: [
+                                                  for (final tag in localizedFeatureTags) _GlassChip(label: tag),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            _FadeSlideIn(
+                                              progress: stage3T,
+                                              child: Text(
+                                                localizedFeatureDescription,
+                                                style: CoconutTypography.body2_14.setColor(_textPrimary),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 28),
+                                            _buildFeaturePreview(stage4T),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    _FadeSlideIn(
-                                      progress: stage2T,
-                                      child: Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [for (final tag in localizedFeatureTags) _GlassChip(label: tag)],
+                                    // Keep the original footer space until the CTA needs more height.
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(minHeight: 76),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Align(
+                                          alignment: Alignment.bottomRight,
+                                          heightFactor: 1,
+                                          child: _buildFeatureCta(isAdded: isAdded, isApplied: isApplied),
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 24),
-                                    _FadeSlideIn(
-                                      progress: stage3T,
-                                      child: Text(
-                                        localizedFeatureDescription,
-                                        style: CoconutTypography.body2_14.setColor(_textPrimary),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 28),
-                                    _buildFeaturePreview(stage4T),
                                   ] else if (detail.kind == _FirstPowCardKind.creator) ...[
                                     _FadeSlideIn(
                                       progress: group0T,
@@ -1084,18 +1109,29 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                     ),
                                     const SizedBox(height: 8),
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: _FadeSlideIn(progress: stage3T, child: const _CreatorStoryBox()),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _FadeSlideIn(
-                                            progress: stage4T,
-                                            child: _CreatorBeliefStatementBox(text: _creatorBeliefStatement),
-                                          ),
-                                        ],
+                                      child: LayoutBuilder(
+                                        builder:
+                                            (context, constraints) => Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: _FadeSlideIn(
+                                                    progress: stage3T,
+                                                    child: const _CreatorStoryBox(),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                ConstrainedBox(
+                                                  constraints: BoxConstraints(maxHeight: constraints.maxHeight / 2),
+                                                  child: SingleChildScrollView(
+                                                    child: _FadeSlideIn(
+                                                      progress: stage4T,
+                                                      child: _CreatorBeliefStatementBox(text: _creatorBeliefStatement),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                       ),
                                     ),
                                   ] else ...[
@@ -1104,12 +1140,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                 ],
                               ),
                             ),
-                            if (detail.kind == _FirstPowCardKind.feature)
-                              Positioned(
-                                right: 20,
-                                bottom: 20,
-                                child: _buildFeatureCta(isAdded: isAdded, isApplied: isApplied),
-                              ),
                           ],
                         ),
                       ),
@@ -1175,10 +1205,12 @@ class _FirstPowDetailSegmentedIndicator extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final kind in _firstPowDetailOrder)
-                _FirstPowDetailSegment(
-                  label: _labelFor(kind),
-                  selected: kind == currentKind,
-                  onTap: () => onSelect(kind),
+                Flexible(
+                  child: _FirstPowDetailSegment(
+                    label: _labelFor(kind),
+                    selected: kind == currentKind,
+                    onTap: () => onSelect(kind),
+                  ),
                 ),
             ],
           ),

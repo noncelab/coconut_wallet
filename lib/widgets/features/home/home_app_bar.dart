@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAp
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
@@ -21,6 +22,7 @@ class HomeAppBar extends StatelessWidget {
   final bool showReconnected;
   final bool isSyncing;
   final bool isArranging;
+  final HomeAddWalletOption homeAddWalletOption;
   final LayerLink addWalletButtonLink;
   final VoidCallback onArrangeDone;
   final VoidCallback? onUndoArrangement;
@@ -46,6 +48,7 @@ class HomeAppBar extends StatelessWidget {
     required this.showReconnected,
     required this.isSyncing,
     required this.isArranging,
+    this.homeAddWalletOption = HomeAddWalletOption.all,
     required this.addWalletButtonLink,
     required this.onArrangeDone,
     this.onUndoArrangement,
@@ -60,6 +63,12 @@ class HomeAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final addWalletIcon = switch (homeAddWalletOption) {
+      HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,
+      HomeAddWalletOption.watchOnly => FeatureWalletIconPath.walletEyes,
+      HomeAddWalletOption.hotWallet => FeatureWalletIconPath.walletAddHot,
+      HomeAddWalletOption.hidden => null,
+    };
     final iconColor = context.coconutColors.iconPrimary;
     final pressedIconBackground = Color.lerp(context.coconutColors.iconButtonHighlight, iconColor, 0.2)!;
     // CDS reserves 32px for outer padding, 16px around leading, and 4px after the empty title.
@@ -101,24 +110,22 @@ class HomeAppBar extends StatelessWidget {
             child: Text(t.done, style: CoconutTypography.body2_14_Bold.copyWith(color: iconColor)),
           )
         else ...[
-          CompositedTransformTarget(
-            link: addWalletButtonLink,
-            child: Material(
-              type: MaterialType.transparency,
-              child: CoconutAppBarActionButton(
-                buttonKey: const Key('home-add-wallet-button'),
-                tooltip: t.home_widgets.add_wallet,
-                size: addWalletButtonSize,
-                icon: SvgPicture.asset(
-                  FeatureWalletIconPath.walletAddDefault,
-                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          if (addWalletIcon != null)
+            CompositedTransformTarget(
+              link: addWalletButtonLink,
+              child: Material(
+                type: MaterialType.transparency,
+                child: CoconutAppBarActionButton(
+                  buttonKey: const Key('home-add-wallet-button'),
+                  tooltip: t.home_widgets.add_wallet,
+                  size: addWalletButtonSize,
+                  icon: SvgPicture.asset(addWalletIcon, colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn)),
+                  onPressed: onAddWallet,
+                  color: iconColor,
+                  highlightColor: pressedIconBackground,
                 ),
-                onPressed: onAddWallet,
-                color: iconColor,
-                highlightColor: pressedIconBackground,
               ),
             ),
-          ),
           if (onAlerts != null)
             Material(
               type: MaterialType.transparency,

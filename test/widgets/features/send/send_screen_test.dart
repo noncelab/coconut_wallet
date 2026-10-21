@@ -2,8 +2,10 @@ import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -74,10 +76,11 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
-  _Preferences(this.manual);
+  _Preferences(this.manual, {this.unit = BitcoinUnit.sats});
   final bool manual;
+  final BitcoinUnit unit;
   @override
-  BitcoinUnit get currentUnit => BitcoinUnit.sats;
+  BitcoinUnit get currentUnit => unit;
   @override
   String get language => 'ko';
   @override
@@ -116,7 +119,10 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
   });
   setUp(() => manager = TestRealmManager());
-  tearDown(() => manager.dispose());
+  tearDown(() {
+    manager.dispose();
+    NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+  });
 
   Future<bool> opensUtxoSelectionSheetOnEntry(
     WidgetTester tester, {
@@ -124,6 +130,8 @@ void main() {
     bool withSelectedUtxos = false,
     int? transactionDraftId,
     bool vaultEntry = false,
+    BitcoinUnit unit = BitcoinUnit.sats,
+    Future<void> Function()? exerciseAmountInput,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
@@ -150,7 +158,7 @@ void main() {
         providers: [
           Provider<SendInfoProvider>.value(value: SendInfoProvider()),
           ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets(wallet, vault)),
-          ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences(manualMode)),
+          ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences(manualMode, unit: unit)),
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
@@ -214,6 +222,7 @@ void main() {
       expect(viewModel.validRecipientList, contains(viewModel.recipientList[1]));
       expect(viewModel.showFeeBoard, isTrue);
     }
+    if (exerciseAmountInput != null) await exerciseAmountInput();
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
     return opened;
@@ -222,6 +231,52 @@ void main() {
   testWidgets('automatic UTXO selection does not open the UTXO selection sheet on entry', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: false), isFalse);
   });
+
+  for (final preset in NumberFormatPreset.values) {
+    testWidgets('${preset.name}: send amount reflects batched input, replacement and deletion', (tester) async {
+      NumberFormatConfig.instance.applyPreset(preset);
+      await opensUtxoSelectionSheetOnEntry(
+        tester,
+        manualMode: false,
+        unit: BitcoinUnit.btc,
+        exerciseAmountInput: () async {
+          final field = find.byWidgetPredicate((widget) => widget is TextField && widget.showCursor == false);
+          final viewModel = tester.element(field).read<SendViewModel>();
+          final controller = tester.widget<TextField>(field).controller!;
+          final alt = preset.decimalSeparator == '.' ? ',' : '.';
+          await tester.enterText(field, '0${alt}12345678');
+          expect(viewModel.recipientList.first.amount, '0.12345678');
+          controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+          tester.testTextInput.updateEditingValue(
+            const TextEditingValue(text: '0.25', selection: TextSelection.collapsed(offset: 4)),
+          );
+          expect(viewModel.recipientList.first.amount, '0.25');
+          tester.testTextInput.updateEditingValue(
+            TextEditingValue(
+              text: '0${preset.decimalSeparator}50',
+              selection: const TextSelection.collapsed(offset: 4),
+              composing: const TextRange(start: 2, end: 4),
+            ),
+          );
+          expect(viewModel.recipientList.first.amount, '0.25');
+          tester.testTextInput.updateEditingValue(controller.value.copyWith(composing: TextRange.empty));
+          expect(viewModel.recipientList.first.amount, '0.50');
+          tester.testTextInput.updateEditingValue(
+            const TextEditingValue(text: '0', selection: TextSelection.collapsed(offset: 1)),
+          );
+          expect(viewModel.recipientList.first.amount, '0');
+          controller.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+          tester.testTextInput.updateEditingValue(
+            const TextEditingValue(text: '-1', selection: TextSelection.collapsed(offset: 2)),
+          );
+          expect(viewModel.recipientList.first.amount, '0');
+          await tester.enterText(field, '');
+          expect(viewModel.recipientList.first.amount, '');
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
+  }
   testWidgets('vault entry prefills a read-only recipient and opens the vault address board', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: false, vaultEntry: true), isFalse);
   });

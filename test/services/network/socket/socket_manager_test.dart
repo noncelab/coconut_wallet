@@ -71,6 +71,8 @@ void main() {
       });
 
       // Socket 닫기 설정
+      when(mockSocket.done).thenAnswer((_) async => mockSocket);
+      when(mockSecureSocket.done).thenAnswer((_) async => mockSecureSocket);
       when(mockSocket.close()).thenAnswer((_) async => null);
       when(mockSecureSocket.close()).thenAnswer((_) async => null);
 
@@ -190,16 +192,18 @@ void main() {
         await socketManager.connect('localhost', 8080, ssl: true);
 
         final receivedWalletIds = <int>[];
+        final callbacksReceived = Completer<void>();
         socketManager.setWalletSubscriptionCallback('script123', 1, (_, __) {
           receivedWalletIds.add(1);
         });
         socketManager.setWalletSubscriptionCallback('script123', 2, (_, __) {
           receivedWalletIds.add(2);
+          callbacksReceived.complete();
         });
 
         const jsonData = '{"method":"blockchain.scripthash.subscribe","params":["script123","status123"]}';
         streamController.add(utf8.encode(jsonData));
-        await Future.delayed(const Duration(milliseconds: 100));
+        await callbacksReceived.future.timeout(const Duration(seconds: 1));
 
         expect(receivedWalletIds, [1, 2]);
         expect(socketManager.removeWalletSubscriptionCallback('script123', 1), isFalse);
@@ -265,8 +269,6 @@ void main() {
         const jsonPart2 = 'lt":{"message":"partial data test"}}';
 
         streamController.add(utf8.encode(jsonPart1));
-        // 약간의 지연 후 나머지 부분 전송
-        await Future.delayed(const Duration(milliseconds: 50));
         streamController.add(utf8.encode(jsonPart2));
 
         final result = await completer.future;
@@ -355,16 +357,17 @@ void main() {
       await socketManager.connect('localhost', 8080, ssl: true);
 
       int callCount = 0;
+      final firstReceived = Completer<void>();
       socketManager.setSubscriptionCallback('script123', (script, status) {
         callCount++;
+        if (!firstReceived.isCompleted) firstReceived.complete();
       });
 
       // 첫 번째 이벤트
       const jsonData1 = '{"method":"blockchain.scripthash.subscribe","params":["script123","status1"]}';
       streamController.add(utf8.encode(jsonData1));
 
-      // 이벤트 처리 시간 기다림
-      await Future.delayed(const Duration(milliseconds: 100));
+      await firstReceived.future.timeout(const Duration(seconds: 1));
 
       // 콜백 제거
       socketManager.removeSubscriptionCallback('script123');
@@ -373,8 +376,10 @@ void main() {
       const jsonData2 = '{"method":"blockchain.scripthash.subscribe","params":["script123","status2"]}';
       streamController.add(utf8.encode(jsonData2));
 
-      // 이벤트 처리 시간 기다림
-      await Future.delayed(const Duration(milliseconds: 100));
+      final processed = Completer<dynamic>();
+      socketManager.setCompleter(1, processed);
+      streamController.add(utf8.encode('{"id":1,"result":null}'));
+      await processed.future.timeout(const Duration(seconds: 1));
 
       expect(callCount, equals(1));
     });
@@ -387,10 +392,7 @@ void main() {
       expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
 
       // onDone 콜백 트리거
-      streamController.close();
-
-      // 이벤트 처리 시간 기다림
-      await Future.delayed(const Duration(milliseconds: 100));
+      await streamController.close();
 
       expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
     });

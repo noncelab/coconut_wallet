@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:uuid/uuid.dart';
 
@@ -11,8 +12,11 @@ enum ExchangeType { upbit, binance, bitflyer }
 class WebSocketService {
   final ExchangeType _exchangeType;
   final String? _symbol;
+  final WebSocketChannel Function(Uri uri) _openChannel;
   final Uuid _uuid = const Uuid();
   WebSocketChannel? _channel;
+  int _generation = 0;
+  int? _reconnectScheduledFor;
   int _reconnectAttempts = 0;
   Timer? _pingTimer;
   bool _isDisposed = false;
@@ -20,9 +24,14 @@ class WebSocketService {
   final StreamController<PriceResponse?> _tickerController = StreamController.broadcast();
   Stream<PriceResponse?> get tickerStream => _tickerController.stream;
 
-  WebSocketService({required ExchangeType exchangeType, String? symbol})
-    : _exchangeType = exchangeType,
-      _symbol = symbol {
+  /// [openChannel]은 테스트가 연결 구현을 주입할 때만 사용한다.
+  WebSocketService({
+    required ExchangeType exchangeType,
+    String? symbol,
+    @visibleForTesting WebSocketChannel Function(Uri uri)? openChannel,
+  }) : _exchangeType = exchangeType,
+       _symbol = symbol,
+       _openChannel = openChannel ?? WebSocketChannel.connect {
     _connect();
   }
 
@@ -41,10 +50,16 @@ class WebSocketService {
   void _connect() {
     if (_isDisposed) return;
 
+    // 이전 채널의 늦은 onError/onDone이 새 소켓을 끊지 않게 먼저 세대를 올린다.
+    _generation++;
+    final generation = _generation;
     _disposeChannel();
 
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_url));
+      _channel = _openChannel(Uri.parse(_url));
+      // ready와 스트림은 같은 핸드셰이크 실패를 따로 전달한다.
+      // ready는 관찰만 하고, 재연결은 실패한 채널마다 한 번만 예약한다.
+      _observeReady(_channel!, generation);
 
       if (_exchangeType == ExchangeType.upbit) {
         final request = _buildUpbitRequest();
@@ -54,17 +69,33 @@ class WebSocketService {
         _channel?.sink.add(jsonEncode(request));
       }
 
-      _channel?.stream.listen(_onData, onError: _onError, onDone: _onDone);
+      _channel?.stream.listen(
+        _onData,
+        onError: (Object error, StackTrace _) => _onError(generation, error),
+        onDone: () => _onDone(generation),
+      );
 
       // Binance는 ping이 필요하지 않으므로 Upbit와 Coincheck만 ping 전송
       if (_exchangeType == ExchangeType.upbit || _exchangeType == ExchangeType.bitflyer) {
-        _pingTimer = Timer.periodic(const Duration(seconds: 10), _sendPing);
+        _pingTimer = Timer.periodic(const Duration(seconds: 10), (_) => _sendPing(generation));
       }
     } catch (e) {
       Logger.log('WebSocketService: 연결 실패 - 네트워크 연결 확인 필요: $e');
       // 연결 실패 시 재시도하지 않고 조용히 종료
       _disposeChannel();
     }
+  }
+
+  void _observeReady(WebSocketChannel channel, int generation) {
+    unawaited(
+      channel.ready.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace _) {
+          if (!_isCurrent(generation)) return;
+          Logger.log('WebSocketService: handshake failed (${error.runtimeType})');
+        },
+      ),
+    );
   }
 
   List<Map<String, dynamic>> _buildUpbitRequest() {
@@ -84,8 +115,15 @@ class WebSocketService {
     };
   }
 
-  void _reconnect() {
-    if (_isDisposed || _reconnectAttempts >= 3) {
+  bool _isCurrent(int generation) => !_isDisposed && generation == _generation;
+
+  void _scheduleReconnect(int generation) {
+    if (!_isCurrent(generation) || _reconnectScheduledFor == generation) return;
+
+    _reconnectScheduledFor = generation;
+    if (_reconnectAttempts >= 3) {
+      _pingTimer?.cancel();
+      _pingTimer = null;
       Logger.log('WebSocketService: 재연결 중단 - 최대 시도 횟수 도달 또는 서비스 종료됨');
       return;
     }
@@ -96,9 +134,7 @@ class WebSocketService {
     // 지수 백오프로 재연결 시도 간격 증가
     final delay = Duration(seconds: _reconnectAttempts * 2);
     Timer(delay, () {
-      if (!_isDisposed) {
-        _connect();
-      }
+      if (_isCurrent(generation)) _connect();
     });
   }
 
@@ -153,35 +189,35 @@ class WebSocketService {
     }
   }
 
-  void _onError(error) {
+  void _onError(int generation, Object error) {
+    if (!_isCurrent(generation)) return;
+
     Logger.log('WebSocketService: WebSocket 오류: $error');
     // 네트워크 관련 오류인지 확인
     if (error is SocketException || error.toString().contains('Connection')) {
       Logger.log('WebSocketService: 네트워크 연결 오류 - 재연결 시도');
-      _reconnect();
+      _scheduleReconnect(generation);
     } else {
       Logger.log('WebSocketService: 기타 오류 - 연결 종료');
       _disposeChannel();
     }
   }
 
-  void _onDone() {
+  void _onDone(int generation) {
+    if (!_isCurrent(generation)) return;
+
     Logger.log('WebSocketService: WebSocket 연결 종료');
-    if (!_isDisposed) {
-      _reconnect();
-    }
+    _scheduleReconnect(generation);
   }
 
-  void _sendPing(Timer timer) {
+  void _sendPing(int generation) {
+    if (!_isCurrent(generation)) return;
+
     try {
-      if (_channel != null && !_isDisposed) {
-        _channel?.sink.add('PING');
-      }
+      _channel?.sink.add('PING');
     } catch (e) {
       Logger.log('WebSocketService: PING 전송 실패: $e');
-      if (!_isDisposed) {
-        _reconnect();
-      }
+      _scheduleReconnect(generation);
     }
   }
 
@@ -273,16 +309,21 @@ class BitflyerResponse extends PriceResponse {
 
 // WebSocketService 팩토리 클래스
 class WebSocketServiceFactory {
-  static WebSocketService create(FiatCode fiatCode) {
+  /// [openChannel]은 테스트가 연결 구현을 주입할 때만 사용한다.
+  /// 생략하면 기존과 같이 [WebSocketChannel.connect]로 거래소에 연결한다.
+  static WebSocketService create(
+    FiatCode fiatCode, {
+    @visibleForTesting WebSocketChannel Function(Uri uri)? openChannel,
+  }) {
     switch (fiatCode) {
       case FiatCode.KRW:
-        return WebSocketService(exchangeType: ExchangeType.upbit);
+        return WebSocketService(exchangeType: ExchangeType.upbit, openChannel: openChannel);
       case FiatCode.USD:
-        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btcusdt');
+        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btcusdt', openChannel: openChannel);
       case FiatCode.JPY:
-        return WebSocketService(exchangeType: ExchangeType.bitflyer);
+        return WebSocketService(exchangeType: ExchangeType.bitflyer, openChannel: openChannel);
       case FiatCode.EUR:
-        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btceur');
+        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btceur', openChannel: openChannel);
     }
   }
 }

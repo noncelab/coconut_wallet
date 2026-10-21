@@ -186,6 +186,43 @@ void main() {
     });
   });
 
+  group('onAmountTextChanged', () {
+    test('replaces the whole canonical value and preserves satoshi precision', () {
+      final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+      for (final amount in ['0.12345678', '0.25', '0.', '0', '', '20999999.99999999']) {
+        viewModel.onAmountTextChanged(amount);
+        expect(viewModel.recipientList.first.amount, amount);
+      }
+    });
+
+    test('rejects invalid BTC updates at the view model boundary', () {
+      final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+      viewModel.onAmountTextChanged('0.25');
+      for (final amount in ['-1', '+1', '1e2', 'NaN', '1,25', '1.2.3', '0.000000001', '21000000.00000001']) {
+        viewModel.onAmountTextChanged(amount);
+        expect(viewModel.recipientList.first.amount, '0.25');
+      }
+    });
+
+    test('satoshi updates reject fractions and values over the supply', () {
+      final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+      viewModel.onAmountTextChanged('2100000000000000');
+      expect(viewModel.recipientList.first.amount, '2100000000000000');
+      for (final amount in ['1.5', '1,5', '-1', '2100000000000001', '999999999999999999999999']) {
+        viewModel.onAmountTextChanged(amount);
+        expect(viewModel.recipientList.first.amount, '2100000000000000');
+      }
+    });
+
+    test('maximum amount mode ignores edits', () {
+      final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+      viewModel.setMaxMode(true);
+      final before = viewModel.recipientList.first.amount;
+      viewModel.onAmountTextChanged('123');
+      expect(viewModel.recipientList.first.amount, before);
+    });
+  });
+
   group('onKeyTap', () {
     // recipientList[0].amount는 항상 canonical 포맷('.' 소수점, 구분자 없음)으로 유지된다.
     String amount(SendViewModel vm) => vm.recipientList[0].amount;

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/utils/certificate_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -61,7 +60,7 @@ class DefaultSocketFactory implements SocketFactory {
       socket = await SecureSocket.connect(host, port, onBadCertificate: (_) => true, timeout: timeout);
       return socket.peerCertificate;
     } finally {
-      unawaited(socket?.close());
+      socket?.destroy();
     }
   }
 }

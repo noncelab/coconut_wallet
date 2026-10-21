@@ -103,6 +103,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
 
   BitcoinUnit get unit => _preferenceProvider.currentUnit;
   FiatCode get fiat => _preferenceProvider.selectedFiat;
+  bool get isFiatBalanceHidden => _preferenceProvider.isFiatBalanceHidden;
   bool get isFakeBalance => usesFakeBalance && _preferenceProvider.isFakeBalanceActive;
 
   /// 가짜 잔액은 홈에만 쓴다. 홈 밖(지갑 목록, 상세, 호들 인사이트 등)에서는 이 사본으로 실제 값을 본다.

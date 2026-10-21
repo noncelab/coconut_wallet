@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:decimal/decimal.dart';
@@ -873,6 +874,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         }
       }
     }
+    notifyListeners();
+  }
+
+  void onAmountTextChanged(String amount) {
+    if (_currentIndex == _recipientList.length || isAmountDisabled) return;
+    if (_recipientList[_currentIndex].amount == amount) return;
+    if (amount.isEmpty) {
+      clearAmountText();
+      return;
+    }
+    final pattern = _currentUnit.isBasedOnSatoshi ? r'^[0-9]{1,16}$' : r'^[0-9]{1,8}(\.[0-9]{0,8})?$';
+    if (!RegExp(pattern).hasMatch(amount)) return;
+    final maxAmount =
+        _currentUnit.isBasedOnSatoshi ? SatoshiAmountInputFormatter.maxSats : BtcAmountInputFormatter.maxBtc.toInt();
+    if (Decimal.parse(amount) > Decimal.fromInt(maxAmount)) return;
+    _recipientList[_currentIndex].amount = amount;
     notifyListeners();
   }
 

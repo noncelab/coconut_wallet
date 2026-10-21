@@ -118,18 +118,36 @@ class SocketManager {
     final connectionTimeout = getConnectionTimeout(isOnionHost);
 
     try {
+      final previousSocket = _socket;
+      _socket = null;
+      previousSocket?.destroy();
+
+      final Socket socket;
       // ssl false인 경우 일반 연결 사용
       if (!_ssl || isOnionHost) {
         Logger.log('Socket connection: $_host:$_port');
-        _socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
+        socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
       } else {
         Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl)');
-        _socket = await socketFactory.createSecureSocket(_host, _port, pinnedFingerprint: pinnedCertFingerprint);
+        socket = await socketFactory.createSecureSocket(_host, _port, pinnedFingerprint: pinnedCertFingerprint);
       }
 
+      // Write completion can fail independently of the read stream, after send returns.
+      unawaited(socket.done.then<void>((_) {}, onError: (Object error, StackTrace _) => _onError(socket, error)));
+      if (_connectionStatus != SocketConnectionStatus.connecting) {
+        socket.destroy();
+        return false;
+      }
+
+      _socket = socket;
       _connectionStatus = SocketConnectionStatus.connected;
       _connectionAttempts = 0;
-      _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
+      socket.listen(
+        (data) => _onData(socket, data),
+        onError: (Object error) => _onError(socket, error),
+        onDone: () => _onDone(socket),
+        cancelOnError: true,
+      );
     } catch (e) {
       Logger.error('Socket connection failed: $e');
       _lastConnectionFailedDueToUntrustedCertificate = e is HandshakeException;
@@ -144,20 +162,29 @@ class SocketManager {
   }
 
   Future<void> disconnect() async {
-    await _socket?.close();
+    final socket = _socket;
+    _socket = null;
     _connectionStatus = SocketConnectionStatus.terminated;
+    try {
+      await socket?.close();
+    } finally {
+      socket?.destroy();
+    }
   }
 
-  void _onData(Uint8List data) {
+  void _onData(Socket socket, Uint8List data) {
+    if (!identical(_socket, socket) || _connectionStatus != SocketConnectionStatus.connected) return;
     _streamController.add(utf8.decode(data));
   }
 
-  void _onDone() {
+  void _onDone(Socket socket) {
+    if (!identical(_socket, socket)) return;
     Logger.log('Socket connection closed');
     markConnectionLost();
   }
 
-  void _onError(error) {
+  void _onError(Socket socket, Object error) {
+    if (!identical(_socket, socket)) return;
     Logger.error('Socket connection error: $error');
     markConnectionLost();
   }
@@ -165,6 +192,7 @@ class SocketManager {
   /// 소켓이 죽었다고 확정하고(FIN/RST 등 실제 에러 이벤트뿐 아니라, ping이 응답 없이 실패하는
   /// blackhole 상태 등 외부에서 감지한 경우도 포함) 연결 상태를 갱신 + 리스너에 알린다.
   void markConnectionLost() {
+    if (_connectionStatus == SocketConnectionStatus.terminated) return;
     _connectionStatus = SocketConnectionStatus.terminated;
     onConnectionLost?.call();
   }

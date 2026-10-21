@@ -111,6 +111,9 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
   @override
+  bool get isFiatBalanceHidden => false;
+
+  @override
   final bool isFakeBalanceActive;
   final BitcoinUnit unit;
 
