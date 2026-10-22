@@ -12,6 +12,8 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 /// 스택을 눌러 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
 /// 목록에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다.
@@ -177,7 +179,14 @@ class _WalletStackViewState extends State<WalletStackView> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 12,
+                    height: 12,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -367,63 +376,84 @@ class BalanceByWalletView extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (final share in shares)
-                  Column(
-                    key: ValueKey('balance-by-wallet-entry-${share.walletId ?? 'others'}'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final nameStyle = CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText);
+                final percentStyle = CoconutTypography.body3_12_NumberBold.copyWith(
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                );
+                final amountStyle = CoconutTypography.caption_10_NumberBold.copyWith(
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                );
+                final entryHeight =
+                    [
+                      10.0,
+                      measureHomeTextSize(context, '0', nameStyle).height,
+                      measureHomeTextSize(context, '0', percentStyle).height,
+                    ].reduce(math.max) +
+                    measureHomeTextSize(context, '0', amountStyle).height;
+                final needed = entryHeight * shares.length;
+                final scale = needed > constraints.maxHeight ? constraints.maxHeight / needed : 1.0;
+                final entries = Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final share in shares)
+                      Column(
+                        key: ValueKey('balance-by-wallet-entry-${share.walletId ?? 'others'}'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(color: colorOf(context, share), shape: BoxShape.circle),
+                          Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(color: colorOf(context, share), shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(share.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: nameStyle),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${sum == 0 ? '0' : (share.balance * 100 / sum).toStringAsFixed(1)}%',
+                                style: percentStyle,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              share.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${sum == 0 ? '0' : (share.balance * 100 / sum).toStringAsFixed(1)}%',
-                            style: CoconutTypography.body3_12_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                          Padding(
+                            padding: const EdgeInsets.only(left: 18),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                total.unit.isEmpty
+                                    ? amountText(share.balance)
+                                    : total.unitFirst
+                                    ? '${total.unit} ${amountText(share.balance)}'
+                                    : '${amountText(share.balance)} ${total.unit}',
+                                maxLines: 1,
+                                style: amountStyle,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 18),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            total.unit.isEmpty
-                                ? amountText(share.balance)
-                                : total.unitFirst
-                                ? '${total.unit} ${amountText(share.balance)}'
-                                : '${amountText(share.balance)} ${total.unit}',
-                            maxLines: 1,
-                            style: CoconutTypography.caption_10_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  ],
+                );
+                if (scale == 1) return entries;
+                return FittedBox(
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: constraints.maxWidth / scale,
+                    height: constraints.maxHeight / scale,
+                    child: entries,
                   ),
-              ],
+                );
+              },
             ),
           ),
         ],

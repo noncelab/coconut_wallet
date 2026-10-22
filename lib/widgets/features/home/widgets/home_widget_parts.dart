@@ -46,9 +46,14 @@ class HomeWidgetPressable extends StatefulWidget {
 class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
   bool _pressed = false;
   bool _showFocus = false;
+  bool _snapBack = false;
 
-  void _setPressed(bool pressed) {
-    if (_pressed != pressed) setState(() => _pressed = pressed);
+  void _setPressed(bool pressed, {bool snap = false}) {
+    if (_pressed == pressed) return;
+    setState(() {
+      _pressed = pressed;
+      _snapBack = snap;
+    });
   }
 
   @override
@@ -77,12 +82,12 @@ class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
           behavior: HitTestBehavior.opaque,
           onTapDown: (_) => _setPressed(true),
           onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
+          onTapCancel: () => _setPressed(false, snap: true),
           onTap: widget.onTap,
           child: AnimatedScale(
             scale: _pressed ? 0.97 : 1,
             duration:
-                MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
+                _snapBack || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
                     ? Duration.zero
                     : const Duration(milliseconds: 100),
             child: DecoratedBox(
@@ -232,7 +237,10 @@ class HomeWidgetCard extends StatelessWidget {
 }
 
 /// [Text]가 그릴 때와 같은 조건(주변 기본 스타일, 글자 배율, 언어)으로 잰 한 줄 폭
-double measureHomeText(BuildContext context, String text, TextStyle style) {
+double measureHomeText(BuildContext context, String text, TextStyle style) =>
+    measureHomeTextSize(context, text, style).width;
+
+Size measureHomeTextSize(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
     textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
@@ -240,9 +248,9 @@ double measureHomeText(BuildContext context, String text, TextStyle style) {
     locale: Localizations.maybeLocaleOf(context),
     maxLines: 1,
   )..layout();
-  final width = painter.width;
+  final size = painter.size;
   painter.dispose();
-  return width;
+  return size;
 }
 
 String formatHomeFiat(int? amount, FiatCode fiat, {bool withSymbol = true}) {

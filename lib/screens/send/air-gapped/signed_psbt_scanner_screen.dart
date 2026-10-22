@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class SignedPsbtScannerScreen extends StatefulWidget {
   const SignedPsbtScannerScreen({super.key});
@@ -57,7 +58,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           context: context,
           backgroundColor: context.coconutColors.background.withValues(alpha: 0.95),
           actionButtonList: [
-            IconButton(
+            CoconutAppBarActionButton(
               icon: SvgPicture.asset(
                 CommonActionIconPath.arrowReload,
                 width: 20,

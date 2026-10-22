@@ -231,26 +231,30 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
+        toolbarHeight: widget.isBottom ? 60 : 56,
         systemOverlayStyle: buildSystemBarStyle(backgroundColor: backgroundColor, brightness: brightness),
         leading:
             Navigator.canPop(context)
-                ? IconButton(
-                  icon: SvgPicture.asset(
-                    widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: SvgPicture.asset(
+                      widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
                 )
                 : null,
         title:
             widget.title.isEmpty
                 ? null
                 : Text(widget.title, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
-        actions: [if (widget.actionButton != null) widget.actionButton!, CoconutLayout.spacing_300w],
+        actions: [if (widget.actionButton != null) widget.actionButton!, CoconutLayout.spacing_100w],
       ),
       body: InputAndShareOverlay(
         scrollController: widget.scrollController,

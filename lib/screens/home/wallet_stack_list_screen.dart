@@ -24,6 +24,9 @@ import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 /// 지갑 목록. 카드가 화면 오른쪽 밖을 중심으로 한 원호를 따라 위아래로 돌고, 가운데 카드의 정보를 왼쪽 아래에 보여 준다.
 /// 홈 스택에서 열면 스택 카드가 가운데 카드로 커지며 날아오고, 나머지 카드는 원호를 따라 펼쳐진다.
@@ -184,11 +187,15 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         context: context,
         title: widget.title,
         actionButtonList: [
-          CupertinoButton(
+          CoconutAppBarActionButton(
             key: const Key('wallet-stack-list-add'),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             onPressed: _addWallet,
-            child: Icon(CupertinoIcons.add, color: colors.primaryText, size: 26),
+            icon: SvgPicture.asset(
+              CommonActionIconPath.plus,
+              width: 15,
+              height: 15,
+              colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+            ),
           ),
         ],
       ),
@@ -432,7 +439,14 @@ class _AddWalletCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                child: Icon(CupertinoIcons.add, size: 22, color: colors.primaryText),
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 13,
+                    height: 13,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               Text(

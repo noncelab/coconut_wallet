@@ -11,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class LabelManagementScreen extends StatefulWidget {
   final int? walletId;
@@ -73,7 +74,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
               context: context,
               backgroundColor: context.coconutColors.background,
               actionButtonList: [
-                IconButton(
+                CoconutAppBarActionButton(
                   key: _tooltipIconKey,
                   icon: SvgPicture.asset(
                     CommonStateIconPath.questionMark,

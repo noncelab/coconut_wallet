@@ -61,7 +61,6 @@ abstract final class CommonFormIconPath {
   static const String circle = 'assets/svg/common/form/circle.svg';
   static const String circleCheck = 'assets/svg/common/form/circle-check.svg';
   static const String circleCheckFilled = 'assets/svg/common/form/circle-check-filled.svg';
-  static const String circleCheckOutline = 'assets/svg/common/form/circle-check-outline.svg';
   static const String circleMinus = 'assets/svg/common/form/circle-minus.svg';
   static const String circlePick = 'assets/svg/common/form/circle-pick.svg';
   static const String textFieldClear = 'assets/svg/common/form/text-field-clear.svg';

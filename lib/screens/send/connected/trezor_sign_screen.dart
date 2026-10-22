@@ -1,7 +1,8 @@
 import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/core/transaction/unsigned_psbt_summary.dart';
 import 'package:coconut_wallet/widgets/features/send/unsigned_psbt_summary_card.dart';
@@ -204,10 +205,10 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        CommonFormIconPath.circleCheckOutline,
+        CommonFormIconPath.circleCheck,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        width: 16,
-        height: 16,
+        width: 20,
+        height: 20,
       );
       stateLabel = t.trezor_sign_screen.done.title;
       detailText = t.trezor_sign_screen.done.description;

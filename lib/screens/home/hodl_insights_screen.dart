@@ -25,6 +25,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart' show precisionErrorTolerance;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 /// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
@@ -188,12 +189,10 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
         title: t.hodl_insights.title,
         actionButtonList: [
           if (!viewModel.hasNoWallets)
-            CupertinoButton(
+            CoconutAppBarActionButton(
               key: const Key('hodl-insights-settings'),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(40, 40),
               onPressed: () => _openSettings(context, viewModel),
-              child: SvgPicture.asset(
+              icon: SvgPicture.asset(
                 FeatureSettingsIconPath.settings,
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),

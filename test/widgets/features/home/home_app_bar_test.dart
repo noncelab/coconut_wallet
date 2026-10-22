@@ -106,7 +106,7 @@ void main() {
           for (var i = 0; i < actions.length; i++) {
             expect(actions[i].left, closeTo(baseline[i].left, 0.01), reason: label);
             expect(actions[i].right, lessThanOrEqualTo(width), reason: label);
-            expect(actions[i].width, 48, reason: label);
+            expect(actions[i].width, HomeAppBar.actionButtonWidth, reason: label);
           }
           expect(
             tester.getRect(find.byType(HomeConnectionStatusIndicator)).right,

@@ -369,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Align(
                           alignment: Alignment.topRight,
                           child: AddWalletHint(
-                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.addWalletButtonSize / 2,
+                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.actionButtonWidth / 2,
                             nudges: viewModel.addWalletHintNudges,
                             onClose: viewModel.dismissAddWalletHint,
                           ),

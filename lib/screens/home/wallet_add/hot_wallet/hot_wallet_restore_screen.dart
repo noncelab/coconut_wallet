@@ -54,6 +54,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart' as permission;
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 enum _RestoreInputMode { mnemonic, seedQr }
 
@@ -388,7 +389,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                 context: context,
                 onBackPressed: _handleAppBarBackPressed,
                 actionButtonList: [
-                  IconButton(
+                  CoconutAppBarActionButton(
                     tooltip:
                         _inputMode == _RestoreInputMode.mnemonic
                             ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr

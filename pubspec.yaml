@@ -124,6 +124,10 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
 
+dependency_overrides:
+  # Keep the URL launcher compatible with the app's AGP 8.6.0.
+  url_launcher_android: 6.3.20
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -217,8 +221,3 @@ flutter:
           weight: 700
         - asset: assets/fonts/Pretendard-Regular.ttf
           weight: 400
-
-# 6.3.29 pulls androidx.browser 1.9.0 and androidx.core 1.17.0, which require AGP 8.9.1.
-# Pin 6.3.20 so the app can stay on AGP 8.6.0.
-dependency_overrides:
-  url_launcher_android: 6.3.20

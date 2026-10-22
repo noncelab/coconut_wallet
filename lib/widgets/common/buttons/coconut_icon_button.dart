@@ -73,6 +73,7 @@ class CoconutIconButton extends StatelessWidget {
 /// use [CoconutIconButton] directly and document the exception nearby.
 class CoconutAppBarActionButton extends StatelessWidget {
   static const minimumSize = kMinInteractiveDimension;
+  static const highlightSize = 40.0;
 
   final Widget icon;
   final VoidCallback? onPressed;
@@ -80,6 +81,7 @@ class CoconutAppBarActionButton extends StatelessWidget {
   final Color? color;
   final Color? highlightColor;
   final double size;
+  final double? width;
   final String? tooltip;
 
   const CoconutAppBarActionButton({
@@ -90,6 +92,7 @@ class CoconutAppBarActionButton extends StatelessWidget {
     this.color,
     this.highlightColor,
     this.size = minimumSize,
+    this.width,
     this.tooltip,
   });
 
@@ -97,14 +100,17 @@ class CoconutAppBarActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       key: buttonKey,
-      width: size < minimumSize ? minimumSize : size,
+      width: width ?? (size < minimumSize ? minimumSize : size),
       height: size < minimumSize ? minimumSize : size,
-      child: CoconutIconButton(
-        icon: icon,
-        onPressed: onPressed,
-        color: color,
-        highlightColor: highlightColor,
-        tooltip: tooltip,
+      child: Center(
+        child: CoconutIconButton(
+          icon: icon,
+          onPressed: onPressed,
+          color: color,
+          highlightColor: highlightColor,
+          tooltip: tooltip,
+          constraints: const BoxConstraints.tightFor(width: highlightSize, height: highlightSize),
+        ),
       ),
     );
   }
