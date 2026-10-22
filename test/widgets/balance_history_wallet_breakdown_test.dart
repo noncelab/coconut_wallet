@@ -30,7 +30,8 @@ void main() {
         balance: balances[i],
         transactions: [
           TransactionMock.createMockTransactionRecord(amount: -10, transactionType: TransactionType.sent),
-          TransactionMock.createMockTransactionRecord(amount: 20, transactionType: TransactionType.received),
+          if (balances[i] > 0)
+            TransactionMock.createMockTransactionRecord(amount: 20, transactionType: TransactionType.received),
         ],
       ),
   ];
@@ -79,6 +80,34 @@ void main() {
     expect(getTooltip(), findsOneWidget);
     expect(find.text('1 sats (+10 sats)'), findsOneWidget);
     expectPointer(tester, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a zero balance wallet still shows transactions in single wallet mode', (tester) async {
+    await show(tester, [10], singleWallet: true);
+    await tester.pumpAndSettle();
+    await show(tester, [0], singleWallet: true, date: DateTime(2026, 10, 7));
+    await tester.pumpAndSettle();
+    expect(getTooltip(), findsOneWidget);
+    expect(find.text('0 sats (-10 sats)'), findsOneWidget);
+    expect(find.byKey(const Key('balance-history-shares')), findsNothing);
+    expect(find.byKey(const Key('balance-history-share-pointer')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('zero balance transactions remain visible alongside wallets with positive balances', (tester) async {
+    await show(tester, [100, 0]);
+    await tester.pumpAndSettle();
+    expect(segment(1), findsOneWidget);
+    expect(segment(2), findsNothing);
+    expect(find.byKey(const ValueKey('balance-history-zero-balance-summary-2')), findsOneWidget);
+    expect(find.text('0 sats (-10 sats)'), findsOneWidget);
+    expectPointer(tester, 1);
+    await show(tester, [0, 0]);
+    await tester.pumpAndSettle();
+    expect(getTooltip(), findsOneWidget);
+    expect(find.byKey(const ValueKey('balance-history-zero-balance-summary-2')), findsOneWidget);
+    expect(find.byKey(const Key('balance-history-share-pointer')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -136,7 +165,8 @@ void main() {
     expectPointer(tester, 2);
     await show(tester, [0, 0], date: DateTime(2026, 10, 3));
     await tester.pumpAndSettle();
-    expect(getTooltip(), findsNothing);
+    expect(getTooltip(), findsOneWidget);
+    expect(find.byKey(const Key('balance-history-share-pointer')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

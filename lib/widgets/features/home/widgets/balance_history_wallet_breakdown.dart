@@ -80,7 +80,9 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
   void _chooseWallet() {
     final positive = widget.slices.where((slice) => slice.balance > 0).toList();
     if (!positive.any((slice) => slice.wallet.id == _selectedId)) {
-      _selectedId = positive.isEmpty ? null : positive.first.wallet.id;
+      _selectedId =
+          positive.firstOrNull?.wallet.id ??
+          widget.slices.where((slice) => slice.transactions.isNotEmpty).firstOrNull?.wallet.id;
     }
   }
 
@@ -223,19 +225,25 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                     style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
                   ),
                 ],
-                if (selected != null && selected.balance > 0) ...[
+                if (selected != null) ...[
                   if (!widget.singleWallet) const SizedBox(height: 2),
                   AnimatedBuilder(
                     animation: _scroll,
                     builder:
                         (context, child) => CustomPaint(
-                          key: !widget.singleWallet ? const Key('balance-history-share-pointer') : null,
+                          key:
+                              !widget.singleWallet && selected.balance > 0
+                                  ? const Key('balance-history-share-pointer')
+                                  : null,
                           painter: BalanceHistorySharePointer(
                             center - (_scroll.hasClients ? _scroll.offset : 0),
                             colors.surfaceMuted,
-                            showPointer: !widget.singleWallet,
+                            showPointer: !widget.singleWallet && selected.balance > 0,
                           ),
-                          child: Padding(padding: EdgeInsets.only(top: !widget.singleWallet ? 14 : 0), child: child),
+                          child: Padding(
+                            padding: EdgeInsets.only(top: !widget.singleWallet && selected.balance > 0 ? 14 : 0),
+                            child: child,
+                          ),
                         ),
                     child: CoconutToolTip(
                       key: const Key('balance-history-share-tooltip'),
@@ -257,6 +265,17 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                     ),
                   ),
                 ],
+                for (final slice in widget.slices)
+                  if (slice.balance == 0 && slice.transactions.isNotEmpty && slice.wallet.id != _selectedId)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Container(
+                        key: ValueKey('balance-history-zero-balance-summary-${slice.wallet.id}'),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: colors.surfaceMuted, borderRadius: BorderRadius.circular(24)),
+                        child: _details(context, slice),
+                      ),
+                    ),
               ],
             );
           },
