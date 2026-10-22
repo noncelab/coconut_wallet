@@ -519,8 +519,8 @@
     {
       "path": "pubspec.yaml",
       "upstream_sha256": "cff219fa6efc1ba3c262011b092051998bce9cf19671ef7c385addc89ec7393b",
-      "vendored_sha256": "cff219fa6efc1ba3c262011b092051998bce9cf19671ef7c385addc89ec7393b",
-      "change": "unchanged"
+      "vendored_sha256": "9f502017a4ddfc1730dc2c18891b6c4fc36f798ca5423c6e9d1ac55a81724b48",
+      "change": "remove-publishing-screenshot-metadata"
     }
   ]
 }
