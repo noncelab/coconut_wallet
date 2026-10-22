@@ -90,7 +90,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   ({int minimum, int maximum})? _axisRange;
   bool _changedOnly = false;
   final Set<int> _expanded = {};
-  final ScrollController _walletScrollController = ScrollController();
+  ScrollController? _walletScrollController;
+  final ScrollController _graphScrollController = ScrollController();
   int _walletScrollRequest = 0;
   final Map<int, double> _cardExtents = {};
   double _cardExtent = 0;
@@ -160,7 +161,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   @override
   void dispose() {
-    _walletScrollController.dispose();
+    _graphScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     vm.data.removeListener(_onData);
     super.dispose();
@@ -253,50 +254,67 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                         listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
                         chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
                       }
-                      // Let the viewport grow with the chart animation. Expanding it to its
-                      // final size immediately clamps a scrolled list before its rows expand.
-                      // Keep enough layout height for the fixed header during initial reveal;
-                      // the outer stack clips that temporary slot below the screen.
+                      // The header follows selection/expansion animations; nested scrolling
+                      // consumes its remaining height before moving the lower list.
                       return TweenAnimationBuilder<double>(
                         duration: const Duration(milliseconds: 360),
                         curve: Curves.easeInOutCubic,
                         tween: Tween(end: chartTarget),
-                        child: selected == null || listHeight <= 0 ? null : _wallets(dates[selected]),
-                        builder:
-                            (context, chartHeight, wallets) => SizedBox(
-                              height: constraints.maxHeight,
-                              width: constraints.maxWidth,
-                              child: Stack(
-                                clipBehavior: Clip.hardEdge,
-                                children: [
-                                  SizedBox(
-                                    height: chartHeight,
-                                    width: double.infinity,
-                                    child: Hero(
-                                      tag: walletBalanceHistoryHeroTag,
-                                      flightShuttleBuilder: walletBalanceHistoryFlight,
-                                      child: Material(
-                                        color: colors.homeSurface,
-                                        borderRadius: BorderRadius.circular(20),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: _chart(balances, dates),
-                                      ),
-                                    ),
-                                  ),
-                                  if (wallets != null)
-                                    Positioned(
-                                      top: chartHeight + listGap,
-                                      left: 0,
-                                      right: 0,
-                                      height: math.min(
-                                        listHeight,
-                                        math.max(120.0, constraints.maxHeight - chartHeight - listGap),
-                                      ),
-                                      child: wallets,
-                                    ),
-                                ],
-                              ),
+                        builder: (context, chartHeight, _) {
+                          final graph = Hero(
+                            tag: walletBalanceHistoryHeroTag,
+                            flightShuttleBuilder: walletBalanceHistoryFlight,
+                            child: Material(
+                              key: const Key('balance-history-graph-surface'),
+                              color: colors.homeSurface,
+                              borderRadius: BorderRadius.circular(20),
+                              clipBehavior: Clip.antiAlias,
+                              child: _chart(balances, dates),
                             ),
+                          );
+                          if (selected == null || listHeight <= 0) {
+                            return SizedBox(height: chartHeight, width: double.infinity, child: graph);
+                          }
+                          final expandedHeight = math.min(chartHeight, math.max(0.0, maxHeight - 120 - listGap));
+                          final minimumHeight = math.min(180.0, expandedHeight);
+                          final collapseRange = expandedHeight - minimumHeight;
+                          return Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(top: minimumHeight + listGap),
+                                child: NestedScrollView(
+                                  key: const Key('balance-history-nested-scroll'),
+                                  controller: _graphScrollController,
+                                  headerSliverBuilder:
+                                      (context, innerScrolled) => [
+                                        SliverToBoxAdapter(child: SizedBox(height: collapseRange)),
+                                      ],
+                                  body: Builder(
+                                    builder: (bodyContext) {
+                                      _walletScrollController = PrimaryScrollController.of(bodyContext);
+                                      return _wallets(dates[selected]);
+                                    },
+                                  ),
+                                ),
+                              ),
+                              AnimatedBuilder(
+                                animation: _graphScrollController,
+                                child: graph,
+                                builder: (context, child) {
+                                  final offset =
+                                      _graphScrollController.hasClients ? _graphScrollController.offset : 0.0;
+                                  return Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: minimumHeight + (collapseRange - offset).clamp(0.0, collapseRange),
+                                    child: child!,
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),
@@ -620,8 +638,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
         _walletIds != null ||
         _selected == null ||
         _dates[_selected!] != day ||
-        !_walletScrollController.hasClients)
+        _walletScrollController?.hasClients != true) {
       return;
+    }
     _WalletCardAnchorRenderBox? target;
     void findAnchor(RenderObject object) {
       if (object is _WalletCardAnchorRenderBox && object.identity == (day, _changedOnly, walletId)) {
@@ -630,14 +649,16 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       object.visitChildren(findAnchor);
     }
 
-    final root = _walletScrollController.position.context.storageContext.findRenderObject();
+    final scrollContext = _walletScrollController!.position.context.storageContext;
+    if (!scrollContext.mounted) return;
+    final root = scrollContext.findRenderObject();
     if (root == null) return;
     findAnchor(root);
     final anchor = target;
     if (anchor == null || !anchor.attached) return;
-    final position = _walletScrollController.position;
+    final position = _walletScrollController!.position;
     final offset = RenderAbstractViewport.of(anchor).getOffsetToReveal(anchor, 0).offset - 12;
-    await _walletScrollController.animateTo(
+    await _walletScrollController!.animateTo(
       offset.clamp(position.minScrollExtent, position.maxScrollExtent),
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeInOutCubic,
@@ -799,7 +820,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
           child: Stack(
             children: [
               ListView(
-                controller: _walletScrollController,
+                key: const Key('balance-history-wallet-list'),
                 padding: const EdgeInsets.only(top: 8),
                 children: [
                   AnimatedSwitcher(
