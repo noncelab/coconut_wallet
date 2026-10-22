@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography, CoconutChip;
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -194,11 +195,12 @@ Future<void> _openWidgetsTab(
   Color? sourceMarkerColor,
   DateTime? dataNow,
   Map<int, WalletBackground> walletBackgrounds = const {},
+  bool gestureGuideDismissed = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: gestureGuideDismissed});
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   final appearanceRepository = WalletAppearanceRepository(prefs);
   for (final entry in walletBackgrounds.entries) {
@@ -1261,6 +1263,8 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
       expect(find.byType(WalletBalanceHistoryScreen), findsOneWidget);
       expect(
         tester
@@ -1357,6 +1361,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
       final screen = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
       final vm = screen.viewModel;
       final interactiveChart = find.byKey(const Key('balance-history-interactive-chart'));
@@ -1447,6 +1453,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
       final list = find.byKey(const Key('balance-history-wallet-chips'));
       final last = find.byKey(const ValueKey('balance-history-wallet-30'));
       expect(last, findsNothing);
@@ -1463,6 +1471,106 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('balance history repeats the guide in debug even after its dismissal is saved', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        dataNow: DateTime(2026, 10, 20, 12),
+        gestureGuideDismissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      final preview = find.byKey(const Key('hodl-insights-balance-chart'));
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      final guide = find.byKey(const Key('balance-history-gesture-guide'));
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      expect(guide, findsOneWidget);
+      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_pan), findsOneWidget);
+      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_zoom), findsOneWidget);
+      final before =
+          tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
+      await tester.drag(guide, const Offset(-100, 0));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel,
+        before,
+      );
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
+      expect(guide, findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isTrue);
+      await tester.tap(chart);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(guide, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history panning shows feedback only at the reached edge and clears it on release', (
+      tester,
+    ) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        dataNow: DateTime(2026, 10, 20, 12),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final bounds = tester.getRect(chart);
+      double feedback() =>
+          tester
+              .widget<TweenAnimationBuilder<double>>(find.byKey(const Key('balance-history-edge-feedback')))
+              .tween
+              .end!;
+      final latestPeriod =
+          tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
+      final latest = await tester.startGesture(bounds.center);
+      await latest.moveBy(const Offset(-20, 0));
+      await tester.pump();
+      await latest.moveBy(const Offset(-80, 0));
+      await tester.pump(const Duration(milliseconds: 180));
+      expect(feedback(), greaterThan(0));
+      expect(
+        tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel,
+        latestPeriod,
+      );
+      await latest.up();
+      await tester.pumpAndSettle();
+      expect(feedback(), 0);
+      final oldest = await tester.startGesture(bounds.center);
+      await oldest.moveBy(const Offset(20, 0));
+      await tester.pump();
+      await oldest.moveBy(const Offset(60, 0));
+      await tester.pump();
+      expect(feedback(), 0);
+      await oldest.moveBy(Offset(bounds.width * 100, 0));
+      await tester.pump(const Duration(milliseconds: 180));
+      expect(feedback(), lessThan(0));
+      await oldest.up();
+      await tester.pumpAndSettle();
+      expect(feedback(), 0);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
     testWidgets('balance history date focus opens and retargets the wallet share tooltip without resizing the graph', (
       tester,
     ) async {
@@ -1475,6 +1583,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
       await tester.pumpAndSettle();
       final chart = find.byKey(const Key('balance-history-interactive-chart'));
       final surface = find.byKey(const Key('balance-history-graph-surface'));
@@ -1690,6 +1800,8 @@ void main() {
       expect(insights.balancePeriod, HomeWidgetPeriod.month);
 
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
       await tester.pumpAndSettle();
       expect(find.byType(WalletBalanceHistoryScreen), findsOneWidget);
       Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();

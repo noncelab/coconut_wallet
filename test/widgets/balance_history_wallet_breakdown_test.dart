@@ -65,10 +65,13 @@ void main() {
     expect(tester.getTopLeft(arrow).dx + painter.center, closeTo(tester.getCenter(segment(id)).dx, 0.01));
   }
 
-  testWidgets('tapping a tiny share opens its tooltip at the middle of its segment', (tester) async {
+  testWidgets('the first wallet tooltip opens by default and tapping a tiny share moves it to that segment', (
+    tester,
+  ) async {
     await show(tester, [1000000, 1, 0]);
     await tester.pumpAndSettle();
-    expect(getTooltip(), findsNothing);
+    expect(getTooltip(), findsOneWidget);
+    expectPointer(tester, 1);
     expect(segment(3), findsNothing);
     expect(tester.getSize(segment(2)).width, 24);
     await tester.tap(segment(2));

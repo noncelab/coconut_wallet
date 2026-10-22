@@ -1,6 +1,10 @@
 import 'dart:math' as math;
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -16,7 +20,8 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart' show WalletContentTheme;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show kDebugMode, listEquals;
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
 const walletBalanceHistoryHeroTag = 'hodl-balance-history';
@@ -86,6 +91,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   double _startEnd = 0;
   Offset _startPosition = Offset.zero;
   bool _pinching = false;
+  double _edgeOverscroll = 0;
+  late bool _showGestureGuide;
 
   HodlInsightsViewModel get vm => widget.viewModel;
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
@@ -97,6 +104,11 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   @override
   void initState() {
     super.initState();
+    final preferences = SharedPrefsRepository();
+    _showGestureGuide =
+        kDebugMode ||
+        !preferences.isInitialized ||
+        !preferences.getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed);
     _walletIds = vm.walletIds?.length == 1 ? [vm.walletIds!.single] : null;
     _readAnchor();
     _period = vm.balancePeriod;
@@ -153,6 +165,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   }
 
   void _selectPeriod(HomeWidgetPeriod period) => setState(() {
+    _edgeOverscroll = 0;
     _period = period;
     _span = (period == HomeWidgetPeriod.all ? _allDays : period.days).toDouble();
     _end = (_days - 1).toDouble();
@@ -221,7 +234,13 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                 color: colors.homeSurface,
                                 borderRadius: BorderRadius.circular(20),
                                 clipBehavior: Clip.antiAlias,
-                                child: _chart(balances, dates),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    ExcludeSemantics(excluding: _showGestureGuide, child: _chart(balances, dates)),
+                                    if (_showGestureGuide) _BalanceHistoryGestureGuide(onDismiss: _dismissGestureGuide),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -242,10 +261,19 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   void _selectWallet(int? walletId) {
     setState(() {
+      _edgeOverscroll = 0;
       _walletIds = walletId == null ? null : [walletId];
       _axisRange = null;
     });
     _reanchor();
+  }
+
+  Future<void> _dismissGestureGuide() async {
+    setState(() => _showGestureGuide = false);
+    final preferences = SharedPrefsRepository();
+    if (preferences.isInitialized) {
+      await preferences.setBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed, true);
+    }
   }
 
   Widget _walletChips() {
@@ -441,6 +469,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                           }
                         },
                         onScaleStart: (details) {
+                          setState(() => _edgeOverscroll = 0);
                           _startSpan = _span;
                           _startEnd = _end;
                           _startPosition = details.localFocalPoint;
@@ -470,15 +499,21 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                               _selected == null
                                   ? _startPosition.dx / width
                                   : ((_selected! - (_startEnd - _startSpan + 1)) / (_startSpan - 1)).clamp(0.0, 1.0);
+                          final panning = zoom == 1 && !_pinching;
+                          final requestedEnd =
+                              panning
+                                  ? _startEnd - delta.dx / width * (_startSpan - 1)
+                                  : anchor + (span - 1) * (1 - fraction);
+                          final end = requestedEnd.clamp(span - 1, (_days - 1).toDouble());
                           setState(() {
                             _span = span;
-                            _end = (zoom == 1 && !_pinching
-                                    ? _startEnd - delta.dx / width * (_startSpan - 1)
-                                    : anchor + (span - 1) * (1 - fraction))
-                                .clamp(span - 1, (_days - 1).toDouble());
+                            _end = end;
+                            _edgeOverscroll =
+                                panning ? ((requestedEnd - end) * width / (_startSpan - 1)).clamp(-width, width) : 0;
                             _syncPeriod();
                           });
                         },
+                        onScaleEnd: (_) => setState(() => _edgeOverscroll = 0),
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -544,6 +579,19 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                   );
                                 },
                               ),
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: TweenAnimationBuilder<double>(
+                                  key: const Key('balance-history-edge-feedback'),
+                                  tween: Tween(end: _edgeOverscroll),
+                                  duration: Duration(milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 160),
+                                  curve: Curves.easeOutCubic,
+                                  builder:
+                                      (context, amount, _) =>
+                                          CustomPaint(painter: _BalanceHistoryEdgePainter(amount, colors.tertiaryText)),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -758,6 +806,118 @@ List<int> _axisTickAmounts(int minimum, int maximum, int intervals) {
   return {
     for (var tick = intervals; tick >= 0; tick--) (minimum + (maximum - minimum) * tick / intervals).round(),
   }.toList();
+}
+
+class _BalanceHistoryGestureGuide extends StatelessWidget {
+  final VoidCallback onDismiss;
+  const _BalanceHistoryGestureGuide({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    Widget instruction(SvgPicture icon, String text) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        icon,
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.primaryText))),
+      ],
+    );
+    return GestureDetector(
+      key: const Key('balance-history-gesture-guide'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: ColoredBox(
+        color: colors.homeSurface.withValues(alpha: 0.7),
+        child: LayoutBuilder(
+          builder:
+              (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t.wallet_list.balance_history_detail.gesture_guide_title,
+                          style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
+                        ),
+                        const SizedBox(height: 12),
+                        instruction(
+                          SvgPicture.asset(CommonNavigationIconPath.arrowLeftRight),
+                          t.wallet_list.balance_history_detail.gesture_guide_pan,
+                        ),
+                        const SizedBox(height: 10),
+                        instruction(
+                          SvgPicture.asset(CommonNavigationIconPath.arrowUpDown),
+                          t.wallet_list.balance_history_detail.gesture_guide_zoom,
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ShrinkAnimationButton(
+                            key: const Key('balance-history-gesture-guide-dismiss'),
+                            onPressed: onDismiss,
+                            defaultColor: colors.primaryText,
+                            borderWidth: 0,
+                            borderRadius: 12,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              child: Text(
+                                t.confirm,
+                                style: CoconutTypography.body3_12_Bold.copyWith(color: colors.homeSurface),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceHistoryEdgePainter extends CustomPainter {
+  final double overscroll;
+  final Color color;
+  const _BalanceHistoryEdgePainter(this.overscroll, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty || overscroll.abs() < 0.1) return;
+    final extent = (overscroll.abs() / 4).clamp(0.0, 24.0);
+    final right = overscroll > 0;
+    final x = right ? size.width : 0.0;
+    final direction = right ? -1 : 1;
+    final edge =
+        Path()
+          ..moveTo(x, 0)
+          ..quadraticBezierTo(x + direction * extent * 2, size.height / 2, x, size.height)
+          ..close();
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.drawPath(
+      edge,
+      Paint()
+        ..shader = LinearGradient(
+          begin: right ? Alignment.centerRight : Alignment.centerLeft,
+          end: right ? Alignment.centerLeft : Alignment.centerRight,
+          colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0)],
+        ).createShader(Rect.fromLTWH(right ? size.width - extent : 0, 0, extent, size.height)),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _BalanceHistoryEdgePainter oldDelegate) =>
+      overscroll != oldDelegate.overscroll || color != oldDelegate.color;
 }
 
 class _BalanceHistoryGridPainter extends CustomPainter {

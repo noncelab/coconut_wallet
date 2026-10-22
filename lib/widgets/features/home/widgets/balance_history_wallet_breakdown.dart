@@ -69,14 +69,12 @@ class BalanceHistoryWalletBreakdown extends StatefulWidget {
 class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBreakdown> {
   final ScrollController _scroll = ScrollController();
   int? _selectedId;
-  bool _visible = false;
   bool _reveal = false;
 
   @override
   void initState() {
     super.initState();
     _chooseWallet();
-    _visible = widget.focusedDate != null || widget.singleWallet;
   }
 
   void _chooseWallet() {
@@ -91,7 +89,6 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     super.didUpdateWidget(oldWidget);
     _chooseWallet();
     if (widget.singleWallet || (widget.focusedDate != null && widget.focusedDate != oldWidget.focusedDate)) {
-      _visible = true;
       _reveal = true;
     }
   }
@@ -127,7 +124,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
               cursor += segmentWidth;
               if (segmentWidth <= 0) continue;
               final appearance = appearances?.appearanceOf(slice.wallet) ?? WalletAppearance.of(slice.wallet);
-              final isSelected = slice.wallet.id == _selectedId && _visible;
+              final isSelected = slice.wallet.id == _selectedId;
               segments.add(
                 SizedBox(
                   width: segmentWidth,
@@ -144,39 +141,41 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                               ? null
                               : () => setState(() {
                                 _selectedId = slice.wallet.id;
-                                _visible = true;
                                 _reveal = true;
                               }),
-                      child: Padding(
-                        padding: EdgeInsets.only(right: cursor < geometry.total - 0.01 ? 2 : 0),
-                        child: ClipRect(
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              RepaintBoundary(
-                                child: WalletCardBackground(
-                                  background: appearance.background,
-                                  photoFile: appearances?.photoFileFor(slice.wallet.id),
-                                ),
-                              ),
-                              if (isSelected && segmentWidth > 48)
-                                WalletContentTheme(
-                                  background: appearance.background,
-                                  child: Builder(
-                                    builder:
-                                        (context) => Center(
-                                          child: Text(
-                                            slice.wallet.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: CoconutTypography.body3_12_Bold.copyWith(
-                                              color: context.coconutColors.primaryText,
-                                            ),
-                                          ),
-                                        ),
+                      child: ColoredBox(
+                        color: colors.surfaceMuted,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: cursor < geometry.total - 0.01 ? 2 : 0),
+                          child: ClipRect(
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                RepaintBoundary(
+                                  child: WalletCardBackground(
+                                    background: appearance.background,
+                                    photoFile: appearances?.photoFileFor(slice.wallet.id),
                                   ),
                                 ),
-                            ],
+                                if (isSelected && segmentWidth > 48)
+                                  WalletContentTheme(
+                                    background: appearance.background,
+                                    child: Builder(
+                                      builder:
+                                          (context) => Center(
+                                            child: Text(
+                                              slice.wallet.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: CoconutTypography.body3_12_Bold.copyWith(
+                                                color: context.coconutColors.primaryText,
+                                              ),
+                                            ),
+                                          ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -224,7 +223,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                     style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
                   ),
                 ],
-                if (_visible && selected != null && selected.balance > 0) ...[
+                if (selected != null && selected.balance > 0) ...[
                   if (!widget.singleWallet) const SizedBox(height: 2),
                   AnimatedBuilder(
                     animation: _scroll,

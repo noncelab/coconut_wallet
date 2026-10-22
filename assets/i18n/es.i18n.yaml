@@ -959,6 +959,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    gesture_guide_title: "Explora el gráfico"
+    gesture_guide_pan: "Desliza a izquierda o derecha para desplazarte en el tiempo."
+    gesture_guide_zoom: "Desliza arriba o abajo, o amplía y reduce con dos dedos para ajustar el intervalo: 1 semana, 1 mes, 3 meses y más."
     balance_label: "Saldo"
     transactions_label: "Transacciones"
     flow_summary: "${count} tx · ${amount}"

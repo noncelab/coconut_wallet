@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -143,7 +144,7 @@ void main() {
   setUpAll(() => CoconutWalletApp.kFaucetHost = 'https://faucet.invalid');
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: true});
     final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
     walletProvider = _Wallets([
       WalletMock.createSingleSigWalletItem(id: 1, name: 'First'),
@@ -318,7 +319,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Wallet Card'), findsNothing);
     expect(tester.getSize(find.byKey(const Key('wallet-detail-chart-back'))), chartButtonSize);
-    expect(find.text('Show balance trend >'), findsOneWidget);
+    expect(find.text('View balance trend >'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
     await tester.pumpAndSettle();

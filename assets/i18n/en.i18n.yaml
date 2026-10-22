@@ -830,6 +830,9 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    gesture_guide_title: "Explore the graph"
+    gesture_guide_pan: "Swipe left or right to move through time."
+    gesture_guide_zoom: "Swipe up or down, or pinch to zoom, to adjust the range: 1 week, 1 month, 3 months, and more."
     balance_label: "Balance"
     transactions_label: "Transactions"
     flow_summary: "${count} tx · ${amount}"
@@ -2252,5 +2255,5 @@ wallet_card_detail_screen:
   details: "Details"
   chart: "Chart"
   wallet_card: "Wallet Card"
-  show_balance_trend: "Show balance trend"
+  show_balance_trend: "View balance trend"
   chart_date_format: "MMM d"
