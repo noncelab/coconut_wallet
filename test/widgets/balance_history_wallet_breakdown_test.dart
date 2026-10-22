@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
@@ -206,6 +207,39 @@ void main() {
     }
     await tester.pumpAndSettle();
     expectSelectedVisible();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('share bar clamps at both ends and shows feedback until the drag ends', (tester) async {
+    await show(tester, List.filled(30, 1));
+    await tester.pumpAndSettle();
+    final bar = find.byKey(const Key('balance-history-shares'));
+    final controller = tester.widget<SingleChildScrollView>(bar).controller!;
+    double feedback() {
+      final paint = tester.widget<CustomPaint>(
+        find.descendant(
+          of: find.byKey(const Key('balance-history-shares-edge-feedback')),
+          matching: find.byType(CustomPaint),
+        ),
+      );
+      return (paint.painter! as BalanceHistoryEdgePainter).overscroll;
+    }
+
+    for (final right in [false, true]) {
+      controller.jumpTo(right ? controller.position.maxScrollExtent : 0);
+      await tester.pumpAndSettle();
+      final edgeOffset = controller.offset;
+      final gesture = await tester.startGesture(tester.getCenter(bar));
+      await gesture.moveBy(Offset(right ? -30 : 30, 0));
+      await gesture.moveBy(Offset(right ? -50 : 50, 0));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(controller.offset, edgeOffset);
+      expect(feedback(), right ? greaterThan(0) : lessThan(0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(feedback(), 0);
+    }
     expect(tester.takeException(), isNull);
   });
 

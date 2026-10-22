@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -70,6 +71,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
   final ScrollController _scroll = ScrollController();
   int? _selectedId;
   bool _reveal = false;
+  double _edgeOverscroll = 0;
 
   @override
   void initState() {
@@ -215,14 +217,53 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                     borderRadius: BorderRadius.circular(14),
                     child: ColoredBox(
                       color: colors.surfaceMuted,
-                      child: SingleChildScrollView(
-                        key: const Key('balance-history-shares'),
-                        controller: _scroll,
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: math.max(width, geometry.total),
-                          height: 28,
-                          child: Row(children: segments),
+                      child: NotificationListener<OverscrollIndicatorNotification>(
+                        onNotification: (notification) {
+                          notification.disallowIndicator();
+                          return true;
+                        },
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification.depth != 0 || notification.metrics.axis != Axis.horizontal) return false;
+                            if (notification is OverscrollNotification && notification.dragDetails != null) {
+                              setState(
+                                () => _edgeOverscroll = (_edgeOverscroll + notification.overscroll).clamp(-96.0, 96.0),
+                              );
+                            } else if (notification is ScrollEndNotification ||
+                                notification is ScrollUpdateNotification) {
+                              if (_edgeOverscroll != 0) setState(() => _edgeOverscroll = 0);
+                            }
+                            return false;
+                          },
+                          child: Stack(
+                            children: [
+                              SingleChildScrollView(
+                                key: const Key('balance-history-shares'),
+                                physics: const ClampingScrollPhysics(),
+                                controller: _scroll,
+                                scrollDirection: Axis.horizontal,
+                                child: SizedBox(
+                                  width: math.max(width, geometry.total),
+                                  height: 28,
+                                  child: Row(children: segments),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: TweenAnimationBuilder<double>(
+                                    key: const Key('balance-history-shares-edge-feedback'),
+                                    tween: Tween(end: _edgeOverscroll),
+                                    duration: Duration(milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 160),
+                                    curve: Curves.easeOutCubic,
+                                    builder:
+                                        (context, amount, _) => CustomPaint(
+                                          painter: BalanceHistoryEdgePainter(amount, colors.tertiaryText),
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
