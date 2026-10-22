@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -39,6 +41,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:provider/provider.dart';
@@ -166,6 +169,7 @@ void main() {
     String? focusedTransactionHash,
     Size size = const Size(390, 1400),
     CoconutThemeVariant variant = CoconutThemeVariant.light,
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -185,6 +189,11 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: variant),
+          builder:
+              (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+                child: child!,
+              ),
           home: WalletCardDetailScreen(
             id: id,
             entryPoint: '/wallet-list',
@@ -200,6 +209,62 @@ void main() {
     );
     await tester.pump();
   }
+
+  testWidgets('real fonts: large detail card keeps chart, neighbor and collapse geometry', (tester) async {
+    await tester.runAsync(() async {
+      for (final family in ['Pretendard', 'SpaceGrotesk']) {
+        final loader = FontLoader(family);
+        for (final weight in ['Regular', 'Bold']) {
+          loader.addFont(
+            Future.value(ByteData.sublistView(File('assets/fonts/$family-$weight.ttf').readAsBytesSync())),
+          );
+        }
+        await loader.load();
+      }
+    });
+    await pump(tester, size: const Size(320, 700), textScale: 1.3);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final front = find.byKey(const ValueKey('wallet-detail-card-1'));
+    final cardRect = tester.getRect(front);
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byKey(const Key('wallet-detail-chart-card'))), cardRect);
+    await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(front), cardRect);
+    await tester.drag(find.byKey(const Key('wallet-detail-carousel')), const Offset(-280, 0));
+    await tester.pumpAndSettle();
+    final neighborRect = tester.getRect(find.byKey(const ValueKey('wallet-detail-card-2')));
+    expect(neighborRect, rectMoreOrLessEquals(cardRect, epsilon: 1e-8));
+    final scroll = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+    scroll.jumpTo(cardRect.height * 0.425);
+    await tester.pump();
+    final collapsed = find.byKey(const Key('wallet-detail-appbar-balance'));
+    final opacity = tester.widget<Opacity>(find.ancestor(of: collapsed, matching: find.byType(Opacity)).first);
+    final evidence = Platform.environment['DETAIL_FONT_EVIDENCE_DIR'];
+    if (evidence != null) {
+      Directory(evidence).createSync(recursive: true);
+      File('$evidence/screen-integration.json').writeAsStringSync(
+        jsonEncode({
+          'cardHeight': cardRect.height,
+          'neighborEdgeDeltas': [
+            neighborRect.left - cardRect.left,
+            neighborRect.top - cardRect.top,
+            neighborRect.right - cardRect.right,
+            neighborRect.bottom - cardRect.bottom,
+          ],
+          'scrollOffset': scroll.offset,
+          'collapseOpacity': opacity.opacity,
+        }),
+      );
+    }
+    expect(opacity.opacity, closeTo(Curves.easeInOutCubic.transform(0.5), 1e-8));
+    scroll.jumpTo(0);
+    await tester.pump();
+    expect(collapsed, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('shows the focused wallet card, UTXO and recent transaction sections', (tester) async {
     await pump(tester);

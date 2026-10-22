@@ -178,7 +178,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   /// 카드의 잔액이 앱바 아래로 사라지는 구간에서 앱바에 잔액이 나타난다.
   void _updateCollapseProgress() {
-    final cardHeight = WalletDetailCardCarousel.heightFor(MediaQuery.sizeOf(context).width);
+    final cardHeight = WalletDetailCardCarousel.heightFor(context);
     final start = cardHeight * 0.3;
     final end = cardHeight * 0.55;
     final progress = ((_scrollController.offset - start) / (end - start)).clamp(0.0, 1.0);

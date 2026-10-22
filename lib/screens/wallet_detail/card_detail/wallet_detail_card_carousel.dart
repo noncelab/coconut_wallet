@@ -35,11 +35,53 @@ class WalletDetailCardCarousel extends StatefulWidget {
     this.onPageScrolled,
   });
 
-  /// 카드 폭은 화면 폭의 [widthFraction], 높이는 폭의 [aspect] 배(최소 210).
+  /// 카드 폭은 화면 폭의 [widthFraction], 높이는 폭의 [aspect] 배 또는 확대된 내용의 높이.
   static const double widthFraction = 0.86;
   static const double aspect = 0.66;
 
-  static double heightFor(double screenWidth) => math.max(210, screenWidth * widthFraction * aspect);
+  static double heightFor(BuildContext context) {
+    ({double height, double baseline}) line(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      final metrics = (
+        height: painter.height,
+        baseline: painter.computeDistanceToActualBaseline(TextBaseline.alphabetic),
+      );
+      painter.dispose();
+      return metrics;
+    }
+
+    final header = line('지갑', CoconutTypography.body2_14_Bold);
+    final amount = line('0', CoconutTypography.heading2_28_NumberBold);
+    final unit = line(
+      BitcoinUnit.values.map((unit) => unit.symbol).join(' '),
+      CoconutTypography.heading4_18_NumberBold,
+    );
+    final small = line('₩ 0', CoconutTypography.body3_12);
+    final amountHeight =
+        math.max(amount.baseline, unit.baseline) +
+        math.max(amount.height - amount.baseline, unit.height - unit.baseline);
+    // Include the button's 1px border on both sides, as well as the existing card padding and gaps.
+    final contentHeight =
+        32 +
+        math.max(36, header.height) +
+        amountHeight +
+        2 +
+        small.height +
+        10 +
+        _ActionButton.size +
+        2 +
+        4 +
+        small.height;
+    return math.max(
+      math.max(210, MediaQuery.sizeOf(context).width * widthFraction * aspect),
+      contentHeight.ceilToDouble(),
+    );
+  }
 
   @override
   State<WalletDetailCardCarousel> createState() => _WalletDetailCardCarouselState();
@@ -83,7 +125,7 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   Widget build(BuildContext context) {
     final cardWidth = MediaQuery.sizeOf(context).width * WalletDetailCardCarousel.widthFraction;
     return SizedBox(
-      height: WalletDetailCardCarousel.heightFor(MediaQuery.sizeOf(context).width) + 16,
+      height: WalletDetailCardCarousel.heightFor(context) + 16,
       child: PageView.builder(
         key: const Key('wallet-detail-carousel'),
         controller: _controller,
