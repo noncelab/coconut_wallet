@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -616,7 +617,7 @@ class AddressRepository extends BaseRepository {
     if (existingAddress == null) {
       return false;
     }
-    return existingAddress.total != 0 || existingAddress.unconfirmed != 0;
+    return existingAddress.total != 0 || existingAddress.unconfirmed != 0 || _hasPendingTransaction(walletId, address);
   }
 
   /// 주소가 사용된 적 있지만 지금은 잔액도 미확정 트랜잭션도 없는지 확인합니다.
@@ -627,10 +628,13 @@ class AddressRepository extends BaseRepository {
     if (existingAddress == null) {
       return false;
     }
-    return existingAddress.isUsed && existingAddress.total == 0 && existingAddress.unconfirmed == 0;
+    return existingAddress.isUsed &&
+        existingAddress.total == 0 &&
+        existingAddress.unconfirmed == 0 &&
+        !_hasPendingTransaction(walletId, address);
   }
 
-  /// 과거에 사용됐지만 지금은 잔액도 미확정 트랜잭션도 없는 주소 목록을 조회합니다.
+  /// 잔액이 0인 사용 주소 후보를 조회한다. 미확정 이력이 남은 주소도 재확인 대상이다.
   List<WalletAddress> getDormantUsedAddresses(int walletId) {
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isUsed == true AND total == 0 AND unconfirmed == 0 SORT(index ASC)',
@@ -641,12 +645,28 @@ class AddressRepository extends BaseRepository {
 
   /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
   List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    final pendingAddresses = <String>{};
+    for (final tx in _pendingTransactions(walletId)) {
+      for (final encoded in [...tx.inputAddressList, ...tx.outputAddressList]) {
+        pendingAddresses.add(jsonDecode(encoded)['address'] as String);
+      }
+    }
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
-      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0) SORT(index ASC)',
-      [walletId, isChange],
+      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0 OR address IN $2) SORT(index ASC)',
+      [walletId, isChange, pendingAddresses.toList()],
     );
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
+
+  RealmResults<RealmTransaction> _pendingTransactions(int walletId) => realm.query<RealmTransaction>(
+    r'walletId == $0 AND blockHeight <= 0 AND replaceByTransactionHash == null',
+    [walletId],
+  );
+
+  bool _hasPendingTransaction(int walletId, String address) =>
+      _pendingTransactions(walletId).query(r'ANY inputAddressList CONTAINS $0 OR ANY outputAddressList CONTAINS $0', [
+        jsonEncode(address),
+      ]).isNotEmpty;
 
   /// isUsed로 표시된 주소 중 최대 인덱스 / 없으면 -1
   /// (getUsedIndexes와 달리 updateUsedIndex:false로 갱신된 인덱스도 포함)
