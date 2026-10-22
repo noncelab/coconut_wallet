@@ -43,13 +43,13 @@ class HomeAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor = context.coconutColors.iconPrimary;
     final pressedIconBackground = Color.lerp(context.coconutColors.iconButtonHighlight, iconColor, 0.2)!;
-    // CDS reserves 20px for outer padding, 16px around leading, and 4px after the empty title.
+    // CDS reserves 32px for outer padding, 16px around leading, and 4px after the empty title.
     // Keep the three actions and their trailing 4px outside the status indicator's maximum width.
     final statusWidth = math.max(
       0.0,
       MediaQuery.sizeOf(context).width -
           MediaQuery.paddingOf(context).horizontal -
-          20 -
+          32 -
           16 -
           4 -
           actionButtonWidth * 3 -
