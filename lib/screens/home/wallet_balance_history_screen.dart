@@ -353,56 +353,72 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
           child: Semantics(
             selected: selected,
             button: true,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
-              child: Stack(
-                children: [
-                  if (wallet != null)
-                    Positioned.fill(
-                      child: WalletCardBackground(
-                        background: background,
-                        photoFile: appearances?.photoFileFor(wallet.id),
-                        resizePhotoToDisplaySize: true,
+            child: Align(
+              widthFactor: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
+                child: Stack(
+                  children: [
+                    if (wallet != null)
+                      Positioned.fill(
+                        child: WalletCardBackground(
+                          background: background,
+                          photoFile: appearances?.photoFileFor(wallet.id),
+                          resizePhotoToDisplaySize: true,
+                        ),
+                      ),
+                    WalletContentTheme(
+                      background: background,
+                      child: Builder(
+                        builder:
+                            (chipContext) => ExcludeSemantics(
+                              child: DefaultTextStyle.merge(
+                                style: const TextStyle(height: 1.4, leadingDistribution: TextLeadingDistribution.even),
+                                child: DecoratedBox(
+                                  position: DecorationPosition.foreground,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
+                                    border:
+                                        selected
+                                            ? Border.all(
+                                              color:
+                                                  wallet != null
+                                                      ? chipContext.coconutColors.primaryText
+                                                      : colors.chipSelectedText,
+                                            )
+                                            : null,
+                                  ),
+                                  child: CoconutChip(
+                                    key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
+                                    label: label,
+                                    labelSize: 12,
+                                    minWidth: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    isSelected: selected,
+                                    color:
+                                        wallet != null
+                                            ? Colors.transparent
+                                            : selected
+                                            ? colors.chipSelectedBackground
+                                            : colors.chipUnselectedBackground,
+                                    labelColor:
+                                        wallet != null
+                                            ? chipContext.coconutColors.primaryText
+                                            : selected
+                                            ? colors.chipSelectedText
+                                            : colors.chipUnselectedText,
+                                    borderColor: Colors.transparent,
+                                    borderWidth: 0,
+                                    selectedBorderWidth: 0,
+                                    onTap: () => _selectWallet(id),
+                                  ),
+                                ),
+                              ),
+                            ),
                       ),
                     ),
-                  WalletContentTheme(
-                    background: background,
-                    child: Builder(
-                      builder:
-                          (chipContext) => ExcludeSemantics(
-                            child: CoconutChip(
-                              key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
-                              label: label,
-                              labelSize: 12,
-                              minWidth: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              isSelected: selected,
-                              color:
-                                  wallet != null
-                                      ? Colors.transparent
-                                      : selected
-                                      ? colors.chipSelectedBackground
-                                      : colors.chipUnselectedBackground,
-                              labelColor:
-                                  wallet != null
-                                      ? chipContext.coconutColors.primaryText
-                                      : selected
-                                      ? colors.chipSelectedText
-                                      : colors.chipUnselectedText,
-                              borderColor:
-                                  wallet != null
-                                      ? chipContext.coconutColors.primaryText
-                                      : selected
-                                      ? colors.chipSelectedText
-                                      : colors.chipUnselectedText,
-                              borderWidth: 0,
-                              selectedBorderWidth: 1,
-                              onTap: () => _selectWallet(id),
-                            ),
-                          ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -415,7 +431,13 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final labelHeight = _singleLineHeight(
       context,
       'Hg',
-      const TextStyle(fontFamily: CoconutTypography.kTextFontFamily, fontSize: 12, fontWeight: FontWeight.bold),
+      const TextStyle(
+        fontFamily: CoconutTypography.kTextFontFamily,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        height: 1.4,
+        leadingDistribution: TextLeadingDistribution.even,
+      ),
     );
     return SizedBox(
       height: labelHeight.ceilToDouble() + 18,
