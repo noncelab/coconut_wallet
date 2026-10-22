@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "The amount you set appears only in Home balance widgets"
   size: "Size"
   wallet_goals: "Goal per Wallet"
-  wallet_goals_description: "Leave it empty for no goal on that wallet"
+  wallet_goals_description: "Set a savings goal for each wallet"
   wallet_goal_placeholder: "Goal amount"
   categories:
     balance: "Balance"
@@ -227,10 +227,11 @@ home_menu:
   remove_shortcut: "Remove Shortcut"
   removed: "Removed from Home"
 hodl_insights:
-  no_goal: "Set a goal for each wallet in settings"
+  no_goal: "Tap here to enter your goal amount"
   title: "Hodl Insights"
   settings_title: "Insights Settings"
-  settings_description: "Choose the wallets to include in your insights."
+  settings_heading: "Select wallets"
+  settings_description: "Choose the wallets to include in the analysis"
   total_balance: "Total Balance"
   goal: "Goal"
   goal_reached: "Goal reached"

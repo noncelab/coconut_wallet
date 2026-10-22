@@ -513,9 +513,22 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            child: Text(
-                              '${t.wallet_card_detail_screen.show_balance_trend} >',
-                              style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    t.wallet_card_detail_screen.show_balance_trend,
+                                    style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                SvgPicture.asset(
+                                  CommonNavigationIconPath.arrowRight,
+                                  height: 8,
+                                  colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -666,23 +679,26 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
             Semantics(
               button: true,
               enabled: moreEnabled,
-              child: GestureDetector(
-                key: key == null ? null : ValueKey(('more', key)),
-                behavior: HitTestBehavior.opaque,
-                onTap: moreEnabled ? onMore : null,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Text(t.view_more, style: CoconutTypography.body2_14.setColor(moreColor)),
-                      const SizedBox(width: 6),
-                      SvgPicture.asset(
-                        CommonNavigationIconPath.arrowRight,
-                        width: 7,
-                        height: 12,
-                        colorFilter: ColorFilter.mode(moreColor, BlendMode.srcIn),
-                      ),
-                    ],
+              child: Transform.translate(
+                offset: const Offset(8, 0),
+                child: InkWell(
+                  key: key == null ? null : ValueKey(('more', key)),
+                  onTap: moreEnabled ? onMore : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(t.view_more, style: CoconutTypography.body2_14.setColor(moreColor)),
+                        const SizedBox(width: 6),
+                        SvgPicture.asset(
+                          CommonNavigationIconPath.arrowRight,
+                          width: 7,
+                          height: 12,
+                          colorFilter: ColorFilter.mode(moreColor, BlendMode.srcIn),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

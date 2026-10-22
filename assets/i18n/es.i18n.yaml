@@ -212,7 +212,7 @@ home_edit:
   fake_balance_description: "El importe configurado solo aparece en los widgets de saldo de Inicio"
   size: "Tamaño"
   wallet_goals: "Objetivo por billetera"
-  wallet_goals_description: "Déjalo vacío para no tener objetivo en esa billetera"
+  wallet_goals_description: "Define un objetivo de ahorro para cada billetera"
   wallet_goal_placeholder: "Cantidad objetivo"
   categories:
     balance: "Saldo"
@@ -228,10 +228,11 @@ home_menu:
   remove_shortcut: "Quitar acceso directo"
   removed: "Quitado del inicio"
 hodl_insights:
-  no_goal: "Fija un objetivo para cada billetera en los ajustes"
+  no_goal: "Toca aquí para introducir tu cantidad objetivo"
   title: "Hodl Insights"
   settings_title: "Ajustes de Insights"
-  settings_description: "Elige las billeteras que se incluyen en tus insights."
+  settings_heading: "Seleccionar billeteras"
+  settings_description: "Elige las billeteras que se incluyen en el análisis"
   total_balance: "Saldo total"
   goal: "Objetivo"
   goal_reached: "Objetivo alcanzado"

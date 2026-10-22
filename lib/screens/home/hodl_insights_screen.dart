@@ -164,8 +164,9 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
     final settings = await WidgetConfigureSheet.openSettings(
       context,
       title: t.hodl_insights.settings_title,
-      heading: t.hodl_insights.title,
+      heading: t.hodl_insights.settings_heading,
       description: t.hodl_insights.settings_description,
+      showWalletsTitle: false,
       spec: const HomeWidgetSettingsSpec(wallets: true, goals: true),
       wallets: viewModel.data.wallets,
       initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
@@ -286,6 +287,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                         key: const Key('hodl-insights-activity-periods'),
                                         selected: viewModel.activityPeriod,
                                         onSelected: viewModel.selectActivityPeriod,
+                                        backgroundColor: HomeCardSurface.of(context),
                                       ),
                                     ),
                                     child: _ActivityCard(viewModel: viewModel),
@@ -654,15 +656,8 @@ class _BalanceChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chart = Material(color: Colors.transparent, child: HomeSparkline(values: viewModel.chartBalances));
-    final hasCardHero = context.findAncestorWidgetOfExactType<Hero>() != null;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: hasCardHero ? null : () => WalletBalanceHistoryScreen.open(context, viewModel),
-      child:
-          hasCardHero
-              ? chart
-              : Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart),
-    );
+    if (context.findAncestorWidgetOfExactType<Hero>() != null) return chart;
+    return Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart);
   }
 }
 
@@ -729,7 +724,7 @@ class _BalanceCard extends StatelessWidget {
     final rate = viewModel.changeRate;
     final rateColor = homePriceColorOf(context, rate, neutral: colors.tertiaryText);
     final hasChange = rate != null && rate != 0;
-    return _InsightCard(
+    final card = _InsightCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -851,6 +846,18 @@ class _BalanceCard extends StatelessWidget {
         ],
       ),
     );
+    if (context.findAncestorWidgetOfExactType<Hero>() != null) return card;
+    return GestureDetector(
+      key: const Key('hodl-insights-balance-card'),
+      behavior: HitTestBehavior.opaque,
+      onTap:
+          () => WalletBalanceHistoryScreen.open(
+            context,
+            viewModel,
+            cardHeight: (context.findRenderObject() as RenderBox?)?.size.height,
+          ),
+      child: card,
+    );
   }
 }
 
@@ -956,7 +963,7 @@ class _GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final goal = viewModel.goal;
-    return _InsightCard(
+    final card = _InsightCard(
       child: Column(
         key: const Key('hodl-insights-goal'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -968,21 +975,17 @@ class _GoalCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_300h,
           if (goal == null)
-            GestureDetector(
+            Row(
               key: const Key('hodl-insights-goal-empty'),
-              behavior: HitTestBehavior.opaque,
-              onTap: onSetGoal,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      t.hodl_insights.no_goal,
-                      style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-                    ),
+              children: [
+                Expanded(
+                  child: Text(
+                    t.hodl_insights.no_goal,
+                    style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
                   ),
-                  Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
-                ],
-              ),
+                ),
+                Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
+              ],
             )
           else
             Builder(
@@ -1053,6 +1056,8 @@ class _GoalCard extends StatelessWidget {
         ],
       ),
     );
+    if (goal != null) return card;
+    return GestureDetector(behavior: HitTestBehavior.opaque, onTap: onSetGoal, child: card);
   }
 }
 

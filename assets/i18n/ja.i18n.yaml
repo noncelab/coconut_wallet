@@ -210,7 +210,7 @@ home_edit:
   fake_balance_description: "設定した金額はホームの残高ウィジェットにのみ表示されます"
   size: "サイズ"
   wallet_goals: "ウォレットごとの目標数量"
-  wallet_goals_description: "空欄にするとそのウォレットの目標はなくなります"
+  wallet_goals_description: "ウォレットごとに貯蓄目標を設定してみましょう"
   wallet_goal_placeholder: "目標数量"
   categories:
     balance: "残高"
@@ -226,10 +226,11 @@ home_menu:
   remove_shortcut: "ショートカットを削除"
   removed: "ホームから削除しました"
 hodl_insights:
-  no_goal: "設定でウォレットごとの目標数量を決めてみましょう"
+  no_goal: "ここをタップして目標数量を入力してみましょう"
   title: "ガチホインサイト"
   settings_title: "インサイト設定"
-  settings_description: "インサイトに含めるウォレットを選んでください。"
+  settings_heading: "ウォレット選択"
+  settings_description: "分析に含めるウォレットを選んでください"
   total_balance: "総残高"
   goal: "目標"
   goal_reached: "目標達成"

@@ -22,6 +22,13 @@ class WalletCardBackground extends StatelessWidget {
     this.resizePhotoToDisplaySize = false,
   });
 
+  /// 한 가지 색으로만 칠할 수 있는 곳(도넛 차트 등)에서 배경을 대신하는 색. 사진은 대표 색이 없어 null.
+  static Color? representativeColorOf(WalletBackground? background) => switch (background) {
+    WalletSkinBackground(:final skinId) => WalletSkin.byId(skinId)?.base,
+    WalletColorBackground(:final color) => color,
+    _ => null,
+  };
+
   static const double lightPhotoScrimOpacity = 0.4;
   static const double darkPhotoScrimOpacity = 0.5;
 

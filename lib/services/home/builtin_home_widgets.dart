@@ -287,7 +287,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       return BalanceByWalletView(
         shares: viewModel.balanceShares(walletIds: ids, othersName: t.home_widgets.others),
         total: _btcAmount(viewModel, viewModel.totalBalance(ids), roundedTo4: true),
-        amountText: (sats) => _btcNumber(viewModel, sats, roundedTo4: true),
+        amountText: (sats) => _btcNumber(viewModel, sats),
       );
     },
   ),

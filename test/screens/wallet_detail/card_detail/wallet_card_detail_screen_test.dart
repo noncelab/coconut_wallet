@@ -327,7 +327,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Wallet Card'), findsNothing);
     expect(tester.getSize(find.byKey(const Key('wallet-detail-chart-back'))), chartButtonSize);
-    expect(find.text('View balance trend >'), findsOneWidget);
+    expect(find.text('View balance trend'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
     await tester.pumpAndSettle();

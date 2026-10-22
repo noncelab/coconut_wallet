@@ -54,20 +54,25 @@ Widget walletBalanceHistoryFlight(
 
 class WalletBalanceHistoryScreen extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
-  const WalletBalanceHistoryScreen({super.key, required this.viewModel});
 
-  static Future<void> open(BuildContext context, HodlInsightsViewModel viewModel) => Navigator.of(context).push<void>(
-    PageRouteBuilder<void>(
-      settings: const RouteSettings(name: '/wallet-balance-history'),
-      opaque: false,
-      transitionDuration: const Duration(milliseconds: 450),
-      reverseTransitionDuration: const Duration(milliseconds: 400),
-      pageBuilder: (_, __, ___) => WalletBalanceHistoryScreen(viewModel: viewModel),
-      transitionsBuilder:
-          (_, animation, __, child) =>
-              FadeTransition(opacity: animation.drive(CurveTween(curve: Curves.easeOutCubic)), child: child),
-    ),
-  );
+  /// 호들 인사이트 잔액 카드에서 열면 그 카드 높이. 그래프 카드가 같은 자리, 같은 크기로 이어진다.
+  final double? cardHeight;
+
+  const WalletBalanceHistoryScreen({super.key, required this.viewModel, this.cardHeight});
+
+  static Future<void> open(BuildContext context, HodlInsightsViewModel viewModel, {double? cardHeight}) =>
+      Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          settings: const RouteSettings(name: '/wallet-balance-history'),
+          opaque: false,
+          transitionDuration: const Duration(milliseconds: 450),
+          reverseTransitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (_, __, ___) => WalletBalanceHistoryScreen(viewModel: viewModel, cardHeight: cardHeight),
+          transitionsBuilder:
+              (_, animation, __, child) =>
+                  FadeTransition(opacity: animation.drive(CurveTween(curve: Curves.easeOutCubic)), child: child),
+        ),
+      );
 
   @override
   State<WalletBalanceHistoryScreen> createState() => _WalletBalanceHistoryScreenState();
@@ -201,7 +206,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
         top: false,
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 12),
+          padding: const EdgeInsets.only(top: 8, bottom: 12),
           child: Column(
             children: [
               Expanded(
@@ -210,7 +215,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final graphHeight = math.min(
-                        constraints.maxWidth / 1.43,
+                        widget.cardHeight ?? constraints.maxWidth / 1.43,
                         math.max(0.0, constraints.maxHeight - 120),
                       );
                       return Stack(
@@ -289,7 +294,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final selected = _selected;
     final localSelected = selected != null && selected >= _first && selected <= _last ? selected - _first : null;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Align(
@@ -524,7 +529,6 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             ],
           ),
         ),
-        const SizedBox(height: 8),
         Expanded(
           child: SingleChildScrollView(
             key: const Key('balance-history-breakdown-scroll'),

@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "Der festgelegte Betrag erscheint nur in Guthaben-Widgets auf der Startseite"
   size: "Größe"
   wallet_goals: "Ziel pro Wallet"
-  wallet_goals_description: "Leer lassen, wenn diese Wallet kein Ziel hat"
+  wallet_goals_description: "Lege für jede Wallet ein Sparziel fest"
   wallet_goal_placeholder: "Zielmenge"
   categories:
     balance: "Guthaben"
@@ -227,10 +227,11 @@ home_menu:
   remove_shortcut: "Verknüpfung entfernen"
   removed: "Von der Startseite entfernt"
 hodl_insights:
-  no_goal: "Lege in den Einstellungen ein Ziel für jede Wallet fest"
+  no_goal: "Tippe hier, um deine Zielmenge einzugeben"
   title: "Hodl Insights"
   settings_title: "Insights-Einstellungen"
-  settings_description: "Wähle die Wallets, die in deine Insights einfließen."
+  settings_heading: "Wallets auswählen"
+  settings_description: "Wähle die Wallets, die in die Analyse einfließen"
   total_balance: "Gesamtguthaben"
   goal: "Ziel"
   goal_reached: "Ziel erreicht"

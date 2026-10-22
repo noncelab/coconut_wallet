@@ -36,6 +36,9 @@ class WidgetConfigureSheet extends StatefulWidget {
   final Widget Function(HomeSpan span)? previewBuilder;
   final bool compactFakeBalance;
 
+  /// 지갑 목록 위 '지갑' 제목. 시트 제목이 이미 지갑 선택이면 숨긴다.
+  final bool showWalletsTitle;
+
   const WidgetConfigureSheet({
     super.key,
     required this.heading,
@@ -47,6 +50,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     this.initialSpan,
     this.previewBuilder,
     this.compactFakeBalance = false,
+    this.showWalletsTitle = true,
   });
 
   static Future<HomeWidgetSettings?> open(
@@ -79,6 +83,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     HomeSpan? initialSpan,
     Widget Function(HomeSpan span)? previewBuilder,
     bool compactFakeBalance = false,
+    bool showWalletsTitle = true,
   }) {
     return CommonBottomSheets.showBottomSheet_100<HomeWidgetSettings>(
       context: context,
@@ -95,6 +100,7 @@ class WidgetConfigureSheet extends StatefulWidget {
         initialSpan: initialSpan,
         previewBuilder: previewBuilder,
         compactFakeBalance: compactFakeBalance,
+        showWalletsTitle: showWalletsTitle,
       ),
     );
   }
@@ -257,7 +263,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
   }
 
   List<Widget> _buildWallets(WidgetConfigureViewModel viewModel) => [
-    HomeConfigureSectionTitle(t.home_edit.wallets),
+    if (widget.showWalletsTitle) HomeConfigureSectionTitle(t.home_edit.wallets),
     HomeConfigureCheckRow(
       key: const Key('widget-configure-all-wallets'),
       label: t.home_edit.all_wallets,

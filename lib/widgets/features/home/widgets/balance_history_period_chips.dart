@@ -8,14 +8,20 @@ class BalanceHistoryPeriodChips extends StatelessWidget {
   final HomeWidgetPeriod selected;
   final ValueChanged<HomeWidgetPeriod> onSelected;
 
-  const BalanceHistoryPeriodChips({super.key, required this.selected, required this.onSelected});
+  /// 칩 묶음 바탕. 없으면 화면 바탕색.
+  final Color? backgroundColor;
+
+  const BalanceHistoryPeriodChips({super.key, required this.selected, required this.onSelected, this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: backgroundColor ?? colors.homeBackground,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

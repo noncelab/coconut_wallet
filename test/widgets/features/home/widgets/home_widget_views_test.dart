@@ -526,7 +526,7 @@ void main() {
     expect(find.byKey(const Key('fiat-rate-down')), findsNothing);
   });
 
-  testWidgets('balance by wallet shows a two-line total and 4-decimal amounts with percentages', (tester) async {
+  testWidgets('balance by wallet shows a number-only total and 4-decimal amounts with percentages', (tester) async {
     await _pump(
       tester,
       _wide,
@@ -543,11 +543,8 @@ void main() {
     expect(find.text('Main'), findsOneWidget);
     expect(find.text('75.0%'), findsOneWidget);
     expect(find.text('0.7500 BTC'), findsOneWidget);
-    final total = find.byKey(const Key('balance-by-wallet-total'));
-    expect(
-      tester.getTopLeft(find.descendant(of: total, matching: find.text('BTC'))).dy,
-      greaterThan(tester.getTopLeft(find.descendant(of: total, matching: find.text('1.0000'))).dy),
-    );
+    expect(tester.widget<Text>(find.byKey(const Key('balance-by-wallet-total'))).data, '1.0000');
+    expect(find.text('BTC'), findsNothing);
     final dots = tester.widgetList<Container>(
       find.byWidgetPredicate((w) => w is Container && w.constraints?.maxWidth == 10),
     );

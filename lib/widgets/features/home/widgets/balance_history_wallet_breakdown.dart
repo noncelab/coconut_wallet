@@ -1,14 +1,18 @@
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart' show WalletContentTheme;
 import 'package:flutter/foundation.dart';
@@ -134,7 +138,21 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
               cursor += segmentWidth;
               if (segmentWidth <= 0) continue;
               final appearance = appearances?.appearanceOf(slice.wallet) ?? WalletAppearance.of(slice.wallet);
+              final background =
+                  appearance.background ??
+                  WalletColorBackground.of(
+                    slice.wallet.walletImportSource == WalletImportSource.coconutVault
+                        ? WalletVisualStyleUtil.getColor(appearance.colorIndex).color
+                        : colors.iconSecondary,
+                  );
               final isSelected = slice.wallet.id == _selectedId;
+              final border = homeChartSegmentBorderOf(
+                context,
+                WalletCardBackground.representativeColorOf(background),
+                colors.homeBackground,
+              );
+              final isFirst = cursor - segmentWidth <= 0.01;
+              final isLast = cursor >= geometry.total - 0.01;
               segments.add(
                 SizedBox(
                   width: segmentWidth,
@@ -154,7 +172,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                                 _reveal = true;
                               }),
                       child: ColoredBox(
-                        color: colors.surfaceMuted,
+                        color: colors.homeBackground,
                         child: Padding(
                           padding: EdgeInsets.only(right: cursor < geometry.total - 0.01 ? 2 : 0),
                           child: ClipRect(
@@ -163,13 +181,30 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                               children: [
                                 RepaintBoundary(
                                   child: WalletCardBackground(
-                                    background: appearance.background,
+                                    background: background,
                                     photoFile: appearances?.photoFileFor(slice.wallet.id),
                                   ),
                                 ),
+                                AnimatedOpacity(
+                                  opacity: isSelected ? 0 : 1,
+                                  duration: Duration(milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 200),
+                                  child: ColoredBox(color: Colors.black.withValues(alpha: 0.3)),
+                                ),
+                                if (border != null)
+                                  IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: border, width: 1),
+                                        borderRadius: BorderRadius.horizontal(
+                                          left: Radius.circular(isFirst ? 14 : 0),
+                                          right: Radius.circular(isLast ? 14 : 0),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 if (isSelected && segmentWidth > 48)
                                   WalletContentTheme(
-                                    background: appearance.background,
+                                    background: background,
                                     child: Builder(
                                       builder:
                                           (context) => Center(

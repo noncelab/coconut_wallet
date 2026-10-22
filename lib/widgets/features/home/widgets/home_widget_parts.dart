@@ -232,6 +232,26 @@ class HomeWidgetCard extends StatelessWidget {
 }
 
 /// [Text]가 그릴 때와 같은 조건(주변 기본 스타일, 글자 배율, 언어)으로 잰 한 줄 폭
+/// 차트 조각 색이 바탕과 거의 같아 묻힐 때 두를 얇은 테두리 색. 충분히 구분되면 null.
+/// 조각과 같은 색조를 두고 밝기만 바탕 반대쪽으로 옮겨, 바탕과 구분될 만큼 진하게(어두운 바탕이면 밝게) 만든다.
+Color? homeChartSegmentBorderOf(BuildContext context, Color? fill, Color surface) {
+  if (fill == null) return null;
+  double contrast(Color a, Color b) {
+    final la = a.computeLuminance();
+    final lb = b.computeLuminance();
+    return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+  }
+
+  if (contrast(fill, surface) >= 1.5) return null;
+  final hsl = HSLColor.fromColor(fill);
+  final darken = surface.computeLuminance() > 0.5;
+  var border = fill;
+  for (var step = 1; step <= 20 && contrast(border, surface) < 2.5; step++) {
+    border = hsl.withLightness((hsl.lightness + (darken ? -0.05 : 0.05) * step).clamp(0.0, 1.0)).toColor();
+  }
+  return border;
+}
+
 double measureHomeText(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
