@@ -49,6 +49,7 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -244,7 +245,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         Navigator.pop(context);
       },
       actionButtonList: [
-        IconButton(
+        CoconutAppBarActionButton(
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset(
             CommonStateIconPath.questionMark,

@@ -322,6 +322,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     }
     vibrateExtraLight();
     widget.onMenuOpen?.call();
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted || generation != _menuGeneration || widget.isEditMode) {
       if (generation == _menuGeneration) _isCapturingChild = false;
       return;

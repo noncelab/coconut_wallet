@@ -209,6 +209,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       actionButtonList: [
         Container(
           alignment: Alignment.center,
+          padding: const EdgeInsets.only(right: 8),
           child: CoconutUnderlinedButton(
             text: _isSelectionMode ? t.done : t.select,
             textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),

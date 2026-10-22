@@ -224,9 +224,14 @@ class _PressableRow extends StatefulWidget {
 
 class _PressableRowState extends State<_PressableRow> {
   bool _pressed = false;
+  bool _snapBack = false;
 
-  void _setPressed(bool pressed) {
-    if (_pressed != pressed) setState(() => _pressed = pressed);
+  void _setPressed(bool pressed, {bool snap = false}) {
+    if (_pressed == pressed) return;
+    setState(() {
+      _pressed = pressed;
+      _snapBack = snap;
+    });
   }
 
   @override
@@ -236,13 +241,13 @@ class _PressableRowState extends State<_PressableRow> {
       behavior: HitTestBehavior.opaque,
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
+      onTapCancel: () => _setPressed(false, snap: true),
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1,
-        duration: const Duration(milliseconds: 100),
+        duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
+          duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color:

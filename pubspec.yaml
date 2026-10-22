@@ -124,6 +124,10 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
 
+dependency_overrides:
+  coconut_design_system:
+    path: ../coconut_design_system
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

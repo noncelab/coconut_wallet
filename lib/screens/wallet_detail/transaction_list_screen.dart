@@ -431,7 +431,7 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
           Positioned(
-            left: 4,
+            left: 0,
             top: topPadding + 4,
             child: FeatureAwareBackButton(onPressed: onBackPressed, color: context.coconutColors.primaryText),
           ),

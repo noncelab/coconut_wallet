@@ -54,7 +54,7 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: 4,
+              left: 0,
               top: topPadding + 4,
               child: FeatureAwareBackButton(onPressed: onBackPressed, color: colors.primaryText),
             ),

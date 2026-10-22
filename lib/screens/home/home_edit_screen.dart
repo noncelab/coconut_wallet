@@ -318,7 +318,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                 ),
                 Wrap(
                   spacing: gap,
-                  runSpacing: 24,
+                  runSpacing: 4,
                   children: [
                     for (final definition in definitions)
                       SizedBox(

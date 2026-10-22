@@ -76,7 +76,10 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
   void _onTapUp(TapUpDetails details) {
     if (!widget.isActive) return;
 
-    _onTapCancel();
+    _controller.reverse();
+    setState(() {
+      _isPressed = false;
+    });
   }
 
   void _activate() {
@@ -86,7 +89,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
   void _onTapCancel() {
     if (!widget.isActive) return;
 
-    _controller.reverse();
+    _controller.value = 0;
     setState(() {
       _isPressed = false;
     });

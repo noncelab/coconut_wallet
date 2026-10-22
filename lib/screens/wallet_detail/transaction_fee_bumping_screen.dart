@@ -45,6 +45,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 enum FeeBumpingType { rbf, cpfp }
 
@@ -122,7 +123,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           title: _isRbf ? t.transaction_fee_bumping_screen.rbf : t.transaction_fee_bumping_screen.cpfp,
                           context: context,
                           actionButtonList: [
-                            IconButton(
+                            CoconutAppBarActionButton(
                               key: _tooltipIconKey,
                               icon: SvgPicture.asset(
                                 CommonStateIconPath.questionMark,

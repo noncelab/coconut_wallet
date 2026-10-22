@@ -155,7 +155,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                     CoconutUnderlinedButton(
                       text: t.done,
                       isActive: !_isDeletionMode,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.fromLTRB(8, 4, 16, 4),
                       onTap: () {
                         Navigator.pop(
                           context,
