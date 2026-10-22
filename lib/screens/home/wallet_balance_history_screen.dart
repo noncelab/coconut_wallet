@@ -4,7 +4,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -20,7 +19,8 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart' show WalletContentTheme;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, listEquals;
+import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/cupertino.dart' show CupertinoButton, CupertinoIcons;
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
@@ -106,9 +106,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     super.initState();
     final preferences = SharedPrefsRepository();
     _showGestureGuide =
-        kDebugMode ||
-        !preferences.isInitialized ||
-        !preferences.getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed);
+        !preferences.isInitialized || !preferences.getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed);
     _walletIds = vm.walletIds?.length == 1 ? [vm.walletIds!.single] : null;
     _readAnchor();
     _period = vm.balancePeriod;
@@ -221,31 +219,38 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                         constraints.maxWidth / 1.43,
                         math.max(0.0, constraints.maxHeight - 120),
                       );
-                      return Column(
+                      return Stack(
+                        fit: StackFit.expand,
                         children: [
-                          SizedBox(
-                            height: graphHeight,
-                            width: double.infinity,
-                            child: Hero(
-                              tag: walletBalanceHistoryHeroTag,
-                              flightShuttleBuilder: walletBalanceHistoryFlight,
-                              child: Material(
-                                key: const Key('balance-history-graph-surface'),
-                                color: colors.homeSurface,
-                                borderRadius: BorderRadius.circular(20),
-                                clipBehavior: Clip.antiAlias,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    ExcludeSemantics(excluding: _showGestureGuide, child: _chart(balances, dates)),
-                                    if (_showGestureGuide) _BalanceHistoryGestureGuide(onDismiss: _dismissGestureGuide),
-                                  ],
+                          Column(
+                            children: [
+                              SizedBox(
+                                height: graphHeight,
+                                width: double.infinity,
+                                child: Hero(
+                                  tag: walletBalanceHistoryHeroTag,
+                                  flightShuttleBuilder: walletBalanceHistoryFlight,
+                                  child: Material(
+                                    key: const Key('balance-history-graph-surface'),
+                                    color: colors.homeSurface,
+                                    borderRadius: BorderRadius.circular(20),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: _chart(balances, dates),
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 12),
+                              Expanded(child: _walletBreakdown(dates, balances)),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          Expanded(child: _walletBreakdown(dates, balances)),
+                          if (_showGestureGuide)
+                            Positioned(
+                              top: math.max(0.0, graphHeight - 40),
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: _BalanceHistoryGestureGuide(onDismiss: _dismissGestureGuide),
+                            ),
                         ],
                       );
                     },
@@ -816,73 +821,105 @@ class _BalanceHistoryGestureGuide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    Widget instruction(SvgPicture icon, String text) => Row(
+    Widget instruction(String iconPath, String text) => Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        icon,
+        SvgPicture.asset(
+          iconPath,
+          width: 22,
+          height: 22,
+          colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.primaryText))),
+        Expanded(child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.guideBubblePrimaryText))),
       ],
     );
-    return GestureDetector(
-      key: const Key('balance-history-gesture-guide'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () {},
-      child: ColoredBox(
-        color: colors.homeSurface.withValues(alpha: 0.7),
-        child: LayoutBuilder(
-          builder:
-              (context, constraints) => SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          t.wallet_list.balance_history_detail.gesture_guide_title,
-                          style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
-                        ),
-                        const SizedBox(height: 12),
-                        instruction(
-                          SvgPicture.asset(CommonNavigationIconPath.arrowLeftRight),
-                          t.wallet_list.balance_history_detail.gesture_guide_pan,
-                        ),
-                        const SizedBox(height: 10),
-                        instruction(
-                          SvgPicture.asset(CommonNavigationIconPath.arrowUpDown),
-                          t.wallet_list.balance_history_detail.gesture_guide_zoom,
-                        ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ShrinkAnimationButton(
-                            key: const Key('balance-history-gesture-guide-dismiss'),
-                            onPressed: onDismiss,
-                            defaultColor: colors.primaryText,
-                            borderWidth: 0,
-                            borderRadius: 12,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              child: Text(
-                                t.confirm,
-                                style: CoconutTypography.body3_12_Bold.copyWith(color: colors.homeSurface),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 24),
+                  child: CustomPaint(
+                    size: const Size(18, 10),
+                    painter: _GestureGuideTailPainter(colors.guideBubbleBackground),
                   ),
                 ),
-              ),
+                Container(
+                  key: const Key('balance-history-gesture-guide'),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 6, 12),
+                  decoration: BoxDecoration(
+                    color: colors.guideBubbleBackground,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              t.wallet_list.balance_history_detail.gesture_guide_title,
+                              style: CoconutTypography.body2_14_Bold.copyWith(color: colors.guideBubblePrimaryText),
+                            ),
+                            const SizedBox(height: 10),
+                            instruction(
+                              CommonNavigationIconPath.arrowLeftRight,
+                              t.wallet_list.balance_history_detail.gesture_guide_pan,
+                            ),
+                            const SizedBox(height: 10),
+                            instruction(
+                              CommonNavigationIconPath.arrowUpDown,
+                              t.wallet_list.balance_history_detail.gesture_guide_zoom,
+                            ),
+                          ],
+                        ),
+                      ),
+                      CupertinoButton(
+                        key: const Key('balance-history-gesture-guide-dismiss'),
+                        padding: const EdgeInsets.all(4),
+                        minimumSize: const Size(32, 32),
+                        onPressed: onDismiss,
+                        child: Icon(CupertinoIcons.xmark, size: 16, color: colors.guideBubblePrimaryText),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+class _GestureGuideTailPainter extends CustomPainter {
+  final Color color;
+  const _GestureGuideTailPainter(this.color);
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, size.height)
+        ..lineTo(size.width / 2, 0)
+        ..lineTo(size.width, size.height)
+        ..close(),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GestureGuideTailPainter oldDelegate) => color != oldDelegate.color;
 }
 
 class _BalanceHistoryEdgePainter extends CustomPainter {
