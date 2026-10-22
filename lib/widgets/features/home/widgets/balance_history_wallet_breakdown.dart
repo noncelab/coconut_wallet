@@ -249,14 +249,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                         text: TextSpan(
                           children: [
                             WidgetSpan(
-                              child: SizedBox(
-                                width: math.max(0, width - 34),
-                                child: _details(
-                                  context,
-                                  selected,
-                                  showName: widget.singleWallet || (geometry.values[_selectedId] ?? 0) <= 48,
-                                ),
-                              ),
+                              child: SizedBox(width: math.max(0, width - 34), child: _details(context, selected)),
                             ),
                           ],
                         ),
@@ -272,7 +265,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     );
   }
 
-  Widget _details(BuildContext context, BalanceHistoryWalletSlice slice, {required bool showName}) {
+  Widget _details(BuildContext context, BalanceHistoryWalletSlice slice) {
     final colors = context.coconutColors;
     final sent = slice.transactions.where((tx) => tx.transactionType == TransactionType.sent).toList();
     final received = slice.transactions.where((tx) => tx.transactionType == TransactionType.received).toList();
@@ -295,10 +288,10 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showName) ...[text(slice.wallet.name, bold: true), const SizedBox(height: 12)],
         Table(
           columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
           children: [
+            row(t.name, text(slice.wallet.name)),
             row(t.home_edit.period, text(widget.periodLabel)),
             row(
               t.wallet_list.balance_history_detail.balance_label,

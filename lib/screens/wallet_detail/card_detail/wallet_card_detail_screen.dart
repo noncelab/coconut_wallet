@@ -463,21 +463,24 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       borderRadius: BorderRadius.circular(28),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: WalletBalanceHistoryChart(
-                key: ValueKey(wallet.id),
-                points: [
-                  for (var i = 0; i < dates.length; i++)
-                    WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
-                ],
-                revision: Object.hashAll(balances),
-                targetSats: target,
-                axisUnit: viewModel.unit,
-                cardPresentation: true,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: WalletBalanceHistoryChart(
+                  key: ValueKey(wallet.id),
+                  points: [
+                    for (var i = 0; i < dates.length; i++)
+                      WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
+                  ],
+                  revision: Object.hashAll(balances),
+                  targetSats: target,
+                  axisUnit: viewModel.unit,
+                  cardPresentation: true,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -490,23 +493,30 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (hasTarget)
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '${t.hodl_insights.goal}: ${viewModel.amountText(target)} / ${progress.toStringAsFixed(0)}%',
-                            key: const Key('wallet-detail-balance-goal'),
-                            style: CoconutTypography.body3_12.copyWith(color: colors.homeChartLine),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${t.hodl_insights.goal}: ${viewModel.amountText(target)} / ${progress.toStringAsFixed(0)}%',
+                              key: const Key('wallet-detail-balance-goal'),
+                              style: CoconutTypography.body3_12.copyWith(color: colors.homeChartLine),
+                            ),
                           ),
                         ),
-                      InkWell(
-                        key: const Key('wallet-detail-balance-history'),
-                        onTap: () => _openBalanceHistory(viewModel),
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 6, bottom: 6, right: 8),
-                          child: Text(
-                            '${t.wallet_card_detail_screen.show_balance_trend} >',
-                            style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: InkWell(
+                          key: const Key('wallet-detail-balance-history'),
+                          onTap: () => _openBalanceHistory(viewModel),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            child: Text(
+                              '${t.wallet_card_detail_screen.show_balance_trend} >',
+                              style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                            ),
                           ),
                         ),
                       ),

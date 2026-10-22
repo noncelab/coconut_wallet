@@ -829,6 +829,7 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "期間別サマリー"
     gesture_guide_title: "グラフを動かしてみましょう"
     gesture_guide_pan: "左右にスワイプして表示期間を移動できます。"
     gesture_guide_zoom: "上下にスワイプするか、2本の指で拡大・縮小して、1週間・1か月・3か月などの範囲を調整できます。"

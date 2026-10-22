@@ -259,12 +259,14 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-detail-balance-history')));
     await tester.pumpAndSettle();
     final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+    expect(find.byKey(const ValueKey('balance-history-wallet-all')), findsNothing);
+    expect(find.byKey(const ValueKey('balance-history-wallet-1')), findsNothing);
+    expect(find.text(t.wallet_list.balance_history_detail.period_summary), findsOneWidget);
     expect(history.viewModel.walletIds, [2]);
     expect(history.viewModel.balancePeriod, HomeWidgetPeriod.week);
-    final chip = find.byKey(const ValueKey('balance-history-wallet-2'));
-    final semantics = tester.widget<Semantics>(find.ancestor(of: chip, matching: find.byType(Semantics)).first);
-    expect(semantics.properties.selected, isTrue);
-    Navigator.of(tester.element(chip)).pop();
+    expect(find.byKey(const Key('balance-history-wallet-chips')), findsNothing);
+    expect(find.byKey(const ValueKey('balance-history-wallet-2')), findsNothing);
+    Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
     await tester.pumpAndSettle();
@@ -288,6 +290,11 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
     await tester.pumpAndSettle();
     final label = find.byKey(const Key('wallet-detail-balance-goal'));
+    final trendButton = find.byKey(const Key('wallet-detail-balance-history'));
+    final trendText = find.descendant(of: trendButton, matching: find.byType(Text));
+    expect(tester.getTopLeft(trendText).dx, closeTo(tester.getTopLeft(label).dx, 0.01));
+    expect(tester.getTopLeft(trendButton).dx, closeTo(tester.getTopLeft(label).dx - 8, 0.01));
+    expect(tester.widget<InkWell>(trendButton).borderRadius, BorderRadius.circular(12));
     expect(tester.widget<Text>(label).data, endsWith('100%'));
     for (final balance in [15000000, 5000000]) {
       walletProvider.balances[1] = balance;

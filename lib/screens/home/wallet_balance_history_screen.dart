@@ -13,11 +13,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
-import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
-import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart' show WalletContentTheme;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/cupertino.dart' show CupertinoButton, CupertinoIcons;
@@ -208,8 +203,6 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
           padding: const EdgeInsets.only(top: 16, bottom: 12),
           child: Column(
             children: [
-              _walletChips(),
-              const SizedBox(height: 16),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -264,137 +257,12 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     );
   }
 
-  void _selectWallet(int? walletId) {
-    setState(() {
-      _edgeOverscroll = 0;
-      _walletIds = walletId == null ? null : [walletId];
-      _axisRange = null;
-    });
-    _reanchor();
-  }
-
   Future<void> _dismissGestureGuide() async {
     setState(() => _showGestureGuide = false);
     final preferences = SharedPrefsRepository();
     if (preferences.isInitialized) {
       await preferences.setBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed, true);
     }
-  }
-
-  Widget _walletChips() {
-    final colors = context.coconutColors;
-    final appearances = context.watchWalletAppearance();
-    Widget chip(int? id, String label, {WalletItemBase? wallet, bool isLast = false}) {
-      final background =
-          wallet == null ? null : (appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet)).background;
-      final selected = id == null ? _walletIds == null : _walletIds?.contains(id) == true;
-      return RepaintBoundary(
-        child: Padding(
-          padding: EdgeInsets.only(right: isLast ? 0 : 8),
-          child: Semantics(
-            selected: selected,
-            button: true,
-            child: Align(
-              widthFactor: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
-                child: Stack(
-                  children: [
-                    if (wallet != null)
-                      Positioned.fill(
-                        child: WalletCardBackground(
-                          background: background,
-                          photoFile: appearances?.photoFileFor(wallet.id),
-                          resizePhotoToDisplaySize: true,
-                        ),
-                      ),
-                    WalletContentTheme(
-                      background: background,
-                      child: Builder(
-                        builder:
-                            (chipContext) => ExcludeSemantics(
-                              child: DefaultTextStyle.merge(
-                                style: const TextStyle(height: 1.4, leadingDistribution: TextLeadingDistribution.even),
-                                child: DecoratedBox(
-                                  position: DecorationPosition.foreground,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(CoconutStyles.radius_500),
-                                    border:
-                                        selected
-                                            ? Border.all(
-                                              color:
-                                                  wallet != null
-                                                      ? chipContext.coconutColors.primaryText
-                                                      : colors.chipSelectedText,
-                                            )
-                                            : null,
-                                  ),
-                                  child: CoconutChip(
-                                    key: ValueKey('balance-history-wallet-${id ?? 'all'}'),
-                                    label: label,
-                                    labelSize: 12,
-                                    minWidth: 0,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    isSelected: selected,
-                                    color:
-                                        wallet != null
-                                            ? Colors.transparent
-                                            : selected
-                                            ? colors.chipSelectedBackground
-                                            : colors.chipUnselectedBackground,
-                                    labelColor:
-                                        wallet != null
-                                            ? chipContext.coconutColors.primaryText
-                                            : selected
-                                            ? colors.chipSelectedText
-                                            : colors.chipUnselectedText,
-                                    borderColor: Colors.transparent,
-                                    borderWidth: 0,
-                                    selectedBorderWidth: 0,
-                                    onTap: () => _selectWallet(id),
-                                  ),
-                                ),
-                              ),
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final wallets = vm.data.wallets;
-    // 한 줄 칩의 실제 글꼴 배율에 맞춰 가로 뷰포트 높이를 확보한다.
-    final labelHeight = _singleLineHeight(
-      context,
-      'Hg',
-      const TextStyle(
-        fontFamily: CoconutTypography.kTextFontFamily,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        height: 1.4,
-        leadingDistribution: TextLeadingDistribution.even,
-      ),
-    );
-    return SizedBox(
-      height: labelHeight.ceilToDouble() + 18,
-      child: ListView.builder(
-        key: const Key('balance-history-wallet-chips'),
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        cacheExtent: 80,
-        itemCount: wallets.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) return chip(null, t.home_edit.all_wallets, isLast: wallets.isEmpty);
-          final wallet = wallets[index - 1];
-          return chip(wallet.id, wallet.name, wallet: wallet, isLast: index == wallets.length);
-        },
-      ),
-    );
   }
 
   Widget _chart(List<int> balances, List<DateTime> dates) {
@@ -643,8 +511,11 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             spacing: 12,
             runSpacing: 4,
             children: [
-              Text(period, style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.primaryText)),
-              if (_selected != null)
+              Text(
+                t.wallet_list.balance_history_detail.period_summary,
+                style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.primaryText),
+              ),
+              if (_selected != null && _walletIds == null)
                 Text(
                   vm.data.unit.displayBitcoinAmount(balances[index], withUnit: true),
                   style: CoconutTypography.body2_14_NumberBold.copyWith(color: context.coconutColors.primaryText),

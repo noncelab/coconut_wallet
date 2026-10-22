@@ -958,6 +958,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "Zeitraumübersicht"
     gesture_guide_title: "Diagramm erkunden"
     gesture_guide_pan: "Nach links oder rechts wischen, um den Zeitraum zu verschieben."
     gesture_guide_zoom: "Nach oben oder unten wischen oder mit zwei Fingern zoomen, um den Bereich anzupassen: 1 Woche, 1 Monat, 3 Monate und mehr."

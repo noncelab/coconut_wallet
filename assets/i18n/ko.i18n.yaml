@@ -958,6 +958,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "기간별 요약"
     gesture_guide_title: "그래프를 움직여 보세요"
     gesture_guide_pan: "좌우로 움직여 보는 기간을 이동해요."
     gesture_guide_zoom: "위아래로 움직이거나 두 손가락으로 확대·축소해 1주·1개월·3개월 등의 범위를 조절해요."
