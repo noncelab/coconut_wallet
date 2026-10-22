@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_wallet/constants/wallet_skins.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -25,6 +26,7 @@ import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -107,6 +109,13 @@ void main() {
   late WalletAppearanceProvider appearances;
   late _WalletProvider walletProvider;
 
+  setUpAll(() async {
+    final font = FontLoader('Pretendard');
+    font.addFont(rootBundle.load('assets/fonts/Pretendard-Regular.ttf'));
+    font.addFont(rootBundle.load('assets/fonts/Pretendard-Bold.ttf'));
+    await font.load();
+  });
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
@@ -173,6 +182,57 @@ void main() {
       await tester.pumpAndSettle();
     } else {
       await tester.pump();
+    }
+  }
+
+  for (final variant in [CoconutThemeVariant.dark, CoconutThemeVariant.coconutTheme]) {
+    for (final scale in [1.0, 1.6, 2.0]) {
+      testWidgets('fold keyboard keeps editing and completion reachable ${variant.name} $scale', (tester) async {
+        walletProvider = _WalletProvider(_hotWallet());
+        await open(tester, variant: variant, textScaler: TextScaler.linear(scale), logicalSize: const Size(841, 874));
+        final field = find.byType(EditableText);
+        await tester.ensureVisible(field);
+        await tester.enterText(field, 'Fold savings');
+        await tester.pumpAndSettle();
+        final editable = tester.widget<EditableText>(field);
+
+        for (final size in [const Size(841, 874), const Size(412, 915), const Size(841, 874)]) {
+          tester.view.physicalSize = size;
+          tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 24);
+          tester.view.padding = const FakeViewPadding(top: 24);
+          tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.ensureVisible(field);
+          await tester.pumpAndSettle();
+          final inputRect = tester.getRect(field);
+          final completeRect = tester.getRect(find.text(t.complete));
+          expect(inputRect.top, greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppBar)).dy));
+          expect(inputRect.bottom, lessThanOrEqualTo(completeRect.top));
+          expect(completeRect.bottom, lessThanOrEqualTo(size.height - 300));
+          expect(find.text(t.complete).hitTestable(), findsOneWidget);
+          expect(field.hitTestable(), findsOneWidget);
+          expect(tester.widget<EditableText>(field).controller, same(editable.controller));
+          expect(editable.controller.text, 'Fold savings');
+          expect(editable.focusNode.hasFocus, isTrue);
+        }
+
+        tester.view.viewInsets = const FakeViewPadding();
+        tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+        await tester.pumpAndSettle();
+        final lastIcon = find.byKey(const Key('wallet-appearance-icon-${CustomWalletIcons.totalCount - 1}'));
+        await Scrollable.ensureVisible(tester.element(lastIcon), alignment: 0.5);
+        await tester.pumpAndSettle();
+        expect(tester.getBottomLeft(lastIcon).dy, lessThan(tester.getTopLeft(find.text(t.complete)).dy));
+        expect(lastIcon.hitTestable(), findsOneWidget);
+        await tester.tap(lastIcon);
+        await tester.tap(find.text(t.complete));
+        await tester.pumpAndSettle();
+        expect(walletProvider.savedName, 'Fold savings');
+        expect(walletProvider.savedPalette?.$1, CustomWalletIcons.totalCount - 1);
+        expect(find.byType(WalletAppearanceScreen), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
     }
   }
 

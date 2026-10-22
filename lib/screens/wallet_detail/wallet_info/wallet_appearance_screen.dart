@@ -70,38 +70,40 @@ class _WalletAppearanceBody extends StatelessWidget {
         ),
         body: Stack(
           children: [
-            Column(
-              children: [
-                _preview(context, viewModel),
-                CoconutLayout.spacing_300h,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final size in WalletCardSize.values)
-                      SpanSizeOption(
-                        key: Key('wallet-appearance-size-${size.name}'),
-                        columns: size == WalletCardSize.wide ? 4 : 2,
-                        rows: 2,
-                        isSelected: viewModel.previewSize == size,
-                        onTap: () => viewModel.selectPreviewSize(size),
-                      ),
-                  ],
-                ),
-                CoconutLayout.spacing_400h,
-                _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+            SingleChildScrollView(
+              key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+              child: Column(
+                children: [
+                  _preview(context, viewModel),
+                  CoconutLayout.spacing_300h,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (final size in WalletCardSize.values)
+                        SpanSizeOption(
+                          key: Key('wallet-appearance-size-${size.name}'),
+                          columns: size == WalletCardSize.wide ? 4 : 2,
+                          rows: 2,
+                          isSelected: viewModel.previewSize == size,
+                          onTap: () => viewModel.selectPreviewSize(size),
+                        ),
+                    ],
+                  ),
+                  CoconutLayout.spacing_400h,
+                  _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
+                  Padding(
                     padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
                     child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Align(
               alignment: Alignment.bottomCenter,
               child: FixedBottomButton(
                 text: t.complete,
+                // Scaffold already resizes this body above the keyboard.
+                isVisibleAboveKeyboard: false,
                 isActive: viewModel.canSave,
                 onButtonClicked: () async {
                   await viewModel.save();
