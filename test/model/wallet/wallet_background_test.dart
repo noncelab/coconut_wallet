@@ -32,6 +32,25 @@ void main() {
       expect(WalletBackground.fromJson({'type': 'gif'}), isNull);
       expect(WalletBackground.fromJson({'type': 'photo', 'fileName': 'a.jpg'}), isNull);
       expect(WalletBackground.fromJson({'type': 'photo', 'fileName': 'a.jpg', 'aspectRatio': 0}), isNull);
+      expect(WalletBackground.fromJson({'type': 'photo', 'fileName': '../a.jpg', 'aspectRatio': 1}), isNull);
+      expect(WalletBackground.fromJson({'type': 'photo', 'fileName': '/tmp/a.jpg', 'aspectRatio': 1}), isNull);
+    });
+
+    test('loaded photo framing is clamped into the model range', () {
+      final loaded = WalletBackground.fromJson({
+        'type': 'photo',
+        'fileName': 'wallet_1_1.jpg',
+        'aspectRatio': 1.5,
+        'focusX': 8,
+        'focusY': -4,
+        'scale': -2,
+      });
+
+      expect(loaded, isA<WalletPhotoBackground>());
+      final photo = loaded! as WalletPhotoBackground;
+      expect(photo.focusX, 1);
+      expect(photo.focusY, -1);
+      expect(photo.scale, 1);
     });
 
     test('photo framing is clamped', () {

@@ -18,19 +18,31 @@ sealed class WalletBackground {
       case WalletPhotoBackground.type:
         final fileName = json['fileName'];
         final aspectRatio = _toDouble(json['aspectRatio']);
-        if (fileName is! String || aspectRatio == null || aspectRatio <= 0) return null;
+        if (fileName is! String ||
+            !WalletPhotoBackground.isSafeFileName(fileName) ||
+            aspectRatio == null ||
+            !aspectRatio.isFinite ||
+            aspectRatio <= 0) {
+          return null;
+        }
         return WalletPhotoBackground(
           fileName: fileName,
           aspectRatio: aspectRatio,
-          focusX: _toDouble(json['focusX']) ?? 0,
-          focusY: _toDouble(json['focusY']) ?? 0,
-          scale: _toDouble(json['scale']) ?? 1,
+          focusX: _clamp(json['focusX'], -1, 1, 0),
+          focusY: _clamp(json['focusY'], -1, 1, 0),
+          scale: _clamp(json['scale'], 1, WalletPhotoBackground.maxScale, 1),
         );
     }
     return null;
   }
 
   static double? _toDouble(Object? value) => value is num ? value.toDouble() : null;
+
+  static double _clamp(Object? value, double min, double max, double fallback) {
+    final number = _toDouble(value);
+    if (number == null || !number.isFinite) return fallback;
+    return number.clamp(min, max);
+  }
 }
 
 class WalletSkinBackground extends WalletBackground {
@@ -81,6 +93,12 @@ class WalletColorBackground extends WalletBackground {
 class WalletPhotoBackground extends WalletBackground {
   static const type = 'photo';
   static const double maxScale = 4;
+
+  /// 문서 폴더 안의 파일 이름만 허용한다. 구분자나 `..`가 있으면 그 폴더 밖을 가리킨다.
+  static bool isSafeFileName(String fileName) {
+    if (fileName.isEmpty || fileName.length > 128 || fileName == '.' || fileName == '..') return false;
+    return !fileName.contains('/') && !fileName.contains('\\') && !fileName.contains('\u0000');
+  }
 
   final String fileName;
   final double aspectRatio;

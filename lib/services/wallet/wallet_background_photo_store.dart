@@ -31,20 +31,26 @@ class WalletBackgroundPhotoStore {
 
   File? fileOf(String fileName) {
     final directory = _directory;
-    return directory == null ? null : File(p.join(directory.path, fileName));
+    if (directory == null || !WalletPhotoBackground.isSafeFileName(fileName)) return null;
+    final file = File(p.join(directory.path, fileName));
+    return p.isWithin(directory.path, file.path) ? file : null;
   }
 
   /// 사진을 저장하고 가운데 맞춤 배경 값을 돌려준다. 아직 지갑에 적용하지는 않는다.
   Future<WalletPhotoBackground> save(int walletId, Uint8List bytes, {String extension = 'jpg'}) async {
     final aspectRatio = await _aspectRatioOf(bytes);
     final directory = await init();
-    final fileName = 'wallet_${walletId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
+    final safeExtension = RegExp(r'^[a-z0-9]{1,8}$').hasMatch(extension) ? extension : 'jpg';
+    final fileName = 'wallet_${walletId}_${DateTime.now().microsecondsSinceEpoch}.$safeExtension';
     await File(p.join(directory.path, fileName)).writeAsBytes(bytes, flush: true);
     return WalletPhotoBackground(fileName: fileName, aspectRatio: aspectRatio);
   }
 
   Future<void> delete(String fileName) async {
-    final file = fileOf(fileName) ?? File(p.join((await init()).path, fileName));
+    if (!WalletPhotoBackground.isSafeFileName(fileName)) return;
+    await init();
+    final file = fileOf(fileName);
+    if (file == null) return;
     try {
       if (await file.exists()) await file.delete();
     } catch (e) {
@@ -56,7 +62,7 @@ class WalletBackgroundPhotoStore {
   Future<void> deleteAllExcept(Set<String> keep) async {
     final directory = await init();
     try {
-      await for (final entity in directory.list()) {
+      await for (final entity in directory.list(followLinks: false)) {
         if (entity is File && !keep.contains(p.basename(entity.path))) await entity.delete();
       }
     } catch (e) {

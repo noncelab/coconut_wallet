@@ -109,6 +109,44 @@ void main() {
     expect(photoFile('orphan.jpg').existsSync(), isFalse);
   });
 
+  test('a new provider reloads each wallet background', () async {
+    final first = await createProvider();
+    await first.setBackground(1, const WalletSkinBackground('mint'));
+    await first.setBackground(2, const WalletColorBackground(0xFF112233));
+    first.dispose();
+
+    final second = await createProvider();
+    expect(second.backgroundOf(1), const WalletSkinBackground('mint'));
+    expect(second.backgroundOf(2), const WalletColorBackground(0xFF112233));
+    expect(second.backgroundOf(3), isNull);
+    second.dispose();
+  });
+
+  test('replacing one wallet keeps a photo another wallet still names', () async {
+    final provider = await createProvider();
+    final shared = await writePhoto('shared.jpg');
+    await provider.setBackground(1, shared);
+    await provider.setBackground(2, shared);
+
+    await provider.setBackground(1, const WalletSkinBackground('mint'));
+
+    expect(photoFile('shared.jpg').existsSync(), isTrue);
+    expect(provider.backgroundOf(2), shared);
+  });
+
+  test('delete ignores a stored name that points outside the photo directory', () async {
+    final provider = await createProvider();
+    final outside = File(p.join(tempDir.path, 'keep.txt'))..writeAsStringSync('keep');
+    final escaped = WalletPhotoBackground(fileName: '../keep.txt', aspectRatio: 1);
+    await provider.setBackground(1, escaped);
+
+    events.add(const WalletRemoved(1));
+    await pumpEventQueue();
+
+    expect(outside.existsSync(), isTrue);
+    expect(outside.readAsStringSync(), 'keep');
+  });
+
   test('discardPhoto keeps a photo that a wallet uses', () async {
     final provider = await createProvider();
     final used = await writePhoto('used.jpg');

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -47,6 +49,25 @@ void main() {
     await prefs.setString(SharedPrefKeys.kWalletAppearanceMap, '{not json');
 
     expect(repository.loadBackgrounds(), isEmpty);
+  });
+
+  test('one broken entry does not drop the other wallet', () async {
+    await prefs.setString(
+      SharedPrefKeys.kWalletAppearanceMap,
+      jsonEncode({
+        '1': {
+          'background': {'type': 'skin'},
+        },
+        '2': {
+          'background': {'type': 'skin', 'skinId': 'mint'},
+        },
+        '3': {
+          'background': {'type': 'photo', 'fileName': '../seed.realm', 'aspectRatio': 1},
+        },
+      }),
+    );
+
+    expect(repository.loadBackgrounds(), {2: const WalletSkinBackground('mint')});
   });
 
   test('cleared on password reset', () {
