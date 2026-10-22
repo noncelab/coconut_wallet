@@ -317,6 +317,9 @@ class BalanceByWalletView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final sum = shares.fold<int>(0, (total, share) => total + share.balance);
+    const strokeRatio = 0.2;
+    // The center square's diagonal must fit inside the donut hole.
+    final centerFraction = (1 - 2 * strokeRatio) / math.sqrt2;
     return HomeWidgetCard(
       onPressed: onPressed,
       child: Row(
@@ -330,12 +333,13 @@ class BalanceByWalletView extends StatelessWidget {
                   [for (final share in shares) share.balance.toDouble()],
                   [for (final share in shares) colorOf(context, share)],
                   colors.surfaceMuted,
-                  strokeRatio: 0.2,
+                  strokeRatio: strokeRatio,
                   reveal: reveal,
                 ),
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+                  child: FractionallySizedBox(
+                    widthFactor: centerFraction,
+                    heightFactor: centerFraction,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Column(
