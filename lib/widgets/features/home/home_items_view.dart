@@ -90,6 +90,9 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   String? _previewTargetId;
   HomeGridPosition? _previewCell;
   Offset? _dragGlobalPosition;
+  double? _geometryCellExtent;
+  double? _anchorCellExtent;
+  double? _dragLayoutWidth;
 
   @override
   void initState() {
@@ -128,6 +131,12 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     if (state != AppLifecycleState.resumed) cancelActiveDrag();
   }
 
+  @override
+  void didChangeMetrics() {
+    // A fold or rotation moves the grid without moving the held finger.
+    _refreshActiveDragGeometry();
+  }
+
   /// Back cancels only the held gesture. Previously committed placements remain saved.
   bool cancelActiveDrag() {
     final pointer = _dragPointer;
@@ -148,6 +157,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     });
     _dragPointer = pointer;
     _dragCanceled = false;
+    _anchorCellExtent = _geometryCellExtent;
     if (!widget.isArranging) widget.onArrangeStart?.call();
   }
 
@@ -202,6 +212,35 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
         if (_dragGlobalPosition != null) _updatePreview(draggedId, _dragGlobalPosition!);
       }
     });
+  }
+
+  /// The held finger stays still while the window width changes. Re-snap that point,
+  /// and scale the grabbed offset so a corner grab does not select a different cell.
+  void _refreshActiveDragGeometry() {
+    final draggedId = _draggedId;
+    if (draggedId == null || _dragGlobalPosition == null || _dragCanceled) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _dragCanceled || _draggedId != draggedId || _dragGlobalPosition == null) return;
+      _rescaleDragAnchor();
+      _updatePreview(draggedId, _dragGlobalPosition!);
+    });
+  }
+
+  void _rescaleDragAnchor() {
+    final next = _geometryCellExtent;
+    final previous = _anchorCellExtent;
+    if (next == null || previous == null || previous == 0 || next == previous) return;
+    final draggedId = _draggedId;
+    final dragged = draggedId == null ? null : _itemById(draggedId);
+    if (dragged == null) return;
+    final previousSize = HomeGridGeometry(cellExtent: previous, gap: _gap).sizeOf(dragged.span);
+    final nextSize = HomeGridGeometry(cellExtent: next, gap: _gap).sizeOf(dragged.span);
+    // Multi-cell spans include fixed gaps, so each axis needs its full-size ratio.
+    _dragAnchor = Offset(
+      _dragAnchor.dx * nextSize.width / previousSize.width,
+      _dragAnchor.dy * nextSize.height / previousSize.height,
+    );
+    _anchorCellExtent = next;
   }
 
   void _clearPreview() {
@@ -348,6 +387,10 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
         final maxWidth = constraints.maxWidth - inset * 2;
         final cellExtent =
             maxWidth.isFinite ? math.max(1.0, (maxWidth - (_columns - 1) * _gap) / _columns) : HomeItemsView.cell;
+        final widthChanged = _dragLayoutWidth != null && _dragLayoutWidth != constraints.maxWidth;
+        _dragLayoutWidth = constraints.maxWidth;
+        _geometryCellExtent = cellExtent;
+        if (widthChanged) _refreshActiveDragGeometry();
         // Keep the surface fixed while dragging so a centered grid does not move under the pointer.
         final rowCount = math.max(1, layout.rows);
         final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);

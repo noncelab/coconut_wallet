@@ -1813,6 +1813,117 @@ void main() {
     expect(resized, ['stack:4x2']);
     expect(find.text('remove stack'), findsNothing);
   });
+
+  testWidgets('viewport geometry: shrinking during a drag drops the cell under the held finger', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final before = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    const finger = Offset(130, 40);
+    final gesture = await harness.startAt(finger);
+
+    await harness.pump(250);
+    tester.binding.handleMetricsChanged();
+    await tester.pump();
+
+    final after = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    final expectedColumn = harness.columnUnder(finger, before: before, after: after);
+    expect(before, 76);
+    expect(after, 53.5);
+    expect(expectedColumn, 2, reason: 'The same finger must leave column 1 when the cells shrink.');
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [HomeGridPosition(expectedColumn, 0)]);
+  });
+
+  for (final scenario in [
+    (name: '2x2 horizontal', span: HomeSpan.small, finger: Offset(157, 70), drop: HomeGridPosition(1, 0)),
+    (name: '2x2 vertical', span: HomeSpan.small, finger: Offset(70, 157), drop: HomeGridPosition(0, 1)),
+    (name: '4x2 vertical', span: HomeSpan.wide, finger: Offset(125, 157), drop: HomeGridPosition(0, 1)),
+    (name: '4x2 distinct axis ratios', span: HomeSpan.wide, finger: Offset(125, 158.3), drop: HomeGridPosition(0, 2)),
+  ]) {
+    testWidgets('viewport geometry: ${scenario.name} held drag preserves its full-span anchor', (tester) async {
+      final harness = _ViewportDragHarness(tester, span: scenario.span);
+      await harness.pump(340);
+      final gesture = await harness.startAt(scenario.finger);
+
+      await harness.pump(250);
+      tester.binding.handleMetricsChanged();
+      await tester.pump();
+
+      // A 2-cell side shrinks from 164 to 119, including its fixed 12px gap.
+      // The centered anchor is 59.5: fingers at 157 and 158.3 select cells 1 and 2.
+      await gesture.up();
+      await tester.pump();
+      expect(harness.drops, [scenario.drop]);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('viewport geometry: a finger outside the shrunken grid does not keep the old cell', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final gesture = await harness.startAt(const Offset(300, 40));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await harness.pump(250);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey('home-grid-surface'))).width, lessThan(300));
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, isEmpty);
+  });
+
+  testWidgets('viewport geometry: repeated size changes during a drag use the final cell', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final before = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    const finger = Offset(130, 40);
+    final gesture = await harness.startAt(finger);
+
+    await harness.pump(400);
+    tester.binding.handleMetricsChanged();
+    await harness.pump(250);
+    tester.binding.handleMetricsChanged();
+    tester.binding.handleMetricsChanged();
+    await tester.pump();
+
+    final after = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    final expectedColumn = harness.columnUnder(finger, before: before, after: after);
+    expect(before, 76);
+    expect(after, 53.5);
+    expect(expectedColumn, 2);
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [HomeGridPosition(expectedColumn, 0)]);
+  });
+
+  testWidgets('viewport geometry: removing the grid during a drag does not commit', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    await harness.startAt(const Offset(130, 40));
+    await harness.pump(250);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    expect(harness.drops, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('viewport geometry: a compact width drag still drops the cell under the finger', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(320);
+    final cell = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    expect(cell, 71);
+    final pitch = cell + HomeItemsView.gap;
+    final finger = Offset(3 * pitch + cell / 2, 40);
+    final gesture = await harness.startAt(finger);
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [const HomeGridPosition(3, 0)]);
+  });
 }
 
 class _ResizableDefinition extends HomeItemDefinition {
@@ -1832,4 +1943,65 @@ void usePhoneViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+}
+
+class _ViewportDragHarness {
+  _ViewportDragHarness(this.tester, {HomeSpan span = HomeSpan.shortcut}) {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final kind = span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget;
+    registry.register(_LabelDefinition('shortcut', kind, span));
+    configuration = HomeConfiguration(
+      items: [
+        HomeItem(
+          id: 's',
+          definitionId: 'shortcut',
+          kind: kind,
+          order: 0,
+          span: span,
+          position: const HomeGridPosition(0, 0),
+        ),
+      ],
+    );
+  }
+
+  final WidgetTester tester;
+  final drops = <HomeGridPosition>[];
+  final registry = HomeItemRegistry();
+  late final HomeConfiguration configuration;
+
+  Future<void> pump(double width) {
+    return tester.pumpWidget(
+      CupertinoApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            height: 500,
+            child: HomeItemsView(
+              configuration: configuration,
+              registry: registry,
+              onMoveToCell: (_, position) => drops.add(position),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<TestGesture> startAt(Offset finger) async {
+    final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-s'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(surface + finger);
+    await tester.pump();
+    return gesture;
+  }
+
+  int columnUnder(Offset finger, {required double before, required double after}) {
+    final anchor = before / 2 * (after / before);
+    final pitch = after + HomeItemsView.gap;
+    return ((finger.dx - anchor) / pitch).round().clamp(0, HomeGridLayout.columns - 1);
+  }
 }
