@@ -6,10 +6,14 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -39,6 +43,43 @@ class _FailingTransactionRepository extends TransactionRepository {
   }
 }
 
+class _FailingUtxoRepository extends UtxoRepository {
+  _FailingUtxoRepository(super.realmManager);
+  String? failForOutpoint;
+  bool failedWrite = false;
+  String? failOutgoingHash;
+  bool failedOutgoingWrite = false;
+
+  @override
+  Future<void> markUtxoAsOutgoing(int walletId, Transaction transaction) async {
+    if (!failedOutgoingWrite && transaction.transactionHash == failOutgoingHash) {
+      failedOutgoingWrite = true;
+      final input = transaction.inputs.first;
+      final id = '$walletId:${getUtxoId(input.transactionHash, input.index)}';
+      await realm.writeAsync(() {
+        final row = realm.query<RealmUtxo>(r'walletId == $0 AND id == $1', [walletId, id]).single;
+        row.spentByTransactionHash = transaction.transactionHash;
+        throw StateError('injected pending outgoing write rollback');
+      });
+    }
+    await super.markUtxoAsOutgoing(walletId, transaction);
+  }
+
+  @override
+  Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
+    if (!failedWrite && utxoIds.contains(failForOutpoint)) {
+      failedWrite = true;
+      await realm.writeAsync(() {
+        final row =
+            realm.query<RealmUtxo>(r'walletId == $0 AND id == $1', [walletId, '$walletId:$failForOutpoint']).single;
+        row.isDeleted = true;
+        throw StateError('injected UTXO write rollback');
+      });
+    }
+    await super.deleteUtxoList(walletId, utxoIds);
+  }
+}
+
 void main() {
   for (final mode in [
     'subscribed-only',
@@ -49,6 +90,8 @@ void main() {
     'failed-first-history',
     'missing-header-retry',
     'query-boundaries',
+    'failed-confirmed-utxo-write',
+    'mixed-confirmed-pending-write-retry',
   ]) {
     test('receiver parent confirms with its child: $mode', () async {
       final previousNetwork = NetworkType.currentNetworkType;
@@ -88,8 +131,14 @@ void main() {
         toAddress: change.address,
         amount: 499000,
       );
+      final grandchild = TransactionMock.createMockTransaction(
+        inputTransactionHash: child.transactionHash,
+        toAddress: wallet.walletBase.getAddress(2),
+        amount: 498000,
+      );
       final electrum = ScriptSyncServiceMock.electrumService;
       var phase = 0;
+      final confirmedFunding = mode == 'failed-confirmed-utxo-write';
       var confirmedParentFetches = 0;
       var failedParentOnce = false;
       var receiveHistoryRequests = 0;
@@ -107,8 +156,14 @@ void main() {
             throw StateError('injected history lookup failure');
           }
           return [
-            GetTxHistoryRes(height: phase == 2 ? 100 : 0, txHash: parent.transactionHash),
+            GetTxHistoryRes(height: confirmedFunding ? 99 : (phase == 2 ? 100 : 0), txHash: parent.transactionHash),
             if (phase > 0) GetTxHistoryRes(height: phase == 2 ? childHeight : -1, txHash: child.transactionHash),
+          ];
+        }
+        if (mode == 'mixed-confirmed-pending-write-retry' && phase == 2) {
+          return [
+            GetTxHistoryRes(height: -1, txHash: grandchild.transactionHash),
+            GetTxHistoryRes(height: childHeight, txHash: child.transactionHash),
           ];
         }
         return phase == 0
@@ -117,14 +172,28 @@ void main() {
       });
       when(electrum.getBalance(any, any)).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
-        if (address == receive.address) return GetBalanceRes(confirmed: 0, unconfirmed: phase == 0 ? 500000 : 0);
+        if (address == receive.address) {
+          return GetBalanceRes(
+            confirmed: confirmedFunding && phase == 0 ? 500000 : 0,
+            unconfirmed: !confirmedFunding && phase == 0 ? 500000 : 0,
+          );
+        }
         return GetBalanceRes(confirmed: phase == 2 ? 499000 : 0, unconfirmed: phase == 1 ? 499000 : 0);
       });
       when(electrum.getUnspentList(any, any)).thenAnswer((invocation) async {
         utxoFetches++;
         final address = invocation.positionalArguments[1] as String;
         if (address == receive.address) {
-          return phase == 0 ? [ListUnspentRes(height: 0, txHash: parent.transactionHash, txPos: 0, value: 500000)] : [];
+          return phase == 0
+              ? [
+                ListUnspentRes(
+                  height: confirmedFunding ? 99 : 0,
+                  txHash: parent.transactionHash,
+                  txPos: 0,
+                  value: 500000,
+                ),
+              ]
+              : [];
         }
         return phase == 0
             ? []
@@ -158,21 +227,24 @@ void main() {
           return parent.serialize();
         }
         if (hash == child.transactionHash) return child.serialize();
+        if (hash == grandchild.transactionHash) return grandchild.serialize();
         return funding.serialize();
       });
       when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
         invocation,
       ) async {
         final tx = invocation.positionalArguments[0] as Transaction;
+        if (tx.transactionHash == grandchild.transactionHash) return [child];
         return tx.transactionHash == child.transactionHash ? [parent] : [funding];
       });
       final repository = _FailingTransactionRepository(ScriptSyncServiceMock.realmManager!);
+      final failingUtxos = _FailingUtxoRepository(ScriptSyncServiceMock.realmManager!);
       ScriptSyncServiceMock.transactionSyncService = TransactionSyncService(
         electrum,
         repository,
         ScriptSyncServiceMock.transactionRecordService,
         ScriptSyncServiceMock.stateManager,
-        ScriptSyncServiceMock.utxoRepository,
+        failingUtxos,
         ScriptSyncServiceMock.scriptCallbackService,
       );
       final subscriptions = {receive.address, change.address};
@@ -202,7 +274,43 @@ void main() {
         });
       } else {
         await sync.syncScriptStatus(receiveEvent);
-        expect(repository.getTransactionRecord(wallet.id, parent.transactionHash)?.blockHeight, 0);
+        expect(
+          repository.getTransactionRecord(wallet.id, parent.transactionHash)?.blockHeight,
+          confirmedFunding ? 99 : 0,
+        );
+        if (mode == 'failed-confirmed-utxo-write') {
+          phase = 2;
+          final outpoint = getUtxoId(parent.transactionHash, 0);
+          expect(failingUtxos.getUtxoState(wallet.id, outpoint)?.status, UtxoStatus.unspent);
+          expect(failingUtxos.getUtxoState(wallet.id, outpoint)?.isPending, isFalse);
+          failingUtxos.failForOutpoint = outpoint;
+          await expectLater(
+            ScriptSyncServiceMock.transactionSyncService.fetchScriptTransaction(wallet, change),
+            throwsA(isA<StateError>()),
+          );
+          expect(failingUtxos.failedWrite, isTrue);
+          expect(failingUtxos.getUtxoState(wallet.id, outpoint), isNotNull);
+          print(
+            'SAFE_POST_COMMIT_FAILURE ${jsonEncode({
+              'confirmed_record_retained': (repository.getTransactionRecord(wallet.id, child.transactionHash)?.blockHeight ?? 0) > 0,
+              'spent_input_still_selectable': failingUtxos.getValidatedSelectedUtxoList(wallet.id, [outpoint]).$1.isNotEmpty,
+            })}',
+          );
+          final restarted = TransactionSyncService(
+            electrum,
+            repository,
+            ScriptSyncServiceMock.transactionRecordService,
+            ScriptSyncServiceMock.stateManager,
+            failingUtxos,
+            ScriptCallbackService(),
+          );
+          final result = await restarted.fetchScriptTransaction(wallet, change);
+          expect(repository.getTransactionRecord(wallet.id, child.transactionHash)?.blockHeight, greaterThan(0));
+          expect(failingUtxos.getUtxoState(wallet.id, outpoint), isNull);
+          expect(failingUtxos.getValidatedSelectedUtxoList(wallet.id, [outpoint]).$1, isEmpty);
+          expect(result.coSpentAddresses, contains(receive.address));
+          return;
+        }
         phase = 1;
       }
       await sync.syncScriptStatus(receiveEvent);
@@ -234,6 +342,33 @@ void main() {
           addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
           isNot(contains(receive.address)),
         );
+        return;
+      }
+      if (mode == 'mixed-confirmed-pending-write-retry') {
+        phase = 2;
+        failingUtxos.failOutgoingHash = grandchild.transactionHash;
+        final spentOutpoint = getUtxoId(parent.transactionHash, 0);
+        await expectLater(
+          ScriptSyncServiceMock.transactionSyncService.fetchScriptTransaction(wallet, change),
+          throwsA(isA<StateError>()),
+        );
+        expect(failingUtxos.failedOutgoingWrite, isTrue);
+        expect(failingUtxos.getUtxoState(wallet.id, spentOutpoint), isNull);
+        expect(repository.getTransactionRecord(wallet.id, child.transactionHash)?.blockHeight, 0);
+        final restarted = TransactionSyncService(
+          electrum,
+          repository,
+          ScriptSyncServiceMock.transactionRecordService,
+          ScriptSyncServiceMock.stateManager,
+          failingUtxos,
+          ScriptCallbackService(),
+        );
+        final result = await restarted.fetchScriptTransaction(wallet, change);
+        expect(result.coSpentAddresses, contains(receive.address));
+        expect(repository.getTransactionRecord(wallet.id, child.transactionHash)?.blockHeight, greaterThan(0));
+        expect(repository.getTransactionRecord(wallet.id, grandchild.transactionHash)?.blockHeight, 0);
+        expect(repository.getCpfpHistory(wallet.id, grandchild.transactionHash), isNull);
+        expect(failingUtxos.getUtxoState(wallet.id, spentOutpoint), isNull);
         return;
       }
       final unsubscribedWhilePending = !subscriptions.contains(receive.address);

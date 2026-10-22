@@ -118,7 +118,10 @@ class TransactionSyncService {
         fetchedTransactionDetails,
         now: now,
       );
-      await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+      final unconfirmedRecords = txRecords.where((record) => record.blockHeight <= 0).toList();
+      if (unconfirmedRecords.isNotEmpty) {
+        await _transactionRepository.addAllTransactions(walletId, unconfirmedRecords);
+      }
 
       // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
       final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
@@ -134,7 +137,17 @@ class TransactionSyncService {
       await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
 
       // 7. 대체된 언컨펌 트랜잭션 삭제
-      await _cleanupOrphanedUnconfirmedTransactions(walletId, fetchedTransactionDetails.fetchedTransactions);
+      await _cleanupOrphanedUnconfirmedTransactions(
+        walletId,
+        fetchedTransactionDetails.fetchedTransactions,
+        preparedRecords: {for (final record in txRecords) record.transactionHash: record},
+        confirmedTxHashes: confirmedFetchedTxHashes,
+      );
+
+      final confirmedRecords = txRecords.where((record) => record.blockHeight > 0).toList();
+      if (confirmedRecords.isNotEmpty) {
+        await _transactionRepository.addAllTransactions(walletId, confirmedRecords);
+      }
 
       // 8. 마무리 단계
       await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess, processingStates: processingStates);
@@ -222,7 +235,11 @@ class TransactionSyncService {
     Map<String, CpfpInfo> cpfpInfoMap = {};
     final Set<String> coSpentAddresses = {};
 
-    for (final fetchedTx in fetchedTransactions) {
+    final orderedTransactions = [
+      ...fetchedTransactions.where((tx) => confirmedFetchedTxHashes.contains(tx.transactionHash)),
+      ...fetchedTransactions.where((tx) => !confirmedFetchedTxHashes.contains(tx.transactionHash)),
+    ];
+    for (final fetchedTx in orderedTransactions) {
       Logger.log('Processing transaction: ${fetchedTx.transactionHash}');
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         final outgoingRbfInfo = await _rbfService.detectOutgoingRbfTransaction(walletId, fetchedTx);
@@ -230,12 +247,20 @@ class TransactionSyncService {
           outgoingingRbfInfoMap[fetchedTx.transactionHash] = outgoingRbfInfo;
         }
 
-        final replacedTxHashByIncomingRbf = await _rbfService.detectIncomingRbfTransaction(walletId, fetchedTx);
+        final replacedTxHashByIncomingRbf = await _rbfService.detectIncomingRbfTransaction(
+          walletId,
+          fetchedTx,
+          confirmedTxHashes: confirmedFetchedTxHashes,
+        );
         if (replacedTxHashByIncomingRbf != null) {
           replacedTxHashSetByIncomingRbf.add(replacedTxHashByIncomingRbf);
         }
 
-        final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
+        final cpfpInfo = await _cpfpService.detectCpfpTransaction(
+          walletId,
+          fetchedTx,
+          confirmedTxHashes: confirmedFetchedTxHashes,
+        );
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
         await _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx);
@@ -269,7 +294,11 @@ class TransactionSyncService {
     final addresses = <String>{};
 
     for (final input in transaction.inputs) {
-      final utxo = _utxoRepository.getUtxoState(walletId, getUtxoId(input.transactionHash, input.index));
+      final utxo = _utxoRepository.getUtxoState(
+        walletId,
+        getUtxoId(input.transactionHash, input.index),
+        includeDeleted: true,
+      );
       if (utxo == null || utxo.to == triggeringAddress) {
         continue;
       }
@@ -324,11 +353,17 @@ class TransactionSyncService {
   }
 
   /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupOrphanedUnconfirmedTransactions(int walletId, List<Transaction> newTxs) async {
+  Future<void> _cleanupOrphanedUnconfirmedTransactions(
+    int walletId,
+    List<Transaction> newTxs, {
+    required Map<String, TransactionRecord> preparedRecords,
+    required Set<String> confirmedTxHashes,
+  }) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
     for (final localUnconfirmedTxRecord in unconfirmedTxs) {
+      if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) continue;
       Transaction? unconfirmedTx;
       try {
         unconfirmedTx = Transaction.parse(
@@ -350,7 +385,9 @@ class TransactionSyncService {
         // 겹치는 인풋이 있으면서 새 트랜잭션의 수수료율이 더 높다면 로컬의 언컨펌 트랜잭션은 대체된 것으로 간주
         if (overlappingInputs.isNotEmpty) {
           if (unconfirmedTx.transactionHash != newTx.transactionHash) {
-            final newTxRecord = _transactionRepository.getTransactionRecord(walletId, newTx.transactionHash);
+            final newTxRecord =
+                preparedRecords[newTx.transactionHash] ??
+                _transactionRepository.getTransactionRecord(walletId, newTx.transactionHash);
 
             if (newTxRecord != null && localUnconfirmedTxRecord.feeRate < newTxRecord.feeRate) {
               toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
