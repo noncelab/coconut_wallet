@@ -90,43 +90,50 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
         isBottom: true,
       ),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            SingleChildScrollView(
-              controller: widget.scrollController,
-              child: Column(
-                children: List.generate(_walletList.length, (index) {
-                  int walletId = _walletList[index].id;
-                  final wallet = _walletList[index];
-                  bool isChecked = _selectedWalletId == walletId;
-                  return WalletItemCard(
-                    walletItem: wallet,
-                    animatedBalanceData: AnimatedBalanceData(
-                      _walletBalanceMap[walletId] ?? 0,
-                      _walletBalanceMap[walletId] ?? 0,
-                    ),
-                    isLastItem: index == _walletList.length - 1,
-                    currentUnit: widget.currentUnit,
-                    backgroundColor: backgroundColor,
-                    rightWidget:
-                        isChecked
-                            ? SvgPicture.asset(
-                              CommonActionIconPath.check,
-                              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                            )
-                            : Container(),
-                    onPressed: () => setState(() => _selectedWalletId = walletId),
-                  );
-                }),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                child: Column(
+                  children: List.generate(_walletList.length, (index) {
+                    int walletId = _walletList[index].id;
+                    final wallet = _walletList[index];
+                    bool isChecked = _selectedWalletId == walletId;
+                    return WalletItemCard(
+                      walletItem: wallet,
+                      animatedBalanceData: AnimatedBalanceData(
+                        _walletBalanceMap[walletId] ?? 0,
+                        _walletBalanceMap[walletId] ?? 0,
+                      ),
+                      isLastItem: index == _walletList.length - 1,
+                      currentUnit: widget.currentUnit,
+                      backgroundColor: backgroundColor,
+                      rightWidget:
+                          isChecked
+                              ? SvgPicture.asset(
+                                CommonActionIconPath.check,
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                              )
+                              : Container(),
+                      onPressed: () => setState(() => _selectedWalletId = walletId),
+                    );
+                  }),
+                ),
               ),
             ),
-            FixedBottomButton(
-              onButtonClicked: () => widget.onWalletChanged(_selectedWalletId),
-              isActive: _selectedWalletId != widget.walletId,
-              isVisibleAboveKeyboard: false,
-              showSurroundings: true,
-              surroundingsColor: backgroundColor,
-              text: t.select,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                CoconutLayout.defaultPadding,
+                12,
+                CoconutLayout.defaultPadding,
+                FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
+              ),
+              child: InlineActionButton(
+                onPressed: () => widget.onWalletChanged(_selectedWalletId),
+                isActive: _selectedWalletId != widget.walletId,
+                text: t.select,
+              ),
             ),
           ],
         ),
