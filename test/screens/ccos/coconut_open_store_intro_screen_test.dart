@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_intro_screen.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_build_scene.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_first_pow_scene.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_idea_scene.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -141,6 +142,56 @@ void main() {
       }
       await loader.load();
     }
+  });
+
+  for (final reduced in [false, true]) {
+    testWidgets('IDEA disposes before its first animation tick on repeated early exits reduced=$reduced', (
+      tester,
+    ) async {
+      for (var visit = 0; visit < 3; visit++) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: reduced),
+              child: const Scaffold(body: IdeaSceneBody(animation: AlwaysStoppedAnimation(0), sceneDurationMs: 15000)),
+            ),
+          ),
+        );
+        expect(find.byType(IdeaSceneBody), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(find.byType(IdeaSceneBody), findsNothing);
+        expect(tester.takeException(), isNull, reason: 'An untouched suffix controller must dispose safely.');
+        expect(tester.binding.transientCallbackCount, 0);
+      }
+    });
+  }
+
+  testWidgets('IDEA suffix animation still completes and disposes without pending callbacks', (tester) async {
+    final animation = AnimationController(vsync: tester, duration: const Duration(seconds: 15));
+    addTearDown(animation.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => IdeaSceneBody(animation: animation, sceneDurationMs: 15000),
+          ),
+        ),
+      ),
+    );
+    animation.value = 1;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text(t.ccos.idea_scene.line4, findRichText: true), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    final prefix = t.ccos.idea_scene.line4.substring(0, t.ccos.idea_scene.line4.length - 1);
+    expect(find.text('$prefix...!', findRichText: true), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    animation.value = 0;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(tester.binding.transientCallbackCount, 0);
   });
 
   for (final variant in CoconutThemeVariant.values) {
