@@ -320,7 +320,8 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await SharedPrefsRepository().setWalletTargetSats(1, 10000000);
-    await pump(tester, size: const Size(360, 900), variant: CoconutThemeVariant.dark);
+    await pump(tester, size: const Size(320, 900), variant: CoconutThemeVariant.dark);
+    expect(tester.takeException(), isNull);
     final chartButtonSize = tester.getSize(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
     await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
     await tester.pumpAndSettle();
@@ -331,6 +332,7 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wallet-detail-card-1')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   for (final unbacked in [false, true]) {

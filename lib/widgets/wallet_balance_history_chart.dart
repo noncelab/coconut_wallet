@@ -144,11 +144,15 @@ class _CompactBalanceChart extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         for (final index in {0, (points.length - 1) ~/ 2, points.length - 1})
-          Text(
-            DateFormat(
-              cardPresentation ? t.wallet_card_detail_screen.chart_date_format : 'yy.MM.dd',
-            ).format(points[index].timestamp),
-            style: dateStyle,
+          Flexible(
+            child: Text(
+              DateFormat(
+                cardPresentation ? t.wallet_card_detail_screen.chart_date_format : 'yy.MM.dd',
+              ).format(points[index].timestamp),
+              style: dateStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
       ],
     );

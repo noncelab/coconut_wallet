@@ -35,11 +35,11 @@ class WalletDetailCardCarousel extends StatefulWidget {
     this.onPageScrolled,
   });
 
-  /// 카드 폭은 화면 폭의 [widthFraction], 높이는 폭의 [aspect] 배.
+  /// 카드 폭은 화면 폭의 [widthFraction], 높이는 폭의 [aspect] 배(최소 210).
   static const double widthFraction = 0.86;
   static const double aspect = 0.66;
 
-  static double heightFor(double screenWidth) => screenWidth * widthFraction * aspect;
+  static double heightFor(double screenWidth) => math.max(210, screenWidth * widthFraction * aspect);
 
   @override
   State<WalletDetailCardCarousel> createState() => _WalletDetailCardCarouselState();
