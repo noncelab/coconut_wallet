@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "The amount you set appears only in Home balance widgets"
   size: "Size"
   wallet_goals: "Goal per Wallet"
-  wallet_goals_description: "Leave it empty for no goal on that wallet"
+  wallet_goals_description: "Set a savings goal for each wallet"
   wallet_goal_placeholder: "Goal amount"
   categories:
     balance: "Balance"
@@ -227,12 +227,14 @@ home_menu:
   remove_shortcut: "Remove Shortcut"
   removed: "Removed from Home"
 hodl_insights:
-  no_goal: "Set a goal for each wallet in settings"
+  no_goal: "Tap here to enter your goal amount"
   title: "Hodl Insights"
   settings_title: "Insights Settings"
-  settings_description: "Choose the wallets to include in your insights."
+  settings_heading: "Select wallets"
+  settings_description: "Choose the wallets to include in the analysis"
   total_balance: "Total Balance"
   goal: "Goal"
+  goal_reached: "Goal reached"
   utxo_summary: "UTXO Summary"
   utxo_ranges_unit: "Ranges in BTC"
   total_utxos: "Total ${count} UTXOs"
@@ -829,6 +831,15 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "Period summary"
+    gesture_guide_title: "Explore the graph"
+    gesture_guide_pan: "Swipe left or right to move through time."
+    gesture_guide_zoom: "Swipe up or down, or pinch to zoom, to adjust the range: 1 week, 1 month, 3 months, and more."
+    balance_label: "Balance"
+    transactions_label: "Transactions"
+    flow_summary: "${count} tx · ${amount}"
+    no_transactions_at_date: "No transactions on the selected date"
+    transactions_at_date: "Transactions on selected date"
     wallets_at_date: "Wallets at this point"
     no_wallets: "No wallets to show at this point"
     changed_wallets_only: "Show changed wallets only"
@@ -2244,3 +2255,7 @@ wallet_appearance_screen:
   photo_pick_failed: "Couldn't load this photo. Please choose another one"
 wallet_card_detail_screen:
   details: "Details"
+  chart: "Chart"
+  wallet_card: "Wallet Card"
+  show_balance_trend: "View balance trend"
+  chart_date_format: "MMM d"

@@ -60,6 +60,9 @@ class WalletCard extends StatelessWidget {
   /// [appearance]의 배경이 사진일 때 그 파일. [WalletAppearanceProvider.photoFileFor]로 구한다.
   final File? backgroundPhoto;
 
+  /// 상위에서 배경을 공유하는 확장 카드에서는 내용만 그린다.
+  final bool showBackground;
+
   /// 저장 전 이름을 미리 보여 줄 때 쓴다. 없으면 [wallet]의 이름.
   final String? displayName;
 
@@ -73,6 +76,7 @@ class WalletCard extends StatelessWidget {
     this.statusBadge,
     this.onPressed,
     this.backgroundPhoto,
+    this.showBackground = true,
     this.displayName,
   });
 
@@ -106,7 +110,7 @@ class WalletCard extends StatelessWidget {
       child: Builder(builder: (context) => size == WalletCardSize.wide ? _buildWide(context) : _buildSmall(context)),
     );
     content = WalletContentTheme(background: background, child: content);
-    final hasBackground = appearance.background != null;
+    final hasBackground = showBackground && appearance.background != null;
     Widget withBackground(Widget child) =>
         hasBackground
             ? Stack(
@@ -116,7 +120,10 @@ class WalletCard extends StatelessWidget {
             : child;
     if (onPressed == null) {
       return DecoratedBox(
-        decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: showBackground ? colors.homeSurface : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: SizedBox.expand(child: withBackground(content)),
@@ -124,7 +131,7 @@ class WalletCard extends StatelessWidget {
       );
     }
     return ShrinkAnimationButton(
-      defaultColor: colors.homeSurface,
+      defaultColor: showBackground ? colors.homeSurface : Colors.transparent,
       pressedOverlayColor: colors.homeSurfacePressOverlay,
       pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
       borderRadius: 20,

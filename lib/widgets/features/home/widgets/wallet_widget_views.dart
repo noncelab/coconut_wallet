@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_svg/flutter_svg.dart';
@@ -317,14 +318,25 @@ class BalanceByWalletView extends StatelessWidget {
     this.reveal = 1,
   });
 
-  static Color colorOf(BuildContext context, HomeBalanceShare share) =>
-      share.walletId == null || share.colorIndex == null
-          ? context.coconutColors.surfaceMuted
-          : WalletVisualStyleUtil.getColorByIndex(share.colorIndex!);
+  /// 배경을 지정한 지갑은 배경 색, 아니면 아이콘 색. 잔액 변화의 기간별 요약 막대와 같은 기준이다.
+  static const _strokeRatio = 0.2;
+
+  static Color colorOf(BuildContext context, HomeBalanceShare share, {WalletAppearanceProvider? appearances}) {
+    final walletId = share.walletId;
+    if (walletId == null) return context.coconutColors.surfaceMuted;
+    final background = WalletCardBackground.representativeColorOf(appearances?.backgroundOf(walletId));
+    if (background != null) return background;
+    final colorIndex = share.colorIndex;
+    return colorIndex == null ? context.coconutColors.iconSecondary : WalletVisualStyleUtil.getColorByIndex(colorIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final appearances = context.watchWalletAppearance();
+    final shareColors = [for (final share in shares) colorOf(context, share, appearances: appearances)];
+    final surface = HomeCardSurface.of(context);
+    final shareBorders = [for (final color in shareColors) homeChartSegmentBorderOf(context, color, surface)];
     final sum = shares.fold<int>(0, (total, share) => total + share.balance);
     return HomeWidgetCard(
       onPressed: onPressed,
@@ -337,35 +349,34 @@ class BalanceByWalletView extends StatelessWidget {
               child: CustomPaint(
                 painter: _DonutPainter(
                   [for (final share in shares) share.balance.toDouble()],
-                  [for (final share in shares) colorOf(context, share)],
+                  shareColors,
                   colors.surfaceMuted,
-                  strokeRatio: 0.2,
+                  borders: shareBorders,
+                  strokeRatio: _strokeRatio,
                   reveal: reveal,
                 ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Column(
-                        key: const Key('balance-by-wallet-total'),
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            total.number,
-                            style: CoconutTypography.body1_16_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                          Text(
-                            total.unit,
-                            style: CoconutTypography.body1_16_NumberBold.copyWith(color: colors.primaryText),
-                          ),
-                        ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final numberStyle = CoconutTypography.body1_16_NumberBold.copyWith(
+                      color: colors.primaryText,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    );
+                    final number = measureHomeTextSize(context, total.number, numberStyle);
+                    final width = number.width;
+                    final height = number.height;
+                    final hole = math.max(0.0, constraints.biggest.shortestSide * (1 - 2 * _strokeRatio) - 8);
+                    final diagonal = math.sqrt(width * width + height * height);
+                    final scale = diagonal <= hole || diagonal == 0 ? 1.0 : hole / diagonal;
+                    return Center(
+                      child: SizedBox(
+                        width: width * scale,
+                        height: height * scale,
+                        child: FittedBox(
+                          child: Text(total.number, key: const Key('balance-by-wallet-total'), style: numberStyle),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -406,7 +417,14 @@ class BalanceByWalletView extends StatelessWidget {
                               Container(
                                 width: 10,
                                 height: 10,
-                                decoration: BoxDecoration(color: colorOf(context, share), shape: BoxShape.circle),
+                                decoration: BoxDecoration(
+                                  color: shareColors[shares.indexOf(share)],
+                                  border: switch (shareBorders[shares.indexOf(share)]) {
+                                    final border? => Border.all(color: border, width: 1),
+                                    null => null,
+                                  },
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -464,10 +482,35 @@ class _DonutPainter extends CustomPainter {
   final Color emptyColor;
   final double strokeRatio;
 
+  /// 조각마다 두를 얇은 테두리 색. null이면 두르지 않는다.
+  final List<Color?> borders;
+
   /// 0이면 빈 고리, 1이면 다 그린 고리. 위에서부터 시계 방향으로 차오른다.
   final double reveal;
 
-  _DonutPainter(this.values, this.colors, this.emptyColor, {this.strokeRatio = 0.14, this.reveal = 1});
+  _DonutPainter(
+    this.values,
+    this.colors,
+    this.emptyColor, {
+    this.strokeRatio = 0.14,
+    this.reveal = 1,
+    this.borders = const [],
+  });
+
+  static const _borderWidth = 1.0;
+
+  Color? _borderAt(int index) => index < borders.length ? borders[index] : null;
+
+  void _outline(Canvas canvas, Path path, Color? color) {
+    if (color == null) return;
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _borderWidth
+        ..color = color,
+    );
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -490,20 +533,29 @@ class _DonutPainter extends CustomPainter {
       return;
     }
     if (visible.length == 1) {
+      final border = _borderAt(visible.single);
       if (shown >= 1) {
         canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
+        if (border != null) {
+          final outline =
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = _borderWidth
+                ..color = border;
+          canvas.drawCircle(size.center(Offset.zero), radius + stroke / 2, outline);
+          canvas.drawCircle(size.center(Offset.zero), radius - stroke / 2, outline);
+        }
       } else if (shown > 0) {
-        canvas.drawPath(
-          _roundedSector(
-            size.center(Offset.zero),
-            radius - stroke / 2,
-            radius + stroke / 2,
-            -math.pi / 2,
-            math.pi * 2 * shown,
-            stroke * 0.1,
-          ),
-          Paint()..color = colors[visible.single],
+        final path = _roundedSector(
+          size.center(Offset.zero),
+          radius - stroke / 2,
+          radius + stroke / 2,
+          -math.pi / 2,
+          math.pi * 2 * shown,
+          stroke * 0.1,
         );
+        canvas.drawPath(path, Paint()..color = colors[visible.single]);
+        _outline(canvas, path, border);
       }
       return;
     }
@@ -518,17 +570,16 @@ class _DonutPainter extends CustomPainter {
       final from = start + before;
       final until = math.min(start + sweep - after, limit);
       if (until > from) {
-        canvas.drawPath(
-          _roundedSector(
-            size.center(Offset.zero),
-            radius - stroke / 2,
-            radius + stroke / 2,
-            from - math.pi / 2,
-            until - from,
-            stroke * 0.1,
-          ),
-          Paint()..color = colors[visible[n]],
+        final path = _roundedSector(
+          size.center(Offset.zero),
+          radius - stroke / 2,
+          radius + stroke / 2,
+          from - math.pi / 2,
+          until - from,
+          stroke * 0.1,
         );
+        canvas.drawPath(path, Paint()..color = colors[visible[n]]);
+        _outline(canvas, path, _borderAt(visible[n]));
       }
       start += sweep;
     }
@@ -563,6 +614,7 @@ class _DonutPainter extends CustomPainter {
   bool shouldRepaint(_DonutPainter oldDelegate) =>
       !listEquals(values, oldDelegate.values) ||
       !listEquals(colors, oldDelegate.colors) ||
+      !listEquals(borders, oldDelegate.borders) ||
       emptyColor != oldDelegate.emptyColor ||
       strokeRatio != oldDelegate.strokeRatio ||
       reveal != oldDelegate.reveal;

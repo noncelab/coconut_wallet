@@ -210,7 +210,7 @@ home_edit:
   fake_balance_description: "設定した金額はホームの残高ウィジェットにのみ表示されます"
   size: "サイズ"
   wallet_goals: "ウォレットごとの目標数量"
-  wallet_goals_description: "空欄にするとそのウォレットの目標はなくなります"
+  wallet_goals_description: "ウォレットごとに貯蓄目標を設定してみましょう"
   wallet_goal_placeholder: "目標数量"
   categories:
     balance: "残高"
@@ -226,12 +226,14 @@ home_menu:
   remove_shortcut: "ショートカットを削除"
   removed: "ホームから削除しました"
 hodl_insights:
-  no_goal: "設定でウォレットごとの目標数量を決めてみましょう"
+  no_goal: "ここをタップして目標数量を入力してみましょう"
   title: "ガチホインサイト"
   settings_title: "インサイト設定"
-  settings_description: "インサイトに含めるウォレットを選んでください。"
+  settings_heading: "ウォレット選択"
+  settings_description: "分析に含めるウォレットを選んでください"
   total_balance: "総残高"
   goal: "目標"
+  goal_reached: "目標達成"
   utxo_summary: "UTXOサマリー"
   utxo_ranges_unit: "BTC単位の範囲"
   total_utxos: "UTXO 合計${count}個"
@@ -828,6 +830,15 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "期間別サマリー"
+    gesture_guide_title: "グラフを動かしてみましょう"
+    gesture_guide_pan: "左右にスワイプして表示期間を移動できます。"
+    gesture_guide_zoom: "上下にスワイプするか、2本の指で拡大・縮小して、1週間・1か月・3か月などの範囲を調整できます。"
+    balance_label: "残高"
+    transactions_label: "取引"
+    flow_summary: "${count}件 · ${amount}"
+    no_transactions_at_date: "選択した日に取引はありません"
+    transactions_at_date: "選択した日の取引"
     wallets_at_date: "この時点のウォレット"
     no_wallets: "この時点で表示できるウォレットはありません"
     changed_wallets_only: "残高が変動したウォレットのみ"
@@ -2232,3 +2243,7 @@ wallet_appearance_screen:
   photo_pick_failed: "写真を読み込めませんでした。別の写真を選んでください"
 wallet_card_detail_screen:
   details: "詳細"
+  chart: "チャート"
+  wallet_card: "ウォレットカード"
+  show_balance_trend: "残高推移を見る"
+  chart_date_format: "M月d日"

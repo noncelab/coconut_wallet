@@ -302,26 +302,35 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
           transactions: viewModel.recentTransactions(walletIds: walletIdsOf(item)),
           amountText: (sats) => _btc(viewModel, sats),
           now: DateTime.now(),
-          onTransactionTap:
-              (walletId) => Navigator.of(context).push(
-                PageRouteBuilder<void>(
-                  settings: RouteSettings(
-                    name: AppRouteNames.walletDetail,
-                    arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
+          onTransactionSelected: (tx) {
+            Navigator.of(context).push(
+              PageRouteBuilder<void>(
+                settings: RouteSettings(
+                  name: AppRouteNames.walletDetail,
+                  arguments: WalletDetailRouteArgs(
+                    id: tx.walletId,
+                    entryPoint: kEntryPointWalletHome,
+                    focusRecentTransactions: true,
+                    focusedTransactionHash: tx.txHash,
                   ),
-                  transitionDuration: HodlInsightsScreen.transitionDuration,
-                  reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
-                  pageBuilder: (_, __, ___) => WalletCardDetailScreen(id: walletId, entryPoint: kEntryPointWalletHome),
-                  transitionsBuilder:
-                      (_, animation, __, child) => FadeTransition(
-                        opacity: CurvedAnimation(
-                          parent: animation,
-                          curve: const Interval(0, 0.6, curve: Curves.easeOut),
-                        ),
-                        child: child,
-                      ),
                 ),
+                transitionDuration: HodlInsightsScreen.transitionDuration,
+                reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
+                pageBuilder:
+                    (_, __, ___) => WalletCardDetailScreen(
+                      id: tx.walletId,
+                      entryPoint: kEntryPointWalletHome,
+                      focusRecentTransactions: true,
+                      focusedTransactionHash: tx.txHash,
+                    ),
+                transitionsBuilder:
+                    (_, animation, __, child) => FadeTransition(
+                      opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+                      child: child,
+                    ),
               ),
+            );
+          },
         ),
   ),
   BuiltinHomeWidget(
