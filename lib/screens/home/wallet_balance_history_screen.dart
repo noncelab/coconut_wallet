@@ -343,13 +343,13 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   Widget _walletChips() {
     final colors = context.coconutColors;
     final appearances = context.watchWalletAppearance();
-    Widget chip(int? id, String label, {WalletItemBase? wallet}) {
+    Widget chip(int? id, String label, {WalletItemBase? wallet, bool isLast = false}) {
       final background =
           wallet == null ? null : (appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet)).background;
       final selected = id == null ? _walletIds == null : _walletIds?.contains(id) == true;
       return RepaintBoundary(
         child: Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: EdgeInsets.only(right: isLast ? 0 : 8),
           child: Semantics(
             selected: selected,
             button: true,
@@ -444,13 +444,13 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       child: ListView.builder(
         key: const Key('balance-history-wallet-chips'),
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         cacheExtent: 80,
         itemCount: wallets.length + 1,
         itemBuilder: (context, index) {
-          if (index == 0) return chip(null, t.home_edit.all_wallets);
+          if (index == 0) return chip(null, t.home_edit.all_wallets, isLast: wallets.isEmpty);
           final wallet = wallets[index - 1];
-          return chip(wallet.id, wallet.name, wallet: wallet);
+          return chip(wallet.id, wallet.name, wallet: wallet, isLast: index == wallets.length);
         },
       ),
     );
@@ -964,11 +964,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '${t.wallet_list.balance_history_detail.transactions_at_date} · ${transactions.length}',
-          key: const Key('balance-history-transactions-header'),
-          style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
-        ),
+        _walletSectionHeader(transactions.length, showTransactions: true),
         const SizedBox(height: 4),
         Expanded(
           child: Stack(
@@ -1004,20 +1000,31 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     );
   }
 
-  Widget _walletSectionHeader(int count) {
+  Widget _walletSectionHeader(int count, {bool showTransactions = false}) {
     final colors = context.coconutColors;
-    final title = '${t.wallet_list.balance_history_detail.wallets_at_date} · $count';
+    final walletTitle = '${t.wallet_list.balance_history_detail.wallets_at_date} · $count';
+    final transactionTitle = '${t.wallet_list.balance_history_detail.transactions_at_date} · $count';
+    final title = showTransactions ? transactionTitle : walletTitle;
     final filterLabel = t.wallet_list.balance_history_detail.changed_wallets_only;
     final titleStyle = CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText);
     final filterStyle = CoconutTypography.caption_10.copyWith(color: colors.secondaryText);
     return LayoutBuilder(
-      key: const Key('balance-history-wallet-header'),
+      key: Key(showTransactions ? 'balance-history-transactions-header' : 'balance-history-wallet-header'),
       builder: (context, constraints) {
-        final titleWidth = _singleLineWidth(context, title, titleStyle);
+        final titleWidth = math.max(
+          _singleLineWidth(context, walletTitle, titleStyle),
+          _singleLineWidth(context, transactionTitle, titleStyle),
+        );
         final filterWidth = _singleLineWidth(context, filterLabel, filterStyle) + 14 + 6;
         final sideBySide = titleWidth + 8 + filterWidth <= constraints.maxWidth;
         final titleText = Text(title, style: titleStyle);
-        final filter = _changedOnlyFilter(expandLabel: !sideBySide);
+        final filter = Visibility(
+          visible: !showTransactions,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _changedOnlyFilter(expandLabel: !sideBySide),
+        );
         if (sideBySide) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
