@@ -518,7 +518,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                   ),
                 if (target == null || target <= 0) const SizedBox(height: 16),
                 SizedBox(
-                  height: 120,
+                  height: 200,
                   child: WalletBalanceHistoryChart(
                     key: ValueKey(viewModel.focusedWallet.id),
                     points: [
@@ -527,18 +527,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                     ],
                     revision: Object.hashAll(balances),
                     targetSats: target,
+                    axisUnit: viewModel.unit,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    for (final day in [dates.first, dates.last])
-                      Text(
-                        '${day.year}.${day.month.toString().padLeft(2, '0')}.${day.day.toString().padLeft(2, '0')}',
-                        style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
-                      ),
-                  ],
                 ),
               ],
             ),

@@ -212,7 +212,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
       appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
       body: SafeArea(
         top: false,
-        bottom: selected == null,
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 12),
           child: Column(
@@ -245,12 +245,12 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                       final maxHeight = constraints.maxHeight;
                       const listGap = 12.0;
                       // Card expansion must not change the nested scroll range during a fling.
-                      final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
+                      final preferredChart = maxHeight * 0.52;
                       var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
                       var chartTarget = preferredChart;
                       // A below-layout card can be a few pixels taller than the 52% leftover.
                       // Yield chart height until that card fits. The floor keeps the plot visible.
-                      if (selected != null && _cardExtent > listHeight) {
+                      if (_cardExtent > listHeight) {
                         final minChart = math.max(120.0, maxHeight * 0.36);
                         listHeight = math.min(_cardExtent, math.max(0.0, maxHeight - minChart - listGap));
                         chartTarget = math.max(minChart, maxHeight - listHeight - listGap);
@@ -273,7 +273,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                               child: _chart(balances, dates),
                             ),
                           );
-                          if (selected == null || listHeight <= 0) {
+                          if (listHeight <= 0) {
                             return SizedBox(height: chartHeight, width: double.infinity, child: graph);
                           }
                           final expandedHeight = math.min(chartHeight, math.max(0.0, maxHeight - 120 - listGap));
@@ -294,7 +294,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                   body: Builder(
                                     builder: (bodyContext) {
                                       _walletScrollController = PrimaryScrollController.of(bodyContext);
-                                      return _wallets(dates[selected]);
+                                      return _wallets(dates[selected ?? dates.length - 1]);
                                     },
                                   ),
                                 ),
@@ -496,7 +496,6 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _valueAxis(minimum, maximum),
-                const SizedBox(width: 10),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -1018,13 +1017,10 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
         final filterWidth = _singleLineWidth(context, filterLabel, filterStyle) + 14 + 6;
         final sideBySide = titleWidth + 8 + filterWidth <= constraints.maxWidth;
         final titleText = Text(title, style: titleStyle);
-        final filter = Visibility(
-          visible: !showTransactions,
-          maintainSize: true,
-          maintainAnimation: true,
-          maintainState: true,
-          child: _changedOnlyFilter(expandLabel: !sideBySide),
-        );
+        final filter =
+            showTransactions
+                ? SizedBox(width: sideBySide ? filterWidth : null, height: Sizes.size44)
+                : _changedOnlyFilter(expandLabel: !sideBySide);
         if (sideBySide) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,

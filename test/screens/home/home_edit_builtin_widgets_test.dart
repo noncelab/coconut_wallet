@@ -1276,10 +1276,14 @@ void main() {
         HomeWidgetPeriod.month,
       );
       final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final surface = find.byKey(const Key('balance-history-graph-surface'));
+      final unfocusedHeight = tester.getSize(surface).height;
+      expect(find.byKey(const Key('balance-history-wallet-header')), findsOneWidget);
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsNothing);
       await tester.tap(chart);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      expect(tester.getSize(surface).height, closeTo(unfocusedHeight, 0.01));
       final bounds = tester.getRect(chart);
       final one = await tester.startGesture(bounds.center - const Offset(30, 0), pointer: 1);
       final two = await tester.startGesture(bounds.center + const Offset(30, 0), pointer: 2);

@@ -36,6 +36,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -224,6 +225,13 @@ void main() {
     await tester.pumpAndSettle();
     final chart = tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart));
     expect(chart.targetSats, 50000000);
+    expect(chart.axisUnit, isNotNull);
+    final previewLine = tester.widget<HomeSparkline>(
+      find.descendant(of: find.byType(WalletBalanceHistoryChart), matching: find.byType(HomeSparkline)),
+    );
+    expect(previewLine.selectedIndex, isNull);
+    expect(previewLine.values, chart.points.map((point) => point.balance).toList());
+    expect(previewLine.maximum, greaterThan(previewLine.minimum!));
     expect(chart.points.last.balance, 20000000);
     expect(chart.points.length, HomeWidgetPeriod.year.days);
     final lastDay = chart.points.last.timestamp;

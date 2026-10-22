@@ -1,8 +1,13 @@
 import 'dart:ui' as ui;
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
+import 'package:coconut_wallet/services/home/home_widget_math.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// 목표 때문에 잔액 변화가 눌리지 않도록 축 확장을 잔액 범위의 25%로 제한한다.
 ({double minimum, double maximum, bool targetAbove, bool targetBelow}) walletBalanceChartRange(
@@ -35,8 +40,15 @@ class WalletBalanceHistoryChart extends StatefulWidget {
   final List<WalletBalanceHistoryPoint> points;
   final int revision;
   final int? targetSats;
+  final BitcoinUnit? axisUnit;
 
-  const WalletBalanceHistoryChart({super.key, required this.points, required this.revision, this.targetSats});
+  const WalletBalanceHistoryChart({
+    super.key,
+    required this.points,
+    required this.revision,
+    this.targetSats,
+    this.axisUnit,
+  });
 
   @override
   State<WalletBalanceHistoryChart> createState() => _WalletBalanceHistoryChartState();
@@ -67,6 +79,9 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
 
   @override
   Widget build(BuildContext context) {
+    if (widget.axisUnit != null && widget.points.isNotEmpty) {
+      return _CompactBalanceChart(points: widget.points, unit: widget.axisUnit!, targetSats: widget.targetSats);
+    }
     return AnimatedBuilder(
       animation: _controller,
       builder:
@@ -82,6 +97,117 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
           ),
     );
   }
+}
+
+/// The focused history graph's compact presentation, without a selected point.
+class _CompactBalanceChart extends StatelessWidget {
+  final List<WalletBalanceHistoryPoint> points;
+  final BitcoinUnit unit;
+  final int? targetSats;
+
+  const _CompactBalanceChart({required this.points, required this.unit, this.targetSats});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final balances = [for (final point in points) point.balance];
+    final range = walletBalanceChartRange(balances, targetSats);
+    final axis = HomeWidgetMath.balanceAxisRange(range.minimum.floor(), range.maximum.ceil());
+    final ticks = [for (var i = 0; i <= 4; i++) axis.maximum - (axis.maximum - axis.minimum) * i ~/ 4];
+    final labelStyle = CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(unit.symbol, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [for (final tick in ticks) Text(unit.displayBitcoinAmount(tick), style: labelStyle)],
+              ),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CustomPaint(
+                      painter: _CompactBalanceGridPainter(
+                        minimum: axis.minimum,
+                        maximum: axis.maximum,
+                        target: targetSats,
+                        gridColor: colors.tertiaryText.withValues(alpha: 0.2),
+                        targetColor: colors.secondaryText,
+                      ),
+                    ),
+                    HomeSparkline(values: balances, minimum: axis.minimum, maximum: axis.maximum),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (final index in {0, (points.length - 1) ~/ 2, points.length - 1})
+              Text(
+                DateFormat('yy.MM.dd').format(points[index].timestamp),
+                style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CompactBalanceGridPainter extends CustomPainter {
+  final int minimum;
+  final int maximum;
+  final int? target;
+  final Color gridColor;
+  final Color targetColor;
+
+  const _CompactBalanceGridPainter({
+    required this.minimum,
+    required this.maximum,
+    required this.target,
+    required this.gridColor,
+    required this.targetColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    void dashedLine(double y, Color color) {
+      final paint =
+          Paint()
+            ..color = color
+            ..strokeWidth = 1;
+      for (var x = 0.0; x < size.width; x += 8) {
+        canvas.drawLine(Offset(x, y), Offset((x + 4).clamp(0, size.width), y), paint);
+      }
+    }
+
+    for (var i = 0; i <= 4; i++) {
+      dashedLine(2 + (size.height - 4) * i / 4, gridColor);
+    }
+    final goal = target;
+    if (goal != null && goal > 0 && goal >= minimum && goal <= maximum) {
+      dashedLine(2 + (size.height - 4) * (1 - (goal - minimum) / (maximum - minimum)), targetColor);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CompactBalanceGridPainter oldDelegate) =>
+      minimum != oldDelegate.minimum ||
+      maximum != oldDelegate.maximum ||
+      target != oldDelegate.target ||
+      gridColor != oldDelegate.gridColor ||
+      targetColor != oldDelegate.targetColor;
 }
 
 class _WalletBalanceHistoryPainter extends CustomPainter {
