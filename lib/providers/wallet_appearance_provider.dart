@@ -20,6 +20,7 @@ class WalletAppearanceProvider extends ChangeNotifier {
   StreamSubscription<WalletLifecycleEvent>? _lifecycleSubscription;
   late Map<int, WalletBackground> _backgrounds;
   bool _disposed = false;
+  Future<void>? _updates;
 
   WalletAppearanceProvider({
     required WalletAppearanceRepository repository,
@@ -64,30 +65,43 @@ class WalletAppearanceProvider extends ChangeNotifier {
     await _photoStore.delete(background.fileName);
   }
 
-  Future<void> setBackground(int walletId, WalletBackground? background) async {
+  Future<void> setBackground(int walletId, WalletBackground? background) => _enqueueUpdate(() async {
     final previous = _backgrounds[walletId];
     if (previous == background) return;
+    await _repository.setBackground(walletId, background);
     if (background == null) {
       _backgrounds.remove(walletId);
     } else {
       _backgrounds[walletId] = background;
     }
-    notifyListeners();
-    await _repository.setBackground(walletId, background);
+    if (!_disposed) notifyListeners();
     if (previous is WalletPhotoBackground && !_referencedPhotoFileNames().contains(previous.fileName)) {
       await _photoStore.delete(previous.fileName);
     }
-  }
+  });
 
   Future<void> _onLifecycleEvent(WalletLifecycleEvent event) async {
     if (event is! WalletRemoved) return;
-    final removed = _backgrounds.remove(event.walletId);
-    await _repository.remove(event.walletId);
-    if (removed == null) return;
-    if (!_disposed) notifyListeners();
-    if (removed is WalletPhotoBackground && !_referencedPhotoFileNames().contains(removed.fileName)) {
-      await _photoStore.delete(removed.fileName);
-    }
+    await _enqueueUpdate(() async {
+      await _repository.remove(event.walletId);
+      final removed = _backgrounds.remove(event.walletId);
+      if (removed == null) return;
+      if (!_disposed) notifyListeners();
+      if (removed is WalletPhotoBackground && !_referencedPhotoFileNames().contains(removed.fileName)) {
+        await _photoStore.delete(removed.fileName);
+      }
+    });
+  }
+
+  Future<void> _enqueueUpdate(Future<void> Function() update) {
+    final operation = _updates == null ? update() : _updates!.then((_) => update());
+    // A failed operation still reaches its caller, but must not block later updates.
+    late final Future<void> tail;
+    tail = operation.catchError((Object _) {}).whenComplete(() {
+      if (identical(_updates, tail)) _updates = null;
+    });
+    _updates = tail;
+    return operation;
   }
 
   Set<String> _referencedPhotoFileNames() =>

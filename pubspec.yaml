@@ -104,6 +104,7 @@ dependencies:
       ref: c4bc8c1fa1ebb80a1574e230ebb239b92fc441d8
 
 dev_dependencies:
+  shared_preferences_platform_interface: 2.4.2
   flutter_oss_licenses: ^3.0.2
 
   # The "flutter_lints" package below contains a set of recommended lints to

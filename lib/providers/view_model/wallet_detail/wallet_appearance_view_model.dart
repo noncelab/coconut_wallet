@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -60,6 +61,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
   WalletCardSize _previewSize = WalletCardSize.small;
   late WalletAppearanceTab _tab;
   bool _saved = false;
+  bool _closed = false;
 
   WalletAppearanceViewModel(
     this.walletId,
@@ -133,7 +135,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
       _iconIndex != _initialIconIndex ||
       _colorIndex != _initialColorIndex;
 
-  bool get canSave => hasChanges && isNameValid && !_isPickingPhoto && !_isSaving;
+  bool get canSave => !_closed && hasChanges && isNameValid && !_isPickingPhoto && !_isSaving;
   bool get isSaving => _isSaving;
   bool _isSaving = false;
 
@@ -191,7 +193,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
   }
 
   void selectBackground(WalletBackground? background) {
-    if (_background == background) return;
+    if (_closed || _isSaving || _background == background) return;
     _background = background;
     notifyListeners();
   }
@@ -199,21 +201,25 @@ class WalletAppearanceViewModel extends ChangeNotifier {
   /// 사진을 골라 앱 폴더에 복사한다. 아직 배경으로 적용하지 않는다(자르기 단계에서 [applyPhoto] 또는 [dropPhoto]).
   /// 고르지 않고 닫으면 [PhotoPickResult.cancelled], 읽지 못하면 [PhotoPickResult.failed].
   Future<PhotoPickResult> pickPhoto() async {
-    if (_isPickingPhoto) return const PhotoPickResult.cancelled();
+    if (_closed || _isSaving || _isPickingPhoto) return const PhotoPickResult.cancelled();
     _isPickingPhoto = true;
     notifyListeners();
     try {
       final picked = await _pickPhoto();
-      if (picked == null) return const PhotoPickResult.cancelled();
+      if (_closed || picked == null) return const PhotoPickResult.cancelled();
       final imported = await _appearanceProvider.importPhoto(walletId, picked.bytes, extension: picked.extension);
+      if (_closed) {
+        await _appearanceProvider.discardPhoto(imported);
+        return const PhotoPickResult.cancelled();
+      }
       _importedPhotos.add(imported);
       return PhotoPickResult.picked(imported);
     } catch (e) {
       Logger.error('[WalletAppearanceViewModel] pickPhoto failed: $e');
-      return const PhotoPickResult.failed();
+      return _closed ? const PhotoPickResult.cancelled() : const PhotoPickResult.failed();
     } finally {
       _isPickingPhoto = false;
-      notifyListeners();
+      if (!_closed) notifyListeners();
     }
   }
 
@@ -223,7 +229,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
   /// 자르기 단계에서 취소한 새 사진을 지운다.
   Future<void> dropPhoto(WalletPhotoBackground photo) async {
     if (!_importedPhotos.remove(photo)) return;
-    notifyListeners();
+    if (!_closed) notifyListeners();
     if (_background != photo) await _appearanceProvider.discardPhoto(photo);
   }
 
@@ -242,12 +248,14 @@ class WalletAppearanceViewModel extends ChangeNotifier {
       await _discardUnusedPhotos();
     } finally {
       _isSaving = false;
-      notifyListeners();
+      if (_closed) await _discardUnusedPhotos();
+      if (!_closed) notifyListeners();
     }
   }
 
   /// 저장하지 않고 나갈 때 이번에 가져온 사진을 지운다.
   Future<void> discard() async {
+    _closed = true;
     if (_saved || _isSaving) return;
     await _discardUnusedPhotos();
   }
@@ -258,6 +266,12 @@ class WalletAppearanceViewModel extends ChangeNotifier {
     for (final imported in photos) {
       await _appearanceProvider.discardPhoto(imported);
     }
+  }
+
+  @override
+  void dispose() {
+    unawaited(discard());
+    super.dispose();
   }
 
   static Future<PickedPhoto?> pickPhotoFromGallery() async {

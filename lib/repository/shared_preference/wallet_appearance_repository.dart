@@ -56,10 +56,17 @@ class WalletAppearanceRepository {
   }
 
   Future<void> _writeMap(Map<String, dynamic> map) async {
-    if (map.isEmpty) {
-      await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kWalletAppearanceMap);
-    } else {
-      await _prefs.setString(SharedPrefKeys.kWalletAppearanceMap, json.encode(map));
+    final prefs = _prefs.sharedPrefs;
+    try {
+      final saved =
+          map.isEmpty
+              ? await prefs.remove(SharedPrefKeys.kWalletAppearanceMap)
+              : await prefs.setString(SharedPrefKeys.kWalletAppearanceMap, json.encode(map));
+      if (!saved) throw StateError('Failed to save wallet appearance');
+    } catch (_) {
+      // SharedPreferences changes its cache before the platform confirms the write.
+      await prefs.reload();
+      rethrow;
     }
   }
 }
