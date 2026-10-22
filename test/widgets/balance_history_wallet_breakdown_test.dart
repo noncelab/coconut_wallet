@@ -43,14 +43,16 @@ void main() {
           home: Scaffold(
             body: Align(
               alignment: Alignment.topCenter,
-              child: SizedBox(
-                width: 300,
-                child: BalanceHistoryWalletBreakdown(
-                  slices: slices(balances),
-                  periodLabel: '10/1 ~ 10/7',
-                  focusedDate: date,
-                  singleWallet: singleWallet,
-                  amountText: (amount) => '$amount sats',
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  width: 300,
+                  child: BalanceHistoryWalletBreakdown(
+                    slices: slices(balances),
+                    periodLabel: '10/1 ~ 10/7',
+                    focusedDate: date,
+                    singleWallet: singleWallet,
+                    amountText: (amount) => '$amount sats',
+                  ),
                 ),
               ),
             ),
@@ -167,6 +169,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(getTooltip(), findsOneWidget);
     expect(find.byKey(const Key('balance-history-share-pointer')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('date changes keep the selected share visible as the bar grows and retargets', (tester) async {
+    final few = [for (var i = 0; i < 30; i++) i == 0 || i == 29 ? 1 : 0];
+    await show(tester, few, date: DateTime(2026, 10, 1));
+    await tester.pumpAndSettle();
+    await tester.tap(segment(30));
+    await tester.pumpAndSettle();
+
+    void expectSelectedVisible() {
+      final viewport = tester.getRect(find.byKey(const Key('balance-history-shares')));
+      final center = tester.getCenter(segment(30));
+      expect(center.dx, inInclusiveRange(viewport.left, viewport.right));
+      expectPointer(tester, 30);
+    }
+
+    await show(tester, List.filled(30, 1), date: DateTime(2026, 10, 2));
+    for (var frame = 0; frame < 24; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      // Apply the post-layout scroll correction without advancing the animation.
+      await tester.pump();
+      expectSelectedVisible();
+    }
+    await tester.pumpAndSettle();
+    expectSelectedVisible();
+    await show(tester, few, date: DateTime(2026, 10, 3));
+    await tester.pump(const Duration(milliseconds: 100));
+    await show(tester, List.filled(30, 1), date: DateTime(2026, 10, 4));
+    for (var frame = 0; frame < 24; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      // Apply the post-layout scroll correction without advancing the animation.
+      await tester.pump();
+      expectSelectedVisible();
+    }
+    await tester.pumpAndSettle();
+    expectSelectedVisible();
     expect(tester.takeException(), isNull);
   });
 

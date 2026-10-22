@@ -90,7 +90,13 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
   void didUpdateWidget(covariant BalanceHistoryWalletBreakdown oldWidget) {
     super.didUpdateWidget(oldWidget);
     _chooseWallet();
-    if (widget.singleWallet || (widget.focusedDate != null && widget.focusedDate != oldWidget.focusedDate)) {
+    final sharesChanged =
+        widget.slices.length != oldWidget.slices.length ||
+        widget.slices.indexed.any((entry) {
+          final previous = oldWidget.slices[entry.$1];
+          return entry.$2.wallet.id != previous.wallet.id || entry.$2.balance != previous.balance;
+        });
+    if (sharesChanged || widget.singleWallet != oldWidget.singleWallet || widget.focusedDate != oldWidget.focusedDate) {
       _reveal = true;
     }
   }
@@ -187,15 +193,18 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
               );
             }
             if (_reveal) {
-              _reveal = false;
+              final animating = geometry != target;
+              // Follow the current geometry until the final layout has been applied.
+              _reveal = animating;
               final selectedCenter = center;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted || !_scroll.hasClients) return;
-                _scroll.animateTo(
-                  (selectedCenter - width / 2).clamp(0.0, _scroll.position.maxScrollExtent),
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                );
+                final offset = (selectedCenter - width / 2).clamp(0.0, _scroll.position.maxScrollExtent);
+                if (animating) {
+                  _scroll.jumpTo(offset);
+                } else {
+                  _scroll.animateTo(offset, duration: const Duration(milliseconds: 200), curve: Curves.easeOutCubic);
+                }
               });
             }
             return Column(
