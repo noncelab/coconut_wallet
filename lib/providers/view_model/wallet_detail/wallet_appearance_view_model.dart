@@ -134,6 +134,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
       _colorIndex != _initialColorIndex;
 
   bool get canSave => hasChanges && isNameValid && !_isPickingPhoto && !_isSaving;
+  bool get isSaving => _isSaving;
   bool _isSaving = false;
 
   WalletPhotoBackground? get photo => _background.asPhoto;
@@ -247,7 +248,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
 
   /// 저장하지 않고 나갈 때 이번에 가져온 사진을 지운다.
   Future<void> discard() async {
-    if (_saved) return;
+    if (_saved || _isSaving) return;
     await _discardUnusedPhotos();
   }
 

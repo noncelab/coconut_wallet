@@ -56,12 +56,18 @@ class _WalletAppearanceBody extends StatelessWidget {
     final viewModel = context.watch<WalletAppearanceViewModel>();
     final colors = context.coconutColors;
     return PopScope(
+      canPop: !viewModel.isSaving,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) viewModel.discard();
       },
       child: Scaffold(
         backgroundColor: colors.background,
-        appBar: CoconutAppBar.build(context: context),
+        appBar: CoconutAppBar.build(
+          context: context,
+          onBackPressed: () {
+            if (!viewModel.isSaving) Navigator.maybePop(context);
+          },
+        ),
         body: Stack(
           children: [
             Column(
@@ -154,7 +160,8 @@ class _WallpaperTabBar extends StatelessWidget {
     final colors = context.coconutColors;
     return Column(
       children: [
-        Padding(
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             spacing: 28,
@@ -401,7 +408,6 @@ class _TabBody extends StatelessWidget {
   }) {
     final colors = context.coconutColors;
     return Container(
-      key: key,
       width: size,
       height: size,
       padding: const EdgeInsets.all(_selectionGap),
@@ -410,6 +416,7 @@ class _TabBody extends StatelessWidget {
         border: Border.all(color: isSelected ? colors.primaryText : Colors.transparent, width: _selectionWidth),
       ),
       child: ShrinkAnimationButton(
+        key: key,
         onPressed: onPressed,
         borderRadius: _tileRadius,
         defaultColor: colors.homeSurface,

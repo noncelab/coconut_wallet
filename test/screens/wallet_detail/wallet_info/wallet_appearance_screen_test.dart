@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_wallet/constants/wallet_skins.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_background.dart';
@@ -20,6 +22,8 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_appearan
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_photo_crop_screen.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +41,8 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
   final WalletItemBase wallet;
   String? savedName;
   (int, int)? savedPalette;
+  Completer<void>? nameUpdate;
+  Balance balance = Balance(0, 0);
 
   @override
   WalletItemBase getWalletById(int id) => wallet;
@@ -48,12 +54,17 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
     int? excludeWalletId,
   }) => desiredName == 'taken' ? 'taken (2)' : desiredName;
   @override
-  Future<void> updateWalletName(int id, String name) async => savedName = name;
+  Future<void> updateWalletName(int id, String name) async {
+    savedName = name;
+    final gate = nameUpdate;
+    if (gate != null) await gate.future;
+  }
+
   @override
   Future<void> updateWalletPalette(int id, int iconIndex, int colorIndex) async =>
       savedPalette = (iconIndex, colorIndex);
   @override
-  Balance getWalletBalance(int walletId) => Balance(0, 0);
+  Balance getWalletBalance(int walletId) => balance;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -84,6 +95,13 @@ class _PreferenceProvider extends Fake implements PreferenceProvider {
   BitcoinUnit get currentUnit => BitcoinUnit.btc;
 }
 
+class _PopObserver extends NavigatorObserver {
+  int pops = 0;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) => pops++;
+}
+
 void main() {
   late Directory tempDir;
   late WalletAppearanceProvider appearances;
@@ -106,10 +124,19 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  Future<void> open(WidgetTester tester, {PhotoPicker? pickPhoto}) async {
-    tester.view.physicalSize = const Size(390, 1400);
+  Future<void> open(
+    WidgetTester tester, {
+    PhotoPicker? pickPhoto,
+    CoconutThemeVariant variant = CoconutThemeVariant.dark,
+    TextScaler textScaler = TextScaler.noScaling,
+    Size logicalSize = const Size(390, 1400),
+    bool settle = true,
+    NavigatorObserver? observer,
+  }) async {
+    tester.view.physicalSize = logicalSize;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    addTearDown(() => buildCoconutThemeData(variant: CoconutThemeVariant.dark));
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -118,7 +145,13 @@ void main() {
           ChangeNotifierProvider<WalletAppearanceProvider>.value(value: appearances),
         ],
         child: MaterialApp(
-          theme: buildCoconutThemeData(),
+          theme: buildCoconutThemeData(variant: variant),
+          navigatorObservers: [if (observer != null) observer],
+          builder:
+              (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child ?? const SizedBox.shrink(),
+              ),
           home: Builder(
             builder:
                 (context) => TextButton(
@@ -136,7 +169,11 @@ void main() {
       ),
     );
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   testWidgets('starts on the presets tab with a 2x2 preview and switches tabs', (tester) async {
@@ -320,5 +357,204 @@ void main() {
     final saved = appearances.backgroundOf(walletProvider.wallet.id);
     expect(saved, isA<WalletColorBackground>());
     expect(walletPaletteColors, isNot(contains((saved! as WalletColorBackground).color)));
+  });
+
+  testWidgets('back before complete drops an uncommitted skin', (tester) async {
+    await open(tester);
+    await tester.tap(find.byKey(const Key('wallet-appearance-option-skin-mint')));
+    await tester.pump();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WalletAppearanceScreen), findsNothing);
+    expect(appearances.backgroundOf(walletProvider.wallet.id), isNull);
+  });
+
+  testWidgets('preview size is not saved with the background', (tester) async {
+    await open(tester);
+    await tester.tap(find.byKey(const Key('wallet-appearance-size-wide')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wallet-appearance-tab-colors')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('wallet-appearance-option-color-6')));
+    await tester.pump();
+    await tester.tap(find.text(t.complete));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<WalletCard>(find.byType(WalletCard)).size, WalletCardSize.small);
+    expect(appearances.backgroundOf(walletProvider.wallet.id), WalletColorBackground.of(walletPaletteColors[6]));
+  });
+
+  testWidgets('a missing photo file still opens the editor', (tester) async {
+    await appearances.setBackground(
+      walletProvider.wallet.id,
+      const WalletPhotoBackground(fileName: 'missing.jpg', aspectRatio: 1),
+    );
+    await open(tester);
+
+    expect(find.byKey(const Key('wallet-appearance-option-photo')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dark and light themes both render the editor', (tester) async {
+    for (final variant in CoconutThemeVariant.values) {
+      await open(tester, variant: variant);
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      expect(scaffold.backgroundColor, buildCoconutThemeData(variant: variant).scaffoldBackgroundColor);
+      expect(find.byKey(const Key('wallet-appearance-preview')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('enlarged text does not overflow the wallpaper tabs', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.es);
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+    await open(tester, textScaler: const TextScaler.linear(2), logicalSize: const Size(360, 800));
+
+    expect(find.text('Predefinidos'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a long balance fits the compact and wide previews', (tester) async {
+    walletProvider.balance = Balance(123456789012345, 0);
+    await open(tester, textScaler: const TextScaler.linear(1.6), logicalSize: const Size(360, 800));
+
+    expect(find.byKey(const Key('wallet-card-balance')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('wallet-appearance-size-wide')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<WalletCard>(find.byType(WalletCard)).size, WalletCardSize.wide);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a directly added wallet can rename but not recolor its icon', (tester) async {
+    walletProvider.wallet.walletImportSource = WalletImportSource.keystone;
+    await open(tester);
+
+    expect(find.byKey(const Key('wallet-appearance-tab-wallet')), findsOneWidget);
+    expect(find.byKey(const Key('wallet-appearance-name-field')), findsOneWidget);
+    expect(find.byKey(const Key('wallet-appearance-color-0')), findsNothing);
+  });
+
+  testWidgets('an empty or duplicate name does not complete', (tester) async {
+    walletProvider = _WalletProvider(_hotWallet());
+    await open(tester);
+
+    await tester.enterText(find.byType(EditableText), '');
+    await tester.pump();
+    await tester.tap(find.text(t.complete));
+    await tester.pumpAndSettle();
+    expect(find.byType(WalletAppearanceScreen), findsOneWidget);
+    expect(walletProvider.savedName, isNull);
+
+    await tester.enterText(find.byType(EditableText), 'taken');
+    await tester.pump();
+    await tester.tap(find.text(t.complete));
+    await tester.pumpAndSettle();
+    expect(find.byType(WalletAppearanceScreen), findsOneWidget);
+    expect(walletProvider.savedName, isNull);
+  });
+
+  testWidgets('back during save does not delete the photo being applied', (tester) async {
+    walletProvider = _WalletProvider(_hotWallet());
+    final gate = Completer<void>();
+    walletProvider.nameUpdate = gate;
+    await open(tester, pickPhoto: () async => PickedPhoto(_png, 'png'));
+    await tester.enterText(find.byType(EditableText), 'Savings');
+    await tester.pump();
+    await pickPhotoIntoCrop(tester);
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const Key('wallet-photo-crop-done')));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pumpAndSettle();
+    expect(photoDirectory().listSync(), hasLength(1));
+
+    await tester.tap(find.text(t.complete));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(WalletAppearanceScreen), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byType(WalletAppearanceScreen), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WalletAppearanceScreen), findsNothing);
+    expect(photoDirectory().listSync(), hasLength(1));
+    expect(appearances.backgroundOf(walletProvider.wallet.id), isA<WalletPhotoBackground>());
+    expect(walletProvider.savedName, 'Savings');
+  });
+
+  for (final completionDelay in [Duration.zero, const Duration(milliseconds: 400)]) {
+    testWidgets('appbar back during save returns once after success at $completionDelay', (tester) async {
+      walletProvider = _WalletProvider(_hotWallet());
+      final gate = Completer<void>();
+      walletProvider.nameUpdate = gate;
+      final observer = _PopObserver();
+      await open(tester, observer: observer);
+      await tester.enterText(find.byType(EditableText), 'Savings');
+      await tester.pump();
+      await tester.tap(find.text(t.complete));
+      await tester.pump();
+
+      await tester.tap(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(CoconutAppBarActionButton)).hitTestable(),
+      );
+      await tester.pump(completionDelay);
+      final popsWhileSaving = observer.pops;
+      gate.complete();
+      await tester.pumpAndSettle();
+      final error = tester.takeException();
+
+      expect(popsWhileSaving, 0);
+      expect(error, isNull);
+      expect(observer.pops, 1);
+      expect(find.byType(WalletAppearanceScreen), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+  }
+
+  testWidgets('appbar back during save keeps the editor after a save error', (tester) async {
+    walletProvider = _WalletProvider(_hotWallet());
+    final gate = Completer<void>();
+    walletProvider.nameUpdate = gate;
+    final observer = _PopObserver();
+    await open(tester, observer: observer);
+    await tester.enterText(find.byType(EditableText), 'Savings');
+    await tester.pump();
+    final failure = StateError('synthetic save failure');
+    final save = tester.widget<FixedBottomButton>(find.byType(FixedBottomButton)).onButtonClicked();
+    final failedSave = expectLater(save, throwsA(same(failure)));
+    await tester.pump();
+
+    await tester.tap(
+      find.descendant(of: find.byType(AppBar), matching: find.byType(CoconutAppBarActionButton)).hitTestable(),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    gate.completeError(failure);
+    await failedSave;
+    await tester.pumpAndSettle();
+    final error = tester.takeException();
+
+    expect(observer.pops, 0);
+    expect(error, isNull);
+    expect(find.byType(WalletAppearanceScreen), findsOneWidget);
+    final context = tester.element(find.byKey(const Key('wallet-appearance-preview')));
+    expect(context.read<WalletAppearanceViewModel>().isSaving, isFalse);
+    await tester.tap(
+      find.descendant(of: find.byType(AppBar), matching: find.byType(CoconutAppBarActionButton)).hitTestable(),
+    );
+    await tester.pumpAndSettle();
+    expect(observer.pops, 1);
+    expect(find.text('open'), findsOneWidget);
   });
 }
