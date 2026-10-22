@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -169,7 +170,7 @@ class WalletAppearanceViewModel extends ChangeNotifier {
         _walletProvider.resolveWalletNameConflict(
               desiredName: trimmed,
               descriptor: wallet.descriptor,
-              isSingleSig: true,
+              isSingleSig: wallet is SinglesigWalletItem,
               excludeWalletId: walletId,
             ) !=
             trimmed;
