@@ -133,12 +133,15 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   List<WalletItemBase> get hotWallets => wallets.where((wallet) => wallet.hasLocalKey).toList();
   List<WalletItemBase> get watchOnlyWallets => wallets.where((wallet) => !wallet.hasLocalKey).toList();
 
+  /// null이면 전체 지갑. 빈 목록이거나 고른 id가 모두 사라져도 남은 지갑으로 넓히지 않는다.
   List<int> _idsOf(List<int>? walletIds) {
-    if (walletIds != null) {
-      final existing = walletIds.where((id) => wallets.any((wallet) => wallet.id == id)).toList();
-      if (existing.isNotEmpty) return existing;
+    if (walletIds == null) {
+      return [for (final wallet in wallets) wallet.id];
     }
-    return [for (final wallet in wallets) wallet.id];
+    return [
+      for (final id in walletIds)
+        if (wallets.any((wallet) => wallet.id == id)) id,
+    ];
   }
 
   int balanceOf(int walletId) =>

@@ -90,9 +90,11 @@ void main() {
       expect(viewModel.settings.walletIds, [3]);
     });
 
-    test('저장된 지갑 중 없어진 지갑은 빼고, 모두 없으면 모든 지갑으로 연다', () {
+    test('저장된 지갑 중 없어진 지갑은 빼고, 모두 없으면 남은 지갑으로 넓히지 않는다', () {
       expect(create(spec, initial: const HomeWidgetSettings(walletIds: [2, 9])).settings.walletIds, [2]);
-      expect(create(spec, initial: const HomeWidgetSettings(walletIds: [9])).allWallets, isTrue);
+      final stale = create(spec, initial: const HomeWidgetSettings(walletIds: [9]));
+      expect(stale.allWallets, isFalse);
+      expect(stale.settings.walletIds, isEmpty);
     });
   });
 

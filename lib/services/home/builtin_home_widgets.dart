@@ -145,16 +145,10 @@ List<String> _dayLabels(int days, {int count = 7}) {
 
 String _btc(HomeWidgetsViewModel viewModel, int sats) => viewModel.unit.displayBitcoinAmount(sats, withUnit: true);
 
-String _btcNumber(HomeWidgetsViewModel viewModel, int sats, {bool roundedTo4 = false}) =>
-    roundedTo4 && viewModel.unit.isBtcUnit
-        ? (sats / 100000000).toStringAsFixed(4)
-        : viewModel.unit.displayBitcoinAmount(sats);
+String _btcNumber(HomeWidgetsViewModel viewModel, int sats) => viewModel.unit.displayBitcoinAmount(sats);
 
-HomeAmount _btcAmount(HomeWidgetsViewModel viewModel, int sats, {bool roundedTo4 = false}) => HomeAmount(
-  _btcNumber(viewModel, sats, roundedTo4: roundedTo4),
-  viewModel.unit.symbol,
-  unitFirst: viewModel.unit.isPrefixSymbol,
-);
+HomeAmount _btcAmount(HomeWidgetsViewModel viewModel, int sats) =>
+    HomeAmount(_btcNumber(viewModel, sats), viewModel.unit.symbol, unitFirst: viewModel.unit.isPrefixSymbol);
 
 HomeAmount _fiatAmount(int? amount, FiatCode fiat) =>
     amount == null
@@ -286,8 +280,8 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       final ids = walletIdsOf(item);
       return BalanceByWalletView(
         shares: viewModel.balanceShares(walletIds: ids, othersName: t.home_widgets.others),
-        total: _btcAmount(viewModel, viewModel.totalBalance(ids), roundedTo4: true),
-        amountText: (sats) => _btcNumber(viewModel, sats, roundedTo4: true),
+        total: _btcAmount(viewModel, viewModel.totalBalance(ids)),
+        amountText: (sats) => _btcNumber(viewModel, sats),
       );
     },
   ),
