@@ -210,6 +210,7 @@ abstract final class FeatureWidgetIconPath {
   static const String coinStack = 'assets/svg/features/widgets/coin-stack.svg';
   static const String trendingUp = 'assets/svg/features/widgets/trending-up.svg';
   static const String chartBar = 'assets/svg/features/widgets/chart-bar.svg';
+  static const String chart = 'assets/svg/features/widgets/chart.svg';
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

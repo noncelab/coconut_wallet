@@ -217,71 +217,112 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('balance history opens with the focused wallet selected and shows its target', (tester) async {
+  testWidgets('chart card flips in place and opens one week history for the focused wallet', (tester) async {
     await SharedPrefsRepository().setWalletTargetSats(2, 50000000);
-    final firstDay = DateTime.now().subtract(const Duration(days: 100));
-    walletProvider.transactions = [TransactionMock.createMockTransactionRecord(timestamp: firstDay)];
     await pump(tester, id: 2);
     await tester.pumpAndSettle();
+    expect(find.byType(WalletBalanceHistoryChart), findsNothing);
+    final front = find.byKey(const ValueKey('wallet-detail-card-2'));
+    final frontRect = tester.getRect(front);
+    expect(find.descendant(of: front, matching: find.byKey(const Key('wallet-detail-action-details'))), findsNothing);
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.pump(const Duration(milliseconds: 150));
+    final transform = tester.widget<Transform>(
+      find.ancestor(of: front, matching: find.byKey(const Key('wallet-detail-card-flip'))).first,
+    );
+    expect(transform.transform.entry(3, 2), isNot(0));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byKey(const Key('wallet-detail-chart-card'))), frontRect);
     final chart = tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart));
     expect(chart.targetSats, 50000000);
-    expect(chart.axisUnit, isNotNull);
+    expect(chart.cardPresentation, isTrue);
+    expect(chart.points.last.balance, 20000000);
+    expect(chart.points.length, HomeWidgetPeriod.week.days);
     final previewLine = tester.widget<HomeSparkline>(
       find.descendant(of: find.byType(WalletBalanceHistoryChart), matching: find.byType(HomeSparkline)),
     );
     expect(previewLine.selectedIndex, isNull);
-    expect(previewLine.values, chart.points.map((point) => point.balance).toList());
-    expect(previewLine.maximum, greaterThan(previewLine.minimum!));
-    expect(chart.points.last.balance, 20000000);
-    expect(chart.points.length, HomeWidgetPeriod.year.days);
-    final lastDay = chart.points.last.timestamp;
     expect(
-      chart.points.first.timestamp,
-      DateTime(lastDay.year, lastDay.month, lastDay.day - HomeWidgetPeriod.year.days + 1),
+      find.descendant(of: find.byKey(const Key('wallet-balance-chart-value-axis')), matching: find.byType(Text)),
+      findsNWidgets(3),
+    );
+    expect(
+      find.descendant(of: find.byKey(const Key('wallet-balance-chart-dates')), matching: find.byType(Text)),
+      findsNWidgets(3),
+    );
+    expect(
+      tester.getTopLeft(find.byKey(const Key('wallet-balance-chart-dates'))).dy,
+      lessThan(tester.getTopLeft(find.byType(HomeSparkline)).dy),
     );
     expect(find.byKey(const Key('wallet-detail-balance-goal')), findsOneWidget);
-    expect(tester.widget<RotatedBox>(find.byKey(const Key('wallet-detail-balance-goal-direction'))).quarterTurns, 1);
     await tester.tap(find.byKey(const Key('wallet-detail-balance-history')));
     await tester.pumpAndSettle();
     final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
     expect(history.viewModel.walletIds, [2]);
-    expect(history.viewModel.balancePeriod, HomeWidgetPeriod.year);
+    expect(history.viewModel.balancePeriod, HomeWidgetPeriod.week);
     final chip = find.byKey(const ValueKey('balance-history-wallet-2'));
     final semantics = tester.widget<Semantics>(find.ancestor(of: chip, matching: find.byType(Semantics)).first);
     expect(semantics.properties.selected, isTrue);
     Navigator.of(tester.element(chip)).pop();
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
+    await tester.pumpAndSettle();
+    expect(front, findsOneWidget);
+    expect(find.byKey(const Key('wallet-detail-chart-card')), findsNothing);
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.pumpAndSettle();
     await tester.drag(find.byKey(const Key('wallet-detail-carousel')), const Offset(300, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
     await tester.pumpAndSettle();
     final switchedChart = tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart));
     expect(switchedChart.points.last.balance, 10000000);
     expect(switchedChart.targetSats, isNull);
-    expect(find.byKey(const Key('wallet-detail-balance-goal')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('goal label shows a simple check at or above the target', (tester) async {
+  testWidgets('chart goal summary updates its completion percentage', (tester) async {
     await SharedPrefsRepository().setWalletTargetSats(1, 10000000);
     await pump(tester);
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
     await tester.pumpAndSettle();
-    final check = find.byKey(const Key('wallet-detail-balance-goal-reached'));
     final label = find.byKey(const Key('wallet-detail-balance-goal'));
-    expect(check, findsOneWidget);
-    expect(tester.widget<Text>(label).data, startsWith(t.hodl_insights.goal_reached));
+    expect(tester.widget<Text>(label).data, endsWith('100%'));
     for (final balance in [15000000, 5000000]) {
       walletProvider.balances[1] = balance;
       walletProvider.walletItemListNotifier.notifyListeners();
       await tester.pumpAndSettle();
-      expect(check, balance >= 10000000 ? findsOneWidget : findsNothing);
+      expect(tester.widget<Text>(label).data, endsWith('${balance ~/ 100000}%'));
     }
-    expect(tester.widget<Text>(label).data, startsWith('${t.hodl_insights.goal} ·'));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('balance history has no goal when the focused wallet has no target', (tester) async {
+  testWidgets('chart card has no goal when the focused wallet has no target', (tester) async {
     await pump(tester);
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.pumpAndSettle();
     expect(tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart)).targetSats, isNull);
     expect(find.byKey(const Key('wallet-detail-balance-goal')), findsNothing);
+  });
+
+  testWidgets('chart card fits a narrow dark screen in English with reduced motion', (tester) async {
+    final previousLocale = LocaleSettings.currentLocale;
+    LocaleSettings.setLocale(AppLocale.en);
+    addTearDown(() => LocaleSettings.setLocale(previousLocale));
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await SharedPrefsRepository().setWalletTargetSats(1, 10000000);
+    await pump(tester, size: const Size(360, 900), variant: CoconutThemeVariant.dark);
+    final chartButtonSize = tester.getSize(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.tap(find.byKey(const Key('wallet-detail-action-chart')).hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('Wallet Card'), findsNothing);
+    expect(tester.getSize(find.byKey(const Key('wallet-detail-chart-back'))), chartButtonSize);
+    expect(find.text('Show balance trend >'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('wallet-detail-chart-back')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wallet-detail-card-1')), findsOneWidget);
   });
 
   for (final unbacked in [false, true]) {
@@ -503,14 +544,16 @@ void main() {
     expect(find.byKey(const Key('wallet-detail-appbar-balance')), findsNothing);
   });
 
-  testWidgets('an empty wallet card only offers receive and details', (tester) async {
+  testWidgets('an empty wallet card offers receive and chart with details in the app bar', (tester) async {
     walletProvider.balances[1] = 0;
     await pump(tester);
 
     final card = find.byKey(const ValueKey('wallet-detail-card-1'));
     Finder action(String name) => find.descendant(of: card, matching: find.byKey(Key('wallet-detail-action-$name')));
     expect(action('receive'), findsOneWidget);
-    expect(action('details'), findsOneWidget);
+    expect(action('details'), findsNothing);
+    expect(action('chart'), findsOneWidget);
+    expect(find.byKey(const Key('wallet-detail-action-details')), findsOneWidget);
     expect(action('send'), findsNothing);
     expect(action('organize'), findsNothing);
   });

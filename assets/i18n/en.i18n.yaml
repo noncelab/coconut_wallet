@@ -830,6 +830,9 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    balance_label: "Balance"
+    transactions_label: "Transactions"
+    flow_summary: "${count} tx · ${amount}"
     no_transactions_at_date: "No transactions on the selected date"
     transactions_at_date: "Transactions on selected date"
     wallets_at_date: "Wallets at this point"
@@ -2247,3 +2250,7 @@ wallet_appearance_screen:
   photo_pick_failed: "Couldn't load this photo. Please choose another one"
 wallet_card_detail_screen:
   details: "Details"
+  chart: "Chart"
+  wallet_card: "Wallet Card"
+  show_balance_trend: "Show balance trend"
+  chart_date_format: "MMM d"

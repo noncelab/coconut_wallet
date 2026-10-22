@@ -958,6 +958,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    balance_label: "잔액"
+    transactions_label: "트랜잭션"
+    flow_summary: "${count}회 · ${amount}"
     no_transactions_at_date: "선택한 날짜에 거래 내역이 없어요"
     transactions_at_date: "이 시점의 거래 내역"
     wallets_at_date: "이 시점의 지갑"
@@ -2253,3 +2256,7 @@ wallet_appearance_screen:
   photo_pick_failed: "사진을 불러오지 못했어요. 다른 사진을 골라 주세요"
 wallet_card_detail_screen:
   details: "상세"
+  chart: "차트"
+  wallet_card: "지갑 카드"
+  show_balance_trend: "잔액 변화 보기"
+  chart_date_format: "M월 d일"

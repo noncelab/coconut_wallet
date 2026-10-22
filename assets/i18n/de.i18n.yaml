@@ -958,6 +958,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    balance_label: "Saldo"
+    transactions_label: "Transaktionen"
+    flow_summary: "${count} Tx · ${amount}"
     no_transactions_at_date: "Keine Transaktionen am gewählten Tag"
     transactions_at_date: "Transaktionen am gewählten Tag"
     wallets_at_date: "Wallets zu diesem Zeitpunkt"
@@ -2225,3 +2228,7 @@ wallet_appearance_screen:
   photo_pick_failed: "Dieses Foto konnte nicht geladen werden. Bitte wählen Sie ein anderes"
 wallet_card_detail_screen:
   details: "Details"
+  chart: "Diagramm"
+  wallet_card: "Wallet-Karte"
+  show_balance_trend: "Saldoverlauf anzeigen"
+  chart_date_format: "d.M."

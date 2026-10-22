@@ -293,6 +293,17 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
+        CoconutAppBarActionButton(
+          key: const Key('wallet-detail-action-details'),
+          onPressed: _openWalletInfo,
+          icon: SvgPicture.asset(
+            FeatureSettingsIconPath.settings,
+            width: 20,
+            height: 20,
+            semanticsLabel: t.wallet_card_detail_screen.details,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+          ),
+        ),
       ],
     );
   }
@@ -335,8 +346,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                         _buildMoveToVault(context),
                       const SizedBox(height: 20),
                       _buildSecurityWarning(viewModel.detail),
-                      _buildBalanceHistory(viewModel),
-                      const SizedBox(height: 28),
                       _sectionHeader(
                         context,
                         key: const Key('wallet-detail-utxo-header'),
@@ -427,7 +436,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     final insights = HodlInsightsViewModel(
       viewModel.widgets.withoutFakeBalance(),
       walletIds: [viewModel.focusedWallet.id],
-      balancePeriod: viewModel.balanceHistoryPeriod,
+      balancePeriod: HomeWidgetPeriod.week,
     );
     try {
       await WalletBalanceHistoryScreen.open(context, insights);
@@ -436,115 +445,122 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     }
   }
 
-  Widget _buildBalanceHistory(WalletCardDetailViewModel viewModel) {
+  Widget _buildBalanceHistory(WalletCardDetailViewModel viewModel, WalletItemBase wallet, VoidCallback onBack) {
     final colors = context.coconutColors;
-    final now = viewModel.widgets.now;
-    final period = viewModel.balanceHistoryPeriod;
-    final days =
-        period == HomeWidgetPeriod.all
-            ? viewModel.widgets.daysSinceFirstTransaction(walletIds: [viewModel.focusedWallet.id], asOf: now)
-            : period.days;
-    final dates = HomeWidgetMath.lastDays(now, days);
+    final dates = HomeWidgetMath.lastDays(viewModel.widgets.now, HomeWidgetPeriod.week.days);
     final balances = viewModel.widgets.dailyBalances(
-      walletIds: [viewModel.focusedWallet.id],
+      walletIds: [wallet.id],
       days: dates.length,
-      asOf: now,
+      asOf: viewModel.widgets.now,
     );
-    final target = viewModel.detail.targetSats;
-    final targetReached = target != null && target > 0 && viewModel.balanceOf(viewModel.focusedWallet) >= target;
-    final range = walletBalanceChartRange(balances, target);
-    return _lifted(
-      Material(
-        color: colors.homeSurface,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          key: const Key('wallet-detail-balance-history'),
-          onTap: () => _openBalanceHistory(viewModel),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    final target = viewModel.widgets.savingsGoal(walletIds: [wallet.id])?.target;
+    final hasTarget = target != null && target > 0;
+    final balance = viewModel.balanceOf(wallet);
+    final progress = hasTarget ? balance / target * 100 : 0.0;
+    return Material(
+      key: const Key('wallet-detail-chart-card'),
+      color: colors.homeSurface,
+      borderRadius: BorderRadius.circular(28),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: WalletBalanceHistoryChart(
+                key: ValueKey(wallet.id),
+                points: [
+                  for (var i = 0; i < dates.length; i++)
+                    WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
+                ],
+                revision: Object.hashAll(balances),
+                targetSats: target,
+                axisUnit: viewModel.unit,
+                cardPresentation: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        t.wallet_list.header.balance_history,
-                        style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: colors.secondaryText, size: 20),
-                  ],
-                ),
-                if (target != null && target > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (targetReached) ...[
-                          SvgPicture.asset(
-                            CommonFormIconPath.circleCheckOutline,
-                            key: const Key('wallet-detail-balance-goal-reached'),
-                            width: 14,
-                            height: 14,
-                            colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
-                          ),
-                          const SizedBox(width: 4),
-                        ] else if (range.targetAbove || range.targetBelow) ...[
-                          RotatedBox(
-                            key: const Key('wallet-detail-balance-goal-direction'),
-                            quarterTurns: range.targetAbove ? 1 : 3,
-                            child: SvgPicture.asset(
-                              CommonNavigationIconPath.arrowBack,
-                              width: 14,
-                              height: 14,
-                              colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Flexible(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasTarget)
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
                           child: Text(
-                            '${targetReached ? t.hodl_insights.goal_reached : t.hodl_insights.goal} · ${viewModel.amountText(target)}',
+                            '${t.hodl_insights.goal}: ${viewModel.amountText(target)} / ${progress.toStringAsFixed(0)}%',
                             key: const Key('wallet-detail-balance-goal'),
-                            textAlign: TextAlign.end,
-                            style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+                            style: CoconutTypography.body3_12.copyWith(color: colors.homeChartLine),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                if (target == null || target <= 0) const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: WalletBalanceHistoryChart(
-                    key: ValueKey(viewModel.focusedWallet.id),
-                    points: [
-                      for (var i = 0; i < dates.length; i++)
-                        WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
+                      InkWell(
+                        key: const Key('wallet-detail-balance-history'),
+                        onTap: () => _openBalanceHistory(viewModel),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 6, bottom: 6, right: 8),
+                          child: Text(
+                            '${t.wallet_card_detail_screen.show_balance_trend} >',
+                            style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                          ),
+                        ),
+                      ),
                     ],
-                    revision: Object.hashAll(balances),
-                    targetSats: target,
-                    axisUnit: viewModel.unit,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Semantics(
+                  label: t.wallet_card_detail_screen.wallet_card,
+                  button: true,
+                  child: ShrinkAnimationButton(
+                    key: const Key('wallet-detail-chart-back'),
+                    onPressed: onBack,
+                    defaultColor: colors.homeSurfaceButton,
+                    pressedOverlayColor: colors.surfacePressOverlay,
+                    pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
+                    borderRadius: 22,
+                    child: SizedBox.square(
+                      dimension: 44,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          FeatureShortcutIconPath.myWallets,
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(colors.surfaceButtonText, BlendMode.srcIn),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
-      radius: 20,
     );
   }
 
-  Widget _buildCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, bool isFocused) {
-    final card = _buildDetailCard(viewModel, wallet, isFocused);
-    return _lifted(card, radius: 28);
-  }
+  Widget _buildCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, bool isFocused) => _lifted(
+    WalletDetailFlipCard(
+      key: ValueKey('wallet-detail-flip-${wallet.id}'),
+      isFocused: isFocused,
+      frontBuilder: (flip) => _buildDetailCard(viewModel, wallet, isFocused, flip),
+      backBuilder: (flip) => _buildBalanceHistory(viewModel, wallet, flip),
+    ),
+    radius: 28,
+  );
 
-  Widget _buildDetailCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, bool isFocused) {
+  Widget _buildDetailCard(
+    WalletCardDetailViewModel viewModel,
+    WalletItemBase wallet,
+    bool isFocused,
+    VoidCallback onChart,
+  ) {
     final detail = viewModel.detail;
     final isCurrent = isFocused && detail.walletId == wallet.id;
     return WalletDetailCard(
@@ -559,7 +575,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         onReceive: _openReceive,
         onSend: _openSend,
         onOrganize: _openOrganizer,
-        onDetails: _openWalletInfo,
+        onChart: onChart,
         hasBalance: viewModel.balanceOf(wallet) > 0,
       ),
     );

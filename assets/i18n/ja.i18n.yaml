@@ -829,6 +829,9 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    balance_label: "残高"
+    transactions_label: "取引"
+    flow_summary: "${count}件 · ${amount}"
     no_transactions_at_date: "選択した日に取引はありません"
     transactions_at_date: "選択した日の取引"
     wallets_at_date: "この時点のウォレット"
@@ -2235,3 +2238,7 @@ wallet_appearance_screen:
   photo_pick_failed: "写真を読み込めませんでした。別の写真を選んでください"
 wallet_card_detail_screen:
   details: "詳細"
+  chart: "チャート"
+  wallet_card: "ウォレットカード"
+  show_balance_trend: "残高推移を見る"
+  chart_date_format: "M月d日"

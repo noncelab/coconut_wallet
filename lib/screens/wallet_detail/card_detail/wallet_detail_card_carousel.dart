@@ -244,7 +244,7 @@ class WalletDetailCardAction {
     required VoidCallback onReceive,
     required VoidCallback onSend,
     required VoidCallback onOrganize,
-    required VoidCallback onDetails,
+    required VoidCallback onChart,
     required bool hasBalance,
   }) => [
     WalletDetailCardAction(
@@ -268,12 +268,66 @@ class WalletDetailCardAction {
         onPressed: onOrganize,
       ),
     WalletDetailCardAction(
-      key: const Key('wallet-detail-action-details'),
-      label: t.wallet_card_detail_screen.details,
-      iconPath: FeatureSettingsIconPath.settings,
-      onPressed: onDetails,
+      key: const Key('wallet-detail-action-chart'),
+      label: t.wallet_card_detail_screen.chart,
+      iconPath: FeatureWidgetIconPath.chart,
+      onPressed: onChart,
     ),
   ];
+}
+
+/// Only the visible face is mounted, so hidden card actions cannot receive taps.
+class WalletDetailFlipCard extends StatefulWidget {
+  final bool isFocused;
+  final Widget Function(VoidCallback flip) frontBuilder;
+  final Widget Function(VoidCallback flip) backBuilder;
+
+  const WalletDetailFlipCard({
+    super.key,
+    required this.isFocused,
+    required this.frontBuilder,
+    required this.backBuilder,
+  });
+
+  @override
+  State<WalletDetailFlipCard> createState() => _WalletDetailFlipCardState();
+}
+
+class _WalletDetailFlipCardState extends State<WalletDetailFlipCard> {
+  bool _showChart = false;
+
+  @override
+  void didUpdateWidget(covariant WalletDetailFlipCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isFocused) _showChart = false;
+  }
+
+  void _flip() {
+    if (!widget.isFocused) return;
+    setState(() => _showChart = !_showChart);
+  }
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(end: _showChart ? 1 : 0),
+    duration: Duration(milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 600),
+    curve: Curves.easeInOutCubic,
+    builder: (context, progress, _) {
+      final back = progress >= 0.5;
+      return Transform(
+        key: const Key('wallet-detail-card-flip'),
+        alignment: Alignment.center,
+        transform:
+            Matrix4.identity()
+              ..setEntry(3, 2, 0.0015)
+              ..rotateY(math.pi * (back ? progress - 1 : progress)),
+        child: IgnorePointer(
+          ignoring: !widget.isFocused,
+          child: back ? widget.backBuilder(_flip) : widget.frontBuilder(_flip),
+        ),
+      );
+    },
+  );
 }
 
 class _ActionButton extends StatelessWidget {

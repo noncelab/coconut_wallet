@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -41,6 +42,7 @@ class WalletBalanceHistoryChart extends StatefulWidget {
   final int revision;
   final int? targetSats;
   final BitcoinUnit? axisUnit;
+  final bool cardPresentation;
 
   const WalletBalanceHistoryChart({
     super.key,
@@ -48,6 +50,7 @@ class WalletBalanceHistoryChart extends StatefulWidget {
     required this.revision,
     this.targetSats,
     this.axisUnit,
+    this.cardPresentation = false,
   });
 
   @override
@@ -80,7 +83,12 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
   @override
   Widget build(BuildContext context) {
     if (widget.axisUnit != null && widget.points.isNotEmpty) {
-      return _CompactBalanceChart(points: widget.points, unit: widget.axisUnit!, targetSats: widget.targetSats);
+      return _CompactBalanceChart(
+        points: widget.points,
+        unit: widget.axisUnit!,
+        targetSats: widget.targetSats,
+        cardPresentation: widget.cardPresentation,
+      );
     }
     return AnimatedBuilder(
       animation: _controller,
@@ -104,8 +112,14 @@ class _CompactBalanceChart extends StatelessWidget {
   final List<WalletBalanceHistoryPoint> points;
   final BitcoinUnit unit;
   final int? targetSats;
+  final bool cardPresentation;
 
-  const _CompactBalanceChart({required this.points, required this.unit, this.targetSats});
+  const _CompactBalanceChart({
+    required this.points,
+    required this.unit,
+    this.targetSats,
+    required this.cardPresentation,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,53 +127,131 @@ class _CompactBalanceChart extends StatelessWidget {
     final balances = [for (final point in points) point.balance];
     final range = walletBalanceChartRange(balances, targetSats);
     final axis = HomeWidgetMath.balanceAxisRange(range.minimum.floor(), range.maximum.ceil());
-    final ticks = [for (var i = 0; i <= 4; i++) axis.maximum - (axis.maximum - axis.minimum) * i ~/ 4];
+    final intervals = cardPresentation ? 2 : 4;
+    final ticks = [for (var i = 0; i <= intervals; i++) axis.maximum - (axis.maximum - axis.minimum) * i ~/ intervals];
     final labelStyle = CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText);
+    final dateStyle = (cardPresentation ? CoconutTypography.caption_10 : CoconutTypography.body3_12).copyWith(
+      color: colors.secondaryText,
+    );
+    final datePainter = TextPainter(
+      text: TextSpan(text: '0', style: dateStyle),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final dateHeaderHeight = datePainter.height + 8;
+    datePainter.dispose();
+    Widget dates() => Row(
+      key: const Key('wallet-balance-chart-dates'),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        for (final index in {0, (points.length - 1) ~/ 2, points.length - 1})
+          Text(
+            DateFormat(
+              cardPresentation ? t.wallet_card_detail_screen.chart_date_format : 'yy.MM.dd',
+            ).format(points[index].timestamp),
+            style: dateStyle,
+          ),
+      ],
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(unit.symbol, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
-        const SizedBox(height: 8),
+        if (!cardPresentation) ...[
+          Text(unit.symbol, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
+          const SizedBox(height: 8),
+        ],
         Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Column(
+                key: const Key('wallet-balance-chart-value-axis'),
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [for (final tick in ticks) Text(unit.displayBitcoinAmount(tick), style: labelStyle)],
+                children: [
+                  if (cardPresentation) SizedBox(height: dateHeaderHeight),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [for (final tick in ticks) Text(unit.displayBitcoinAmount(tick), style: labelStyle)],
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(width: 10),
               Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    CustomPaint(
-                      painter: _CompactBalanceGridPainter(
-                        minimum: axis.minimum,
-                        maximum: axis.maximum,
-                        target: targetSats,
-                        gridColor: colors.tertiaryText.withValues(alpha: 0.2),
-                        targetColor: colors.secondaryText,
+                    if (cardPresentation) ...[dates(), const SizedBox(height: 8)],
+                    Expanded(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CustomPaint(
+                            painter: _CompactBalanceGridPainter(
+                              minimum: axis.minimum,
+                              maximum: axis.maximum,
+                              target: range.targetAbove || range.targetBelow ? null : targetSats,
+                              gridColor: colors.tertiaryText.withValues(alpha: 0.2),
+                              targetColor: cardPresentation ? colors.homeChartLine : colors.secondaryText,
+                              intervals: intervals,
+                            ),
+                          ),
+                          HomeSparkline(values: balances, minimum: axis.minimum, maximum: axis.maximum, strokeWidth: 2),
+                          if (cardPresentation &&
+                              targetSats != null &&
+                              targetSats! > 0 &&
+                              !range.targetAbove &&
+                              !range.targetBelow)
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final y =
+                                    2 +
+                                    (constraints.maxHeight - 4) *
+                                        (1 - (targetSats! - axis.minimum) / (axis.maximum - axis.minimum));
+                                final label = '${t.hodl_insights.goal} ${unit.displayBitcoinAmount(targetSats!)}';
+                                final style = CoconutTypography.caption_10.copyWith(color: colors.homeChartLine);
+                                final painter = TextPainter(
+                                  text: TextSpan(text: label, style: style),
+                                  textDirection: Directionality.of(context),
+                                  textScaler: MediaQuery.textScalerOf(context),
+                                  maxLines: 1,
+                                )..layout(maxWidth: constraints.maxWidth);
+                                final labelHeight = painter.height;
+                                painter.dispose();
+                                // Keep 1px clear of the 0.5px stroke, including at the bottom edge.
+                                const gap = 1 + 0.5 / 2;
+                                final top =
+                                    y + gap + labelHeight <= constraints.maxHeight ? y + gap : y - gap - labelHeight;
+                                return Stack(
+                                  children: [
+                                    Positioned(
+                                      left: 0,
+                                      right: 0,
+                                      top: top,
+                                      child: Text(
+                                        label,
+                                        textAlign: TextAlign.end,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: style,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                        ],
                       ),
                     ),
-                    HomeSparkline(values: balances, minimum: axis.minimum, maximum: axis.maximum),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (final index in {0, (points.length - 1) ~/ 2, points.length - 1})
-              Text(
-                DateFormat('yy.MM.dd').format(points[index].timestamp),
-                style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
-              ),
-          ],
-        ),
+        if (!cardPresentation) ...[const SizedBox(height: 12), dates()],
       ],
     );
   }
@@ -171,6 +263,7 @@ class _CompactBalanceGridPainter extends CustomPainter {
   final int? target;
   final Color gridColor;
   final Color targetColor;
+  final int intervals;
 
   const _CompactBalanceGridPainter({
     required this.minimum,
@@ -178,6 +271,7 @@ class _CompactBalanceGridPainter extends CustomPainter {
     required this.target,
     required this.gridColor,
     required this.targetColor,
+    required this.intervals,
   });
 
   @override
@@ -192,12 +286,19 @@ class _CompactBalanceGridPainter extends CustomPainter {
       }
     }
 
-    for (var i = 0; i <= 4; i++) {
-      dashedLine(2 + (size.height - 4) * i / 4, gridColor);
+    for (var i = 0; i <= intervals; i++) {
+      dashedLine(2 + (size.height - 4) * i / intervals, gridColor);
     }
     final goal = target;
     if (goal != null && goal > 0 && goal >= minimum && goal <= maximum) {
-      dashedLine(2 + (size.height - 4) * (1 - (goal - minimum) / (maximum - minimum)), targetColor);
+      final y = 2 + (size.height - 4) * (1 - (goal - minimum) / (maximum - minimum));
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        Paint()
+          ..color = targetColor
+          ..strokeWidth = 0.5,
+      );
     }
   }
 
@@ -206,6 +307,7 @@ class _CompactBalanceGridPainter extends CustomPainter {
       minimum != oldDelegate.minimum ||
       maximum != oldDelegate.maximum ||
       target != oldDelegate.target ||
+      intervals != oldDelegate.intervals ||
       gridColor != oldDelegate.gridColor ||
       targetColor != oldDelegate.targetColor;
 }

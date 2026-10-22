@@ -959,6 +959,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    balance_label: "Saldo"
+    transactions_label: "Transacciones"
+    flow_summary: "${count} tx · ${amount}"
     no_transactions_at_date: "No hay transacciones en la fecha seleccionada"
     transactions_at_date: "Transacciones de la fecha seleccionada"
     wallets_at_date: "Carteras en este momento"
@@ -2238,3 +2241,7 @@ wallet_appearance_screen:
   photo_pick_failed: "No se pudo cargar esta foto. Elige otra"
 wallet_card_detail_screen:
   details: "Detalles"
+  chart: "Gráfico"
+  wallet_card: "Tarjeta de cartera"
+  show_balance_trend: "Ver evolución del saldo"
+  chart_date_format: "d/M"
