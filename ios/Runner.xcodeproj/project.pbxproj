@@ -14,6 +14,7 @@
 		5D7E31AA2C8B4B699F014201 /* DeviceDekKeystore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7E31A92C8B4B699F014201 /* DeviceDekKeystore.swift */; };
 		5F30C6482DD5909E007E3A6E /* LaunchScreenRegtest.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5F30C6462DD5909E007E3A6E /* LaunchScreenRegtest.storyboard */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		E2C210210000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C210210000000000000001 /* SceneDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
@@ -61,6 +62,7 @@
 		6FF3E0C33A9181B996B35318 /* Pods-RunnerTests.debug-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-mainnet.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-mainnet.xcconfig"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		E2C210210000000000000001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7622F082C09732A1226193C5 /* Pods-Runner.profile-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-mainnet.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-mainnet.xcconfig"; sourceTree = "<group>"; };
 		77F214A313D1C80C7510A47B /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				E2C210210000000000000001 /* SceneDelegate.swift */,
 				593DC4AF28BA47E6BE6E6E8F /* Bitbox02MethodHandler.swift */,
 				5D7E31A92C8B4B699F014201 /* DeviceDekKeystore.swift */,
 				F3A2B1C0D9E8F7A6B5C4D3E2 /* BluetoothTransport.swift */,
@@ -529,6 +532,7 @@
 				C2C53B473004B4CD000B5E93 /* TrezorBridgeFFI.swift in Sources */,
 				C2C53B493004BA05000B5E93 /* TrezorMethodHandler.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				E2C210210000000000000002 /* SceneDelegate.swift in Sources */,
 				5BDE05CA37B7431FB7C74C09 /* Bitbox02MethodHandler.swift in Sources */,
 				5D7E31AA2C8B4B699F014201 /* DeviceDekKeystore.swift in Sources */,
 				A0B1C2D3E4F5060708090A0B /* BluetoothTransport.swift in Sources */,

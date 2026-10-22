@@ -4,6 +4,7 @@ import LocalAuthentication
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+    private(set) lazy var flutterEngine = FlutterEngine(name: "coconut-wallet")
     private var osMethodChannel: FlutterMethodChannel?
     private var pendingBitcoinUri: String?
     private var bitbox02Handler: Bitbox02MethodHandler?
@@ -15,15 +16,23 @@ import LocalAuthentication
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
+    guard flutterEngine.run() else {
+      return false
+    }
+    GeneratedPluginRegistrant.register(with: flutterEngine)
+    configurePlatformChannels(messenger: flutterEngine.binaryMessenger)
 
-    guard let controller = window?.rootViewController as? FlutterViewController else {
-      return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    if let url = launchOptions?[.url] as? URL {
+      handleBitcoinUri(url, notifyDart: false)
     }
 
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func configurePlatformChannels(messenger: FlutterBinaryMessenger) {
     osMethodChannel = FlutterMethodChannel(
       name: "onl.coconut.wallet/os",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: messenger
     )
 
     osMethodChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -60,7 +69,7 @@ import LocalAuthentication
 
     let deviceDekChannel = FlutterMethodChannel(
       name: "onl.coconut.wallet/device-dek",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: messenger
     )
     deviceDekChannel.setMethodCallHandler { [weak self] call, result in
       guard let self else {
@@ -132,15 +141,8 @@ import LocalAuthentication
       }
     }
 
-    if let url = launchOptions?[.url] as? URL,
-       url.scheme?.lowercased() == "bitcoin" {
-      pendingBitcoinUri = url.absoluteString
-    }
-
-    bitbox02Handler = Bitbox02MethodHandler(messenger: controller.binaryMessenger)
-    trezorHandler = TrezorMethodHandler(messenger: controller.binaryMessenger)
-
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    bitbox02Handler = Bitbox02MethodHandler(messenger: messenger)
+    trezorHandler = TrezorMethodHandler(messenger: messenger)
   }
 
   override func application(
@@ -148,13 +150,22 @@ import LocalAuthentication
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
-    guard url.scheme?.lowercased() == "bitcoin" else {
+    guard handleBitcoinUri(url) else {
       return super.application(app, open: url, options: options)
     }
+    return true
+  }
 
+  @discardableResult
+  func handleBitcoinUri(_ url: URL, notifyDart: Bool = true) -> Bool {
+    guard url.scheme?.lowercased() == "bitcoin" else {
+      return false
+    }
     let uri = url.absoluteString
     pendingBitcoinUri = uri
-    osMethodChannel?.invokeMethod("onBitcoinUri", arguments: uri)
+    if notifyDart {
+      osMethodChannel?.invokeMethod("onBitcoinUri", arguments: uri)
+    }
     return true
   }
 
