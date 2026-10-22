@@ -79,65 +79,91 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final backgroundColor = context.coconutColors.surfaceBottomSheet;
-
-    return Scaffold(
+    final appBar = CoconutAppBar.build(
+      title: t.send_screen.select_wallet,
+      context: context,
       backgroundColor: backgroundColor,
-      appBar: CoconutAppBar.build(
-        title: t.send_screen.select_wallet,
-        context: context,
-        backgroundColor: backgroundColor,
-        onBackPressed: null,
-        isBottom: true,
+      onBackPressed: null,
+      isBottom: true,
+    );
+    final cards = Column(
+      children: List.generate(_walletList.length, (index) {
+        int walletId = _walletList[index].id;
+        final wallet = _walletList[index];
+        bool isChecked = _selectedWalletId == walletId;
+        return WalletItemCard(
+          walletItem: wallet,
+          animatedBalanceData: AnimatedBalanceData(_walletBalanceMap[walletId] ?? 0, _walletBalanceMap[walletId] ?? 0),
+          isLastItem: index == _walletList.length - 1,
+          currentUnit: widget.currentUnit,
+          backgroundColor: backgroundColor,
+          rightWidget:
+              isChecked
+                  ? SvgPicture.asset(
+                    CommonActionIconPath.check,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                  )
+                  : Container(),
+          onPressed: () => setState(() => _selectedWalletId = walletId),
+        );
+      }),
+    );
+    final confirm = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        CoconutLayout.defaultPadding,
+        12,
+        CoconutLayout.defaultPadding,
+        FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: widget.scrollController,
-                child: Column(
-                  children: List.generate(_walletList.length, (index) {
-                    int walletId = _walletList[index].id;
-                    final wallet = _walletList[index];
-                    bool isChecked = _selectedWalletId == walletId;
-                    return WalletItemCard(
-                      walletItem: wallet,
-                      animatedBalanceData: AnimatedBalanceData(
-                        _walletBalanceMap[walletId] ?? 0,
-                        _walletBalanceMap[walletId] ?? 0,
-                      ),
-                      isLastItem: index == _walletList.length - 1,
-                      currentUnit: widget.currentUnit,
-                      backgroundColor: backgroundColor,
-                      rightWidget:
-                          isChecked
-                              ? SvgPicture.asset(
-                                CommonActionIconPath.check,
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                              )
-                              : Container(),
-                      onPressed: () => setState(() => _selectedWalletId = walletId),
-                    );
-                  }),
+      child: InlineActionButton(
+        onPressed: () => widget.onWalletChanged(_selectedWalletId),
+        isActive: _selectedWalletId != widget.walletId,
+        text: t.select,
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        final label = TextPainter(
+          text: TextSpan(text: t.select, style: CoconutTypography.body2_14_Bold.copyWith(height: 1)),
+          textDirection: Directionality.of(context),
+          textScaler: textScaler,
+        )..layout(maxWidth: (constraints.maxWidth - 2 * (CoconutLayout.defaultPadding + 16)).clamp(1, double.infinity));
+        final buttonHeight = (label.height + 24).clamp(InlineActionButton.defaultHeight + 3, double.infinity);
+        label.dispose();
+        final footerHeight = buttonHeight + 12 + FixedBottomButton.fixedBottomButtonDefaultBottomPadding;
+        final minimumListHeight = kMinInteractiveDimension * (textScaler.scale(14) / 14).clamp(1, double.infinity);
+        final availableHeight = constraints.maxHeight - MediaQuery.paddingOf(context).bottom;
+
+        final scrollAll = availableHeight < appBar.preferredSize.height + footerHeight + minimumListHeight;
+
+        return Material(
+          color: backgroundColor,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                SizedBox(height: scrollAll ? 0 : appBar.preferredSize.height, child: scrollAll ? null : appBar),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: widget.scrollController,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(height: scrollAll ? appBar.preferredSize.height : 0, child: scrollAll ? appBar : null),
+                        cards,
+                        scrollAll ? confirm : const SizedBox.shrink(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                scrollAll ? const SizedBox.shrink() : confirm,
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CoconutLayout.defaultPadding,
-                12,
-                CoconutLayout.defaultPadding,
-                FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
-              ),
-              child: InlineActionButton(
-                onPressed: () => widget.onWalletChanged(_selectedWalletId),
-                isActive: _selectedWalletId != widget.walletId,
-                text: t.select,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
