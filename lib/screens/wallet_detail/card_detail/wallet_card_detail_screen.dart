@@ -64,6 +64,8 @@ import 'package:provider/provider.dart';
 class WalletCardDetailScreen extends StatefulWidget {
   final int id;
   final String entryPoint;
+  final bool focusRecentTransactions;
+  final String? focusedTransactionHash;
 
   /// 카드 휠에 놓을 지갑과 순서(예: 핫월렛 휠에서 들어온 경우). 없으면 전체 지갑.
   final List<int>? walletIds;
@@ -80,25 +82,32 @@ class WalletCardDetailScreen extends StatefulWidget {
     required this.entryPoint,
     this.walletIds,
     this.onFocusChanged,
+    this.focusRecentTransactions = false,
+    this.focusedTransactionHash,
   });
 
   @override
   State<WalletCardDetailScreen> createState() => _WalletCardDetailScreenState();
 }
 
-class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
+class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with SingleTickerProviderStateMixin {
   static const _nextWarningDelay = Duration(milliseconds: 400);
   static const _horizontalPadding = 16.0;
 
   late final WalletCardDetailViewModel _viewModel;
   late final AnalyticsService _analyticsService;
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _recentTransactionsKey = GlobalKey();
+  late final AnimationController _recentHighlightController;
+  Animation<double>? _arrivalAnimation;
+  bool _recentFocusStarted = false;
   final ValueNotifier<double> _collapseProgress = ValueNotifier(0);
   final ValueNotifier<double> _pagePosition = ValueNotifier(0);
 
   @override
   void initState() {
     super.initState();
+    _recentHighlightController = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
     _analyticsService = context.read<AnalyticsService>();
     _viewModel = WalletCardDetailViewModel(
       initialWalletId: widget.id,
@@ -114,6 +123,59 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
     _scrollController.addListener(_updateCollapseProgress);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!widget.focusRecentTransactions || _recentFocusStarted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (!identical(animation, _arrivalAnimation)) {
+      _arrivalAnimation?.removeStatusListener(_onArrivalStatus);
+      _arrivalAnimation = animation;
+      animation?.addStatusListener(_onArrivalStatus);
+    }
+    if (animation == null || animation.status == AnimationStatus.completed) _startRecentFocus();
+  }
+
+  void _onArrivalStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) _startRecentFocus();
+  }
+
+  void _startRecentFocus() {
+    if (_recentFocusStarted) return;
+    _recentFocusStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _focusRecentTransactions());
+  }
+
+  Future<void> _focusRecentTransactions() async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted || !_scrollController.hasClients) return;
+    final target = _recentTransactionsKey.currentContext;
+    if (!mounted || target == null) return;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    final hash = _focusedTransactionHash;
+    final matched = hash != null && _viewModel.recentTransactions.any((tx) => tx.txHash == hash);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (!matched) return;
+    if (reduceMotion) {
+      // 모션 제한 환경에서도 선택된 거래를 아무 피드백 없이 넘기지 않는다.
+      _recentHighlightController.value = 1;
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      if (mounted) _recentHighlightController.value = 0;
+      return;
+    }
+    await _recentHighlightController.forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (!mounted) return;
+    await _recentHighlightController.reverse();
+  }
+
   /// 카드의 잔액이 앱바 아래로 사라지는 구간에서 앱바에 잔액이 나타난다.
   void _updateCollapseProgress() {
     final cardHeight = WalletDetailCardCarousel.heightFor(MediaQuery.sizeOf(context).width);
@@ -125,6 +187,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
 
   @override
   void dispose() {
+    _arrivalAnimation?.removeStatusListener(_onArrivalStatus);
+    _recentHighlightController.dispose();
     _scrollController.dispose();
     _collapseProgress.dispose();
     _pagePosition.dispose();
@@ -134,6 +198,11 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
 
   WalletDetailViewModel get _detail => _viewModel.detail;
   int get _walletId => _viewModel.focusedWallet.id;
+
+  String? get _focusedTransactionHash {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return widget.focusedTransactionHash ?? (args is WalletDetailRouteArgs ? args.focusedTransactionHash : null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -258,61 +327,72 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
               ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-                sliver: SliverList.list(
-                  children: [
-                    if (viewModel.focusedWallet.hasLocalKey && viewModel.balanceOf(viewModel.focusedWallet) > 0)
-                      _buildMoveToVault(context),
-                    const SizedBox(height: 20),
-                    _buildSecurityWarning(viewModel.detail),
-                    _buildBalanceHistory(viewModel),
-                    const SizedBox(height: 28),
-                    _sectionHeader(
-                      context,
-                      key: const Key('wallet-detail-utxo-header'),
-                      title: 'UTXO • ${viewModel.utxoCount}',
-                      onMore: _openUtxoOverview,
-                      moreEnabled: viewModel.utxoCount > 0,
-                    ),
-                    _lifted(
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: context.coconutColors.homeSurface,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: UtxoSummaryView(
-                            keyPrefix: 'wallet-detail',
-                            buckets: viewModel.utxoBuckets,
-                            bucketColors: viewModel.widgets.utxoBucketColors,
-                            amountText: viewModel.amountText,
-                          ),
-                        ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (viewModel.focusedWallet.hasLocalKey && viewModel.balanceOf(viewModel.focusedWallet) > 0)
+                        _buildMoveToVault(context),
+                      const SizedBox(height: 20),
+                      _buildSecurityWarning(viewModel.detail),
+                      _buildBalanceHistory(viewModel),
+                      const SizedBox(height: 28),
+                      _sectionHeader(
+                        context,
+                        key: const Key('wallet-detail-utxo-header'),
+                        title: 'UTXO • ${viewModel.utxoCount}',
+                        onMore: _openUtxoOverview,
+                        moreEnabled: viewModel.utxoCount > 0,
                       ),
-                      radius: 20,
-                    ),
-                    const SizedBox(height: 28),
-                    _sectionHeader(
-                      context,
-                      key: const Key('wallet-detail-transactions-header'),
-                      title: t.wallet_detail_screen.recent_transactions,
-                      onMore: _openTransactionList,
-                      moreEnabled: viewModel.recentTransactions.isNotEmpty,
-                    ),
-                    SizedBox(
-                      height: 216,
-                      child: _lifted(
-                        RecentTransactionsView(
-                          transactions: viewModel.recentTransactions,
-                          amountText: viewModel.amountText,
-                          now: DateTime.now(),
-                          onTransactionSelected: _openTransaction,
+                      _lifted(
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: context.coconutColors.homeSurface,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: UtxoSummaryView(
+                              keyPrefix: 'wallet-detail',
+                              buckets: viewModel.utxoBuckets,
+                              bucketColors: viewModel.widgets.utxoBucketColors,
+                              amountText: viewModel.amountText,
+                            ),
+                          ),
                         ),
                         radius: 20,
                       ),
-                    ),
-                    SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
-                  ],
+                      const SizedBox(height: 28),
+                      Column(
+                        key: _recentTransactionsKey,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionHeader(
+                            context,
+                            key: const Key('wallet-detail-transactions-header'),
+                            title: t.wallet_detail_screen.recent_transactions,
+                            onMore: _openTransactionList,
+                            moreEnabled: viewModel.recentTransactions.isNotEmpty,
+                          ),
+                          SizedBox(
+                            height: 216,
+                            child: _lifted(
+                              RecentTransactionsView(
+                                transactions: viewModel.recentTransactions,
+                                amountText: viewModel.amountText,
+                                now: DateTime.now(),
+                                onTransactionSelected: _openTransaction,
+                                highlightedTxHash: _focusedTransactionHash,
+                                highlightAnimation: _recentHighlightController,
+                              ),
+                              radius: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -653,6 +733,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> {
       padding: const EdgeInsets.only(bottom: 28),
       child: HomeAlertCard.security(
         topSpacing: 8,
+        reserveSpaceOnShow: widget.focusRecentTransactions,
         key: ValueKey(('wallet-detail-warning', detail.walletId, warningType)),
         type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
         showDelay: detail.shouldUseShortWarningDelay(warningType) ? _nextWarningDelay : const Duration(seconds: 1),

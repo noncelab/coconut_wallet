@@ -33,6 +33,9 @@ import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_backgrou
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -157,6 +160,8 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     int id = 1,
+    bool focusRecentTransactions = false,
+    String? focusedTransactionHash,
     Size size = const Size(390, 1400),
     CoconutThemeVariant variant = CoconutThemeVariant.light,
   }) async {
@@ -178,7 +183,12 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: variant),
-          home: WalletCardDetailScreen(id: id, entryPoint: '/wallet-list'),
+          home: WalletCardDetailScreen(
+            id: id,
+            entryPoint: '/wallet-list',
+            focusRecentTransactions: focusRecentTransactions,
+            focusedTransactionHash: focusedTransactionHash,
+          ),
           onGenerateRoute: (settings) {
             pushedRoutes.add(settings.name!);
             return MaterialPageRoute(settings: settings, builder: (_) => const Scaffold());
@@ -265,6 +275,78 @@ void main() {
     expect(tester.widget<WalletBalanceHistoryChart>(find.byType(WalletBalanceHistoryChart)).targetSats, isNull);
     expect(find.byKey(const Key('wallet-detail-balance-goal')), findsNothing);
   });
+
+  for (final unbacked in [false, true]) {
+    testWidgets('home transaction entry scrolls and highlights with unbacked warning: $unbacked', (tester) async {
+      if (unbacked) {
+        final wallet = walletProvider.wallets.first;
+        walletProvider.wallets[0] = SinglesigWalletItem(
+          id: wallet.id,
+          name: wallet.name,
+          descriptor: wallet.descriptor,
+          colorIndex: wallet.colorIndex,
+          iconIndex: wallet.iconIndex,
+          hotWalletMetadata: HotWalletMetadata(
+            walletId: wallet.id,
+            secureStorageKey: 'test',
+            masterFingerprint: '12345678',
+            derivationPath: 'test',
+            accountIndex: 0,
+            backupVerified: false,
+            enterPassphraseWhenSigning: false,
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+      walletProvider.transactions = [
+        TransactionMock.createMockTransactionRecord(transactionHash: 'selected', timestamp: DateTime.now()),
+        TransactionMock.createMockTransactionRecord(transactionHash: 'other', timestamp: DateTime.now()),
+      ];
+      await pump(tester, size: const Size(390, 800), focusRecentTransactions: true, focusedTransactionHash: 'selected');
+      final scroll = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+      await tester.pump(const Duration(milliseconds: 499));
+      expect(scroll.offset, 0);
+      final initialExtent = scroll.position.maxScrollExtent;
+      if (unbacked) {
+        expect(find.byType(HomeAlertCard), findsOneWidget);
+        expect(tester.widget<HomeAlertCard>(find.byType(HomeAlertCard)).reserveSpaceOnShow, isTrue);
+      }
+      var highlighted = false;
+      var peaks = 0;
+      var previousAlpha = 0.0;
+      var rising = false;
+      for (var frame = 0; frame < 45; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(scroll.position.maxScrollExtent, closeTo(initialExtent, 1));
+        expect(scroll.offset, inInclusiveRange(scroll.position.minScrollExtent, scroll.position.maxScrollExtent));
+        final row = find.byKey(const ValueKey('recent-transaction-highlight-selected'));
+        if (row.evaluate().isNotEmpty) {
+          final decoration = tester.widget<DecoratedBox>(row).decoration as BoxDecoration;
+          expect(decoration.border, isNull);
+          final alpha = decoration.color?.a ?? 0;
+          highlighted |= alpha > 0;
+          if (alpha > previousAlpha) rising = true;
+          if (alpha < previousAlpha && rising) {
+            peaks++;
+            rising = false;
+          }
+          previousAlpha = alpha;
+        }
+        expect(find.byKey(const ValueKey('recent-transaction-highlight-other')), findsNothing);
+      }
+      expect(highlighted, isTrue);
+      expect(peaks, 1);
+      final header = find.byKey(const Key('wallet-detail-transactions-header'));
+      expect(tester.getRect(header).top, greaterThanOrEqualTo(kToolbarHeight));
+      expect(tester.getRect(header).bottom, lessThan(800));
+      final decoration =
+          tester.widget<DecoratedBox>(find.byKey(const ValueKey('recent-transaction-highlight-selected'))).decoration
+              as BoxDecoration;
+      expect(decoration.color!.a, 0);
+      expect(find.byKey(const Key('wallet-detail-transactions-highlight')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('opens on the wallet it was entered with', (tester) async {
     await pump(tester, id: 2);

@@ -432,6 +432,8 @@ void main() {
     final route = routeObserver.lastPushed! as PageRouteBuilder<void>;
     expect(route.settings.name, AppRouteNames.walletDetail);
     expect((route.settings.arguments! as WalletDetailRouteArgs).entryPoint, kEntryPointWalletHome);
+    expect((route.settings.arguments! as WalletDetailRouteArgs).focusRecentTransactions, isTrue);
+    expect((route.settings.arguments! as WalletDetailRouteArgs).focusedTransactionHash, 'a');
     expect(route.transitionDuration, HodlInsightsScreen.transitionDuration);
     await _close(tester);
   });
