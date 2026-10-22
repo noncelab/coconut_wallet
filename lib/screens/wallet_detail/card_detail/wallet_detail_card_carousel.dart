@@ -269,7 +269,7 @@ class WalletDetailCardAction {
       ),
     WalletDetailCardAction(
       key: const Key('wallet-detail-action-chart'),
-      label: t.wallet_card_detail_screen.chart,
+      label: t.wallet_list.header.balance_history,
       iconPath: FeatureWidgetIconPath.chart,
       onPressed: onChart,
     ),
