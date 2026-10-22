@@ -443,7 +443,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                       fit: BoxFit.scaleDown,
                       child: Text(
                         _displayDate(dates[_first + ((_last - _first) * i / 6).round()]),
-                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                        style: CoconutTypography.caption_10_Number.copyWith(color: colors.secondaryText),
                       ),
                     ),
                   ),

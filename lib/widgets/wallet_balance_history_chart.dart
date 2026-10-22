@@ -130,9 +130,8 @@ class _CompactBalanceChart extends StatelessWidget {
     final intervals = cardPresentation ? 2 : 4;
     final ticks = [for (var i = 0; i <= intervals; i++) axis.maximum - (axis.maximum - axis.minimum) * i ~/ intervals];
     final labelStyle = CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText);
-    final dateStyle = (cardPresentation ? CoconutTypography.caption_10 : CoconutTypography.body3_12).copyWith(
-      color: colors.secondaryText,
-    );
+    final dateStyle = (cardPresentation ? CoconutTypography.caption_10_Number : CoconutTypography.body3_12_Number)
+        .copyWith(color: colors.secondaryText);
     final datePainter = TextPainter(
       text: TextSpan(text: '0', style: dateStyle),
       textDirection: Directionality.of(context),
