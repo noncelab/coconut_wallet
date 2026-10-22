@@ -611,8 +611,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final start = dates[_selected ?? _first];
     final end = dates[index];
     final exclusiveEnd = DateTime(end.year, end.month, end.day + 1);
+    String periodDate(DateTime date) => _walletIds == null ? _displayDate(date) : DateFormat('yyyy.MM.dd').format(date);
     final period =
-        _selected == null ? '${_displayDate(start)} ~ ${_displayDate(end)}' : DateFormat('yyyy.MM.dd').format(end);
+        _selected == null ? '${periodDate(start)} ~ ${periodDate(end)}' : DateFormat('yyyy.MM.dd').format(end);
     final slices = [
       for (final wallet in vm.data.wallets)
         if (_walletIds == null || _walletIds!.contains(wallet.id))
