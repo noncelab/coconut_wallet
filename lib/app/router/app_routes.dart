@@ -99,6 +99,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             entryPoint: args.entryPoint,
             walletIds: args.walletIds,
             onFocusChanged: args.onFocusChanged,
+            focusRecentTransactions: args.focusRecentTransactions,
+            focusedTransactionHash: args.focusedTransactionHash,
           ),
         ),
     AppRouteNames.walletBackupData:

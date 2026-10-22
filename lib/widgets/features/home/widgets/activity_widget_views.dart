@@ -22,6 +22,10 @@ class RecentTransactionsView extends StatelessWidget {
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
   final DateTime now;
+  final bool showAllTransactions;
+  final String? emptyMessage;
+  final String? highlightedTxHash;
+  final Animation<double>? highlightAnimation;
   final void Function(int walletId)? onTransactionTap;
 
   /// 지갑 하나만 보여 주는 곳(지갑 상세)에서 거래 자체를 열 때 쓴다. 있으면 [onTransactionTap]보다 먼저 쓴다.
@@ -34,7 +38,32 @@ class RecentTransactionsView extends StatelessWidget {
     required this.now,
     this.onTransactionTap,
     this.onTransactionSelected,
+    this.showAllTransactions = false,
+    this.emptyMessage,
+    this.highlightedTxHash,
+    this.highlightAnimation,
   });
+
+  Widget _highlightRow(BuildContext context, HomeRecentTransaction tx, Widget child) {
+    final animation = highlightAnimation;
+    if (highlightedTxHash == null || tx.txHash != highlightedTxHash || animation == null) return child;
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder:
+          (context, child) => DecoratedBox(
+            key: ValueKey('recent-transaction-highlight-${tx.txHash}'),
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              color: context.coconutColors.primaryText.withValues(
+                alpha: 0.08 * Curves.easeInOut.transform(animation.value),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: child,
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +73,52 @@ class RecentTransactionsView extends StatelessWidget {
         key: const Key('recent-transactions-empty'),
         child: Center(
           child: Text(
-            t.home_widgets.no_recent_transactions,
+            emptyMessage ?? t.home_widgets.no_recent_transactions,
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
           ),
         ),
       );
     }
+    if (showAllTransactions) {
+      return SizedBox(
+        height: 16 + transactions.length * 64 + transactions.length - 1,
+        child: HomeWidgetCard(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (index, tx) in transactions.indexed) ...[
+                if (index > 0)
+                  Container(margin: const EdgeInsets.symmetric(horizontal: 28), height: 1, color: colors.divider),
+                _highlightRow(
+                  context,
+                  tx,
+                  _TransactionRow(
+                    key: ValueKey('recent-transactions-row-$index'),
+                    tx: tx,
+                    amountText: amountText,
+                    now: now,
+                    height: 64,
+                    onTap:
+                        onTransactionSelected != null
+                            ? () => onTransactionSelected!(tx)
+                            : onTransactionTap == null
+                            ? null
+                            : () => onTransactionTap!(tx.walletId),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
     final shown = transactions.take(rows).toList();
     final emptyRows = rows - shown.length;
-    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 12), height: 1, color: colors.divider);
+    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 28), height: 1, color: colors.divider);
     return HomeWidgetCard(
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final rowHeight = (constraints.maxHeight - (rows - 1)) / rows;
@@ -63,18 +127,22 @@ class RecentTransactionsView extends StatelessWidget {
             children: [
               for (final (index, tx) in shown.indexed) ...[
                 if (index > 0) divider(),
-                _TransactionRow(
-                  key: ValueKey('recent-transactions-row-$index'),
-                  tx: tx,
-                  amountText: amountText,
-                  now: now,
-                  height: rowHeight,
-                  onTap:
-                      onTransactionSelected != null
-                          ? () => onTransactionSelected!(tx)
-                          : onTransactionTap == null
-                          ? null
-                          : () => onTransactionTap!(tx.walletId),
+                _highlightRow(
+                  context,
+                  tx,
+                  _TransactionRow(
+                    key: ValueKey('recent-transactions-row-$index'),
+                    tx: tx,
+                    amountText: amountText,
+                    now: now,
+                    height: rowHeight,
+                    onTap:
+                        onTransactionSelected != null
+                            ? () => onTransactionSelected!(tx)
+                            : onTransactionTap == null
+                            ? null
+                            : () => onTransactionTap!(tx.walletId),
+                  ),
                 ),
               ],
               if (emptyRows > 0) ...[
@@ -134,76 +202,79 @@ class _TransactionRow extends StatelessWidget {
     };
     final row = SizedBox(
       height: height,
-      child: Row(
-        children: [
-          TransactionStatusGradientMask(
-            enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
-            child: SvgPicture.asset(
-              TransactionUtil.getStatusIconAsset(status),
-              key: ValueKey('recent-transactions-icon-${status.name}'),
-              fit: BoxFit.fill,
-              width: 30,
-              height: 30,
-              colorFilter: ColorFilter.mode(switch (status) {
-                TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                _ => colors.iconPrimary,
-              }, BlendMode.srcIn),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            TransactionStatusGradientMask(
+              enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+              child: SvgPicture.asset(
+                TransactionUtil.getStatusIconAsset(status),
+                key: ValueKey('recent-transactions-icon-${status.name}'),
+                fit: BoxFit.fill,
+                width: 30,
+                height: 30,
+                colorFilter: ColorFilter.mode(switch (status) {
+                  TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                  TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                  _ => colors.iconPrimary,
+                }, BlendMode.srcIn),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        statusText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
                         child: Text(
-                          '$sign ${amountText(tx.amount.abs())}',
-                          style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
+                          statusText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      formatHomeDateTime(tx.time, now),
-                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        tx.walletName,
-                        maxLines: 1,
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '$sign ${amountText(tx.amount.abs())}',
+                            style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        formatHomeDateTime(tx.time, now),
+                        style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          tx.walletName,
+                          maxLines: 1,
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                          style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
     if (onTap == null) return row;

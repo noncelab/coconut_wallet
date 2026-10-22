@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "Der festgelegte Betrag erscheint nur in Guthaben-Widgets auf der Startseite"
   size: "Größe"
   wallet_goals: "Ziel pro Wallet"
-  wallet_goals_description: "Leer lassen, wenn diese Wallet kein Ziel hat"
+  wallet_goals_description: "Lege für jede Wallet ein Sparziel fest"
   wallet_goal_placeholder: "Zielmenge"
   categories:
     balance: "Guthaben"
@@ -227,12 +227,14 @@ home_menu:
   remove_shortcut: "Verknüpfung entfernen"
   removed: "Von der Startseite entfernt"
 hodl_insights:
-  no_goal: "Lege in den Einstellungen ein Ziel für jede Wallet fest"
+  no_goal: "Tippe hier, um deine Zielmenge einzugeben"
   title: "Hodl Insights"
   settings_title: "Insights-Einstellungen"
-  settings_description: "Wähle die Wallets, die in deine Insights einfließen."
+  settings_heading: "Wallets auswählen"
+  settings_description: "Wähle die Wallets, die in die Analyse einfließen"
   total_balance: "Gesamtguthaben"
   goal: "Ziel"
+  goal_reached: "Ziel erreicht"
   utxo_summary: "UTXO-Übersicht"
   utxo_ranges_unit: "Bereiche in BTC"
   total_utxos: "Insgesamt ${count} UTXOs"
@@ -957,6 +959,15 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "Zeitraumübersicht"
+    gesture_guide_title: "Diagramm erkunden"
+    gesture_guide_pan: "Nach links oder rechts wischen, um den Zeitraum zu verschieben."
+    gesture_guide_zoom: "Nach oben oder unten wischen oder mit zwei Fingern zoomen, um den Bereich anzupassen: 1 Woche, 1 Monat, 3 Monate und mehr."
+    balance_label: "Saldo"
+    transactions_label: "Transaktionen"
+    flow_summary: "${count} Tx · ${amount}"
+    no_transactions_at_date: "Keine Transaktionen am gewählten Tag"
+    transactions_at_date: "Transaktionen am gewählten Tag"
     wallets_at_date: "Wallets zu diesem Zeitpunkt"
     no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
     changed_wallets_only: "Nur Wallets mit Änderungen"
@@ -2222,3 +2233,7 @@ wallet_appearance_screen:
   photo_pick_failed: "Dieses Foto konnte nicht geladen werden. Bitte wählen Sie ein anderes"
 wallet_card_detail_screen:
   details: "Details"
+  chart: "Diagramm"
+  wallet_card: "Wallet-Karte"
+  show_balance_trend: "Saldoverlauf anzeigen"
+  chart_date_format: "d.M."

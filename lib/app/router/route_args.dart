@@ -31,6 +31,8 @@ class AddressListRouteArgs {
 
 class WalletDetailRouteArgs {
   final int id;
+  final bool focusRecentTransactions;
+  final String? focusedTransactionHash;
   final String entryPoint;
 
   /// 지갑 상세의 카드 휠에 놓을 지갑과 순서. 없으면 전체 지갑.
@@ -38,7 +40,14 @@ class WalletDetailRouteArgs {
 
   /// 상세 화면에서 카드를 넘기면 알린다. 돌아갈 때 지갑 목록 휠이 같은 카드를 보여 준다.
   final void Function(int walletId)? onFocusChanged;
-  const WalletDetailRouteArgs({required this.id, required this.entryPoint, this.walletIds, this.onFocusChanged});
+  const WalletDetailRouteArgs({
+    required this.id,
+    required this.entryPoint,
+    this.walletIds,
+    this.onFocusChanged,
+    this.focusRecentTransactions = false,
+    this.focusedTransactionHash,
+  });
 }
 
 class UtxoOrganizerRouteArgs {

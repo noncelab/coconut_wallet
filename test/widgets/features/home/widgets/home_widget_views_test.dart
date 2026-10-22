@@ -526,7 +526,7 @@ void main() {
     expect(find.byKey(const Key('fiat-rate-down')), findsNothing);
   });
 
-  testWidgets('balance by wallet shows a two-line total and 4-decimal amounts with percentages', (tester) async {
+  testWidgets('balance by wallet shows a number-only total and 4-decimal amounts with percentages', (tester) async {
     await _pump(
       tester,
       _wide,
@@ -543,11 +543,8 @@ void main() {
     expect(find.text('Main'), findsOneWidget);
     expect(find.text('75.0%'), findsOneWidget);
     expect(find.text('0.7500 BTC'), findsOneWidget);
-    final total = find.byKey(const Key('balance-by-wallet-total'));
-    expect(
-      tester.getTopLeft(find.descendant(of: total, matching: find.text('BTC'))).dy,
-      greaterThan(tester.getTopLeft(find.descendant(of: total, matching: find.text('1.0000'))).dy),
-    );
+    expect(tester.widget<Text>(find.byKey(const Key('balance-by-wallet-total'))).data, '1.0000');
+    expect(find.text('BTC'), findsNothing);
     final dots = tester.widgetList<Container>(
       find.byWidgetPredicate((w) => w is Container && w.constraints?.maxWidth == 10),
     );
@@ -599,7 +596,7 @@ void main() {
     expect(tester.getRect(status).bottom, lessThanOrEqualTo(tester.getRect(time).top + 0.01));
     expect(tester.getRect(icon).center.dy, closeTo(tester.getRect(firstRow).center.dy, 0.5));
     expect(tester.getRect(icon).width, 30);
-    expect(tester.getRect(amount).right, closeTo(tester.getRect(firstRow).right, 0.5));
+    expect(tester.getRect(amount).right, closeTo(tester.getRect(firstRow).right - 16, 0.5));
 
     final pressed = await tester.startGesture(tester.getCenter(find.text('Wallet 1')));
     await tester.pump(const Duration(milliseconds: 150));
@@ -613,6 +610,11 @@ void main() {
     await pressed.up();
     await tester.pump(const Duration(milliseconds: 150));
     expect(tapped, [11]);
+
+    final firstBounds = tester.getRect(firstRow);
+    await tester.tapAt(Offset(firstBounds.left + 4, firstBounds.center.dy));
+    await tester.pump();
+    expect(tapped, [11, 10]);
 
     await _pump(tester, _wide, RecentTransactionsView(transactions: const [], amountText: _btc, now: now));
     expect(find.text(t.home_widgets.no_recent_transactions), findsOneWidget);

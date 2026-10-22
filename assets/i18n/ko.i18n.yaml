@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "설정한 금액은 홈 잔액 위젯에만 표시돼요"
   size: "크기"
   wallet_goals: "지갑별 목표 수량"
-  wallet_goals_description: "비워 두면 그 지갑은 목표가 없어요"
+  wallet_goals_description: "지갑별로 저축 목표를 정해보세요"
   wallet_goal_placeholder: "목표 수량"
   categories:
     balance: "잔액"
@@ -227,12 +227,14 @@ home_menu:
   remove_shortcut: "바로가기 제거"
   removed: "홈에서 제거했어요"
 hodl_insights:
-  no_goal: "설정에서 지갑별 목표 수량을 정해 보세요"
+  no_goal: "여기를 눌러 목표 수량을 입력해 보세요"
   title: "호들 인사이트"
   settings_title: "인사이트 설정"
-  settings_description: "인사이트에 포함할 지갑을 고르세요."
+  settings_heading: "지갑 선택"
+  settings_description: "분석에 포함할 지갑을 고르세요"
   total_balance: "총 잔액"
   goal: "목표"
+  goal_reached: "목표 달성"
   utxo_summary: "UTXO 요약"
   utxo_ranges_unit: "BTC 기준"
   total_utxos: "전체 UTXO ${count}개"
@@ -957,6 +959,15 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "기간별 요약"
+    gesture_guide_title: "그래프를 움직여 보세요"
+    gesture_guide_pan: "좌우로 움직여 보는 기간을 이동해요."
+    gesture_guide_zoom: "위아래로 움직이거나 두 손가락으로 확대·축소해 1주·1개월·3개월 등의 범위를 조절해요."
+    balance_label: "잔액"
+    transactions_label: "트랜잭션"
+    flow_summary: "${count}회 · ${amount}"
+    no_transactions_at_date: "선택한 날짜에 거래 내역이 없어요"
+    transactions_at_date: "이 시점의 거래 내역"
     wallets_at_date: "이 시점의 지갑"
     no_wallets: "이 시점에 표시할 지갑이 없어요"
     changed_wallets_only: "변동이 있는 지갑만 보기"
@@ -2250,3 +2261,7 @@ wallet_appearance_screen:
   photo_pick_failed: "사진을 불러오지 못했어요. 다른 사진을 골라 주세요"
 wallet_card_detail_screen:
   details: "상세"
+  chart: "차트"
+  wallet_card: "지갑 카드"
+  show_balance_trend: "잔액 변화 보기"
+  chart_date_format: "M월 d일"

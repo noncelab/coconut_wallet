@@ -1,5 +1,7 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -94,6 +96,9 @@ class WalletCardDetailViewModel extends ChangeNotifier {
   int balanceOf(WalletItemBase wallet) => _walletProvider.getWalletBalance(wallet.id).total;
 
   String balanceText(WalletItemBase wallet) => _unit.displayBitcoinAmount(balanceOf(wallet));
+
+  HomeWidgetPeriod get balanceHistoryPeriod =>
+      HomeWidgetMath.balanceHistoryPeriod(widgets.transactionRecordsOf(_focusedWalletId), widgets.now);
 
   int get utxoCount => _walletProvider.getUtxoList(_focusedWalletId).length;
 

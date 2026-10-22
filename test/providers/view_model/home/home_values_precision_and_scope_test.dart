@@ -234,10 +234,7 @@ void main() {
       expect(find.text('0.0000 BTC'), findsNothing);
       expect(find.text('0.0001 BTC'), findsNothing);
     }
-    expect(
-      find.descendant(of: find.byKey(const Key('balance-by-wallet-total')), matching: find.text('0.0001 9999')),
-      findsOneWidget,
-    );
+    expect(tester.widget<Text>(find.byKey(const Key('balance-by-wallet-total'))).data, '0.0001 9999');
 
     final normal = _Wallets(
       items: [WalletMock.createSingleSigWalletItem(id: 25, name: 'Normal-')],
@@ -389,10 +386,7 @@ void main() {
     expect(find.text('DisposableBeta-$_betaId'), findsNothing);
     expect(find.byKey(const ValueKey('balance-by-wallet-entry-$_alphaId')), findsNothing);
     expect(find.byKey(const ValueKey('balance-by-wallet-entry-$_betaId')), findsNothing);
-    expect(
-      find.descendant(of: find.byKey(const Key('balance-by-wallet-total')), matching: find.text('0')),
-      findsOneWidget,
-    );
+    expect(tester.widget<Text>(find.byKey(const Key('balance-by-wallet-total'))).data, '0');
 
     await _pump(
       tester,

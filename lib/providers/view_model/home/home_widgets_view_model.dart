@@ -367,7 +367,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
             walletId: wallet.id,
             name: wallet.name,
             balance: balanceOf(wallet.id),
-            colorIndex: wallet.colorIndex,
+            colorIndex: wallet.walletImportSource == WalletImportSource.coconutVault ? wallet.colorIndex : null,
           ),
     ], othersName: othersName);
   }
