@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -80,6 +81,7 @@ abstract final class WalletAddActions {
     WalletAddScreen.routeName,
     WalletAddScreen.sourcesRouteName,
     AppRouteNames.walletAddScanner,
+    AnalyticsScreenNames.walletAddAirgapMfpSheet,
     AppRouteNames.bitbox02Connect,
     AppRouteNames.trezorTransportSelect,
     AppRouteNames.trezorBleConnect,

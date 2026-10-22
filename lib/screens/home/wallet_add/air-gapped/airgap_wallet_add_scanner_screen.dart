@@ -387,6 +387,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       body: Stack(
         children: [
           CoconutQrScanner(
+            closeOnPermissionDenied: widget.importSource != WalletImportSource.extendedPublicKey,
             setMobileScannerController: (MobileScannerController qrViewcontroller) {
               controller = qrViewcontroller;
             },
