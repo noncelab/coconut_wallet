@@ -1539,12 +1539,51 @@ void main() {
       await tester.pumpAndSettle();
       await tester.drag(list, const Offset(0, -500));
       await tester.pumpAndSettle();
-      expect(tester.getSize(graph).height, closeTo(180, 1));
+      expect(tester.getSize(graph).height, closeTo(200, 1));
       expect(nested.innerController.offset, greaterThan(0));
       await tester.drag(list, const Offset(0, 3000));
       await tester.pumpAndSettle();
       expect(nested.innerController.offset, closeTo(0, 1));
       expect(tester.getSize(graph).height, closeTo(expandedHeight, 1));
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('expanding a wallet during a fling keeps nested extents and header position stable', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 1100),
+        dataNow: DateTime(2026, 10, 20, 12),
+        walletList: [for (var id = 1; id <= 8; id++) WalletMock.createSingleSigWalletItem(id: id)],
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final bounds = tester.getRect(chart);
+      await tester.tapAt(Offset(bounds.right - 1, bounds.center.dy));
+      await tester.pumpAndSettle();
+      final list = find.byKey(const Key('balance-history-wallet-list'));
+      await tester.fling(list, const Offset(0, -350), 1000);
+      await tester.pump(const Duration(milliseconds: 16));
+      final nested = tester.state<NestedScrollViewState>(find.byKey(const Key('balance-history-nested-scroll')));
+      expect(nested.innerController.position.isScrollingNotifier.value, isTrue);
+      final extent = nested.outerController.position.maxScrollExtent;
+      final header = find.byKey(const Key('balance-history-wallet-header'));
+      final top = tester.getRect(header).top;
+      final card = tester.widget<WalletCard>(find.byKey(const ValueKey('balance-history-wallet-card-2')));
+      card.onPressed!();
+      for (var frame = 0; frame < 24; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(tester.takeException(), isNull);
+        expect(nested.outerController.position.maxScrollExtent, closeTo(extent, 1));
+        expect(tester.getRect(header).top, closeTo(top, 1));
+      }
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(chart)).pop();
       await tester.pumpAndSettle();

@@ -92,6 +92,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   final Set<int> _expanded = {};
   ScrollController? _walletScrollController;
   final ScrollController _graphScrollController = ScrollController();
+  double _compactGraphOffset = 0;
   int _walletScrollRequest = 0;
   final Map<int, double> _cardExtents = {};
   double _cardExtent = 0;
@@ -243,8 +244,8 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                     builder: (context, constraints) {
                       final maxHeight = constraints.maxHeight;
                       const listGap = 12.0;
-                      final walletsExpanded = _walletIds == null && _expanded.isNotEmpty;
-                      final preferredChart = selected == null ? maxHeight : maxHeight * (walletsExpanded ? 0.34 : 0.52);
+                      // Card expansion must not change the nested scroll range during a fling.
+                      final preferredChart = selected == null ? maxHeight : maxHeight * 0.52;
                       var listHeight = math.max(0.0, maxHeight - preferredChart - listGap);
                       var chartTarget = preferredChart;
                       // A below-layout card can be a few pixels taller than the 52% leftover.
@@ -276,8 +277,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                             return SizedBox(height: chartHeight, width: double.infinity, child: graph);
                           }
                           final expandedHeight = math.min(chartHeight, math.max(0.0, maxHeight - 120 - listGap));
-                          final minimumHeight = math.min(180.0, expandedHeight);
+                          final minimumHeight = math.min(200.0, expandedHeight);
                           final collapseRange = expandedHeight - minimumHeight;
+                          _compactGraphOffset = (expandedHeight - maxHeight * 0.34).clamp(0.0, collapseRange);
                           return Stack(
                             children: [
                               Padding(
@@ -622,6 +624,10 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   Future<void> _toggleWallet(int walletId, DateTime day) async {
     final request = ++_walletScrollRequest;
     final opening = !_expanded.contains(walletId);
+    ScrollHoldController? hold;
+    if (_graphScrollController.hasClients) {
+      hold = _graphScrollController.position.hold(() => hold = null);
+    }
     setState(() {
       if (opening) {
         _expanded.add(walletId);
@@ -629,9 +635,18 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
         _expanded.remove(walletId);
       }
     });
-    if (!opening) return;
-    // The graph and expanded rows must reach their final sizes before measuring.
+    if (opening && _graphScrollController.hasClients && _graphScrollController.offset < _compactGraphOffset) {
+      // Use the existing collapse range instead of resizing its header underneath a ballistic activity.
+      _graphScrollController.animateTo(
+        _compactGraphOffset,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+    // Hold remaining momentum until the expanded rows have finished changing height.
     await Future<void>.delayed(const Duration(milliseconds: 380));
+    if (mounted && _graphScrollController.hasClients) hold?.cancel();
+    if (!opening) return;
     if (!mounted ||
         request != _walletScrollRequest ||
         !_expanded.contains(walletId) ||
@@ -974,6 +989,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final titleStyle = CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText);
     final filterStyle = CoconutTypography.caption_10.copyWith(color: colors.secondaryText);
     return LayoutBuilder(
+      key: const Key('balance-history-wallet-header'),
       builder: (context, constraints) {
         final titleWidth = _singleLineWidth(context, title, titleStyle);
         final filterWidth = _singleLineWidth(context, filterLabel, filterStyle) + 14 + 6;
