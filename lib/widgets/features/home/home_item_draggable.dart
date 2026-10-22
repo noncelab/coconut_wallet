@@ -13,6 +13,7 @@ class HomeItemDraggable extends Draggable<String> {
     required this.onLongPress,
     required this.onPointerDragStart,
     this.canStartDrag,
+    this.onDragSessionStarted,
     super.data,
     super.axis,
     super.childWhenDragging,
@@ -36,6 +37,7 @@ class HomeItemDraggable extends Draggable<String> {
   final VoidCallback onLongPress;
   final void Function(int pointer) onPointerDragStart;
   final bool Function()? canStartDrag;
+  final ValueChanged<Drag>? onDragSessionStarted;
 
   static const double movementAfterHold = 12;
 
@@ -50,7 +52,10 @@ class HomeItemDraggable extends Draggable<String> {
       )
       ..onStart = (position) {
         final drag = onStart(position);
-        return drag == null ? null : _HomeItemDrag(drag, position);
+        if (drag == null) return null;
+        final session = _HomeItemDrag(drag, position);
+        onDragSessionStarted?.call(session);
+        return session;
       };
   }
 }
@@ -75,6 +80,11 @@ class _HomeItemDrag extends Drag with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) cancel();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshTargets());
   }
 
   void _refreshTargets() {

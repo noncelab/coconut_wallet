@@ -79,12 +79,17 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   Timer? _previewTimer;
   Timer? _dropSettleTimer;
   String? _settlingDroppedId;
+  final Set<String> _snappingDropIds = {};
   final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
   String? _draggedId;
   int? _dragPointer;
+  Drag? _activeDrag;
+  bool _disposing = false;
   bool _dragCanceled = false;
   bool _dropInsideSurface = false;
   Offset _dragAnchor = Offset.zero;
+  Offset _initialDragAnchor = Offset.zero;
+  final _feedbackGeometry = ValueNotifier<({Size size, Offset translation})?>(null);
   HomeConfiguration? _previewConfiguration;
   String? _previewDraggedId;
   String? _previewTargetId;
@@ -105,6 +110,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isArranging && !widget.isArranging) cancelActiveDrag();
     if (oldWidget.configuration != widget.configuration) {
+      if (_settlingDroppedId != null) _snapCrossingDropPaths(oldWidget.configuration);
       if (_draggedId != null) cancelActiveDrag();
       _previewTimer?.cancel();
       _previewConfiguration = null;
@@ -118,11 +124,15 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   @override
   void dispose() {
+    _disposing = true;
     WidgetsBinding.instance.removeObserver(this);
-    if (_dragPointer case final pointer?) GestureBinding.instance.cancelPointer(pointer);
+    final pointer = _dragPointer;
+    _activeDrag?.cancel();
+    if (pointer != null) GestureBinding.instance.cancelPointer(pointer);
     _previewTimer?.cancel();
     _dropSettleTimer?.cancel();
     _stopAutoScroll();
+    _feedbackGeometry.dispose();
     super.dispose();
   }
 
@@ -142,6 +152,8 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final pointer = _dragPointer;
     if (pointer == null) return false;
     _dragCanceled = true;
+    // End the avatar now; queued pointer cancellation can be delayed or filtered.
+    _activeDrag?.cancel();
     GestureBinding.instance.cancelPointer(pointer);
     // A configuration swap can unmount the dragged child first, and Flutter skips onDragEnd for it.
     _endDrag();
@@ -150,11 +162,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   void _startDrag(String id, int pointer) {
     _menuKeys[id]?.currentState?.dismissMenu();
-    _dropSettleTimer?.cancel();
-    setState(() {
-      _settlingDroppedId = null;
-      _draggedId = id;
-    });
+    setState(() => _draggedId = id);
     _dragPointer = pointer;
     _dragCanceled = false;
     _anchorCellExtent = _geometryCellExtent;
@@ -162,8 +170,10 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   }
 
   void _endDrag() {
+    _activeDrag = null;
     _dragPointer = null;
     _stopAutoScroll();
+    if (_disposing) return;
     _clearPreview();
     if (mounted) setState(() => _draggedId = null);
   }
@@ -241,6 +251,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
       _dragAnchor.dy * nextSize.height / previousSize.height,
     );
     _anchorCellExtent = next;
+    _feedbackGeometry.value = (size: nextSize, translation: _initialDragAnchor - _dragAnchor);
   }
 
   void _clearPreview() {
@@ -336,14 +347,38 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     });
   }
 
+  void _snapCrossingDropPaths(HomeConfiguration previous) {
+    final before = HomeGridLayout(previous);
+    final after = HomeGridLayout(widget.configuration);
+    const geometry = HomeGridGeometry(cellExtent: 1, gap: 0);
+    final stationary = [
+      for (final item in widget.configuration.items)
+        if (before.positionOf(item.id) == after.positionOf(item.id))
+          geometry.rectOf(after.positionOf(item.id)!, item.span),
+    ];
+    for (final item in widget.configuration.items) {
+      final from = before.positionOf(item.id);
+      final to = after.positionOf(item.id)!;
+      if (from == null || from == to) continue;
+      // shortcut: bounding sweeps can snap clear diagonals; use swept shapes if those need animation.
+      final swept = geometry.rectOf(from, item.span).expandToInclude(geometry.rectOf(to, item.span));
+      if (stationary.any(swept.overlaps)) _snappingDropIds.add(item.id);
+    }
+  }
+
   void _commitDrop(String id, VoidCallback fallback) {
     if (_dragCanceled || !_dropInsideSurface) return;
     _previewTimer?.cancel();
-    // The feedback already reached this cell. Only its neighbors need to travel.
+    // Preserve ordinary reflow; keep crossing paths snapped until their old tweens finish.
     _dropSettleTimer?.cancel();
     setState(() => _settlingDroppedId = id);
     _dropSettleTimer = Timer(HomeItemsView.reorderDuration, () {
-      if (mounted) setState(() => _settlingDroppedId = null);
+      if (mounted) {
+        setState(() {
+          _settlingDroppedId = null;
+          _snappingDropIds.clear();
+        });
+      }
     });
     if (_previewDraggedId == id && _previewTargetId != null) {
       widget.onInsertBefore?.call(id, _previewTargetId!);
@@ -399,7 +434,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
         final lead =
             widget.isArranging && widget.onRemove != null && widget.menuItemsOf != null ? _RemoveBadge.lead : 0.0;
         HomeGridPosition dropPositionFor(HomeItem dragged, Offset globalOffset) =>
-            geometry.dropPosition(layout, dragged, _toSurface(globalOffset));
+            geometry.dropPosition(layout, dragged, _toSurface(globalOffset + _initialDragAnchor - _dragAnchor));
         final grid = Padding(
           padding: EdgeInsets.symmetric(horizontal: sidePadding),
           child: SizedBox(
@@ -445,7 +480,9 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
                                     end: geometry.originOf(previewLayout.positionOf(item.id) ?? position),
                                   ),
                                   duration:
-                                      item.id == _settlingDroppedId || MediaQuery.disableAnimationsOf(context)
+                                      item.id == _settlingDroppedId ||
+                                              _snappingDropIds.contains(item.id) ||
+                                              MediaQuery.disableAnimationsOf(context)
                                           ? Duration.zero
                                           : HomeItemsView.reorderDuration,
                                   curve: Curves.easeInOutCubic,
@@ -455,7 +492,12 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
                                       (context, offset, child) => Transform.translate(
                                         offset: geometry.originOf(position),
                                         child: Transform.translate(
-                                          offset: offset - geometry.originOf(position),
+                                          // A zero duration alone does not stop a tween with an unchanged end.
+                                          offset:
+                                              (_snappingDropIds.contains(item.id)
+                                                  ? geometry.originOf(previewLayout.positionOf(item.id) ?? position)
+                                                  : offset) -
+                                              geometry.originOf(position),
                                           transformHitTests: _draggedId == null,
                                           child: child,
                                         ),
@@ -503,7 +545,21 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   }
 
   Widget _dragFeedback(Size size, Widget content) {
-    final feedback = Opacity(opacity: 0.7, child: SizedBox(width: size.width, height: size.height, child: content));
+    // Flutter captures this widget and the initial anchor for the entire drag.
+    final feedback = ValueListenableBuilder<({Size size, Offset translation})?>(
+      valueListenable: _feedbackGeometry,
+      child: content,
+      builder: (context, geometry, child) {
+        final currentSize = geometry?.size ?? size;
+        return Transform.translate(
+          offset: geometry?.translation ?? Offset.zero,
+          child: Opacity(
+            opacity: 0.7,
+            child: SizedBox(width: currentSize.width, height: currentSize.height, child: child),
+          ),
+        );
+      },
+    );
     return widget.wrapDragFeedback?.call(feedback) ?? feedback;
   }
 
@@ -536,13 +592,16 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             isArranging: () => widget.isArranging,
             onLongPress: () => menuKey.currentState?.showMenu(),
             onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
             canStartDrag: () => _draggedId == null,
             maxSimultaneousDrags: 1,
             onDragUpdate: (details) => _onDragUpdate(item.id, details),
             onDragEnd: (_) => _endDrag(),
             dragAnchorStrategy: (_, dragContext, point) {
               final box = dragContext.findRenderObject()! as RenderBox;
-              return _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
             },
             feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
@@ -610,13 +669,16 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             isArranging: () => widget.isArranging,
             onLongPress: () {},
             onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
             canStartDrag: () => _draggedId == null,
             maxSimultaneousDrags: 1,
             onDragUpdate: (details) => _onDragUpdate(item.id, details),
             onDragEnd: (_) => _endDrag(),
             dragAnchorStrategy: (_, dragContext, point) {
               final box = dragContext.findRenderObject()! as RenderBox;
-              return _dragAnchor = box.globalToLocal(point);
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
             },
             feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width, height: size.height),

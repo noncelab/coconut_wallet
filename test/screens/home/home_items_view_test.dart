@@ -1815,6 +1815,128 @@ void main() {
     expect(find.text('remove stack'), findsNothing);
   });
 
+  for (final rapidRegrab in [false, true]) {
+    testWidgets('occupied reverse: staggered fixture never overlaps after release, rapidRegrab=$rapidRegrab', (
+      tester,
+    ) async {
+      usePhoneViewport(tester);
+      final registry =
+          HomeItemRegistry()
+            ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut))
+            ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small));
+      var configuration = HomeConfiguration(
+        items: [
+          for (final entry
+              in [
+                ('source', HomeSpan.shortcut, const HomeGridPosition(2, 0)),
+                ('tall', HomeSpan.small, const HomeGridPosition(1, 1)),
+                ('target', HomeSpan.shortcut, const HomeGridPosition(3, 2)),
+                ('other', HomeSpan.shortcut, const HomeGridPosition(1, 3)),
+              ].indexed)
+            HomeItem(
+              id: entry.$2.$1,
+              definitionId: entry.$2.$2 == HomeSpan.small ? 'small' : 'shortcut',
+              kind: entry.$2.$2 == HomeSpan.small ? HomeItemKind.widget : HomeItemKind.shortcut,
+              order: entry.$1,
+              span: entry.$2.$2,
+              position: entry.$2.$3,
+            ),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: StatefulBuilder(
+              builder:
+                  (context, update) => HomeItemsView(
+                    configuration: configuration,
+                    registry: registry,
+                    isArranging: true,
+                    badgeInset: 16,
+                    onRemove: (_) {},
+                    menuItemsOf: (_) => [],
+                    onMoveToCell:
+                        (id, position) => update(() {
+                          configuration = HomeGridLayout(configuration).moveToCell(id, position);
+                        }),
+                  ),
+            ),
+          ),
+        ),
+      );
+      final target = tester.getCenter(find.byKey(const ValueKey('home-item-target')));
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+      await gesture.moveBy(const Offset(24, 0));
+      await tester.pump(const Duration(milliseconds: 32));
+      await gesture.moveTo(target);
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      for (var frame = 0; frame < 20; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (rapidRegrab && frame == 1) {
+          final regrab = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+          await regrab.moveBy(const Offset(0, 92.5));
+          await regrab.up();
+          await tester.pump();
+          await tester.pump();
+        }
+        final rects = [
+          for (final item in configuration.items) tester.getRect(find.byKey(ValueKey('home-item-content-${item.id}'))),
+        ];
+        for (var i = 0; i < rects.length; i++) {
+          for (var j = i + 1; j < rects.length; j++) {
+            final overlap = rects[i].intersect(rects[j]);
+            expect(
+              overlap.width <= 0.5 || overlap.height <= 0.5,
+              isTrue,
+              reason: 'Frame $frame: ${configuration.items[i].id} overlaps ${configuration.items[j].id}',
+            );
+          }
+        }
+      }
+      expect(HomeGridLayout(configuration).positionOf('source'), HomeGridPosition(3, rapidRegrab ? 3 : 2));
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  for (final span in [HomeSpan.shortcut, HomeSpan.small, HomeSpan.wide]) {
+    testWidgets('held feedback: ${span.toJson()} resizes at the fractional grab point', (tester) async {
+      final harness = _ViewportDragHarness(tester, span: span);
+      await harness.pump(340);
+      final source = tester.getRect(find.byKey(const ValueKey('home-item-s')));
+      final grab = Offset(source.width * 0.25, source.height * 0.75);
+      final finger = source.topLeft + grab + const Offset(30, 20);
+      final gesture = await tester.startGesture(source.topLeft + grab);
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveTo(finger);
+      await tester.pump();
+      final feedback = find.ancestor(of: find.text('built:shortcut'), matching: find.byType(Opacity));
+      expect(feedback, findsOneWidget);
+      expect(tester.getSize(feedback), source.size);
+      expect(tester.getTopLeft(feedback), finger - grab);
+
+      for (final width in [250.0, 400.0, 340.0]) {
+        await harness.pump(width);
+        tester.binding.handleMetricsChanged();
+        await tester.pump();
+        await tester.pump();
+        final cell = (width - 36) / 4;
+        final expected = Size(span.width * cell + (span.width - 1) * 12, span.height * cell + (span.height - 1) * 12);
+        expect(tester.getSize(feedback), expected);
+        final expectedOrigin = finger - Offset(expected.width * 0.25, expected.height * 0.75);
+        expect((tester.getTopLeft(feedback) - expectedOrigin).distance, lessThan(0.001));
+      }
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(feedback, findsNothing);
+      expect(harness.drops, isEmpty);
+      expect(tester.getRect(find.byKey(const ValueKey('home-item-s'))), source);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('viewport geometry: shrinking during a drag drops the cell under the held finger', (tester) async {
     final harness = _ViewportDragHarness(tester);
     await harness.pump(340);
@@ -1837,7 +1959,7 @@ void main() {
     expect(harness.drops, [HomeGridPosition(expectedColumn, 0)]);
   });
 
-  for (final scenario in [
+  for (final scenario in const [
     (name: '2x2 horizontal', span: HomeSpan.small, finger: Offset(157, 70), drop: HomeGridPosition(1, 0)),
     (name: '2x2 vertical', span: HomeSpan.small, finger: Offset(70, 157), drop: HomeGridPosition(0, 1)),
     (name: '4x2 vertical', span: HomeSpan.wide, finger: Offset(125, 157), drop: HomeGridPosition(0, 1)),
