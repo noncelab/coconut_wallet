@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/app_routes.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -145,6 +148,7 @@ void main() {
     bool vaultEntry = false,
     bool verifyInputCompletion = false,
     bool verifyUriCompletion = false,
+    bool verifyLoadingOverlay = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
@@ -183,16 +187,25 @@ void main() {
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
           navigatorObservers: [pushes],
-          home: LoaderOverlay(
-            child: SendScreen(
-              walletId: 1,
-              isMoveToVault: vaultEntry,
-              receivingVaultWalletId: vaultEntry ? 1 : null,
-              sendEntryPoint: SendEntryPoint.walletDetail,
-              selectedUtxoList: selectedUtxos,
-              transactionDraftId: transactionDraftId,
-            ),
-          ),
+          routes: buildAppRoutes(),
+          initialRoute: AppRouteNames.send,
+          onGenerateInitialRoutes:
+              (_) => [
+                MaterialPageRoute<void>(
+                  settings: RouteSettings(
+                    name: AppRouteNames.send,
+                    arguments: SendRouteArgs(
+                      id: 1,
+                      isMoveToVault: vaultEntry,
+                      receivingVaultWalletId: vaultEntry ? 1 : null,
+                      sendEntryPoint: SendEntryPoint.walletDetail,
+                      selectedUtxoList: selectedUtxos,
+                      transactionDraftId: transactionDraftId,
+                    ),
+                  ),
+                  builder: buildAppRoutes()[AppRouteNames.send]!,
+                ),
+              ],
         ),
       ),
     );
@@ -200,6 +213,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800)); // the sheet opens 500 ms after entry
     await tester.pump(const Duration(milliseconds: 500));
     final opened = pushes.names.contains(AnalyticsScreenNames.sendSelectUtxoSheet);
+    if (verifyLoadingOverlay) {
+      final sendContext = tester.element(find.byType(SendScreen));
+      expect(OverlayControllerWidget.of(sendContext), isNotNull);
+      sendContext.loaderOverlay.show();
+      await tester.pump();
+      expect(sendContext.loaderOverlay.visible, isTrue);
+      sendContext.loaderOverlay.hide();
+      await tester.pump();
+      expect(sendContext.loaderOverlay.visible, isFalse);
+      expect(tester.takeException(), isNull);
+    }
     if (vaultEntry) {
       final fieldFinder = find.byType(VaultReceivingAddressField);
       final field = tester.widget<VaultReceivingAddressField>(fieldFinder);
@@ -336,6 +360,10 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     return opened;
   }
+
+  testWidgets('send route can show signing loader on a cold entry', (tester) async {
+    await opensUtxoSelectionSheetOnEntry(tester, manualMode: false, verifyLoadingOverlay: true);
+  });
 
   testWidgets('automatic UTXO selection does not open the UTXO selection sheet on entry', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: false), isFalse);
