@@ -93,7 +93,9 @@ class WalletCardDetailViewModel extends ChangeNotifier {
   WalletAppearance appearanceOf(WalletItemBase wallet) =>
       _appearanceProvider?.appearanceOf(wallet) ?? WalletAppearance.of(wallet);
 
-  int balanceOf(WalletItemBase wallet) => _walletProvider.getWalletBalance(wallet.id).total;
+  int balanceOf(WalletItemBase wallet) =>
+      _nodeProvider.state.registeredWallets[wallet.id]?.balanceSnapshot ??
+      _walletProvider.getWalletBalance(wallet.id).total;
 
   String balanceText(WalletItemBase wallet) => _unit.displayBitcoinAmount(balanceOf(wallet));
 

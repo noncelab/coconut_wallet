@@ -92,10 +92,7 @@ class NodeStateManager implements StateManagerInterface {
       final newWalletInfo = newState.registeredWallets[walletId]!;
 
       // 지갑 상세 상태 비교 (subscription, balance, transaction, utxo)
-      if (prevWalletInfo.subscription != newWalletInfo.subscription ||
-          prevWalletInfo.balance != newWalletInfo.balance ||
-          prevWalletInfo.transaction != newWalletInfo.transaction ||
-          prevWalletInfo.utxo != newWalletInfo.utxo) {
+      if (prevWalletInfo != newWalletInfo) {
         return true;
       }
     }
@@ -106,7 +103,48 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    _setState(newUpdatedWallets: {..._state.registeredWallets, walletId: WalletUpdateInfo(walletId)}, notify: false);
+    final previous = _state.registeredWallets[walletId];
+    _setState(
+      newUpdatedWallets: {
+        ..._state.registeredWallets,
+        walletId: WalletUpdateInfo(
+          walletId,
+          isSyncQueued: previous?.isSyncQueued ?? false,
+          balanceSnapshot: previous?.balanceSnapshot,
+        ),
+      },
+      notify: false,
+    );
+  }
+
+  @override
+  void setWalletSyncQueueState(int walletId, bool isSyncQueued, int? balanceSnapshot) {
+    final previous = _state.registeredWallets[walletId] ?? WalletUpdateInfo(walletId);
+    final completed = !isSyncQueued && balanceSnapshot != null;
+    final updated = WalletUpdateInfo.fromExisting(
+      previous,
+      isSyncQueued: isSyncQueued,
+      balanceSnapshot: isSyncQueued ? previous.balanceSnapshot ?? balanceSnapshot : balanceSnapshot,
+      subscription: completed ? WalletSyncState.completed : null,
+      balance:
+          completed
+              ? WalletSyncState.completed
+              : !isSyncQueued
+              ? WalletSyncState.waiting
+              : null,
+      transaction: completed ? WalletSyncState.completed : null,
+      utxo: completed ? WalletSyncState.completed : null,
+    );
+    final wallets = {..._state.registeredWallets, walletId: updated};
+    _setState(
+      newUpdatedWallets: wallets,
+      newConnectionState:
+          wallets.values.any((wallet) => wallet.isSyncQueued)
+              ? NodeSyncState.syncing
+              : isAllWalletsCompleted(updatedWallets: wallets)
+              ? NodeSyncState.completed
+              : NodeSyncState.failed,
+    );
   }
 
   /// 지갑의 동기화 상태 증가 및 상태 업데이트
@@ -306,6 +344,9 @@ class NodeStateManager implements StateManagerInterface {
         case IsolateStateMethod.addWalletFetchCompleted:
           addWalletFetchCompleted(params[0], params[1]);
           break;
+        case IsolateStateMethod.setWalletSyncQueueState:
+          setWalletSyncQueueState(params[0], params[1], params[2]);
+          break;
       }
     } catch (e) {
       Logger.error('handleIsolateStateMessage 처리 중 에러 발생: $e');
@@ -343,7 +384,8 @@ class NodeStateManager implements StateManagerInterface {
     final registeredWallets = updatedWallets ?? _state.registeredWallets;
 
     for (final walletInfo in registeredWallets.values) {
-      if (walletInfo.subscription != WalletSyncState.completed ||
+      if (walletInfo.isSyncQueued ||
+          walletInfo.subscription != WalletSyncState.completed ||
           walletInfo.balance != WalletSyncState.completed ||
           walletInfo.transaction != WalletSyncState.completed ||
           walletInfo.utxo != WalletSyncState.completed) {

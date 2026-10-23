@@ -80,9 +80,7 @@ void main() {
   }
 
   Future<Balance> apply(List<UpdateAddressBalanceDto> updates) async {
-    final delta = await addresses.updateAddressBalanceBatch(wallet.id, updates);
-    await wallets.accumulateWalletBalance(wallet.id, delta);
-    return delta;
+    return addresses.updateAddressBalanceBatch(wallet.id, updates, walletBalance: wallets.getWalletBalance(wallet.id));
   }
 
   void expectStoredBalances(int walletId, int confirmed, int unconfirmed) {
@@ -165,6 +163,36 @@ void main() {
 
     expectStoredBalances(wallet.id, 5000, -1000);
     expect((delta.confirmed, delta.unconfirmed), (0, 0));
+  });
+
+  test('one satoshi changes remain exact at the Bitcoin supply limit', () async {
+    const maxSats = 2100000000000000;
+    await apply([update(maxSats, 0)]);
+    await apply([update(maxSats - 1, 1), update(maxSats - 1, 1)]);
+    expectStoredBalances(wallet.id, maxSats - 1, 1);
+    await apply([update(maxSats - 1, 0)]);
+    expectStoredBalances(wallet.id, maxSats - 1, 0);
+  });
+
+  test('another wallet aggregate is rejected before changing either wallet', () async {
+    final other = addWallet(2);
+    final wrongBalance = wallets.getWalletBalance(other.id)!;
+    expect(
+      () => addresses.updateAddressBalance(
+        walletId: wallet.id,
+        index: 0,
+        isChange: false,
+        balance: Balance(1000, 0),
+        walletBalance: wrongBalance,
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      addresses.updateAddressBalanceBatch(wallet.id, [update(1000, 0)], walletBalance: wrongBalance),
+      throwsArgumentError,
+    );
+    expectStoredBalances(wallet.id, 0, 0);
+    expectStoredBalances(other.id, 0, 0);
   });
 
   test('missing address rejects the whole batch without partially changing stored balances', () async {

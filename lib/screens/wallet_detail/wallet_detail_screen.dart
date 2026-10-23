@@ -245,19 +245,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             children: [
               FiatPrice(satoshiAmount: viewModel.balance),
               CoconutLayout.spacing_100h,
-              WalletBalanceSyncShimmer(
-                isRefreshing: viewModel.isRefreshing || viewModel.isWalletSyncing,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: BitcoinAmountUnit(
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: BitcoinAmountUnit(
+                  currentUnit: viewModel.currentUnit,
+                  unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
+                  child: AnimatedBalance(
+                    prevValue: viewModel.balance,
+                    value: viewModel.balance,
+                    duration: 400,
                     currentUnit: viewModel.currentUnit,
-                    unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
-                    child: AnimatedBalance(
-                      prevValue: viewModel.balance,
-                      value: viewModel.balance,
-                      currentUnit: viewModel.currentUnit,
-                      textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
-                    ),
+                    textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
                   ),
                 ),
               ),

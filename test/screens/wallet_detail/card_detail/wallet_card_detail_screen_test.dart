@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -91,8 +92,13 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
 }
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  final bool syncing;
+  _Node({this.syncing = false});
   @override
-  NodeProviderState get state => NodeProviderState.initial();
+  NodeProviderState get state =>
+      syncing
+          ? const NodeProviderState(nodeSyncState: NodeSyncState.syncing, registeredWallets: {})
+          : NodeProviderState.initial();
   @override
   Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
   @override
@@ -166,6 +172,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     int id = 1,
+    bool syncing = false,
     bool focusRecentTransactions = false,
     String? focusedTransactionHash,
     Size size = const Size(390, 1400),
@@ -180,7 +187,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<WalletProvider>.value(value: walletProvider),
           ChangeNotifierProvider<TransactionProvider>.value(value: transactions),
-          ChangeNotifierProvider<NodeProvider>.value(value: _Node()),
+          ChangeNotifierProvider<NodeProvider>.value(value: _Node(syncing: syncing)),
           ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
           ChangeNotifierProvider<PriceProvider>.value(value: _Prices()),
           ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity()),
@@ -210,6 +217,13 @@ void main() {
     );
     await tester.pump();
   }
+
+  testWidgets('syncing keeps detail balance readable without a flashing shader', (tester) async {
+    await pump(tester, syncing: true);
+    final card = find.byKey(const ValueKey('wallet-detail-card-1'));
+    expect(card, findsOneWidget);
+    expect(find.descendant(of: card, matching: find.byType(Shimmer)), findsNothing);
+  });
 
   testWidgets('real fonts: large detail card keeps chart, neighbor and collapse geometry', (tester) async {
     await tester.runAsync(() async {

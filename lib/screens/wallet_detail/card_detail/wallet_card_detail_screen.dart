@@ -48,7 +48,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
-import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -272,12 +271,14 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                       opacity: progress,
                       child: Transform.translate(offset: Offset(0, 8 * (1 - progress)), child: child),
                     ),
-        child: _CollapsedBalance(
-          key: const Key('wallet-detail-appbar-balance'),
-          balance: viewModel.balanceOf(viewModel.focusedWallet),
-          unit: viewModel.unit,
-          isSyncing: viewModel.detail.isWalletSyncing,
-          onTap: viewModel.toggleUnit,
+        child: KeyedSubtree(
+          key: ValueKey(viewModel.focusedWallet.id),
+          child: _CollapsedBalance(
+            key: const Key('wallet-detail-appbar-balance'),
+            balance: viewModel.balanceOf(viewModel.focusedWallet),
+            unit: viewModel.unit,
+            onTap: viewModel.toggleUnit,
+          ),
         ),
       ),
       actionButtonList: [
@@ -574,27 +575,19 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     WalletDetailFlipCard(
       key: ValueKey('wallet-detail-flip-${wallet.id}'),
       isFocused: isFocused,
-      frontBuilder: (flip) => _buildDetailCard(viewModel, wallet, isFocused, flip),
+      frontBuilder: (flip) => _buildDetailCard(viewModel, wallet, flip),
       backBuilder: (flip) => _buildBalanceHistory(viewModel, wallet, flip),
     ),
     radius: 28,
   );
 
-  Widget _buildDetailCard(
-    WalletCardDetailViewModel viewModel,
-    WalletItemBase wallet,
-    bool isFocused,
-    VoidCallback onChart,
-  ) {
-    final detail = viewModel.detail;
-    final isCurrent = isFocused && detail.walletId == wallet.id;
+  Widget _buildDetailCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, VoidCallback onChart) {
     return WalletDetailCard(
       key: ValueKey('wallet-detail-card-${wallet.id}'),
       wallet: wallet,
       appearance: viewModel.appearanceOf(wallet),
       balance: viewModel.balanceOf(wallet),
       unit: viewModel.unit,
-      isSyncing: isCurrent && (detail.isRefreshing || detail.isWalletSyncing),
       onBalanceTap: viewModel.toggleUnit,
       actions: WalletDetailCardAction.standard(
         onReceive: _openReceive,
@@ -980,16 +973,9 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 class _CollapsedBalance extends StatelessWidget {
   final int balance;
   final BitcoinUnit unit;
-  final bool isSyncing;
   final VoidCallback onTap;
 
-  const _CollapsedBalance({
-    super.key,
-    required this.balance,
-    required this.unit,
-    required this.isSyncing,
-    required this.onTap,
-  });
+  const _CollapsedBalance({super.key, required this.balance, required this.unit, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1000,21 +986,19 @@ class _CollapsedBalance extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          WalletBalanceSyncShimmer(
-            isRefreshing: isSyncing,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: BitcoinAmountUnit(
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: BitcoinAmountUnit(
+              currentUnit: unit,
+              unitStyle: CoconutTypography.body2_14_NumberBold.setColor(colors.primaryText),
+              child: AnimatedBalance(
+                prevValue: balance,
+                value: balance,
+                duration: 400,
                 currentUnit: unit,
-                unitStyle: CoconutTypography.body2_14_NumberBold.setColor(colors.primaryText),
-                child: AnimatedBalance(
-                  prevValue: balance,
-                  value: balance,
-                  currentUnit: unit,
-                  textStyle: CoconutTypography.body1_16_NumberBold
-                      .merge(const TextStyle(fontSize: 18))
-                      .setColor(colors.primaryText),
-                ),
+                textStyle: CoconutTypography.body1_16_NumberBold
+                    .merge(const TextStyle(fontSize: 18))
+                    .setColor(colors.primaryText),
               ),
             ),
           ),
