@@ -1,19 +1,15 @@
-import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/descriptor_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
-/// TODO: 우선 seedsigner 지갑 추가가 안되는 문제부터 해결합니다.
-/// 추후 필요 시 다른 qr scan handler도 추가합니다.
+/// 첫 스캔 데이터의 형식에 맞는 handler를 선택하고 이후 처리를 위임한다.
+/// handlers 목록의 순서가 형식 판별 우선순위다.
 class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
-  //final List<UrType>? expectedUrType;
-  final BcUrQrScanDataHandler _bcUrQrScanDataHandler;
-  final DescriptorQrScanDataHandler _descriptorQrScanDataHandler;
+  final List<IQrScanDataHandler> _handlers;
   IQrScanDataHandler? _selected;
 
-  ComposedScanDataHandler({List<UrType>? expectedUrType})
-    : _bcUrQrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: expectedUrType),
-      _descriptorQrScanDataHandler = DescriptorQrScanDataHandler();
+  ComposedScanDataHandler(this._handlers);
+
+  IQrScanDataHandler? get selectedHandler => _selected;
 
   @override
   dynamic get result => _selected?.result;
@@ -36,11 +32,13 @@ class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
   bool validateFormat(String data) {
     try {
       if (_selected == null) {
-        if (_descriptorQrScanDataHandler.validateFormat(data)) {
-          _selected = _descriptorQrScanDataHandler;
-        } else if (_bcUrQrScanDataHandler.validateFormat(data)) {
-          _selected = _bcUrQrScanDataHandler;
-        } else {
+        for (final handler in _handlers) {
+          if (handler.validateFormat(data)) {
+            _selected = handler;
+            break;
+          }
+        }
+        if (_selected == null) {
           return false;
         }
       }
@@ -53,8 +51,9 @@ class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
   @override
   void reset() {
     _selected = null;
-    _bcUrQrScanDataHandler.reset();
-    _descriptorQrScanDataHandler.reset();
+    for (final handler in _handlers) {
+      handler.reset();
+    }
   }
 
   @override

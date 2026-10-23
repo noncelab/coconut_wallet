@@ -7,7 +7,6 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/composed_scan_data_handler2.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/extended_pub_key_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
@@ -35,7 +34,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.seedSigner:
-        _qrDataHandler = ComposedScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        _qrDataHandler = ComposedScanDataHandler([
+          DescriptorQrScanDataHandler(),
+          BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]),
+        ]);
         break;
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
@@ -49,7 +51,12 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
-        _qrDataHandler = ComposedScanDataHandler2();
+        _qrDataHandler = ComposedScanDataHandler([
+          DescriptorQrScanDataHandler(),
+          BcUrQrScanDataHandler(),
+          BbQrScanDataHandler(),
+          ExtendedPublicKeyQrScanDataHandler(),
+        ]);
         break;
       case WalletImportSource.bitbox02:
       case WalletImportSource.trezor:
@@ -59,9 +66,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
 
-  bool get isExtendedPublicKeyScanned =>
-      _qrDataHandler is ComposedScanDataHandler2 &&
-      _qrDataHandler.selectedHandler is ExtendedPublicKeyQrScanDataHandler;
+  bool get isExtendedPublicKeyScanned => switch (_qrDataHandler) {
+    ComposedScanDataHandler(:final selectedHandler) => selectedHandler is ExtendedPublicKeyQrScanDataHandler,
+    _ => false,
+  };
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(
