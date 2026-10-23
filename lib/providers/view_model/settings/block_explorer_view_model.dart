@@ -9,6 +9,8 @@ enum ExplorerConnectionStatus { none, connecting, connected, failed }
 
 class BlockExplorerViewModel extends ChangeNotifier {
   final BlockExplorerProvider _blockExplorerProvider;
+  final Dio _dio;
+  final CancelToken _connectionCancelToken = CancelToken();
 
   late bool _initialUseDefault;
   late String _initialCustomUrl;
@@ -22,7 +24,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
   Timer? _connectionTimer;
   bool _disposed = false;
 
-  BlockExplorerViewModel(this._blockExplorerProvider) {
+  BlockExplorerViewModel(this._blockExplorerProvider, {Dio? dio}) : _dio = dio ?? Dio() {
     _loadSettings();
   }
 
@@ -39,8 +41,10 @@ class BlockExplorerViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _connectionTimer?.cancel();
     _disposed = true;
+    _connectionTimer?.cancel();
+    _connectionCancelToken.cancel();
+    _dio.close(force: true);
     super.dispose();
   }
 
@@ -89,13 +93,12 @@ class BlockExplorerViewModel extends ChangeNotifier {
       changed = _customExplorerUrl != _initialCustomUrl && _customExplorerUrl.isNotEmpty;
     }
 
-    if (_hasChanges != changed) {
-      _hasChanges = changed;
-      notifyListeners();
-    }
+    _hasChanges = changed;
+    notifyListeners();
   }
 
   Future<void> saveChanges() async {
+    if (_disposed) return;
     if (_isDefaultExplorerEnabled) {
       await _blockExplorerProvider.setUseDefaultExplorer(true);
 
@@ -111,12 +114,13 @@ class BlockExplorerViewModel extends ChangeNotifier {
 
     final String urlToTest = UrlNormalizeUtil.normalize(_customExplorerUrl);
 
-    final Dio dio = Dio();
     try {
-      final response = await dio.get(urlToTest);
+      final response = await _dio.get(urlToTest, cancelToken: _connectionCancelToken);
+      if (_disposed) return;
       if (response.statusCode == 200) {
         await _blockExplorerProvider.setUseDefaultExplorer(false);
         await _blockExplorerProvider.setCustomExplorerUrl(urlToTest);
+        if (_disposed) return;
 
         _customExplorerUrl = urlToTest;
 
@@ -135,16 +139,19 @@ class BlockExplorerViewModel extends ChangeNotifier {
         _setConnectionStatus(ExplorerConnectionStatus.failed);
       }
     } catch (e) {
+      if (_disposed) return;
       _setConnectionStatus(ExplorerConnectionStatus.failed);
     }
   }
 
   void _setConnectionStatus(ExplorerConnectionStatus status) {
+    if (_disposed) return;
     _connectionStatus = status;
     notifyListeners();
   }
 
   void _resetStateAfterSave() {
+    if (_disposed) return;
     _initialUseDefault = _isDefaultExplorerEnabled;
     _initialCustomUrl = _customExplorerUrl;
     _hasChanges = false;
