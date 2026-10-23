@@ -302,12 +302,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               reverse: true,
-              child: BalanceHistoryPeriodChips(
-                selected: _period,
-                onSelected: _selectPeriod,
-                backgroundColor: colors.surface,
-                itemBackgroundColor: colors.background,
-              ),
+              child: BalanceHistoryPeriodChips(selected: _period, onSelected: _selectPeriod),
             ),
           ),
           const SizedBox(height: 8),

@@ -71,12 +71,9 @@ class HodlInsightsScreen extends StatefulWidget {
         reverseTransitionDuration: transitionDuration,
         pageBuilder: (context, _, __) => page(context),
         transitionsBuilder:
-            (context, animation, __, child) => ColoredBox(
-              color: context.coconutColors.homeBackground,
-              child: FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
-                child: child,
-              ),
+            (context, animation, __, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+              child: child,
             ),
       ),
     );
