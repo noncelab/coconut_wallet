@@ -355,6 +355,9 @@ feature_sub_labels:
 all_features_hint:
   title: "Mehr auf der Seite"
   description: "Wische die Startseite nach links, um alle Funktionen zu sehen"
+add_recipient_hint:
+  title: "Empfänger hinzufügen"
+  description: "Wische nach links, um einen Empfänger hinzuzufügen"
 wallet_stack_list:
   utxos: "UTXOs"
   last_transaction: "Letzte Transaktion"
@@ -1011,7 +1014,6 @@ send_screen:
   drag_to_add_address: "Ziehen, um eine Adresse hinzuzufügen"
   dialog:
     load_draft_failed: "Laden fehlgeschlagen"
-  swipe_to_add_address: "Wischen, um einen Empfänger hinzuzufügen"
   toast:
     draft_utxo_used: "Zuvor ausgewählter Bitcoin wurde bereits ausgegeben. Bitte wählen Sie UTXOs erneut aus."
     draft_utxo_locked: "Zuvor ausgewählter Bitcoin wurde gesperrt. Bitte wählen Sie UTXOs erneut aus."
