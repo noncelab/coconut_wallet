@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
@@ -106,13 +105,11 @@ class WalletAddDialog extends StatelessWidget {
       return Padding(padding: const EdgeInsets.fromLTRB(8, 0, 8, 100), child: _buildContent(context));
     }
     final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-    final mediaQuery = MediaQuery.of(context);
-    final top = kToolbarHeight + mediaQuery.padding.top - 15;
 
     return Stack(
       children: [
         Positioned(
-          top: top,
+          top: kToolbarHeight + MediaQuery.paddingOf(context).top - 15,
           left: 0,
           right: 0,
           child: SlideTransition(
@@ -121,14 +118,9 @@ class WalletAddDialog extends StatelessWidget {
               elevation: 4,
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
               color: context.coconutColors.homeBackground,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: (mediaQuery.size.height - top - mediaQuery.padding.bottom).clamp(0, double.infinity),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                  child: _buildContent(context),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                child: _buildContent(context),
               ),
             ),
           ),
@@ -239,32 +231,24 @@ class WalletAddDialog extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  const labelStyle = CoconutTypography.body2_14;
-                  final lineHeight =
-                      (MediaQuery.textScalerOf(context).scale(labelStyle.fontSize!) * labelStyle.height!)
-                          .ceilToDouble();
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: topSheetWalletOptions.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 0,
-                      crossAxisSpacing: 0,
-                      mainAxisExtent: math.max(constraints.maxWidth / 3 / 1.2, 16 + 24 + 4 + 2 * lineHeight),
-                    ),
-                    itemBuilder: (context, index) {
-                      if (index >= topSheetWalletOptions.length) {
-                        return const SizedBox.expand();
-                      }
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: topSheetWalletOptions.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 0,
+                  crossAxisSpacing: 0,
+                  childAspectRatio: 1.2,
+                ),
+                itemBuilder: (context, index) {
+                  if (index >= topSheetWalletOptions.length) {
+                    return const SizedBox.expand();
+                  }
 
-                      final scanType = topSheetWalletOptions[index];
-                      return buildWalletIconShrinkButton(() => _onWalletSelected(context, scanType), scanType);
-                    },
-                  );
+                  final scanType = topSheetWalletOptions[index];
+                  return buildWalletIconShrinkButton(() => _onWalletSelected(context, scanType), scanType);
                 },
               ),
               CoconutLayout.spacing_200h,
@@ -389,20 +373,17 @@ class WalletAddDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Text(
-                  switch (mode) {
-                    WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
-                    WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
-                    WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
-                  },
-                  key: const Key('wallet-add-dialog-title'),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                ),
+              const Spacer(),
+              Text(
+                switch (mode) {
+                  WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
+                  WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
+                  WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
+                },
+                key: const Key('wallet-add-dialog-title'),
+                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
               ),
+              const Spacer(),
               const SizedBox(width: 40),
             ],
           ),

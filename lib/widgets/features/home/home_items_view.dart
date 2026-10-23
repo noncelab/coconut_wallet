@@ -79,7 +79,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   Timer? _previewTimer;
   Timer? _dropSettleTimer;
   String? _settlingDroppedId;
-  final Set<String> _snappingDropIds = {};
   final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
   String? _draggedId;
   int? _dragPointer;
@@ -110,7 +109,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isArranging && !widget.isArranging) cancelActiveDrag();
     if (oldWidget.configuration != widget.configuration) {
-      if (_settlingDroppedId != null) _snapCrossingDropPaths(oldWidget.configuration);
       if (_draggedId != null) cancelActiveDrag();
       _previewTimer?.cancel();
       _previewConfiguration = null;
@@ -347,38 +345,14 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     });
   }
 
-  void _snapCrossingDropPaths(HomeConfiguration previous) {
-    final before = HomeGridLayout(previous);
-    final after = HomeGridLayout(widget.configuration);
-    const geometry = HomeGridGeometry(cellExtent: 1, gap: 0);
-    final stationary = [
-      for (final item in widget.configuration.items)
-        if (before.positionOf(item.id) == after.positionOf(item.id))
-          geometry.rectOf(after.positionOf(item.id)!, item.span),
-    ];
-    for (final item in widget.configuration.items) {
-      final from = before.positionOf(item.id);
-      final to = after.positionOf(item.id)!;
-      if (from == null || from == to) continue;
-      // shortcut: bounding sweeps can snap clear diagonals; use swept shapes if those need animation.
-      final swept = geometry.rectOf(from, item.span).expandToInclude(geometry.rectOf(to, item.span));
-      if (stationary.any(swept.overlaps)) _snappingDropIds.add(item.id);
-    }
-  }
-
   void _commitDrop(String id, VoidCallback fallback) {
     if (_dragCanceled || !_dropInsideSurface) return;
     _previewTimer?.cancel();
-    // Preserve ordinary reflow; keep crossing paths snapped until their old tweens finish.
+    // The feedback already reached this cell. Only its neighbors need to travel.
     _dropSettleTimer?.cancel();
     setState(() => _settlingDroppedId = id);
     _dropSettleTimer = Timer(HomeItemsView.reorderDuration, () {
-      if (mounted) {
-        setState(() {
-          _settlingDroppedId = null;
-          _snappingDropIds.clear();
-        });
-      }
+      if (mounted) setState(() => _settlingDroppedId = null);
     });
     if (_previewDraggedId == id && _previewTargetId != null) {
       widget.onInsertBefore?.call(id, _previewTargetId!);
@@ -480,9 +454,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
                                     end: geometry.originOf(previewLayout.positionOf(item.id) ?? position),
                                   ),
                                   duration:
-                                      item.id == _settlingDroppedId ||
-                                              _snappingDropIds.contains(item.id) ||
-                                              MediaQuery.disableAnimationsOf(context)
+                                      item.id == _settlingDroppedId || MediaQuery.disableAnimationsOf(context)
                                           ? Duration.zero
                                           : HomeItemsView.reorderDuration,
                                   curve: Curves.easeInOutCubic,
@@ -492,12 +464,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
                                       (context, offset, child) => Transform.translate(
                                         offset: geometry.originOf(position),
                                         child: Transform.translate(
-                                          // A zero duration alone does not stop a tween with an unchanged end.
-                                          offset:
-                                              (_snappingDropIds.contains(item.id)
-                                                  ? geometry.originOf(previewLayout.positionOf(item.id) ?? position)
-                                                  : offset) -
-                                              geometry.originOf(position),
+                                          offset: offset - geometry.originOf(position),
                                           transformHitTests: _draggedId == null,
                                           child: child,
                                         ),

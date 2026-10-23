@@ -121,58 +121,6 @@ Offset _cornerAlignedOffset({required double angle, required Offset localCorner,
   return targetPoint - rotatedCorner;
 }
 
-const double _minCardExtent = 48;
-
-double _minUsableCardScale(double idealCardWidth, double idealCardHeight) {
-  final shortSide = math.min(idealCardWidth, idealCardHeight);
-  if (shortSide <= 0) return 0;
-  return math.min(1, _minCardExtent / shortSide);
-}
-
-double _laidOutTextHeight({
-  required String source,
-  required TextStyle baseStyle,
-  required TextStyle highlightStyle,
-  required StrutStyle strutStyle,
-  required Set<String> highlightPhrases,
-  required double maxWidth,
-  required TextScaler textScaler,
-  required TextDirection textDirection,
-  required Locale? locale,
-}) {
-  final painter = TextPainter(
-    text: styledSpanFromVisibleText(
-      visibleText: source,
-      sourceText: source,
-      baseStyle: baseStyle,
-      highlightStyle: highlightStyle,
-      highlightPhrases: highlightPhrases,
-    ),
-    textAlign: TextAlign.left,
-    textDirection: textDirection,
-    textScaler: textScaler,
-    strutStyle: strutStyle,
-    locale: locale,
-  )..layout(maxWidth: maxWidth);
-  final height = painter.height.ceilToDouble();
-  painter.dispose();
-  return height;
-}
-
-// Vertical padding 10+10, icon 18, body3 line. Matches _AddThemeButton at rest.
-double _addThemeButtonHeight(TextScaler textScaler, TextDirection textDirection, Locale? locale) {
-  final painter = TextPainter(
-    text: TextSpan(text: t.ccos.first_pow_scene.add_button, style: CoconutTypography.body3_12_Bold),
-    textDirection: textDirection,
-    textScaler: textScaler,
-    locale: locale,
-    maxLines: 1,
-  )..layout();
-  final height = (math.max(painter.height, 18) + 20).ceilToDouble();
-  painter.dispose();
-  return height;
-}
-
 /// Scene 3 ("FIRST PoW") of the open-store intro story: three tilted photo cards, the typed
 /// intro copy, and the add/remove-theme button. Tapping the center photo opens a full-screen
 /// detail view (the other two photos will get their own detail views later).
@@ -323,18 +271,29 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final maxHeight = constraints.maxHeight;
         final idealCardWidth = width / 3 * 1.4;
         final idealCardHeight = idealCardWidth * 1.42;
         final arcLift = idealCardHeight * 0.07;
-        final availableImageHeight = maxHeight * 0.5;
+        final availableImageHeight = constraints.maxHeight * 0.5;
         final neededImageHeight = idealCardHeight + arcLift;
-        final baseImageScale =
-            !availableImageHeight.isFinite || neededImageHeight <= availableImageHeight
-                ? 1.0
-                : availableImageHeight / neededImageHeight;
-        final minImageScale = _minUsableCardScale(idealCardWidth, idealCardHeight);
-        var imageScale = math.max(baseImageScale, minImageScale);
+        final imageScale = neededImageHeight > availableImageHeight ? availableImageHeight / neededImageHeight : 1.0;
+        final cardWidth = idealCardWidth * imageScale;
+        final cardHeight = idealCardHeight * imageScale;
+        const leftAngle = 10 * math.pi / 180;
+        const rightAngle = -10 * math.pi / 180;
+        final halfW = cardWidth / 2;
+        final halfH = cardHeight / 2;
+        final leftCardOffset = _cornerAlignedOffset(
+          angle: leftAngle,
+          localCorner: Offset(halfW, -halfH),
+          targetPoint: Offset(-halfW, -halfH),
+        );
+        final rightCardOffset = _cornerAlignedOffset(
+          angle: rightAngle,
+          localCorner: Offset(-halfW, -halfH),
+          targetPoint: Offset(halfW, -halfH),
+        );
+        final topExtra = cardHeight * 0.08 + 24;
 
         final bodyStyle = CoconutTypography.heading4_18_Bold.setColor(_textPrimary).copyWith(height: 1.3);
         final highlightStyle = bodyStyle.copyWith(
@@ -355,82 +314,6 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
           forceStrutHeight: true,
         );
 
-        // Roomy scenes keep the 44/22 gaps. A short scene gives those gaps back
-        // before card scale, and never shrinks a card below a 48px tap target.
-        const designedCopyGap = 44.0;
-        const minCopyGap = 16.0;
-        const designedLineGap = 22.0;
-        const minLineGap = 12.0;
-        final textScaler = MediaQuery.textScalerOf(context);
-        final textDirection = Directionality.of(context);
-        final locale = Localizations.maybeLocaleOf(context);
-        final line1Height = _laidOutTextHeight(
-          source: text1,
-          baseStyle: bodyStyle,
-          highlightStyle: highlightStyle,
-          strutStyle: strutStyle,
-          highlightPhrases: introHighlights,
-          maxWidth: width,
-          textScaler: textScaler,
-          textDirection: textDirection,
-          locale: locale,
-        );
-        final line2Height = _laidOutTextHeight(
-          source: text2,
-          baseStyle: text2Style,
-          highlightStyle: text2HighlightStyle,
-          strutStyle: text2StrutStyle,
-          highlightPhrases: const <String>{},
-          maxWidth: width,
-          textScaler: textScaler,
-          textDirection: textDirection,
-          locale: locale,
-        );
-        final ctaHeight = _addThemeButtonHeight(textScaler, textDirection, locale);
-        var copyGap = designedCopyGap;
-        var lineGap = designedLineGap;
-        double cardBlockFor(double scale) => idealCardHeight * scale * 1.08 + 24;
-        if (maxHeight.isFinite) {
-          var overflow =
-              cardBlockFor(imageScale) + copyGap + line1Height + lineGap + line2Height + ctaHeight - maxHeight;
-          if (overflow > 0) {
-            final cut = math.min(overflow, copyGap - minCopyGap);
-            copyGap -= cut;
-            overflow -= cut;
-          }
-          if (overflow > 0) {
-            final cut = math.min(overflow, lineGap - minLineGap);
-            lineGap -= cut;
-            overflow -= cut;
-          }
-          if (overflow > 0 && idealCardHeight > 0) {
-            const safety = 1.0;
-            final roomForBlock = maxHeight - copyGap - line1Height - lineGap - line2Height - ctaHeight - safety;
-            final fitted = (roomForBlock - 24) / (idealCardHeight * 1.08);
-            imageScale = fitted.clamp(minImageScale, imageScale);
-          }
-        }
-        final needsScroll =
-            maxHeight.isFinite &&
-            cardBlockFor(imageScale) + copyGap + line1Height + lineGap + line2Height + ctaHeight > maxHeight;
-        final cardWidth = idealCardWidth * imageScale;
-        final cardHeight = idealCardHeight * imageScale;
-        const leftAngle = 10 * math.pi / 180;
-        const rightAngle = -10 * math.pi / 180;
-        final halfW = cardWidth / 2;
-        final halfH = cardHeight / 2;
-        final leftCardOffset = _cornerAlignedOffset(
-          angle: leftAngle,
-          localCorner: Offset(halfW, -halfH),
-          targetPoint: Offset(-halfW, -halfH),
-        );
-        final rightCardOffset = _cornerAlignedOffset(
-          angle: rightAngle,
-          localCorner: Offset(-halfW, -halfH),
-          targetPoint: Offset(halfW, -halfH),
-        );
-        final topExtra = cardHeight * 0.08 + 24;
-
         return AnimatedBuilder(
           animation: Listenable.merge([widget.animation, _wiggleController]),
           builder: (context, child) {
@@ -439,166 +322,155 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
             final wiggleEnvelope = _hasInteractedWithCards ? 0.0 : _wiggleEnvelope(_wiggleController.value);
             final wiggleRotation = wiggleEnvelope * 0.04;
 
-            final cardFan = SizedBox(
-              width: width,
-              height: cardHeight + topExtra,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Transform.translate(
-                    offset: leftCardOffset,
-                    child: _PolaroidCard(
-                      imagePath: _creatorImagePath,
-                      width: cardWidth,
-                      height: cardHeight,
-                      finalAngle: leftAngle,
-                      entranceOffset: Offset(-cardWidth * 0.7, -24),
-                      progress: cardsProgress,
-                      heroTag: _creatorHeroTag,
-                      onTap: () => _openDetail(context, _FirstPowCardKind.creator),
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: rightCardOffset,
-                    child: _PolaroidCard(
-                      imagePath: _deliveryImagePath,
-                      width: cardWidth,
-                      height: cardHeight,
-                      finalAngle: rightAngle,
-                      entranceOffset: Offset(cardWidth * 0.7, -24),
-                      progress: cardsProgress,
-                      heroTag: _deliveryHeroTag,
-                      onTap: () => _openDetail(context, _FirstPowCardKind.delivery),
-                    ),
-                  ),
-                  _PolaroidCard(
-                    imagePath: _featureImagePath,
-                    width: cardWidth,
-                    height: cardHeight,
-                    finalAngle: 0,
-                    entranceOffset: const Offset(0, -260),
-                    progress: cardsProgress,
-                    heroTag: _featureHeroTag,
-                    onTap: () => _openDetail(context, _FirstPowCardKind.feature),
-                    extraRotation: wiggleRotation,
-                  ),
-                ],
-              ),
-            );
-            final copy = Builder(
-              builder: (context) {
-                final starts = FirstPowSceneBody.typingStartMs([text1, text2]);
-                final titleEntranceInterval = intervalFromMs(
-                  starts[0] - 180,
-                  starts[0],
-                  widget.sceneDurationMs,
-                  curve: Curves.easeOutCubic,
-                );
-                final entranceT = titleEntranceInterval.transform(value);
-                final dy = 20 * (1 - entranceT);
-                return Opacity(
-                  opacity: entranceT,
-                  child: Transform.translate(
-                    offset: Offset(0, dy),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                          textAlign: TextAlign.left,
-                          textScaler: textScaler,
-                          strutStyle: strutStyle,
-                          text: typewriterSpan(
-                            source: text1,
-                            animation: widget.animation,
-                            interval: typewriterIntervalFromMs(text1, starts[0], widget.sceneDurationMs),
-                            baseStyle: bodyStyle,
-                            highlightStyle: highlightStyle,
-                            highlightPhrases: introHighlights,
-                          ),
-                        ),
-                        SizedBox(height: lineGap),
-                        RichText(
-                          textAlign: TextAlign.left,
-                          textScaler: textScaler,
-                          strutStyle: text2StrutStyle,
-                          text: typewriterSpan(
-                            source: text2,
-                            animation: widget.animation,
-                            interval: typewriterIntervalFromMs(text2, starts[1], widget.sceneDurationMs),
-                            baseStyle: text2Style,
-                            highlightStyle: text2HighlightStyle,
-                            highlightPhrases: const <String>{},
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-            final addButton = Builder(
-              builder: (context) {
-                final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
-                final buttonEntranceInterval = intervalFromMs(
-                  ctaStart,
-                  ctaStart + _buttonEntranceMs,
-                  widget.sceneDurationMs,
-                  curve: Curves.linear,
-                );
-                final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
-                final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
-                return Opacity(
-                  opacity: buttonOpacity,
-                  child: Transform.scale(
-                    scale: buttonT.clamp(0.0, 1.4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedBuilder(
-                          animation: _addedBadgeController,
-                          builder: (context, child) {
-                            final progress = _addedBadgeController.value;
-                            if (progress <= 0.001) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Transform.scale(scale: progress, child: child),
-                            );
-                          },
-                          child: _AddedGlassBadge(
-                            label:
-                                widget.isApplied
-                                    ? t.ccos.first_pow_scene.status_applied
-                                    : t.ccos.first_pow_scene.status_added,
-                          ),
-                        ),
-                        _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-            if (needsScroll) {
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    cardFan,
-                    SizedBox(height: copyGap),
-                    copy,
-                    Align(alignment: Alignment.centerRight, child: addButton),
-                  ],
-                ),
-              );
-            }
             return Stack(
               clipBehavior: Clip.none,
               children: [
-                cardFan,
-                Padding(padding: EdgeInsets.only(top: cardHeight + topExtra + copyGap, bottom: ctaHeight), child: copy),
-                Positioned(right: 0, bottom: 0, child: addButton),
+                SizedBox(
+                  width: width,
+                  height: cardHeight + topExtra,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Transform.translate(
+                        offset: leftCardOffset,
+                        child: _PolaroidCard(
+                          imagePath: _creatorImagePath,
+                          width: cardWidth,
+                          height: cardHeight,
+                          finalAngle: leftAngle,
+                          entranceOffset: Offset(-cardWidth * 0.7, -24),
+                          progress: cardsProgress,
+                          heroTag: _creatorHeroTag,
+                          onTap: () => _openDetail(context, _FirstPowCardKind.creator),
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: rightCardOffset,
+                        child: _PolaroidCard(
+                          imagePath: _deliveryImagePath,
+                          width: cardWidth,
+                          height: cardHeight,
+                          finalAngle: rightAngle,
+                          entranceOffset: Offset(cardWidth * 0.7, -24),
+                          progress: cardsProgress,
+                          heroTag: _deliveryHeroTag,
+                          onTap: () => _openDetail(context, _FirstPowCardKind.delivery),
+                        ),
+                      ),
+                      _PolaroidCard(
+                        imagePath: _featureImagePath,
+                        width: cardWidth,
+                        height: cardHeight,
+                        finalAngle: 0,
+                        entranceOffset: const Offset(0, -260),
+                        progress: cardsProgress,
+                        heroTag: _featureHeroTag,
+                        onTap: () => _openDetail(context, _FirstPowCardKind.feature),
+                        extraRotation: wiggleRotation,
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: cardHeight + topExtra + 44),
+                  child: Builder(
+                    builder: (context) {
+                      final starts = FirstPowSceneBody.typingStartMs([text1, text2]);
+                      final titleEntranceInterval = intervalFromMs(
+                        starts[0] - 180,
+                        starts[0],
+                        widget.sceneDurationMs,
+                        curve: Curves.easeOutCubic,
+                      );
+                      final entranceT = titleEntranceInterval.transform(value);
+                      final dy = 20 * (1 - entranceT);
+
+                      return Opacity(
+                        opacity: entranceT,
+                        child: Transform.translate(
+                          offset: Offset(0, dy),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                textAlign: TextAlign.left,
+                                strutStyle: strutStyle,
+                                text: typewriterSpan(
+                                  source: text1,
+                                  animation: widget.animation,
+                                  interval: typewriterIntervalFromMs(text1, starts[0], widget.sceneDurationMs),
+                                  baseStyle: bodyStyle,
+                                  highlightStyle: highlightStyle,
+                                  highlightPhrases: introHighlights,
+                                ),
+                              ),
+                              const SizedBox(height: 22),
+                              RichText(
+                                textAlign: TextAlign.left,
+                                strutStyle: text2StrutStyle,
+                                text: typewriterSpan(
+                                  source: text2,
+                                  animation: widget.animation,
+                                  interval: typewriterIntervalFromMs(text2, starts[1], widget.sceneDurationMs),
+                                  baseStyle: text2Style,
+                                  highlightStyle: text2HighlightStyle,
+                                  highlightPhrases: const {},
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Builder(
+                    builder: (context) {
+                      final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
+                      final buttonEntranceInterval = intervalFromMs(
+                        ctaStart,
+                        ctaStart + _buttonEntranceMs,
+                        widget.sceneDurationMs,
+                        curve: Curves.linear,
+                      );
+                      final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
+                      final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
+                      return Opacity(
+                        opacity: buttonOpacity,
+                        child: Transform.scale(
+                          scale: buttonT.clamp(0.0, 1.4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _addedBadgeController,
+                                builder: (context, child) {
+                                  final progress = _addedBadgeController.value;
+                                  if (progress <= 0.001) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Transform.scale(scale: progress, child: child),
+                                  );
+                                },
+                                child: _AddedGlassBadge(
+                                  label:
+                                      widget.isApplied
+                                          ? t.ccos.first_pow_scene.status_applied
+                                          : t.ccos.first_pow_scene.status_added,
+                                ),
+                              ),
+                              _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             );
           },

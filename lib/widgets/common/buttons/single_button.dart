@@ -158,16 +158,8 @@ class SingleButton extends StatelessWidget {
             ],
           ),
         ),
-        if (subtitle != null && !isVerticalSubtitle) ...[
-          CoconutLayout.spacing_200w,
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(subtitle!, style: _resolvedSubtitleStyle(context)),
-            ),
-          ),
-        ],
+        if (subtitle != null && !isVerticalSubtitle)
+          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
         if (rightElement != null) ...[
           rightElement!,
           if (showRightArrowWithRightElement) ...[CoconutLayout.spacing_200w, _rightArrow(context)],
