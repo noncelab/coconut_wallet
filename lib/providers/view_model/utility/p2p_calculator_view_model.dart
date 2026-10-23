@@ -36,7 +36,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   /// 입력 금액 (sats or fiat)
   int? _inputAmount;
-  int? get inputAmount => _inputAmount;
+  int? _resultAmount;
+  int? get inputAmount => _resultAmount == null ? _inputAmount : calculateInputFromResult(_resultAmount!);
+  int? get resultAmount => _resultAmount ?? (_inputAmount == null ? null : calculate(_inputAmount!));
+  bool get isEditingResult => _resultAmount != null;
 
   late BitcoinUnit _currentUnit;
   BitcoinUnit get currentUnit => _currentUnit;
@@ -106,6 +109,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   void resetInput() {
     _inputAmount = null;
+    _resultAmount = null;
     _feeRate = 1.0;
     notifyListeners();
   }
@@ -128,7 +132,27 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   void setInputAmount(int? amount) {
     _inputAmount = amount;
+    _resultAmount = null;
     notifyListeners();
+  }
+
+  void setResultAmount(int? amount) {
+    _resultAmount = amount;
+    _inputAmount = null;
+    notifyListeners();
+  }
+
+  /// Invert the selected trade equation; swapping trade direction applies a different premium.
+  int? calculateInputFromResult(int result) {
+    final price = _getBtcPrice();
+    final multiplier = 1 + (_inputAssetType == InputAssetType.fiat ? -_feeRate : _feeRate) / 100;
+    if (price <= 0 || !multiplier.isFinite || multiplier <= 0 || result < 0) return null;
+    final minorUnitsPrice = price * _fiatCode.minorUnitsPerWhole;
+    final input =
+        _inputAssetType == InputAssetType.fiat
+            ? result * minorUnitsPrice / (100000000 * multiplier)
+            : result * 100000000 / (minorUnitsPrice * multiplier);
+    return input.isFinite ? input.round() : null;
   }
 
   void cycleBtcUnit() {
@@ -167,6 +191,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
     final minorUnitsPrice = price * _fiatCode.minorUnitsPerWhole;
     final discountMultiplier = 1.0 - (_feeRate / 100.0);
+    if (!discountMultiplier.isFinite || discountMultiplier < 0) return 0;
     final btcAmount = (fiatMinorUnits * discountMultiplier) / minorUnitsPrice;
     return (btcAmount * 100000000).round();
   }
@@ -178,6 +203,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     if (price == 0) return 0;
     final minorUnitsPrice = price * _fiatCode.minorUnitsPerWhole;
     final premiumMultiplier = 1.0 + (_feeRate / 100.0);
+    if (!premiumMultiplier.isFinite || premiumMultiplier <= 0) return 0;
     final btcAmount = satsAmount / 100000000;
     return (btcAmount * minorUnitsPrice * premiumMultiplier).round();
   }

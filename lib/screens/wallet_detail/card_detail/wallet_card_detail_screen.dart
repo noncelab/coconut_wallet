@@ -333,7 +333,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                     vibrateExtraLight();
                     viewModel.focusWallet(wallet.id);
                     widget.onFocusChanged?.call(wallet.id);
-                    _pagePosition.value = viewModel.wallets.indexOf(wallet).toDouble();
                   },
                   onPageScrolled: (page) => _pagePosition.value = page,
                   cardBuilder: (context, wallet, isFocused) => _buildCard(viewModel, wallet, isFocused),

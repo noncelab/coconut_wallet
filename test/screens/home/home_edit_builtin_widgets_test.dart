@@ -265,7 +265,7 @@ Future<void> _openWidgetsTab(
         home,
         Positioned(
           left: 8,
-          top: 280,
+          bottom: 8,
           child: Text('SOURCE PAGE TEXT', style: TextStyle(color: sourceMarkerColor, fontSize: 28)),
         ),
       ],
@@ -1261,6 +1261,54 @@ void main() {
       expect(find.byKey(const Key('hodl-insights-settings')), findsNothing);
       expect(tester.takeException(), isNull);
       await _close(tester);
+    });
+
+    testWidgets('balance history keeps the same continuous period bar as total balance', (tester) async {
+      const capture = Key('period-bar-match-capture');
+      for (final variant in CoconutThemeVariant.values) {
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          screen: insights,
+          size: const Size(390, 844),
+          variant: variant,
+          captureKey: capture,
+        );
+        await tester.pumpAndSettle();
+
+        Future<List<int>> backgrounds(Finder bar) async {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
+          final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 1)))!;
+          final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+          final origin = tester.getTopLeft(find.byKey(capture));
+          final pixels = <int>[];
+          for (final period in HomeWidgetPeriod.values) {
+            final chip = find.descendant(
+              of: bar,
+              matching: find.byKey(ValueKey('hodl-insights-period-${period.name}')),
+            );
+            final rect = tester.getRect(chip).shift(-origin);
+            final offset = ((rect.top + 1).floor() * image.width + rect.center.dx.floor()) * 4;
+            pixels.add(data.getUint32(offset));
+          }
+          image.dispose();
+          return pixels;
+        }
+
+        final totalBar = find.byKey(const Key('hodl-insights-balance-periods'));
+        final expected = await backgrounds(totalBar);
+        await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+        await tester.pumpAndSettle();
+        final detailBar = find.descendant(
+          of: find.byType(WalletBalanceHistoryScreen),
+          matching: find.byType(BalanceHistoryPeriodChips),
+        );
+        expect(await backgrounds(detailBar), expected, reason: '${variant.name}: no separate unselected chip fills');
+        expect(tester.takeException(), isNull);
+        await _close(tester);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
     });
 
     testWidgets('balance chart opens Hero detail, preserves period, toggles focus and zooms while focused', (
@@ -2481,55 +2529,54 @@ void main() {
     }
 
     for (final variant in CoconutThemeVariant.values) {
-      testWidgets('UTXO entry fully occludes outgoing page text $variant', (tester) async {
-        final samples = <List<List<int>>>[];
-        for (final marker in [const Color(0xFFFF0000), const Color(0xFF00FF00)]) {
-          const capture = ValueKey('utxo-flight-capture');
-          await _openWidgetsTab(
-            tester,
-            fake: false,
-            variant: variant,
-            cupertinoShell: true,
-            size: const Size(344, 800),
-            captureKey: capture,
-            sourceMarkerColor: marker,
-            screen:
-                (vm) => CupertinoPageScaffold(
-                  child: HomeCubePager(
-                    allFeaturesBuilder: (_) => const SizedBox(),
-                    home: Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: 174,
-                        height: 174,
-                        child: Builder(
-                          builder:
-                              (context) => vm.registry
-                                  .byId(HomeItemIds.utxoStatus)!
-                                  .build(
-                                    context,
-                                    const HomeItem(
-                                      id: 'source',
-                                      definitionId: HomeItemIds.utxoStatus,
-                                      kind: HomeItemKind.widget,
-                                      order: 0,
-                                      span: HomeSpan.small,
+      for (final interrupted in [false, true]) {
+        testWidgets('UTXO route smoothly hides and reveals home siblings $variant interrupted=$interrupted', (
+          tester,
+        ) async {
+          final samples = <List<List<int>>>[];
+          for (final marker in [const Color(0xFFFF0000), const Color(0xFF00FF00)]) {
+            const capture = ValueKey('utxo-flight-capture');
+            await _openWidgetsTab(
+              tester,
+              fake: false,
+              variant: variant,
+              cupertinoShell: true,
+              size: const Size(344, 800),
+              captureKey: capture,
+              sourceMarkerColor: marker,
+              screen:
+                  (vm) => CupertinoPageScaffold(
+                    child: HomeCubePager(
+                      allFeaturesBuilder: (_) => const SizedBox(),
+                      home: Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: 174,
+                          height: 174,
+                          child: Builder(
+                            builder:
+                                (context) => vm.registry
+                                    .byId(HomeItemIds.utxoStatus)!
+                                    .build(
+                                      context,
+                                      const HomeItem(
+                                        id: 'source',
+                                        definitionId: HomeItemIds.utxoStatus,
+                                        kind: HomeItemKind.widget,
+                                        order: 0,
+                                        span: HomeSpan.small,
+                                      ),
                                     ),
-                                  ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-          );
+            );
 
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
-          await tester.pump();
-          final frames = <List<int>>[];
-          for (var frame = 0; frame < 30; frame++) {
-            await tester.pump(const Duration(milliseconds: 16));
-            if ([0, 4, 9, 14, 19, 29].contains(frame)) {
+            await tester.pump(const Duration(milliseconds: 300));
+            final frames = <List<int>>[];
+            Future<void> captureFrame() async {
               await tester.runAsync(() async {
                 final image = await tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage();
                 final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -2537,18 +2584,60 @@ void main() {
                 image.dispose();
               });
             }
+
+            await captureFrame();
+            await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+            await tester.pump();
+            await captureFrame();
+            await tester.pump(const Duration(milliseconds: 16));
+            await captureFrame();
+            await tester.pump(const Duration(milliseconds: 80));
+            await captureFrame();
+            await tester.pump(Duration(milliseconds: interrupted ? 16 : 804));
+            await captureFrame();
+            Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+            await tester.pump();
+            await captureFrame();
+            await tester.pump(Duration(milliseconds: interrupted ? 32 : 240));
+            await captureFrame();
+            await tester.pumpAndSettle();
+            await captureFrame();
+            expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+            expect(tester.takeException(), isNull);
+            samples.add(frames);
+            await _close(tester);
           }
-          samples.add(frames);
-          await _close(tester);
-        }
-        for (var frame = 0; frame < samples[0].length; frame++) {
-          var changed = 0;
-          for (var byte = 0; byte < samples[0][frame].length; byte++) {
-            if (samples[0][frame][byte] != samples[1][frame][byte]) changed++;
+          // Changing only a non-Hero sibling's color measures how much of Home is
+          // actually painted through the incoming route, independent of its palette.
+          final visibility = <int>[];
+          for (var frame = 0; frame < samples[0].length; frame++) {
+            var changed = 0;
+            for (var byte = 0; byte < samples[0][frame].length; byte++) {
+              changed += (samples[0][frame][byte] - samples[1][frame][byte]).abs();
+            }
+            visibility.add(changed);
           }
-          expect(changed, 0, reason: 'outgoing text color must not affect actual viewport pixels at sample $frame');
-        }
-      });
+          final evidenceDir = Platform.environment['HODL_SIBLING_EVIDENCE_DIR'];
+          if (evidenceDir != null) {
+            Directory(evidenceDir).createSync(recursive: true);
+            File(
+              '$evidenceDir/${variant.name}-interrupted-$interrupted.json',
+            ).writeAsStringSync(jsonEncode({'visibility': visibility}));
+          }
+          expect(visibility[0], greaterThan(0));
+          expect(visibility[1], visibility[0], reason: 'Home siblings must not disappear on the first push frame');
+          expect(visibility[2], inExclusiveRange(0, visibility[0]), reason: 'entry gradually hides Home siblings');
+          expect(visibility[3], inExclusiveRange(0, visibility[2]), reason: 'entry follows route progress');
+          expect(visibility[4], interrupted ? greaterThan(0) : 0, reason: 'only a completed entry fully occludes Home');
+          expect(visibility[5], visibility[4], reason: 'starting or interrupting pop must not flash Home siblings');
+          expect(
+            visibility[6],
+            inExclusiveRange(visibility[5], visibility[0]),
+            reason: 'return gradually reveals Home siblings before the route is removed',
+          );
+          expect(visibility[7], visibility[0], reason: 'return restores the exact original Home painting');
+        });
+      }
     }
 
     for (final popAt in [const Duration(milliseconds: 112), const Duration(milliseconds: 900)]) {
