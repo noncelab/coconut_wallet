@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -24,42 +25,49 @@ void main() {
     expect(widths.values.reduce((a, b) => a + b), 720);
   });
 
-  List<BalanceHistoryWalletSlice> slices(List<int> balances) => [
+  List<BalanceHistoryWalletSlice> slices(List<int> balances, {bool withTransactions = true}) => [
     for (var i = 0; i < balances.length; i++)
       BalanceHistoryWalletSlice(
         wallet: WalletMock.createSingleSigWalletItem(id: i + 1),
         balance: balances[i],
         transactions: [
-          TransactionMock.createMockTransactionRecord(amount: -10, transactionType: TransactionType.sent),
-          if (balances[i] > 0)
-            TransactionMock.createMockTransactionRecord(amount: 20, transactionType: TransactionType.received),
+          if (withTransactions) ...[
+            TransactionMock.createMockTransactionRecord(amount: -10, transactionType: TransactionType.sent),
+            if (balances[i] > 0)
+              TransactionMock.createMockTransactionRecord(amount: 20, transactionType: TransactionType.received),
+          ],
         ],
       ),
   ];
 
-  Future<void> show(WidgetTester tester, List<int> balances, {DateTime? date, bool singleWallet = false}) =>
-      tester.pumpWidget(
-        MaterialApp(
-          theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.topCenter,
-              child: SingleChildScrollView(
-                child: SizedBox(
-                  width: 300,
-                  child: BalanceHistoryWalletBreakdown(
-                    slices: slices(balances),
-                    periodLabel: '10/1 ~ 10/7',
-                    focusedDate: date,
-                    singleWallet: singleWallet,
-                    amountText: (amount) => '$amount sats',
-                  ),
-                ),
+  Future<void> show(
+    WidgetTester tester,
+    List<int> balances, {
+    DateTime? date,
+    bool singleWallet = false,
+    bool withTransactions = true,
+  }) => tester.pumpWidget(
+    MaterialApp(
+      theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            child: SizedBox(
+              width: 300,
+              child: BalanceHistoryWalletBreakdown(
+                slices: slices(balances, withTransactions: withTransactions),
+                periodLabel: '10/1 ~ 10/7',
+                focusedDate: date,
+                singleWallet: singleWallet,
+                amountText: (amount) => '$amount sats',
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   Finder segment(int id) => find.byKey(ValueKey('balance-history-share-$id'));
   Finder getTooltip() => find.byKey(const Key('balance-history-share-tooltip'));
@@ -83,6 +91,16 @@ void main() {
     expect(getTooltip(), findsOneWidget);
     expect(find.text('1 sats (+10 sats)'), findsOneWidget);
     expectPointer(tester, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('empty sent and received show only counts without amounts', (tester) async {
+    await show(tester, [100], singleWallet: true, withTransactions: false);
+    await tester.pumpAndSettle();
+    for (final label in [t.home_widgets.sent, t.home_widgets.received]) {
+      final summary = t.wallet_list.balance_history_detail.flow_count(count: 0);
+      expect(find.text('$label $summary'), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 

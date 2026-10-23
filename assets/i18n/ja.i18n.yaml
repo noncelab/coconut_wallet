@@ -753,6 +753,7 @@ wallet_list:
     gesture_guide_zoom: "上下にスワイプするか、2本の指で拡大・縮小して、1週間・1か月・3か月などの範囲を調整できます。"
     balance_label: "残高"
     transactions_label: "取引"
+    flow_count: "${count}件"
     flow_summary: "${count}件 · ${amount}"
     no_transactions_at_date: "選択した日に取引はありません"
     transactions_at_date: "選択した日の取引"

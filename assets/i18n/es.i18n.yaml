@@ -883,6 +883,7 @@ wallet_list:
     gesture_guide_zoom: "Desliza arriba o abajo, o amplía y reduce con dos dedos para ajustar el intervalo: 1 semana, 1 mes, 3 meses y más."
     balance_label: "Saldo"
     transactions_label: "Transacciones"
+    flow_count: "${count} tx"
     flow_summary: "${count} tx · ${amount}"
     no_transactions_at_date: "No hay transacciones en la fecha seleccionada"
     transactions_at_date: "Transacciones de la fecha seleccionada"

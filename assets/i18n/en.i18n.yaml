@@ -754,6 +754,7 @@ wallet_list:
     gesture_guide_zoom: "Swipe up or down, or pinch to zoom, to adjust the range: 1 week, 1 month, 3 months, and more."
     balance_label: "Balance"
     transactions_label: "Transactions"
+    flow_count: "${count} tx"
     flow_summary: "${count} tx · ${amount}"
     no_transactions_at_date: "No transactions on the selected date"
     transactions_at_date: "Transactions on selected date"
