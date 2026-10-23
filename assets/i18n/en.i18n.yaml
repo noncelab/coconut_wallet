@@ -523,12 +523,8 @@ wallet_home_screen:
     description: "Set an app lock to keep your wallet safe"
   view_all_wallets: "View All Wallets"
   wallet_filter:
-    all: "All"
     watch_only: "Watch-only"
     hot: "Hot wallet"
-  add_wallet_type_all: "Try adding a wallet!"
-  add_wallet_type_watch_only: "Try adding a watch-only wallet!"
-  add_wallet_type_hot: "Try adding a hot wallet!"
   wallet_type_selection:
     watch_only:
       title: "Add a watch-only wallet"
@@ -539,10 +535,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "Create a new wallet"
-      description: "Automatically and securely"
     restore:
       title: "Restore with mnemonic"
-      description: "Keep your existing wallet"
     device_passcode_required:
       title: "A device passcode is required"
       description: "To protect your hot wallet, first set a screen lock passcode in your device settings."
@@ -559,7 +553,6 @@ wallet_home_screen:
     passphrase_used: "Passphrase on"
     passphrase_unused: "Passphrase off"
     create_wallet: "Create wallet"
-    mnemonic_backup_guide: "You can view the generated mnemonic on the next backup screen"
     mnemonic_length: "Mnemonic length"
     word_count(count): "$count words"
     use_passphrase: "Use passphrase"
@@ -569,13 +562,11 @@ wallet_home_screen:
     passphrase_mismatch: "Passphrases do not match"
     show_passphrase: "Show passphrase"
     hide_passphrase: "Hide passphrase"
-    enter_passphrase_when_signing: "I'll enter the passphrase each time I sign"
     store_passphrase: "Save passphrase"
     store_passphrase_off_description: "Enter the passphrase manually each time you sign"
     store_passphrase_on_description: "More convenient, but it reduces the security benefit of the passphrase"
     passphrase_not_stored_title: "Remember your passphrase"
     passphrase_not_stored_description: "Your passphrase won't be stored on this device. Please remember it, as forgetting it will prevent you from recovering the wallet or sending bitcoin."
-    passphrase_not_stored_confirm: "I'll remember it"
     creation_failed: "We couldn't create the wallet. Please try again."
     duplicate_name_title: "Duplicate wallet name"
     duplicate_name_description: "A wallet with this name already exists"
@@ -610,7 +601,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "Switch to manual entry"
     switch_to_mnemonic_description: "Clear the scanned data and enter the mnemonic manually?"
   hot_wallet_setup:
-    title: "Create a new wallet"
     wallet_created_title: "Your new hot wallet\nis ready!"
     backup_title: "Back up mnemonic"
     backup_preparation_title: "Keep your mnemonic\nsafe"
@@ -639,89 +629,16 @@ wallet_home_screen:
     passphrase_correct: "The passphrase matches"
     backup_complete_title: "Your mnemonic backup has been verified"
     backup_complete_description: "You correctly verified all selected words. Mnemonic backup reminders will no longer be displayed."
-    set: "Set"
     skip: "I'll do it later"
   add_wallet: "Add wallet"
   add_wallet_action: "Add wallet"
   view_all: "View all"
-  wallet_menu:
-    rename: "Rename"
-    backup: "Back up"
-    wallet_info: "Wallet info"
-    remove_from_home: "Remove from Home"
-    delete: "Delete wallet"
-  edit_home_screen: "Edit Home Screen"
-  backup_update_notice_action: "Learn more"
-  backup_update_notice:
-    title: "Inheritance Wallet Backup Update"
-    description: "Some inheritance wallet backup details have changed.\nPlease update Coconut Wallet to the latest version.\nUpdating the vault applies the changes automatically.\nThen back up your wallet information again."
-    action: "Learn more"
   edit:
-    title: "Choose which features appear\non the home screen."
-    hide_balance: "Hide Balance"
-    hide_balance_on_home: "Balance will be hidden on the home screen"
     fake_balance:
       fake_balance_setting: "Fake Balance"
       fake_balance_display: "Show Fake Balance"
       fake_balance_input_placeholder: "Please set the total fake balance"
-      fake_balance_input_description: "Fake balances are calculated automatically for each wallet"
       fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
-    hide_fiat_price: "Hide Fiat Balance"
-    hide_fiat_price_on_home: "Fiat balance will be hidden on the home screen"
-    home_add_wallet_button:
-      title: "Home screen top button"
-      sheet_title: "Home screen top button"
-      preview: "Home screen preview"
-      preview_all: "All wallet add button"
-      preview_all_emphasis: "All"
-      preview_watch_only: "Watch-only wallet add button"
-      preview_hot_wallet: "Hot wallet add button"
-      preview_hidden: "Add wallet button hidden"
-      preview_hidden_emphasis: "hidden"
-      all:
-        title: "All"
-        description: "Choose from all wallet types."
-      watch_only:
-        title: "Watch-only"
-        description: "Add a security-focused watch-only wallet."
-      hot_wallet:
-        title: "Hot wallet"
-        description: "Add a hot wallet that is ready to use."
-      hidden:
-        title: "Hide"
-        description: "Do not show the add-wallet button at the top of Home."
-    category:
-      total_balance: "Total\nBalance"
-      wallet_list: "Wallet\nList"
-      recent_transactions: "Recent\nTransactions\n(24hours)"
-      analysis: "Analysis"
-    alert: 
-      empty_fake_balance: "Enter Fake Balance"
-      empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
-      set_to_0: "Set balance to 0 BTC" 
-      enter_again: "Try again"
-  last_24_hours_transactions: "Last 24 hours transactions"
-  syncing_recent_transaction: "Syncing recent transactions"
-  cannot_modify_fixed_widget: "You can’t show or hide this item."
-  no_change_in_amount: "No change in amount!"
-  analysis_period: "Recent ${days} days • ${transaction_type}"
-  analysis_period_custom: "Custom • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "Analysis Period"
-    days_15: "15 days"
-    days_30: "30 days"
-    days_60: "60 days"
-    days_90: "90 days"
-    custom: "Custom"
-    transaction_type: "Transaction Type"
-
-  transaction_count: "Transaction $count times"
-  count: "$count times"
-  increase: "Increased"
-  decrease: "Decreased"
-  sent: "Sent"
-  received: "Received"
-
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"

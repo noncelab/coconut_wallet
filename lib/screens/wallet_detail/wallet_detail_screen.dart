@@ -208,26 +208,29 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         ),
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
+            width: CoconutAppBarActionButton.actionWidth,
             onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               FeatureUtxoIconPath.faucet,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
         CoconutAppBarActionButton(
+          width: CoconutAppBarActionButton.actionWidth,
           onPressed: () {
             _logAction(WalletDetailAction.walletInfo);
             _openWalletInfo();
           },
           icon: SvgPicture.asset(
             FeatureSettingsIconPath.settings,
-            width: 20,
-            height: 20,
+            width: 24,
+            height: 24,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
+        const SizedBox(width: 8),
       ],
     );
   }

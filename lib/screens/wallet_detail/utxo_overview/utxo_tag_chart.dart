@@ -154,7 +154,7 @@ class UtxoTagChart extends StatelessWidget {
       height: height,
       color: colors.background,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 12 : 8, 16, showBalanceHeader ? 24 : 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,

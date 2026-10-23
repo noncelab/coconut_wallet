@@ -523,12 +523,8 @@ wallet_home_screen:
     description: "Richte eine App-Sperre ein, um deine Wallet sicher zu schützen"
   view_all_wallets: "Alle Wallets anzeigen"
   wallet_filter:
-    all: "Alle"
     watch_only: "Nur ansehen"
     hot: "Hot Wallet"
-  add_wallet_type_all: "Füge eine Wallet hinzu!"
-  add_wallet_type_watch_only: "Füge eine Watch-only-Wallet hinzu!"
-  add_wallet_type_hot: "Füge eine Hot Wallet hinzu!"
   wallet_type_selection:
     watch_only:
       title: "Watch-only-Wallet hinzufügen"
@@ -539,10 +535,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "Neue Wallet erstellen"
-      description: "Automatisch und sicher"
     restore:
       title: "Mit Mnemonik wiederherstellen"
-      description: "Bestehende Wallet beibehalten"
     device_passcode_required:
       title: "Ein Gerätecode ist erforderlich"
       description: "Lege zum Schutz deiner Hot Wallet zuerst einen Code für die Bildschirmsperre in den Geräteeinstellungen fest."
@@ -559,7 +553,6 @@ wallet_home_screen:
     passphrase_used: "Passphrase aktiviert"
     passphrase_unused: "Passphrase deaktiviert"
     create_wallet: "Wallet erstellen"
-    mnemonic_backup_guide: "Die erstellte Mnemonik wird im nächsten Sicherungsbildschirm angezeigt"
     mnemonic_length: "Anzahl der Mnemonik-Wörter"
     word_count(count): "$count Wörter"
     use_passphrase: "Passphrase verwenden"
@@ -569,13 +562,11 @@ wallet_home_screen:
     passphrase_mismatch: "Die Passphrasen stimmen nicht überein"
     show_passphrase: "Passphrase anzeigen"
     hide_passphrase: "Passphrase verbergen"
-    enter_passphrase_when_signing: "Ich gebe die Passphrase bei jeder Signatur ein"
     store_passphrase: "Passphrase speichern"
     store_passphrase_off_description: "Gib die Passphrase bei jeder Signatur manuell ein"
     store_passphrase_on_description: "Bequemer, verringert jedoch den Sicherheitseffekt der Passphrase"
     passphrase_not_stored_title: "Merke dir deine Passphrase"
     passphrase_not_stored_description: "Die Passphrase wird nicht auf diesem Gerät gespeichert. Merke sie dir gut, da du sonst die Wallet nicht wiederherstellen oder Bitcoin senden kannst."
-    passphrase_not_stored_confirm: "Ich merke sie mir"
     creation_failed: "Die Wallet konnte nicht erstellt werden. Versuche es erneut."
     duplicate_name_title: "Doppelter Wallet-Name"
     duplicate_name_description: "Eine Wallet mit diesem Namen existiert bereits"
@@ -610,7 +601,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "Zur manuellen Eingabe wechseln"
     switch_to_mnemonic_description: "Gescannte Daten löschen und die Mnemonik manuell eingeben?"
   hot_wallet_setup:
-    title: "Neue Wallet erstellen"
     wallet_created_title: "Deine neue Hot Wallet\nist bereit!"
     backup_title: "Mnemonik sichern"
     backup_preparation_title: "Bewahre deine Mnemonik\nsicher auf"
@@ -639,89 +629,16 @@ wallet_home_screen:
     passphrase_correct: "Die Passphrase stimmt überein"
     backup_complete_title: "Dein Mnemonik-Backup wurde überprüft"
     backup_complete_description: "Du hast alle ausgewählten Wörter korrekt bestätigt. Hinweise zum Sichern deiner Mnemonik werden künftig nicht mehr angezeigt."
-    set: "Eingerichtet"
     skip: "Später erledigen"
   add_wallet: "Wallet hinzufügen"
   add_wallet_action: "Wallet hinzufügen"
   view_all: "Alle anzeigen"
-  wallet_menu:
-    rename: "Umbenennen"
-    backup: "Sichern"
-    wallet_info: "Wallet-Informationen"
-    remove_from_home: "Vom Startbildschirm entfernen"
-    delete: "Wallet löschen"
-  edit_home_screen: "Startbildschirm bearbeiten"
-  backup_update_notice_action: "Mehr erfahren"
-  backup_update_notice:
-    title: "Backup-Update für Vererbungs-Wallets"
-    description: "Einige Backup-Informationen der Vererbungs-Wallet haben sich geändert.\nBitte aktualisieren Sie Coconut Wallet auf die neueste Version.\nDurch die Aktualisierung des Vaults werden die Änderungen automatisch übernommen.\nErstellen Sie anschließend erneut ein Backup Ihrer Wallet-Informationen."
-    action: "Mehr erfahren"
   edit:
-    title: "Wählen Sie aus, welche Funktionen\nauf dem Startbildschirm angezeigt werden."
-    hide_balance: "Guthaben verbergen"
-    hide_balance_on_home: "Guthaben wird auf dem Startbildschirm verborgen"
     fake_balance:
       fake_balance_setting: "Falsches Guthaben"
       fake_balance_display: "Falsches Guthaben anzeigen"
       fake_balance_input_placeholder: "Bitte stellen Sie das gesamte falsche Guthaben ein"
-      fake_balance_input_description: "Falsche Guthaben werden für jede Wallet automatisch berechnet"
       fake_balance_input_exceeds_error: "Sie können bis zu 21 Millionen BTC einstellen"
-    hide_fiat_price: "Fiat-Guthaben verbergen"
-    hide_fiat_price_on_home: "Fiat-Guthaben wird auf dem Startbildschirm verborgen"
-    home_add_wallet_button:
-      title: "Schaltfläche oben auf dem Startbildschirm"
-      sheet_title: "Schaltfläche oben auf dem Startbildschirm"
-      preview: "Vorschau des Startbildschirms"
-      preview_all: "Schaltfläche für alle Wallets"
-      preview_all_emphasis: "alle"
-      preview_watch_only: "Nur beobachten – Wallet hinzufügen"
-      preview_hot_wallet: "Schaltfläche für Hot Wallets"
-      preview_hidden: "Wallet-Schaltfläche ausgeblendet"
-      preview_hidden_emphasis: "ausgeblendet"
-      all:
-        title: "Alle"
-        description: "Wähle aus allen Wallet-Typen aus."
-      watch_only:
-        title: "Nur beobachten"
-        description: "Füge eine besonders sichere Watch-only-Wallet hinzu."
-      hot_wallet:
-        title: "Hot Wallet"
-        description: "Füge eine sofort einsatzbereite Hot Wallet hinzu."
-      hidden:
-        title: "Ausblenden"
-        description: "Zeige oben auf dem Startbildschirm keine Schaltfläche zum Hinzufügen einer Wallet."
-    category:
-      total_balance: "Gesamt-\nguthaben"
-      wallet_list: "Wallet-\nListe"
-      recent_transactions: "Letzte\nTransaktionen\n(24 Stunden)"
-      analysis: "Analyse"
-    alert:
-      empty_fake_balance: "Falsches Guthaben eingeben"
-      empty_fake_balance_description: "Es wurde kein Betrag eingegeben.\nMöchten Sie ihn erneut eingeben oder auf 0 BTC setzen?"
-      set_to_0: "Guthaben auf 0 BTC setzen"
-      enter_again: "Erneut versuchen"
-  last_24_hours_transactions: "Transaktionen der letzten 24 Stunden"
-  syncing_recent_transaction: "Letzte Transaktionen werden synchronisiert"
-  cannot_modify_fixed_widget: "Sie können dieses Element nicht ein- oder ausblenden."
-  no_change_in_amount: "Keine Betragsänderung!"
-  analysis_period: "Letzte ${days} Tage • ${transaction_type}"
-  analysis_period_custom: "Benutzerdefiniert • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "Analysezeitraum"
-    days_15: "15 Tage"
-    days_30: "30 Tage"
-    days_60: "60 Tage"
-    days_90: "90 Tage"
-    custom: "Benutzerdefiniert"
-    transaction_type: "Transaktionstyp"
-
-  transaction_count: "Transaktion $count Mal"
-  count: "$count Mal"
-  increase: "Erhöht"
-  decrease: "Verringert"
-  sent: "Gesendet"
-  received: "Empfangen"
-
 wallet_add_scanner_screen:
   add_wallet: "Wallet hinzufügen"
   add_watch_only_wallet: "Watch-Only-Wallet hinzufügen"

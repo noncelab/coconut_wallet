@@ -12,7 +12,7 @@ import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeAppBar extends StatelessWidget {
-  static const actionButtonWidth = CoconutAppBarActionButton.highlightSize;
+  static const actionButtonWidth = CoconutAppBarActionButton.actionWidth;
 
   final NetworkStatus networkStatus;
   final bool showReconnected;

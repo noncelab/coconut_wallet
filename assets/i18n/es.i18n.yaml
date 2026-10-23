@@ -524,12 +524,8 @@ wallet_home_screen:
     description: "Configura el bloqueo de la aplicación para proteger tu billetera"
   view_all_wallets: "Ver todas mis billeteras"
   wallet_filter:
-    all: "Todas"
     watch_only: "Solo lectura"
     hot: "Billetera caliente"
-  add_wallet_type_all: "¡Añade una billetera!"
-  add_wallet_type_watch_only: "¡Añade una billetera de solo lectura!"
-  add_wallet_type_hot: "¡Añade una billetera caliente!"
   wallet_type_selection:
     watch_only:
       title: "Añadir billetera de solo lectura"
@@ -540,10 +536,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "Crear una billetera nueva"
-      description: "De forma automática y segura"
     restore:
       title: "Restaurar con mnemónico"
-      description: "Conservar la billetera existente"
     device_passcode_required:
       title: "Se requiere un código del dispositivo"
       description: "Para proteger tu billetera caliente, configura primero un código de bloqueo de pantalla en los ajustes del dispositivo."
@@ -560,7 +554,6 @@ wallet_home_screen:
     passphrase_used: "Frase de contraseña activada"
     passphrase_unused: "Frase de contraseña desactivada"
     create_wallet: "Crear billetera"
-    mnemonic_backup_guide: "Puedes ver la frase mnemónica generada en la siguiente pantalla de respaldo"
     mnemonic_length: "Longitud del mnemónico"
     word_count(count): "$count palabras"
     use_passphrase: "Usar frase de contraseña"
@@ -570,13 +563,11 @@ wallet_home_screen:
     passphrase_mismatch: "Las frases de contraseña no coinciden"
     show_passphrase: "Mostrar frase de contraseña"
     hide_passphrase: "Ocultar frase de contraseña"
-    enter_passphrase_when_signing: "Introduciré la frase de contraseña cada vez que firme"
     store_passphrase: "Guardar frase de contraseña"
     store_passphrase_off_description: "Introduce la frase de contraseña manualmente cada vez que firmes"
     store_passphrase_on_description: "Es más cómodo, pero reduce la protección que ofrece la frase de contraseña"
     passphrase_not_stored_title: "Recuerda tu frase de contraseña"
     passphrase_not_stored_description: "La frase de contraseña no se guardará en este dispositivo. Recuérdala bien, ya que si la olvidas no podrás recuperar la billetera ni enviar bitcoin."
-    passphrase_not_stored_confirm: "La recordaré"
     creation_failed: "No se pudo crear la billetera. Inténtalo de nuevo."
     duplicate_name_title: "Nombre de billetera duplicado"
     duplicate_name_description: "Ya existe una billetera con este nombre"
@@ -611,7 +602,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "Cambiar a entrada manual"
     switch_to_mnemonic_description: "¿Borrar los datos escaneados e introducir la mnemónica manualmente?"
   hot_wallet_setup:
-    title: "Crear una nueva billetera"
     wallet_created_title: "¡Tu nueva billetera caliente\nestá lista!"
     backup_title: "Guardar el mnemónico"
     backup_preparation_title: "Guarda tu frase mnemónica\nde forma segura"
@@ -640,89 +630,16 @@ wallet_home_screen:
     passphrase_correct: "La frase de contraseña coincide"
     backup_complete_title: "Se ha verificado la copia de seguridad de tu frase mnemónica"
     backup_complete_description: "Has verificado correctamente todas las palabras seleccionadas. Los recordatorios para hacer una copia de seguridad de tu frase mnemónica ya no se mostrarán."
-    set: "Configurado"
     skip: "Lo haré más tarde"
   add_wallet: "Añadir billetera"
   add_wallet_action: "Añadir billetera"
   view_all: "Ver todas"
-  wallet_menu:
-    rename: "Cambiar nombre"
-    backup: "Crear copia de seguridad"
-    wallet_info: "Información de la billetera"
-    remove_from_home: "Quitar de Inicio"
-    delete: "Eliminar billetera"
-  edit_home_screen: "Editar pantalla de inicio"
-  backup_update_notice_action: "Más información"
-  backup_update_notice:
-    title: "Actualización de respaldo de la billetera de herencia"
-    description: "Parte de la información de respaldo de la billetera de herencia ha cambiado.\nActualiza Coconut Wallet a la última versión.\nAl actualizar la bóveda, los cambios se aplican automáticamente.\nDespués, vuelve a respaldar la información de tu billetera."
-    action: "Más información"
   edit:
-    title: "Puedes ocultar o añadir funciones\nen la pantalla de inicio"
-    hide_balance: "Ocultar saldo"
-    hide_balance_on_home: "No mostrar el saldo en la pantalla de inicio"
     fake_balance:
       fake_balance_setting: "Saldo falso"
       fake_balance_display: "Mostrar saldo falso"
       fake_balance_input_placeholder: "Establece el saldo falso total"
-      fake_balance_input_description: "Si tienes varias billeteras, el saldo de cada una se calculará automáticamente"
       fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
-    hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
-    hide_fiat_price_on_home: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio"
-    home_add_wallet_button:
-      title: "Botón superior de Inicio"
-      sheet_title: "Botón superior de Inicio"
-      preview: "Vista previa de Inicio"
-      preview_all: "Botón para añadir cualquier cartera"
-      preview_all_emphasis: "cualquier"
-      preview_watch_only: "Botón para añadir cartera de solo lectura"
-      preview_hot_wallet: "Botón para añadir cartera caliente"
-      preview_hidden: "Botón para añadir cartera oculto"
-      preview_hidden_emphasis: "oculto"
-      all:
-        title: "Todas"
-        description: "Elige entre todos los tipos de cartera."
-      watch_only:
-        title: "Solo lectura"
-        description: "Añade una cartera de solo lectura con mayor seguridad."
-      hot_wallet:
-        title: "Cartera caliente"
-        description: "Añade una cartera caliente lista para usar."
-      hidden:
-        title: "Ocultar"
-        description: "No mostrar el botón para añadir una cartera en la parte superior de Inicio."
-    category:
-      total_balance: "Saldo total"
-      wallet_list: "Lista de billeteras"
-      recent_transactions: "Transacciones de las últimas 24 h"
-      analysis: "Análisis"
-    alert:
-      empty_fake_balance: "Ingresar saldo falso"
-      empty_fake_balance_description: "No se ha establecido un monto.\n¿Quieres reingresarlo o establecerlo en 0 BTC?"
-      set_to_0: "Establecer en 0 BTC"
-      enter_again: "Ingresar de nuevo"
-  last_24_hours_transactions: "Transacciones de las últimas 24 h"
-  syncing_recent_transaction: "Cargando transacciones recientes"
-  cannot_modify_fixed_widget: "No puedes mostrar u ocultar este elemento."
-  no_change_in_amount: "No hay cambio en la cantidad!"
-  analysis_period: "Últimos ${days} días • ${transaction_type}"
-  analysis_period_custom: "Personalizado • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "Periodo de análisis"
-    days_15: "15 días"
-    days_30: "30 días"
-    days_60: "60 días"
-    days_90: "90 días"
-    custom: "Personalizado"
-    transaction_type: "Tipo de transacción"
-
-  transaction_count: "${count} transacciones"
-  count: "${count} veces"
-  increase: "Ha aumentado"
-  decrease: "Ha disminuido"
-  sent: "Enviado"
-  received: "Recibido"
-
 wallet_add_scanner_screen:
   add_wallet: "Añadir billetera" 
   add_watch_only_wallet: "Añadir billetera de solo lectura (watch-only)"

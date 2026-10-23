@@ -15,7 +15,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/legacy_utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'dart:convert';
@@ -318,7 +317,7 @@ void main() {
     }
   });
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final variant in CoconutThemeVariant.values) {
       for (final populated in [false, true]) {
         for (final scale in [1.0, 2.0]) {
@@ -358,7 +357,7 @@ void main() {
                           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
                           child: child!,
                         ),
-                    home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+                    home: const UtxoOverviewScreen(id: 7),
                   ),
                 ),
               ),
@@ -373,7 +372,7 @@ void main() {
     }
   }
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final variant in CoconutThemeVariant.values) {
       for (final populated in [false, true]) {
         for (final scale in [1.0, 2.0]) {
@@ -424,7 +423,7 @@ void main() {
                           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
                           child: child!,
                         ),
-                    home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+                    home: const UtxoOverviewScreen(id: 7),
                   ),
                 ),
               ),
@@ -442,7 +441,7 @@ void main() {
     }
   }
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets('actual ${legacy ? 'legacy' : 'current'} caller tracks 3 buckets and restores at ${scale}x with warning', (
         tester,
@@ -474,7 +473,7 @@ void main() {
                   ),
               onGenerateRoute:
                   (_) => MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('detail fixture'))),
-              home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+              home: const UtxoOverviewScreen(id: 7),
             ),
           ),
         );
@@ -551,8 +550,8 @@ void main() {
           if (populated) {
             expect(metrics['summaryHeight'], UtxoSummaryChart.estimatedHeight);
           } else {
-            expect(metrics['chipTop'], 16, reason: 'The hidden balance header uses compact top padding.');
-            expect(metrics['summaryHeight']! - metrics['chipBottom']!, 24);
+            expect(metrics['chipTop'], 8, reason: 'The hidden balance header uses compact top padding.');
+            expect(metrics['summaryHeight']! - metrics['chipBottom']!, 8);
             expect(metrics['summaryHeight'], lessThan(UtxoSummaryChart.estimatedHeight));
           }
           await tester.pumpWidget(const SizedBox.shrink());

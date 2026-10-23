@@ -14,7 +14,7 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletList;
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -137,7 +137,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final openedWalletId = ValueNotifier(wallet.id);
     final args = WalletDetailRouteArgs(
       id: wallet.id,
-      entryPoint: kEntryPointWalletList,
+      entryPoint: kEntryPointWalletHome,
       walletIds: [for (final item in _viewModel.wallets) item.id],
       onFocusChanged: (walletId) {
         openedWalletId.value = walletId;
