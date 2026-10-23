@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
@@ -20,13 +21,33 @@ class ReceiveAddressRouteArgs {
 class AddressListRouteArgs {
   final int id;
   final bool? initialShowOnlyWatchedAddresses;
-  const AddressListRouteArgs({required this.id, this.initialShowOnlyWatchedAddresses});
+  final bool? initialShowOnlyUnusedAddresses;
+  const AddressListRouteArgs({
+    required this.id,
+    this.initialShowOnlyWatchedAddresses,
+    this.initialShowOnlyUnusedAddresses,
+  });
 }
 
 class WalletDetailRouteArgs {
   final int id;
+  final bool focusRecentTransactions;
+  final String? focusedTransactionHash;
   final String entryPoint;
-  const WalletDetailRouteArgs({required this.id, required this.entryPoint});
+
+  /// 지갑 상세의 카드 휠에 놓을 지갑과 순서. 없으면 전체 지갑.
+  final List<int>? walletIds;
+
+  /// 상세 화면에서 카드를 넘기면 알린다. 돌아갈 때 지갑 목록 휠이 같은 카드를 보여 준다.
+  final void Function(int walletId)? onFocusChanged;
+  const WalletDetailRouteArgs({
+    required this.id,
+    required this.entryPoint,
+    this.walletIds,
+    this.onFocusChanged,
+    this.focusRecentTransactions = false,
+    this.focusedTransactionHash,
+  });
 }
 
 class UtxoOrganizerRouteArgs {
@@ -113,6 +134,11 @@ class UtxoTagCrudRouteArgs {
   const UtxoTagCrudRouteArgs({required this.id});
 }
 
+class WalletAppearanceRouteArgs {
+  final int id;
+  const WalletAppearanceRouteArgs({required this.id});
+}
+
 class WalletResyncRouteArgs {
   final int id;
   const WalletResyncRouteArgs({required this.id});
@@ -130,6 +156,7 @@ class WalletInfoRouteArgs {
   final bool? showMfpInput;
   final bool? highlightMnemonicBackup;
   final bool? showTargetSetting;
+  final WalletInfoTarget? initialTarget;
   const WalletInfoRouteArgs({
     required this.id,
     required this.walletType,
@@ -137,6 +164,7 @@ class WalletInfoRouteArgs {
     this.showMfpInput,
     this.highlightMnemonicBackup,
     this.showTargetSetting,
+    this.initialTarget,
   });
 }
 

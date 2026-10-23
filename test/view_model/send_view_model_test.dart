@@ -90,6 +90,13 @@ void main() {
     );
   }
 
+  testWidgets('수수료 응답 전에 보내기 화면을 닫아도 오류가 발생하지 않는다', (tester) async {
+    final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+    viewModel.dispose();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+  });
+
   group('isOwnAddress', () {
     test('지갑이 없으면 false 반환', () {
       final viewModel = createViewModel(walletProvider: FakeWalletProvider());

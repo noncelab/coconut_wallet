@@ -116,16 +116,19 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   scrolledUnderElevation: 0,
                   toolbarHeight: 56,
                   backgroundColor: context.coconutColors.background,
-                  leading: IconButton(
-                    icon: SvgPicture.asset(
-                      CommonNavigationIconPath.arrowBack,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                      width: 24,
-                      height: 24,
+                  leading: Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: SvgPicture.asset(
+                        CommonNavigationIconPath.arrowBack,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
                   ),
                   title: Padding(
                     padding: const EdgeInsets.only(right: Sizes.size16, top: Sizes.size4),
@@ -134,7 +137,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       focusNode: _addressFocusNode,
                       onChanged: (_) {},
                       size: CoconutTextFieldSize.search,
-                      backgroundColor: context.coconutColors.background,
+                      placeholderText: t.address_search_screen.address_placeholder,
+                      backgroundColor: context.coconutColors.inputSurface,
                       maxLines: 1,
                       clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                       onClear: () {
@@ -154,6 +158,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                         _showAddressScanner();
                       },
                       suffixIconAsset: CommonActionIconPath.scan,
+                      suffixSemanticLabel: t.send_address_screen.text2,
                       suffixIconColor: context.coconutColors.iconPrimary,
                     ),
                   ),

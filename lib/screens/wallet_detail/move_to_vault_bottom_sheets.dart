@@ -240,7 +240,7 @@ class _ShowVaultSelectWalletBottomSheetState extends State<ShowVaultSelectWallet
         children: [
           for (var index = 0; index < wallets.length; index++)
             Padding(
-              padding: EdgeInsets.only(bottom: index == wallets.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(bottom: index == wallets.length - 1 ? 0 : 8),
               child: WalletItemCard(
                 key: ValueKey(wallets[index].id),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),

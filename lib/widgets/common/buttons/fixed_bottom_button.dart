@@ -110,39 +110,36 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,
-                MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: ShrinkAnimationButton(
-                    onPressed: () {
-                      widget.onButtonClicked();
-                    },
-                    isActive: widget.isActive,
-                    defaultColor: resolvedBackgroundColor,
-                    pressedOverlayColor:
-                        widget.pressedBackgroundColor ??
-                        (resolvedBackgroundColor == colors.buttonPrimaryBackground
-                            ? colors.buttonPrimaryPressOverlay
-                            : getDarkerColor(resolvedBackgroundColor)),
-                    pressedOverlayOpacity:
-                        widget.pressedBackgroundColor == null &&
-                                resolvedBackgroundColor == colors.buttonPrimaryBackground
-                            ? colors.buttonPrimaryPressOverlayOpacity
-                            : null,
-                    disabledColor: colors.buttonPrimaryDisabledBackground,
-                    borderRadius: 12,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width,
-                      height: buttonHeight,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            widget.text,
-                            textAlign: TextAlign.center,
-                            style: CoconutTypography.body2_14_Bold
-                                .setColor(widget.isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
-                                .copyWith(height: 1.0),
-                          ),
+                ShrinkAnimationButton(
+                  onPressed: () {
+                    widget.onButtonClicked();
+                  },
+                  isActive: widget.isActive,
+                  defaultColor: resolvedBackgroundColor,
+                  pressedOverlayColor:
+                      widget.pressedBackgroundColor ??
+                      (resolvedBackgroundColor == colors.buttonPrimaryBackground
+                          ? colors.buttonPrimaryPressOverlay
+                          : getDarkerColor(resolvedBackgroundColor)),
+                  pressedOverlayOpacity:
+                      widget.pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
+                          ? colors.buttonPrimaryPressOverlayOpacity
+                          : null,
+                  disabledColor: colors.buttonPrimaryDisabledBackground,
+                  borderRadius: 12,
+                  child: Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    constraints: BoxConstraints(minHeight: buttonHeight),
+                    child: Center(
+                      heightFactor: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Text(
+                          widget.text,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body2_14_Bold
+                              .setColor(widget.isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
+                              .copyWith(height: 1.0),
                         ),
                       ),
                     ),
@@ -192,40 +189,38 @@ class InlineActionButton extends StatelessWidget {
     final resolvedHeight =
         buttonHeight ?? (Platform.isAndroid ? InlineActionButton.defaultHeight : InlineActionButton.defaultHeight + 3);
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: ShrinkAnimationButton(
-        onPressed: onPressed,
-        isActive: isActive,
-        defaultColor: resolvedBackgroundColor,
-        pressedOverlayColor:
-            pressedBackgroundColor ??
-            (resolvedBackgroundColor == colors.buttonPrimaryBackground
-                ? colors.buttonPrimaryPressOverlay
-                : getDarkerColor(resolvedBackgroundColor)),
-        pressedOverlayOpacity:
-            pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
-                ? colors.buttonPrimaryPressOverlayOpacity
-                : null,
-        disabledColor: colors.buttonPrimaryDisabledBackground,
-        borderRadius: 12,
-        child: SizedBox(
-          width: double.infinity,
-          height: resolvedHeight,
-          child: Center(
-            child:
-                child ??
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    text!,
-                    textAlign: TextAlign.center,
-                    style: CoconutTypography.body2_14_Bold
-                        .setColor(isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
-                        .copyWith(height: 1.0),
-                  ),
+    return ShrinkAnimationButton(
+      onPressed: onPressed,
+      isActive: isActive,
+      defaultColor: resolvedBackgroundColor,
+      pressedOverlayColor:
+          pressedBackgroundColor ??
+          (resolvedBackgroundColor == colors.buttonPrimaryBackground
+              ? colors.buttonPrimaryPressOverlay
+              : getDarkerColor(resolvedBackgroundColor)),
+      pressedOverlayOpacity:
+          pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
+              ? colors.buttonPrimaryPressOverlayOpacity
+              : null,
+      disabledColor: colors.buttonPrimaryDisabledBackground,
+      borderRadius: 12,
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(minHeight: resolvedHeight),
+        child: Center(
+          heightFactor: 1,
+          child:
+              child ??
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  text!,
+                  textAlign: TextAlign.center,
+                  style: CoconutTypography.body2_14_Bold
+                      .setColor(isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
+                      .copyWith(height: 1.0),
                 ),
-          ),
+              ),
         ),
       ),
     );

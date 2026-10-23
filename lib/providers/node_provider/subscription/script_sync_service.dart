@@ -277,7 +277,6 @@ class ScriptSyncService {
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
-      await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // Transaction 동기화
       _stateManager.addWalletFetchDispatched(dto.walletItem.id, 1);
@@ -292,6 +291,7 @@ class ScriptSyncService {
         dto.scriptStatus,
         fetchResult.txHashes,
       );
+      await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // 이번 이벤트가 트리거한 주소 외에 같은 트랜잭션으로 UTXO가 함께 소비된 주소가 있다면,
       // 그 주소들 자신의 구독 이벤트가 실패/누락되어도 잔액이 stale 상태로 남지 않도록 동기화한다.
@@ -374,7 +374,6 @@ class ScriptSyncService {
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses, onBatchProgress: reportProgress);
-      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);
       Logger.performance('Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}');
@@ -401,6 +400,7 @@ class ScriptSyncService {
         }
       }
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
 
       final transactionEndTime = DateTime.now();
       final transactionDuration = transactionEndTime.difference(transactionStartTime);

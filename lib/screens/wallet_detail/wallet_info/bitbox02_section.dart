@@ -91,7 +91,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
         children: [
           Text(
             t.wallet_info_screen.connected_hardware_wallet.title,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
           ),
           CoconutLayout.spacing_300h,
           Divider(color: context.coconutColors.divider, height: 1),
@@ -116,7 +116,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                       ? t.wallet_info_screen.connected_hardware_wallet.connected
                       : t.wallet_info_screen.connected_hardware_wallet.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.accentForeground : context.coconutColors.secondaryText,
+                    _isConnected ? context.coconutColors.accentForeground : context.coconutColors.secondaryTextStrong,
                   ),
                 ),
                 if (_isConnected) ...[
@@ -157,7 +157,7 @@ class _InfoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+        Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong)),
         const SizedBox(width: 12),
         child,
       ],

@@ -218,9 +218,11 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       ),
                       CoconutLayout.spacing_100w,
-                      Text(
-                        t.wallet_add_scanner_screen.paste.mfp_description_title,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                      Expanded(
+                        child: Text(
+                          t.wallet_add_scanner_screen.paste.mfp_description_title,
+                          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                        ),
                       ),
                     ],
                   ),

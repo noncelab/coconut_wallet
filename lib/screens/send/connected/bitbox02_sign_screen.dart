@@ -192,10 +192,10 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        CommonFormIconPath.circleCheckOutline,
+        CommonFormIconPath.circleCheck,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        width: 16,
-        height: 16,
+        width: 20,
+        height: 20,
       );
       stateLabel = t.bitbox02_sign_screen.done.title;
       detailText = t.bitbox02_sign_screen.done.description;

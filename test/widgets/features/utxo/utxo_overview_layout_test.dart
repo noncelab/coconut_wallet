@@ -77,7 +77,7 @@ void main() {
           final label = find.text('${t.utxo_detail_screen.utxo_unlocked} • ${utxos.length} coins');
           final card = tester.getRect(find.ancestor(of: label, matching: find.byType(Container)).first);
           expect(card.top - chart.top, 16);
-          final contentBottom = utxos.isEmpty ? card.bottom + 12 : tester.getRect(find.text('small')).bottom + 16;
+          final contentBottom = utxos.isEmpty ? card.bottom : tester.getRect(find.text('small')).bottom + 16;
           expect(chart.bottom - contentBottom, 24);
           expect(tester.takeException(), isNull);
         }

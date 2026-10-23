@@ -25,7 +25,11 @@ class CpfpService {
   }
 
   /// CPFP 트랜잭션을 감지하는 함수
-  Future<CpfpInfo?> detectCpfpTransaction(int walletId, Transaction tx) async {
+  Future<CpfpInfo?> detectCpfpTransaction(
+    int walletId,
+    Transaction tx, {
+    Set<String> confirmedTxHashes = const {},
+  }) async {
     // 이미 CPFP 내역이 있는지 확인
     if (hasExistingCpfpHistory(walletId, tx.transactionHash)) {
       return null;
@@ -37,6 +41,7 @@ class CpfpService {
     double originalFee = 0.0;
 
     for (final input in tx.inputs) {
+      if (confirmedTxHashes.contains(input.transactionHash)) continue;
       final parentTxRecord = _transactionRepository.getTransactionRecord(walletId, input.transactionHash);
 
       if (parentTxRecord != null && parentTxRecord.blockHeight == 0) {

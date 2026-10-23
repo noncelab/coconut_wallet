@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -59,7 +60,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
       final resolvedName = _walletProvider.resolveWalletNameConflict(
         desiredName: trimmedName,
         descriptor: _walletDescriptor,
-        isSingleSig: true,
+        isSingleSig: _walletProvider.getWalletById(_walletId) is SinglesigWalletItem,
         excludeWalletId: _walletId,
       );
       // 동일 주소의 Watch-only/핫월렛은 입력한 이름이 그대로 반환된다.

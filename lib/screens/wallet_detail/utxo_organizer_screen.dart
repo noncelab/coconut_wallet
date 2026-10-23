@@ -8,7 +8,10 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class UtxoOrganizerScreen extends StatefulWidget {
   const UtxoOrganizerScreen({super.key, required this.id});
@@ -20,8 +23,12 @@ class UtxoOrganizerScreen extends StatefulWidget {
 }
 
 class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> with SelfLoggedScreenView<UtxoOrganizerScreen> {
-  int _selectedIndex = 0;
-  bool _hasVisitedSplit = false;
+  late int _selectedIndex = _canMerge(context.read<WalletProvider>()) ? 0 : 1;
+  late bool _hasVisitedSplit = _selectedIndex == 1;
+
+  /// 합치기는 쓸 수 있는 UTXO가 둘 이상일 때만 할 수 있다.
+  bool _canMerge(WalletProvider wallets) =>
+      wallets.getUtxoList(widget.id).where((utxo) => utxo.status == UtxoStatus.unspent).length >= 2;
 
   @override
   String get analyticsScreenName => AppRouteNames.utxoOrganizer;
@@ -34,6 +41,7 @@ class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> with SelfLogg
 
   void _selectTab(int index) {
     if (_selectedIndex == index) return;
+    if (index == 0 && !_canMerge(context.read<WalletProvider>())) return;
     setState(() {
       _selectedIndex = index;
       if (index == 1) _hasVisitedSplit = true;
@@ -43,6 +51,7 @@ class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> with SelfLogg
 
   @override
   Widget build(BuildContext context) {
+    final canMerge = context.select<WalletProvider, bool>(_canMerge);
     return Scaffold(
       backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
@@ -59,7 +68,14 @@ class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> with SelfLogg
             selectedTextColor: context.coconutColors.segmentedControlSelectedText,
             unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
             labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            children: [Text(t.utxo_organizer_screen.merge), Text(t.utxo_organizer_screen.split)],
+            children: [
+              Text(
+                t.utxo_organizer_screen.merge,
+                key: const Key('utxo-organizer-merge-tab'),
+                style: canMerge ? null : TextStyle(color: context.coconutColors.mutedText),
+              ),
+              Text(t.utxo_organizer_screen.split),
+            ],
           ),
         ),
       ),

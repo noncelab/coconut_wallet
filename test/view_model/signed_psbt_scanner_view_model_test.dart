@@ -106,7 +106,7 @@ void main() {
 
       expect(handler.isCompleted(), isTrue);
 
-      final result = viewModel.processUrSigningResult(handler.result);
+      final result = viewModel.processUrSigningResult(handler.result!);
 
       expect(result.isSuccess, isTrue);
       expect(sendInfoProvider.signedResult, isNotNull);
@@ -122,7 +122,7 @@ void main() {
 
       expect(handler.isCompleted(), isTrue);
 
-      final result = viewModel.processUrSigningResult(handler.result);
+      final result = viewModel.processUrSigningResult(handler.result!);
 
       expect(result.isSuccess, isTrue);
       expect(sendInfoProvider.signedResult, isNotNull);
@@ -138,7 +138,7 @@ void main() {
 
       expect(handler.isCompleted(), isTrue);
 
-      final result = viewModel.processUrSigningResult(handler.result);
+      final result = viewModel.processUrSigningResult(handler.result!);
 
       expect(result.isSuccess, isTrue);
       expect(sendInfoProvider.signedResult, isNotNull);
@@ -177,7 +177,7 @@ void main() {
       expect(handler.isCompleted(), isTrue);
       expect(handler.result, expectedRawTransaction);
 
-      final result = viewModel.processBbQrSigningResult(handler.result);
+      final result = viewModel.processBbQrSigningResult(handler.result!);
 
       expect(result.isSuccess, isTrue);
       expect(sendInfoProvider.signedResult, expectedRawTransaction);

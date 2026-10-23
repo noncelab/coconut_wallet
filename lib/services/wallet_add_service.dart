@@ -69,7 +69,29 @@ class WalletAddService {
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-      final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
+      final parsed = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
+      final path = parsed.derivationPath;
+      if (!WalletUtility.validateDerivationPath(path)) {
+        throw const FormatException('Invalid account derivation path');
+      }
+      final originalKey = parsed.keyStore.extendedPublicKey;
+      // coconut_lib 1.1.1 loses the origin child index; remove when its UR factory preserves it.
+      final account = HDWallet.fromPublicKeyWithDerivationPath(originalKey.publicKey, originalKey.chainCode, path);
+      if (account.depth != originalKey.depth || account.depth > 255) {
+        throw const FormatException('Invalid account depth');
+      }
+      final accountKey = ExtendedPublicKey.fromHdWallet(
+        account,
+        originalKey.version,
+        originalKey.parentFingerprintByte,
+      );
+      final singleSigWallet = SingleSignatureWallet(
+        parsed.keyStore.masterFingerprint,
+        account,
+        parsed.addressType,
+        path,
+        accountKey,
+      );
       return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
     } catch (e) {
       Logger.error('$className.$methodName failed: ${e.runtimeType}');
