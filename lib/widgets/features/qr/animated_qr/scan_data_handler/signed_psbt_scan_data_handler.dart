@@ -11,14 +11,14 @@ import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler
 /// 3. raw hex string (single QR)
 enum SignedPsbtScanDataType { ur, bbqr, raw }
 
-class SignedPsbtScanDataHandler extends IFragmentedQrScanDataHandler {
+class SignedPsbtScanDataHandler extends IFragmentedQrScanDataHandler<Object> {
   final BcUrQrScanDataHandler _bcUrQrScanDataHandler = BcUrQrScanDataHandler(
     expectedUrType: [UrType.cryptoPsbt, UrType.psbt],
   );
   final BbQrScanDataHandler _bbQrScanDataHandler = BbQrScanDataHandler();
   final RawSignedTransactionDataHandler _rawSignedTransactionDataHandler = RawSignedTransactionDataHandler();
 
-  IQrScanDataHandler? _currentScanDataHandler;
+  IQrScanDataHandler<Object>? _currentScanDataHandler;
   SignedPsbtScanDataType? _currentScanDataType;
 
   SignedPsbtScanDataType? get scanDataType => _currentScanDataType;
@@ -55,7 +55,7 @@ class SignedPsbtScanDataHandler extends IFragmentedQrScanDataHandler {
   }
 
   @override
-  dynamic get result {
+  Object? get result {
     if (_currentScanDataHandler == null) {
       return null;
     }

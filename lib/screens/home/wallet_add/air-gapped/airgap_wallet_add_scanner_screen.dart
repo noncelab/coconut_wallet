@@ -535,7 +535,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     );
   }
 
-  Future<void> _onCompletedScanning(dynamic additionInfo) async {
+  Future<void> _onCompletedScanning(Object additionInfo) async {
     const methodName = '_onCompletedScanning';
     if (_isProcessing || _isCompletedScanLocked) return;
     _isProcessing = true;

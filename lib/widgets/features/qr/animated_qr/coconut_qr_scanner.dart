@@ -15,9 +15,9 @@ class CoconutQrScanner extends StatefulWidget {
   static String qrFormatErrorMessage = 'Invalid QR format.';
   static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(MobileScannerController) setMobileScannerController;
-  final Function(dynamic) onComplete;
+  final Function(Object) onComplete;
   final Function(String, String?) onFailed;
-  final IQrScanDataHandler qrDataHandler;
+  final IQrScanDataHandler<Object> qrDataHandler;
   final ValueChanged<String>? onScanData;
 
   const CoconutQrScanner({

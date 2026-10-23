@@ -4,7 +4,9 @@ import 'package:coconut_wallet/utils/bb_qr/bb_qr_decoder.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 
-class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
+/// BBQR 데이터 타입에 따라 결과 타입이 달라진다.
+/// J: Map<String, dynamic>(지갑 export JSON), P: String(PSBT base64), T: String(hex transaction)
+class BbQrScanDataHandler implements IFragmentedQrScanDataHandler<Object> {
   BbQrDecoder _bbqrDecoder;
   int? _sequenceLength;
   String? _dataType; // BBQR 데이터 타입 저장
@@ -16,7 +18,7 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       _bbqrDecoder = BbQrDecoder();
 
   @override
-  dynamic get result {
+  Object? get result {
     return _psbtBase64 ?? _bbqrDecoder.result;
   }
 

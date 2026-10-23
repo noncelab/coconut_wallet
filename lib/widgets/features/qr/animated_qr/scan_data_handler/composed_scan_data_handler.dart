@@ -3,16 +3,16 @@ import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler
 
 /// 첫 스캔 데이터의 형식에 맞는 handler를 선택하고 이후 처리를 위임한다.
 /// handlers 목록의 순서가 형식 판별 우선순위다.
-class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
-  final List<IQrScanDataHandler> _handlers;
-  IQrScanDataHandler? _selected;
+class ComposedScanDataHandler implements IFragmentedQrScanDataHandler<Object> {
+  final List<IQrScanDataHandler<Object>> _handlers;
+  IQrScanDataHandler<Object>? _selected;
 
   ComposedScanDataHandler(this._handlers);
 
-  IQrScanDataHandler? get selectedHandler => _selected;
+  IQrScanDataHandler<Object>? get selectedHandler => _selected;
 
   @override
-  dynamic get result => _selected?.result;
+  Object? get result => _selected?.result;
 
   @override
   double get progress => _selected?.progress ?? 0.0;

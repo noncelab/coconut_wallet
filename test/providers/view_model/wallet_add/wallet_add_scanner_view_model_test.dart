@@ -64,7 +64,7 @@ void main() {
         expect(viewModel.isExtendedPublicKeyScanned, isTrue);
 
         final result = await viewModel.addWallet(
-          handler.result,
+          handler.result!,
           isExtendedPublicKey: viewModel.isExtendedPublicKeyScanned,
           masterFingerPrint: '1234abcd',
         );
@@ -83,7 +83,7 @@ void main() {
         expect(viewModel.isExtendedPublicKeyScanned, isFalse);
 
         final result = await viewModel.addWallet(
-          handler.result,
+          handler.result!,
           isExtendedPublicKey: viewModel.isExtendedPublicKeyScanned,
         );
 
@@ -177,7 +177,7 @@ void main() {
       }
       expect(handler.isCompleted(), isTrue);
 
-      final result = await viewModel.addWallet(handler.result);
+      final result = await viewModel.addWallet(handler.result!);
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(wallets.addedWallet!.walletImportSource, WalletImportSource.coldCard);

@@ -22,7 +22,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
   final PreferenceProvider _preferenceProvider;
-  late final IQrScanDataHandler _qrDataHandler;
+  late final IQrScanDataHandler<Object> _qrDataHandler;
 
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._preferenceProvider) {
     switch (_walletImportSource) {
@@ -62,7 +62,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  IQrScanDataHandler get qrDataHandler => _qrDataHandler;
+  IQrScanDataHandler<Object> get qrDataHandler => _qrDataHandler;
 
   bool get isExtendedPublicKeyScanned => switch (_qrDataHandler) {
     ComposedScanDataHandler(:final selectedHandler) => selectedHandler is ExtendedPublicKeyQrScanDataHandler,
@@ -71,7 +71,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(
-    dynamic additionInfo, {
+    Object additionInfo, {
     bool? isExtendedPublicKey,
     String? masterFingerPrint,
   }) async {
