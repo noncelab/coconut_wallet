@@ -40,6 +40,8 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   String _deviceLabel = '';
   bool _isConnecting = false;
   bool _disposed = false;
+  int _connectionAttempt = 0;
+  Future<String> Function()? _pairingCallback;
   bool _isPairingCodeWrong = false;
   bool _isPermissionDenied = false;
 
@@ -81,11 +83,13 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   Future<String> waitForPairingCode() async {
+    if (_disposed) return '';
     _pairingErrorMessage = null;
-    _pairingCodeCompleter = Completer<String>();
+    final completer = Completer<String>();
+    _pairingCodeCompleter = completer;
     _setState(TrezorBleConnectStep.pairing);
-    final code = await _pairingCodeCompleter!.future;
-    _pairingCodeCompleter = null;
+    final code = await completer.future;
+    if (identical(_pairingCodeCompleter, completer)) _pairingCodeCompleter = null;
     return code;
   }
 
@@ -96,8 +100,20 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   void cancelPairing() {
-    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
-      _pairingCodeCompleter!.complete('');
+    _cancelConnection();
+    _disconnectDevice().catchError((_) {});
+  }
+
+  void _cancelConnection() {
+    _connectionAttempt++;
+    _isConnecting = false;
+    final completer = _pairingCodeCompleter;
+    if (completer != null && !completer.isCompleted) completer.complete('');
+    _pairingCodeCompleter = null;
+    final callback = _pairingCallback;
+    _pairingCallback = null;
+    if (callback != null && identical(TrezorDevice.onPairingCodeRequested, callback)) {
+      TrezorDevice.cancel().catchError((_) {});
     }
   }
 
@@ -107,7 +123,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   bool resumeFromExistingSession() {
     final device = TrezorDevice.lastConnected;
     final cachedXpub = device?.cachedXpub;
-    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    if (_disposed || device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
     _device = device;
     _deviceLabel = device.label;
     _xpub = cachedXpub;
@@ -121,11 +137,13 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       'TREZOR_BLE_CONNECT connect start: step=${_step.name} isConnecting=$_isConnecting '
       'lastConnected=${TrezorDevice.lastConnected != null}',
     );
-    if (_isConnecting || _step == TrezorBleConnectStep.paired) {
+    if (_disposed || _isConnecting || _step == TrezorBleConnectStep.paired) {
       debugPrint('TREZOR_BLE_CONNECT connect skipped: already connecting or paired');
       return;
     }
 
+    final attempt = ++_connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
     _isConnecting = true;
     _errorMessage = null;
     _errorDescription = null;
@@ -136,14 +154,15 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     if (!_disposed) notifyListeners();
 
     try {
-      // Disconnect any previously active BLE session before starting a new one.
-      await TrezorDevice.lastConnected?.disconnect();
-
-      TrezorDevice.onPairingCodeRequested = () async {
-        return await waitForPairingCode();
-      };
+      Future<String> callback() async => isCancelled() ? '' : await waitForPairingCode();
+      _pairingCallback = callback;
       _setState(TrezorBleConnectStep.connecting);
-      _device = await TrezorDevice.connect();
+      final device = await TrezorDevice.connect(pairingCodeRequested: callback, isCancelled: isCancelled);
+      if (isCancelled()) {
+        await device.disconnect();
+        return;
+      }
+      _device = device;
       _deviceLabel = _device!.label;
       TrezorDevice.lastConnected = _device;
       debugPrint(
@@ -153,14 +172,16 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       );
 
       _setState(TrezorBleConnectStep.passphraseUseQuestion);
-    } on TrezorPairingCodeWrongException catch (e) {
-      _errorMessage = e.message;
+    } on TrezorPairingCodeWrongException {
+      if (isCancelled()) return;
+      _errorMessage = null;
       _pairingCodeCompleter = null;
       _isPairingCodeWrong = true;
       if (!_disposed) notifyListeners();
     } on TrezorConnectException catch (e) {
+      if (isCancelled()) return;
       if (e.code == 'PERMISSION_DENIED') {
-        _errorMessage = e.message;
+        _errorMessage = null;
         _isPermissionDenied = true;
         _step = TrezorBleConnectStep.idle;
         if (!_disposed) notifyListeners();
@@ -182,26 +203,31 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       } else if (e.message.contains('Encryption is insufficient')) {
         // 페어링 중간에 중단된 경우
         _errorDescription = t.wallet_connect_screen.guide_trezor.pairing_aborted.title;
-        _errorMessage = e.message;
+        _errorMessage = null;
         _peerRemovedPairingSteps = null;
         onPairingFailed?.call();
         _setState(TrezorBleConnectStep.error);
       } else {
-        _errorMessage = e.message;
+        _errorMessage = null;
         onPairingFailed?.call();
         _setState(TrezorBleConnectStep.error);
       }
-    } on TrezorPairingException catch (e) {
-      _errorMessage = e.message;
+    } on TrezorPairingException {
+      if (isCancelled()) return;
+      _errorMessage = null;
       onPairingFailed?.call();
       _setState(TrezorBleConnectStep.error);
     } catch (e) {
-      _errorMessage = e.toString();
+      if (isCancelled()) return;
+      _errorMessage = null;
       onPairingFailed?.call();
       _setState(TrezorBleConnectStep.error);
     } finally {
-      _isConnecting = false;
-      if (!_disposed) notifyListeners();
+      if (attempt == _connectionAttempt) {
+        _pairingCallback = null;
+        _isConnecting = false;
+        if (!_disposed) notifyListeners();
+      }
     }
   }
 
@@ -210,7 +236,10 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   Future<void> retrieveXPub() => _retrieveXPub(silent: false);
 
   Future<void> _retrieveXPub({bool silent = false}) async {
-    if (_isRetrievingXPub || _device == null) return;
+    if (_disposed || _isRetrievingXPub || _device == null) return;
+    final device = _device!;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
     _isRetrievingXPub = true;
     _errorMessage = null;
 
@@ -220,22 +249,27 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       final keypath = isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
 
       try {
-        _xpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
-        _device!.cachedXpub = _xpub;
-        _fingerprint = await _device!.getFingerprint();
-        _device!.cachedFingerprint = _fingerprint;
+        final xpub = await device.getXPub(keypath: keypath, network: nt.toString());
+        if (isCancelled()) return;
+        _xpub = xpub;
+        device.cachedXpub = _xpub;
+        final fingerprint = await device.getFingerprint();
+        if (isCancelled()) return;
+        _fingerprint = fingerprint;
+        device.cachedFingerprint = _fingerprint;
         debugPrint(
-          'TREZOR_BLE_CONNECT xpub retrieved: id=${_device!.id} '
+          'TREZOR_BLE_CONNECT xpub retrieved: id=${device.id} '
           'xpubLength=${_xpub.length} fingerprint=$_fingerprint '
-          'cachedXpub=${_device!.cachedXpub != null} cachedFingerprint=${_device!.cachedFingerprint != null}',
+          'cachedXpub=${device.cachedXpub != null} cachedFingerprint=${device.cachedFingerprint != null}',
         );
         _setState(TrezorBleConnectStep.paired);
-      } on Exception catch (e) {
+      } on Exception {
+        if (isCancelled()) return;
         if (silent) {
-          _errorMessage = e.toString();
+          _errorMessage = t.wallet_connect_screen.guide_trezor.error.title;
           _setState(TrezorBleConnectStep.paired);
         } else {
-          _errorMessage = e.toString();
+          _errorMessage = t.wallet_connect_screen.guide_trezor.error.title;
           _setState(TrezorBleConnectStep.error);
         }
       }
@@ -298,21 +332,27 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   /// If not, first call applySettings to enable it — the user must confirm on the device.
   /// The user cannot skip this step after choosing to use passphrase.
   Future<void> selectUsePassphrase() async {
-    if (!_device!.passphraseProtection) {
+    final device = _device;
+    if (_disposed || device == null) return;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
+    if (!device.passphraseProtection) {
       _setState(TrezorBleConnectStep.passphraseEnabling);
       try {
-        await _device!.applySettings(usePassphrase: true);
+        await device.applySettings(usePassphrase: true);
+        if (isCancelled()) return;
       } catch (error) {
-        _errorMessage = error.toString();
+        if (isCancelled()) return;
+        _errorMessage = null;
         await _disconnectDevice();
         _setState(TrezorBleConnectStep.error);
         return;
       }
-      _device!.passphraseProtection = true;
+      device.passphraseProtection = true;
     }
-    if (_device!.passphraseAlwaysOnDevice) {
+    if (device.passphraseAlwaysOnDevice) {
       _setState(TrezorBleConnectStep.passphraseOnDevice);
-    } else if (!_device!.supportsPassphraseEntry) {
+    } else if (!device.supportsPassphraseEntry) {
       _setState(TrezorBleConnectStep.passphraseInput);
     } else {
       _setState(TrezorBleConnectStep.passphraseSourceSelection);
@@ -338,10 +378,16 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
 
   /// Internal: call createSession then proceed to getXPub.
   Future<void> _createSessionAndProceed(TrezorPassphraseType type, {String value = ''}) async {
+    final device = _device;
+    if (_disposed || device == null) return;
+    final attempt = _connectionAttempt;
+    bool isCancelled() => _disposed || attempt != _connectionAttempt;
     try {
-      await _device!.createSession(type: type, value: value);
+      await device.createSession(type: type, value: value);
+      if (isCancelled()) return;
     } catch (error) {
-      _errorMessage = error.toString();
+      if (isCancelled()) return;
+      _errorMessage = null;
       await _disconnectDevice();
       _setState(TrezorBleConnectStep.error);
       return;
@@ -361,11 +407,13 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _cancelConnection();
     await _disconnectDevice();
     _setState(TrezorBleConnectStep.idle);
   }
 
   void reset() {
+    _cancelConnection();
     debugPrint(
       'TREZOR_BLE_CONNECT reset: step=${_step.name} device=${_device != null} '
       'lastConnected=${TrezorDevice.lastConnected != null} xpub=${_xpub.isNotEmpty} fingerprint=${_fingerprint.isNotEmpty}',
@@ -389,10 +437,10 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _cancelConnection();
     if (_step != TrezorBleConnectStep.paired) {
-      TrezorDevice.cancel().catchError((_) {});
       if (_device != null) {
-        _device!.disconnect().catchError((_) {});
+        _device!.cancelAndDisconnect().catchError((_) {});
       }
     }
     _device = null;

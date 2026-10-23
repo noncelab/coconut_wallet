@@ -70,7 +70,7 @@ class AddressItemCard extends StatelessWidget {
                     Text(
                       '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
                       style: CoconutTypography.body1_16_Number.setColor(
-                        isUsed ? context.coconutColors.primaryText : context.coconutColors.mutedText,
+                        isUsed ? context.coconutColors.primaryText : context.coconutColors.secondaryTextStrong,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -78,7 +78,9 @@ class AddressItemCard extends StatelessWidget {
                       currentUnit.displayBitcoinAmount(balanceInSats, withUnit: true),
                       style: CoconutTypography.body2_14_Number
                           .setColor(
-                            balanceInSats == 0 ? context.coconutColors.mutedText : context.coconutColors.primaryText,
+                            balanceInSats == 0
+                                ? context.coconutColors.secondaryTextStrong
+                                : context.coconutColors.primaryText,
                           )
                           .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),

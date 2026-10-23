@@ -15,6 +15,7 @@ class WalletBalanceSyncShimmer extends StatelessWidget {
     final colors = context.coconutColors;
     return Shimmer.fromColors(
       period: const Duration(milliseconds: 1100),
+      enabled: !(MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)),
       baseColor: colors.tertiaryText,
       highlightColor: Color.lerp(colors.mutedText, colors.secondaryText, 0.25)!,
       child: child,

@@ -20,25 +20,21 @@ class CoconutAppBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
 
-    return GestureDetector(
-      onTap: isActive ? onPressed : null,
-      child: Container(
+    final enabled = isActive && onPressed != null;
+    return TextButton(
+      onPressed: enabled ? onPressed : null,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isActive ? Colors.transparent : colors.border),
-          color: isActive ? (isActivePrimaryColor ? colors.primary : colors.primaryText) : colors.surfaceMuted,
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: CoconutTypography.body3_12.copyWith(
-              color: isActive ? colors.background : colors.secondaryText,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
+        backgroundColor: enabled ? (isActivePrimaryColor ? colors.primary : colors.primaryText) : colors.surfaceMuted,
+        foregroundColor: colors.background,
+        disabledForegroundColor: colors.secondaryText,
+        overlayColor: colors.surfacePressOverlay,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        side: BorderSide(color: enabled ? Colors.transparent : colors.border),
+        textStyle: CoconutTypography.body3_12.copyWith(fontWeight: enabled ? FontWeight.bold : FontWeight.normal),
       ),
+      child: Text(text),
     );
   }
 }

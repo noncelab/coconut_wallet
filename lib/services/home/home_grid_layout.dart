@@ -1,0 +1,435 @@
+import 'dart:math' as math;
+
+import 'package:coconut_wallet/model/home/home_configuration.dart';
+import 'package:coconut_wallet/model/home/home_item.dart';
+
+class HomeGridLayout {
+  static const columns = 4;
+  static const _origin = HomeGridPosition(0, 0);
+
+  final HomeConfiguration configuration;
+  late final Map<String, HomeItem> _itemsById = {for (final item in configuration.items) item.id: item};
+  late final Map<String, HomeGridPosition> _positions = _placeItems();
+
+  HomeGridLayout(this.configuration);
+
+  HomeGridPosition? positionOf(String id) => _positions[id];
+
+  int get rows => _bottom(_positions);
+
+  HomeConfiguration get positionedConfiguration => _withPositions(_positions);
+
+  List<HomeItem> get itemsInVisualOrder => [...configuration.items]..sort((a, b) {
+    final aPosition = _positions[a.id]!;
+    final bPosition = _positions[b.id]!;
+    final rowComparison = aPosition.row.compareTo(bPosition.row);
+    return rowComparison != 0 ? rowComparison : aPosition.column.compareTo(bPosition.column);
+  });
+
+  /// Reflows a resized item's suffix, filling gaps without moving the visual prefix.
+  /// Dragging and loading retain explicit spaces; resizing intentionally makes room or closes it.
+  HomeConfiguration resizeItem(String id, HomeSpan span) {
+    final ordered = itemsInVisualOrder;
+    final index = ordered.indexWhere((item) => item.id == id);
+    if (index < 0 || ordered[index].span == span || span.width <= 0 || span.width > columns || span.height <= 0) {
+      return positionedConfiguration;
+    }
+    final resized = HomeGridLayout(
+      HomeConfiguration(
+        version: configuration.version,
+        items: [for (final (i, item) in ordered.indexed) item.copyWith(order: i, span: i == index ? span : item.span)],
+        shortcutWalletContext: configuration.shortcutWalletContext,
+      ),
+    );
+    final positions = {for (final item in ordered.take(index)) item.id: _positions[item.id]!};
+    final previous = index == 0 ? null : ordered[index - 1];
+    final start =
+        previous == null
+            ? anchorForSpan(_positions[id]!, span)
+            : HomeGridPosition(_positions[previous.id]!.column + previous.span.width, _positions[previous.id]!.row);
+    final target = resized._firstFreeFrom(span, positions, start);
+    positions[id] = target;
+    // Search the remaining resized row again for each item: a later shortcut can
+    // fill a hole that a preceding 2×2 or 4×2 could not use. Never jump above the resized item.
+    final suffixStart = HomeGridPosition(target.row == start.row ? start.column : 0, target.row);
+    for (final item in ordered.skip(index + 1)) {
+      positions[item.id] = resized._firstFreeFrom(item.span, positions, suffixStart);
+    }
+    return resized._withPositions(positions);
+  }
+
+  bool canMoveToCell(String id, HomeGridPosition target) {
+    final item = _itemsById[id];
+    return item != null && _withinBounds(item.span, target);
+  }
+
+  static HomeGridPosition anchorForSpan(HomeGridPosition position, HomeSpan? span) {
+    if (span == HomeSpan.small) {
+      return HomeGridPosition(position.column.clamp(0, columns - HomeSpan.small.width), position.row);
+    }
+    if (span == HomeSpan.wide) return HomeGridPosition(0, position.row);
+    return position;
+  }
+
+  /// Moves to a grid cell while preserving items that do not conflict with the target.
+  HomeConfiguration moveToCell(String id, HomeGridPosition target) {
+    final item = _itemsById[id];
+    if (item == null || !canMoveToCell(id, target)) return positionedConfiguration;
+    final source = _positions[id]!;
+    if (source == target) return positionedConfiguration;
+    final rowExchange = _exchangeWithWideRow(item, source, target);
+    if (rowExchange != null) return rowExchange;
+    if (item.span == HomeSpan.shortcut) {
+      final visual = itemsInVisualOrder;
+      final sourceIndex = visual.indexOf(item);
+      final targetIndex = visual.indexWhere((other) => _positions[other.id] == target);
+      if (targetIndex >= 0) {
+        final first = math.min(sourceIndex, targetIndex);
+        final last = math.max(sourceIndex, targetIndex);
+        final run = visual.sublist(first, last + 1);
+        if (run.every((other) => other.span == HomeSpan.shortcut)) {
+          final slots = [for (final other in run) _positions[other.id]!];
+          run.remove(item);
+          run.insert(targetIndex - first, item);
+          return _withPositions({
+            ..._positions,
+            for (var index = 0; index < run.length; index++) run[index].id: slots[index],
+          });
+        }
+      }
+    }
+    final placed = Map<String, HomeGridPosition>.of(_positions)..remove(id);
+    return _placeAndRelocateDisplaced(item, source, target, placed);
+  }
+
+  /// A wide destination can use the source row if its companions fit beside the moving widget.
+  /// Keep this local to two complete, disjoint row bands; otherwise use ordinary collision handling.
+  HomeConfiguration? _exchangeWithWideRow(HomeItem moving, HomeGridPosition source, HomeGridPosition target) {
+    if (moving.span != HomeSpan.small || (source.row - target.row).abs() < HomeSpan.small.height) return null;
+    final wide =
+        configuration.items.where((other) {
+          final position = _positions[other.id]!;
+          return other.span == HomeSpan.wide && position.row == target.row;
+        }).firstOrNull;
+    if (wide == null) return null;
+    final companions = <HomeItem>[];
+    for (final other in itemsInVisualOrder) {
+      if (other.id == moving.id) continue;
+      final position = _positions[other.id]!;
+      if (position.row >= source.row + moving.span.height || position.row + other.span.height <= source.row) continue;
+      if (position.row < source.row || position.row + other.span.height > source.row + moving.span.height) return null;
+      companions.add(other);
+    }
+    final placed =
+        Map<String, HomeGridPosition>.of(_positions)
+          ..remove(moving.id)
+          ..remove(wide.id);
+    for (final other in companions) {
+      placed.remove(other.id);
+    }
+    if (!_fits(moving.span, target, placed)) return null;
+    placed[moving.id] = target;
+    final wideTarget = HomeGridPosition(0, source.row);
+    if (!_fits(wide.span, wideTarget, placed)) return null;
+    placed[wide.id] = wideTarget;
+    final destinationBand = HomeGridPosition(0, target.row);
+    for (final other in companions) {
+      final previous = _positions[other.id]!;
+      final translated = HomeGridPosition(previous.column, target.row + previous.row - source.row);
+      final position =
+          _fits(other.span, translated, placed)
+              ? translated
+              : _firstFreeWithin(other.span, placed, destinationBand, HomeSpan.wide);
+      if (position == null) return null;
+      placed[other.id] = position;
+    }
+    return _withPositions(placed);
+  }
+
+  /// Inserts in visual order, allowing the following items to flow into new rows.
+  HomeConfiguration moveBefore(String id, String beforeId) {
+    if (id == beforeId) return positionedConfiguration;
+    final moving = _itemsById[id];
+    final before = _itemsById[beforeId];
+    if (moving == null || before == null) return positionedConfiguration;
+    if (moving.span == HomeSpan.shortcut &&
+        before.span == HomeSpan.wide &&
+        _positions[id]!.row > _positions[beforeId]!.row) {
+      final target = HomeGridPosition(0, _positions[beforeId]!.row);
+      final placed = Map<String, HomeGridPosition>.of(_positions)..remove(id);
+      _shiftRowsDown(placed, fromRow: target.row, by: moving.span.height);
+      placed[id] = target;
+      return _withPositions(placed);
+    }
+    final ordered = itemsInVisualOrder..remove(moving);
+    ordered.insert(ordered.indexOf(before), moving);
+    final insertionIndex = ordered.indexOf(moving);
+    final prefix = ordered.take(insertionIndex).toList();
+    final positions = {for (final item in prefix) item.id: _positions[item.id]!};
+    final start = _positions[beforeId]!;
+    var rowHeight = 0;
+    for (final item in prefix) {
+      final position = positions[item.id]!;
+      if (position.row <= start.row && start.row < position.row + item.span.height) {
+        rowHeight = math.max(rowHeight, position.row + item.span.height - start.row);
+      }
+    }
+    _flow(ordered.skip(insertionIndex), positions, prefix, start, rowHeight);
+    return HomeConfiguration(
+      version: configuration.version,
+      items: [
+        for (var index = 0; index < ordered.length; index++)
+          ordered[index].copyWith(order: index, position: positions[ordered[index].id]),
+      ],
+      shortcutWalletContext: configuration.shortcutWalletContext,
+    );
+  }
+
+  bool wideDropKeepsSnappedRow(List<HomeItem> others, int row) {
+    bool occupiesRow(HomeItem item) {
+      final position = positionOf(item.id);
+      return position != null && position.row <= row && row < position.row + item.span.height;
+    }
+
+    final crossesTallItem = others.any((item) {
+      final position = positionOf(item.id);
+      return position != null && position.row < row && occupiesRow(item);
+    });
+    final shortcutStartsOnRow = others.any((item) => item.span.height == 1 && positionOf(item.id)?.row == row);
+    if (!crossesTallItem && shortcutStartsOnRow) return true;
+    final rowIsEmpty = !others.any(occupiesRow);
+    final itemsEndingAbove =
+        others.where((item) {
+          final position = positionOf(item.id);
+          return position != null && position.row + item.span.height == row;
+        }).toList();
+    return rowIsEmpty && itemsEndingAbove.isNotEmpty && itemsEndingAbove.every((item) => item.span.height == 1);
+  }
+
+  void _flow(
+    Iterable<HomeItem> items,
+    Map<String, HomeGridPosition> positions,
+    List<HomeItem> alreadyPlaced,
+    HomeGridPosition start,
+    int startRowHeight,
+  ) {
+    var row = start.row;
+    var column = start.column;
+    var rowHeight = startRowHeight;
+    final placed = [...alreadyPlaced];
+    void nextRow() {
+      row += math.max(rowHeight, 1);
+      column = 0;
+      rowHeight = 0;
+    }
+
+    var first = true;
+    for (final item in items) {
+      while (true) {
+        final followsStaggeredTallItem =
+            !first &&
+            item.span.height < rowHeight &&
+            placed.any((previous) {
+              final position = positions[previous.id]!;
+              return position.row == row && position.column > 0 && previous.span.height > item.span.height;
+            });
+        if (column > 0 && (column + item.span.width > columns || followsStaggeredTallItem)) {
+          nextRow();
+          continue;
+        }
+        if (_isFlowColumn(item.span, column) && _fits(item.span, HomeGridPosition(column, row), positions)) break;
+        column++;
+        if (column >= columns) nextRow();
+      }
+      positions[item.id] = HomeGridPosition(column, row);
+      placed.add(item);
+      column += item.span.width;
+      rowHeight = math.max(rowHeight, item.span.height);
+      first = false;
+      if (column == columns) {
+        row += rowHeight;
+        column = 0;
+        rowHeight = 0;
+      }
+    }
+  }
+
+  void _shiftRowsDown(Map<String, HomeGridPosition> placed, {required int fromRow, required int by}) {
+    for (final entry in placed.entries.toList()) {
+      final position = entry.value;
+      if (position.row >= fromRow) {
+        placed[entry.key] = HomeGridPosition(position.column, position.row + by);
+      }
+    }
+  }
+
+  HomeConfiguration _placeAndRelocateDisplaced(
+    HomeItem item,
+    HomeGridPosition source,
+    HomeGridPosition target,
+    Map<String, HomeGridPosition> placed,
+  ) {
+    final displaced =
+        configuration.items.where((other) {
+            if (other.id == item.id) return false;
+            final position = placed[other.id];
+            return position != null &&
+                (_overlaps(item.span, target, other.span, position) ||
+                    _tallRowConflict(item.span, target, other.span, position));
+          }).toList()
+          ..sort((a, b) {
+            final aPosition = placed[a.id]!;
+            final bPosition = placed[b.id]!;
+            final rowComparison = aPosition.row.compareTo(bPosition.row);
+            return rowComparison != 0 ? rowComparison : aPosition.column.compareTo(bPosition.column);
+          });
+    for (final other in displaced) {
+      placed.remove(other.id);
+    }
+    placed[item.id] = target;
+    for (final other in displaced) {
+      final previous = _positions[other.id]!;
+      final translated = HomeGridPosition(
+        source.column + previous.column - target.column,
+        source.row + previous.row - target.row,
+      );
+      final withinVacatedArea =
+          translated.column >= source.column &&
+          translated.row >= source.row &&
+          translated.column + other.span.width <= source.column + item.span.width &&
+          translated.row + other.span.height <= source.row + item.span.height;
+      // Keep the displaced group together in the space vacated by the moving item.
+      placed[other.id] =
+          withinVacatedArea && _fits(other.span, translated, placed)
+              ? translated
+              : _firstFreeWithin(other.span, placed, source, item.span) ??
+                  (_fits(other.span, source, placed) ? source : _firstFreeFrom(other.span, placed, _origin));
+    }
+    return _withPositions(placed);
+  }
+
+  HomeGridPosition? _firstFreeWithin(
+    HomeSpan span,
+    Map<String, HomeGridPosition> placed,
+    HomeGridPosition start,
+    HomeSpan area,
+  ) {
+    for (var row = start.row; row <= start.row + area.height - span.height; row++) {
+      for (var column = start.column; column <= start.column + area.width - span.width; column++) {
+        final candidate = HomeGridPosition(column, row);
+        if (_fits(span, candidate, placed)) return candidate;
+      }
+    }
+    return null;
+  }
+
+  Map<String, HomeGridPosition> _placeItems() {
+    final placed = <String, HomeGridPosition>{};
+    if (!configuration.items.any((item) => item.position != null)) {
+      _flowWithoutCollisions(configuration.items, placed);
+      return placed;
+    }
+    HomeItem? previous;
+    for (final item in configuration.items) {
+      final position = item.position;
+      if (position != null && _fits(item.span, position, placed)) {
+        placed[item.id] = position;
+      } else {
+        final previousPosition = previous == null ? null : placed[previous.id];
+        final start =
+            previousPosition == null
+                ? _origin
+                : HomeGridPosition(previousPosition.column + previous!.span.width, previousPosition.row);
+        placed[item.id] = _firstFreeFrom(item.span, placed, start, useFlowColumns: true);
+      }
+      previous = item;
+    }
+    return placed;
+  }
+
+  void _flowWithoutCollisions(List<HomeItem> items, Map<String, HomeGridPosition> placed) {
+    var row = 0;
+    var column = 0;
+    var rowHeight = 0;
+    for (final item in items) {
+      while (true) {
+        if (column + item.span.width > columns) {
+          row += math.max(rowHeight, 1);
+          column = 0;
+          rowHeight = 0;
+          continue;
+        }
+        if (_isFlowColumn(item.span, column) && _withinBounds(item.span, HomeGridPosition(column, row))) break;
+        column++;
+      }
+      placed[item.id] = HomeGridPosition(column, row);
+      column += item.span.width;
+      rowHeight = math.max(rowHeight, item.span.height);
+      if (column == columns) {
+        row += rowHeight;
+        column = 0;
+        rowHeight = 0;
+      }
+    }
+  }
+
+  HomeGridPosition _firstFreeFrom(
+    HomeSpan span,
+    Map<String, HomeGridPosition> placed,
+    HomeGridPosition start, {
+    bool useFlowColumns = false,
+  }) {
+    for (var row = start.row; ; row++) {
+      for (var column = row == start.row ? start.column : 0; column <= columns - span.width; column++) {
+        final candidate = HomeGridPosition(column, row);
+        if ((!useFlowColumns || _isFlowColumn(span, column)) && _fits(span, candidate, placed)) return candidate;
+      }
+    }
+  }
+
+  int _bottom(Map<String, HomeGridPosition> positions) {
+    var bottom = 0;
+    for (final item in configuration.items) {
+      final position = positions[item.id];
+      if (position != null) bottom = math.max(bottom, position.row + item.span.height);
+    }
+    return bottom;
+  }
+
+  bool _fits(HomeSpan span, HomeGridPosition target, Map<String, HomeGridPosition> placed) {
+    if (!_withinBounds(span, target)) return false;
+    for (final item in configuration.items) {
+      final position = placed[item.id];
+      if (position != null &&
+          (_overlaps(span, target, item.span, position) || _tallRowConflict(span, target, item.span, position))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _withinBounds(HomeSpan span, HomeGridPosition position) =>
+      position.column >= 0 && position.row >= 0 && position.column + span.width <= columns;
+
+  // Keep preset and insertion flow unchanged; explicit positions may use any fitting column.
+  bool _isFlowColumn(HomeSpan span, int column) => span != HomeSpan.small || column.isEven;
+
+  bool _tallRowConflict(HomeSpan a, HomeGridPosition aPosition, HomeSpan b, HomeGridPosition bPosition) =>
+      a.height > 1 &&
+      b.height > 1 &&
+      aPosition.row != bPosition.row &&
+      aPosition.row < bPosition.row + b.height &&
+      bPosition.row < aPosition.row + a.height;
+
+  bool _overlaps(HomeSpan a, HomeGridPosition aPosition, HomeSpan b, HomeGridPosition bPosition) =>
+      aPosition.column < bPosition.column + b.width &&
+      aPosition.column + a.width > bPosition.column &&
+      aPosition.row < bPosition.row + b.height &&
+      aPosition.row + a.height > bPosition.row;
+
+  HomeConfiguration _withPositions(Map<String, HomeGridPosition> positions) => HomeConfiguration(
+    version: configuration.version,
+    items: [for (final item in configuration.items) item.copyWith(position: positions[item.id])],
+    shortcutWalletContext: configuration.shortcutWalletContext,
+  );
+}

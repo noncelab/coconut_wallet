@@ -143,6 +143,8 @@ class CoconutToast {
     Color? textColor,
     String? iconPath,
     CoconutToastLevel level = CoconutToastLevel.info,
+    String? actionText,
+    VoidCallback? onAction,
   }) {
     if (removePrevToast && _currentToastOverlay != null) {
       try {
@@ -181,6 +183,8 @@ class CoconutToast {
                   textStyle: textStyle,
                   textPadding: textPadding,
                   level: level,
+                  actionText: actionText,
+                  onAction: onAction,
                   onDismiss: () {
                     overlayEntry.remove();
                     _currentToastOverlay = null;
@@ -245,10 +249,14 @@ class _CoconutToastWidget extends StatefulWidget {
     this.borderColor,
     this.textColor,
     this.iconPath,
+    this.actionText,
+    this.onAction,
   });
 
   final BuildContext context;
   final String text;
+  final String? actionText;
+  final VoidCallback? onAction;
   final bool isVisibleIcon;
   final int duration;
   final VoidCallback onDismiss;
@@ -367,6 +375,7 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                     else
                       SizedBox(height: widget.iconSize),
                     Flexible(
+                      fit: widget.actionText == null ? FlexFit.loose : FlexFit.tight,
                       child: Text(
                         widget.text,
                         style: widget.textStyle.copyWith(
@@ -376,6 +385,27 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                         ),
                       ),
                     ),
+                    if (widget.actionText != null)
+                      GestureDetector(
+                        key: const Key('coconut-toast-action'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          widget.onAction?.call();
+                          _startFadeOut();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Text(
+                            widget.actionText!,
+                            style: widget.textStyle.copyWith(
+                              decoration: TextDecoration.none,
+                              fontWeight: FontWeight.w700,
+                              color: widget.textColor ?? colors.primaryText,
+                              leadingDistribution: TextLeadingDistribution.even,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -659,7 +689,7 @@ class CoconutPopup extends StatefulWidget {
     this.wrapTitleByWords = false,
     this.centerDescription = true,
     this.wrapDescriptionByWords = false,
-    this.useFixedFontSize = true,
+    this.useFixedFontSize = false,
     this.onTapLeft,
     this.backgroundColor,
     this.titleColor,
@@ -729,7 +759,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
         widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
         CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
     final checkboxTextStyle = widget.checkboxTextStyle ?? CoconutTypography.body3_12;
-    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryText;
+    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryTextStrong;
     final checkboxTextPressingColor =
         widget.checkboxTextStyle?.color?.withValues(alpha: checkboxTextColor.a * 0.5) ?? colors.mutedText;
 
@@ -804,6 +834,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
                   children: [
                     CoconutCheckbox(
                       isSelected: widget.isCheckboxSelected,
+                      color: colors.iconPrimary,
+                      unSelectedColor: colors.iconPrimary,
+                      inactiveColor: colors.iconDisabled,
                       onChanged: (value) => widget.onCheckboxChanged?.call(value),
                     ),
                     const SizedBox(width: 8),
@@ -895,9 +928,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
             widget.useFixedFontSize
                 ? MediaQuery(
                   data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
-                  child: content,
+                  child: SingleChildScrollView(child: content),
                 )
-                : content,
+                : SingleChildScrollView(child: content),
       ),
     );
   }

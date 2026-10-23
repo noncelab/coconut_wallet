@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io' show Platform;
@@ -95,10 +96,9 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
-      Navigator.pushReplacementNamed(
+      WalletAddActions.finishWithWalletDetail(
         context,
-        AppRouteNames.walletDetail,
-        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
+        WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }

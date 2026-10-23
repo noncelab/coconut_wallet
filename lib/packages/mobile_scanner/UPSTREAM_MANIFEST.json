@@ -1,0 +1,526 @@
+{
+  "package": "mobile_scanner",
+  "version": "7.0.1",
+  "archive_url": "https://pub.dev/api/archives/mobile_scanner-7.0.1.tar.gz",
+  "archive_sha256": "54005bdea7052d792d35b4fef0f84ec5ddc3a844b250ecd48dc192fb9b4ebc95",
+  "excluded": [
+    "example/",
+    "test/",
+    "android/src/test/",
+    "README.md",
+    "CHANGELOG.md",
+    "analysis_options.yaml"
+  ],
+  "files": [
+    {
+      "path": "LICENSE",
+      "upstream_sha256": "339ba81aabe6518f26ab5c9d2f76ca1732349360ba18d61bb93acb694dee7afe",
+      "vendored_sha256": "339ba81aabe6518f26ab5c9d2f76ca1732349360ba18d61bb93acb694dee7afe",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/build.gradle",
+      "upstream_sha256": "17281500fb15e7cb125cba433cdd4f5cb3d1e9af99cb09e7a2ffb30e2fac578c",
+      "vendored_sha256": "17281500fb15e7cb125cba433cdd4f5cb3d1e9af99cb09e7a2ffb30e2fac578c",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "upstream_sha256": "3d91f0932da99885c41e9dc4e85c9f9a2d3bfef4f0ad87473014dc0827a94884",
+      "vendored_sha256": "3d91f0932da99885c41e9dc4e85c9f9a2d3bfef4f0ad87473014dc0827a94884",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/proguard-rules.pro",
+      "upstream_sha256": "406bb82525fcca67e2f543ab0580b3674817c0a8193d9202636db220e18aa75a",
+      "vendored_sha256": "406bb82525fcca67e2f543ab0580b3674817c0a8193d9202636db220e18aa75a",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/settings.gradle",
+      "upstream_sha256": "79e6270a97b1770b52acb36f1414159369224529d24e7ae400927be9c6bae0e9",
+      "vendored_sha256": "79e6270a97b1770b52acb36f1414159369224529d24e7ae400927be9c6bae0e9",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/AndroidManifest.xml",
+      "upstream_sha256": "19ac4885d700557fab9e37502768e5c1b761dfc7c101493d6f726e5d506564bf",
+      "vendored_sha256": "19ac4885d700557fab9e37502768e5c1b761dfc7c101493d6f726e5d506564bf",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/BarcodeHandler.kt",
+      "upstream_sha256": "dffb694e0080ea985153cf025ac35071df9334ff2443b58a7e071c0c08f8739c",
+      "vendored_sha256": "d1dac6174f163768d260d79c7ed3b45273926c7c2eaf9f8678e7b07c7cf1aad2",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/DeviceOrientationListener.kt",
+      "upstream_sha256": "10ba28baeb02fc702ddf7c81f1464f7eef8e38025d650d220a2a6cb40c04a4f6",
+      "vendored_sha256": "e5291b77d62cce40a1d4ef346389d105db5dc28d36879ddcd6e0a942ae7e377e",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScanner.kt",
+      "upstream_sha256": "8869e5fb2f3de52d3f75ca510bd896dde20f6be8fd74ffaa16865687fbe6b8f9",
+      "vendored_sha256": "8869e5fb2f3de52d3f75ca510bd896dde20f6be8fd74ffaa16865687fbe6b8f9",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerCallbacks.kt",
+      "upstream_sha256": "34dccd63d3de50c367e1072d76d2b37f97ae0a13319cfdd2fbaf956554b69cd2",
+      "vendored_sha256": "7495299bbffffb32de2b99e189c5bdb3e287842bd1449b9512b20d6f67cce26f",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerExceptions.kt",
+      "upstream_sha256": "5c252f8bb847e9687bff0d13a9242de05ad7cf5ea2c1569d2ab63cba58726aee",
+      "vendored_sha256": "6f990e626ad4e403b0699633f4596a583602b838f2b00a35be1419f900f2f49d",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerHandler.kt",
+      "upstream_sha256": "bc7d0ddd4ff681de5cc109ec8af79dbb7ded38302de4cb6f92f93fb28ba1b9fd",
+      "vendored_sha256": "bc7d0ddd4ff681de5cc109ec8af79dbb7ded38302de4cb6f92f93fb28ba1b9fd",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerPermissions.kt",
+      "upstream_sha256": "03126ec55ebde16bb79d6dcebac16684bdac6a7ea6c2ae0fa093e0b645963f9d",
+      "vendored_sha256": "03126ec55ebde16bb79d6dcebac16684bdac6a7ea6c2ae0fa093e0b645963f9d",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerPermissionsListener.kt",
+      "upstream_sha256": "6adc92a6c3583972a0237e2d3e68e408ce7ca3be71a493762943905d6096a049",
+      "vendored_sha256": "085dd838f63863511cf44fbc30d04aa9ee2efdb509f5fa940bad7b19f1d953df",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerPlugin.kt",
+      "upstream_sha256": "6464bb8bb86273532728fb61d9766d407a69584a12aef8828ccd047a1b30af9e",
+      "vendored_sha256": "6464bb8bb86273532728fb61d9766d407a69584a12aef8828ccd047a1b30af9e",
+      "change": "unchanged"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/MobileScannerUtilities.kt",
+      "upstream_sha256": "ff53b046082495531c553fb06d8468f9e228866f7589e5f506e007bad6cd2f08",
+      "vendored_sha256": "e024c98c63225c1db0445f55d8e5ac1f5d56512b9a1b9484ffdad1392ef7f2d4",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/objects/BarcodeFormats.kt",
+      "upstream_sha256": "bf884138cdec1c9c6468b1ea923b03f27ce6e9bf00c7e209a98f6aa25d639fde",
+      "vendored_sha256": "63511edfbe9bed06f3db5c8756656dd567fddaa988489f7309ce02e964ead99a",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/objects/DetectionSpeed.kt",
+      "upstream_sha256": "dd20787716c0fe5e7f287dec98cefaa5a946760a204657a00ea2661860e03f0b",
+      "vendored_sha256": "6ef0b59e36e00346787cdcd9a52659e35cf1517305ea0aa1692067bf563833d1",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/objects/MobileScannerErrorCodes.kt",
+      "upstream_sha256": "e0b4ffb99c64605038cf3ab1864e12659feb6871be435c982a8e64a643f6dccd",
+      "vendored_sha256": "286cb3f6415d360a5ea9db9ffe8f022865ce5c2619c7efb6e697bab8a5ccd827",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/objects/MobileScannerStartParameters.kt",
+      "upstream_sha256": "70b9cf78570cc1ba64bb57263daaa6b341703d39b10ed8d0dc555e8849e3abda",
+      "vendored_sha256": "3a7fc81234c9085e8c13a1e6bb54f2a609d31f7fbf452d502988a0f1ec56adea",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/utils/DeviceOrientationExtension.kt",
+      "upstream_sha256": "c2b37e45ae2a0f195a1a35d1915972269f52accc18e3a2d1f77b1e4aa2f5ba32",
+      "vendored_sha256": "ba591906ffc98f03c9e14f08bb667c15ca4b56ccd8dc3541c3b5c8e93f098725",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/utils/Yuv.kt",
+      "upstream_sha256": "7ca8df313a12c7c092f26ee2c84be8bfb6fbc46fb9e5a0509695ff8ef4b0484f",
+      "vendored_sha256": "05deaeb65965dad4762ca1344855818091252769db10c3562636835d40eb8a44",
+      "change": "final-lf-only"
+    },
+    {
+      "path": "android/src/main/kotlin/dev/steenbakker/mobile_scanner/utils/YuvToRgbConverter.kt",
+      "upstream_sha256": "daeae610a6134a362731392869a4574c39372f0607d6c386ce1b01b7ad6d3f22",
+      "vendored_sha256": "daeae610a6134a362731392869a4574c39372f0607d6c386ce1b01b7ad6d3f22",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner.podspec",
+      "upstream_sha256": "f8e389eaf23024bab7d3d89856aeed8a700bbb0c288a9309a6e97e14e9203216",
+      "vendored_sha256": "f8e389eaf23024bab7d3d89856aeed8a700bbb0c288a9309a6e97e14e9203216",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Package.swift",
+      "upstream_sha256": "7b36fb028978015e90e77a723712d8133a9a6b82ca8c75906949b41501809176",
+      "vendored_sha256": "7b36fb028978015e90e77a723712d8133a9a6b82ca8c75906949b41501809176",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/DetectionSpeed.swift",
+      "upstream_sha256": "d4966f662c48ffc4d53f11d657bd30dd09bffcd7fb62ba70c4cb4d0d104c2876",
+      "vendored_sha256": "d4966f662c48ffc4d53f11d657bd30dd09bffcd7fb62ba70c4cb4d0d104c2876",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/DeviceOrientationStreamHandler.swift",
+      "upstream_sha256": "8a7d94c2c7c0aeab4afd6b63ccf7db1d3cb2cc5fad2920b502fb0ee2f120eff0",
+      "vendored_sha256": "8a7d94c2c7c0aeab4afd6b63ccf7db1d3cb2cc5fad2920b502fb0ee2f120eff0",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/MobileScannerError.swift",
+      "upstream_sha256": "dfe7f8607ae3bbafd768b59ba8c95628af1b4f1cbda9a9641fae569e8d34754e",
+      "vendored_sha256": "dfe7f8607ae3bbafd768b59ba8c95628af1b4f1cbda9a9641fae569e8d34754e",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/MobileScannerErrorCodes.swift",
+      "upstream_sha256": "ac07a62729e504b9f8105db95564ab08aaf0ba7927c07592aa9242ad31ab3d51",
+      "vendored_sha256": "ac07a62729e504b9f8105db95564ab08aaf0ba7927c07592aa9242ad31ab3d51",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/MobileScannerPlugin.swift",
+      "upstream_sha256": "506a6dd802e1d60a15e25c2ddf825689e329be07d80a2fc1c52b5b8ec113722e",
+      "vendored_sha256": "506a6dd802e1d60a15e25c2ddf825689e329be07d80a2fc1c52b5b8ec113722e",
+      "change": "unchanged"
+    },
+    {
+      "path": "darwin/mobile_scanner/Sources/mobile_scanner/Resources/PrivacyInfo.xcprivacy",
+      "upstream_sha256": "1bac827f49b2b8a5358491b9698203bf191791a6f1ba3a3ace3b1285d52d2d17",
+      "vendored_sha256": "1bac827f49b2b8a5358491b9698203bf191791a6f1ba3a3ace3b1285d52d2d17",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/mobile_scanner.dart",
+      "upstream_sha256": "69dee478011b0b6fef040e8724b17d09126bf27cad9333764e7fc59efe224b16",
+      "vendored_sha256": "69dee478011b0b6fef040e8724b17d09126bf27cad9333764e7fc59efe224b16",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/address_type.dart",
+      "upstream_sha256": "ff994b56c95357bb905902d75ec22e794cd2cd02c3cf37ef77126717cce77dd7",
+      "vendored_sha256": "ff994b56c95357bb905902d75ec22e794cd2cd02c3cf37ef77126717cce77dd7",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/barcode_format.dart",
+      "upstream_sha256": "46befd9c4e8075de03fa299a13d3e0250574cf570ce48db2dbb45bf5f98724c4",
+      "vendored_sha256": "46befd9c4e8075de03fa299a13d3e0250574cf570ce48db2dbb45bf5f98724c4",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/barcode_type.dart",
+      "upstream_sha256": "beaad47d3d6546731c6660e0d5546850b89625b41dbf0ebe491b26936714f799",
+      "vendored_sha256": "beaad47d3d6546731c6660e0d5546850b89625b41dbf0ebe491b26936714f799",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/camera_facing.dart",
+      "upstream_sha256": "43a6adcea29043470a5acfa043ce03ee10aa1ecb4f4d8ae434f1264df0893ccc",
+      "vendored_sha256": "43a6adcea29043470a5acfa043ce03ee10aa1ecb4f4d8ae434f1264df0893ccc",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/detection_speed.dart",
+      "upstream_sha256": "d87ddb6632fa035212f430cbda7657be90755b25865876a145cd4cc7d68b7fe0",
+      "vendored_sha256": "d87ddb6632fa035212f430cbda7657be90755b25865876a145cd4cc7d68b7fe0",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/email_type.dart",
+      "upstream_sha256": "63dba6493ac005150e408167082e15eafa912910e73291ea7b0218aaa57e33e6",
+      "vendored_sha256": "63dba6493ac005150e408167082e15eafa912910e73291ea7b0218aaa57e33e6",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/encryption_type.dart",
+      "upstream_sha256": "471c2c5d3b17714e38f5edb6b8001ff210297b0a126528bf30fa3ef4de8a1d09",
+      "vendored_sha256": "471c2c5d3b17714e38f5edb6b8001ff210297b0a126528bf30fa3ef4de8a1d09",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/mobile_scanner_authorization_state.dart",
+      "upstream_sha256": "f939369aa604a288d0d80fdedfbb302971d75dcf492c01940201eaf684f750c0",
+      "vendored_sha256": "f939369aa604a288d0d80fdedfbb302971d75dcf492c01940201eaf684f750c0",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/mobile_scanner_error_code.dart",
+      "upstream_sha256": "6aef66310b0fd84c5cac482179f5f0ff5c397bf8005d3fd37105557ec41da737",
+      "vendored_sha256": "6aef66310b0fd84c5cac482179f5f0ff5c397bf8005d3fd37105557ec41da737",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/phone_type.dart",
+      "upstream_sha256": "4de187d87d9e4f158995fe0b1db49d259f2075aafc301185ec87bf8a3d5e13ed",
+      "vendored_sha256": "4de187d87d9e4f158995fe0b1db49d259f2075aafc301185ec87bf8a3d5e13ed",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/enums/torch_state.dart",
+      "upstream_sha256": "6f0e054e2297a16574800bb7db2d052477d0e3b946c18bdc7a3543605ebf0ebb",
+      "vendored_sha256": "6f0e054e2297a16574800bb7db2d052477d0e3b946c18bdc7a3543605ebf0ebb",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/method_channel/android_surface_producer_delegate.dart",
+      "upstream_sha256": "c090fe3bfc7dc80a79f6bb55c6bb13891a42d5e05144bff0bd417deead19cae2",
+      "vendored_sha256": "c090fe3bfc7dc80a79f6bb55c6bb13891a42d5e05144bff0bd417deead19cae2",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/method_channel/mobile_scanner_method_channel.dart",
+      "upstream_sha256": "0aab971a6dcdb44523d18c300908e9bafec752d074614a02d4a2039c727d5cd7",
+      "vendored_sha256": "0aab971a6dcdb44523d18c300908e9bafec752d074614a02d4a2039c727d5cd7",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/method_channel/rotated_preview.dart",
+      "upstream_sha256": "7f3c6f745d994c6acb47e566ceffa7c27c3a6fb9eafd4be1dc2c8ed27ff5dd00",
+      "vendored_sha256": "7f3c6f745d994c6acb47e566ceffa7c27c3a6fb9eafd4be1dc2c8ed27ff5dd00",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/mobile_scanner.dart",
+      "upstream_sha256": "0c6780cb86595319f16441afd15ea4d0e4ececd3170760b7ac06ac0139a40137",
+      "vendored_sha256": "0c6780cb86595319f16441afd15ea4d0e4ececd3170760b7ac06ac0139a40137",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/mobile_scanner_controller.dart",
+      "upstream_sha256": "f42e33df0c468f03ad879ab0ed12341ca2263ca7f5c6502f8a37f15b336185ce",
+      "vendored_sha256": "cdd544dce683a9131accfa61fb1273babcd46ca2a29088ea09003976f5be298d",
+      "change": "two-listener-cleanup-calls"
+    },
+    {
+      "path": "lib/src/mobile_scanner_exception.dart",
+      "upstream_sha256": "8cc141240ee9ae9d6157fa451b6567f1a04c5bd637f6700de8c58f3fa673b5d9",
+      "vendored_sha256": "8cc141240ee9ae9d6157fa451b6567f1a04c5bd637f6700de8c58f3fa673b5d9",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/mobile_scanner_platform_interface.dart",
+      "upstream_sha256": "05d01e6efb8c108f5700363433043fada4ee88c3e921bbad6bf3fd246a8c2207",
+      "vendored_sha256": "05d01e6efb8c108f5700363433043fada4ee88c3e921bbad6bf3fd246a8c2207",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/mobile_scanner_preview.dart",
+      "upstream_sha256": "cd7f9cece0422dc3e163ffe9fca50f1ea3848547c624fbfdb5b3f05b4353d55e",
+      "vendored_sha256": "cd7f9cece0422dc3e163ffe9fca50f1ea3848547c624fbfdb5b3f05b4353d55e",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/mobile_scanner_view_attributes.dart",
+      "upstream_sha256": "489405aa791f556cb13984f18ef07cd2b15ed747907a00f400a3e983ef701cde",
+      "vendored_sha256": "489405aa791f556cb13984f18ef07cd2b15ed747907a00f400a3e983ef701cde",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/address.dart",
+      "upstream_sha256": "f762c56e961211b2e9214464fbb9f200ba60e28dc695cd5c204365e50229e750",
+      "vendored_sha256": "f762c56e961211b2e9214464fbb9f200ba60e28dc695cd5c204365e50229e750",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/barcode.dart",
+      "upstream_sha256": "a902f2682b531b416b5580414d33f34b1af461f3afaef3a053aee8c782852744",
+      "vendored_sha256": "a902f2682b531b416b5580414d33f34b1af461f3afaef3a053aee8c782852744",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/barcode_capture.dart",
+      "upstream_sha256": "50a43699e50af40c77e697821125b80068621608cb6817cb3a154fd22e3e33f5",
+      "vendored_sha256": "50a43699e50af40c77e697821125b80068621608cb6817cb3a154fd22e3e33f5",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/calendar_event.dart",
+      "upstream_sha256": "461fc305b0479b4f1d1647016970d1a1ad5326b27c1c6e58aa2201be94723485",
+      "vendored_sha256": "461fc305b0479b4f1d1647016970d1a1ad5326b27c1c6e58aa2201be94723485",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/contact_info.dart",
+      "upstream_sha256": "e979d5f95427288425c56ae94f97dad94124d721b38bdb9b26c54d00a0af2d3c",
+      "vendored_sha256": "e979d5f95427288425c56ae94f97dad94124d721b38bdb9b26c54d00a0af2d3c",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/driver_license.dart",
+      "upstream_sha256": "9ba5e07720b6c20c7888527b14a1c698038cad98a566134bb72ff5fb41144034",
+      "vendored_sha256": "9ba5e07720b6c20c7888527b14a1c698038cad98a566134bb72ff5fb41144034",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/email.dart",
+      "upstream_sha256": "60d976ac066b928234d0052ffef088715d71ee427f56fed3af4303096bb9c514",
+      "vendored_sha256": "60d976ac066b928234d0052ffef088715d71ee427f56fed3af4303096bb9c514",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/geo_point.dart",
+      "upstream_sha256": "9324766098ec18fe1df65b0e177a29775245f827fa04fbf0b4f4aeeda74d8277",
+      "vendored_sha256": "9324766098ec18fe1df65b0e177a29775245f827fa04fbf0b4f4aeeda74d8277",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/mobile_scanner_state.dart",
+      "upstream_sha256": "76c95c50336674dfc004aa1fdd4298525feadbacd3e204a512c815e52cb9bea6",
+      "vendored_sha256": "76c95c50336674dfc004aa1fdd4298525feadbacd3e204a512c815e52cb9bea6",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/person_name.dart",
+      "upstream_sha256": "8bd771dc0f7491e520dc5140eb0891cfd556a8511be844bf85fde2a446a62792",
+      "vendored_sha256": "8bd771dc0f7491e520dc5140eb0891cfd556a8511be844bf85fde2a446a62792",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/phone.dart",
+      "upstream_sha256": "783e6f00991081248c5ad81341b5e1a16cb844c09fa9ec14295bd1d4ab2bb9f3",
+      "vendored_sha256": "783e6f00991081248c5ad81341b5e1a16cb844c09fa9ec14295bd1d4ab2bb9f3",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/scanner_error_widget.dart",
+      "upstream_sha256": "ac69ff209b6ea60d6b42b92424c7f36d52b996f4379077dd7781190a693af56c",
+      "vendored_sha256": "ac69ff209b6ea60d6b42b92424c7f36d52b996f4379077dd7781190a693af56c",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/sms.dart",
+      "upstream_sha256": "2e620a62c43bf7d7bd1f59dde962f137c228a4a2f75ec3bf6512fd9aa41f444b",
+      "vendored_sha256": "2e620a62c43bf7d7bd1f59dde962f137c228a4a2f75ec3bf6512fd9aa41f444b",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/start_options.dart",
+      "upstream_sha256": "9097eaf849149989c32e045e2cdabfd8ee30ecc02c027592d16808923addaac1",
+      "vendored_sha256": "9097eaf849149989c32e045e2cdabfd8ee30ecc02c027592d16808923addaac1",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/url_bookmark.dart",
+      "upstream_sha256": "3eacf831dc45ea69af8ad0a55833db1e6bc9b77222cb97553b7cebb642b9c941",
+      "vendored_sha256": "3eacf831dc45ea69af8ad0a55833db1e6bc9b77222cb97553b7cebb642b9c941",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/objects/wifi.dart",
+      "upstream_sha256": "325bbdf75f686ac91fbefb1a79c957516051a0429530fc1582853f2ba2320d69",
+      "vendored_sha256": "325bbdf75f686ac91fbefb1a79c957516051a0429530fc1582853f2ba2320d69",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/overlay/barcode_overlay.dart",
+      "upstream_sha256": "3f72515836c780f40a40677e74728228ac0825df57507a82c416076534d0b6b5",
+      "vendored_sha256": "3f72515836c780f40a40677e74728228ac0825df57507a82c416076534d0b6b5",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/overlay/barcode_painter.dart",
+      "upstream_sha256": "23a99649291f1f1d3e79efc4a654a53b92f1846cda9566963eee5862ccc08e4f",
+      "vendored_sha256": "23a99649291f1f1d3e79efc4a654a53b92f1846cda9566963eee5862ccc08e4f",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/overlay/scan_window_overlay.dart",
+      "upstream_sha256": "30f383cbf69436c7efde75af0b3aee04bd61effde523139ac8e78a776f7bae0a",
+      "vendored_sha256": "30f383cbf69436c7efde75af0b3aee04bd61effde523139ac8e78a776f7bae0a",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/overlay/scan_window_painter.dart",
+      "upstream_sha256": "211221689ce51bfb592ba94bc65820c39d1d4f31b3e31c35977cd34433bdf9e3",
+      "vendored_sha256": "211221689ce51bfb592ba94bc65820c39d1d4f31b3e31c35977cd34433bdf9e3",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/scan_window_calculation.dart",
+      "upstream_sha256": "0dcc1c9174fd9e39274632049c7ea9533271b549fceb6afa8aeead169396b8ef",
+      "vendored_sha256": "0dcc1c9174fd9e39274632049c7ea9533271b549fceb6afa8aeead169396b8ef",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/utils/parse_device_orientation_extension.dart",
+      "upstream_sha256": "062aa27a8a5fdc07322daabc3660265cfe8e54992e7604dadc5f814e0f3e15a6",
+      "vendored_sha256": "062aa27a8a5fdc07322daabc3660265cfe8e54992e7604dadc5f814e0f3e15a6",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/barcode_reader.dart",
+      "upstream_sha256": "0c5f0faf3e95a16afde44e77c33e1e4fea8d343f1ea8638f2d3dd5ef79c2e975",
+      "vendored_sha256": "0c5f0faf3e95a16afde44e77c33e1e4fea8d343f1ea8638f2d3dd5ef79c2e975",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/javascript_map.dart",
+      "upstream_sha256": "887e999a4fcb9e0fb8621ac81611a5537a89035bf87dd1e99111a46bbb5987fb",
+      "vendored_sha256": "887e999a4fcb9e0fb8621ac81611a5537a89035bf87dd1e99111a46bbb5987fb",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/media_track_constraints_delegate.dart",
+      "upstream_sha256": "4acfafcd731e162c5734e2e151000f959a56624c5624df036671605456725351",
+      "vendored_sha256": "4acfafcd731e162c5734e2e151000f959a56624c5624df036671605456725351",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/media_track_extension.dart",
+      "upstream_sha256": "df5b3010d95243f07f407b3832c6b34bc3cc127c0933708eed4f8ec9f5202735",
+      "vendored_sha256": "df5b3010d95243f07f407b3832c6b34bc3cc127c0933708eed4f8ec9f5202735",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/mobile_scanner_web.dart",
+      "upstream_sha256": "ebc45ba7dd9aaac61b9f9412c18d5c989f9db75fff8fcb2192cb381276d2722c",
+      "vendored_sha256": "ebc45ba7dd9aaac61b9f9412c18d5c989f9db75fff8fcb2192cb381276d2722c",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/zxing/result.dart",
+      "upstream_sha256": "aa3062076bb68c2465dd5042e4937e5b71994722c5bb7392c9170a5746cff03c",
+      "vendored_sha256": "aa3062076bb68c2465dd5042e4937e5b71994722c5bb7392c9170a5746cff03c",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/zxing/result_point.dart",
+      "upstream_sha256": "a83310cb821a5918390ac9b7db866c55264c7b73a5163c8b4efc1250687c9568",
+      "vendored_sha256": "a83310cb821a5918390ac9b7db866c55264c7b73a5163c8b4efc1250687c9568",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/zxing/zxing_barcode_reader.dart",
+      "upstream_sha256": "fb02ed44615c293cec9362725ca0d88b01d0e6c2f23e74bd7a021607ca2618fd",
+      "vendored_sha256": "fb02ed44615c293cec9362725ca0d88b01d0e6c2f23e74bd7a021607ca2618fd",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/zxing/zxing_browser_multi_format_reader.dart",
+      "upstream_sha256": "d5516c8e57d7473a4e604755997b8514816a562c4db07edc3bddfc34e31c8ef1",
+      "vendored_sha256": "d5516c8e57d7473a4e604755997b8514816a562c4db07edc3bddfc34e31c8ef1",
+      "change": "unchanged"
+    },
+    {
+      "path": "lib/src/web/zxing/zxing_exception.dart",
+      "upstream_sha256": "a3a287574d1e51539b4b8a5f733a58a7a18ae05efb7c2b157842a790a75beef9",
+      "vendored_sha256": "a3a287574d1e51539b4b8a5f733a58a7a18ae05efb7c2b157842a790a75beef9",
+      "change": "unchanged"
+    },
+    {
+      "path": "pubspec.yaml",
+      "upstream_sha256": "cff219fa6efc1ba3c262011b092051998bce9cf19671ef7c385addc89ec7393b",
+      "vendored_sha256": "9f502017a4ddfc1730dc2c18891b6c4fc36f798ca5423c6e9d1ac55a81724b48",
+      "change": "remove-publishing-screenshot-metadata"
+    }
+  ]
+}

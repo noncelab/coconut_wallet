@@ -18,7 +18,7 @@ class TrezorDigitBox extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: context.coconutColors.inputPlaceholder,
+          color: context.coconutColors.inputSurface,
           border: hasError && filled ? Border.all(color: context.coconutColors.danger, width: 1.5) : null,
         ),
         alignment: Alignment.center,

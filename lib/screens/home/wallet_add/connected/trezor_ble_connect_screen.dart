@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'dart:io';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -46,6 +48,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   late TrezorBleConnectViewModel _viewModel;
   bool _isAddingWallet = false;
+  bool _isClosing = false;
   bool _isVerifyingPairingCode = false;
   TrezorBleConnectStep? _lastStep;
   final ScrollController _scrollController = ScrollController();
@@ -223,10 +226,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();
-      Navigator.pushReplacementNamed(
+      WalletAddActions.finishWithWalletDetail(
         context,
-        AppRouteNames.walletDetail,
-        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
+        WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }
@@ -238,6 +240,17 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isClosing || !mounted) return;
+    _isClosing = true;
+    final route = ModalRoute.of(context);
+    try {
+      await _close();
+    } finally {
+      if (mounted && route?.isCurrent == true) _isClosing = false;
+    }
+  }
+
+  Future<void> _close() async {
     if (_viewModel.step == TrezorBleConnectStep.pairing) {
       _viewModel.cancelPairing();
       Navigator.pop(context);

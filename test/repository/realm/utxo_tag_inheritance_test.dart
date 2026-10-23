@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/realm/realm_utxo_mock.dart';
@@ -30,16 +31,24 @@ void main() {
 
   test('inherits captured tags when sync removes the source before applying', () async {
     // Given
-    addTag('saved', ['source']);
-    realmManager.realm.write(() => realmManager.realm.add(RealmUtxoMock.getMock(id: 'source')));
-    final capturedTagIds = repository.getUtxoTagsByTxHash(1, 'source').value.map((tag) => tag.id).toList();
-    await repository.deleteUtxoList(1, ['source']);
+    const sourceHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    final sourceId = getUtxoId(sourceHash, 0);
+    final realmSourceId = getRealmUtxoId(1, sourceHash, 0);
+    addTag('saved', [sourceId]);
+    realmManager.realm.write(
+      () => realmManager.realm.add(RealmUtxoMock.getMock(id: realmSourceId, transactionHash: sourceHash)),
+    );
+    expect(repository.getUtxoState(1, sourceId), isNotNull);
+    final capturedTagIds = repository.getUtxoTagsByTxHash(1, sourceId).value.map((tag) => tag.id).toList();
+    expect(capturedTagIds, ['saved']);
+    await repository.deleteUtxoList(1, [sourceId]);
+    expect(realmManager.realm.find<RealmUtxo>(realmSourceId)!.isDeleted, isTrue);
     expect(attachedIds('saved'), isEmpty);
 
     // When
     final result = await repository.applyInheritedTags(
       1,
-      sourceUtxoIds: ['source'],
+      sourceUtxoIds: [sourceId],
       targetUtxoIds: ['target'],
       tagIds: capturedTagIds,
     );

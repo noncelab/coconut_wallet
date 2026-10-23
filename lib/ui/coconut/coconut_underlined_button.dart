@@ -35,30 +35,35 @@ class _CoconutUnderlinedButtonState extends State<CoconutUnderlinedButton> {
   Widget build(BuildContext context) {
     final color = _resolvedColor(context);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        if (!widget.isActive) return;
-        widget.onTap();
-        setState(() => _isPressing = false);
-      },
-      onTapDown: (_) {
-        if (!widget.isActive) return;
-        setState(() => _isPressing = true);
-      },
-      onTapCancel: () {
-        if (!widget.isActive) return;
-        setState(() => _isPressing = false);
-      },
-      child: Padding(
-        padding: widget.padding ?? const EdgeInsets.all(4),
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(widget.text, textAlign: TextAlign.center, softWrap: true, style: widget.textStyle.setColor(color)),
-              Container(width: _getTextWidth(context) + 4, height: widget.lineWidth, color: color),
-            ],
+    return Semantics(
+      button: true,
+      enabled: widget.isActive,
+      child: GestureDetector(
+        excludeFromSemantics: !widget.isActive,
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          if (!widget.isActive) return;
+          widget.onTap();
+          setState(() => _isPressing = false);
+        },
+        onTapDown: (_) {
+          if (!widget.isActive) return;
+          setState(() => _isPressing = true);
+        },
+        onTapCancel: () {
+          if (!widget.isActive) return;
+          setState(() => _isPressing = false);
+        },
+        child: Padding(
+          padding: widget.padding ?? const EdgeInsets.all(4),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(widget.text, textAlign: TextAlign.center, softWrap: true, style: widget.textStyle.setColor(color)),
+                Container(width: _getTextWidth(context) + 4, height: widget.lineWidth, color: color),
+              ],
+            ),
           ),
         ),
       ),

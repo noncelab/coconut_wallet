@@ -9,11 +9,9 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -217,7 +215,7 @@ class WalletAddDialog extends StatelessWidget {
       children: switch (mode) {
         WalletAddDialogMode.walletType => [
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletEyes,
+            iconPath: FeatureWalletIconPath.walletAddWatchOnly,
             title: t.wallet_home_screen.wallet_type_selection.watch_only.title,
             description: t.wallet_home_screen.wallet_type_selection.watch_only.description,
             onPressed: () => _showMode(context, WalletAddDialogMode.watchOnlySource),
@@ -270,12 +268,12 @@ class WalletAddDialog extends StatelessWidget {
         ],
         WalletAddDialogMode.hotWalletAction => [
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletAddHot,
+            iconPath: FeatureWalletIconPath.walletAddCreate,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
             onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletCreate),
           ),
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletImportHot,
+            iconPath: FeatureWalletIconPath.walletAddImport,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
             onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletRestore),
           ),
@@ -305,34 +303,12 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
-    context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: routeName == AppRouteNames.hotWalletRestore);
-    if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
+    final restore = routeName == AppRouteNames.hotWalletRestore;
+    if (!await WalletAddActions.prepareHotWallet(context, restore: restore) || !context.mounted) return;
 
     final navigator = Navigator.of(context);
     navigator.pop();
     navigator.pushNamed(routeName);
-  }
-
-  Future<bool> _ensureDevicePasscodeIsSet(BuildContext context) async {
-    final authProvider = context.read<AuthProvider>();
-    final isDevicePasscodeSet = await authProvider.isDevicePasscodeSet();
-    if (!context.mounted) return false;
-    if (isDevicePasscodeSet) return true;
-
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.title,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.description,
-      leftButtonText: t.close,
-      rightButtonText: t.go_to_settings,
-      onTapLeft: () => Navigator.pop(context),
-      onTapRight: () async {
-        Navigator.pop(context);
-        await authProvider.openDeviceSecuritySettings();
-      },
-    );
-    return false;
   }
 
   void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
@@ -399,7 +375,12 @@ class WalletAddDialog extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                t.wallet_add_scanner_screen.add_wallet,
+                switch (mode) {
+                  WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
+                  WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
+                  WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
+                },
+                key: const Key('wallet-add-dialog-title'),
                 style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
               ),
               const Spacer(),
@@ -434,6 +415,7 @@ class _WalletActionButton extends StatelessWidget {
             SvgPicture.asset(
               iconPath,
               width: 24,
+              height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_400w,

@@ -94,6 +94,7 @@ void main() {
         UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _inputHash),
       );
     });
+    expect(repository.getUtxoState(1, getUtxoId(_inputHash, 0)), isNotNull);
   });
 
   tearDown(() {
@@ -275,6 +276,7 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     expect(tagIds(targetId()), ['savings']);
     expect(tagIds(previousOutput), isEmpty);
+    expect(node.broadcasts, 1);
   });
 
   test('confirmed predecessor output tags are not candidates for another transaction', () async {
@@ -376,6 +378,7 @@ void main() {
     expect(tagIds(targetId()), ['incoming']);
     expect(tagIds(inputId), isEmpty);
     expect(tagIds(siblingId), ['sibling']);
+    expect(node.broadcasts, 1);
   });
 
   test('full send has no consent candidates and removes source links only after success', () async {

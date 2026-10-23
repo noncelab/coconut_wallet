@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutTextField, CoconutTextFieldStyle;
-import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,7 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 
 class HotWalletPassphraseCheckScreen extends StatefulWidget {
   const HotWalletPassphraseCheckScreen({super.key, required this.mnemonic, required this.descriptor});
@@ -23,9 +23,11 @@ class HotWalletPassphraseCheckScreen extends StatefulWidget {
   State<HotWalletPassphraseCheckScreen> createState() => _HotWalletPassphraseCheckScreenState();
 }
 
-class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseCheckScreen> {
+class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseCheckScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  late final AnimationController _successCheckController;
   bool _isIncorrect = false;
   bool _isChecking = false;
   bool _isCorrect = false;
@@ -33,8 +35,15 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
   @override
   void initState() {
     super.initState();
+    _successCheckController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _controller.addListener(_handleChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _successCheckController.value = 1;
   }
 
   void _handleChanged() {
@@ -49,6 +58,7 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
     _controller.clear();
     _controller.dispose();
     _focusNode.dispose();
+    _successCheckController.dispose();
     widget.mnemonic.fillRange(0, widget.mnemonic.length, 0);
     super.dispose();
   }
@@ -107,14 +117,34 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
                                       key: const ValueKey('correct'),
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        SvgPicture.asset(
-                                          CommonFormIconPath.circleCheckFilled,
+                                        Lottie.asset(
+                                          StateLottiePath.checkComplete,
                                           width: 52,
                                           height: 52,
-                                          colorFilter: ColorFilter.mode(
-                                            context.coconutColors.iconPrimary,
-                                            BlendMode.srcIn,
+                                          fit: BoxFit.contain,
+                                          controller: _successCheckController,
+                                          repeat: false,
+                                          onLoaded: (_) {
+                                            if (!mounted || MediaQuery.disableAnimationsOf(context)) return;
+                                            _successCheckController.forward();
+                                          },
+                                          delegates: LottieDelegates(
+                                            values: [
+                                              ValueDelegate.color(const [
+                                                'Shape Layer 1',
+                                                'Group 1',
+                                                'Fill',
+                                              ], value: context.coconutColors.checkIconBackground),
+                                              ValueDelegate.strokeColor(const [
+                                                'Path 1',
+                                                'Stroke',
+                                              ], value: context.coconutColors.checkIconForeground),
+                                            ],
                                           ),
+                                          frameBuilder:
+                                              (_, child, composition) =>
+                                                  composition == null ? _buildStaticSuccessCheck() : child,
+                                          errorBuilder: (_, _, _) => _buildStaticSuccessCheck(),
                                         ),
                                         CoconutLayout.spacing_500h,
                                         Text(
@@ -169,6 +199,15 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
         ),
         if (_isChecking) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
       ],
+    );
+  }
+
+  Widget _buildStaticSuccessCheck() {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(color: context.coconutColors.checkIconBackground, shape: BoxShape.circle),
+      child: Icon(Icons.check_rounded, size: 32, color: context.coconutColors.checkIconForeground),
     );
   }
 

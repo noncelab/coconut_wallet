@@ -8,6 +8,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/common/feature_search_focus.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/deletable_settings_row.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
@@ -26,7 +27,9 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 /// 카테고리마다 또는 기능마다 최적화된 진입점을 새로 설계한다
 /// (`docs/ccos/foundation/architecture.md` 6.1절 참고).
 class ThemeBottomSheet extends StatefulWidget {
-  const ThemeBottomSheet({super.key});
+  final CoconutThemeVariant? highlightVariant;
+
+  const ThemeBottomSheet({super.key, this.highlightVariant});
 
   @override
   State<ThemeBottomSheet> createState() => _ThemeBottomSheetState();
@@ -160,13 +163,17 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
           onBackPressed: null,
           isBottom: true,
           actionButtonList: [
-            CoconutAppBarActionButton(
-              onPressed: () => openCoconutOpenStoreIntroScreen(context),
-              icon: SvgPicture.asset(
-                BrandIconPath.coconutPlanet,
-                width: Sizes.size24,
-                height: Sizes.size24,
-                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+            MergeSemantics(
+              child: CoconutAppBarActionButton(
+                tooltip: CcosOpenStoreContentSource.intro.ctaLabel,
+                onPressed: () => openCoconutOpenStoreIntroScreen(context),
+                icon: SvgPicture.asset(
+                  BrandIconPath.coconutPlanet,
+                  semanticsLabel: CcosOpenStoreContentSource.intro.ctaLabel,
+                  width: Sizes.size24,
+                  height: Sizes.size24,
+                  colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                ),
               ),
             ),
           ],
@@ -181,6 +188,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
               SizedBox(height: appBar.preferredSize.height, child: appBar),
               Flexible(
                 child: GestureDetector(
+                  excludeFromSemantics: true,
                   onTap: () {
                     if (_swipedVariant != null) setState(() => _swipedVariant = null);
                   },
@@ -221,26 +229,30 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
               ? '${CcosFeatureRegistrySource.featuredListing.author} · ${CcosFeatureRegistrySource.featuredListing.authorBio}'
               : null;
 
+      final row =
+          // 두 기본 테마(어두운 테마, 밝은 테마)는 삭제 불가
+          isCoconutTheme
+              ? DeletableSettingsRow(
+                title: option.title,
+                subtitle: subtitle,
+                isSelected: isSelected,
+                isSwiped: _swipedVariant == option.variant,
+                onSwipeChanged: (isSwiped) {
+                  setState(() => _swipedVariant = isSwiped ? option.variant : null);
+                },
+                onDelete: () => _handleDeleteTheme(context, provider),
+                onTap: () => _onThemeSelected(context, option.variant),
+                subtitleStyle: CoconutTypography.caption_10.setColor(colors.primaryText),
+              )
+              : SelectableSettingsRow(
+                title: option.title,
+                isSelected: isSelected,
+                onTap: () => _onThemeSelected(context, option.variant),
+              );
       widgets.add(
-        // 두 기본 테마(어두운 테마, 밝은 테마)는 삭제 불가
-        isCoconutTheme
-            ? DeletableSettingsRow(
-              title: option.title,
-              subtitle: subtitle,
-              isSelected: isSelected,
-              isSwiped: _swipedVariant == option.variant,
-              onSwipeChanged: (isSwiped) {
-                setState(() => _swipedVariant = isSwiped ? option.variant : null);
-              },
-              onDelete: () => _handleDeleteTheme(context, provider),
-              onTap: () => _onThemeSelected(context, option.variant),
-              subtitleStyle: CoconutTypography.caption_10.setColor(colors.primaryText),
-            )
-            : SelectableSettingsRow(
-              title: option.title,
-              isSelected: isSelected,
-              onTap: () => _onThemeSelected(context, option.variant),
-            ),
+        option.variant == widget.highlightVariant
+            ? FeatureSearchFocus(key: ValueKey('theme-search-focus-${option.variant.name}'), child: row)
+            : row,
       );
       if (index < options.length - 1) {
         widgets.add(Divider(color: colors.primaryText.withValues(alpha: 0.12), height: 1));

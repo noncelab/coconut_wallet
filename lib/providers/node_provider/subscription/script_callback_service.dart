@@ -41,9 +41,11 @@ class ScriptCallbackService {
   }
 
   /// 트랜잭션의 처리를 시작합니다.
-  void registerTransactionProcessing(int walletId, String txHash, bool isConfirmed) {
+  TransactionProcessingState registerTransactionProcessing(int walletId, String txHash, bool isConfirmed) {
     final txHashKey = getTxHashKey(walletId, txHash);
-    _processingTransactions[txHashKey] = TransactionProcessingState(isConfirmed, false);
+    final state = TransactionProcessingState(isConfirmed, false);
+    _processingTransactions[txHashKey] = state;
+    return state;
   }
 
   /// fetchUtxos 콜백 함수 등록
@@ -80,17 +82,33 @@ class ScriptCallbackService {
   }
 
   /// 트랜잭션의 처리를 완료 상태로 변경합니다.
-  Future<void> registerTransactionCompletion(int walletId, Set<String> txHashes) async {
+  Future<void> registerTransactionCompletion(
+    int walletId,
+    Set<String> txHashes, {
+    Map<String, TransactionProcessingState>? processingStates,
+  }) async {
+    final completed = <String>{};
     // 먼저 모든 트랜잭션 상태를 완료로 변경
     for (final txHash in txHashes) {
       final txHashKey = getTxHashKey(walletId, txHash);
-      if (_processingTransactions.containsKey(txHashKey)) {
-        _processingTransactions[txHashKey]!.setCompleted();
+      final state = _processingTransactions[txHashKey];
+      if (state != null && (processingStates == null || identical(state, processingStates[txHash]))) {
+        state.setCompleted();
+        completed.add(txHash);
       }
     }
 
     // 모든 종속성 한 번에 처리
-    await _deleteTransactionDependencies(txHashes);
+    await _deleteTransactionDependencies(completed);
+  }
+
+  void releaseTransactionProcessing(int walletId, Map<String, TransactionProcessingState> processingStates) {
+    for (final entry in processingStates.entries) {
+      final key = getTxHashKey(walletId, entry.key);
+      if (identical(_processingTransactions[key], entry.value) && !entry.value.isCompleted) {
+        _processingTransactions.remove(key);
+      }
+    }
   }
 
   /// 여러 트랜잭션 해시에 대한 종속성을 일괄 제거

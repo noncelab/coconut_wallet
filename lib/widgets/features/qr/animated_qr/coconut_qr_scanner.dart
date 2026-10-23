@@ -15,10 +15,11 @@ class CoconutQrScanner extends StatefulWidget {
   static String qrFormatErrorMessage = 'Invalid QR format.';
   static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(MobileScannerController) setMobileScannerController;
-  final Function(dynamic) onComplete;
+  final Function(Object) onComplete;
   final Function(String, String?) onFailed;
-  final IQrScanDataHandler qrDataHandler;
+  final IQrScanDataHandler<Object> qrDataHandler;
   final ValueChanged<String>? onScanData;
+  final bool closeOnPermissionDenied;
 
   const CoconutQrScanner({
     super.key,
@@ -27,13 +28,15 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onFailed,
     required this.qrDataHandler,
     this.onScanData,
+    this.closeOnPermissionDenied = true,
   });
 
   @override
   State<CoconutQrScanner> createState() => _CoconutQrScannerState();
 }
 
-class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
+class _CoconutQrScannerState extends State<CoconutQrScanner>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   bool _isScanningExtraData = false;
@@ -41,12 +44,15 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
   bool _isShowedCameraPermissionDialog = false;
+  bool _isCameraPermissionDialogOpen = false;
+  bool _retryDeniedCameraOnDialogDismiss = false;
 
   MobileScannerController? _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = MobileScannerController();
 
     widget.setMobileScannerController(_controller!);
@@ -54,9 +60,30 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _progressNotifier.dispose();
     _controller?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || widget.closeOnPermissionDenied) return;
+    if (_controller?.value.error?.errorCode != MobileScannerErrorCode.permissionDenied) return;
+    if (_isCameraPermissionDialogOpen) {
+      _retryDeniedCameraOnDialogDismiss = true;
+    } else {
+      _retryDeniedCamera();
+    }
+  }
+
+  void _retryDeniedCamera() {
+    if (!mounted || widget.closeOnPermissionDenied) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    if (_controller?.value.error?.errorCode == MobileScannerErrorCode.permissionDenied) {
+      _controller?.start();
+    }
   }
 
   void resetScanState() {
@@ -152,9 +179,16 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           _isShowedCameraPermissionDialog = true;
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted) return;
+            _isCameraPermissionDialogOpen = true;
             await showCameraPermissionDialog(this.context);
             if (!mounted) return;
-            Navigator.pop(this.context);
+            _isCameraPermissionDialogOpen = false;
+            if (widget.closeOnPermissionDenied) {
+              Navigator.pop(this.context);
+            } else if (_retryDeniedCameraOnDialogDismiss) {
+              _retryDeniedCameraOnDialogDismiss = false;
+              _retryDeniedCamera();
+            }
           });
         }
         return Center(child: Text(error.errorCode.message));

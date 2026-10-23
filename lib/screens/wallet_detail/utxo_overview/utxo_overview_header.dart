@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +26,10 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget refreshButton;
 
   @override
-  double get minExtent => topPadding + 165;
+  double get minExtent => topPadding + 161;
 
   @override
-  double get maxExtent => topPadding + 273;
+  double get maxExtent => topPadding + 261;
 
   double _lerp(double begin, double end, double progress) => begin + (end - begin) * progress;
 
@@ -53,9 +54,9 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: 4,
+              left: 0,
               top: topPadding + 4,
-              child: BackButton(onPressed: onBackPressed, color: colors.primaryText),
+              child: FeatureAwareBackButton(onPressed: onBackPressed, color: colors.primaryText),
             ),
             Positioned(right: 4, top: topPadding + 4, child: refreshButton),
             Positioned(
@@ -86,7 +87,7 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
             Positioned(
               left: 16,
-              top: topPadding + 116,
+              top: topPadding + 108,
               child: Opacity(
                 opacity: (1 - progress * 1.8).clamp(0.0, 1.0),
                 child: Transform.translate(

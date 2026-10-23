@@ -10,7 +10,7 @@ class ElectrumResponse<T> {
   ElectrumResponse({required this.result, this.jsonrpc, this.id});
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class ServerFeaturesRes {
   @JsonKey(name: 'server_version')
   String serverVersion;
@@ -58,7 +58,7 @@ Map<String, HostsPort> _hostsFromJson(dynamic json) {
   return result;
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class HostsPort {
   @JsonKey(name: 'ssl_port')
   int? sslPort;
@@ -70,7 +70,7 @@ class HostsPort {
   factory HostsPort.fromJson(Map<String, dynamic> json) => _$HostsPortFromJson(json);
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class GetTxHistoryRes {
   int height;
   @JsonKey(name: 'tx_hash')
@@ -89,7 +89,7 @@ class GetTxHistoryRes {
   int get hashCode => Object.hash(txHash, height);
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class GetMempoolRes {
   int height;
   @JsonKey(name: 'tx_hash')
@@ -101,7 +101,7 @@ class GetMempoolRes {
   factory GetMempoolRes.fromJson(Map<String, dynamic> json) => _$GetMempoolResFromJson(json);
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class ListUnspentRes {
   int height;
   @JsonKey(name: 'tx_hash')
@@ -115,7 +115,7 @@ class ListUnspentRes {
   factory ListUnspentRes.fromJson(Map<String, dynamic> json) => _$ListUnspentResFromJson(json);
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class GetBalanceRes {
   int confirmed;
   int unconfirmed;
@@ -127,7 +127,7 @@ class GetBalanceRes {
   }
 }
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class BlockHeaderSubscribe {
   int height;
   String hex;

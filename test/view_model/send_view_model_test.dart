@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:coconut_lib/coconut_lib.dart';
+
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -87,6 +89,13 @@ void main() {
       [],
     );
   }
+
+  testWidgets('수수료 응답 전에 보내기 화면을 닫아도 오류가 발생하지 않는다', (tester) async {
+    final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+    viewModel.dispose();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+  });
 
   group('isOwnAddress', () {
     test('지갑이 없으면 false 반환', () {
@@ -183,6 +192,51 @@ void main() {
         ),
       );
       expect(viewModel.isOwnAddress(address), true);
+    });
+  });
+
+  group('recipient input order', () {
+    late NetworkType previousNetwork;
+    setUp(() {
+      previousNetwork = NetworkType.currentNetworkType;
+      NetworkType.setNetworkType(NetworkType.mainnet);
+    });
+    tearDown(() => NetworkType.setNetworkType(previousNetwork));
+    const address = '1BoatSLRHtKNngkdXEeobR76b53LETtpyT';
+
+    test('amount then scanned address updates fee visibility on completion', () {
+      final vm = createViewModel(walletProvider: FakeWalletProvider());
+      vm.setAmountText(10000, 0);
+      expect(vm.showFeeBoard, isFalse);
+      vm.setAddressText(address, 0);
+      expect(vm.showFeeBoard, isFalse);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.showFeeBoard, isTrue);
+      expect(vm.recipientList.single.addressError, AddressError.none);
+    });
+
+    test('address then keypad amount waits for focus out', () {
+      final vm = createViewModel(walletProvider: FakeWalletProvider());
+      vm.setAddressText(address, 0);
+      expect(vm.showFeeBoard, isFalse);
+      for (final digit in '10000'.split('')) {
+        vm.onKeyTap(digit);
+      }
+      expect(vm.showFeeBoard, isFalse);
+      expect(vm.recipientList.single.minimumAmountError, AmountError.none);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.showFeeBoard, isTrue);
+    });
+
+    test('invalid address does not reveal fee board', () {
+      final vm = createViewModel(walletProvider: FakeWalletProvider());
+      vm.setAmountText(10000, 0);
+      vm.setAddressText('invalid', 0);
+      expect(vm.recipientList.single.addressError, AddressError.none);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.recipientList.single.addressError, AddressError.invalid);
+      expect(vm.showFeeBoard, isFalse);
+      expect(vm.isReadyToSend, isFalse);
     });
   });
 
