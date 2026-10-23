@@ -37,19 +37,25 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     });
   }
 
-  void _updateTooltipPosition() {
+  bool _updateTooltipPosition() {
     final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      setState(() {
-        _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
-        _tooltipIconSize = renderBox.size;
-      });
+    if (renderBox == null) {
+      return false;
     }
+
+    _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
+    _tooltipIconSize = renderBox.size;
+    return true;
   }
 
   void _toggleTooltip() {
+    final willShow = !_isTooltipVisible;
+    if (willShow && !_updateTooltipPosition()) {
+      return;
+    }
+
     setState(() {
-      _isTooltipVisible = !_isTooltipVisible;
+      _isTooltipVisible = willShow;
     });
   }
 
@@ -164,9 +170,13 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   }
 
   Widget _buildTooltip(BuildContext context) {
+    final anchor = _tooltipIconPosition! & _tooltipIconSize!;
     return Positioned(
       top: _tooltipIconPosition!.dy + _tooltipIconSize!.height - 10,
-      right: 18,
+      right: RightTriangleBubbleClipper.rightOffsetForAnchor(
+        viewportWidth: MediaQuery.sizeOf(context).width,
+        anchor: anchor,
+      ),
       child: GestureDetector(
         onTap: _removeTooltip,
         child: ClipPath(

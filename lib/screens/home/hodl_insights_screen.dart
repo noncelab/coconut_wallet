@@ -27,7 +27,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
-/// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서 기간을 바꿔 가며 본다.
+/// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서
+/// 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
   static const transitionDuration = Duration(milliseconds: 480);
 
@@ -37,7 +38,8 @@ class HodlInsightsScreen extends StatefulWidget {
 
   const HodlInsightsScreen({super.key, this.heroTag, this.heroSection});
 
-  /// 홈 위젯이나 모든 기능에서 연다. 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
+  /// 홈 위젯이나 모든 기능에서 연다.
+  /// 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
   static Future<void> open(
     BuildContext context, {
     List<int>? walletIds,
@@ -167,6 +169,8 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
       title: t.hodl_insights.settings_title,
       heading: t.hodl_insights.settings_heading,
       description: t.hodl_insights.settings_description,
+      headingStyle: CoconutTypography.body1_16_Bold,
+      descriptionStyle: CoconutTypography.body3_12,
       showWalletsTitle: false,
       spec: const HomeWidgetSettingsSpec(wallets: true, goals: true),
       wallets: viewModel.data.wallets,
@@ -390,7 +394,8 @@ class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
 /// 지갑별 잔액 · UTXO 요약 · 거래 활동 사이: 위 카드 아래에서 다음 제목 글자까지
 const _sectionGap = 40.0;
 
-/// 카드 이동 중 출발 내용을 먼저 걷고 도착 내용을 나타낸다. 각 내용은 제 크기에서 폭에 맞춰 줄인다.
+/// 카드 이동 중 출발 내용을 먼저 걷고 도착 내용을 나타낸다.
+/// 각 내용은 제 크기에서 폭에 맞춰 줄인다.
 Widget _cardShuttle(
   BuildContext flightContext,
   Animation<double> animation,
@@ -486,7 +491,8 @@ String _btcText(HodlInsightsViewModel viewModel, int sats) =>
 HomeAmount _btcAmount(HodlInsightsViewModel viewModel, int sats) =>
     HomeAmount(_btcNumber(viewModel, sats), viewModel.data.unit.symbol, unitFirst: viewModel.data.unit.isPrefixSymbol);
 
-/// 잔액 숫자와 단위. [HomeAmountText]와 같은 순서지만 FittedBox 없이 그려서 옆 글자와 기준선을 맞출 수 있다.
+/// 잔액 숫자와 단위.
+/// [HomeAmountText]와 같은 순서지만 FittedBox 없이 그려서 옆 글자와 기준선을 맞출 수 있다.
 List<TextSpan> _amountSpans(HomeAmount amount, TextStyle numberStyle, TextStyle unitStyle, Color color) {
   final number = TextSpan(
     text: amount.number,
@@ -614,7 +620,8 @@ class _NoWalletsView extends StatelessWidget {
   }
 }
 
-/// 지갑별 잔액 구역: 회색 띠가 카드 중간부터 천천히 옅어져 UTXO 요약 제목에서 끝난다. 띠 위 카드는 바탕색으로 뒤집는다.
+/// 지갑별 잔액 구역: 회색 띠가 카드 중간부터 천천히 옅어져 UTXO 요약 제목에서 끝난다.
+/// 띠 위 카드는 바탕색으로 뒤집는다.
 class _LowerBand extends StatelessWidget {
   /// 카드 아래 띠의 끝 여백. 띠는 카드 중간부터 천천히 옅어져 이 여백 끝에서 사라진다.
   static const _fadeHeight = _sectionGap;
@@ -860,7 +867,9 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-/// 화면을 열 때 차오르는 값(목표 막대, 지갑별 잔액 도넛). 화면이 다 열린 뒤 잠깐 쉬었다가 0에서 천천히 차오르고, 값이 바뀌면 지금 값에서 이어서 움직인다.
+/// 화면을 열 때 차오르는 값(목표 막대, 지갑별 잔액 도넛).
+/// 화면이 다 열린 뒤 잠깐 쉬었다가 0에서 천천히 차오르고,
+/// 값이 바뀌면 지금 값에서 이어서 움직인다.
 class _OpenProgress extends StatefulWidget {
   static const fillDuration = Duration(milliseconds: 1600);
   static const startDelay = Duration(milliseconds: 250);
@@ -995,60 +1004,63 @@ class _GoalCard extends StatelessWidget {
                 );
                 return _OpenProgress(
                   progress: goal.ratio,
-                  builder:
-                      (context, ratio) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              '${_btcNumber(viewModel, goal.ratio == 0 ? goal.balance : (goal.balance * ratio / goal.ratio).round())} / ${_btcText(viewModel, goal.target)}',
-                              key: const Key('goal-progress-amount'),
-                              style: numberStyle,
-                            ),
+                  builder: (context, ratio) {
+                    final animatedBalance =
+                        goal.ratio == 0 ? goal.balance : (goal.balance * ratio / goal.ratio).round();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${_btcNumber(viewModel, animatedBalance)} / ${_btcText(viewModel, goal.target)}',
+                            key: const Key('goal-progress-amount'),
+                            style: numberStyle,
                           ),
-                          CoconutLayout.spacing_200h,
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: SizedBox(
-                                    height: 12,
-                                    child: Stack(
-                                      children: [
-                                        Container(color: colors.surfaceMuted),
-                                        FractionallySizedBox(
-                                          key: const Key('goal-progress-fill'),
-                                          widthFactor: ratio.clamp(0.0, 1.0),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: colors.success,
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
+                        ),
+                        CoconutLayout.spacing_200h,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: SizedBox(
+                                  height: 12,
+                                  child: Stack(
+                                    children: [
+                                      Container(color: colors.surfaceMuted),
+                                      FractionallySizedBox(
+                                        key: const Key('goal-progress-fill'),
+                                        widthFactor: ratio.clamp(0.0, 1.0),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: colors.success,
+                                            borderRadius: BorderRadius.circular(6),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                              CoconutLayout.spacing_400w,
-                              SizedBox(
-                                width: measureHomeText(context, goal.percentText, numberStyle) + 1,
-                                child: Text(
-                                  formatGoalPercent(ratio),
-                                  key: const Key('goal-progress-percent'),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  style: numberStyle,
-                                ),
+                            ),
+                            CoconutLayout.spacing_400w,
+                            SizedBox(
+                              width: measureHomeText(context, goal.percentText, numberStyle) + 1,
+                              child: Text(
+                                formatGoalPercent(ratio),
+                                key: const Key('goal-progress-percent'),
+                                textAlign: TextAlign.right,
+                                maxLines: 1,
+                                style: numberStyle,
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),

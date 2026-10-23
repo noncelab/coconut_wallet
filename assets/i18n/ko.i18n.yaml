@@ -401,7 +401,7 @@ home_widgets:
   utxo_count: "UTXO $count개"
   today: "오늘"
 home_presets:
-  header: "쓰는 방식에 맞춰\n홈을 빠르게 구성해 보세요"
+  header: "지갑 사용 방식에 맞는\n홈 화면을 빠르게 구성해 보세요"
   preview: "미리보기"
   current: "적용 중"
   safety_name: "안전"
@@ -411,7 +411,7 @@ home_presets:
   simple_name: "간단하게"
   simple_description: "지갑과 자주 쓰는 기능만 보여 줘요"
   hide_balances_name: "잔액 없이"
-  hide_balances_description: "홈에 실제 잔액이나 법정화폐 금액을 보여 주지 않아요"
+  hide_balances_description: "잔액이나 법정화폐 금액을 보여 주지 않아요"
   statistics_name: "저축 현황"
   statistics_description: "잔액 추이와 저축 목표, UTXO 현황을 함께 봐요"
   apply: "홈에 적용"

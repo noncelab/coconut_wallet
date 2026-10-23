@@ -29,20 +29,26 @@ class CenterTriangleBubbleClipper extends CustomClipper<Path> {
 }
 
 class RightTriangleBubbleClipper extends CustomClipper<Path> {
+  static const double arrowTipInset = 19;
+
   final double arrowOffset;
   final double? arrowPosition;
 
   RightTriangleBubbleClipper({this.arrowOffset = 0.0, this.arrowPosition});
 
+  static double rightOffsetForAnchor({required double viewportWidth, required Rect anchor}) {
+    return viewportWidth - anchor.center.dx - arrowTipInset;
+  }
+
   @override
   Path getClip(Size size) {
     var path = Path();
-    final offset = arrowPosition == null ? arrowOffset : size.width - 19 - arrowPosition!;
+    final offset = arrowPosition == null ? arrowOffset : size.width - arrowTipInset - arrowPosition!;
 
     // 삼각형 꼭지점 부분 (클릭 지점 기준 위치라서 이동하지 않음)
     // 모서리 접점을 삼각형 밑변점과 같은 좌표로 합쳐서 gap 없이 이어지도록 함
     path.moveTo(size.width - 10 - offset, 15);
-    path.lineTo(size.width - 19 - offset, 5);
+    path.lineTo(size.width - arrowTipInset - offset, 5);
     path.lineTo(size.width - 28 - offset, 15);
     path.lineTo(15, 15);
     path.quadraticBezierTo(0, 15, 0, 30);

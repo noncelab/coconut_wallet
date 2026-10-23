@@ -44,7 +44,8 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
   bool _isAnimating = false;
   VoidCallback? _pendingOnComplete;
 
-  // 스와이프로 인식되기 전(=slop 이내)까지는 포인터 이동을 무시해서 _dragOffset을 정확히 0으로 유지
+  // 스와이프로 인식되기 전(=slop 이내)까지는 포인터 이동을 무시한다.
+  // 그래야 _dragOffset을 정확히 0으로 유지할 수 있다.
   Offset? _dragStartPosition;
   bool _dragRecognized = false;
   static const double _dragSlop = 18; // kTouchSlop 기본값과 동일
@@ -124,6 +125,7 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final pressStyle = SettingsRowPressStyle.resolve(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
     return ClipRect(
@@ -299,9 +301,7 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(_borderRadius),
                                   child: Container(
-                                    color: colors.surfacePressOverlay.withValues(
-                                      alpha: colors.surfacePressOverlayOpacity,
-                                    ),
+                                    color: pressStyle.color.withValues(alpha: pressStyle.opacity),
                                   ),
                                 ),
                               ),
