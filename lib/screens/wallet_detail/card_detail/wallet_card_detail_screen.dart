@@ -289,8 +289,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
             onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
               FeatureUtxoIconPath.faucet,
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
@@ -1019,7 +1019,13 @@ class _CollapsedBalance extends StatelessWidget {
               ),
             ),
           ),
-          FiatPrice(satoshiAmount: balance, textStyle: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+          Transform.translate(
+            offset: const Offset(0, -2),
+            child: FiatPrice(
+              satoshiAmount: balance,
+              textStyle: CoconutTypography.body3_12.setColor(colors.secondaryText),
+            ),
+          ),
         ],
       ),
     );
