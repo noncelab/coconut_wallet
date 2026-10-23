@@ -136,21 +136,33 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     _routeAnimation = animation;
     if (!_shouldShowGestureGuide) return;
+    animation?.addStatusListener(_onRouteAnimationStatus);
     if (animation == null || animation.status == AnimationStatus.completed) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showGestureGuideAfterTransition());
       return;
     }
-    animation.addStatusListener(_onRouteAnimationStatus);
   }
 
   void _onRouteAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.reverse) {
+      // 돌아가는 Hero가 툴팁 앞을 지나기 전에 안내를 숨긴다. X로 닫은 기록은 남기지 않는다.
+      if (_showGestureGuide) setState(() => _showGestureGuide = false);
+      return;
+    }
     if (status != AnimationStatus.completed) return;
-    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
-    _showGestureGuideAfterTransition();
+    // Hero 오버레이가 제거되고 그래프가 본래 자리로 돌아온 프레임 다음에 표시한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showGestureGuideAfterTransition());
   }
 
   void _showGestureGuideAfterTransition() {
     if (!mounted || !_shouldShowGestureGuide || _showGestureGuide) return;
+    final animation = _routeAnimation;
+    if (animation != null && animation.status != AnimationStatus.completed) {
+      animation.removeStatusListener(_onRouteAnimationStatus);
+      animation.addStatusListener(_onRouteAnimationStatus);
+      return;
+    }
+    if (ModalRoute.of(context)?.isCurrent == false) return;
     setState(() => _showGestureGuide = true);
   }
 

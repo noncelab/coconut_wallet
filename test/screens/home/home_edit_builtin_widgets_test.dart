@@ -1455,6 +1455,41 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('balance history shows its guide after the Hero landing frame', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        gestureGuideDismissed: false,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+      final guide = find.byKey(const Key('balance-history-gesture-guide'));
+      expect(guide, findsNothing);
+      final animation = ModalRoute.of(tester.element(find.byType(WalletBalanceHistoryScreen)))!.animation!;
+      for (var frame = 0; frame < 60 && animation.status != AnimationStatus.completed; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        // 전환 중과 Hero 착지 프레임에는 안내를 띄우지 않는다.
+        expect(guide, findsNothing);
+      }
+      expect(animation.status, AnimationStatus.completed);
+      await tester.pump();
+      expect(guide, findsOneWidget);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pump();
+      expect(animation.status, AnimationStatus.reverse);
+      expect(guide, findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(guide, findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('balance history repeats until X is pressed and then stays dismissed in every mode', (tester) async {
       await _openWidgetsTab(
         tester,
