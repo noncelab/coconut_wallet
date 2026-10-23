@@ -41,6 +41,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -631,6 +632,33 @@ void main() {
     expect(find.byKey(const Key('wallet-detail-action-details')), findsOneWidget);
     expect(action('send'), findsNothing);
     expect(action('organize'), findsNothing);
+  });
+
+  testWidgets('background paint opacity follows fractional scroll across the focus midpoint', (tester) async {
+    await appearances.setBackground(1, WalletColorBackground.of(Colors.white));
+    await appearances.setBackground(2, WalletColorBackground.of(Colors.black));
+    await pump(tester);
+    final carousel = find.byKey(const Key('wallet-detail-carousel'));
+    final pageView = tester.widget<PageView>(carousel);
+    final gesture = await tester.startGesture(tester.getCenter(carousel));
+    await gesture.moveBy(const Offset(-20, 0));
+    await tester.pump();
+    var crossedMidpoint = false;
+    for (var step = 0; step < 40; step++) {
+      await gesture.moveBy(const Offset(-8, 0));
+      await tester.pump();
+      final page = pageView.controller!.page!;
+      if (page <= 0 || page >= 1) continue;
+      final overlay = find.byKey(const ValueKey(('wallet-detail-background', 2)));
+      expect(overlay, findsOneWidget);
+      expect(tester.widget(overlay), isA<Opacity>(), reason: 'A fractional page must not replace the blended base');
+      expect(tester.renderObject<RenderOpacity>(overlay).opacity, closeTo(page, 0.000001));
+      if (page > 0.5) crossedMidpoint = true;
+      if (page > 0.7) break;
+    }
+    expect(crossedMidpoint, isTrue);
+    await gesture.up();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('the background blends with the swipe and settles on the next wallet', (tester) async {
