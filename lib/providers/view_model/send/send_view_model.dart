@@ -330,9 +330,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       }
     }
 
-    _setRecommendedFees().whenComplete(() {
-      notifyListeners();
-    });
+    _setRecommendedFees();
 
     _loadDrafts();
   }

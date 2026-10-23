@@ -108,7 +108,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final preferences = SharedPrefsRepository();
     _showGestureGuide =
         !preferences.isInitialized || !preferences.getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed);
-    _walletIds = vm.walletIds?.length == 1 ? [vm.walletIds!.single] : null;
+    _walletIds = vm.walletIds == null ? null : List<int>.of(vm.walletIds!);
     _readAnchor();
     _period = vm.balancePeriod;
     _span = (_period == HomeWidgetPeriod.all ? _allDays : _period.days).toDouble();
@@ -526,7 +526,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                 t.wallet_list.balance_history_detail.period_summary,
                 style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.primaryText),
               ),
-              if (_selected != null && _walletIds == null)
+              if (_selected != null && _walletIds?.length != 1)
                 Text(
                   vm.data.unit.displayBitcoinAmount(balances[index], withUnit: true),
                   style: CoconutTypography.body2_14_NumberBold.copyWith(color: context.coconutColors.primaryText),
@@ -542,7 +542,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
               slices: slices,
               periodLabel: period,
               focusedDate: _selected == null ? null : end,
-              singleWallet: _walletIds != null,
+              singleWallet: _walletIds?.length == 1,
               amountText: (sats) => vm.data.unit.displayBitcoinAmount(sats, withUnit: true),
             ),
           ),

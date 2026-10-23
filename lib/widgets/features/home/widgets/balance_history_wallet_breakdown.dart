@@ -378,8 +378,17 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     final sentAmount = sent.fold<int>(0, (sum, tx) => sum + tx.amount).abs();
     final receivedAmount = received.fold<int>(0, (sum, tx) => sum + tx.amount).abs();
     final change = '${slice.change >= 0 ? '+' : '-'}${widget.amountText(slice.change.abs())}';
-    String flow(String label, int count, int amount, String sign) =>
-        '$label ${t.wallet_list.balance_history_detail.flow_summary(count: count, amount: '$sign${widget.amountText(amount)}')}';
+    String flow(String label, int count, int amount, String sign) {
+      final summary =
+          count == 0
+              ? t.wallet_list.balance_history_detail.flow_count(count: count)
+              : t.wallet_list.balance_history_detail.flow_summary(
+                count: count,
+                amount: '${amount == 0 ? '' : sign}${widget.amountText(amount)}',
+              );
+      return '$label $summary';
+    }
+
     Widget text(String value, {bool bold = false}) => Text(
       value,
       style: (bold ? CoconutTypography.body3_12_Bold : CoconutTypography.body3_12).copyWith(color: colors.primaryText),
