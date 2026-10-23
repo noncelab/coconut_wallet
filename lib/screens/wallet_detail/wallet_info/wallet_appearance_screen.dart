@@ -162,8 +162,7 @@ class _WallpaperTabBar extends StatelessWidget {
     final colors = context.coconutColors;
     return Column(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             spacing: 28,

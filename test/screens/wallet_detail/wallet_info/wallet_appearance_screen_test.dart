@@ -239,6 +239,7 @@ void main() {
   testWidgets('starts on the presets tab with a 2x2 preview and switches tabs', (tester) async {
     await open(tester);
 
+    expect(tester.getTopLeft(find.byKey(const Key('wallet-appearance-tab-skins'))).dx, closeTo(20, 0.01));
     expect(find.byKey(const Key('wallet-appearance-option-skin-mint')), findsOneWidget);
     expect(find.byKey(const Key('wallet-appearance-option-color-6')), findsNothing);
     expect(tester.widget<WalletCard>(find.byType(WalletCard)).size, WalletCardSize.small);
@@ -479,6 +480,7 @@ void main() {
     await open(tester, textScaler: const TextScaler.linear(2), logicalSize: const Size(360, 800));
 
     expect(find.text('Predefinidos'), findsOneWidget);
+    expect(tester.getTopLeft(find.byKey(const Key('wallet-appearance-tab-skins'))).dx, closeTo(20, 0.01));
     expect(tester.takeException(), isNull);
   });
 
