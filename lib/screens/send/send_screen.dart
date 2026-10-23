@@ -2805,7 +2805,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.add(focusNode);
   }
 
-  bool hasAddressTextChangedSinceFocus(int index, String currentText) {
+  bool _hasAddressTextChangedSinceFocus(int index, String currentText) {
     return _addressFocusInTextList[index] != currentText;
   }
 
