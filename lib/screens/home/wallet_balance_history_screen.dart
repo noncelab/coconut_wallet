@@ -103,6 +103,13 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
   List<int> get _balances => vm.data.dailyBalances(walletIds: _walletIds, days: _days, asOf: _today);
 
+  // 지갑 상세 화면이서 전이하거나 앱에 추가된 지갑이 1개일 때
+  bool get _singleWalletScope {
+    final wallets = vm.data.wallets;
+    if (_walletIds == null) return wallets.length == 1;
+    return wallets.where((wallet) => _walletIds!.contains(wallet.id)).length == 1;
+  }
+
   int get _first => (_end - _span + 1).round().clamp(0, _days - 1);
   int get _last => _end.round().clamp(_first, _days - 1);
 
@@ -477,7 +484,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                       key: const Key('hodl-insights-balance-readout'),
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: colors.homeBackground,
+                                        color: colors.background,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Column(
@@ -580,7 +587,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
               slices: slices,
               periodLabel: period,
               focusedDate: _selected == null ? null : end,
-              singleWallet: _walletIds?.length == 1,
+              singleWallet: _singleWalletScope,
               amountText: (sats) => vm.data.unit.displayBitcoinAmount(sats, withUnit: true),
             ),
           ),
