@@ -257,7 +257,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     required bool isSelected,
     required String label,
     required VoidCallback onToggle,
-    EdgeInsets padding = const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+    EdgeInsets padding = const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 16),
   }) {
     return GestureDetector(
       onTap: onToggle,
