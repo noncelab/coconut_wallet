@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -53,6 +54,29 @@ void main() {
     await _pump(tester, reconnected: true);
 
     expect(find.text(t.home_connection_status.electrum_connection_restored), findsOneWidget);
+  });
+
+  testWidgets('recovery keeps its left edge while the previous message fades out', (tester) async {
+    final previousLocale = LocaleSettings.currentLocale;
+    addTearDown(() => LocaleSettings.setLocaleSync(previousLocale));
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+    for (final status in [NetworkStatus.vpnBlocked, NetworkStatus.connectionFailed, NetworkStatus.offline]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pump(tester, status: status);
+      await tester.runAsync(() => vg.waitForPendingDecodes());
+      await tester.pump();
+      final left = tester.getTopLeft(find.text(HomeConnectionStatusIndicator.errorMessage(status))).dx;
+
+      await _pump(tester, reconnected: true);
+      await tester.runAsync(() => vg.waitForPendingDecodes());
+      await tester.pump(const Duration(milliseconds: 200));
+      final message = find.text(t.home_connection_status.electrum_connection_restored);
+      expect(tester.getTopLeft(message).dx, closeTo(left, 0.01), reason: '$status during fade');
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.getTopLeft(message).dx, closeTo(left, 0.01), reason: '$status after fade');
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('connection messages fit a narrow leading area in every locale', (tester) async {
