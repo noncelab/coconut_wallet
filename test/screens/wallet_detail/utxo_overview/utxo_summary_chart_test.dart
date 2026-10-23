@@ -216,12 +216,9 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
   final chartFinder = name.startsWith('tags-') ? find.byType(UtxoTagChart) : find.byType(UtxoSummaryChart);
   final summary = tester.getRect(chartFinder);
   final context = tester.element(chartFinder);
-  final bottomPadding =
-      tester
-          .widget<Padding>(find.descendant(of: chartFinder, matching: find.byType(Padding)).first)
-          .padding
-          .resolve(Directionality.of(context))
-          .bottom;
+  final bottomPadding = tester
+      .widget<Padding>(find.descendant(of: chartFinder, matching: find.byType(Padding)).first)
+      .padding.resolve(Directionality.of(context)).bottom;
   final expectedBackground = context.coconutColors.background.toARGB32();
   final expectedDivider = context.coconutColors.divider.toARGB32();
   final expectedChipSurface = context.coconutColors.utxoOverviewAvailabilitySurface.toARGB32();
@@ -442,8 +439,7 @@ void main() {
             final chart = tester.getRect(find.byType(UtxoTagChart));
             expect(chart.height, greaterThanOrEqualTo(UtxoSummaryChart.estimatedHeight));
             if (!populated) {
-              for (final text
-                  in find.descendant(of: find.byType(UtxoTagChart), matching: find.byType(Text)).evaluate()) {
+              for (final text in find.descendant(of: find.byType(UtxoTagChart), matching: find.byType(Text)).evaluate()) {
                 final rect = tester.getRect(find.byWidget(text.widget));
                 expect(rect.top, greaterThanOrEqualTo(chart.top));
                 expect(rect.bottom, lessThanOrEqualTo(chart.bottom));

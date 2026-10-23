@@ -14,9 +14,7 @@ void main() {
   setUpAll(() async {
     final loader = FontLoader('Pretendard');
     for (final file in ['Pretendard-Regular.ttf', 'Pretendard-Bold.ttf']) {
-      loader.addFont(
-        Future.value(ByteData.view(Uint8List.fromList(File('assets/fonts/$file').readAsBytesSync()).buffer)),
-      );
+      loader.addFont(Future.value(ByteData.view(Uint8List.fromList(File('assets/fonts/$file').readAsBytesSync()).buffer)));
     }
     await loader.load();
   });
@@ -33,9 +31,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: buildCoconutThemeData(),
-          builder:
-              (context, child) =>
-                  MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)), child: child!),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)),
+            child: child!,
+          ),
           home: Scaffold(
             body: Align(
               alignment: Alignment.topLeft,
@@ -73,7 +72,9 @@ void main() {
         await tester.pumpAndSettle();
         final title = find.text(titles[1]).last;
         final paragraph = tester.renderObject<RenderParagraph>(title);
-        final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: titles[1].length));
+        final boxes = paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: titles[1].length),
+        );
         expect(boxes.map((box) => box.top.round()).toSet().length, 2, reason: 'The target must actually wrap.');
         final row = tester.renderObject<RenderBox>(find.ancestor(of: title, matching: find.byType(Row)).first);
         final point = row.localToGlobal(
