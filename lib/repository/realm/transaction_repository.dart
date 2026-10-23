@@ -18,6 +18,9 @@ import 'package:tuple/tuple.dart';
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
 
+  /// 거래 객체 전체를 변환하지 않고 지갑 사용 이력의 존재만 확인한다.
+  bool hasTransactionHistory(int walletId) => realm.query<RealmTransaction>('walletId == $walletId').isNotEmpty;
+
   /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     final transactions = realm.query<RealmTransaction>(

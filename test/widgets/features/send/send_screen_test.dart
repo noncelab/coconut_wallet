@@ -31,6 +31,25 @@ import 'package:provider/provider.dart';
 import '../../../mock/utxo_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
+class _CountingWallet extends SingleSignatureWallet {
+  _CountingWallet(SingleSignatureWallet wallet)
+    : super(
+        wallet.keyStore.masterFingerprint,
+        wallet.keyStore.hdWallet,
+        wallet.addressType,
+        wallet.derivationPath,
+        wallet.keyStore.extendedPublicKey,
+      );
+
+  int changeAddressDerivations = 0;
+
+  @override
+  String getAddressWithDerivationPath(String derivationPath) {
+    changeAddressDerivations++;
+    return super.getAddressWithDerivationPath(derivationPath);
+  }
+}
+
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   _Wallets(this.wallet, this.vault);
   final WalletItemBase wallet;
@@ -124,9 +143,13 @@ void main() {
     bool withSelectedUtxos = false,
     int? transactionDraftId,
     bool vaultEntry = false,
+    bool verifyInputCompletion = false,
+    bool verifyUriCompletion = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
+    final countingWallet = _CountingWallet(wallet.walletBase as SingleSignatureWallet);
+    wallet.walletBase = countingWallet;
     final selectedUtxos =
         withSelectedUtxos
             ? [
@@ -188,12 +211,22 @@ void main() {
       expect(find.text(t.send_screen.vault_addresses(name: 'Test')), findsOneWidget);
       expect(find.text(t.view_more), findsNothing);
       expect(viewModel.showAddressBoard, isTrue);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(0)}')), findsOneWidget);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(1)}')), findsNothing);
       await tester.tap(find.text(shortenAddress(vault.getAddress(1), head: 12, tail: 14)));
       await tester.pump();
       await tester.pump(); // address selection updates the view model after the frame
       expect(tester.widget<VaultReceivingAddressField>(fieldFinder).address, vault.getAddress(1));
       expect(viewModel.recipientList.first.address, vault.getAddress(1));
       expect(viewModel.showAddressBoard, isFalse);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(fieldFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(1)}')), findsOneWidget);
+      expect(find.byKey(ValueKey('vault-address-selected-${vault.getAddress(0)}')), findsNothing);
+      viewModel.setShowAddressBoard(false);
+      await tester.pump();
       tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
       await tester.pump();
       await tester.tap(find.text(t.send_screen.add_recipient));
@@ -214,6 +247,91 @@ void main() {
       expect(viewModel.validRecipientList, contains(viewModel.recipientList[1]));
       expect(viewModel.showFeeBoard, isTrue);
     }
+    if (verifyInputCompletion) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setFeeRateText('1');
+      vm.setMaxMode(true);
+      vm.setAddressText(vault.getAddress(5), 0);
+      expect(vm.isReadyToSend, isFalse);
+      vm.validateAllFieldsOnFocusLost(); // QR result completion
+      expect(vm.showFeeBoard, isTrue);
+      expect(vm.isReadyToSend, isTrue);
+
+      vm.setAddressText('invalid', 0);
+      expect(vm.isReadyToSend, isFalse);
+      expect(vm.recipientList.first.addressError, AddressError.none);
+      vm.setFeeRateText('2'); // must not rebuild unvalidated input
+      expect(vm.isReadyToSend, isFalse);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.recipientList.first.addressError, AddressError.invalid);
+
+      vm.setAddressText(vault.getAddress(5), 0);
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.isReadyToSend, isTrue);
+      vm.setMaxMode(false);
+      for (final digit in '10000'.split('')) {
+        vm.onKeyTap(digit);
+        expect(vm.isReadyToSend, isFalse);
+      }
+      vm.validateAllFieldsOnFocusLost();
+      expect(vm.isReadyToSend, isTrue);
+
+      vm.addRecipient();
+      vm.setCurrentPage(1);
+      vm.setAddressText('invalid', 1);
+      vm.deleteRecipient();
+      expect(vm.isReadyToSend, isTrue, reason: 'deleting the edited recipient must restore remaining inputs');
+      await tester.pump();
+
+      final addressInput = tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .firstWhere((field) => field.keyboardType == TextInputType.text);
+      final address = vault.getAddress(5);
+      addressInput.controller.text = address;
+      vm.validateAllFieldsOnFocusLost();
+      addressInput.focusNode.requestFocus();
+      await tester.pump();
+      addressInput.controller.text = '${address}x';
+      addressInput.controller.text = address;
+      expect(vm.isReadyToSend, isFalse);
+      addressInput.focusNode.unfocus();
+      await tester.pump();
+      expect(vm.isReadyToSend, isTrue, reason: 'reverting an edit still requires validation on focus out');
+    }
+    if (verifyUriCompletion) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setFeeRateText('1');
+      final addressFinder = find.byWidgetPredicate(
+        (widget) => widget is EditableText && widget.keyboardType == TextInputType.text,
+      );
+      final addressInput = tester.widget<EditableText>(addressFinder);
+      addressInput.focusNode.requestFocus();
+      await tester.pump();
+      expect(addressInput.focusNode.hasFocus, isTrue);
+      final address = vault.getAddress(5);
+      await tester.enterText(addressFinder, 'bitcoin:$address?amount=0.0001');
+      countingWallet.changeAddressDerivations = 0;
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(addressInput.focusNode.hasFocus, isFalse);
+      expect(vm.recipientList.single.address, address);
+      expect(vm.recipientList.single.amount, '10000');
+      expect(vm.showFeeBoard, isTrue);
+      expect(vm.isReadyToSend, isTrue);
+      expect(
+        countingWallet.changeAddressDerivations,
+        1,
+        reason: 'one input completion must build the transaction only once',
+      );
+    }
+    if (transactionDraftId != null) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      vm.setAddressText('invalid', 0);
+      expect(vm.isReadyToSend, isFalse);
+      vm.loadTransactionDraft(transactionDraftId);
+      expect(vm.isReadyToSend, isTrue, reason: 'loading a draft must discard pending manual edits');
+      await tester.pump();
+    }
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
     return opened;
@@ -228,6 +346,21 @@ void main() {
 
   testWidgets('manual UTXO selection entered with chosen UTXOs does not open the sheet again', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: true, withSelectedUtxos: true), isFalse);
+  });
+
+  testWidgets('completed max-send and amount inputs rebuild, while edits invalidate the previous result', (
+    tester,
+  ) async {
+    await opensUtxoSelectionSheetOnEntry(
+      tester,
+      manualMode: true,
+      withSelectedUtxos: true,
+      verifyInputCompletion: true,
+    );
+  });
+
+  testWidgets('pasting a BIP21 URI and completing the address input builds the transaction once', (tester) async {
+    await opensUtxoSelectionSheetOnEntry(tester, manualMode: true, withSelectedUtxos: true, verifyUriCompletion: true);
   });
 
   testWidgets('opening a draft with manually chosen UTXOs does not open the UTXO selection sheet', (tester) async {
