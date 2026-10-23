@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/utils/hex_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
-class RawSignedTransactionDataHandler implements IQrScanDataHandler {
+class RawSignedTransactionDataHandler implements IQrScanDataHandler<String> {
   final String _version = '02000000';
   final String _segwitMarker = '0001';
   String? _rawSignedTransaction;

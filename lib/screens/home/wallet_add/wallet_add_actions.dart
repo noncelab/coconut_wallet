@@ -25,7 +25,7 @@ abstract final class WalletAddActions {
     WalletImportSource.coldCard,
     WalletImportSource.krux,
     WalletImportSource.passport,
-    WalletImportSource.extendedPublicKey,
+    WalletImportSource.extendedPublicKey, // 이 값을 통해 진입하는 화면에서 WalletImportSource.descriptor도 수용
   ];
 
   /// USB·블루투스로 연결하는 기기

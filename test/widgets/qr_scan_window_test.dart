@@ -37,7 +37,7 @@ class _CameraPlatform extends MobileScannerPlatform {
   Future<void> dispose() async {}
 }
 
-class _UnusedQrHandler extends Fake implements IQrScanDataHandler {}
+class _UnusedQrHandler extends Fake implements IQrScanDataHandler<Object> {}
 
 void main() {
   late MobileScannerPlatform originalPlatform;
