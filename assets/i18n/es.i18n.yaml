@@ -1359,6 +1359,11 @@ utxo_tag_screen:
   add_tag: "Presiona el botón + para crear tu primera etiqueta"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "Seleccione una cartera de solo lectura para recibir bitcoins."
+  vault_unused_title: "Esta bóveda no tiene historial"
+  vault_unused_description: "Esta bóveda no tiene historial de transacciones. Para evitar un envío a la bóveda equivocada, verifica la dirección de recepción en tu wallet de hardware antes de continuar."
+  vault_unused_continue: "Continuar tras verificar"
+  vault_sync_required_title: "Sincroniza primero la bóveda"
+  vault_sync_required_description: "Aún no podemos verificar el historial ni la dirección de recepción. Comprueba la conexión y la sincronización y vuelve a seleccionar la bóveda cuando termine."
   vault_select_receiving_wallet: "Seleccionar la bóveda receptora"
   vault_connect_watch_only_wallet: "Conectar una cartera para consultar la bóveda"
   vault_watch_only_description: "Añada a la app una «cartera para consultar la bóveda (solo lectura)». Puede comprobar sus bitcoins de forma segura y en tiempo real sin encender su dispositivo dedicado cada vez."

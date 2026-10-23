@@ -1368,6 +1368,11 @@ utxo_tag_screen:
   add_tag: "Press the + button to create your first tag"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "Select a watch-only wallet to receive Bitcoin."
+  vault_unused_title: "This vault has no transaction history"
+  vault_unused_description: "This vault has no transaction history. To avoid sending to the wrong vault, verify the receiving address on your hardware wallet before continuing."
+  vault_unused_continue: "Continue after checking"
+  vault_sync_required_title: "Sync this vault first"
+  vault_sync_required_description: "We cannot confirm this vault’s transaction history and receiving address yet. Check your connection and sync status, then select it again once syncing is complete."
   vault_select_receiving_wallet: "Select a receiving vault"
   vault_connect_watch_only_wallet: "Connect a vault monitoring wallet"
   vault_watch_only_description: "Add a “vault monitoring (watch-only) wallet” to the app. You can safely check your Bitcoin in real time without turning on your dedicated device each time."

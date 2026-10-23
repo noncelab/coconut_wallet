@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
-class ExtendedPublicKeyQrScanDataHandler implements IQrScanDataHandler {
+class ExtendedPublicKeyQrScanDataHandler implements IQrScanDataHandler<String> {
   String? _scannedResult;
 
   bool _isValidExtendedPublicKey(String text) {
@@ -36,7 +36,7 @@ class ExtendedPublicKeyQrScanDataHandler implements IQrScanDataHandler {
   double get progress => _scannedResult != null ? 1.0 : 0.0;
 
   @override
-  get result => _scannedResult;
+  String? get result => _scannedResult;
 
   @override
   void reset() {

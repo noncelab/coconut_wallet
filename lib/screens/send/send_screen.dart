@@ -79,6 +79,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -864,7 +865,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _hotWalletSigningViewModel = signingViewModel;
     Uint8List? passphrase;
     try {
-      await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      context.loaderOverlay.show();
+      try {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      } finally {
+        if (mounted) context.loaderOverlay.hide();
+      }
       if (!mounted) return;
       final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
       if (signingViewModel.shouldEnterPassphraseWhenSigning) {
@@ -2207,6 +2215,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String walletName,
     String derivationPath, {
     required bool isCurrentWallet,
+    bool isSelected = false,
   }) {
     return ShrinkAnimationButton(
       onPressed: () {
@@ -2248,22 +2257,36 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.only(left: 14, right: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              CoconutLayout.spacing_100h,
-              Text(
-                shortenAddress(address, head: 12, tail: 14),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CoconutLayout.spacing_100h,
+                    Text(
+                      shortenAddress(address, head: 12, tail: 14),
+                      style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                    ),
+                    _buildAddressRowSubtitle(
+                      context,
+                      walletName,
+                      derivationPath,
+                      isCurrentWallet,
+                      addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
+                    ),
+                    CoconutLayout.spacing_100h,
+                  ],
+                ),
               ),
-              _buildAddressRowSubtitle(
-                context,
-                walletName,
-                derivationPath,
-                isCurrentWallet,
-                addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
-              ),
-              CoconutLayout.spacing_100h,
+              if (isSelected)
+                SvgPicture.asset(
+                  CommonActionIconPath.check,
+                  key: ValueKey('vault-address-selected-$address'),
+                  width: 12,
+                  height: 12,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                ),
             ],
           ),
         ),
@@ -2375,6 +2398,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   _receivingVaultName,
                                   address.derivationPath,
                                   isCurrentWallet: false,
+                                  isSelected:
+                                      selection.item1 < selection.item2.length &&
+                                      selection.item2[selection.item1] == address.address,
                                 );
                               },
                             );
@@ -2640,14 +2666,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
         _amountController.text = _formatDecimalTextForDisplay(amountText);
-        _viewModel.setAmountText(bip21Data.amount!, index);
+        _viewModel.setAmountText(bip21Data.amount!, index, validate: false);
       }
+      _viewModel.validateAllFieldsOnFocusLost();
       return;
     }
 
     final normalized = normalizeAddress(scannedData);
     _addressControllerList[index].text = normalized;
     _viewModel.setAddressText(normalized, index);
+    _viewModel.validateAllFieldsOnFocusLost();
   }
 
   void _recipientPageListener() {
@@ -2741,10 +2769,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          if (hasAddressTextChangedSinceFocus(index, controller.text)) {
-            if (controller.text.toLowerCase().startsWith('bitcoin:')) {
-              _applyIncomingBitcoinUri(controller.text, index);
-            }
+          if (_hasAddressTextChangedSinceFocus(index, controller.text) &&
+              controller.text.toLowerCase().startsWith('bitcoin:')) {
+            _applyIncomingBitcoinUri(controller.text, index);
+          } else {
+            // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
             _viewModel.validateAllFieldsOnFocusLost();
           }
         } else {
@@ -2776,7 +2805,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.add(focusNode);
   }
 
-  bool hasAddressTextChangedSinceFocus(int index, String currentText) {
+  bool _hasAddressTextChangedSinceFocus(int index, String currentText) {
     return _addressFocusInTextList[index] != currentText;
   }
 

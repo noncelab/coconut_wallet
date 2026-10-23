@@ -1356,6 +1356,11 @@ utxo_tag_screen:
   add_tag: "+ボタンを押して最初のタグを作成"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "ビットコインを受け取る閲覧専用ウォレットを選択してください。"
+  vault_unused_title: "取引履歴のない金庫です"
+  vault_unused_description: "この金庫には取引履歴がありません。送金先を間違えないよう、ハードウェアウォレットで受取アドレスを確認してから進んでください。"
+  vault_unused_continue: "確認して続ける"
+  vault_sync_required_title: "先に同期を完了してください"
+  vault_sync_required_description: "金庫の取引履歴と受取アドレスをまだ確認できません。接続と同期の状態を確認し、同期完了後にもう一度選択してください。"
   vault_select_receiving_wallet: "受け取り先の金庫を選択"
   vault_connect_watch_only_wallet: "金庫確認用ウォレットを接続する"
   vault_watch_only_description: "アプリに「金庫確認用（閲覧専用）ウォレット」を登録してみましょう。専用機器を毎回起動しなくても、ビットコインが保管されていることをアプリでリアルタイムに安全に確認できます。"
