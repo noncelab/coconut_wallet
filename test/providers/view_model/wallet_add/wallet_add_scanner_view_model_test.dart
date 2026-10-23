@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ur/ur.dart';
+import 'package:ur/ur_encoder.dart';
 
 class _WalletProvider extends Fake implements WalletProvider {
   WatchOnlyWallet? addedWallet;
@@ -102,6 +103,16 @@ void main() {
         expect(handler.validateFormat(descriptor), isTrue);
         expect(handler.joinData(descriptor), isTrue);
         expect(viewModel.isExtendedPublicKeyScanned, isFalse);
+      });
+
+      test('descriptor와 xpub 외의 형식은 거절한다', () {
+        final handler = createViewModel(source).qrDataHandler;
+        final ur =
+            UREncoder(UR('crypto-account', Uint8List.fromList(List.generate(100, (index) => index))), 20).nextPart();
+        const bbQr = r'B$2J0100';
+
+        expect(handler.validateFormat(ur), isFalse);
+        expect(handler.validateFormat(bbQr), isFalse);
       });
     });
   }

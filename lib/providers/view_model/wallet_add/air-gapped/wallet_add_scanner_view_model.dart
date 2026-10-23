@@ -51,12 +51,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
-        _qrDataHandler = ComposedScanDataHandler([
-          DescriptorQrScanDataHandler(),
-          BcUrQrScanDataHandler(),
-          BbQrScanDataHandler(),
-          ExtendedPublicKeyQrScanDataHandler(),
-        ]);
+        _qrDataHandler = ComposedScanDataHandler([DescriptorQrScanDataHandler(), ExtendedPublicKeyQrScanDataHandler()]);
         break;
       case WalletImportSource.bitbox02:
       case WalletImportSource.trezor:
