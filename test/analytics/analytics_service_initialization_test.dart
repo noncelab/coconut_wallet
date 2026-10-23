@@ -6,7 +6,6 @@ import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -56,30 +55,17 @@ class _AnalyticsFake extends Fake implements FirebaseAnalytics {
   }
 
   @override
-  Future<void> logEvent({
-    required String name,
-    Map<String, Object>? parameters,
-    AnalyticsCallOptions? callOptions,
-  }) async {
+  Future<void> logEvent({required String name, Map<String, Object>? parameters}) async {
     _record(name, parameters);
   }
 
   @override
-  Future<void> logScreenView({
-    String? screenClass,
-    String? screenName,
-    Map<String, Object>? parameters,
-    AnalyticsCallOptions? callOptions,
-  }) async {
+  Future<void> logScreenView({String? screenClass, String? screenName, Map<String, Object>? parameters}) async {
     _record('screen_view', parameters);
   }
 
   @override
-  Future<void> setUserProperty({
-    required String name,
-    required String? value,
-    AnalyticsCallOptions? callOptions,
-  }) async {
+  Future<void> setUserProperty({required String name, required String? value}) async {
     if (value != null) properties[name] = value;
   }
 }

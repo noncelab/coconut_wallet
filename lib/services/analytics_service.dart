@@ -7,19 +7,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
 
-/// 안드로이드 학습용 배포 시 활용, 아닐 때는 주석처리 필요
-class FirebaseAnalytics {
-  Future<void> setDefaultEventParameters(Map<String, Object> parameters) {
-    throw Exception('Must not be called.');
-  }
+/// SDK를 제외한 배포용 계약. 실제 앱은 null을 주입하고 테스트에서만 fake를 사용한다.
+abstract interface class FirebaseAnalytics {
+  Future<void> setDefaultEventParameters(Map<String, Object> parameters);
 
-  Future<void> logEvent({required String name, required Map<String, Object> parameters}) {
-    throw Exception('Must not be called.');
-  }
+  Future<void> logEvent({required String name, required Map<String, Object> parameters});
 
-  Future<void> setUserProperty({required String name, required String value}) {
-    throw Exception('Must not be called.');
-  }
+  Future<void> logScreenView({required String screenName, Map<String, Object>? parameters});
+
+  Future<void> setUserProperty({required String name, required String value});
 }
 
 /// Firebase Analytics
@@ -71,11 +67,12 @@ class AnalyticsService {
     _lastScreenParameters = normalized;
     if (_isAnalyticsDisabled) return;
 
-    // try {
-    //   await _analytics?.logScreenView(screenName: screenName);
-    // } catch (e) {
-    //   Logger.error('Analytics screen_view error: $e');
-    // }
+    try {
+      await _initialization;
+      await _analytics?.logScreenView(screenName: screenName, parameters: normalized.isEmpty ? null : normalized);
+    } catch (e) {
+      Logger.error('Analytics screen_view error: $e');
+    }
   }
 
   /// 커스텀 이벤트 로깅

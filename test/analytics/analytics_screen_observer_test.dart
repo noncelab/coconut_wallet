@@ -6,7 +6,6 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -16,19 +15,10 @@ class _RecordingAnalytics extends Fake implements FirebaseAnalytics {
   final List<String> screens = [];
 
   @override
-  Future<void> logEvent({
-    required String name,
-    Map<String, Object>? parameters,
-    AnalyticsCallOptions? callOptions,
-  }) async {}
+  Future<void> logEvent({required String name, Map<String, Object>? parameters}) async {}
 
   @override
-  Future<void> logScreenView({
-    String? screenClass,
-    String? screenName,
-    Map<String, Object>? parameters,
-    AnalyticsCallOptions? callOptions,
-  }) async {
+  Future<void> logScreenView({String? screenClass, String? screenName, Map<String, Object>? parameters}) async {
     screens.add(screenName!);
   }
 

@@ -11,7 +11,6 @@ import 'package:coconut_wallet/analytics/analytics_value_formatter.dart';
 import 'package:coconut_wallet/analytics/user_cohort_analytics.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -195,7 +194,7 @@ void main() {
       await service.setUserCohort(cohort);
       final call = sink.calls.single;
       expect(call.memberName, #setUserProperty);
-      expect(call.namedArguments, {#name: 'user_cohort', #value: cohort.value, #callOptions: null});
+      expect(call.namedArguments, {#name: 'user_cohort', #value: cohort.value});
     });
   }
   test('disabled analytics sends nothing', () async {
