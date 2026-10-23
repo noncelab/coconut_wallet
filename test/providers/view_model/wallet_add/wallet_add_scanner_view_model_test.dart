@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:cbor/cbor.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -6,6 +10,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ur/ur.dart';
 
 class _WalletProvider extends Fake implements WalletProvider {
   WatchOnlyWallet? addedWallet;
@@ -100,6 +105,40 @@ void main() {
       });
     });
   }
+
+  group('UR 결과 해석', () {
+    const vpub =
+        'vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg';
+
+    UR buildUrBytes() {
+      final json = {
+        'chain': 'TBTC',
+        'xfp': 'F75F5AB5',
+        'account': 0,
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': 'F75F5AB5', 'name': 'p2wpkh'},
+      };
+      final payload = cbor.encode(CborBytes(utf8.encode(jsonEncode(json))));
+      return UR('bytes', Uint8List.fromList(payload));
+    }
+
+    test('passport 메뉴에서 UR bytes는 출처가 passport로 저장된다', () async {
+      final viewModel = createViewModel(WalletImportSource.passport);
+      final result = await viewModel.addWallet(buildUrBytes());
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(wallets.addedWallet!.descriptor, contains(vpub));
+      expect(wallets.addedWallet!.walletImportSource, WalletImportSource.passport);
+    });
+
+    test('passport가 아닌 메뉴의 UR 결과도 type이 bytes면 bytes로 해석한다', () async {
+      final viewModel = createViewModel(WalletImportSource.keystone);
+      final result = await viewModel.addWallet(buildUrBytes());
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(wallets.addedWallet!.descriptor, contains(vpub));
+      expect(wallets.addedWallet!.walletImportSource, WalletImportSource.keystone);
+    });
+  });
 
   test('다른 handler를 사용하는 메뉴에서도 타입 변환 오류 없이 false를 반환한다', () {
     for (final source in [

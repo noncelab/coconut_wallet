@@ -75,7 +75,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       if (additionInfo is WatchOnlyWallet) {
         return _addCoconutVaultWallet(additionInfo);
       } else if (additionInfo is UR) {
-        if (_walletImportSource == WalletImportSource.passport) {
+        if (additionInfo.type == UrType.bytes.value) {
           return _addUrBytesWallet(_walletImportSource, additionInfo);
         }
         return _addBcUrWallet(_walletImportSource, additionInfo);
