@@ -216,6 +216,9 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
   final chartFinder = name.startsWith('tags-') ? find.byType(UtxoTagChart) : find.byType(UtxoSummaryChart);
   final summary = tester.getRect(chartFinder);
   final context = tester.element(chartFinder);
+  final bottomPadding = tester
+      .widget<Padding>(find.descendant(of: chartFinder, matching: find.byType(Padding)).first)
+      .padding.resolve(Directionality.of(context)).bottom;
   final expectedBackground = context.coconutColors.background.toARGB32();
   final expectedDivider = context.coconutColors.divider.toARGB32();
   final expectedChipSurface = context.coconutColors.utxoOverviewAvailabilitySurface.toARGB32();
@@ -245,7 +248,7 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
       final points = <String, int>{
         'summaryTop': (summary.top + 2).round(),
         'summaryBottom': (summary.bottom - 2).round(),
-        'chipBottomPadding': (summary.bottom - 12).round(),
+        'chipBottomPadding': (summary.bottom - bottomPadding / 2).round(),
         'afterSummary': (summary.bottom + 2).round(),
         'aboveNativeInset': image.height - 56,
         'insideNativeInset': image.height - 2,
@@ -433,6 +436,17 @@ void main() {
             await tester.pumpAndSettle();
             expect(find.byType(UtxoTagChart), findsOneWidget);
             await _captureScreenPixels(tester, boundary, name);
+            final chart = tester.getRect(find.byType(UtxoTagChart));
+            expect(chart.height, greaterThanOrEqualTo(UtxoSummaryChart.estimatedHeight));
+            if (!populated) {
+              for (final text in find.descendant(of: find.byType(UtxoTagChart), matching: find.byType(Text)).evaluate()) {
+                final rect = tester.getRect(find.byWidget(text.widget));
+                expect(rect.top, greaterThanOrEqualTo(chart.top));
+                expect(rect.bottom, lessThanOrEqualTo(chart.bottom));
+                expect(rect.left, greaterThanOrEqualTo(chart.left));
+                expect(rect.right, lessThanOrEqualTo(chart.right));
+              }
+            }
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox.shrink());
           });
@@ -548,7 +562,11 @@ void main() {
           expect(find.textContaining('coins'), findsNWidgets(2));
           expect(find.byIcon(Icons.info_outline_rounded), populated ? findsOneWidget : findsNothing);
           if (populated) {
-            expect(metrics['summaryHeight'], UtxoSummaryChart.estimatedHeight);
+            expect(metrics['summaryHeight'], greaterThanOrEqualTo(UtxoSummaryChart.amountViewMinHeight));
+            if (metrics['summaryHeight']! > UtxoSummaryChart.amountViewMinHeight) {
+              expect(metrics['chipTop'], 8, reason: 'Content beyond the minimum leaves only its padding.');
+            }
+            expect(metrics['followingTop'], greaterThanOrEqualTo(metrics['summaryHeight']!));
           } else {
             expect(metrics['chipTop'], 8, reason: 'The hidden balance header uses compact top padding.');
             expect(metrics['summaryHeight']! - metrics['chipBottom']!, 8);
@@ -566,7 +584,7 @@ void main() {
         await _captureSummary(tester, '${variant.name}-populated-warning-${scale}x');
         expect(tester.takeException(), isNull);
         final summary = tester.getRect(find.byType(UtxoSummaryChart));
-        if (scale == 1) expect(summary.height, UtxoSummaryChart.estimatedHeight);
+        expect(summary.height, greaterThanOrEqualTo(UtxoSummaryChart.amountViewMinHeight));
         for (final text in find.descendant(of: find.byType(UtxoSummaryChart), matching: find.byType(Text)).evaluate()) {
           final rect = tester.getRect(find.byWidget(text.widget));
           expect(rect.top, greaterThanOrEqualTo(summary.top));
