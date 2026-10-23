@@ -482,6 +482,15 @@ void main() {
     expect(find.text('Predefinidos'), findsOneWidget);
     expect(tester.getTopLeft(find.byKey(const Key('wallet-appearance-tab-skins'))).dx, closeTo(20, 0.01));
     expect(tester.takeException(), isNull);
+
+    final photosTab = find.byKey(const Key('wallet-appearance-tab-photos'));
+    await tester.drag(find.byKey(const Key('wallet-appearance-tabs-scroll')), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(photosTab.hitTestable(), findsOneWidget);
+    await tester.tap(photosTab);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const PageStorageKey('wallet-appearance-tab-body-photos')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a long balance fits the compact and wide previews', (tester) async {

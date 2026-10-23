@@ -159,8 +159,11 @@ class _WallpaperTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
+        SingleChildScrollView(
+          key: const Key('wallet-appearance-tabs-scroll'),
+          scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             spacing: 28,
