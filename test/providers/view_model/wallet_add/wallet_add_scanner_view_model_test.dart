@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cbor/cbor.dart';
@@ -148,6 +149,40 @@ void main() {
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(wallets.addedWallet!.descriptor, contains(vpub));
       expect(wallets.addedWallet!.walletImportSource, WalletImportSource.keystone);
+    });
+  });
+
+  group('coldCard 메뉴의 BBQR 허용 타입', () {
+    test('지갑 export JSON(J 타입)만 받고 PSBT·transaction은 거절한다', () {
+      final handler = createViewModel(WalletImportSource.coldCard).qrDataHandler;
+
+      expect(handler.validateFormat(r'B$2J0100'), isTrue);
+      expect(handler.validateFormat(r'B$2P0100'), isFalse);
+      expect(handler.validateFormat(r'B$HT0100'), isFalse);
+      expect(handler.validateFormat(r'B$2T0100'), isFalse);
+    });
+
+    test('실기기 Coldcard 지갑 export BBQR로 bip84 지갑을 추가한다', () async {
+      final fixture =
+          jsonDecode(File('test/fixtures/wallet_add/coldcard_export_bbqr_j.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final viewModel = createViewModel(WalletImportSource.coldCard);
+      final handler = viewModel.qrDataHandler;
+      final parts = fixture['parts'] as List<dynamic>;
+
+      expect(handler.validateFormat(parts.first as String), isTrue);
+      for (final part in parts) {
+        expect(handler.isCompleted(), isFalse);
+        expect(handler.joinData(part as String), isTrue);
+      }
+      expect(handler.isCompleted(), isTrue);
+
+      final result = await viewModel.addWallet(handler.result);
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(wallets.addedWallet!.walletImportSource, WalletImportSource.coldCard);
+      expect(wallets.addedWallet!.descriptor, contains('wpkh'));
+      expect(wallets.addedWallet!.descriptor, contains('73c5da0a'));
     });
   });
 

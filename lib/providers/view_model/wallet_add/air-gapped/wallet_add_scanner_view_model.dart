@@ -47,9 +47,12 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.bytes]);
         break;
       case WalletImportSource.coldCard:
-        _qrDataHandler = BbQrScanDataHandler();
+        // 지갑 추가에는 ColdCard의 지갑 export(BBQR JSON)만 받는다. P(PSBT)·T(transaction)은 지갑 정보가 아니다.
+        _qrDataHandler = BbQrScanDataHandler(allowedDataTypes: const {'J'});
         break;
       case WalletImportSource.extendedPublicKey:
+      // UI 진입 경로는 extendedPublicKey뿐이다. descriptor는 스캔 결과로만 결정되는 저장 출처 값이며,
+      // 진입 소스로 오는 경로는 없지만 enum 호환을 위해 같은 구성을 유지한다.
       case WalletImportSource.descriptor:
         _qrDataHandler = ComposedScanDataHandler([DescriptorQrScanDataHandler(), ExtendedPublicKeyQrScanDataHandler()]);
         break;

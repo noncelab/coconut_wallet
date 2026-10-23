@@ -9,8 +9,11 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   int? _sequenceLength;
   String? _dataType; // BBQR 데이터 타입 저장
   String? _psbtBase64;
+  final Set<String> _allowedDataTypes;
 
-  BbQrScanDataHandler() : _bbqrDecoder = BbQrDecoder();
+  BbQrScanDataHandler({Set<String> allowedDataTypes = const {'J', 'P', 'T'}})
+    : _allowedDataTypes = allowedDataTypes,
+      _bbqrDecoder = BbQrDecoder();
 
   @override
   dynamic get result {
@@ -110,7 +113,7 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       // encoding: 2(base32), Z(zlib+base32) H(hex)
       if (encoding != '2' && encoding != 'Z' && encoding != 'H') return false;
       // dataType: J(Json), P(PSBT), T(Transaction/Text)
-      if (!['J', 'P', 'T'].contains(dataType)) return false;
+      if (!_allowedDataTypes.contains(dataType)) return false;
 
       // total, index가 base36 숫자인지 확인
       try {
