@@ -102,7 +102,7 @@ dependencies:
   coconut_design_system:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: c4bc8c1fa1ebb80a1574e230ebb239b92fc441d8
+      ref: fix/appbar-symmetric-insets
 
 dev_dependencies:
   shared_preferences_platform_interface: 2.4.2

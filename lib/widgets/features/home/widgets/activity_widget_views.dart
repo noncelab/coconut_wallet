@@ -90,7 +90,11 @@ class RecentTransactionsView extends StatelessWidget {
             children: [
               for (final (index, tx) in transactions.indexed) ...[
                 if (index > 0)
-                  Container(margin: const EdgeInsets.symmetric(horizontal: 28), height: 1, color: colors.divider),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    height: 1,
+                    color: colors.divider,
+                  ),
                 _highlightRow(
                   context,
                   tx,
@@ -116,9 +120,13 @@ class RecentTransactionsView extends StatelessWidget {
     }
     final shown = transactions.take(rows).toList();
     final emptyRows = rows - shown.length;
-    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 28), height: 1, color: colors.divider);
+    Widget divider() => Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 1,
+      color: colors.divider,
+    );
     return HomeWidgetCard(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final rowHeight = (constraints.maxHeight - (rows - 1)) / rows;

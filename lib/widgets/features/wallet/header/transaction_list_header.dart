@@ -72,10 +72,12 @@ class _TransactionListHeaderState extends State<TransactionListHeader> {
       child: Column(
         children: [
           _buildBtcBalance(context),
-          const SizedBox(height: 2),
-          FiatPrice(
-            satoshiAmount: widget.animatedBalanceData.current,
-            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+          Transform.translate(
+            offset: const Offset(0, -2),
+            child: FiatPrice(
+              satoshiAmount: widget.animatedBalanceData.current,
+              textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+            ),
           ),
         ],
       ),
