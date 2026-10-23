@@ -536,6 +536,11 @@ class AddressRepository extends BaseRepository {
       return Balance(0, 0);
     }
 
+    // 중복 주소는 기존 저장 동작처럼 마지막 잔액을 사용하고, 변화량도 한 번만 반영한다.
+    final updatesByAddress = <(int, bool), UpdateAddressBalanceDto>{
+      for (final dto in updateDataList) (dto.scriptStatus.index, dto.scriptStatus.isChange): dto,
+    };
+
     // 모든 주소 정보를 한 번에 쿼리
     final realmAddresses = realm.query<RealmWalletAddress>('walletId == $walletId');
 
@@ -544,7 +549,7 @@ class AddressRepository extends BaseRepository {
     int totalConfirmedDiff = 0;
     int totalUnconfirmedDiff = 0;
 
-    for (var dto in updateDataList) {
+    for (var dto in updatesByAddress.values) {
       // 해당 주소 찾기
       final realmAddress = realmAddresses.firstWhere(
         (a) => a.index == dto.scriptStatus.index && a.isChange == dto.scriptStatus.isChange,
