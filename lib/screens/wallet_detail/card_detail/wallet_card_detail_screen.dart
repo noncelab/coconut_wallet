@@ -285,25 +285,28 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
             key: const Key('wallet-detail-faucet'),
+            width: CoconutAppBarActionButton.actionWidth,
             onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
               FeatureUtxoIconPath.faucet,
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
         CoconutAppBarActionButton(
           key: const Key('wallet-detail-action-details'),
+          width: CoconutAppBarActionButton.actionWidth,
           onPressed: _openWalletInfo,
           icon: SvgPicture.asset(
             FeatureSettingsIconPath.settings,
-            width: 20,
-            height: 20,
+            width: 24,
+            height: 24,
             semanticsLabel: t.wallet_card_detail_screen.details,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
+        const SizedBox(width: 4),
       ],
     );
   }

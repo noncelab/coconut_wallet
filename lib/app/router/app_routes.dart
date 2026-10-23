@@ -12,7 +12,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
@@ -222,7 +221,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => TransactionDraftScreen(isSignedTabActive: args.isSignedTabActive),
         ),
-    AppRouteNames.walletHomeEdit: (context) => const WalletHomeEditScreen(),
     AppRouteNames.trezorTransportSelect:
         (context) => _buildScreenWithArgs<TrezorTransportSelectRouteArgs>(
           context,

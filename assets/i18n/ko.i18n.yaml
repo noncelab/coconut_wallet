@@ -523,12 +523,8 @@ wallet_home_screen:
     description: "앱 잠금을 설정해 지갑을 안전하게 보호하세요"
   view_all_wallets: "내 지갑 전체보기"
   wallet_filter:
-    all: "전체"
     watch_only: "보기 전용"
     hot: "핫월렛"
-  add_wallet_type_all: "지갑을 추가해 보세요!"
-  add_wallet_type_watch_only: "보기 전용 지갑을 추가해 보세요!"
-  add_wallet_type_hot: "핫월렛을 추가해 보세요!"
   wallet_type_selection:
     watch_only:
       title: "보기 전용 지갑 추가하기"
@@ -539,10 +535,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "새 지갑 만들기"
-      description: "자동으로 안전하게"
     restore:
       title: "지갑 복원하기"
-      description: "기존 지갑을 그대로"
     device_passcode_required:
       title: "기기 비밀번호 설정이 필요해요"
       description: "핫월렛을 안전하게 보호하려면 먼저 기기 설정에서 화면 잠금 비밀번호를 설정해 주세요."
@@ -559,7 +553,6 @@ wallet_home_screen:
     passphrase_used: "패스프레이즈 사용"
     passphrase_unused: "패스프레이즈 미사용"
     create_wallet: "지갑 생성하기"
-    mnemonic_backup_guide: "생성된 니모닉은 다음 백업 화면에서 확인할 수 있어요"
     mnemonic_length: "단어 수"
     word_count(count): "${count}단어"
     use_passphrase: "패스프레이즈 사용"
@@ -569,13 +562,11 @@ wallet_home_screen:
     passphrase_mismatch: "패스프레이즈가 일치하지 않아요"
     show_passphrase: "패스프레이즈 보기"
     hide_passphrase: "패스프레이즈 숨기기"
-    enter_passphrase_when_signing: "서명할 때마다 패스프레이즈를 입력할게요"
     store_passphrase: "패스프레이즈 저장"
     store_passphrase_off_description: "서명할 때마다 패스프레이즈를 직접 입력합니다"
     store_passphrase_on_description: "편리하지만 패스프레이즈의 보안 효과가 상쇄됩니다"
     passphrase_not_stored_title: "패스프레이즈를 꼭 기억해 주세요"
     passphrase_not_stored_description: "패스프레이즈는 기기에 저장되지 않아요. 잊어버리면 지갑을 복구하거나 송금할 수 없으니 꼭 기억해 주세요."
-    passphrase_not_stored_confirm: "기억할게요"
     creation_failed: "지갑을 생성하지 못했어요. 다시 시도해 주세요."
     duplicate_name_title: "지갑 이름 중복"
     duplicate_name_description: "이미 같은 이름의 지갑이 있어요"
@@ -610,7 +601,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "직접 입력으로 변경"
     switch_to_mnemonic_description: "스캔한 정보를 지우고 니모닉을 직접 입력할까요?"
   hot_wallet_setup:
-    title: "새 지갑 생성하기"
     wallet_created_title: "새로운 핫월렛을\n만들었어요!"
     backup_title: "니모닉 백업하기"
     backup_preparation_title: "니모닉을\n안전하게 보관하세요"
@@ -639,89 +629,16 @@ wallet_home_screen:
     passphrase_correct: "패스프레이즈가 일치해요"
     backup_complete_title: "니모닉 백업을 확인했어요"
     backup_complete_description: "선택한 단어를 모두 정확하게 확인했어요. 앞으로 니모닉 백업 안내가 표시되지 않습니다."
-    set: "설정됨"
     skip: "나중에 할게요"
   add_wallet: "지갑 추가"
   add_wallet_action: "지갑 추가하기"
   view_all: "모두 보기"
-  wallet_menu:
-    rename: "이름 변경"
-    backup: "백업하기"
-    wallet_info: "지갑 정보"
-    remove_from_home: "홈에서 제거"
-    delete: "지갑 삭제"
-  edit_home_screen: "홈 화면 편집하기"
-  backup_update_notice_action: "자세히 보기"
-  backup_update_notice:
-    title: "상속 지갑 백업 업데이트 알림"
-    description: "상속 지갑의 백업 문구가 일부 변경되었어요.\n코코넛 볼트도 최신 버전으로 업데이트해 주세요.\n볼트를 업데이트하면 변경 사항이 자동으로 반영돼요.\n이후 구성 정보를 다시 백업해 주세요."
-    action: "자세히 보기"
   edit:
-    title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
-    hide_balance: "잔액 숨기기"
-    hide_balance_on_home: "홈 화면에 잔액을 표시하지 않아요"
     fake_balance:
       fake_balance_setting: "가짜 잔액 설정"
       fake_balance_display: "가짜 잔액 표시"
       fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요"
-      fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요"
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    hide_fiat_price: "법정 화폐 잔액 숨기기"
-    hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요"
-    home_add_wallet_button:
-      title: "홈 화면 상단 버튼"
-      sheet_title: "홈 화면 상단 버튼"
-      preview: "홈 화면 미리보기"
-      preview_all: "모든 지갑 추가 버튼"
-      preview_all_emphasis: "모든"
-      preview_watch_only: "보기 전용 지갑 추가 버튼"
-      preview_hot_wallet: "핫월렛 추가 버튼"
-      preview_hidden: "지갑 추가 버튼 숨김"
-      preview_hidden_emphasis: "숨김"
-      all:
-        title: "전체"
-        description: "모든 종류의 지갑을 선택할 수 있도록 할게요."
-      watch_only:
-        title: "보기 전용"
-        description: "보안이 우수한 보기 전용 지갑을 추가할게요."
-      hot_wallet:
-        title: "핫월렛"
-        description: "바로 사용 가능한 핫월렛을 추가할게요."
-      hidden:
-        title: "표시 안 함"
-        description: "홈 상단에 지갑 추가 버튼을 표시하지 않아요."
-    category:
-      total_balance: "잔액 합계"
-      wallet_list: "지갑 목록"
-      recent_transactions: "24시간 내\n거래"
-      analysis: "분석"
-    alert: 
-      empty_fake_balance: "가짜 잔액 입력"
-      empty_fake_balance_description: "금액이 설정되지 않았어요.\n금액을 다시 입력하거나,\n 0 BTC로 설정할 수 있어요."
-      set_to_0: "0 BTC로 설정"
-      enter_again: "다시 입력"
-  last_24_hours_transactions: "지난 24시간 거래"
-  syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
-  cannot_modify_fixed_widget: "이 요소는 표시/숨김을 변경할 수 없어요."
-  no_change_in_amount: "수량 변화가 없어요!"
-  analysis_period: "최근 ${days}일 • ${transaction_type}"
-  analysis_period_custom: "직접 설정 • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "조회 기간"
-    days_15: "15일"
-    days_30: "30일"
-    days_60: "60일"
-    days_90: "90일"
-    custom: "직접 설정"
-    transaction_type: "거래 유형"
-
-  transaction_count: "트랜잭션 $count회"
-  count: "$count회"
-  increase: "증가했어요"
-  decrease: "감소했어요"
-  sent: "보냈어요"
-  received: "받았어요"
-
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"

@@ -608,7 +608,6 @@ Uses `CoconutDesignSystem` widgets and styles:
 | `lib/services/wallet_add_service.dart:22-39` | `createExtendedPublicKeyWallet` |
 | `lib/utils/third_party_util.dart:5-34` | `getNextThirdPartyWalletName` |
 | `lib/providers/wallet_provider.dart:221-249` | `syncFromThirdParty` |
-| `lib/screens/home/wallet_home_screen.dart:1663-1730` | `_goToBitBox02Screen` — import wiring |
 
 ---
 

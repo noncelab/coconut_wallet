@@ -52,7 +52,8 @@ class UtxoSummaryChart extends StatelessWidget {
     this.height,
   });
 
-  static const double estimatedHeight = 350;
+  static const double estimatedHeight = 240;
+  static const double amountViewMinHeight = estimatedHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +63,7 @@ class UtxoSummaryChart extends StatelessWidget {
       constraints: buckets.isNotEmpty && height != null ? BoxConstraints(minHeight: height!) : null,
       color: colors.background,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 8, 16, showBalanceHeader ? 24 : 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -184,7 +185,7 @@ class _AvailabilityChip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
+          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.secondaryTextStrong)),
           const SizedBox(height: 4),
           Text(formatBalance(sats), style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
         ],
@@ -213,7 +214,7 @@ class _BarChart extends StatefulWidget {
 }
 
 class _BarChartState extends State<_BarChart> {
-  static const double _barMaxHeight = 80;
+  static const double _barMaxHeight = 72;
   int? _tappedBucketIndex;
   Timer? _bubbleDismissTimer;
 
@@ -337,7 +338,7 @@ class _BarChartState extends State<_BarChart> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: colors.utxoOverviewChartSurface,
             borderRadius: const BorderRadius.only(
@@ -397,7 +398,7 @@ class _BarChartState extends State<_BarChart> {
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: colors.utxoOverviewChartSurface,
+                                      color: colors.background,
                                       borderRadius: BorderRadius.circular(999),
                                       boxShadow: [
                                         BoxShadow(
@@ -416,7 +417,7 @@ class _BarChartState extends State<_BarChart> {
                                 ),
                                 Text(
                                   bucket.label,
-                                  style: CoconutTypography.caption_10.setColor(colors.mutedText),
+                                  style: CoconutTypography.caption_10.setColor(colors.secondaryTextStrong),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,

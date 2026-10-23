@@ -63,7 +63,8 @@ class CoconutIconButton extends StatelessWidget {
 /// Standard app-bar action icon button.
 ///
 /// This wraps [CoconutIconButton] and fixes the common 48x48 app-bar action
-/// size used across the app.
+/// size used across the app. [actionWidth] provides the 40px layout width used
+/// by compact app bars while preserving the 48px hit area height.
 ///
 /// Prefer this over raw `IconButton` for:
 /// - app bar right-side action icons
@@ -74,6 +75,7 @@ class CoconutIconButton extends StatelessWidget {
 class CoconutAppBarActionButton extends StatelessWidget {
   static const minimumSize = kMinInteractiveDimension;
   static const highlightSize = 40.0;
+  static const actionWidth = highlightSize;
 
   final Widget icon;
   final VoidCallback? onPressed;

@@ -88,7 +88,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
   double get _summaryChartHeight {
     final box = _summaryChartKey.currentContext?.findRenderObject();
-    return box is RenderBox && box.hasSize ? box.size.height : UtxoSummaryChart.estimatedHeight;
+    return box is RenderBox && box.hasSize ? box.size.height : UtxoSummaryChart.amountViewMinHeight;
   }
 
   final GlobalKey _listOrderDropdownKey = GlobalKey();
@@ -524,7 +524,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
                 key: _summaryChartKey,
-                height: UtxoSummaryChart.estimatedHeight,
+                height: UtxoSummaryChart.amountViewMinHeight,
                 buckets: _buckets,
                 totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
                 coinCount: viewModel.utxoList.length,

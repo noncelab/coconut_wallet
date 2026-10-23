@@ -32,7 +32,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
@@ -457,15 +457,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 languageCode: context.read<PreferenceProvider>().language,
                 title: t.utility.p2p_calculator.no_wallet,
                 description: t.utility.p2p_calculator.no_wallet_description,
-                onTapRight: () {
-                  // popup 닫고 홈으로 이동
-                  Navigator.of(context).pop();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    WalletHomeScreen.openAddWalletIfActive(); // 홈에서 지갑 추가 바텀시트 열기
-                  });
-                },
+                onTapRight: _returnToHomeAndAddWallet,
                 onTapLeft: () {
                   Navigator.of(context).pop();
                 },
@@ -522,6 +514,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           break;
         }
     }
+  }
+
+  Future<void> _returnToHomeAndAddWallet() async {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.popUntil((route) => route.isFirst);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!navigator.mounted) return;
+    await WalletAddScreen.openByWalletCount(navigator.context);
   }
 
   void _changeInputAsset() {
