@@ -790,7 +790,11 @@ class _BalanceCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   if (hasChange) ...[
-                    Icon(rate > 0 ? CupertinoIcons.arrow_up : CupertinoIcons.arrow_down, size: 14, color: rateColor),
+                    Icon(
+                      rate > 0 ? CupertinoIcons.arrowtriangle_up_fill : CupertinoIcons.arrowtriangle_down_fill,
+                      size: 12,
+                      color: rateColor,
+                    ),
                     const SizedBox(width: 2),
                   ],
                   Text(rateText, key: const Key('hodl-insights-balance-rate'), style: rateStyle),
