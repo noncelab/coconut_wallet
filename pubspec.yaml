@@ -177,7 +177,6 @@ flutter:
     - assets/lottie/check-mark.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json
-    - assets/lottie/swipe-left.json
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
     - assets/lottie/three-stars-growing.json

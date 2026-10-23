@@ -54,8 +54,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
 
-  /// 말풍선 오른쪽 끝이 지갑 추가 버튼 오른쪽 끝보다 더 나가는 거리
-  static const _addWalletHintRightOverhang = 52.0;
+  /// 온보딩 - 지갑 추가 말풍선
+  static const _addWalletHintRightOverhang = 32.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
   final GlobalKey<HomeCubePagerState> _pagerKey = GlobalKey();

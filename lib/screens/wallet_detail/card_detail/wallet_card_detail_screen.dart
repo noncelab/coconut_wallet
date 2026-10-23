@@ -281,7 +281,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         ),
       ),
       actionButtonList: [
-        WalletRefreshIndicator(isRefreshing: viewModel.detail.isRefreshing),
+        WalletRefreshIndicator(isRefreshing: viewModel.detail.isRefreshing || viewModel.detail.isWalletSyncing),
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
             key: const Key('wallet-detail-faucet'),
