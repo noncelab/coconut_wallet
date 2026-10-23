@@ -1,5 +1,7 @@
-import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
+import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -93,7 +95,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   Offset _startPosition = Offset.zero;
   bool _pinching = false;
   double _edgeOverscroll = 0;
-  late bool _showGestureGuide;
+  late bool _shouldShowGestureGuide;
+  bool _showGestureGuide = false;
+  Animation<double>? _routeAnimation;
 
   HodlInsightsViewModel get vm => widget.viewModel;
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
@@ -106,7 +110,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
   void initState() {
     super.initState();
     final preferences = SharedPrefsRepository();
-    _showGestureGuide =
+    _shouldShowGestureGuide =
         !preferences.isInitialized || !preferences.getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed);
     _walletIds = vm.walletIds == null ? null : List<int>.of(vm.walletIds!);
     _readAnchor();
@@ -115,6 +119,32 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     _end = (_days - 1).toDouble();
     vm.data.addListener(_onData);
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _routeAnimation)) return;
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
+    _routeAnimation = animation;
+    if (!_shouldShowGestureGuide) return;
+    if (animation == null || animation.status == AnimationStatus.completed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showGestureGuideAfterTransition());
+      return;
+    }
+    animation.addStatusListener(_onRouteAnimationStatus);
+  }
+
+  void _onRouteAnimationStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
+    _showGestureGuideAfterTransition();
+  }
+
+  void _showGestureGuideAfterTransition() {
+    if (!mounted || !_shouldShowGestureGuide || _showGestureGuide) return;
+    setState(() => _showGestureGuide = true);
   }
 
   void _readAnchor() {
@@ -158,6 +188,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     WidgetsBinding.instance.removeObserver(this);
     vm.data.removeListener(_onData);
     super.dispose();
@@ -263,11 +294,15 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     );
   }
 
-  Future<void> _dismissGestureGuide() async {
-    setState(() => _showGestureGuide = false);
+  void _dismissGestureGuide() {
+    if (!_showGestureGuide) return;
+    setState(() {
+      _shouldShowGestureGuide = false;
+      _showGestureGuide = false;
+    });
     final preferences = SharedPrefsRepository();
     if (preferences.isInitialized) {
-      await preferences.setBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed, true);
+      unawaited(preferences.setBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed, true));
     }
   }
 
@@ -305,7 +340,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
               child: BalanceHistoryPeriodChips(
                 selected: _period,
                 onSelected: _selectPeriod,
-                backgroundColor: colors.surface,
+                backgroundColor: colors.background,
                 itemBackgroundColor: colors.background,
               ),
             ),
@@ -367,6 +402,9 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                           }
                           if (_pinching && details.pointerCount < 2) return;
                           final delta = details.localFocalPoint - _startPosition;
+                          final completedGuideGesture =
+                              _pinching ? (details.scale - 1).abs() > 0.01 : delta.distanceSquared > 16;
+                          if (completedGuideGesture) _dismissGestureGuide();
                           final zoom =
                               _pinching
                                   ? details.scale
@@ -709,7 +747,7 @@ class _BalanceHistoryGestureGuide extends StatelessWidget {
           iconPath,
           width: 22,
           height: 22,
-          colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: CoconutTypography.body3_12.copyWith(color: colors.guideBubblePrimaryText))),
@@ -726,8 +764,8 @@ class _BalanceHistoryGestureGuide extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 24),
+                Align(
+                  alignment: Alignment.center,
                   child: CustomPaint(
                     size: const Size(18, 10),
                     painter: _GestureGuideTailPainter(colors.guideBubbleBackground),
@@ -770,7 +808,7 @@ class _BalanceHistoryGestureGuide extends StatelessWidget {
                         padding: const EdgeInsets.all(4),
                         minimumSize: const Size(32, 32),
                         onPressed: onDismiss,
-                        child: Icon(CupertinoIcons.xmark, size: 16, color: colors.guideBubblePrimaryText),
+                        child: const Icon(CupertinoIcons.xmark, size: 16, color: Colors.white),
                       ),
                     ],
                   ),
