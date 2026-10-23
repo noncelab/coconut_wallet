@@ -1352,6 +1352,44 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('balance history preserves multiple selected wallets and their combined balance', (tester) async {
+      final now = DateTime(2026, 10, 20, 12);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        dataNow: now,
+        walletList: [for (var id = 1; id <= 3; id++) WalletMock.createSingleSigWalletItem(id: id)],
+        screen:
+            (_) => Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed: () => HodlInsightsScreen.open(context, walletIds: [1, 2]),
+                    child: const Text('open scoped insights'),
+                  ),
+            ),
+      );
+      await tester.tap(find.text('open scoped insights'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+      final breakdown = tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown));
+      expect(breakdown.slices.map((slice) => slice.wallet.id), [1, 2]);
+      expect(breakdown.singleWallet, isFalse);
+      expect(find.byKey(const Key('balance-history-shares')), findsOneWidget);
+      final chart = find.descendant(of: find.byType(WalletBalanceHistoryScreen), matching: find.byType(HomeSparkline));
+      expect(
+        tester.widget<HomeSparkline>(chart).values,
+        history.viewModel.data.dailyBalances(walletIds: [1, 2], days: HomeWidgetPeriod.week.days, asOf: now),
+      );
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
     testWidgets('balance history shows all wallets without a wallet chip list', (tester) async {
       await _openWidgetsTab(tester, fake: false, screen: insights);
       await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
