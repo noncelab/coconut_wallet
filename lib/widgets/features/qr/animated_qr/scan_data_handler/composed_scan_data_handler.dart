@@ -52,6 +52,7 @@ class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
 
   @override
   void reset() {
+    _selected = null;
     _bcUrQrScanDataHandler.reset();
     _descriptorQrScanDataHandler.reset();
   }

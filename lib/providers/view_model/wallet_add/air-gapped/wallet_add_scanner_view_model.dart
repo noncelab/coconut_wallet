@@ -60,8 +60,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
 
   bool get isExtendedPublicKeyScanned =>
-      _walletImportSource == WalletImportSource.extendedPublicKey &&
-      (_qrDataHandler as ComposedScanDataHandler2).selectedHandler is ExtendedPublicKeyQrScanDataHandler;
+      _qrDataHandler is ComposedScanDataHandler2 &&
+      _qrDataHandler.selectedHandler is ExtendedPublicKeyQrScanDataHandler;
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(
@@ -126,14 +126,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
-      _walletImportSource,
+      WalletImportSource.descriptor,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromDescriptor(
-      descriptor: descriptor,
-      name: name,
-      walletImportSource: _walletImportSource,
-    );
+    final wallet = _walletAddService.createWalletFromDescriptor(descriptor: descriptor, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
