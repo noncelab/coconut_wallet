@@ -116,6 +116,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final tooltipColor = Theme.of(context).brightness == Brightness.dark ? colors.surface : colors.surfaceMuted;
     final appearances = context.watchWalletAppearance();
     final selected = widget.slices.where((slice) => slice.wallet.id == _selectedId).firstOrNull;
     return LayoutBuilder(
@@ -322,7 +323,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                                   : null,
                           painter: BalanceHistorySharePointer(
                             center - (_scroll.hasClients ? _scroll.offset : 0),
-                            colors.surfaceMuted,
+                            tooltipColor,
                             showPointer: !widget.singleWallet && selected.balance > 0,
                           ),
                           child: Padding(
@@ -334,7 +335,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                       key: const Key('balance-history-share-tooltip'),
                       tooltipType: CoconutTooltipType.fixed,
                       showIcon: false,
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: tooltipColor,
                       borderColor: Colors.transparent,
                       borderRadius: 24,
                       padding: const EdgeInsets.all(16),

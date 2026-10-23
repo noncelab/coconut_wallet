@@ -296,7 +296,14 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
                               child: AnimatedOpacity(
                                 duration: const Duration(milliseconds: 100),
                                 opacity: _isPressed ? 1 : 0,
-                                child: Container(color: colors.primaryText.withValues(alpha: 0.12)),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(_borderRadius),
+                                  child: Container(
+                                    color: colors.surfacePressOverlay.withValues(
+                                      alpha: colors.surfacePressOverlayOpacity,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

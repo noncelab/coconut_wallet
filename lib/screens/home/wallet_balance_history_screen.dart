@@ -200,7 +200,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final balances = _balances;
     final dates = _dates;
     return Scaffold(
-      backgroundColor: colors.homeBackground,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
       body: SafeArea(
         top: false,
@@ -231,7 +231,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                                   flightShuttleBuilder: walletBalanceHistoryFlight,
                                   child: Material(
                                     key: const Key('balance-history-graph-surface'),
-                                    color: colors.homeSurface,
+                                    color: colors.surface,
                                     borderRadius: BorderRadius.circular(20),
                                     clipBehavior: Clip.antiAlias,
                                     child: _chart(balances, dates),
@@ -302,7 +302,12 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               reverse: true,
-              child: BalanceHistoryPeriodChips(selected: _period, onSelected: _selectPeriod),
+              child: BalanceHistoryPeriodChips(
+                selected: _period,
+                onSelected: _selectPeriod,
+                backgroundColor: colors.surface,
+                itemBackgroundColor: colors.background,
+              ),
             ),
           ),
           const SizedBox(height: 8),

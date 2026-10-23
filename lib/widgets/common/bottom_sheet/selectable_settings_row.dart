@@ -36,7 +36,7 @@ class SelectableSettingsRow extends StatelessWidget {
         onTap();
       },
       defaultColor: Colors.transparent,
-      borderRadius: 0,
+      borderRadius: 12,
       borderWidth: 0,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
