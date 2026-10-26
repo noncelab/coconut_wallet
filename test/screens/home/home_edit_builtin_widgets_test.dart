@@ -1329,6 +1329,83 @@ void main() {
       }
     });
 
+    testWidgets('insights balance chart morphs between periods and retargets from its current shape', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, size: const Size(390, 844));
+      await tester.pumpAndSettle();
+      final chart = find.descendant(
+        of: find.byKey(const Key('hodl-insights-balance-chart')),
+        matching: find.byType(HomeSparkline),
+      );
+      List<num> values() => List<num>.of(tester.widget<HomeSparkline>(chart).values);
+      final initial = values();
+      await tester.tap(find.byKey(const ValueKey('hodl-insights-period-month')).first);
+      await tester.pump();
+      expect(values(), orderedEquals(initial));
+      await tester.pump(const Duration(milliseconds: 200));
+      final midway = values();
+      expect(midway, isNot(orderedEquals(initial)));
+      await tester.tap(find.byKey(const ValueKey('hodl-insights-period-threeMonths')).first);
+      await tester.pump();
+      expect(values(), orderedEquals(midway), reason: 'a new period continues from the visible intermediate curve');
+      await tester.pumpAndSettle();
+      final finalShape = values();
+      expect(finalShape, isNot(orderedEquals(midway)));
+      expect(finalShape.every((value) => value >= 0 && value <= 1), isTrue);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('insights balance chart changes immediately when motion is disabled', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, disableAnimations: true);
+      await tester.pumpAndSettle();
+      final chart = find.descendant(
+        of: find.byKey(const Key('hodl-insights-balance-chart')),
+        matching: find.byType(HomeSparkline),
+      );
+      final initial = List<num>.of(tester.widget<HomeSparkline>(chart).values);
+      await tester.tap(find.byKey(const ValueKey('hodl-insights-period-month')).first);
+      await tester.pump();
+      final updated = List<num>.of(tester.widget<HomeSparkline>(chart).values);
+      expect(updated, isNot(orderedEquals(initial)));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.widget<HomeSparkline>(chart).values, orderedEquals(updated));
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('only the insights balance chart swipes between adjacent periods without opening detail', (
+      tester,
+    ) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, size: const Size(390, 844));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('hodl-insights-balance-chart'));
+      HomeWidgetPeriod selected() =>
+          tester.widget<BalanceHistoryPeriodChips>(find.byKey(const Key('hodl-insights-balance-periods'))).selected;
+      expect(selected(), HomeWidgetPeriod.week);
+      await tester.drag(chart, const Offset(120, 0));
+      await tester.pumpAndSettle();
+      expect(selected(), HomeWidgetPeriod.week);
+      for (final period in HomeWidgetPeriod.values.skip(1)) {
+        await tester.drag(chart, const Offset(-120, 0));
+        await tester.pumpAndSettle();
+        expect(selected(), period);
+        expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
+      }
+      await tester.drag(chart, const Offset(-120, 0));
+      await tester.pumpAndSettle();
+      expect(selected(), HomeWidgetPeriod.all);
+      for (final period in HomeWidgetPeriod.values.reversed.skip(1)) {
+        await tester.drag(chart, const Offset(120, 0));
+        await tester.pumpAndSettle();
+        expect(selected(), period);
+      }
+      await tester.tap(chart);
+      await tester.pumpAndSettle();
+      expect(find.byType(WalletBalanceHistoryScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('balance chart opens Hero detail, preserves period, toggles focus and zooms while focused', (
       tester,
     ) async {
