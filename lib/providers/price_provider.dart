@@ -28,7 +28,6 @@ class PriceProvider extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
   final CoinGeckoPriceService Function() _createCoinGeckoService;
-  late FiatCode _fiatCode;
 
   /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
   final Map<FiatCode, WebSocketService> _webSocketServices = {};
@@ -56,7 +55,6 @@ class PriceProvider extends ChangeNotifier {
   }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create,
        _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new {
     Logger.log('PriceProvider: Initialized with connectivity provider');
-    _fiatCode = _preferenceProvider.selectedFiat;
 
     _connectivityListener = _onConnectivityChanged;
     _preferenceListener = _onPreferenceChanged;
@@ -94,13 +92,10 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void _onPreferenceChanged() {
-    // 모든 통화의 가격을 유지하므로 선택 통화 변경 시 재연결은 불필요.
-    // 연결이 끊긴 통화가 있으면 끊긴 것만 다시 연다.
-    if (_fiatCode != _preferenceProvider.selectedFiat) {
-      _fiatCode = _preferenceProvider.selectedFiat;
-      if (_connectivityProvider.isInternetOn == true) {
-        initWebSocketService();
-      }
+    // 모든 통화의 가격을 유지하므로 선택 통화 변경만으로는 재연결 불필요.
+    // 끊긴 채널이 있으면 끊긴 것만 다시 연다.
+    if (_connectivityProvider.isInternetOn == true) {
+      initWebSocketService();
     }
   }
 
@@ -152,11 +147,6 @@ class PriceProvider extends ChangeNotifier {
         );
         service.start();
         Logger.log('[CoinGecko] 폴링 시작');
-      }
-
-      final selectedFiat = _preferenceProvider.selectedFiat;
-      if (selectedFiat != _fiatCode) {
-        _fiatCode = selectedFiat;
       }
     } catch (e) {
       Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
