@@ -15,6 +15,7 @@ class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
+  final CoinGeckoPriceService Function() _createCoinGeckoService;
   late FiatCode _fiatCode;
 
   /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
@@ -33,11 +34,6 @@ class PriceProvider extends ChangeNotifier {
   /// 통화별 가격 저장
   final Map<FiatCode, int> _bitcoinPrices = {};
 
-  int? get bitcoinPriceKrw => _bitcoinPrices[FiatCode.KRW];
-  int? get bitcoinPriceUsd => _bitcoinPrices[FiatCode.USD];
-  int? get bitcoinPriceJpy => _bitcoinPrices[FiatCode.JPY];
-  int? get bitcoinPriceEur => _bitcoinPrices[FiatCode.EUR];
-
   /// 특정 통화의 BTC 가격 조회
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => _bitcoinPrices[fiatCode];
 
@@ -45,7 +41,9 @@ class PriceProvider extends ChangeNotifier {
     this._connectivityProvider,
     this._preferenceProvider, {
     @visibleForTesting WebSocketService Function(FiatCode fiatCode)? webSocketFactory,
-  }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create {
+    @visibleForTesting CoinGeckoPriceService Function()? coinGeckoFactory,
+  }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create,
+       _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new {
     Logger.log('PriceProvider: Initialized with connectivity provider');
     _fiatCode = _preferenceProvider.selectedFiat;
 
@@ -135,7 +133,7 @@ class PriceProvider extends ChangeNotifier {
 
       // 거래소 웹소켓이 없는 통화는 CoinGecko 폴링
       if (_coinGeckoService == null) {
-        final service = CoinGeckoPriceService();
+        final service = _createCoinGeckoService();
         _coinGeckoService = service;
         _coinGeckoSubscription = service.priceStream.listen(
           _updateCoinGeckoPrices,
@@ -214,44 +212,15 @@ class PriceProvider extends ChangeNotifier {
 
   // util: 통화 코드를 받아서 가격을 반환 (문자열)
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) {
-    try {
-      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
-      final price = _getPriceForFiat(targetFiat);
+    final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
+    final price = getBitcoinPriceForFiat(targetFiat);
 
-      if (price == null) {
-        return '';
-      }
-
-      final amount = FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
-
-      if (showCurrencySymbol) {
-        return '${targetFiat.symbol} $amount';
-      } else {
-        return amount;
-      }
-    } catch (e) {
-      Logger.error('PriceProvider: getFiatPrice 오류: $e');
+    if (price == null) {
       return '';
     }
+
+    final amount = FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
+
+    return showCurrencySymbol ? '${targetFiat.symbol} $amount' : amount;
   }
-
-  // util: 통화 코드를 받아서 가격을 반환 (정수)
-  int? getFiatAmount(int satoshiAmount, [FiatCode? fiatCode]) {
-    try {
-      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
-      final price = _getPriceForFiat(targetFiat);
-
-      if (price == null) {
-        return null;
-      }
-
-      return FiatUtil.calculateFiatAmount(satoshiAmount, price);
-    } catch (e) {
-      Logger.error('PriceProvider: getFiatAmount 오류: $e');
-      return null;
-    }
-  }
-
-  /// 특정 통화의 가격 반환
-  int? _getPriceForFiat(FiatCode fiatCode) => _bitcoinPrices[fiatCode];
 }

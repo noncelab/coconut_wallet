@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -15,9 +14,7 @@ import 'package:flutter/material.dart';
 class UtxoSelectionViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final UtxoTagProvider _tagProvider;
-  final PriceProvider _priceProvider;
   final PreferenceProvider _preferenceProvider;
-  late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
   late final int _walletId;
   bool _isInitialized = false;
@@ -49,14 +46,10 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   UtxoSelectionViewModel(
     this._walletProvider,
     this._tagProvider,
-    this._priceProvider,
     this._preferenceProvider,
     this._isNetworkOn,
     this._walletId,
-  ) {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    _priceProvider.addListener(_updateBitcoinPriceKrw);
-  }
+  );
 
   void initialize(List<UtxoState> selectedUtxoList) {
     if (_isInitialized) return;
@@ -104,7 +97,6 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     initialize(selectedUtxoList);
   }
 
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get isInitialized => _isInitialized;
@@ -216,11 +208,6 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateBitcoinPriceKrw() {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    notifyListeners();
-  }
-
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
@@ -288,11 +275,5 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     }
 
     return false;
-  }
-
-  @override
-  void dispose() {
-    _priceProvider.removeListener(_updateBitcoinPriceKrw);
-    super.dispose();
   }
 }

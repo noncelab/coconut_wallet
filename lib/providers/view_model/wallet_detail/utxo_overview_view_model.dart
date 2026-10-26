@@ -78,7 +78,6 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
-  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
   String get fiatPriceString => _priceProvider.getFiatPrice(balance);
   bool? get isNetworkOn => _connectProvider.isInternetOn;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;

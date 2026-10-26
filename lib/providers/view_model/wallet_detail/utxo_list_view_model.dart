@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -26,7 +25,6 @@ class UtxoListViewModel extends ChangeNotifier {
   late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
-  late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
   late final NodeProvider _nodeProvider;
   late final WalletItemBase _walletListBaseItem;
@@ -64,8 +62,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
-  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
-  String get fiatPriceString => _priceProvider.getFiatPrice(balance);
+
   bool? get isNetworkOn => _connectProvider.isInternetOn;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
@@ -98,7 +95,6 @@ class UtxoListViewModel extends ChangeNotifier {
     this._txProvider,
     this._tagProvider,
     this._connectProvider,
-    this._priceProvider,
     this._preferenceProvider,
     this._nodeProvider,
     this._syncWalletStateStream,

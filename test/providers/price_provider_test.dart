@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/coingecko_price_service.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -40,10 +41,10 @@ void main() {
       harness.emit(FiatCode.EUR, 55000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 100000000);
-      expect(harness.prices.bitcoinPriceUsd, 60000);
-      expect(harness.prices.bitcoinPriceJpy, 9000000);
-      expect(harness.prices.bitcoinPriceEur, 55000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.USD), 60000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.JPY), 9000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.EUR), 55000);
       expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
       expect(harness.prices.getFiatPrice(100000000), '₩ 100,000,000');
       expect(harness.notes, hasLength(4));
@@ -52,7 +53,7 @@ void main() {
     });
   });
 
-  testWidgets('selected currency change reconnects once and keeps one live set', (tester) async {
+  testWidgets('selected currency change keeps one live set without reconnecting', (tester) async {
     await withHarness(tester, (harness) async {
       harness.emit(FiatCode.KRW, 100000000);
       harness.emit(FiatCode.USD, 60000);
@@ -62,13 +63,13 @@ void main() {
       harness.preference.select(FiatCode.USD);
 
       expect(OwnedSocket.live, 4);
-      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.created, 4);
       expect(harness.prices.getFiatPrice(100000000), r'$ 60,000');
 
       harness.emit(FiatCode.USD, 61000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceUsd, 61000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.USD), 61000);
       expect(harness.prices.getFiatPrice(100000000), r'$ 61,000');
       expect(harness.notes, hasLength(1));
       expect(OwnedSocket.live, 4);
@@ -88,7 +89,7 @@ void main() {
   testWidgets('offline startup waits, then one online notification opens four sockets', (tester) async {
     await withHarness(tester, (harness) async {
       expect(OwnedSocket.created, 0);
-      expect(harness.prices.bitcoinPriceKrw, isNull);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), isNull);
       expect(harness.prices.getFiatPrice(100000000), isEmpty);
 
       harness.connectivity.setOnline(true);
@@ -128,7 +129,7 @@ void main() {
       harness.emit(FiatCode.KRW, 42000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 42000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 42000);
       expect(harness.notes, hasLength(1));
     });
   });
@@ -146,7 +147,7 @@ void main() {
       harness.emit(FiatCode.EUR, 55000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceEur, 55000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.EUR), 55000);
       expect(harness.notes, hasLength(1));
     });
   });
@@ -176,7 +177,7 @@ void main() {
       harness.emit(FiatCode.KRW, 222);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 222);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 222);
       expect(harness.notes.map((note) => note.krw).toList(), [222]);
       expect(OwnedSocket.live, 4);
     });
@@ -218,7 +219,7 @@ void main() {
       second.emit(FiatCode.KRW, 333);
       await tester.pump();
 
-      expect(second.prices.bitcoinPriceKrw, 333);
+      expect(second.prices.getBitcoinPriceForFiat(FiatCode.KRW), 333);
       expect(second.notes, hasLength(1));
       expect(tester.takeException(), isNull);
     } finally {
@@ -240,7 +241,7 @@ void main() {
       harness.emit(FiatCode.KRW, 99000000);
       await tester.idle();
       await tester.pump();
-      expect(harness.prices.bitcoinPriceKrw, 99000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 99000000);
       expect(harness.prices.getFiatPrice(100000000), '₩ 99,000,000');
       expect(find.text('₩ 99,000,000'), findsOneWidget);
       expect(find.text('₩ 100,000,000'), findsNothing);
@@ -286,7 +287,7 @@ void main() {
       session.harness.emit(FiatCode.KRW, 100000000);
       await tester.pump();
       expect(session.harness.notes, hasLength(1));
-      expect(session.harness.prices.bitcoinPriceKrw, 100000000);
+      expect(session.harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
     } finally {
       await releaseGuard(tester, session);
     }
@@ -461,6 +462,7 @@ void main() {
           },
         );
       },
+      coinGeckoFactory: _CoinGecko.new,
     );
     addTearDown(prices.dispose);
     addTearDown(connectivity.dispose);
@@ -468,10 +470,10 @@ void main() {
 
     await _waitUntil(
       () =>
-          prices.bitcoinPriceKrw == 100000000 &&
-          prices.bitcoinPriceUsd == 60000 &&
-          prices.bitcoinPriceJpy == 9000000 &&
-          prices.bitcoinPriceEur == 55000,
+          prices.getBitcoinPriceForFiat(FiatCode.KRW) == 100000000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.USD) == 60000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.JPY) == 9000000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.EUR) == 55000,
     );
 
     expect(accepted, 4);
@@ -572,10 +574,15 @@ class Harness {
   Harness({bool online = true, FiatCode fiat = FiatCode.KRW})
     : connectivity = ScriptedConnectivity(online: online),
       preference = ScriptedPreference(fiat) {
-    prices = PriceProvider(connectivity, preference, webSocketFactory: book.create);
+    prices = PriceProvider(connectivity, preference, webSocketFactory: book.create, coinGeckoFactory: _CoinGecko.new);
     prices.addListener(() {
       notes.add(
-        PriceNote(prices.bitcoinPriceKrw, prices.bitcoinPriceUsd, prices.bitcoinPriceJpy, prices.bitcoinPriceEur),
+        PriceNote(
+          prices.getBitcoinPriceForFiat(FiatCode.KRW),
+          prices.getBitcoinPriceForFiat(FiatCode.USD),
+          prices.getBitcoinPriceForFiat(FiatCode.JPY),
+          prices.getBitcoinPriceForFiat(FiatCode.EUR),
+        ),
       );
     });
   }
@@ -626,6 +633,28 @@ class PriceNote {
   final int? usd;
   final int? jpy;
   final int? eur;
+}
+
+class _CoinGecko extends Fake implements CoinGeckoPriceService {
+  final _controller = StreamController<Map<FiatCode, int>>.broadcast(sync: true);
+
+  @override
+  Stream<Map<FiatCode, int>> get priceStream => _controller.stream;
+
+  void emit(Map<FiatCode, int> prices) {
+    if (!_controller.isClosed) _controller.add(prices);
+  }
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
+  void dispose() {
+    _controller.close();
+  }
 }
 
 class SocketBook {
@@ -819,6 +848,8 @@ ExchangeType _exchangeFor(FiatCode fiat) {
       return ExchangeType.binance;
     case FiatCode.JPY:
       return ExchangeType.bitflyer;
+    default:
+      throw UnsupportedError('no exchange source for $fiat');
   }
 }
 
@@ -830,6 +861,8 @@ String? _symbolFor(FiatCode fiat) {
       return 'btceur';
     case FiatCode.KRW:
     case FiatCode.JPY:
+      return null;
+    default:
       return null;
   }
 }
@@ -843,6 +876,8 @@ String _payload(FiatCode fiat, int price) {
       return '{"c":"$price"}';
     case FiatCode.JPY:
       return '{"method":"channelMessage","params":{"message":{"ltp":$price}}}';
+    default:
+      return '{}';
   }
 }
 
