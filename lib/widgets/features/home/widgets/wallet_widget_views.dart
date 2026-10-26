@@ -288,7 +288,7 @@ class _WalletStackViewState extends State<WalletStackView> {
 
   Widget _indicator(BuildContext context) {
     final colors = context.coconutColors;
-    final slotWidth = _pageCount > 5 ? 14.0 : 16.0;
+    const slotWidth = 14.0;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
