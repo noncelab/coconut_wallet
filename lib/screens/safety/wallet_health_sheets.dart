@@ -89,7 +89,7 @@ Future<void> showWalletHealthAboutSheet(BuildContext context) => CommonBottomShe
   context: context,
   screenName: '/wallet-health/about',
   title: t.wallet_health.about.title,
-  titleTextStyle: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+  titleTextStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
   scaleDownTitle: true,
   minChildSize: 0.6,
   maxChildSize: 0.9,
@@ -483,7 +483,15 @@ class _ScoreFormula extends StatelessWidget {
                     (c.score! * c.weightPercent / 100).toStringAsFixed(1),
                   ),
           Divider(color: colors.divider, height: 16),
-          row(s.formula_total, '', '${report.score}', nameStyle: bold, resultStyle: bold),
+          row(
+            s.formula_total,
+            '',
+            report.categories.values
+                .fold<double>(0, (sum, c) => sum + (c.score ?? 0) * c.weightPercent / 100)
+                .toStringAsFixed(1),
+            nameStyle: bold,
+            resultStyle: bold,
+          ),
         ],
       ),
     );

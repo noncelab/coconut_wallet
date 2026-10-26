@@ -11,7 +11,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
@@ -146,16 +146,10 @@ List<String> _dayLabels(int days, {int count = 7}) {
 
 String _btc(HomeWidgetsViewModel viewModel, int sats) => viewModel.unit.displayBitcoinAmount(sats, withUnit: true);
 
-String _btcNumber(HomeWidgetsViewModel viewModel, int sats, {bool roundedTo4 = false}) =>
-    roundedTo4 && viewModel.unit.isBtcUnit
-        ? (sats / 100000000).toStringAsFixed(4)
-        : viewModel.unit.displayBitcoinAmount(sats);
+String _btcNumber(HomeWidgetsViewModel viewModel, int sats) => viewModel.unit.displayBitcoinAmount(sats);
 
-HomeAmount _btcAmount(HomeWidgetsViewModel viewModel, int sats, {bool roundedTo4 = false}) => HomeAmount(
-  _btcNumber(viewModel, sats, roundedTo4: roundedTo4),
-  viewModel.unit.symbol,
-  unitFirst: viewModel.unit.isPrefixSymbol,
-);
+HomeAmount _btcAmount(HomeWidgetsViewModel viewModel, int sats) =>
+    HomeAmount(_btcNumber(viewModel, sats), viewModel.unit.symbol, unitFirst: viewModel.unit.isPrefixSymbol);
 
 HomeAmount _fiatAmount(int? amount, FiatCode fiat) =>
     amount == null
@@ -300,8 +294,8 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       final ids = walletIdsOf(item);
       return BalanceByWalletView(
         shares: viewModel.balanceShares(walletIds: ids, othersName: t.home_widgets.others),
-        total: _btcAmount(viewModel, viewModel.totalBalance(ids), roundedTo4: true),
-        amountText: (sats) => _btcNumber(viewModel, sats, roundedTo4: true),
+        total: _btcAmount(viewModel, viewModel.totalBalance(ids)),
+        amountText: (sats) => _btcNumber(viewModel, sats),
       );
     },
   ),
@@ -316,26 +310,35 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
           transactions: viewModel.recentTransactions(walletIds: walletIdsOf(item)),
           amountText: (sats) => _btc(viewModel, sats),
           now: DateTime.now(),
-          onTransactionTap:
-              (walletId) => Navigator.of(context).push(
-                PageRouteBuilder<void>(
-                  settings: RouteSettings(
-                    name: AppRouteNames.walletDetail,
-                    arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
+          onTransactionSelected: (tx) {
+            Navigator.of(context).push(
+              PageRouteBuilder<void>(
+                settings: RouteSettings(
+                  name: AppRouteNames.walletDetail,
+                  arguments: WalletDetailRouteArgs(
+                    id: tx.walletId,
+                    entryPoint: kEntryPointWalletHome,
+                    focusRecentTransactions: true,
+                    focusedTransactionHash: tx.txHash,
                   ),
-                  transitionDuration: HodlInsightsScreen.transitionDuration,
-                  reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
-                  pageBuilder: (_, __, ___) => WalletDetailScreen(id: walletId, entryPoint: kEntryPointWalletHome),
-                  transitionsBuilder:
-                      (_, animation, __, child) => FadeTransition(
-                        opacity: CurvedAnimation(
-                          parent: animation,
-                          curve: const Interval(0, 0.6, curve: Curves.easeOut),
-                        ),
-                        child: child,
-                      ),
                 ),
+                transitionDuration: HodlInsightsScreen.transitionDuration,
+                reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
+                pageBuilder:
+                    (_, __, ___) => WalletCardDetailScreen(
+                      id: tx.walletId,
+                      entryPoint: kEntryPointWalletHome,
+                      focusRecentTransactions: true,
+                      focusedTransactionHash: tx.txHash,
+                    ),
+                transitionsBuilder:
+                    (_, animation, __, child) => FadeTransition(
+                      opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+                      child: child,
+                    ),
               ),
+            );
+          },
         ),
   ),
   BuiltinHomeWidget(

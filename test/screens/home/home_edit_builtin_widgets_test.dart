@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -34,8 +35,7 @@ import 'package:coconut_wallet/screens/home/home_edit_screen.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
-import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
@@ -56,6 +56,10 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoApp, CupertinoPageScaffold, CupertinoScrollBehavior, DefaultCupertinoLocalizations;
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
+import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
+import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -192,12 +196,23 @@ Future<void> _openWidgetsTab(
   bool cupertinoShell = false,
   Color? sourceMarkerColor,
   DateTime? dataNow,
+  Map<int, WalletBackground> walletBackgrounds = const {},
+  bool gestureGuideDismissed = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: gestureGuideDismissed});
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
+  final appearanceRepository = WalletAppearanceRepository(prefs);
+  for (final entry in walletBackgrounds.entries) {
+    await appearanceRepository.setBackground(entry.key, entry.value);
+  }
+  final appearances = WalletAppearanceProvider(
+    repository: appearanceRepository,
+    photoStore: WalletBackgroundPhotoStore(),
+  );
+  addTearDown(appearances.dispose);
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
   final now = dataNow ?? DateTime.now();
@@ -253,7 +268,7 @@ Future<void> _openWidgetsTab(
         home,
         Positioned(
           left: 8,
-          top: 280,
+          bottom: 8,
           child: Text('SOURCE PAGE TEXT', style: TextStyle(color: sourceMarkerColor, fontSize: 28)),
         ),
       ],
@@ -262,6 +277,7 @@ Future<void> _openWidgetsTab(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<WalletAppearanceProvider>.value(value: appearances),
         ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(wallets, transactions, loadState: loadState)),
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences(isFakeBalanceActive: fake)),
         ChangeNotifierProvider.value(value: homeViewModel),
@@ -418,6 +434,8 @@ void main() {
     final route = routeObserver.lastPushed! as PageRouteBuilder<void>;
     expect(route.settings.name, AppRouteNames.walletDetail);
     expect((route.settings.arguments! as WalletDetailRouteArgs).entryPoint, kEntryPointWalletHome);
+    expect((route.settings.arguments! as WalletDetailRouteArgs).focusRecentTransactions, isTrue);
+    expect((route.settings.arguments! as WalletDetailRouteArgs).focusedTransactionHash, 'a');
     expect(route.transitionDuration, HodlInsightsScreen.transitionDuration);
     await _close(tester);
   });
@@ -666,7 +684,7 @@ void main() {
     });
   }
 
-  testWidgets('default preset cards share their top edge and built-in cards use the same padding', (tester) async {
+  testWidgets('default preset cards align and transaction rows own their horizontal padding', (tester) async {
     final preset = builtinHomePresets().first;
     await _openWidgetsTab(tester, fake: false, screen: (_) => HomePresetPreviewScreen(preset: preset));
 
@@ -674,8 +692,18 @@ void main() {
     final utxo = tester.getRect(find.byKey(const ValueKey('home-item-preset-default-2')));
     expect(price.top, utxo.top);
     expect(price.bottom, utxo.bottom);
+    final transactionCards =
+        tester
+            .widgetList<HomeWidgetCard>(
+              find.descendant(of: find.byType(RecentTransactionsView), matching: find.byType(HomeWidgetCard)),
+            )
+            .toSet();
+    expect(transactionCards, isNotEmpty);
     for (final card in tester.widgetList<HomeWidgetCard>(find.byType(HomeWidgetCard))) {
-      expect(card.padding, const EdgeInsets.all(16));
+      expect(
+        card.padding,
+        transactionCards.contains(card) ? const EdgeInsets.symmetric(vertical: 8) : const EdgeInsets.all(16),
+      );
     }
     await _close(tester);
   });
@@ -1239,6 +1267,72 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('balance period bars stay continuous with each screen background in every theme', (tester) async {
+      const capture = Key('period-bar-match-capture');
+      for (final variant in CoconutThemeVariant.values) {
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          screen: insights,
+          size: const Size(390, 844),
+          variant: variant,
+          captureKey: capture,
+        );
+        await tester.pumpAndSettle();
+
+        Future<void> expectBackgrounds(Finder bar, Color background) async {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
+          final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 1)))!;
+          final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+          final origin = tester.getTopLeft(find.byKey(capture));
+          final barRect = tester.getRect(bar).shift(-origin);
+          final colors = tester.element(bar).coconutColors;
+          Color pixelAt(Offset point) {
+            final offset = (point.dy.floor() * image.width + point.dx.floor()) * 4;
+            return Color.fromARGB(
+              data.getUint8(offset + 3),
+              data.getUint8(offset),
+              data.getUint8(offset + 1),
+              data.getUint8(offset + 2),
+            );
+          }
+
+          for (final period in HomeWidgetPeriod.values) {
+            final chip = find.descendant(
+              of: bar,
+              matching: find.byKey(ValueKey('hodl-insights-period-${period.name}')),
+            );
+            final rect = tester.getRect(chip).shift(-origin);
+            expect(
+              pixelAt(Offset(rect.center.dx, rect.top + 1)),
+              period == HomeWidgetPeriod.week ? colors.primaryText : background,
+              reason: '${variant.name}: ${period.name} chip uses the screen palette',
+            );
+            expect(
+              pixelAt(Offset(rect.center.dx, barRect.bottom - 1)),
+              background,
+              reason: '${variant.name}: the bar background stays continuous below every chip',
+            );
+          }
+          image.dispose();
+        }
+
+        final totalBar = find.byKey(const Key('hodl-insights-balance-periods'));
+        await expectBackgrounds(totalBar, tester.element(totalBar).coconutColors.homeBackground);
+        await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+        await tester.pumpAndSettle();
+        final detailBar = find.descendant(
+          of: find.byType(WalletBalanceHistoryScreen),
+          matching: find.byType(BalanceHistoryPeriodChips),
+        );
+        await expectBackgrounds(detailBar, tester.element(detailBar).coconutColors.background);
+        expect(tester.takeException(), isNull);
+        await _close(tester);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      }
+    });
+
     testWidgets('balance chart opens Hero detail, preserves period, toggles focus and zooms while focused', (
       tester,
     ) async {
@@ -1261,10 +1355,14 @@ void main() {
         HomeWidgetPeriod.month,
       );
       final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final surface = find.byKey(const Key('balance-history-graph-surface'));
+      final unfocusedHeight = tester.getSize(surface).height;
+      expect(find.byKey(const Key('balance-history-breakdown-header')), findsOneWidget);
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsNothing);
       await tester.tap(chart);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      expect(tester.getSize(surface).height, closeTo(unfocusedHeight, 0.01));
       final bounds = tester.getRect(chart);
       final one = await tester.startGesture(bounds.center - const Offset(30, 0), pointer: 1);
       final two = await tester.startGesture(bounds.center + const Offset(30, 0), pointer: 2);
@@ -1278,6 +1376,11 @@ void main() {
       await two.up();
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      final zoomedSparkline = find.descendant(
+        of: find.byType(WalletBalanceHistoryScreen),
+        matching: find.byType(HomeSparkline),
+      );
+      expect(tester.widget<HomeSparkline>(zoomedSparkline).values.length, greaterThanOrEqualTo(7));
       expect(
         tester
             .widget<BalanceHistoryPeriodChips>(
@@ -1306,18 +1409,255 @@ void main() {
       final latest = tester.getRect(chart);
       await tester.tapAt(Offset(latest.right - 1, latest.center.dy));
       await tester.pumpAndSettle();
-      expect(find.byType(WalletItemCard), findsWidgets);
-      await tester.tap(find.byType(WalletItemCard).first);
-      await tester.pumpAndSettle();
-      expect(find.byType(TransactionItemCard), findsWidgets);
-      await tester.tap(find.byType(WalletItemCard).first);
-      await tester.pumpAndSettle();
-      expect(find.byType(TransactionItemCard), findsNothing);
+      final fixedHeight = tester.getSize(chart).height;
+      expect(find.byKey(const Key('balance-history-share-tooltip')), findsOneWidget);
+      expect(find.byKey(const Key('balance-history-shares')), findsOneWidget);
+      expect(find.byKey(const Key('balance-history-share-pointer')), findsOneWidget);
+      expect(tester.getSize(chart).height, closeTo(fixedHeight, 0.01));
       Navigator.of(tester.element(chart)).pop();
       await tester.pumpAndSettle();
       expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
       expect(find.byKey(const Key('hodl-insights-balance-chart')), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('balance history preserves multiple selected wallets and their combined balance', (tester) async {
+      final now = DateTime(2026, 10, 20, 12);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        dataNow: now,
+        walletList: [for (var id = 1; id <= 3; id++) WalletMock.createSingleSigWalletItem(id: id)],
+        screen:
+            (_) => Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed: () => HodlInsightsScreen.open(context, walletIds: [1, 2]),
+                    child: const Text('open scoped insights'),
+                  ),
+            ),
+      );
+      await tester.tap(find.text('open scoped insights'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+      final breakdown = tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown));
+      expect(breakdown.slices.map((slice) => slice.wallet.id), [1, 2]);
+      expect(breakdown.singleWallet, isFalse);
+      expect(find.byKey(const Key('balance-history-shares')), findsOneWidget);
+      final chart = find.descendant(of: find.byType(WalletBalanceHistoryScreen), matching: find.byType(HomeSparkline));
+      expect(
+        tester.widget<HomeSparkline>(chart).values,
+        history.viewModel.data.dailyBalances(walletIds: [1, 2], days: HomeWidgetPeriod.week.days, asOf: now),
+      );
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history shows all wallets without a wallet chip list', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final screen = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
+      expect(find.byKey(const Key('balance-history-wallet-chips')), findsNothing);
+      final breakdown = tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown));
+      expect(
+        breakdown.slices.map((slice) => slice.wallet.id),
+        screen.viewModel.data.wallets.map((wallet) => wallet.id),
+      );
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history shows its guide after the Hero landing frame', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        gestureGuideDismissed: false,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+      final guide = find.byKey(const Key('balance-history-gesture-guide'));
+      expect(guide, findsNothing);
+      final animation = ModalRoute.of(tester.element(find.byType(WalletBalanceHistoryScreen)))!.animation!;
+      for (var frame = 0; frame < 60 && animation.status != AnimationStatus.completed; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        // 전환 중과 Hero 착지 프레임에는 안내를 띄우지 않는다.
+        expect(guide, findsNothing);
+      }
+      expect(animation.status, AnimationStatus.completed);
+      await tester.pump();
+      expect(guide, findsOneWidget);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pump();
+      expect(animation.status, AnimationStatus.reverse);
+      expect(guide, findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(guide, findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('balance history repeats until X is pressed and then stays dismissed in every mode', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        dataNow: DateTime(2026, 10, 20, 12),
+        gestureGuideDismissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      final preview = find.byKey(const Key('hodl-insights-balance-chart'));
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      final guide = find.byKey(const Key('balance-history-gesture-guide'));
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      expect(guide, findsOneWidget);
+      final graphSurface = find.byKey(const Key('balance-history-graph-surface'));
+      expect(find.descendant(of: graphSurface, matching: guide), findsNothing);
+      expect(tester.getRect(guide).bottom, greaterThan(tester.getRect(graphSurface).bottom));
+      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_pan), findsOneWidget);
+      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_zoom), findsOneWidget);
+      final before =
+          tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
+      await tester.drag(guide, const Offset(-100, 0));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel,
+        before,
+      );
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(guide, findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('balance-history-gesture-guide-dismiss')));
+      await tester.pumpAndSettle();
+      expect(guide, findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isTrue);
+      await tester.tap(chart);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(preview);
+      await tester.pumpAndSettle();
+      expect(guide, findsNothing);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history panning shows feedback only at the reached edge and clears it on release', (
+      tester,
+    ) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        dataNow: DateTime(2026, 10, 20, 12),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final bounds = tester.getRect(chart);
+      double feedback() =>
+          tester
+              .widget<TweenAnimationBuilder<double>>(find.byKey(const Key('balance-history-edge-feedback')))
+              .tween
+              .end!;
+      final latestPeriod =
+          tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
+      final latest = await tester.startGesture(bounds.center);
+      await latest.moveBy(const Offset(-20, 0));
+      await tester.pump();
+      await latest.moveBy(const Offset(-80, 0));
+      await tester.pump(const Duration(milliseconds: 180));
+      expect(feedback(), greaterThan(0));
+      expect(
+        tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel,
+        latestPeriod,
+      );
+      await latest.up();
+      await tester.pumpAndSettle();
+      expect(feedback(), 0);
+      final oldest = await tester.startGesture(bounds.center);
+      await oldest.moveBy(const Offset(20, 0));
+      await tester.pump();
+      await oldest.moveBy(const Offset(60, 0));
+      await tester.pump();
+      expect(feedback(), 0);
+      await oldest.moveBy(Offset(bounds.width * 100, 0));
+      await tester.pump(const Duration(milliseconds: 180));
+      expect(feedback(), lessThan(0));
+      await oldest.up();
+      await tester.pumpAndSettle();
+      expect(feedback(), 0);
+      expect(tester.takeException(), isNull);
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history date focus opens and retargets the wallet share tooltip without resizing the graph', (
+      tester,
+    ) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        dataNow: DateTime(2026, 10, 20, 12),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pumpAndSettle();
+      final chart = find.byKey(const Key('balance-history-interactive-chart'));
+      final surface = find.byKey(const Key('balance-history-graph-surface'));
+      final size = tester.getSize(surface);
+      final before = tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown));
+      expect(before.focusedDate, isNull);
+      expect(before.periodLabel, contains(' ~ '));
+      final bounds = tester.getRect(chart);
+      await tester.tapAt(Offset(bounds.right - 1, bounds.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('balance-history-share-tooltip')), findsOneWidget);
+      final gesture = await tester.startGesture(bounds.center);
+      for (final fraction in [0.2, 0.8, 0.4, 0.95]) {
+        await gesture.moveTo(Offset(bounds.left + bounds.width * fraction, bounds.center.dy));
+        await tester.pump(const Duration(milliseconds: 60));
+        final breakdown = tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown));
+        expect(breakdown.focusedDate, isNotNull);
+        expect(breakdown.periodLabel, isNot(contains(' ~ ')));
+        expect(find.byKey(const Key('balance-history-share-tooltip')), findsOneWidget);
+        expect(tester.getSize(surface), size);
+        expect(tester.takeException(), isNull);
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(chart)).pop();
+      await tester.pumpAndSettle();
       await _close(tester);
     });
 
@@ -1362,10 +1702,14 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('the goal bar, wallet donut and UTXO summary count up from zero when the screen opens', (tester) async {
+    testWidgets('the goal bar, amount, wallet donut and UTXO summary count up from zero when the screen opens', (
+      tester,
+    ) async {
       await _openWidgetsTab(tester, fake: false, screen: insights);
       await tester.pump();
       double width() => tester.getSize(find.byKey(const Key('goal-progress-fill'))).width;
+      String amount() => tester.widget<Text>(find.byKey(const Key('goal-progress-amount'))).data!.split(' / ').first;
+      final startAmount = amount();
       expect(tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal, 0);
       expect(find.text(t.hodl_insights.total_utxos(count: 0)), findsOneWidget);
 
@@ -1374,8 +1718,13 @@ void main() {
       expect(width(), start, reason: 'waits a moment before filling');
       await tester.pump(const Duration(milliseconds: 600));
       final middle = width();
+      final middleAmount = amount();
       await tester.pump(const Duration(seconds: 2));
       final end = width();
+      final endAmount = amount();
+      double btc(String text) => double.parse(text.replaceAll(RegExp(r'[^0-9.]'), ''));
+      expect(btc(startAmount), 0);
+      expect(btc(middleAmount), allOf(greaterThan(0), lessThan(btc(endAmount))));
 
       expect(start, 0);
       expect(start, lessThan(middle));
@@ -1960,15 +2309,17 @@ void main() {
         if (definition == HomeItemIds.balanceByWallet) {
           final section = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet')));
           final viewportRect = tester.getRect(find.byType(CustomScrollView));
+          final balance = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balance')));
           expect(
-            section.center.dy,
-            closeTo(viewportRect.center.dy, 1),
-            reason: 'leading space centers the measured section',
+            (section.center.dy - viewportRect.center.dy).abs() < 1 ||
+                (position.pixels == position.minScrollExtent && balance.top - viewportRect.top <= 8),
+            isTrue,
+            reason: 'the section is centered, or the list rests at the top with no space above the first card',
           );
           final before = position.pixels;
           await tester.drag(find.byKey(ValueKey(targetKey)), const Offset(0, -80));
           await tester.pump();
-          expect(position.pixels, greaterThan(before), reason: 'synthetic leading space preserves scroll hit testing');
+          expect(position.pixels, greaterThan(before), reason: 'the list still scrolls after initial positioning');
           final sectionFinder = find.byKey(const ValueKey('hodl-insights-repaint-balanceByWallet'));
           final shifted = tester.getRect(sectionFinder);
           final expectedOffset = (position.pixels +
@@ -2163,25 +2514,14 @@ void main() {
             }
           }
           if (evidenceDir != null) File('$evidenceDir/$prefix-trace.json').writeAsStringSync(jsonEncode(records));
-          for (final frame in records) {
-            expect(
-              (frame['total'] as List).single['text'],
-              t.hodl_insights.total_utxos(count: 2),
-              reason: 'selected positive Home UTXO Hero retains the source total at every frame',
-            );
-            final rows = frame['rowValues']! as List<List<String>>;
-            for (var bucket = 0; bucket < 4; bucket++) {
-              expect(
-                rows[bucket][1],
-                bucket == 0 ? '2 (100.0%)' : '0 (0.0%)',
-                reason: 'selected Hero keeps each bucket count',
-              );
-              expect(
-                rows[bucket][2],
-                bucket == 0 ? '0.4 BTC' : '0 BTC',
-                reason: 'selected Hero keeps each bucket amount',
-              );
-            }
+          final shownCounts = [
+            for (final frame in records)
+              int.parse(RegExp(r'\d+').firstMatch((frame['total'] as List).single['text'] as String)!.group(0)!),
+          ];
+          expect(shownCounts.first, 0, reason: 'selected Home UTXO Hero starts the fill from empty');
+          for (var i = 1; i < shownCounts.length; i++) {
+            expect(shownCounts[i], greaterThanOrEqualTo(shownCounts[i - 1]), reason: 'fill never goes backwards');
+            expect(shownCounts[i], lessThanOrEqualTo(2), reason: 'fill never overshoots the real count');
           }
 
           expect(
@@ -2235,55 +2575,54 @@ void main() {
     }
 
     for (final variant in CoconutThemeVariant.values) {
-      testWidgets('UTXO entry fully occludes outgoing page text $variant', (tester) async {
-        final samples = <List<List<int>>>[];
-        for (final marker in [const Color(0xFFFF0000), const Color(0xFF00FF00)]) {
-          const capture = ValueKey('utxo-flight-capture');
-          await _openWidgetsTab(
-            tester,
-            fake: false,
-            variant: variant,
-            cupertinoShell: true,
-            size: const Size(344, 800),
-            captureKey: capture,
-            sourceMarkerColor: marker,
-            screen:
-                (vm) => CupertinoPageScaffold(
-                  child: HomeCubePager(
-                    allFeaturesBuilder: (_) => const SizedBox(),
-                    home: Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: 174,
-                        height: 174,
-                        child: Builder(
-                          builder:
-                              (context) => vm.registry
-                                  .byId(HomeItemIds.utxoStatus)!
-                                  .build(
-                                    context,
-                                    const HomeItem(
-                                      id: 'source',
-                                      definitionId: HomeItemIds.utxoStatus,
-                                      kind: HomeItemKind.widget,
-                                      order: 0,
-                                      span: HomeSpan.small,
+      for (final interrupted in [false, true]) {
+        testWidgets('UTXO route smoothly hides and reveals home siblings $variant interrupted=$interrupted', (
+          tester,
+        ) async {
+          final samples = <List<List<int>>>[];
+          for (final marker in [const Color(0xFFFF0000), const Color(0xFF00FF00)]) {
+            const capture = ValueKey('utxo-flight-capture');
+            await _openWidgetsTab(
+              tester,
+              fake: false,
+              variant: variant,
+              cupertinoShell: true,
+              size: const Size(344, 800),
+              captureKey: capture,
+              sourceMarkerColor: marker,
+              screen:
+                  (vm) => CupertinoPageScaffold(
+                    child: HomeCubePager(
+                      allFeaturesBuilder: (_) => const SizedBox(),
+                      home: Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: 174,
+                          height: 174,
+                          child: Builder(
+                            builder:
+                                (context) => vm.registry
+                                    .byId(HomeItemIds.utxoStatus)!
+                                    .build(
+                                      context,
+                                      const HomeItem(
+                                        id: 'source',
+                                        definitionId: HomeItemIds.utxoStatus,
+                                        kind: HomeItemKind.widget,
+                                        order: 0,
+                                        span: HomeSpan.small,
+                                      ),
                                     ),
-                                  ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-          );
+            );
 
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
-          await tester.pump();
-          final frames = <List<int>>[];
-          for (var frame = 0; frame < 30; frame++) {
-            await tester.pump(const Duration(milliseconds: 16));
-            if ([0, 4, 9, 14, 19, 29].contains(frame)) {
+            await tester.pump(const Duration(milliseconds: 300));
+            final frames = <List<int>>[];
+            Future<void> captureFrame() async {
               await tester.runAsync(() async {
                 final image = await tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage();
                 final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -2291,18 +2630,60 @@ void main() {
                 image.dispose();
               });
             }
+
+            await captureFrame();
+            await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+            await tester.pump();
+            await captureFrame();
+            await tester.pump(const Duration(milliseconds: 16));
+            await captureFrame();
+            await tester.pump(const Duration(milliseconds: 80));
+            await captureFrame();
+            await tester.pump(Duration(milliseconds: interrupted ? 16 : 804));
+            await captureFrame();
+            Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+            await tester.pump();
+            await captureFrame();
+            await tester.pump(Duration(milliseconds: interrupted ? 32 : 240));
+            await captureFrame();
+            await tester.pumpAndSettle();
+            await captureFrame();
+            expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+            expect(tester.takeException(), isNull);
+            samples.add(frames);
+            await _close(tester);
           }
-          samples.add(frames);
-          await _close(tester);
-        }
-        for (var frame = 0; frame < samples[0].length; frame++) {
-          var changed = 0;
-          for (var byte = 0; byte < samples[0][frame].length; byte++) {
-            if (samples[0][frame][byte] != samples[1][frame][byte]) changed++;
+          // Changing only a non-Hero sibling's color measures how much of Home is
+          // actually painted through the incoming route, independent of its palette.
+          final visibility = <int>[];
+          for (var frame = 0; frame < samples[0].length; frame++) {
+            var changed = 0;
+            for (var byte = 0; byte < samples[0][frame].length; byte++) {
+              changed += (samples[0][frame][byte] - samples[1][frame][byte]).abs();
+            }
+            visibility.add(changed);
           }
-          expect(changed, 0, reason: 'outgoing text color must not affect actual viewport pixels at sample $frame');
-        }
-      });
+          final evidenceDir = Platform.environment['HODL_SIBLING_EVIDENCE_DIR'];
+          if (evidenceDir != null) {
+            Directory(evidenceDir).createSync(recursive: true);
+            File(
+              '$evidenceDir/${variant.name}-interrupted-$interrupted.json',
+            ).writeAsStringSync(jsonEncode({'visibility': visibility}));
+          }
+          expect(visibility[0], greaterThan(0));
+          expect(visibility[1], visibility[0], reason: 'Home siblings must not disappear on the first push frame');
+          expect(visibility[2], inExclusiveRange(0, visibility[0]), reason: 'entry gradually hides Home siblings');
+          expect(visibility[3], inExclusiveRange(0, visibility[2]), reason: 'entry follows route progress');
+          expect(visibility[4], interrupted ? greaterThan(0) : 0, reason: 'only a completed entry fully occludes Home');
+          expect(visibility[5], visibility[4], reason: 'starting or interrupting pop must not flash Home siblings');
+          expect(
+            visibility[6],
+            inExclusiveRange(visibility[5], visibility[0]),
+            reason: 'return gradually reveals Home siblings before the route is removed',
+          );
+          expect(visibility[7], visibility[0], reason: 'return restores the exact original Home painting');
+        });
+      }
     }
 
     for (final popAt in [const Duration(milliseconds: 112), const Duration(milliseconds: 900)]) {
@@ -2461,7 +2842,15 @@ void main() {
           final highlight = find.byKey(ValueKey('hodl-insights-highlight-${centeredSection.name}'));
           final section = tester.element(highlight).findAncestorWidgetOfExactType<Column>()!;
           final sectionCenter = tester.getRect(find.byWidget(section)).center.dy;
-          expect((sectionCenter - viewportCenter).abs(), lessThan(10), reason: '${target.$1} should be centered');
+          final list = tester.getRect(find.byKey(const Key('hodl-insights-list')));
+          final balance = tester.getRect(find.byKey(const ValueKey('hodl-insights-repaint-balance')));
+          final position = Scrollable.of(tester.element(highlight)).position;
+          expect(
+            (sectionCenter - viewportCenter).abs() < 10 ||
+                (position.pixels == position.minScrollExtent && balance.top - list.top <= 8),
+            isTrue,
+            reason: '${target.$1} should be centered, or rest at the top with no space above the first card',
+          );
         }
         expect(
           find.byWidgetPredicate((widget) => widget is Hero && widget.tag == insightsHeroTag('source')),

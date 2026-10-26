@@ -7,8 +7,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/signer/multisig_signer_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/taproot/role_description_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/taproot/taproot_setup_summary_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/taproot/taproot_spend_type_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -86,40 +86,19 @@ class _WalletSignerSectionState extends State<WalletSignerSection> {
         if (viewModel.canSpendBothPaths) ...[
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
-            child: CoconutSegmentedControl(
+            child: TaprootSpendTypeSegmentedControl(
               key: _taprootSegmentedControlKey,
-              selectedColor: context.coconutColors.segmentedControlSelected,
-              segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
-              selectedTextColor: context.coconutColors.segmentedControlSelectedText,
-              unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
-              isSelected: [effectiveIndex == 0, effectiveIndex == 1],
-              onPressed: (index) {
-                viewModel.updateTaprootSpendType(index);
-              },
-              children: [
-                _buildSegmentLabel(
-                  context,
-                  t.wallet_signer_section.segmented_control.parent_key,
-                  effectiveIndex == 0
-                      ? t.wallet_signer_section.segmented_control.currently_using
-                      : t.wallet_signer_section.segmented_control.default_path,
-                  effectiveIndex == 0,
-                ),
-                _buildSegmentLabel(
-                  context,
-                  t.wallet_signer_section.segmented_control.child_key,
-                  effectiveIndex == 1
-                      ? t.wallet_signer_section.segmented_control.currently_using
-                      : t.wallet_signer_section.segmented_control.inheritance_path,
-                  effectiveIndex == 1,
-                ),
-              ],
+              selectedIndex: effectiveIndex,
+              onPressed: viewModel.updateTaprootSpendType,
             ),
           ),
         ],
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildRoleDescriptionCard(effectiveIndex, viewModel),
+          child: TaprootRoleDescriptionCard(
+            isParent: effectiveIndex == 0,
+            hasSingleParent: viewModel.hasSingleTaprootParent,
+          ),
         ),
         Divider(color: context.coconutColors.divider, height: 40, indent: 16, endIndent: 16),
         Padding(
@@ -222,43 +201,6 @@ class _WalletSignerSectionState extends State<WalletSignerSection> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildSegmentLabel(BuildContext context, String title, String subTitle, bool isSelected) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(title),
-        Text(
-          subTitle,
-          style: CoconutTypography.caption_10.setColor(
-            isSelected
-                ? context.coconutColors.segmentedControlSelectedText.withValues(alpha: 0.7)
-                : context.coconutColors.primaryText.withValues(alpha: 0.2),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleDescriptionCard(int index, WalletInfoViewModel viewModel) {
-    final isParent = index == 0;
-    final theme = isParent ? RoleDescriptionTheme.cosigner : RoleDescriptionTheme.heir;
-    String description;
-    if (isParent) {
-      description =
-          viewModel.hasSingleTaprootParent
-              ? t.taproot.role_description_card.single_parent_description
-              : t.taproot.role_description_card.multi_parent_description;
-    } else {
-      description = t.taproot.role_description_card.child_description;
-    }
-    return RoleDescriptionCard(
-      description: description,
-      themeColor: theme.themeColor,
-      backgroundColor: theme.backgroundColor,
-      highlightPattern: theme.highlightPattern,
     );
   }
 }

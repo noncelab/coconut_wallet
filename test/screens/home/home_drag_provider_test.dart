@@ -73,6 +73,8 @@ void main() {
                     ),
                     registry: HomeItemRegistry()..register(definition),
                     onMoveToCell: (_, position) => droppedAt = position,
+                    wrapDragFeedback:
+                        (child) => ChangeNotifierProvider<HomeWidgetsViewModel>.value(value: model, child: child),
                     menuItemsOf:
                         withMenu
                             ? (_) => [

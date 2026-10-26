@@ -108,7 +108,7 @@ class CoconutAppBar {
           ...actionButtonList
         else
           Visibility(visible: false, maintainSize: true, maintainState: true, maintainAnimation: true, child: leading),
-        CoconutLayout.spacing_300w,
+        CoconutLayout.spacing_100w,
       ],
       flexibleSpace:
           !isBottom && (backgroundColor == null || hasBackDropFilter)
@@ -237,6 +237,7 @@ class _AppBarLeading extends StatelessWidget {
 }
 
 /// 직접 그린 헤더용 뒤로가기 버튼. All Features·바로가기로 연 화면이면 닫기(X) 버튼으로 보여 준다.
+/// [CoconutAppBar]의 뒤로가기와 같은 모양이므로, 헤더 왼쪽 끝(x=0)에 두면 위치도 같아진다.
 class FeatureAwareBackButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color color;
@@ -245,19 +246,12 @@ class FeatureAwareBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!FeatureEntryRoutes.instance.contains(ModalRoute.of(context))) {
-      return BackButton(onPressed: onPressed, color: color);
-    }
-    return IconButton(
-      key: const Key('feature-aware-close-button'),
-      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+    final isFeatureEntry = FeatureEntryRoutes.instance.contains(ModalRoute.of(context));
+    return _AppBarLeading(
+      iconKey: isFeatureEntry ? const Key('feature-aware-close-button') : null,
+      assetName: isFeatureEntry ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+      iconColor: color,
       onPressed: onPressed,
-      icon: SvgPicture.asset(
-        CommonActionIconPath.close,
-        width: 24,
-        height: 24,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      ),
     );
   }
 }

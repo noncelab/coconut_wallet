@@ -941,7 +941,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               focusNode: viewModel.amountFocusNode,
               style: CoconutTextFieldStyle.underline,
               underlineSpacing: CoconutTextFieldUnderlineSpacing.standard,
-              backgroundColor: context.coconutColors.inputSurface,
+              backgroundColor: context.coconutColors.background,
               fontSize: 18,
               fontFamily: CoconutTypography.kNumberFontFamily,
               letterSpacing: -0.04,
@@ -1072,7 +1072,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             height: 40,
                             fontHeight: 1,
                             borderRadius: 8,
-                            backgroundColor: hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                            backgroundColor: hasFocus ? context.coconutColors.background : Colors.transparent,
                             controller: viewModel.splitCountController,
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
@@ -1974,7 +1974,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             /// 금액 입력란
                             Expanded(
                               child: CoconutTextField(
-                                backgroundColor: context.coconutColors.inputSurface,
+                                backgroundColor: context.coconutColors.background,
                                 enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
@@ -2047,7 +2047,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         focusNode: widget.item.countFocusNode,
                                         textAlign: TextAlign.center,
                                         backgroundColor:
-                                            hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                                            hasFocus ? context.coconutColors.background : Colors.transparent,
                                         fontSize: 24,
                                         isVisibleBorder: false,
                                         onChanged: (_) {},

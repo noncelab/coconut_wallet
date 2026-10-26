@@ -453,18 +453,17 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             ignoring: !widget.enabled,
             child: CupertinoButton(
               padding: EdgeInsets.zero,
-              minimumSize: const Size(44, 44),
-              alignment: Alignment.centerRight,
+              minimumSize: const Size(24, 24),
               onPressed: widget.enabled ? widget.onClear : null,
               child: SizedBox(
-                width: 16,
-                height: 16,
+                width: 20,
+                height: 20,
                 child: Center(
                   child: SvgPicture.asset(
                     CommonFormIconPath.textFieldClear,
                     semanticsLabel: CupertinoLocalizations.of(context).clearButtonLabel,
-                    width: 14,
-                    height: 14,
+                    width: 16,
+                    height: 16,
                     colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
                   ),
                 ),
@@ -488,8 +487,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
           ignoring: !widget.enabled || widget.onSuffixPressed == null,
           child: CupertinoButton(
             padding: EdgeInsets.zero,
-            minimumSize: const Size(44, 44),
-            alignment: Alignment.centerRight,
+            minimumSize: const Size(20, 20),
             onPressed: widget.enabled ? widget.onSuffixPressed : null,
             child: SizedBox(
               width: 20,

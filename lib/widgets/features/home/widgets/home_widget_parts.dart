@@ -46,9 +46,14 @@ class HomeWidgetPressable extends StatefulWidget {
 class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
   bool _pressed = false;
   bool _showFocus = false;
+  bool _snapBack = false;
 
-  void _setPressed(bool pressed) {
-    if (_pressed != pressed) setState(() => _pressed = pressed);
+  void _setPressed(bool pressed, {bool snap = false}) {
+    if (_pressed == pressed) return;
+    setState(() {
+      _pressed = pressed;
+      _snapBack = snap;
+    });
   }
 
   @override
@@ -77,12 +82,12 @@ class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
           behavior: HitTestBehavior.opaque,
           onTapDown: (_) => _setPressed(true),
           onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
+          onTapCancel: () => _setPressed(false, snap: true),
           onTap: widget.onTap,
           child: AnimatedScale(
             scale: _pressed ? 0.97 : 1,
             duration:
-                MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
+                _snapBack || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)
                     ? Duration.zero
                     : const Duration(milliseconds: 100),
             child: DecoratedBox(
@@ -232,8 +237,31 @@ class HomeWidgetCard extends StatelessWidget {
   }
 }
 
+/// 차트 조각 색이 바탕과 거의 같아 묻힐 때 두를 얇은 테두리 색. 충분히 구분되면 null.
+/// 조각과 같은 색조를 두고 밝기만 바탕 반대쪽으로 옮겨, 바탕과 구분될 만큼 진하게(어두운 바탕이면 밝게) 만든다.
+Color? homeChartSegmentBorderOf(BuildContext context, Color? fill, Color surface) {
+  if (fill == null) return null;
+  double contrast(Color a, Color b) {
+    final la = a.computeLuminance();
+    final lb = b.computeLuminance();
+    return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+  }
+
+  if (contrast(fill, surface) >= 1.5) return null;
+  final hsl = HSLColor.fromColor(fill);
+  final darken = surface.computeLuminance() > 0.5;
+  var border = fill;
+  for (var step = 1; step <= 20 && contrast(border, surface) < 2.5; step++) {
+    border = hsl.withLightness((hsl.lightness + (darken ? -0.05 : 0.05) * step).clamp(0.0, 1.0)).toColor();
+  }
+  return border;
+}
+
 /// [Text]가 그릴 때와 같은 조건(주변 기본 스타일, 글자 배율, 언어)으로 잰 한 줄 폭
-double measureHomeText(BuildContext context, String text, TextStyle style) {
+double measureHomeText(BuildContext context, String text, TextStyle style) =>
+    measureHomeTextSize(context, text, style).width;
+
+Size measureHomeTextSize(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
     textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
@@ -241,9 +269,9 @@ double measureHomeText(BuildContext context, String text, TextStyle style) {
     locale: Localizations.maybeLocaleOf(context),
     maxLines: 1,
   )..layout();
-  final width = painter.width;
+  final size = painter.size;
   painter.dispose();
-  return width;
+  return size;
 }
 
 String formatHomeFiat(int? amount, FiatCode fiat, {bool withSymbol = true}) {
@@ -375,11 +403,21 @@ class HomeSparkline extends StatelessWidget {
   final List<num> values;
   final Color? color;
   final double strokeWidth;
+  final num? minimum;
+  final num? maximum;
 
   /// 손가락으로 짚은 점. 세로 안내선과 점을 그린다.
   final int? selectedIndex;
 
-  const HomeSparkline({super.key, required this.values, this.color, this.strokeWidth = 2, this.selectedIndex});
+  const HomeSparkline({
+    super.key,
+    required this.values,
+    this.color,
+    this.strokeWidth = 2,
+    this.selectedIndex,
+    this.minimum,
+    this.maximum,
+  });
 
   /// [index]번째 값이 [size] 안에서 그려지는 위치
   static Offset pointOf(List<num> values, int index, Size size, {double strokeWidth = 2}) {
@@ -399,6 +437,8 @@ class HomeSparkline extends StatelessWidget {
         color ?? context.coconutColors.homeChartLine,
         strokeWidth,
         selectedIndex: selectedIndex,
+        minimum: minimum?.toDouble(),
+        maximum: maximum?.toDouble(),
         guideColor: context.coconutColors.tertiaryText,
       ),
       size: Size.infinite,
@@ -457,17 +497,27 @@ class _SparklinePainter extends CustomPainter {
   final List<double> values;
   final Color color;
   final double strokeWidth;
+  final double? minimum;
+  final double? maximum;
 
   final int? selectedIndex;
   final Color? guideColor;
 
-  _SparklinePainter(this.values, this.color, this.strokeWidth, {this.selectedIndex, this.guideColor});
+  _SparklinePainter(
+    this.values,
+    this.color,
+    this.strokeWidth, {
+    this.selectedIndex,
+    this.guideColor,
+    this.minimum,
+    this.maximum,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (values.length < 2 || size.isEmpty) return;
-    final minValue = values.reduce(math.min);
-    final maxValue = values.reduce(math.max);
+    final minValue = minimum ?? values.reduce(math.min);
+    final maxValue = maximum ?? values.reduce(math.max);
     final range = maxValue - minValue;
     final inset = strokeWidth;
     Offset point(int i) {
@@ -511,6 +561,8 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter oldDelegate) =>
+      oldDelegate.minimum != minimum ||
+      oldDelegate.maximum != maximum ||
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
       oldDelegate.selectedIndex != selectedIndex ||

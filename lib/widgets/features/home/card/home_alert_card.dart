@@ -22,6 +22,8 @@ class HomeAlertCard extends StatefulWidget {
     required this.icon,
     required this.onTap,
     required this.onClosed,
+    this.topSpacing = 16,
+    this.reserveSpaceOnShow = false,
   }) : assert(type != HomeAlertCardType.openStore),
        intro = null;
 
@@ -32,6 +34,8 @@ class HomeAlertCard extends StatefulWidget {
     required this.onTap,
     required this.onClosed,
   }) : type = HomeAlertCardType.openStore,
+       topSpacing = 16,
+       reserveSpaceOnShow = false,
        title = null,
        description = null,
        icon = null;
@@ -47,6 +51,12 @@ class HomeAlertCard extends StatefulWidget {
   /// null이면 닫기 버튼을 그리지 않는다(위급 사건은 인지·완료될 때만 사라진다)
   final VoidCallback? onClosed;
 
+  /// 카드가 나타날 때 위에 함께 펼쳐지는 여백.
+  final double topSpacing;
+
+  /// 자동 스크롤 중 뒤늦은 높이 변화가 생기지 않도록 등장 공간을 미리 확보한다.
+  final bool reserveSpaceOnShow;
+
   @override
   State<HomeAlertCard> createState() => _HomeAlertCardState();
 }
@@ -58,6 +68,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   late final AnimationController _controller;
   late final Animation<double> _animation;
   Timer? _showDelayTimer;
+  bool _closing = false;
 
   /// 동작 줄이기면 펼치기·접기 없이 최종 모습으로 바로 바뀐다
   bool _reduceMotion = false;
@@ -89,6 +100,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   }
 
   Future<void> _close() async {
+    setState(() => _closing = true);
     _showDelayTimer?.cancel();
     if (_reduceMotion) {
       _controller.value = 0;
@@ -129,15 +141,22 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   }
 
   Widget _buildAnimatedSecurityCard(BuildContext context, double value) {
-    return Opacity(
-      opacity: value,
-      child: Transform.translate(
-        offset: Offset(0, 4 * (1 - value)),
-        child: Transform.scale(
-          scale: 0.96 + (0.04 * value),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [SizedBox(height: 16 * value), _buildSecurityCard(context, heightFactor: value)],
+    final layoutFactor = widget.reserveSpaceOnShow && !_closing ? 1.0 : value;
+    return IgnorePointer(
+      ignoring: value == 0,
+      child: Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 4 * (1 - value)),
+          child: Transform.scale(
+            scale: 0.96 + (0.04 * value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: widget.topSpacing * layoutFactor),
+                _buildSecurityCard(context, heightFactor: layoutFactor),
+              ],
+            ),
           ),
         ),
       ),
@@ -211,7 +230,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.title!, style: titleStyle),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 4),
                           Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
                         ],
                       ),

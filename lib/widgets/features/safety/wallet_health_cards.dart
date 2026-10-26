@@ -185,8 +185,8 @@ String safetyIssueText(SafetyCheckResult item) {
     },
     SafetyCheckId.unrecognizedOutgoing => t.wallet_health.incident.outgoing_title,
     SafetyCheckId.txConflict => c.tx_conflict.issue,
-    SafetyCheckId.addressReuse => t.wallet_health.category.addresses_reused(n: item.subjects.length),
-    SafetyCheckId.possibleDusting => t.wallet_health.category.possible_dusting(n: item.subjects.length),
+    SafetyCheckId.addressReuse => c.address_reuse.issue(n: item.subjects.length),
+    SafetyCheckId.possibleDusting => c.possible_dusting.issue(n: item.subjects.length),
     SafetyCheckId.pendingOutgoingAtBaseline => c.recent_at_add.issue,
     SafetyCheckId.unexpectedSelfTransfer => c.self_transfer.issue,
     SafetyCheckId.serverCert => switch (detail) {
@@ -195,7 +195,9 @@ String safetyIssueText(SafetyCheckResult item) {
       _ => t.wallet_health.incident.server_identity_title,
     },
     SafetyCheckId.metadataBackup =>
-      detail == SafetyCheckDetail.changed ? c.metadata_backup.changed(n: count) : c.metadata_backup.never_exported,
+      detail == SafetyCheckDetail.changed
+          ? c.metadata_backup.issue_changed(n: count)
+          : c.metadata_backup.issue_never_exported,
   };
 }
 

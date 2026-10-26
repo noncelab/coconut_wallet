@@ -292,6 +292,12 @@ class CoconutColors {
   /// 홈 화면 요소가 눌렸을 때 기본으로 사용할 overlay 강도
   final double homeSurfacePressOverlayOpacity;
 
+  /// homeSurface 위에 놓이는 원형 버튼 바탕
+  final Color homeSurfaceButton;
+
+  /// Edit Home 화면(homeBackground) 위의 선택되지 않은 칩 바탕
+  final Color editHomeChipUnselectedBackground;
+
   /// 홈 위젯의 추이 그래프 선
   final Color homeChartLine;
 
@@ -480,6 +486,8 @@ class CoconutColors {
     required this.homeSurface,
     required this.homeSurfacePressOverlay,
     required this.homeSurfacePressOverlayOpacity,
+    required this.homeSurfaceButton,
+    required this.editHomeChipUnselectedBackground,
     required this.homeChartLine,
     required this.homeWidgetShadow,
     required this.utxoOverviewChartSurface,
@@ -749,6 +757,9 @@ class CoconutColors {
       homeSurfacePressOverlay: Color.lerp(a.homeSurfacePressOverlay, b.homeSurfacePressOverlay, t)!,
       homeSurfacePressOverlayOpacity:
           a.homeSurfacePressOverlayOpacity + (b.homeSurfacePressOverlayOpacity - a.homeSurfacePressOverlayOpacity) * t,
+      homeSurfaceButton: Color.lerp(a.homeSurfaceButton, b.homeSurfaceButton, t)!,
+      editHomeChipUnselectedBackground:
+          Color.lerp(a.editHomeChipUnselectedBackground, b.editHomeChipUnselectedBackground, t)!,
       homeChartLine: Color.lerp(a.homeChartLine, b.homeChartLine, t)!,
       homeWidgetShadow: Color.lerp(a.homeWidgetShadow, b.homeWidgetShadow, t)!,
       utxoOverviewChartSurface: Color.lerp(a.utxoOverviewChartSurface, b.utxoOverviewChartSurface, t)!,
@@ -894,9 +905,9 @@ class CoconutColors {
       inputPlaceholder: const Color(0xFFA0A0A0),
       inputBorderUnfocused: ds.CoconutColors.gray800,
       inputBorderFocused: ds.CoconutColors.white,
-      segmentedControlSelected: ds.CoconutColors.gray900,
+      segmentedControlSelected: ds.CoconutColors.white,
       segmentedControlBackground: ds.CoconutColors.gray800,
-      segmentedControlSelectedText: ds.CoconutColors.white,
+      segmentedControlSelectedText: ds.CoconutColors.black,
       segmentedControlUnselectedText: const Color(0xFFA0A0A0),
       surfaceBottomSheet: ds.CoconutColors.gray900,
       surfaceBottomSheetElevated: ds.CoconutColors.gray850,
@@ -935,6 +946,8 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.gray850,
       homeSurfacePressOverlay: ds.CoconutColors.gray800,
       homeSurfacePressOverlayOpacity: 0.5,
+      homeSurfaceButton: ds.CoconutColors.gray750,
+      editHomeChipUnselectedBackground: ds.CoconutColors.gray800,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: const Color.fromARGB(12, 255, 255, 255),
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
@@ -1106,9 +1119,11 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.white,
       homeSurfacePressOverlay: ds.CoconutColors.gray700,
       homeSurfacePressOverlayOpacity: 0.2,
+      homeSurfaceButton: ds.CoconutColors.gray300,
+      editHomeChipUnselectedBackground: ds.CoconutColors.white,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: ds.CoconutColors.gray600.withValues(alpha: 0.3),
-      utxoOverviewChartSurface: ds.CoconutColors.white,
+      utxoOverviewChartSurface: ds.CoconutColors.gray150,
       utxoOverviewAvailabilitySurface: ds.CoconutColors.gray150,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.white,
@@ -1294,10 +1309,12 @@ class CoconutColors {
       homeSurface: cream,
       homeSurfacePressOverlay: golenSun,
       homeSurfacePressOverlayOpacity: 0.2,
+      homeSurfaceButton: sand,
+      editHomeChipUnselectedBackground: cream,
       homeChartLine: kCoconutPriceUp,
       homeWidgetShadow: huskDeep.withValues(alpha: 0.18),
-      utxoOverviewChartSurface: shell,
-      utxoOverviewAvailabilitySurface: shell,
+      utxoOverviewChartSurface: cream,
+      utxoOverviewAvailabilitySurface: cream,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
       utxoOverviewCoinSurface: shell,
       utxoOverviewSelectedCoinBorder: huskDeep,

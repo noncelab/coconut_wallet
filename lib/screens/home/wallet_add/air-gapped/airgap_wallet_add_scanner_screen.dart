@@ -45,6 +45,7 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 const String className = 'WalletAddScannerScreen';
 
@@ -367,7 +368,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         isBottom: true,
         backgroundColor: context.coconutColors.background,
         actionButtonList: [
-          IconButton(
+          CoconutAppBarActionButton(
             onPressed: () {
               if (controller != null) {
                 controller!.switchCamera();
@@ -386,6 +387,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       body: Stack(
         children: [
           CoconutQrScanner(
+            closeOnPermissionDenied: widget.importSource != WalletImportSource.extendedPublicKey,
             setMobileScannerController: (MobileScannerController qrViewcontroller) {
               controller = qrViewcontroller;
             },
@@ -535,7 +537,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     );
   }
 
-  Future<void> _onCompletedScanning(dynamic additionInfo) async {
+  Future<void> _onCompletedScanning(Object additionInfo) async {
     const methodName = '_onCompletedScanning';
     if (_isProcessing || _isCompletedScanLocked) return;
     _isProcessing = true;

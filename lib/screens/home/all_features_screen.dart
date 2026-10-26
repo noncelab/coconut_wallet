@@ -78,7 +78,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> with AutomaticKee
     FeatureCategory.tools => t.all_features.categories.tools,
     FeatureCategory.safety => t.all_features.categories.safety,
     FeatureCategory.settings => t.all_features.categories.settings,
-    null => t.all_features.categories.added,
+    null => t.all_features.categories.open_store,
   };
 
   void _launch(BuildContext context, FeatureItem feature) {

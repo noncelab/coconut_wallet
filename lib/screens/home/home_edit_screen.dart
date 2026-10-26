@@ -318,7 +318,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                 ),
                 Wrap(
                   spacing: gap,
-                  runSpacing: 24,
+                  runSpacing: 4,
                   children: [
                     for (final definition in definitions)
                       SizedBox(
@@ -366,24 +366,50 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 4),
                                   child: LayoutBuilder(
-                                    builder:
-                                        (context, constraints) => Row(
+                                    builder: (context, constraints) {
+                                      final name = Text(
+                                        // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
+                                        TextUtils.preventLineBreakInsideWords(definition.displayName()),
+                                        key: ValueKey('home-edit-widget-name-${definition.id}'),
+                                        style: CoconutTypography.body2_14.copyWith(
+                                          color: colors.primaryText,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      );
+                                      const iconSize = 22.0;
+                                      if (!viewModel.isOnHome(definition)) {
+                                        // + 아이콘만 있을 때는 이름 옆에 아이콘 폭만 비우고, 48px 터치 영역은 이름 위에 겹친다.
+                                        return Stack(
+                                          alignment: Alignment.centerRight,
                                           children: [
-                                            Expanded(
-                                              child: Text(
-                                                // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
-                                                TextUtils.preventLineBreakInsideWords(definition.displayName()),
-                                                key: ValueKey('home-edit-widget-name-${definition.id}'),
-                                                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+                                            ConstrainedBox(
+                                              constraints: const BoxConstraints(minHeight: 48),
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(right: iconSize + 8),
+                                                  child: name,
+                                                ),
                                               ),
                                             ),
-                                            // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
-                                            ConstrainedBox(
-                                              constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
-                                              child: _buildToggleButton(viewModel, definition, iconSize: 22),
+                                            SizedBox.square(
+                                              dimension: 48,
+                                              child: _buildToggleButton(viewModel, definition, iconSize: iconSize),
                                             ),
                                           ],
-                                        ),
+                                        );
+                                      }
+                                      return Row(
+                                        children: [
+                                          Expanded(child: name),
+                                          // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
+                                          ConstrainedBox(
+                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
+                                            child: _buildToggleButton(viewModel, definition, iconSize: iconSize),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
@@ -486,7 +512,7 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? colors.chipSelectedBackground : colors.chipUnselectedBackground,
+          color: selected ? colors.chipSelectedBackground : colors.editHomeChipUnselectedBackground,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(

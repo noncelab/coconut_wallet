@@ -45,7 +45,6 @@ abstract final class CommonActionIconPath {
 }
 
 abstract final class CommonCommunicationIconPath {
-  static const String bell = 'assets/svg/common/communication/bell.svg';
   static const String boldBell = 'assets/svg/common/communication/bold-bell.svg';
   static const String clip = 'assets/svg/common/communication/clip.svg';
   static const String githubLogo = 'assets/svg/common/communication/github-logo.svg';
@@ -61,7 +60,6 @@ abstract final class CommonDividerIconPath {
 abstract final class CommonFormIconPath {
   static const String circle = 'assets/svg/common/form/circle.svg';
   static const String circleCheck = 'assets/svg/common/form/circle-check.svg';
-  static const String circleCheckOutline = 'assets/svg/common/form/circle-check-outline.svg';
   static const String circleMinus = 'assets/svg/common/form/circle-minus.svg';
   static const String circlePick = 'assets/svg/common/form/circle-pick.svg';
   static const String textFieldClear = 'assets/svg/common/form/text-field-clear.svg';
@@ -80,6 +78,8 @@ abstract final class CommonNavigationIconPath {
   static const String arrowRight = 'assets/svg/common/navigation/arrow-right.svg';
   static const String arrowRightMd = 'assets/svg/common/navigation/arrow-right-md.svg';
   static const String arrowTopDown = 'assets/svg/common/navigation/arrow-top-down.svg';
+  static const String arrowLeftRight = 'assets/svg/common/navigation/arrow-left-right.svg';
+  static const String arrowUpDown = 'assets/svg/common/navigation/arrow-up-down.svg';
   static const String back = 'assets/svg/common/navigation/back.svg';
   static const String caretDown = 'assets/svg/common/navigation/caret-down.svg';
   static const String circleArrowRight = 'assets/svg/common/navigation/circle-arrow-right.svg';
@@ -106,12 +106,6 @@ abstract final class CommonStateIconPath {
   static const String starFilled = 'assets/svg/common/state/star-filled.svg';
   static const String starOutlined = 'assets/svg/common/state/star-outlined.svg';
   static const String starOutlinedBold = 'assets/svg/common/state/star-outlined-bold.svg';
-  static const String starSmall = 'assets/svg/common/state/star-small.svg';
-  static const String statusComplete = 'assets/svg/common/state/status-complete.svg';
-  static const String statusFailure = 'assets/svg/common/state/status-failure.svg';
-  static const String statusIdle = 'assets/svg/common/state/status-idle.svg';
-  static const String statusImpossible = 'assets/svg/common/state/status-impossible.svg';
-  static const String statusLoading = 'assets/svg/common/state/status-loading.svg';
   static const String stopSign = 'assets/svg/common/state/stop-sign.svg';
   static const String triangleWarning = 'assets/svg/common/state/triangle-warning.svg';
   static const String bulb = 'assets/svg/brand/motifs/bulb.svg';
@@ -166,10 +160,9 @@ abstract final class FeatureTransactionIconPath {
   static const String feeRateLow = 'assets/svg/features/transaction/fee-rate/low.svg';
   static const String feeRateMedium = 'assets/svg/features/transaction/fee-rate/medium.svg';
   static const String receipt = 'assets/svg/features/transaction/receipt.svg';
-  static const String receive = 'assets/svg/features/transaction/receive.svg';
   static const String receivePlane = 'assets/svg/features/transaction/receive-plane.svg';
   static const String send = 'assets/svg/features/transaction/send.svg';
-  static const String sendPlane = 'assets/svg/features/transaction/send-plane.svg';
+  static const String sendPlane = send;
   static const String transaction = 'assets/svg/features/transaction/transaction.svg';
   static const String txReceived = 'assets/svg/features/transaction/tx-received.svg';
   static const String txReceiving = 'assets/svg/features/transaction/tx-receiving.svg';
@@ -229,6 +222,7 @@ abstract final class FeatureWidgetIconPath {
   static const String trendingUp = 'assets/svg/features/widgets/trending-up.svg';
   static const String chartBar = 'assets/svg/features/widgets/chart-bar.svg';
   static const String shieldCheck = 'assets/svg/features/widgets/shield-check.svg';
+  static const String chart = 'assets/svg/features/widgets/chart.svg';
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

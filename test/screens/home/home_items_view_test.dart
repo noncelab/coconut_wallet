@@ -11,6 +11,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show MaterialApp;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 class _LabelDefinition extends HomeItemDefinition {
   _LabelDefinition(String id, HomeItemKind kind, HomeSpan span)
@@ -18,6 +19,19 @@ class _LabelDefinition extends HomeItemDefinition {
 
   @override
   Widget build(BuildContext context, HomeItem item) => Text('built:$id');
+}
+
+class _ProvidedLabelDefinition extends HomeItemDefinition {
+  _ProvidedLabelDefinition(String id)
+    : super(
+        id: id,
+        kind: HomeItemKind.widget,
+        supportedSpans: const [HomeSpan.small],
+        category: HomeItemCategory.wallets,
+      );
+
+  @override
+  Widget build(BuildContext context, HomeItem item) => Text('provided:${context.watch<String>()}');
 }
 
 HomeItem _item(String id, String definitionId, HomeItemKind kind, int order, HomeSpan span) {
@@ -465,7 +479,40 @@ void main() {
         ..register(_LabelDefinition('w2', HomeItemKind.widget, HomeSpan.small))
         ..register(_LabelDefinition('w3', HomeItemKind.widget, HomeSpan.small));
 
+  testWidgets('the drag feedback shows the tile that reads a provider from inside the screen', (tester) async {
+    usePhoneViewport(tester);
+    final registry = HomeItemRegistry()..register(_ProvidedLabelDefinition('provided'));
+    final configuration = HomeConfiguration(items: [_item('p', 'provided', HomeItemKind.widget, 0, HomeSpan.small)]);
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Provider<String>.value(
+          value: 'value',
+          child: SingleChildScrollView(
+            child: HomeItemsView(
+              configuration: configuration,
+              registry: registry,
+              onInsertBefore: (_, __) {},
+              wrapDragFeedback: (child) => Provider<String>.value(value: 'value', child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-p'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveBy(const Offset(0, 40));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('provided:value'), findsOneWidget);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('long-press dragging an item onto another inserts it before the target', (tester) async {
+    usePhoneViewport(tester);
     String? movedId;
     String? beforeId;
     await tester.pumpWidget(
@@ -975,6 +1022,7 @@ void main() {
   }
 
   testWidgets('dropping the last shortcut onto the first 2×2 inserts it before that widget', (tester) async {
+    usePhoneViewport(tester);
     String? movedId;
     String? beforeId;
     final registry =
@@ -1088,6 +1136,7 @@ void main() {
   });
 
   testWidgets('dragging over an item previews the positions after insertion without a highlight', (tester) async {
+    usePhoneViewport(tester);
     final configuration = threeItems();
     String? insertedBefore;
     await tester.pumpWidget(
@@ -1192,6 +1241,7 @@ void main() {
   });
 
   testWidgets('a stable hover makes room gradually without saving before release', (tester) async {
+    usePhoneViewport(tester);
     var drops = 0;
     await tester.pumpWidget(
       CupertinoApp(
@@ -1493,6 +1543,7 @@ void main() {
       final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
       await tester.pump(const Duration(milliseconds: 600));
       await gesture.up();
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('move a'), findsOneWidget);
@@ -1763,6 +1814,239 @@ void main() {
     expect(resized, ['stack:4x2']);
     expect(find.text('remove stack'), findsNothing);
   });
+
+  for (final rapidRegrab in [false, true]) {
+    testWidgets('occupied reverse: staggered fixture never overlaps after release, rapidRegrab=$rapidRegrab', (
+      tester,
+    ) async {
+      usePhoneViewport(tester);
+      final registry =
+          HomeItemRegistry()
+            ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut))
+            ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small));
+      var configuration = HomeConfiguration(
+        items: [
+          for (final entry
+              in [
+                ('source', HomeSpan.shortcut, const HomeGridPosition(2, 0)),
+                ('tall', HomeSpan.small, const HomeGridPosition(1, 1)),
+                ('target', HomeSpan.shortcut, const HomeGridPosition(3, 2)),
+                ('other', HomeSpan.shortcut, const HomeGridPosition(1, 3)),
+              ].indexed)
+            HomeItem(
+              id: entry.$2.$1,
+              definitionId: entry.$2.$2 == HomeSpan.small ? 'small' : 'shortcut',
+              kind: entry.$2.$2 == HomeSpan.small ? HomeItemKind.widget : HomeItemKind.shortcut,
+              order: entry.$1,
+              span: entry.$2.$2,
+              position: entry.$2.$3,
+            ),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: StatefulBuilder(
+              builder:
+                  (context, update) => HomeItemsView(
+                    configuration: configuration,
+                    registry: registry,
+                    isArranging: true,
+                    badgeInset: 16,
+                    onRemove: (_) {},
+                    menuItemsOf: (_) => [],
+                    onMoveToCell:
+                        (id, position) => update(() {
+                          configuration = HomeGridLayout(configuration).moveToCell(id, position);
+                        }),
+                  ),
+            ),
+          ),
+        ),
+      );
+      final target = tester.getCenter(find.byKey(const ValueKey('home-item-target')));
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+      await gesture.moveBy(const Offset(24, 0));
+      await tester.pump(const Duration(milliseconds: 32));
+      await gesture.moveTo(target);
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      for (var frame = 0; frame < 20; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (rapidRegrab && frame == 1) {
+          final regrab = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+          await regrab.moveBy(const Offset(0, 92.5));
+          await regrab.up();
+          await tester.pump();
+          await tester.pump();
+        }
+        final rects = [
+          for (final item in configuration.items) tester.getRect(find.byKey(ValueKey('home-item-content-${item.id}'))),
+        ];
+        for (var i = 0; i < rects.length; i++) {
+          for (var j = i + 1; j < rects.length; j++) {
+            final overlap = rects[i].intersect(rects[j]);
+            expect(
+              overlap.width <= 0.5 || overlap.height <= 0.5,
+              isTrue,
+              reason: 'Frame $frame: ${configuration.items[i].id} overlaps ${configuration.items[j].id}',
+            );
+          }
+        }
+      }
+      expect(HomeGridLayout(configuration).positionOf('source'), HomeGridPosition(3, rapidRegrab ? 3 : 2));
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  for (final span in [HomeSpan.shortcut, HomeSpan.small, HomeSpan.wide]) {
+    testWidgets('held feedback: ${span.toJson()} resizes at the fractional grab point', (tester) async {
+      final harness = _ViewportDragHarness(tester, span: span);
+      await harness.pump(340);
+      final source = tester.getRect(find.byKey(const ValueKey('home-item-s')));
+      final grab = Offset(source.width * 0.25, source.height * 0.75);
+      final finger = source.topLeft + grab + const Offset(30, 20);
+      final gesture = await tester.startGesture(source.topLeft + grab);
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveTo(finger);
+      await tester.pump();
+      final feedback = find.ancestor(of: find.text('built:shortcut'), matching: find.byType(Opacity));
+      expect(feedback, findsOneWidget);
+      expect(tester.getSize(feedback), source.size);
+      expect(tester.getTopLeft(feedback), finger - grab);
+
+      for (final width in [250.0, 400.0, 340.0]) {
+        await harness.pump(width);
+        tester.binding.handleMetricsChanged();
+        await tester.pump();
+        await tester.pump();
+        final cell = (width - 36) / 4;
+        final expected = Size(span.width * cell + (span.width - 1) * 12, span.height * cell + (span.height - 1) * 12);
+        expect(tester.getSize(feedback), expected);
+        final expectedOrigin = finger - Offset(expected.width * 0.25, expected.height * 0.75);
+        expect((tester.getTopLeft(feedback) - expectedOrigin).distance, lessThan(0.001));
+      }
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(feedback, findsNothing);
+      expect(harness.drops, isEmpty);
+      expect(tester.getRect(find.byKey(const ValueKey('home-item-s'))), source);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('viewport geometry: shrinking during a drag drops the cell under the held finger', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final before = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    const finger = Offset(130, 40);
+    final gesture = await harness.startAt(finger);
+
+    await harness.pump(250);
+    tester.binding.handleMetricsChanged();
+    await tester.pump();
+
+    final after = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    final expectedColumn = harness.columnUnder(finger, before: before, after: after);
+    expect(before, 76);
+    expect(after, 53.5);
+    expect(expectedColumn, 2, reason: 'The same finger must leave column 1 when the cells shrink.');
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [HomeGridPosition(expectedColumn, 0)]);
+  });
+
+  for (final scenario in const [
+    (name: '2x2 horizontal', span: HomeSpan.small, finger: Offset(157, 70), drop: HomeGridPosition(1, 0)),
+    (name: '2x2 vertical', span: HomeSpan.small, finger: Offset(70, 157), drop: HomeGridPosition(0, 1)),
+    (name: '4x2 vertical', span: HomeSpan.wide, finger: Offset(125, 157), drop: HomeGridPosition(0, 1)),
+    (name: '4x2 distinct axis ratios', span: HomeSpan.wide, finger: Offset(125, 158.3), drop: HomeGridPosition(0, 2)),
+  ]) {
+    testWidgets('viewport geometry: ${scenario.name} held drag preserves its full-span anchor', (tester) async {
+      final harness = _ViewportDragHarness(tester, span: scenario.span);
+      await harness.pump(340);
+      final gesture = await harness.startAt(scenario.finger);
+
+      await harness.pump(250);
+      tester.binding.handleMetricsChanged();
+      await tester.pump();
+
+      // A 2-cell side shrinks from 164 to 119, including its fixed 12px gap.
+      // The centered anchor is 59.5: fingers at 157 and 158.3 select cells 1 and 2.
+      await gesture.up();
+      await tester.pump();
+      expect(harness.drops, [scenario.drop]);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('viewport geometry: a finger outside the shrunken grid does not keep the old cell', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final gesture = await harness.startAt(const Offset(300, 40));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await harness.pump(250);
+    await tester.pump();
+    expect(tester.getSize(find.byKey(const ValueKey('home-grid-surface'))).width, lessThan(300));
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, isEmpty);
+  });
+
+  testWidgets('viewport geometry: repeated size changes during a drag use the final cell', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    final before = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    const finger = Offset(130, 40);
+    final gesture = await harness.startAt(finger);
+
+    await harness.pump(400);
+    tester.binding.handleMetricsChanged();
+    await harness.pump(250);
+    tester.binding.handleMetricsChanged();
+    tester.binding.handleMetricsChanged();
+    await tester.pump();
+
+    final after = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    final expectedColumn = harness.columnUnder(finger, before: before, after: after);
+    expect(before, 76);
+    expect(after, 53.5);
+    expect(expectedColumn, 2);
+
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [HomeGridPosition(expectedColumn, 0)]);
+  });
+
+  testWidgets('viewport geometry: removing the grid during a drag does not commit', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(340);
+    await harness.startAt(const Offset(130, 40));
+    await harness.pump(250);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    expect(harness.drops, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('viewport geometry: a compact width drag still drops the cell under the finger', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(320);
+    final cell = tester.getSize(find.byKey(const ValueKey('home-item-s'))).width;
+    expect(cell, 71);
+    final pitch = cell + HomeItemsView.gap;
+    final finger = Offset(3 * pitch + cell / 2, 40);
+    final gesture = await harness.startAt(finger);
+    await gesture.up();
+    await tester.pump();
+    expect(harness.drops, [const HomeGridPosition(3, 0)]);
+  });
 }
 
 class _ResizableDefinition extends HomeItemDefinition {
@@ -1776,4 +2060,71 @@ class _ResizableDefinition extends HomeItemDefinition {
 
   @override
   Widget build(BuildContext context, HomeItem item) => Text('built:$id');
+}
+
+void usePhoneViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
+class _ViewportDragHarness {
+  _ViewportDragHarness(this.tester, {HomeSpan span = HomeSpan.shortcut}) {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final kind = span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget;
+    registry.register(_LabelDefinition('shortcut', kind, span));
+    configuration = HomeConfiguration(
+      items: [
+        HomeItem(
+          id: 's',
+          definitionId: 'shortcut',
+          kind: kind,
+          order: 0,
+          span: span,
+          position: const HomeGridPosition(0, 0),
+        ),
+      ],
+    );
+  }
+
+  final WidgetTester tester;
+  final drops = <HomeGridPosition>[];
+  final registry = HomeItemRegistry();
+  late final HomeConfiguration configuration;
+
+  Future<void> pump(double width) {
+    return tester.pumpWidget(
+      CupertinoApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            height: 500,
+            child: HomeItemsView(
+              configuration: configuration,
+              registry: registry,
+              onMoveToCell: (_, position) => drops.add(position),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<TestGesture> startAt(Offset finger) async {
+    final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-s'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(surface + finger);
+    await tester.pump();
+    return gesture;
+  }
+
+  int columnUnder(Offset finger, {required double before, required double after}) {
+    final anchor = before / 2 * (after / before);
+    final pitch = after + HomeItemsView.gap;
+    return ((finger.dx - anchor) / pitch).round().clamp(0, HomeGridLayout.columns - 1);
+  }
 }

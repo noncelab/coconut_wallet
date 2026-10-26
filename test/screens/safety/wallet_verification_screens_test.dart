@@ -20,6 +20,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/safety/bsms_verification_screen.dart';
@@ -58,6 +59,8 @@ class _Wallets extends ChangeNotifier implements WalletProvider {
   WalletItemBase getWalletById(int id) => walletItemList.firstWhere((wallet) => wallet.id == id);
   @override
   int getWatchedAddressCount(int id) => 0;
+  @override
+  List<TransactionRecord> getTransactionRecordList(int walletId) => const [];
   void removeAll() {
     walletItemList.clear();
     notifyListeners();
@@ -595,9 +598,7 @@ void main() {
         expect(_text(label), provider ? findsOneWidget : findsNothing);
         if (provider) {
           final lastMenu = _text(
-            type == WalletType.singleSignature
-                ? t.wallet_info_screen.extended_public_key
-                : t.wallet_info_screen.view_wallet_backup_data,
+            type == WalletType.singleSignature ? t.wallet_info_screen.extended_public_key : t.wallet_info_screen.bsms,
           );
           final safetyRow = find.byKey(const Key('wallet-safety-status-row'));
           expect(tester.getTopLeft(safetyRow).dy, greaterThan(tester.getBottomLeft(lastMenu).dy));

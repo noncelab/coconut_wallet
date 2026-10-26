@@ -60,7 +60,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
 
-  static const _addWalletHintRightOverhang = 52.0;
+  /// 온보딩 - 지갑 추가 말풍선
+  static const _addWalletHintRightOverhang = 32.0;
   static const _safetyHintTailFromLeft = 40.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
@@ -388,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Align(
                           alignment: Alignment.topRight,
                           child: AddWalletHint(
-                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.addWalletButtonSize / 2,
+                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.actionButtonWidth / 2,
                             nudges: viewModel.addWalletHintNudges,
                             onClose: viewModel.dismissAddWalletHint,
                           ),
@@ -468,6 +469,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           onArrangeDone: _finishArranging,
                           onResize: (item, span) => viewModel.resizeItem(item.id, span),
                           badgeInset: _gridBadgeInset,
+                          wrapDragFeedback:
+                              (child) => MultiProvider(
+                                providers: [
+                                  ChangeNotifierProvider.value(value: _viewModel),
+                                  ChangeNotifierProvider.value(value: _widgetsViewModel),
+                                ],
+                                child: child,
+                              ),
                           minHeight: math.max(
                             0,
                             constraints.viewportMainAxisExtent -

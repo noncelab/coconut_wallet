@@ -120,7 +120,8 @@ void main() {
         expect(_checkAgain, findsOneWidget);
         expect(_text(t.wallet_health.section.review_needed), findsOneWidget);
         expect(_text(t.wallet_health.check.watch_only_verify.issue_not_verified), findsOneWidget);
-        expect(_text(t.wallet_health.category.addresses_reused(n: 2)), findsNWidgets(2)); // 카드 상태 줄 + 행
+        expect(_text(t.wallet_health.category.addresses_reused(n: 2)), findsOneWidget); // 카드 상태 줄
+        expect(_text(t.wallet_health.check.address_reuse.issue(n: 2)), findsOneWidget); // 행
         expect(_premiumCard, findsOneWidget);
         // C4: 판매 카드 안에는 칩이 없다(Premium 바탕 위에서 묻히고 젬이 두 번 나온다)
         expect(find.descendant(of: _premiumCard, matching: find.byType(PremiumChip)), findsNothing);
@@ -762,11 +763,11 @@ void main() {
     await tester.tap(find.byKey(const Key('wallet-health-info')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-about-sheet')), findsOneWidget);
-    // 시트 머리가 "About Wallet Health Score"(18 Bold), 본문에는 같은 제목을 다시 쓰지 않는다
+    // 시트 머리가 "About Wallet Health Score"(16 Bold), 본문에는 같은 제목을 다시 쓰지 않는다
     final heading = _text(t.wallet_health.about.title);
     expect(heading, findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('wallet-health-about-sheet')), matching: heading), findsNothing);
-    expect(tester.widget<Text>(heading).style!.fontSize, 18);
+    expect(tester.widget<Text>(heading).style!.fontSize, 16);
     // 좁은 앱바 제목 칸에서 말줄임 대신 한 줄로 줄여 맞춘다
     expect(tester.widget<Text>(heading).overflow, isNot(TextOverflow.ellipsis));
     expect(find.ancestor(of: heading, matching: find.byType(FittedBox)), findsOneWidget);
@@ -839,7 +840,7 @@ void main() {
 
   testWidgets('review row opens the review item sheet', (tester) async {
     await _pump(tester, scoredReport());
-    await tester.tap(_text(t.wallet_health.category.addresses_reused(n: 2)).last);
+    await tester.tap(_text(t.wallet_health.check.address_reuse.issue(n: 2)));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('wallet-health-review-sheet')), findsOneWidget);
     expect(_text(t.wallet_health.review.address_reuse.body), findsOneWidget);

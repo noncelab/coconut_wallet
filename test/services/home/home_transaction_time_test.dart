@@ -5,24 +5,18 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test(
-    'the process uses the requested timezone, including seasonal offsets',
-    () {
-      final offsets = [
-        DateTime(2026, 1, 15).timeZoneOffset.inMinutes,
-        DateTime(2026, 7, 15).timeZoneOffset.inMinutes,
-      ];
-      final expected =
-          {
-            'UTC': [0, 0],
-            'Asia/Seoul': [540, 540],
-            'Asia/Kathmandu': [345, 345],
-            'America/New_York': [-300, -240],
-          }[Platform.environment['TZ']];
-      print('TZ=${Platform.environment['TZ']}, winter/summer offsets=$offsets');
-      if (expected != null) expect(offsets, expected);
-    },
-  );
+  test('the process uses the requested timezone, including seasonal offsets', () {
+    final offsets = [DateTime(2026, 1, 15).timeZoneOffset.inMinutes, DateTime(2026, 7, 15).timeZoneOffset.inMinutes];
+    final expected =
+        {
+          'UTC': [0, 0],
+          'Asia/Seoul': [540, 540],
+          'Asia/Kathmandu': [345, 345],
+          'America/New_York': [-300, -240],
+        }[Platform.environment['TZ']];
+    print('TZ=${Platform.environment['TZ']}, winter/summer offsets=$offsets');
+    if (expected != null) expect(offsets, expected);
+  });
 
   final cases = [
     (

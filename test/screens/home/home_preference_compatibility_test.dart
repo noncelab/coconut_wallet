@@ -20,7 +20,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
@@ -250,14 +249,8 @@ void main() {
     final viewModel = tester.element(find.byType(HomeItemsView)).read<HomeViewModel>();
     final configuration = viewModel.configuration;
     for (final option in [HomeAddWalletOption.hidden, HomeAddWalletOption.hotWallet, HomeAddWalletOption.watchOnly]) {
-      final settings = WalletHomeEditViewModel(
-        tester.element(find.byType(HomeItemsView)).read<WalletProvider>(),
-        preferences,
-      );
-      settings.setTempHomeAddWalletOption(option);
-      settings.setTempIsFiatBalanceHidden(option != HomeAddWalletOption.watchOnly);
-      await settings.onComplete();
-      settings.dispose();
+      await preferences.changeIsFiatBalanceHidden(option != HomeAddWalletOption.watchOnly);
+      await preferences.changeHomeAddWalletOption(option);
       await tester.pump();
       final button = find.byKey(const Key('home-add-wallet-button'));
       expect(button, option == HomeAddWalletOption.hidden ? findsNothing : findsOneWidget);

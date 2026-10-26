@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutSwitch, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    show CoconutLayout, CoconutSwitch, CoconutTypography, Sizes;
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -19,7 +20,8 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// 위젯 설정 시트. 저장하면 [HomeWidgetSettings]를 돌려준다. [initial]이 null이면 새로 추가하는 위젯이다.
+/// 위젯 설정 시트.
+/// 저장하면 [HomeWidgetSettings]를 돌려주고, [initial]이 null이면 새로 추가하는 위젯이다.
 /// 호들 인사이트처럼 위젯이 아닌 화면의 설정에도 쓴다([title], [description]).
 class WidgetConfigureSheet extends StatefulWidget {
   final String heading;
@@ -28,13 +30,20 @@ class WidgetConfigureSheet extends StatefulWidget {
   final HomeWidgetSettings? initial;
   final String? title;
   final String? description;
+  final TextStyle? headingStyle;
+  final TextStyle? descriptionStyle;
 
-  /// 지금 크기(이미 홈에 있는 위젯). 새로 추가하면 null이고 [HomeWidgetSettingsSpec.sizes]의 첫 크기가 기본이다.
+  /// 지금 크기(이미 홈에 있는 위젯).
+  /// 새로 추가하면 null이고 [HomeWidgetSettingsSpec.sizes]의 첫 크기가 기본이다.
   final HomeSpan? initialSpan;
 
-  /// 크기를 고르는 위젯의 미리보기. 시트는 홈 위젯 데이터에 닿지 않으므로 여는 쪽이 만든다.
+  /// 크기를 고르는 위젯의 미리보기.
+  /// 시트는 홈 위젯 데이터에 닿지 않으므로 여는 쪽이 만든다.
   final Widget Function(HomeSpan span)? previewBuilder;
   final bool compactFakeBalance;
+
+  /// 지갑 목록 위 '지갑' 제목. 시트 제목이 이미 지갑 선택이면 숨긴다.
+  final bool showWalletsTitle;
 
   const WidgetConfigureSheet({
     super.key,
@@ -44,9 +53,12 @@ class WidgetConfigureSheet extends StatefulWidget {
     this.initial,
     this.title,
     this.description,
+    this.headingStyle,
+    this.descriptionStyle,
     this.initialSpan,
     this.previewBuilder,
     this.compactFakeBalance = false,
+    this.showWalletsTitle = true,
   });
 
   static Future<HomeWidgetSettings?> open(
@@ -76,9 +88,12 @@ class WidgetConfigureSheet extends StatefulWidget {
     HomeWidgetSettings? initial,
     String? title,
     String? description,
+    TextStyle? headingStyle,
+    TextStyle? descriptionStyle,
     HomeSpan? initialSpan,
     Widget Function(HomeSpan span)? previewBuilder,
     bool compactFakeBalance = false,
+    bool showWalletsTitle = true,
   }) {
     return CommonBottomSheets.showBottomSheet_100<HomeWidgetSettings>(
       context: context,
@@ -92,9 +107,12 @@ class WidgetConfigureSheet extends StatefulWidget {
         initial: initial,
         title: title,
         description: description,
+        headingStyle: headingStyle,
+        descriptionStyle: descriptionStyle,
         initialSpan: initialSpan,
         previewBuilder: previewBuilder,
         compactFakeBalance: compactFakeBalance,
+        showWalletsTitle: showWalletsTitle,
       ),
     );
   }
@@ -116,6 +134,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
   final TextEditingController _fakeBalanceController = TextEditingController();
   final Map<int, TextEditingController> _targetControllers = {};
   final Map<int, FocusNode> _targetFocusNodes = {};
+  final Map<int, GlobalKey> _targetFieldKeys = {};
 
   TextEditingController _targetController(int walletId) => _targetControllers.putIfAbsent(walletId, () {
     final saved = _viewModel.targetOf(walletId);
@@ -128,6 +147,17 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
     });
     return controller;
   });
+
+  FocusNode _targetFocusNode(int walletId) => _targetFocusNodes.putIfAbsent(walletId, () {
+    final focusNode = FocusNode();
+    focusNode.addListener(() {
+      if (focusNode.hasFocus) _scrollTargetIntoView(walletId);
+    });
+    return focusNode;
+  });
+
+  GlobalKey _targetFieldKey(int walletId) => _targetFieldKeys.putIfAbsent(walletId, GlobalKey.new);
+
   final FocusNode _fakeBalanceFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   double? _lastKeyboardInset;
@@ -150,8 +180,32 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     if (_lastKeyboardInset != keyboardInset) {
       _lastKeyboardInset = keyboardInset;
-      if (keyboardInset > 0) _scrollToFakeBalanceOnFocus();
+      if (keyboardInset > 0) _scrollFocusedInputIntoView();
     }
+  }
+
+  void _scrollFocusedInputIntoView() {
+    for (final entry in _targetFocusNodes.entries) {
+      if (entry.value.hasFocus) {
+        _scrollTargetIntoView(entry.key);
+        return;
+      }
+    }
+    _scrollToFakeBalanceOnFocus();
+  }
+
+  void _scrollTargetIntoView(int walletId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(_targetFocusNodes[walletId]?.hasFocus ?? false)) return;
+      final fieldContext = _targetFieldKeys[walletId]?.currentContext;
+      if (fieldContext == null) return;
+      Scrollable.ensureVisible(
+        fieldContext,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        alignment: 0.35,
+      );
+    });
   }
 
   void _scrollToFakeBalanceOnFocus() {
@@ -201,6 +255,8 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                 (viewModel.isNew
                     ? t.home_edit.configure_widget_description_add
                     : t.home_edit.configure_widget_description_edit),
+            introHeadingStyle: widget.headingStyle,
+            introDescriptionStyle: widget.descriptionStyle,
             buttonText: viewModel.isNew ? t.home_edit.add_to_home : t.home_edit.save_changes,
             buttonKey: const Key('widget-configure-submit'),
             isButtonActive: viewModel.canSubmit,
@@ -257,7 +313,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
   }
 
   List<Widget> _buildWallets(WidgetConfigureViewModel viewModel) => [
-    HomeConfigureSectionTitle(t.home_edit.wallets),
+    if (widget.showWalletsTitle) HomeConfigureSectionTitle(t.home_edit.wallets),
     HomeConfigureCheckRow(
       key: const Key('widget-configure-all-wallets'),
       label: t.home_edit.all_wallets,
@@ -313,7 +369,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
   List<Widget> _buildGoals(WidgetConfigureViewModel viewModel) {
     final colors = context.coconutColors;
     return [
-      HomeConfigureSectionTitle(t.home_edit.wallet_goals),
+      HomeConfigureSectionTitle(t.home_edit.wallet_goals, bottomPadding: Sizes.size4),
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         child: Text(
@@ -330,26 +386,29 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
             children: [
               Text(wallet.name, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
               CoconutLayout.spacing_200h,
-              CoconutTextField(
-                key: ValueKey('widget-configure-goal-input-${wallet.id}'),
-                textInputType: const TextInputType.numberWithOptions(decimal: true),
-                textInputFormatter: const [BtcAmountInputFormatter()],
-                placeholderText: t.home_edit.wallet_goal_placeholder,
-                isLengthVisible: false,
-                controller: _targetController(wallet.id),
-                focusNode: _targetFocusNodes.putIfAbsent(wallet.id, FocusNode.new),
-                onChanged: (text) {},
-                backgroundColor: colors.inputSurface,
-                maxLength: 19,
-                suffix: Text(t.btc, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
-                errorText:
-                    viewModel.targetExceedsSupply(wallet.id)
-                        ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
-                        : '',
-                isError: viewModel.targetExceedsSupply(wallet.id),
-                maxLines: 1,
-                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
-                onClear: _targetController(wallet.id).clear,
+              KeyedSubtree(
+                key: _targetFieldKey(wallet.id),
+                child: CoconutTextField(
+                  key: ValueKey('widget-configure-goal-input-${wallet.id}'),
+                  textInputType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputFormatter: const [BtcAmountInputFormatter()],
+                  placeholderText: t.home_edit.wallet_goal_placeholder,
+                  isLengthVisible: false,
+                  controller: _targetController(wallet.id),
+                  focusNode: _targetFocusNode(wallet.id),
+                  onChanged: (text) {},
+                  backgroundColor: colors.inputSurface,
+                  maxLength: 19,
+                  suffix: Text(t.btc, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
+                  errorText:
+                      viewModel.targetExceedsSupply(wallet.id)
+                          ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
+                          : '',
+                  isError: viewModel.targetExceedsSupply(wallet.id),
+                  maxLines: 1,
+                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                  onClear: _targetController(wallet.id).clear,
+                ),
               ),
             ],
           ),

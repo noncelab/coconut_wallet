@@ -56,7 +56,7 @@ void main() {
 
   tearDown(() => model.dispose());
 
-  Future<void> pumpGrid(WidgetTester tester) => tester.pumpWidget(
+  Future<void> pumpGrid(WidgetTester tester, {bool showRemove = false}) => tester.pumpWidget(
     MaterialApp(
       theme: buildCoconutThemeData(),
       home: Align(
@@ -75,6 +75,7 @@ void main() {
                   isArranging: model.isArranging,
                   onArrangeStart: model.startArranging,
                   onArrangeDone: model.finishArranging,
+                  onRemove: showRemove ? (item) => model.removeItem(item.id) : null,
                   menuItemsOf:
                       (item) => [
                         LongPressedMenuItem(
@@ -100,6 +101,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     return gesture;
   }
+
+  testWidgets('occupied drop has no rendered overlap on the first release frame', (tester) async {
+    model.startArranging();
+    await pumpGrid(tester);
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-3'))));
+    await gesture.moveBy(const Offset(24, 0));
+    await tester.pump(const Duration(milliseconds: 32));
+    await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('home-item-1'))));
+    await tester.pump(const Duration(milliseconds: 200));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 16));
+    final rects = [
+      for (final id in ['1', '2', '3']) tester.getRect(find.byKey(ValueKey('home-item-content-$id'))),
+    ];
+    for (var i = 0; i < rects.length; i++) {
+      for (var j = i + 1; j < rects.length; j++) {
+        final overlap = rects[i].intersect(rects[j]);
+        expect(
+          overlap.width <= 0.5 || overlap.height <= 0.5,
+          isTrue,
+          reason: 'Dropped and displaced tiles must occupy distinct rendered cells.',
+        );
+      }
+    }
+    expect(repository.load(), model.configuration);
+    model.undoArrangement();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('held remove and restore clears the actual feedback before release', (tester) async {
+    model.startArranging();
+    await pumpGrid(tester, showRemove: true);
+    final original = model.configuration;
+    final gesture = await dragOver(tester, '3', '1');
+    final feedback = find.ancestor(of: find.text('3'), matching: find.byType(Opacity));
+    expect(feedback, findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home-item-remove-2')));
+    await tester.pump();
+    await tester.pump();
+    expect(feedback, findsNothing);
+    model.restore(original);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(gridKey.currentState!.cancelActiveDrag(), isFalse);
+    await gesture.moveBy(const Offset(30, 0));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(model.configuration, original);
+    expect(repository.load(), original);
+    expect(feedback, findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('canceling a live drag restores the preview and a late release cannot save it', (tester) async {
     model.startArranging();

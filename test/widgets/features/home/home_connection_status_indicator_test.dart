@@ -57,8 +57,10 @@ void main() {
   });
 
   testWidgets('recovery keeps its left edge while the previous message fades out', (tester) async {
+    final previousLocale = LocaleSettings.currentLocale;
+    addTearDown(() => LocaleSettings.setLocaleSync(previousLocale));
     LocaleSettings.setLocaleSync(AppLocale.ko);
-    for (final status in [NetworkStatus.vpnBlocked, NetworkStatus.connectionFailed]) {
+    for (final status in [NetworkStatus.vpnBlocked, NetworkStatus.connectionFailed, NetworkStatus.offline]) {
       await tester.pumpWidget(const SizedBox.shrink());
       await _pump(tester, status: status);
       await tester.runAsync(() => vg.waitForPendingDecodes());

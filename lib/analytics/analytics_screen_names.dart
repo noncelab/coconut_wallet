@@ -21,8 +21,6 @@ class AnalyticsScreenNames {
   static const String walletHomeAnalysisFilterSheet = 'wallet-home-analysis-filter-sheet';
   static const String walletHomeGlossaryTermDetailSheet = 'wallet-home-glossary-term-detail-sheet';
   static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
-  static const String walletHomeEditWalletSheet = 'wallet-home-edit-wallet-sheet';
-  static const String walletHomeEditAddWalletOptionSheet = 'wallet-home-edit-add-wallet-option-sheet';
   // 홈 지갑 추가 탑시트 (wallet_add_dialog.dart, WalletAddDialogMode별)
   static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
   static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
@@ -79,6 +77,8 @@ class AnalyticsScreenNames {
   static const String walletInfoMfpSheet = 'wallet-info-mfp-sheet';
   static const String walletInfoEditTargetAmountSheet = 'wallet-info-edit-target-amount-sheet';
   static const String walletInfoEditSheet = 'wallet-info-edit-sheet';
+  static const String walletInfoDescriptorSheet = 'wallet-info-descriptor-sheet';
+  static const String walletInfoTaprootSpendTypeSheet = 'wallet-info-taproot-spend-type-sheet';
   static const String walletResyncAuthSheet = 'wallet-resync-auth-sheet';
   static const String hotWalletAuthSheet = 'hot-wallet-auth-sheet';
   static const String hotWalletAppLockGuideSheet = 'hot-wallet-app-lock-guide-sheet';

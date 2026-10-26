@@ -182,7 +182,7 @@ class AppSettingsScreen extends StatefulWidget {
         await CommonBottomSheets.showCustomHeightBottomSheet(
           context: context,
           screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
-          heightRatio: 0.4,
+          heightRatio: 0.5,
           child: NumberFormatBottomSheet(),
         );
       case AppSettingsTarget.electrum:

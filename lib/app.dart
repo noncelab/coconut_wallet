@@ -6,7 +6,6 @@ import 'package:coconut_wallet/app/providers/app_providers.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
-import 'package:coconut_wallet/constants/new_home_flag.dart';
 import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
@@ -15,7 +14,6 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart'
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -81,8 +79,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
       return switch (_appEntryFlow) {
         AppEntryFlow.splash => AnalyticsScreenNames.splash,
         AppEntryFlow.pinCheck => AnalyticsScreenNames.pinCheck,
-        AppEntryFlow.main =>
-          kUseNewHome && _homePage == 1 ? AnalyticsScreenNames.allFeatures : AnalyticsScreenNames.walletHome,
+        AppEntryFlow.main => _homePage == 1 ? AnalyticsScreenNames.allFeatures : AnalyticsScreenNames.walletHome,
       };
     }
     return analyticsRouteScreenName(settings);
@@ -157,7 +154,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   _appEntryFlow == AppEntryFlow.splash
                       ? StartScreen(onComplete: _completeSplash)
                       : _appEntryFlow == AppEntryFlow.main
-                      ? (kUseNewHome ? HomeScreen(onPageChanged: _onHomePageChanged) : const WalletHomeScreen())
+                      ? HomeScreen(onPageChanged: _onHomePageChanged)
                       : CustomLoadingOverlay(
                         child: PinCheckScreen(
                           appEntrance: true,

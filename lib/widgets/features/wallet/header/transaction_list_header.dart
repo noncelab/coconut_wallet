@@ -71,15 +71,14 @@ class _TransactionListHeaderState extends State<TransactionListHeader> {
       },
       child: Column(
         children: [
-          FiatPrice(
-            satoshiAmount: widget.animatedBalanceData.current,
-            textStyle: TextStyle.lerp(
-              CoconutTypography.body2_14_Number,
-              CoconutTypography.body3_12_Number,
-              widget.collapseProgress,
+          _buildBtcBalance(context),
+          Transform.translate(
+            offset: const Offset(0, -2),
+            child: FiatPrice(
+              satoshiAmount: widget.animatedBalanceData.current,
+              textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
             ),
           ),
-          _buildBtcBalance(context),
         ],
       ),
     );
@@ -87,8 +86,8 @@ class _TransactionListHeaderState extends State<TransactionListHeader> {
 
   Widget _buildBtcBalance(BuildContext context) {
     final unitStyle = TextStyle.lerp(
-      CoconutTypography.heading4_18_Number,
-      CoconutTypography.body2_14_Number,
+      CoconutTypography.heading4_18_NumberBold,
+      CoconutTypography.body2_14_NumberBold,
       widget.collapseProgress,
     )!.setColor(context.coconutColors.primaryText);
     final amountStyle = TextStyle.lerp(

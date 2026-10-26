@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
@@ -10,17 +11,23 @@ import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletList;
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 /// 지갑 목록. 카드가 화면 오른쪽 밖을 중심으로 한 원호를 따라 위아래로 돌고, 가운데 카드의 정보를 왼쪽 아래에 보여 준다.
 /// 홈 스택에서 열면 스택 카드가 가운데 카드로 커지며 날아오고, 나머지 카드는 원호를 따라 펼쳐진다.
@@ -81,7 +88,17 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
   static const _pageFraction = 0.4;
 
   late final PageController _controller;
+  final Map<int, GlobalKey> _cardKeys = {};
   int _focused = 0;
+  double? _indicatorDragDistance;
+  Offset? _indicatorPointerDown;
+  Timer? _indicatorRepeat;
+  int _indicatorDragDirection = 0;
+  bool _indicatorAutoMode = false;
+  static const _indicatorRepeatInterval = Duration(milliseconds: 500);
+
+  int get _indicatorCount => _viewModel.wallets.length + 1;
+  static const _indicatorPageDistance = 18.0;
 
   WalletStackListViewModel get _viewModel => context.read<WalletStackListViewModel>();
 
@@ -94,6 +111,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   @override
   void dispose() {
+    _indicatorRepeat?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -105,15 +123,166 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final index = _page.round();
     if (index == _focused) return;
     setState(() => _focused = index);
+    if (ModalRoute.of(context)?.isCurrent ?? true) vibrateExtraLight();
     final wallets = _viewModel.wallets;
     if (index < wallets.length) widget.onFocusWallet?.call(wallets[index].id);
   }
 
+  void _startIndicatorDrag(DragStartDetails details) {
+    if (!_controller.hasClients) return;
+    _indicatorRepeat?.cancel();
+    _controller.jumpToPage(_page.round().clamp(0, _indicatorCount - 1));
+    _indicatorDragDistance = 0;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+    if (_indicatorCount > 9 && _indicatorPointerDown != null) {
+      _moveIndicator(details.globalPosition.dy - _indicatorPointerDown!.dy);
+    }
+  }
+
+  void _updateIndicatorDrag(DragUpdateDetails details) => _moveIndicator(details.primaryDelta ?? 0);
+
+  bool get _canRepeatIndicator {
+    if (!_controller.hasClients || _indicatorCount <= 9) return false;
+    final current = _page.round();
+    return current >= 4 && current <= _indicatorCount - 5;
+  }
+
+  void _stopIndicatorRepeat() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorDragDirection = 0;
+  }
+
+  void _repeatIndicator(int direction) {
+    _stopIndicatorRepeat();
+    if (!_indicatorAutoMode && !_canRepeatIndicator) return;
+    // 같은 드래그에서 시작한 자동 전환은 양 끝 네 페이지에 들어가도 유지한다.
+    _indicatorAutoMode = true;
+    _indicatorDragDirection = direction;
+    _indicatorDragDistance = 0;
+    if ((direction < 0 && _page <= 0) || (direction > 0 && _page >= _indicatorCount - 1)) return;
+    _indicatorRepeat = Timer.periodic(_indicatorRepeatInterval, (_) {
+      if (!mounted || _indicatorDragDistance == null || !_controller.hasClients || _indicatorCount <= 9) {
+        _stopIndicatorRepeat();
+        return;
+      }
+      _stepIndicator(_indicatorDragDirection);
+      if ((_indicatorDragDirection < 0 && _page <= 0) ||
+          (_indicatorDragDirection > 0 && _page >= _indicatorCount - 1)) {
+        _indicatorDragDistance = 0;
+        _stopIndicatorRepeat();
+      }
+    });
+  }
+
+  void _moveIndicator(double movement) {
+    if (_indicatorDragDistance == null || !_controller.hasClients || movement == 0) return;
+    if (_indicatorAutoMode || _canRepeatIndicator) {
+      _indicatorAutoMode = true;
+      // 자동 전환 중에는 같은 방향으로 더 끌어도 페이지를 건너뛰지 않는다.
+      if (movement.sign == _indicatorDragDirection) {
+        _indicatorDragDistance = 0;
+        return;
+      }
+      _indicatorDragDistance = _indicatorDragDistance! + movement;
+      if (_indicatorDragDistance!.abs() < _indicatorPageDistance) return;
+      final direction = _indicatorDragDistance!.sign.toInt();
+      _indicatorDragDistance = 0;
+      _stepIndicator(direction);
+      _repeatIndicator(direction);
+      return;
+    }
+
+    // 양 끝 네 페이지는 손가락 이동량만큼만 전환한다.
+    _stopIndicatorRepeat();
+    _indicatorDragDistance = _indicatorDragDistance! + movement;
+    final steps = (_indicatorDragDistance! / _indicatorPageDistance).truncate();
+    if (steps != 0) {
+      _indicatorDragDistance = _indicatorDragDistance! - steps * _indicatorPageDistance;
+      final current = _page.round();
+      final target = (current + steps).clamp(0, _indicatorCount - 1);
+      for (var page = current; page != target;) {
+        page += steps.sign;
+        _stepIndicator(steps.sign);
+        if (_canRepeatIndicator) {
+          _repeatIndicator(steps.sign);
+          break;
+        }
+      }
+    }
+    if ((_page <= 0 && _indicatorDragDistance! < 0) || (_page >= _indicatorCount - 1 && _indicatorDragDistance! > 0)) {
+      _indicatorDragDistance = 0;
+    }
+  }
+
+  void _stepIndicator(int direction) {
+    if (!_controller.hasClients || _indicatorCount < 2) return;
+    final current = _page.round().clamp(0, _indicatorCount - 1);
+    final next = (current + direction).clamp(0, _indicatorCount - 1);
+    if (current == next) return;
+    _controller.jumpToPage(next);
+  }
+
+  void _endIndicatorDrag() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorPointerDown = null;
+    _indicatorDragDistance = null;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+  }
+
+  Object _heroTagOf(int walletId) =>
+      widget.heroTagOf?.call(walletId) ?? ('wallet-wheel', identityHashCode(this), walletId);
+
+  /// 지갑 상세에서 카드를 넘기면 휠도 그 카드로 옮겨 둔다. 돌아올 때 그 카드로 돌아온다.
+  void _showWallet(int walletId) {
+    final index = _viewModel.wallets.indexWhere((wallet) => wallet.id == walletId);
+    if (index >= 0 && _controller.hasClients && _page.round() != index) _controller.jumpToPage(index);
+  }
+
+  /// 휠에 놓인 지갑 카드의 화면 좌표. 지갑 상세로 펼치고 접을 때 쓴다.
+  Rect? _cardRectOf(int walletId) {
+    final box = _cardKeys[walletId]?.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
   void _openWallet(WalletItemBase wallet) {
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.walletDetail,
-      arguments: WalletDetailRouteArgs(id: wallet.id, entryPoint: kEntryPointWalletList),
+    final openedWalletId = ValueNotifier(wallet.id);
+    final args = WalletDetailRouteArgs(
+      id: wallet.id,
+      entryPoint: kEntryPointWalletHome,
+      walletIds: [for (final item in _viewModel.wallets) item.id],
+      onFocusChanged: (walletId) {
+        openedWalletId.value = walletId;
+        _showWallet(walletId);
+      },
+    );
+    final routeBuilder = context.findAncestorWidgetOfExactType<WidgetsApp>()?.routes?[AppRouteNames.walletDetail];
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
+        transitionDuration: WalletCardDetailScreen.transitionDuration,
+        reverseTransitionDuration: WalletCardDetailScreen.transitionDuration,
+        pageBuilder:
+            (routeContext, _, __) =>
+                routeBuilder?.call(routeContext) ??
+                WalletCardDetailScreen(
+                  id: args.id,
+                  entryPoint: args.entryPoint,
+                  walletIds: args.walletIds,
+                  onFocusChanged: args.onFocusChanged,
+                ),
+        transitionsBuilder:
+            (_, animation, __, child) => WalletDetailExpandTransition(
+              animation: animation,
+              walletId: openedWalletId,
+              cardRectOf: _cardRectOf,
+              child: child,
+            ),
+      ),
     );
   }
 
@@ -134,11 +303,15 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         context: context,
         title: widget.title,
         actionButtonList: [
-          CupertinoButton(
+          CoconutAppBarActionButton(
             key: const Key('wallet-stack-list-add'),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             onPressed: _addWallet,
-            child: Icon(CupertinoIcons.add, color: colors.primaryText, size: 26),
+            icon: SvgPicture.asset(
+              CommonActionIconPath.plus,
+              width: 15,
+              height: 15,
+              colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+            ),
           ),
         ],
       ),
@@ -206,7 +379,16 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
                     width: cardLeft,
                     top: centerY - 60,
                     height: 120,
-                    child: IgnorePointer(child: FadeTransition(opacity: fan, child: _indicator(context, count))),
+                    child: GestureDetector(
+                      key: const Key('wallet-stack-list-indicator-scrubber'),
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragDown: (details) => _indicatorPointerDown = details.globalPosition,
+                      onVerticalDragStart: _startIndicatorDrag,
+                      onVerticalDragUpdate: _updateIndicatorDrag,
+                      onVerticalDragEnd: (_) => _endIndicatorDrag(),
+                      onVerticalDragCancel: _endIndicatorDrag,
+                      child: FadeTransition(opacity: fan, child: _indicator(context, count)),
+                    ),
                   ),
                   Positioned(
                     left: 28,
@@ -269,22 +451,26 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   Widget _walletCard(BuildContext context, WalletStackListViewModel viewModel, WalletItemBase wallet) {
     final last = viewModel.lastTransactionTime(wallet);
+    final appearances = context.watchWalletAppearance();
     final card = _ScaledCard(
       child: WalletCard(
         key: ValueKey('wallet-stack-list-card-${wallet.id}'),
         wallet: wallet,
-        appearance: WalletAppearance.of(wallet),
+        appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+        backgroundPhoto: appearances?.photoFileFor(wallet.id),
         size: WalletCardSize.small,
         balanceDisplay: viewModel.balanceText(wallet),
         secondaryText: last == null ? null : formatHomeRelativeTime(last, DateTime.now()),
         statusBadge: safetyCautionBadgeFor(context, wallet.id, compact: true),
       ),
     );
-    final tagOf = widget.heroTagOf;
-    if (tagOf == null) return card;
     return HeroMode(
       enabled: _focused < viewModel.wallets.length,
-      child: Hero(tag: tagOf(wallet.id), flightShuttleBuilder: _shuttle, child: card),
+      child: Hero(
+        tag: _heroTagOf(wallet.id),
+        flightShuttleBuilder: _shuttle,
+        child: KeyedSubtree(key: _cardKeys.putIfAbsent(wallet.id, GlobalKey.new), child: card),
+      ),
     );
   }
 
@@ -315,29 +501,65 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   Widget _indicator(BuildContext context, int count) {
     final colors = context.coconutColors;
-    // Nine markers occupy at most 113 px inside the 120 px indicator area.
-    // Keep the current page visible without shrinking markers as wallets grow.
     final visibleCount = math.min(count, 9);
-    final first = (_focused - visibleCount ~/ 2).clamp(0, count - visibleCount);
+    final slotHeight = count > 9 ? 10.0 : 11.0;
+    const selectedExtraHeight = 14.0;
+    final height = visibleCount * slotHeight + selectedExtraHeight;
+    final first = (_focused - visibleCount ~/ 2).clamp(0, count - visibleCount).toDouble();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     return Center(
       child: Semantics(
         value: '${_focused + 1}/$count',
-        child: Column(
+        child: SizedBox(
           key: const Key('wallet-stack-list-indicator'),
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = first; i < first + visibleCount; i++)
-              Container(
-                key: ValueKey('wallet-stack-list-indicator-dot-$i'),
-                margin: const EdgeInsets.symmetric(vertical: 2.5),
-                width: 6,
-                height: i == _focused ? 20 : 6,
-                decoration: BoxDecoration(
-                  color: i == _focused ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-          ],
+          width: 6,
+          height: height,
+          child: ClipRect(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: first, end: first),
+              duration: Duration(milliseconds: reduceMotion ? 0 : 300),
+              curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
+              builder: (context, position, _) {
+                final start = math.max(0, position.floor() - 1);
+                final end = math.min(count, position.ceil() + visibleCount + 1);
+                double visibility(int index) => (math.min(
+                          (index - position + 0.5) * slotHeight,
+                          (visibleCount - (index - position + 0.5)) * slotHeight,
+                        ) /
+                        (slotHeight / 2))
+                    .clamp(0.0, 1.0);
+                return Stack(
+                  children: [
+                    for (var i = start; i < end; i++)
+                      Positioned(
+                        key: ValueKey('wallet-stack-list-indicator-slot-$i'),
+                        top:
+                            (i - position) * slotHeight +
+                            (i > _focused ? selectedExtraHeight : 0) +
+                            (slotHeight - 6) / 2,
+                        left: 0,
+                        right: 0,
+                        child: Opacity(
+                          opacity: visibility(i),
+                          child: Transform.scale(
+                            scale: visibility(i),
+                            child: Container(
+                              key: ValueKey('wallet-stack-list-indicator-dot-$i'),
+                              width: 6,
+                              height: i == _focused ? 20 : 6,
+                              decoration: BoxDecoration(
+                                color: i == _focused ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -379,7 +601,14 @@ class _AddWalletCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                child: Icon(CupertinoIcons.add, size: 22, color: colors.primaryText),
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 13,
+                    height: 13,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               Text(

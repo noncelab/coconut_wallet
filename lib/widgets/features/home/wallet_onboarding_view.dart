@@ -5,6 +5,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletOnboardingItem {
   final Widget icon;
@@ -153,7 +154,17 @@ class WalletOnboardingView extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(CupertinoIcons.add, size: 18, color: colors.primaryText),
+                  SizedBox.square(
+                    dimension: 18,
+                    child: Center(
+                      child: SvgPicture.asset(
+                        CommonActionIconPath.plus,
+                        width: 10,
+                        height: 10,
+                        colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                      ),
+                    ),
+                  ),
                   CoconutLayout.spacing_200w,
                   Text(
                     t.wallet_onboarding.add_first_wallet,

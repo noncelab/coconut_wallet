@@ -37,7 +37,11 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       child = _row(
         context,
         key: 'error',
-        leading: SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
+        leading: SvgPicture.asset(
+          FeatureConnectivityIconPath.cloudDisconnected,
+          width: 16,
+          colorFilter: ColorFilter.mode(colors.dangerText, BlendMode.srcIn),
+        ),
         message: errorMessage(networkStatus),
         color: colors.dangerText,
       );

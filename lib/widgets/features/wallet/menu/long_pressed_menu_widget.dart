@@ -86,6 +86,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _childRepaintBoundaryKey = GlobalKey();
+  final GlobalKey _menuContentKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   LocalHistoryEntry? _menuHistory;
   ModalRoute<dynamic>? _menuRoute;
@@ -93,10 +94,9 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
   ui.Image? _capturedChildImage;
   bool _isCapturingChild = false;
   int _menuGeneration = 0;
-  Rect? _menuRect;
   int? _hoveredMenuIndex;
   bool _isMenuPointerActive = false;
-  double _menuItemHeight = 44;
+  final List<GlobalKey> _menuItemKeys = [];
   late AnimationController _menuAnimationController;
   late AnimationController _shakeController;
   late AnimationController _closeButtonController;
@@ -283,7 +283,6 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     _overlayEntry = null;
     _capturedChildImage?.dispose();
     _capturedChildImage = null;
-    _menuRect = null;
     _hoveredMenuIndex = null;
     _isMenuPointerActive = false;
   }
@@ -322,6 +321,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     }
     vibrateExtraLight();
     widget.onMenuOpen?.call();
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted || generation != _menuGeneration || widget.isEditMode) {
       if (generation == _menuGeneration) _isCapturingChild = false;
       return;
@@ -368,9 +368,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
           behavior: HitTestBehavior.translucent,
           onPointerDown: (event) {
             if (_isClosing) return;
-            if (_menuRect?.contains(event.position) != true) return;
-            _isMenuPointerActive = true;
-            _updateHoveredMenuItem(event.position);
+            _isMenuPointerActive = _updateHoveredMenuItem(event.position);
           },
           onPointerMove: (event) {
             if (_isMenuPointerActive) _updateHoveredMenuItem(event.position);
@@ -438,6 +436,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                 bottom: 0,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    _ensureMenuItemKeys();
                     // 메뉴의 예상 크기를 계산 (실제 RenderBox에 의존하지 않음)
                     // 어느 언어에서든 라벨이 잘리지 않도록, 최대 폭은 화면 폭(좌우 16 여백)까지 늘린다.
                     const double minMenuWidth = 180;
@@ -460,7 +459,6 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                       return math.max(maxWidth, textPainter.width);
                     });
                     final itemHeight = math.max(widget.menuIconSize, maxTitleHeight) + 24;
-                    _menuItemHeight = itemHeight;
                     // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 + 아이콘/텍스트 간격 8
                     final double menuWidth =
                         (maxTitleWidth.ceilToDouble() + 8 + 48 + widget.menuIconSize)
@@ -513,7 +511,6 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                     } else if (left + menuSize.width > screenSize.width) {
                       left = screenSize.width - menuSize.width;
                     }
-                    _menuRect = Rect.fromLTWH(left, top, menuSize.width, menuSize.height);
 
                     return Stack(
                       children: [
@@ -534,6 +531,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                               key: const Key('long-pressed-menu-box'),
                               width: menuWidth,
                               child: ClipRRect(
+                                key: _menuContentKey,
                                 borderRadius: BorderRadius.circular(12),
                                 child: Material(
                                   elevation: 4,
@@ -567,6 +565,7 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
                                             ...List.generate(
                                               widget.menuItems.length,
                                               (index) => Semantics(
+                                                key: _menuItemKeys[index],
                                                 button: true,
                                                 label: widget.menuItems[index].title,
                                                 onTap: () {
@@ -675,23 +674,38 @@ class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
     }
   }
 
-  void _updateHoveredMenuItem(Offset globalPosition) {
-    final menuRect = _menuRect;
-    if (menuRect == null) return;
+  void _ensureMenuItemKeys() {
+    if (_menuItemKeys.length == widget.menuItems.length) return;
+    _menuItemKeys
+      ..clear()
+      ..addAll(List<GlobalKey>.generate(widget.menuItems.length, (_) => GlobalKey()));
+  }
+
+  bool _updateHoveredMenuItem(Offset globalPosition) {
+    final box = _menuContentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return false;
+    // Opening scale changes the painted row positions before the layout bounds change.
+    final localPosition = box.globalToLocal(globalPosition);
+    final inside = (Offset.zero & box.size).contains(localPosition);
 
     int? nextIndex;
-    if (menuRect.contains(globalPosition)) {
-      final localY = globalPosition.dy - menuRect.top - 8 - _headerHeight;
-      if (localY >= 0) {
-        final index = (localY / _menuItemHeight).floor();
-        if (index >= 0 && index < widget.menuItems.length) nextIndex = index;
+    if (inside) {
+      for (var index = 0; index < _menuItemKeys.length; index++) {
+        final row = _menuItemKeys[index].currentContext?.findRenderObject() as RenderBox?;
+        if (row == null || !row.hasSize) continue;
+        final rowRect = box.globalToLocal(row.localToGlobal(Offset.zero)) & row.size;
+        if (rowRect.contains(localPosition)) {
+          nextIndex = index;
+          break;
+        }
       }
     }
 
-    if (_hoveredMenuIndex == nextIndex) return;
+    if (_hoveredMenuIndex == nextIndex) return inside;
     _hoveredMenuIndex = nextIndex;
     if (nextIndex != null) vibrateExtraLight();
     _overlayEntry?.markNeedsBuild();
+    return inside;
   }
 
   void _selectHoveredMenuItem() {

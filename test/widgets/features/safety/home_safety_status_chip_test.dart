@@ -174,7 +174,7 @@ void main() {
           for (final key in ['home-edit-button', 'home-add-wallet-button', 'home-settings-button'])
             tester.getRect(find.byKey(Key(key))),
         ];
-        expect(actions.map((rect) => rect.width), everyElement(48));
+        expect(actions.map((rect) => rect.width), everyElement(HomeAppBar.actionButtonWidth));
         expect(tester.getRect(find.byType(HomeSafetyStatusChip)).right, lessThanOrEqualTo(actions.first.left));
         expect(tester.takeException(), isNull);
       }

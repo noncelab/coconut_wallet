@@ -2,7 +2,7 @@ import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
-class DescriptorQrScanDataHandler implements IQrScanDataHandler {
+class DescriptorQrScanDataHandler implements IQrScanDataHandler<String> {
   String? _result;
 
   @override
@@ -28,7 +28,7 @@ class DescriptorQrScanDataHandler implements IQrScanDataHandler {
   }
 
   @override
-  dynamic get result => _result;
+  String? get result => _result;
 
   @override
   double get progress => isCompleted() ? 1.0 : 0.0;

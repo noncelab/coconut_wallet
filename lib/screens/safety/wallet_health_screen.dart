@@ -169,8 +169,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             onPressed: () => showWalletHealthAboutSheet(context),
             icon: SvgPicture.asset(
               CommonStateIconPath.circleInfo,
-              width: 24,
-              height: 24,
+              width: 20,
+              height: 20,
               colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
             ),
           ),
