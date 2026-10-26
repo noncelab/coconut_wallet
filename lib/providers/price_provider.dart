@@ -38,7 +38,6 @@ class PriceProvider extends ChangeNotifier {
   StreamSubscription<Map<FiatCode, int>>? _coinGeckoSubscription;
 
   late final VoidCallback _connectivityListener;
-  late final VoidCallback _preferenceListener;
   _ConnectionPhase _phase = _ConnectionPhase.active;
 
   /// 통화별 가격 저장
@@ -57,10 +56,9 @@ class PriceProvider extends ChangeNotifier {
     Logger.log('PriceProvider: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;
-    _preferenceListener = _onPreferenceChanged;
 
+    // 가격 채널은 선택 통화와 무관하게 전 통화를 구독하므로 preference 리스너는 등록하지 않는다.
     _connectivityProvider.addListener(_connectivityListener);
-    _preferenceProvider.addListener(_preferenceListener);
 
     _checkInitialNetworkState();
   }
@@ -88,14 +86,6 @@ class PriceProvider extends ChangeNotifier {
         _phase = _ConnectionPhase.waitingNetwork;
       }
       disposePriceSources();
-    }
-  }
-
-  void _onPreferenceChanged() {
-    // 모든 통화의 가격을 유지하므로 선택 통화 변경만으로는 재연결 불필요.
-    // 끊긴 채널이 있으면 끊긴 것만 다시 연다.
-    if (_connectivityProvider.isInternetOn == true) {
-      initPriceSources();
     }
   }
 
@@ -207,7 +197,6 @@ class PriceProvider extends ChangeNotifier {
   @override
   void dispose() {
     _connectivityProvider.removeListener(_connectivityListener);
-    _preferenceProvider.removeListener(_preferenceListener);
     try {
       disposePriceSources();
     } catch (e) {
