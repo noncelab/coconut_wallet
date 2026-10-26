@@ -18,6 +18,7 @@ class HistoricalBitcoinPriceService {
       FiatCode.USD => _fetchBinancePrices('BTCUSDT'),
       FiatCode.EUR => _fetchBinancePrices('BTCEUR'),
       FiatCode.JPY => _fetchBitflyerDailyCloses().then(_toHistoricalPrices),
+      _ => _fetchCoinGeckoDailyCloses(fiatCode).then(_toHistoricalPrices),
     };
   }
 
@@ -28,7 +29,34 @@ class HistoricalBitcoinPriceService {
       FiatCode.USD => _fetchBinanceDailyCloses('BTCUSDT'),
       FiatCode.EUR => _fetchBinanceDailyCloses('BTCEUR'),
       FiatCode.JPY => _fetchBitflyerDailyCloses(),
+      _ => _fetchCoinGeckoDailyCloses(fiatCode),
     };
+  }
+
+  // CoinGecko 무료 API는 days>90 요청만 일별 데이터를 주므로 100일을 받아 날짜별 종가로 정리한다.
+  Future<List<double>> _fetchCoinGeckoDailyCloses(FiatCode fiatCode) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart',
+      queryParameters: {'vs_currency': fiatCode.vsCurrency, 'days': 100},
+    );
+    final prices = response.data?['prices'];
+    final closes = <DateTime, double>{};
+
+    if (prices is List) {
+      for (final point in prices) {
+        if (point is! List || point.length < 2) continue;
+        final millis = (point[0] as num?)?.toInt();
+        final price = (point[1] as num?)?.toDouble();
+        if (millis == null || price == null) continue;
+        final date = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+        closes[DateTime.utc(date.year, date.month, date.day)] = price;
+      }
+    }
+
+    final today = DateTime.now().toUtc();
+    final todayUtc = DateTime.utc(today.year, today.month, today.day);
+    final sortedDays = closes.keys.where((day) => day.isBefore(todayUtc)).toList()..sort();
+    return [for (final day in sortedDays.skip(sortedDays.length > 32 ? sortedDays.length - 32 : 0)) closes[day]!];
   }
 
   // bitFlyer 공개 API에는 일봉이 없어, bitFlyer 웹 차트가 쓰는 비공식 주소를 쓴다. 바뀌면 실패하고 값 없음으로 처리된다.

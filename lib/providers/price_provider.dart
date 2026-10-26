@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/services/coingecko_price_service.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -16,12 +17,13 @@ class PriceProvider extends ChangeNotifier {
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
   late FiatCode _fiatCode;
 
-  /// 통화별 웹소켓 서비스
-  WebSocketService? _webSocketServiceKrw;
-  WebSocketService? _webSocketServiceUsd;
-  WebSocketService? _webSocketServiceJpy;
-  WebSocketService? _webSocketServiceEur;
+  /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
+  final Map<FiatCode, WebSocketService> _webSocketServices = {};
   final List<StreamSubscription<PriceResponse?>> _tickerSubscriptions = [];
+
+  /// 거래소 웹소켓이 없는 통화용 CoinGecko 폴링 서비스
+  CoinGeckoPriceService? _coinGeckoService;
+  StreamSubscription<Map<FiatCode, int>>? _coinGeckoSubscription;
 
   late final VoidCallback _connectivityListener;
   late final VoidCallback _preferenceListener;
@@ -29,29 +31,15 @@ class PriceProvider extends ChangeNotifier {
   bool _isSuspended = false;
 
   /// 통화별 가격 저장
-  int? _bitcoinPriceKrw;
-  int? _bitcoinPriceUsd;
-  int? _bitcoinPriceJpy;
-  int? _bitcoinPriceEur;
+  final Map<FiatCode, int> _bitcoinPrices = {};
 
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int? get bitcoinPriceUsd => _bitcoinPriceUsd;
-  int? get bitcoinPriceJpy => _bitcoinPriceJpy;
-  int? get bitcoinPriceEur => _bitcoinPriceEur;
+  int? get bitcoinPriceKrw => _bitcoinPrices[FiatCode.KRW];
+  int? get bitcoinPriceUsd => _bitcoinPrices[FiatCode.USD];
+  int? get bitcoinPriceJpy => _bitcoinPrices[FiatCode.JPY];
+  int? get bitcoinPriceEur => _bitcoinPrices[FiatCode.EUR];
 
   /// 특정 통화의 BTC 가격 조회
-  int? getBitcoinPriceForFiat(FiatCode fiatCode) {
-    switch (fiatCode) {
-      case FiatCode.KRW:
-        return _bitcoinPriceKrw;
-      case FiatCode.USD:
-        return _bitcoinPriceUsd;
-      case FiatCode.JPY:
-        return _bitcoinPriceJpy;
-      case FiatCode.EUR:
-        return _bitcoinPriceEur;
-    }
-  }
+  int? getBitcoinPriceForFiat(FiatCode fiatCode) => _bitcoinPrices[fiatCode];
 
   PriceProvider(
     this._connectivityProvider,
@@ -83,12 +71,7 @@ class PriceProvider extends ChangeNotifier {
     final isNetworkOn = _connectivityProvider.isInternetOn;
 
     if (isNetworkOn == true) {
-      final hasAnyService =
-          _webSocketServiceKrw != null ||
-          _webSocketServiceUsd != null ||
-          _webSocketServiceJpy != null ||
-          _webSocketServiceEur != null;
-      if (_isPendingConnection || !hasAnyService) {
+      if (_isPendingConnection || _webSocketServices.isEmpty || _coinGeckoService == null) {
         Logger.log('PriceProvider: Network connected');
         _isPendingConnection = false;
         initWebSocketService();
@@ -101,11 +84,12 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void _onPreferenceChanged() {
-    // 통화가 변경되었을 때 웹소켓 재연결
-    if (_connectivityProvider.isInternetOn == true) {
-      if (_fiatCode != _preferenceProvider.selectedFiat) {
-        _fiatCode = _preferenceProvider.selectedFiat;
-        initWebSocketService(force: true);
+    // 모든 통화의 가격을 유지하므로 선택 통화 변경 시 재연결은 불필요.
+    // 연결이 끊긴 통화가 있으면 끊긴 것만 다시 연다.
+    if (_fiatCode != _preferenceProvider.selectedFiat) {
+      _fiatCode = _preferenceProvider.selectedFiat;
+      if (_connectivityProvider.isInternetOn == true) {
+        initWebSocketService();
       }
     }
   }
@@ -124,65 +108,41 @@ class PriceProvider extends ChangeNotifier {
       disposeWebSocketService();
     }
 
-    // 이미 모든 WebSocket이 연결되어 있으면 스킵
-    if (_webSocketServiceKrw != null &&
-        _webSocketServiceUsd != null &&
-        _webSocketServiceJpy != null &&
-        _webSocketServiceEur != null) {
-      Logger.log('PriceProvider: 모든 WebSocket이 이미 연결되어 있습니다.');
+    final exchangeFiats = FiatCode.values.where((fiat) => fiat.hasExchangeSource).toList();
+
+    // 이미 모든 가격 채널이 연결되어 있으면 스킵
+    if (_webSocketServices.length == exchangeFiats.length && _coinGeckoService != null) {
+      Logger.log('PriceProvider: 모든 가격 채널이 이미 연결되어 있습니다.');
       return;
     }
 
     try {
-      Logger.log('PriceProvider: 모든 통화의 WebSocket 초기화 중...');
+      Logger.log('PriceProvider: 모든 통화의 가격 채널 초기화 중...');
       _isPendingConnection = false;
 
-      // KRW 웹소켓 (Upbit)
-      if (_webSocketServiceKrw == null) {
-        _webSocketServiceKrw = _createWebSocket(FiatCode.KRW);
+      for (final fiatCode in exchangeFiats) {
+        if (_webSocketServices.containsKey(fiatCode)) continue;
+        final service = _createWebSocket(fiatCode);
+        _webSocketServices[fiatCode] = service;
         _tickerSubscriptions.add(
-          _webSocketServiceKrw!.tickerStream.listen(
-            (ticker) => updatePriceForFiat(FiatCode.KRW, ticker),
-            onError: (error) => Logger.error('[KRW WebSocket] 스트림 오류: $error'),
+          service.tickerStream.listen(
+            (ticker) => updatePriceForFiat(fiatCode, ticker),
+            onError: (error) => Logger.error('[${fiatCode.code} WebSocket] 스트림 오류: $error'),
           ),
         );
-        Logger.log('[KRW WebSocket] Upbit 연결 완료');
+        Logger.log('[${fiatCode.code} WebSocket] 연결 완료');
       }
 
-      // USD 웹소켓 (Binance)
-      if (_webSocketServiceUsd == null) {
-        _webSocketServiceUsd = _createWebSocket(FiatCode.USD);
-        _tickerSubscriptions.add(
-          _webSocketServiceUsd!.tickerStream.listen(
-            (ticker) => updatePriceForFiat(FiatCode.USD, ticker),
-            onError: (error) => Logger.error('[USD WebSocket] 스트림 오류: $error'),
-          ),
+      // 거래소 웹소켓이 없는 통화는 CoinGecko 폴링
+      if (_coinGeckoService == null) {
+        final service = CoinGeckoPriceService();
+        _coinGeckoService = service;
+        _coinGeckoSubscription = service.priceStream.listen(
+          _updateCoinGeckoPrices,
+          onError: (error) => Logger.error('[CoinGecko] 스트림 오류: $error'),
         );
-        Logger.log('[USD WebSocket] Binance 연결 완료');
-      }
-
-      // JPY 웹소켓 (Bitflyer)
-      if (_webSocketServiceJpy == null) {
-        _webSocketServiceJpy = _createWebSocket(FiatCode.JPY);
-        _tickerSubscriptions.add(
-          _webSocketServiceJpy!.tickerStream.listen(
-            (ticker) => updatePriceForFiat(FiatCode.JPY, ticker),
-            onError: (error) => Logger.error('[JPY WebSocket] 스트림 오류: $error'),
-          ),
-        );
-        Logger.log('[JPY WebSocket] Bitflyer 연결 완료');
-      }
-
-      // EUR 웹소켓 (Binance)
-      if (_webSocketServiceEur == null) {
-        _webSocketServiceEur = _createWebSocket(FiatCode.EUR);
-        _tickerSubscriptions.add(
-          _webSocketServiceEur!.tickerStream.listen(
-            (ticker) => updatePriceForFiat(FiatCode.EUR, ticker),
-            onError: (error) => Logger.error('[EUR WebSocket] 스트림 오류: $error'),
-          ),
-        );
-        Logger.log('[EUR WebSocket] Binance 연결 완료');
+        service.start();
+        Logger.log('[CoinGecko] 폴링 시작');
       }
 
       final selectedFiat = _preferenceProvider.selectedFiat;
@@ -199,21 +159,12 @@ class PriceProvider extends ChangeNotifier {
   void updatePriceForFiat(FiatCode fiatCode, PriceResponse? ticker) {
     if (ticker == null) return;
 
-    switch (fiatCode) {
-      case FiatCode.KRW:
-        _bitcoinPriceKrw = ticker.tradePrice;
-        break;
-      case FiatCode.USD:
-        _bitcoinPriceUsd = ticker.tradePrice;
-        break;
-      case FiatCode.JPY:
-        _bitcoinPriceJpy = ticker.tradePrice;
-        break;
-      case FiatCode.EUR:
-        _bitcoinPriceEur = ticker.tradePrice;
-        break;
-    }
+    _bitcoinPrices[fiatCode] = ticker.tradePrice;
+    notifyListeners();
+  }
 
+  void _updateCoinGeckoPrices(Map<FiatCode, int> prices) {
+    _bitcoinPrices.addAll(prices);
     notifyListeners();
   }
 
@@ -233,53 +184,20 @@ class PriceProvider extends ChangeNotifier {
     }
     _tickerSubscriptions.clear();
 
-    // KRW WebSocket 정리
-    if (_webSocketServiceKrw != null) {
+    for (final entry in _webSocketServices.entries) {
       try {
-        _webSocketServiceKrw?.dispose();
-        Logger.log('[KRW WebSocket] 정리 완료');
+        entry.value.dispose();
+        Logger.log('[${entry.key.code} WebSocket] 정리 완료');
       } catch (e) {
-        Logger.error('[KRW WebSocket] 정리 중 오류: $e');
-      } finally {
-        _webSocketServiceKrw = null;
+        Logger.error('[${entry.key.code} WebSocket] 정리 중 오류: $e');
       }
     }
+    _webSocketServices.clear();
 
-    // USD WebSocket 정리
-    if (_webSocketServiceUsd != null) {
-      try {
-        _webSocketServiceUsd?.dispose();
-        Logger.log('[USD WebSocket] 정리 완료');
-      } catch (e) {
-        Logger.error('[USD WebSocket] 정리 중 오류: $e');
-      } finally {
-        _webSocketServiceUsd = null;
-      }
-    }
-
-    // JPY WebSocket 정리
-    if (_webSocketServiceJpy != null) {
-      try {
-        _webSocketServiceJpy?.dispose();
-        Logger.log('[JPY WebSocket] 정리 완료');
-      } catch (e) {
-        Logger.error('[JPY WebSocket] 정리 중 오류: $e');
-      } finally {
-        _webSocketServiceJpy = null;
-      }
-    }
-
-    // EUR WebSocket 정리
-    if (_webSocketServiceEur != null) {
-      try {
-        _webSocketServiceEur?.dispose();
-        Logger.log('[EUR WebSocket] 정리 완료');
-      } catch (e) {
-        Logger.error('[EUR WebSocket] 정리 중 오류: $e');
-      } finally {
-        _webSocketServiceEur = null;
-      }
-    }
+    _coinGeckoSubscription?.cancel();
+    _coinGeckoSubscription = null;
+    _coinGeckoService?.dispose();
+    _coinGeckoService = null;
   }
 
   @override
@@ -335,16 +253,5 @@ class PriceProvider extends ChangeNotifier {
   }
 
   /// 특정 통화의 가격 반환
-  int? _getPriceForFiat(FiatCode fiatCode) {
-    switch (fiatCode) {
-      case FiatCode.KRW:
-        return _bitcoinPriceKrw;
-      case FiatCode.USD:
-        return _bitcoinPriceUsd;
-      case FiatCode.JPY:
-        return _bitcoinPriceJpy;
-      case FiatCode.EUR:
-        return _bitcoinPriceEur;
-    }
-  }
+  int? _getPriceForFiat(FiatCode fiatCode) => _bitcoinPrices[fiatCode];
 }

@@ -324,6 +324,8 @@ class WebSocketServiceFactory {
         return WebSocketService(exchangeType: ExchangeType.bitflyer, openChannel: openChannel);
       case FiatCode.EUR:
         return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btceur', openChannel: openChannel);
+      default:
+        throw ArgumentError('$fiatCode는 거래소 웹소켓을 지원하지 않습니다. CoinGecko를 사용하세요.');
     }
   }
 }

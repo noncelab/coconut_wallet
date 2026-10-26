@@ -1114,6 +1114,7 @@ class _WalletListAppBarMenuButtonState extends State<_WalletListAppBarMenuButton
   }
 }
 
+// 현재 사용처가 없는 상태 (가격 출처 툴팁용으로 작성됐으나 호출부가 제거됨)
 class _BitcoinPriceInfoButton extends StatefulWidget {
   final WalletListViewModel viewModel;
   const _BitcoinPriceInfoButton({required this.viewModel});
@@ -1251,14 +1252,7 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
     );
   }
 
-  String _getPriceSource(FiatCode fiatCode) {
-    return switch (fiatCode) {
-      FiatCode.KRW => 'Upbit (KRW-BTC)',
-      FiatCode.USD => 'Binance (BTCUSDT)',
-      FiatCode.JPY => 'bitFlyer (BTC_JPY)',
-      FiatCode.EUR => 'Binance (BTCEUR)',
-    };
-  }
+  String _getPriceSource(FiatCode fiatCode) => fiatCode.priceSource;
 
   @override
   Widget build(BuildContext context) {

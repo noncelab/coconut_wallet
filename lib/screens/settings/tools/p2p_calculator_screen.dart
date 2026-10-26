@@ -34,6 +34,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
@@ -1129,7 +1130,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
-              await _viewModel.onFiatUnitChange();
+              await CommonBottomSheets.showCustomHeightBottomSheet(
+                context: context,
+                screenName: AnalyticsScreenNames.appSettingsFiatSheet,
+                heightRatio: 1.0,
+                child: FiatBottomSheet(
+                  title: t.fiat_bottom_sheet.select_title,
+                  closeOnSelect: true,
+                  selectedValue: _viewModel.fiatCode,
+                  onSelected: _viewModel.setFiatCode,
+                ),
+              );
               _resetCalculator();
               _inputFocusNode.unfocus();
             },
@@ -1225,6 +1236,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         return t.utility.p2p_calculator.bitflyer_price;
       case FiatCode.EUR:
         return t.utility.p2p_calculator.binance_price;
+      default:
+        return t.utility.p2p_calculator.coingecko_price;
     }
   }
 
@@ -1793,36 +1806,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (!isInputFocused) return [];
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      switch (_viewModel.fiatCode) {
-        case FiatCode.KRW:
-          return [
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-            {'label': '+${100000.toThousandsSeparatedString()}', 'value': '100000'},
-            {'label': '+${500000.toThousandsSeparatedString()}', 'value': '500000'},
-          ];
-        case FiatCode.USD:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-        case FiatCode.JPY:
-          return [
-            {'label': '+${1000.toThousandsSeparatedString()}', 'value': '1000'},
-            {'label': '+${5000.toThousandsSeparatedString()}', 'value': '5000'},
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-          ];
-        case FiatCode.EUR:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-      }
+      final amounts = kFiatQuickAddAmounts[_viewModel.fiatCode] ?? const [10, 50, 100, 500];
+      return [
+        for (final amount in amounts) {'label': '+${amount.toThousandsSeparatedString()}', 'value': '$amount'},
+      ];
     } else {
       // BTC/Sats 입력
       if (_viewModel.currentUnit.isBasedOnSatoshi) {

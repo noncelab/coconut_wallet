@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -199,16 +201,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String _getInputPlaceholder() {
     if (_inputAssetType == InputAssetType.fiat) {
-      switch (_fiatCode) {
-        case FiatCode.KRW:
-          return 50000.toThousandsSeparatedString();
-        case FiatCode.USD:
-          return '50';
-        case FiatCode.JPY:
-          return 5000.toThousandsSeparatedString();
-        case FiatCode.EUR:
-          return '50';
-      }
+      // 각 통화 Quick Add의 두 번째 금액을 placeholder로 사용
+      final placeholderAmount = kFiatQuickAddAmounts[_fiatCode]?[1] ?? 50;
+      return placeholderAmount.toThousandsSeparatedString();
     } else {
       if (_currentUnit.isBasedOnSatoshi) {
         return 50000.toThousandsSeparatedString();
@@ -222,17 +217,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     int inputValue;
 
     if (_inputAssetType == InputAssetType.fiat) {
-      // Fiat 입력 모드: inputValue는 법정화폐 금액
-      switch (_fiatCode) {
-        case FiatCode.KRW:
-          inputValue = 50000;
-        case FiatCode.USD:
-          inputValue = 50;
-        case FiatCode.JPY:
-          inputValue = 5000;
-        case FiatCode.EUR:
-          inputValue = 50;
-      }
+      // Fiat 입력 모드: inputValue는 법정화폐 금액 (Quick Add 두 번째 금액과 동일하게)
+      inputValue = kFiatQuickAddAmounts[_fiatCode]?[1] ?? 50;
       // Fiat → Sats (inputValue는 whole unit 기준이므로 minor unit으로 변환)
       final sats = calculateSatsFromFiat(inputValue * _fiatCode.minorUnitsPerWhole);
       return formatSatsResult(sats);
@@ -289,23 +275,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     return FiatUtil.formatMinorUnits(fiatMinorUnits, _fiatCode);
   }
 
-  Future<void> onFiatUnitChange() async {
-    vibrateExtraLight();
-
-    switch (_fiatCode) {
-      case FiatCode.KRW:
-        _fiatCode = FiatCode.USD;
-        break;
-      case FiatCode.USD:
-        _fiatCode = FiatCode.JPY;
-        break;
-      case FiatCode.JPY:
-        _fiatCode = FiatCode.EUR;
-        break;
-      case FiatCode.EUR:
-        _fiatCode = FiatCode.KRW;
-        break;
-    }
+  /// 통화 변경 (fiat bottom sheet 선택 시 호출)
+  Future<void> setFiatCode(FiatCode fiatCode) async {
+    _fiatCode = fiatCode;
 
     // PriceProvider가 웹소켓으로 실시간 제공하는 가격 사용
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
@@ -360,6 +332,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
             final priceStr = response.data['price'];
             final price = double.tryParse(priceStr?.toString() ?? '');
             return price?.toInt();
+          }
+          return null;
+
+        default:
+          final response = await dio.get(
+            'https://api.coingecko.com/api/v3/simple/price',
+            queryParameters: {'ids': 'bitcoin', 'vs_currencies': fiatCode.vsCurrency},
+          );
+          if (response.statusCode == 200) {
+            final price = response.data?['bitcoin']?[fiatCode.vsCurrency];
+            return (price is num) ? price.toInt() : null;
           }
           return null;
       }

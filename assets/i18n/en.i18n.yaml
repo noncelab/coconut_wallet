@@ -163,6 +163,7 @@ utility:
     upbit_price: "Upbit Price"
     binance_price: "Binance Price"
     bitflyer_price: "Bitflyer Price"
+    coingecko_price: "CoinGecko Price"
     offline_price_unavailable: "Price unavailable"
     premium: "Premium"
     transaction_bill: "Transaction Bill"
@@ -2053,10 +2054,12 @@ trade_exchange:
 
 fiat_bottom_sheet:
   title: "Currency Settings"
+  select_title: "Select Currency"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
   eur_price: "Binance Price"
+  coingecko_price: "CoinGecko Price"
 
 language_bottom_sheet:
   title: "Language Settings"

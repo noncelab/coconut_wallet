@@ -163,6 +163,7 @@ utility:
     upbit_price: "업비트 기준 시세"
     binance_price: "바이낸스 기준 시세"
     bitflyer_price: "비트플라이어 기준 시세"
+    coingecko_price: "코인게코 기준 시세"
     offline_price_unavailable: "시세를 가져올 수 없어요"
     premium: "프리미엄"
     transaction_bill: "거래 계산서"
@@ -2059,10 +2060,12 @@ trade_exchange:
 
 fiat_bottom_sheet:
   title: "통화 설정"
+  select_title: "통화 선택"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
   eur_price: "바이낸스 기준"
+  coingecko_price: "코인게코 기준"
 
 language_bottom_sheet:
   title: "언어 설정"

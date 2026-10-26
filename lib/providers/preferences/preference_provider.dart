@@ -756,15 +756,8 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
-  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
-
-  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
-    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
-    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
-  };
+  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록 (선택 통화가 맨 앞)
+  List<FiatCode> get orderedFiats => [_selectedFiat, ...FiatCode.values.where((fiat) => fiat != _selectedFiat)];
 
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
@@ -889,8 +882,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
-    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
-    return order.where((f) => fiats.contains(f)).toList();
+    return orderedFiats.where((f) => fiats.contains(f)).toList();
   }
 
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
