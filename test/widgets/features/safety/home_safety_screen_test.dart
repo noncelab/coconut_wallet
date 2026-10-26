@@ -103,7 +103,6 @@ class _Routes extends NavigatorObserver {
 WalletHealthReport _scored({int walletCount = 1}) => WalletHealthReport(
   status: WalletHealthStatus.scored,
   score: 92,
-  profile: WeightProfile.hotFunded,
   walletCount: walletCount,
   evaluatedAt: DateTime.now(),
 );
@@ -113,7 +112,6 @@ final _incident = SafetyIncident(walletId: 1, txid: 'a', detectedAt: DateTime(20
 WalletHealthReport _critical() => WalletHealthReport(
   status: WalletHealthStatus.criticalOverride,
   score: 80,
-  profile: WeightProfile.hotFunded,
   walletCount: 1,
   criticalIncidents: [_incident],
   evaluatedAt: DateTime.now(),

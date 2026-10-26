@@ -34,7 +34,6 @@ WalletHealthReport _report(
 }) => WalletHealthReport(
   status: status,
   score: score,
-  profile: WeightProfile.hotFunded,
   criticalIncidents: incidents,
   reviewItems: review,
   allGoodItems: const [SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.passed)],

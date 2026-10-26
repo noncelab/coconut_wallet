@@ -168,6 +168,8 @@ void main() {
         expect(_addWallet, findsOneWidget);
         expect(_text(t.home_widgets.add_wallet), findsOneWidget);
         expect(_checkAgain, findsNothing);
+        // 검사할 지갑이 없으니 마지막 검사 시각도 없다
+        expect(_textContaining(t.wallet_health.summary.last_checked(time: '').trim()), findsNothing);
         expect(_text(t.wallet_health.hero.no_wallet_body), findsOneWidget);
         expect(_text(t.wallet_health.category.available), findsOneWidget);
         expect(_text(t.wallet_health.section.after_adding_wallet), findsOneWidget);
@@ -379,7 +381,6 @@ void main() {
       status: base.status,
       score: base.score,
       label: base.label,
-      profile: base.profile,
       categories: base.categories,
       criticalIncidents: base.criticalIncidents,
       reviewItems: [cert, ...base.reviewItems],
@@ -411,7 +412,6 @@ void main() {
       status: WalletHealthStatus.criticalOverride,
       score: 80,
       label: WalletHealthLabel.good,
-      profile: WeightProfile.watchOnlyOnly,
       categories: categories(),
       reviewItems: const [watchOnly, cert],
       walletCount: 1,
@@ -472,7 +472,6 @@ void main() {
       status: base.status,
       score: base.score,
       label: base.label,
-      profile: base.profile,
       categories: base.categories,
       reviewItems: const [appLock],
       walletCount: 1,
@@ -709,7 +708,6 @@ void main() {
       status: WalletHealthStatus.criticalOverride,
       score: 90,
       label: WalletHealthLabel.excellent,
-      profile: WeightProfile.hotFunded,
       categories: categories(recoveryIssues: 0, privacyIssues: 0),
       reviewItems: const [
         SafetyCheckResult(
@@ -740,7 +738,6 @@ void main() {
       status: base.status,
       score: base.score,
       label: base.label,
-      profile: base.profile,
       categories: base.categories,
       reviewItems: base.reviewItems,
       allGoodItems: base.allGoodItems,
@@ -781,34 +778,56 @@ void main() {
     expect(_textContaining('80 × '), findsOneWidget);
     expect(_text(t.wallet_health.about.formula_total), findsOneWidget);
     expect(_text('${scoredReport().score}'), findsWidgets);
+    expect(_text(t.wallet_health.about.formula_cap), findsNothing);
     expect(_text(t.wallet_health.about.included_title), findsOneWidget);
     expect(_text(t.wallet_health.about.data_note), findsOneWidget);
     expect(_text(t.wallet_health.about.weighting_title), findsNothing);
     expect(_text(t.wallet_health.about.wallets_title), findsNothing);
   });
 
-  testWidgets('category card opens its detail sheet; a failing row inside it opens the review sheet', (tester) async {
+  testWidgets('a capped score shows the cap below the weighted total', (tester) async {
+    await _pump(tester, scoredReport(score: 74, scoreCap: 74));
+    await tester.tap(find.byKey(const Key('wallet-health-info')));
+    await tester.pumpAndSettle();
+    expect(_text(t.wallet_health.about.formula_total), findsOneWidget);
+    expect(_text(t.wallet_health.about.formula_cap), findsOneWidget);
+    expect(_text('74.0'), findsOneWidget);
+  });
+
+  testWidgets('category card scrolls to and briefly highlights its review rows instead of opening a sheet', (
+    tester,
+  ) async {
     await _pump(tester, scoredReport());
+    final highlight = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_ReviewRowHighlight');
+    Color overlay() =>
+        (tester
+                    .widget<DecoratedBox>(find.descendant(of: highlight, matching: find.byType(DecoratedBox)).first)
+                    .decoration
+                as BoxDecoration)
+            .color!;
+
+    // 앱 보호는 검토 필요 항목이 없어 아무 일도 없다
+    await tester.tap(find.byKey(const Key('wallet-health-category-app')));
+    await tester.pumpAndSettle();
+    expect(highlight, findsNothing);
+
+    // 개인정보 보호: 주소 재사용 행만 감싸고, 스크롤(0.5초)·대기(0.3초)·켜짐(0.28초) 뒤 덮개가 가장 진하다
     await tester.tap(find.byKey(const Key('wallet-health-category-privacy')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('wallet-health-category-sheet-privacy')), findsOneWidget);
-    expect(_text(t.wallet_health.about.weight_privacy), findsOneWidget);
-    // 실패 행: 이름 + 짧은 결과 + 꺾쇠
-    expect(_text(t.wallet_health.check.address_reuse.count(n: 2)), findsOneWidget);
-    final reuseRow = find.byKey(Key('wallet-health-check-row-${scoredReport().reviewItems[1].key}'));
-    expect(reuseRow, findsOneWidget);
-    await tester.tap(reuseRow);
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(find.byKey(const Key('wallet-health-category-sheet-privacy')), findsNothing);
-    expect(find.byKey(const Key('wallet-health-review-sheet')), findsOneWidget);
-    // C16: 시트 머리는 점검 이름, 문장 제목은 본문 첫 줄(긴 de/es/ja 제목이 말줄임되지 않게)
-    final heading = find.descendant(
-      of: find.byKey(const Key('wallet-health-review-sheet')),
-      matching: _text(t.wallet_health.review.address_reuse.title),
-    );
-    expect(heading, findsOneWidget);
-    expect(tester.widget<Text>(heading).style!.fontSize, 18);
-    expect(_text(safetyCheckName(SafetyCheckId.addressReuse)), findsWidgets);
+    expect(highlight, findsOneWidget);
+    final reuseRow = find.byKey(Key('wallet-health-review-${scoredReport().reviewItems[1].key}'));
+    expect(find.descendant(of: highlight, matching: reuseRow), findsOneWidget);
+    expect(overlay().a, 0);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 280));
+    expect(overlay().a, greaterThan(0));
+    // 모션 줄이기면 1.2초 켜 둔 뒤, 아니면 0.16초 뒤 0.28초에 걸쳐 꺼진다
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(overlay().a, 0);
+    expect(tester.takeException(), isNull);
   });
 
   // 앱 뿌리가 CupertinoApp이라 Android에서도 튕김 스크롤(CupertinoScrollBehavior)로 당겨진다. 이 틀은 MaterialApp이라
@@ -886,7 +905,6 @@ void main() {
         status: base.status,
         score: base.score,
         label: base.label,
-        profile: base.profile,
         categories: base.categories,
         recovery: base.recovery,
         reviewItems: reviewItems ?? base.reviewItems,
@@ -1080,13 +1098,12 @@ void main() {
       expect(names.take(4), safetyNoWalletCheckNames()); // 앞 넷은 화면 S0와 같은 순서(C41)
       final tops = [for (final name in names) tester.getTopLeft(find.descendant(of: card, matching: _text(name))).dy];
       expect(tops, [...tops]..sort());
-      // "점수에 포함되지 않은 항목"은 지갑이 없으면 위 목록과 겹치므로 없다
-      expect(find.descendant(of: about, matching: _text(t.wallet_health.about.not_included_title)), findsNothing);
 
       await openAbout(tester, scoredReport());
       expect(find.descendant(of: about, matching: _text(t.wallet_health.section.after_adding_wallet)), findsNothing);
       expect(find.descendant(of: about, matching: find.byType(WalletHealthNotIncludedCard)), findsNothing);
-      expect(find.descendant(of: about, matching: _text(t.wallet_health.about.not_included_title)), findsOneWidget);
+      // 해당 없는 점검 목록은 점수를 깎지 않으므로 안내 시트에 싣지 않는다
+      expect(find.descendant(of: about, matching: _text(t.wallet_health.about.not_included_title)), findsNothing);
     });
 
     testWidgets('C46: offline, the header says why under the offline line, in the home chip words', (tester) async {

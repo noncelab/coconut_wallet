@@ -108,10 +108,6 @@ class _AboutSheet extends StatelessWidget {
     final report = context.watch<SafetyProvider?>()?.report;
     final s = t.wallet_health.about;
     final secondary = CoconutTypography.body3_12.setColor(colors.secondaryText);
-    final notIncluded = <String>{
-      for (final r in report?.notIncluded ?? const <SafetyCheckResult>[])
-        if (r.reason != null) '${safetyCheckName(r.id)} - ${safetyReasonText(r.reason!)}',
-    };
     return ListView(
       key: const Key('wallet-health-about-sheet'),
       controller: controller,
@@ -156,25 +152,7 @@ class _AboutSheet extends StatelessWidget {
           CoconutLayout.spacing_300h,
           Text(safetyKoText(s.formula_note), style: secondary),
         ],
-        // 지갑이 없으면 위 "지갑을 추가하면…" 목록과 겹치므로 뺀다(C47)
-        if (notIncluded.isNotEmpty && report?.status != WalletHealthStatus.noWallet) ...[
-          CoconutLayout.spacing_400h,
-          _Box(
-            radius: 12,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(safetyKoText(s.not_included_title), style: secondary),
-                CoconutLayout.spacing_300h,
-                for (final (i, line) in notIncluded.indexed) ...[
-                  if (i > 0) CoconutLayout.spacing_50h,
-                  Text(safetyKoText(line), style: secondary),
-                ],
-              ],
-            ),
-          ),
-        ],
-        if (report != null) ...[
+        if (report != null && report.score != null) ...[
           _SheetTitle(s.data_title, bottom: 0),
           Text(safetyKoText(s.data_note), style: CoconutTypography.body3_12.setColor(colors.primaryText)),
           CoconutLayout.spacing_300h,
@@ -455,6 +433,7 @@ class _ScoreFormula extends StatelessWidget {
     final muted = CoconutTypography.body3_12.setColor(colors.secondaryText);
     final bold = CoconutTypography.body3_12_Bold.setColor(colors.primaryText);
     const order = [SafetyCategory.recovery, SafetyCategory.activity, SafetyCategory.app, SafetyCategory.privacy];
+    final cap = report.scoreCap;
     Widget row(String name, String formula, String result, {TextStyle? nameStyle, TextStyle? resultStyle}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -489,9 +468,10 @@ class _ScoreFormula extends StatelessWidget {
             report.categories.values
                 .fold<double>(0, (sum, c) => sum + (c.score ?? 0) * c.weightPercent / 100)
                 .toStringAsFixed(1),
-            nameStyle: bold,
-            resultStyle: bold,
+            nameStyle: cap == null ? bold : style,
+            resultStyle: cap == null ? bold : style,
           ),
+          if (cap != null) row(s.formula_cap, '', cap.toStringAsFixed(1), nameStyle: bold, resultStyle: bold),
         ],
       ),
     );
@@ -549,17 +529,7 @@ class _ConnectionValue extends StatelessWidget {
   }
 }
 
-// ── 카테고리 상세 · 지갑별 기여 ──
-
-Future<void> showSafetyCategorySheet(BuildContext context, SafetyCategory category) =>
-    CommonBottomSheets.showDraggableBottomSheet<void>(
-      context: context,
-      screenName: '/wallet-health/category',
-      title: safetyCategoryName(category),
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      childBuilder: (controller) => _CategorySheet(category: category, controller: controller, opener: context),
-    );
+// ── 지갑별 기여 ──
 
 /// 점검 결과 전체(실패 → 통과 → 해당 없음 순)
 List<SafetyCheckResult> _allChecks(WalletHealthReport report) => [
@@ -567,135 +537,6 @@ List<SafetyCheckResult> _allChecks(WalletHealthReport report) => [
   ...report.allGoodItems,
   ...report.notIncluded,
 ];
-
-class _CategorySheet extends StatelessWidget {
-  const _CategorySheet({required this.category, required this.controller, required this.opener});
-
-  final SafetyCategory category;
-  final ScrollController controller;
-
-  /// 시트를 닫은 뒤 다음 화면을 여는 데 쓴다
-  final BuildContext opener;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final report = context.watch<SafetyProvider?>()?.report;
-    if (report == null) return const SizedBox.shrink();
-    final score = report.categories[category]?.score;
-    final status = safetyCategoryStatus(context, report, category);
-    final available = report.status == WalletHealthStatus.noWallet && category == SafetyCategory.app;
-    final checks = [
-      for (final r in _allChecks(report))
-        if (r.id.category == category) r,
-    ];
-    final secondary = CoconutTypography.body3_12.setColor(colors.secondaryText);
-    final note = switch (category) {
-      SafetyCategory.app => t.wallet_health.category_sheet.app_protection_note,
-      SafetyCategory.recovery => t.wallet_health.about.wallets_note,
-      SafetyCategory.activity => t.wallet_health.category_sheet.activity_note,
-      SafetyCategory.privacy => t.wallet_health.about.weight_privacy,
-    };
-    return ListView(
-      key: Key('wallet-health-category-sheet-${category.name}'),
-      controller: controller,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              available ? t.wallet_health.category.available : score?.toString() ?? t.wallet_health.category.waiting,
-              style:
-                  score != null && !available
-                      ? CoconutTypography.heading2_28_NumberBold.setColor(colors.primaryText)
-                      : CoconutTypography.heading3_21_Bold.setColor(
-                        available ? colors.primaryText : colors.secondaryText,
-                      ),
-            ),
-            CoconutLayout.spacing_200w,
-            Expanded(child: Text(safetyKoText(status.text), style: CoconutTypography.body2_14.setColor(status.color))),
-          ],
-        ),
-        CoconutLayout.spacing_400h,
-        if (category == SafetyCategory.recovery)
-          ..._walletBoxes(context, report, checks)
-        else if (checks.isNotEmpty)
-          _Box(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (final (i, item) in checks.indexed) ...[
-                  if (i > 0) Divider(color: colors.divider, height: 1, indent: 16, endIndent: 16),
-                  _CheckRow(item: item, opener: opener, showWallet: true),
-                ],
-              ],
-            ),
-          ),
-        CoconutLayout.spacing_300h,
-        Text(safetyKoText(note), style: secondary),
-      ],
-    );
-  }
-
-  /// 복구 준비: 지갑마다 상자 하나(비중 큰 지갑부터, 점수 없는 지갑은 뒤에)
-  List<Widget> _walletBoxes(BuildContext context, WalletHealthReport report, List<SafetyCheckResult> checks) {
-    final walletIds = {
-      for (final r in report.recovery) r.walletId,
-      for (final c in checks)
-        if (c.walletId != null) c.walletId!,
-    };
-    if (walletIds.isEmpty) {
-      return [
-        Text(
-          safetyKoText(t.wallet_health.category_sheet.no_applicable),
-          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-        ),
-      ];
-    }
-    return [
-      for (final (i, walletId) in walletIds.indexed) ...[
-        if (i > 0) CoconutLayout.spacing_300h,
-        _WalletBox(
-          walletId: walletId,
-          score: report.recovery.firstWhereOrNull((r) => r.walletId == walletId)?.score,
-          checks: [
-            for (final c in checks)
-              if (c.walletId == walletId) c,
-          ],
-          opener: opener,
-        ),
-      ],
-    ];
-  }
-}
-
-class _WalletBox extends StatelessWidget {
-  const _WalletBox({required this.walletId, required this.score, required this.checks, required this.opener});
-
-  final int walletId;
-  final int? score;
-  final List<SafetyCheckResult> checks;
-  final BuildContext opener;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final wallet = safetyWalletOf(context, walletId);
-    return _Box(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          if (wallet != null)
-            Padding(padding: const EdgeInsets.all(16), child: _WalletHeader(wallet: wallet, score: score)),
-          if (wallet != null && checks.isNotEmpty) Divider(color: colors.divider, height: 1),
-          for (final item in checks) _CheckRow(item: item, opener: opener),
-        ],
-      ),
-    );
-  }
-}
 
 class _WalletHeader extends StatelessWidget {
   const _WalletHeader({required this.wallet, required this.score});
@@ -734,20 +575,16 @@ class _WalletHeader extends StatelessWidget {
 
 /// 점검 한 줄: 실패 = ⚠ + 문제 + 알약(누르면 시트를 닫고 해당 화면) / 통과 = ✓ + 결과 / 해당 없음 = ○ + 이유
 class _CheckRow extends StatelessWidget {
-  const _CheckRow({required this.item, required this.opener, this.showWallet = false});
+  const _CheckRow({required this.item, required this.opener});
 
   final SafetyCheckResult item;
   final BuildContext opener;
-
-  /// 지갑별이 아닌 카테고리 상자: 지갑 이름을 부제로, 할 일은 꺾쇠로(복구 준비·지갑 시트는 알약)
-  final bool showWallet;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final failed = item.outcome == SafetyOutcome.failed;
     final passed = item.outcome == SafetyOutcome.passed ? safetyPassedText(item) : null;
-    final wallet = showWallet ? safetyWalletOf(context, item.walletId)?.name : null;
     final health = context.walletHealthColors;
     final (icon, iconColor) =
         failed
@@ -770,7 +607,6 @@ class _CheckRow extends StatelessWidget {
             : passed != null && !passed.byUser
             ? health.good
             : colors.secondaryText;
-    final chevron = failed && showWallet;
     final tallest = 20.0;
     final resultLine =
         MediaQuery.textScalerOf(context).scale(CoconutTypography.body3_12.fontSize!) *
@@ -801,7 +637,6 @@ class _CheckRow extends StatelessWidget {
                     safetyKoText(safetyCheckName(item.id)),
                     style: CoconutTypography.body2_14.setColor(colors.primaryText),
                   ),
-                  if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                 ],
               ),
             ),
@@ -819,21 +654,11 @@ class _CheckRow extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: CoconutTypography.body3_12.setColor(resultColor),
                   ),
-                  if (failed && !showWallet) ...[
-                    CoconutLayout.spacing_100h,
-                    SafetyActionPill(text: safetyCtaText(item)),
-                  ],
+                  if (failed) ...[CoconutLayout.spacing_100h, SafetyActionPill(text: safetyCtaText(item))],
                 ],
               ),
             ),
           ),
-          if (chevron) ...[
-            CoconutLayout.spacing_200w,
-            Padding(
-              padding: EdgeInsets.only(top: safetyTitleLineTop(context, SafetyChevron.height, tallest: tallest)),
-              child: const SafetyChevron(),
-            ),
-          ],
         ],
       ),
     );
@@ -881,7 +706,6 @@ class _WalletSheet extends StatelessWidget {
       for (final i in report?.criticalIncidents ?? const [])
         if (i.walletId == walletId) i,
     ];
-    final secondary = CoconutTypography.body3_12.setColor(colors.secondaryText);
     // 전체 지갑 상태로 가는 버튼을 시트 아래에 고정한다(고르기 시트의 확인 버튼과 같은 방식). 목록은 그 높이만큼 비켜 둔다
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final buttonArea =
@@ -942,8 +766,6 @@ class _WalletSheet extends StatelessWidget {
               ],
             ),
           ),
-        CoconutLayout.spacing_300h,
-        Text(safetyKoText(t.wallet_health.about.wallets_note), style: secondary),
       ],
     );
     return SafeArea(

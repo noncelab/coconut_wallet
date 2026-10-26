@@ -48,6 +48,8 @@ class SafetyInputsCollector {
     var tagCount = 0;
     var memoCount = 0;
     final snapshots = <SafetyWalletSnapshot>[];
+    // 주소 → 앱에 추가한 다른 지갑의 주소인지(지갑마다 "그 지갑이 아닌 지갑"을 보지만, 한 주소는 한 지갑에만 속한다)
+    final otherWalletOwner = <String, int?>{};
     for (final wallet in _wallets.walletItemList) {
       final id = wallet.id;
       final listed = _wallets.getTransactionRecordList(id);
@@ -63,6 +65,11 @@ class SafetyInputsCollector {
           if (!listedTxids.contains(row.transactionHash)) mapRealmTransactionToTransaction(row),
       ];
       final utxos = _wallets.getUtxoList(id);
+      final pendingSpentBy = {
+        for (final utxo in utxos)
+          if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) utxo.spentByTransactionHash!,
+      };
+      final baseline = state.baselines[id];
       final ownReceive = <String, bool>{};
       final receivedByAddress = <String, Set<String>>{};
       final txs = <SafetyTx>[];
@@ -78,6 +85,18 @@ class SafetyInputsCollector {
             receivedByAddress.putIfAbsent(output.address, () => {}).add(tx.transactionHash);
           }
         }
+        // 출금 감지 후보만 본다(기준점이 이미 아는 옛 거래는 다시 판정하지 않는다). 주소마다 모든 지갑을 찾으므로 결과를 모은다
+        final outgoing = tx.transactionType == TransactionType.sent || pendingSpentBy.contains(tx.transactionHash);
+        final paysOwnWallet =
+            outgoing &&
+            !(baseline?.knows(tx.transactionHash, tx.blockHeight) ?? false) &&
+            tx.outputAddressList.any((output) {
+              final owner = otherWalletOwner.putIfAbsent(
+                output.address,
+                () => _wallets.findWalletIdContainingAddress(output.address),
+              );
+              return owner != null && owner != id;
+            });
         txs.add((
           txid: tx.transactionHash,
           type: tx.transactionType,
@@ -86,6 +105,7 @@ class SafetyInputsCollector {
           timestamp: tx.timestamp,
           createdAt: tx.createdAt,
           ownReceiveOutputs: receiveOutputs,
+          paysOwnWallet: paysOwnWallet,
         ));
       }
       final currentTxids = txs.map((tx) => tx.txid).toSet();
@@ -119,11 +139,7 @@ class SafetyInputsCollector {
               update.utxo == WalletSyncState.completed,
           lastResyncAt: _node.getLastResyncTimestamp(id),
           txs: txs,
-          pendingSpentByTxids: {
-            for (final utxo in utxos)
-              if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null)
-                utxo.spentByTransactionHash!,
-          },
+          pendingSpentByTxids: pendingSpentBy,
           trackedTxStates: trackedTxStates,
           backupVerified: wallet.hotWalletMetadata?.backupVerified ?? false,
           passphraseOnSigning: wallet.hotWalletMetadata?.enterPassphraseWhenSigning ?? false,

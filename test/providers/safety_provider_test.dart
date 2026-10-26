@@ -314,16 +314,14 @@ void main() {
     expect(provider.report!.reviewItems.any((item) => item.id == SafetyCheckId.pendingOutgoingAtBaseline), isFalse);
     await expectLater(provider.recognizeIncident('1:unknown'), throwsStateError);
   });
-  testWidgets('an unexpected self transfer after the baseline can be acknowledged as a review item', (tester) async {
+  testWidgets('a self transfer after the baseline is neither an incident nor a review item', (tester) async {
     create(tester);
     await settle(tester);
     wallets.records[1] = [safetyTx('self', type: TransactionType.self)];
     await provider.refresh();
-    expect(provider.report!.reviewItems.any((item) => item.id == SafetyCheckId.unexpectedSelfTransfer), isTrue);
-    await provider.recognizeIncident('1:self');
-    expect(store.state.recognizedTxids, contains('self'));
     expect(store.state.incidents, isEmpty);
     expect(provider.report!.reviewItems.any((item) => item.id == SafetyCheckId.unexpectedSelfTransfer), isFalse);
+    expect(provider.vibrations, 0);
   });
   testWidgets('app-created transaction recorded for another wallet is excluded', (tester) async {
     create(tester);
@@ -686,7 +684,6 @@ void main() {
     final fixed = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.notEnoughData,
-        profile: WeightProfile.watchOnlyOnly,
         evaluatedAt: DateTime(2026),
         infoIncidents: [info],
         recommended: const [RecommendedItem(id: RecommendedCheckId.hotPhysicalBackup)],
@@ -701,7 +698,6 @@ void main() {
     final action = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.notEnoughData,
-        profile: WeightProfile.watchOnlyOnly,
         evaluatedAt: DateTime(2026),
         reviewItems: const [
           SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.failed, severity: SafetySeverity.actionNeeded),

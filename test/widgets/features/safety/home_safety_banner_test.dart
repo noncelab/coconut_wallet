@@ -77,7 +77,6 @@ WalletHealthReport _report({List<SafetyIncident> incidents = const [], List<Safe
               ? WalletHealthStatus.criticalOverride
               : WalletHealthStatus.scored,
       score: 80,
-      profile: WeightProfile.hotFunded,
       criticalIncidents: incidents,
       reviewItems: review,
       evaluatedAt: _now,

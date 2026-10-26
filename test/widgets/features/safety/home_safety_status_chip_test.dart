@@ -23,7 +23,7 @@ const _allStatuses = [
   HomeSafetyStatus(HomeSafetyStatusKind.reconnected),
   HomeSafetyStatus(HomeSafetyStatusKind.updating),
   HomeSafetyStatus(HomeSafetyStatusKind.noIssues),
-  HomeSafetyStatus(HomeSafetyStatusKind.upToDate),
+  HomeSafetyStatus(HomeSafetyStatusKind.noScore),
 ];
 
 Widget _app(Widget child, {CoconutThemeVariant variant = CoconutThemeVariant.light}) =>
@@ -96,7 +96,7 @@ String _chipText(HomeSafetyStatus status) => switch (status.kind) {
   HomeSafetyStatusKind.reconnected => t.wallet_health.status_chip.reconnected,
   HomeSafetyStatusKind.updating => t.status_updating,
   HomeSafetyStatusKind.noIssues => t.wallet_health.summary.no_issues_found,
-  HomeSafetyStatusKind.upToDate => t.wallet_health.status_chip.up_to_date,
+  HomeSafetyStatusKind.noScore => t.wallet_health.title,
 };
 
 void main() {

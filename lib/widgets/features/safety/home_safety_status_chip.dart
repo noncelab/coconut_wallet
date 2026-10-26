@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -42,7 +42,7 @@ class HomeSafetyStatusChip extends StatelessWidget {
     HomeSafetyStatusKind.reconnected => t.wallet_health.status_chip.reconnected,
     HomeSafetyStatusKind.updating => t.status_updating,
     HomeSafetyStatusKind.noIssues => t.wallet_health.summary.no_issues_found,
-    HomeSafetyStatusKind.upToDate => t.wallet_health.status_chip.up_to_date,
+    HomeSafetyStatusKind.noScore => t.wallet_health.title,
   };
 
   @override
@@ -72,14 +72,14 @@ class HomeSafetyStatusChip extends StatelessWidget {
       ),
       HomeSafetyStatusKind.reconnected => (svg(CommonFormIconPath.circleCheck, colors.success), colors.success),
       HomeSafetyStatusKind.updating => (
-        // 16 상자 안의 14: 다른 상태로 바뀔 때 글이 옆으로 튀지 않게
+        // 18 상자 안의 15: 체크 아이콘의 원(24 중 20)과 같은 지름·굵기
         SizedBox.square(
           dimension: 18,
           child: Center(
             child: SizedBox.square(
-              dimension: 16,
+              dimension: 15,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: 1.5,
                 color: colors.secondaryText,
                 value: reduceMotion ? 0.75 : null,
               ),
@@ -89,8 +89,8 @@ class HomeSafetyStatusChip extends StatelessWidget {
         colors.secondaryTextStrong,
       ),
       HomeSafetyStatusKind.noIssues => (svg(FeatureWalletHealthIconPath.checkCircleFilled, okColor), okColor),
-      HomeSafetyStatusKind.upToDate => (
-        svg(CommonFormIconPath.circleCheck, colors.secondaryTextStrong),
+      HomeSafetyStatusKind.noScore => (
+        svg(FeatureWalletHealthIconPath.gauge, colors.secondaryTextStrong),
         colors.secondaryTextStrong,
       ),
     };
@@ -107,24 +107,54 @@ class HomeSafetyStatusChip extends StatelessWidget {
             ? Text('${status.count}', maxLines: 1, style: style)
             : null;
 
+    const duration = Duration(milliseconds: 300);
+    Widget fade(Widget child) =>
+        reduceMotion
+            ? child
+            : AnimatedSwitcher(
+              duration: duration,
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+              layoutBuilder:
+                  (current, previous) =>
+                      Stack(alignment: Alignment.centerLeft, children: [...previous, if (current != null) current]),
+              child: child,
+            );
+    Widget grow(Widget child) =>
+        reduceMotion
+            ? child
+            : AnimatedSize(duration: duration, curve: Curves.easeInOut, alignment: Alignment.centerLeft, child: child);
     final row = FittedBox(
-      key: ValueKey((status, label == null)),
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerLeft,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          icon,
-          if (label != null) ...[CoconutLayout.spacing_100w, label],
-          if (status.kind != HomeSafetyStatusKind.updating) ...[
-            CoconutLayout.spacing_200w,
-            SvgPicture.asset(
-              CommonNavigationIconPath.arrowRight,
-              width: 6,
-              height: 10,
-              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          fade(KeyedSubtree(key: ValueKey((status.kind, status.label)), child: icon)),
+          grow(
+            fade(
+              label == null
+                  ? const SizedBox.shrink(key: ValueKey(null))
+                  : Padding(key: ValueKey((text, label.data)), padding: const EdgeInsets.only(left: 4), child: label),
             ),
-          ],
+          ),
+          grow(
+            fade(
+              status.kind == HomeSafetyStatusKind.updating
+                  ? const SizedBox.shrink(key: ValueKey('no-chevron'))
+                  : Padding(
+                    key: ValueKey(color),
+                    padding: const EdgeInsets.only(left: 8),
+                    child: SvgPicture.asset(
+                      CommonNavigationIconPath.arrowRight,
+                      width: 6,
+                      height: 10,
+                      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                    ),
+                  ),
+            ),
+          ),
         ],
       ),
     );
@@ -145,18 +175,7 @@ class HomeSafetyStatusChip extends StatelessWidget {
                   vibrateExtraLight();
                   onTap!();
                 },
-        child:
-            reduceMotion
-                ? row
-                : AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                  // 가운데 정렬이면 폭이 다른 상태끼리 바뀔 때 좌우로 흔들린다
-                  layoutBuilder:
-                      (current, previous) =>
-                          Stack(alignment: Alignment.centerLeft, children: [...previous, if (current != null) current]),
-                  child: row,
-                ),
+        child: row,
       ),
     );
   }

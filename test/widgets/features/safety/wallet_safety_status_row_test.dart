@@ -39,7 +39,6 @@ class _Rescue extends ChangeNotifier implements RescueReadyProvider {
 
 WalletHealthReport _report({List<SafetyCheckResult> issues = const [], bool checked = true}) => WalletHealthReport(
   status: WalletHealthStatus.scored,
-  profile: WeightProfile.watchOnlyOnly,
   evaluatedAt: DateTime(2026),
   reviewItems: issues,
   allGoodItems:

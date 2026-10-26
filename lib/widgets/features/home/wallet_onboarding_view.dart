@@ -159,8 +159,8 @@ class WalletOnboardingView extends StatelessWidget {
                     child: Center(
                       child: SvgPicture.asset(
                         CommonActionIconPath.plus,
-                        width: 10,
-                        height: 10,
+                        width: 12,
+                        height: 12,
                         colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                       ),
                     ),

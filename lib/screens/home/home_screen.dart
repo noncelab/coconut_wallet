@@ -495,12 +495,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();
-    final arranging = context.watch<HomeViewModel>().isArranging;
+    final home = context.watch<HomeViewModel>();
+    final arranging = home.isArranging;
     final safety = context.watch<SafetyProvider?>();
+    final isSyncing = status.isSyncing && home.wallets.isNotEmpty;
     return HomeAppBar(
       networkStatus: status.networkStatus,
       showReconnected: status.showElectrumReconnected,
-      isSyncing: status.isSyncing,
+      isSyncing: isSyncing,
       isArranging: arranging,
       homeAddWalletOption: _viewModel.homeAddWalletOption,
       addWalletButtonLink: _addWalletButtonLink,
@@ -516,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 report: safety.report,
                 networkStatus: status.networkStatus,
                 showReconnected: status.showElectrumReconnected,
-                isSyncing: status.isSyncing,
+                isSyncing: isSyncing,
               ),
       statusChipLink: _statusChipLink,
       onStatusTap: () {

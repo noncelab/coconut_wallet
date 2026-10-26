@@ -13,6 +13,16 @@ abstract final class SafetyEngine {
   static const conflictWindow = Duration(days: 7);
   static const certExpiringWindow = Duration(days: 30);
 
+  /// 핫월렛에 "잃으면 아까운 돈"이 들어 있다고 보는 기준 잔액(10만 sats = 0.001 BTC). 두 곳에 쓴다.
+  /// - 앱 보호 비중: 핫월렛 잔액이 0에서 이 값까지 늘수록 함께 커지고, 이 값부터는 더 커지지 않는다.
+  ///   1 sat 차이로 점수가 튀지 않게 단번에 올리지 않고 서서히 올린다.
+  /// - 앱 잠금 상한: 핫월렛 잔액이 이 값 이상인데 앱 잠금이 꺼져 있으면 총점을 [appLockOffScoreCap] 이하로 묶는다.
+  static const hotExposureFullSats = 100000;
+
+  /// 앱 잠금이 꺼졌을 때 총점이 넘을 수 없는 값. 74는 '주의 필요'(50~74)의 맨 위라서,
+  /// 다른 점검이 모두 좋아도 '양호'(75 이상)로 보이지 않는다.
+  static const appLockOffScoreCap = 74;
+
   static WalletHealthReport evaluate(SafetyInputs inputs) {
     final wallets = inputs.wallets;
     final state = inputs.state;
@@ -37,6 +47,12 @@ abstract final class SafetyEngine {
     results.add(
       inputs.appLockEnabled
           ? const SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.passed)
+          : wallets.isEmpty
+          ? const SafetyCheckResult(
+            SafetyCheckId.appLock,
+            SafetyOutcome.notApplicable,
+            reason: NotApplicableReason.noWallet,
+          )
           : SafetyCheckResult(
             SafetyCheckId.appLock,
             SafetyOutcome.failed,
@@ -145,36 +161,32 @@ abstract final class SafetyEngine {
             ? 100 - math.min<int>(45, 15 * reused) - math.min<int>(15, 5 * dust)
             : null;
 
-    // 점수 밖 검토 항목(조치 필요): 기준점 때 대기 중이었거나 7일 안에 확정된 출금(레드팀 §2), 기준점 뒤 앱이 만들지 않은
-    // 자기 앞 전송(§7). 확정돼도 남고 "내 거래예요"(인지)나 사건이 되면 닫힌다. 지갑에서 거래가 사라지면 보여 줄 수 없어 뺀다
+    // 점수 밖 검토 항목(조치 필요): 지갑을 추가할 때 대기 중이었거나 그 전 7일 안에 확정된 출금(레드팀 §2).
+    // 확정돼도 남고 "내 거래예요"(인지)나 사건이 되면 닫힌다. 지갑에서 거래가 사라지면 보여 줄 수 없어 뺀다.
+    // 지갑을 추가한 뒤 앱이 만들지 않은 출금은 여기가 아니라 사건(위급)이 된다(IncidentDetector)
     final incidentTxids = {for (final i in state.incidents) i.txid};
     for (final w in wallets) {
       final baseline = state.baselines[w.id];
       if (baseline == null) continue;
       final listed = {for (final tx in w.txs) tx.txid};
-      for (final (id, txids) in [
-        (SafetyCheckId.pendingOutgoingAtBaseline, baseline.pendingSentAtBaseline),
-        (SafetyCheckId.unexpectedSelfTransfer, baseline.unexpectedSelfTxids),
-      ]) {
-        final open = [
-          for (final txid in txids)
-            if (listed.contains(txid) &&
-                !state.recognizedTxids.contains(txid) &&
-                !state.isAppCreated(txid) &&
-                !incidentTxids.contains(txid))
-              txid,
-        ];
-        if (open.isEmpty) continue;
-        results.add(
-          SafetyCheckResult(
-            id,
-            SafetyOutcome.failed,
-            walletId: w.id,
-            severity: SafetySeverity.actionNeeded,
-            subjects: open,
-          ),
-        );
-      }
+      final open = [
+        for (final txid in baseline.pendingSentAtBaseline)
+          if (listed.contains(txid) &&
+              !state.recognizedTxids.contains(txid) &&
+              !state.isAppCreated(txid) &&
+              !incidentTxids.contains(txid))
+            txid,
+      ];
+      if (open.isEmpty) continue;
+      results.add(
+        SafetyCheckResult(
+          SafetyCheckId.pendingOutgoingAtBaseline,
+          SafetyOutcome.failed,
+          walletId: w.id,
+          severity: SafetySeverity.actionNeeded,
+          subjects: open,
+        ),
+      );
     }
 
     // 점수 밖: 서버 인증서(만료 임박은 추천 목록)
@@ -217,23 +229,35 @@ abstract final class SafetyEngine {
         results.where((r) => r.outcome == SafetyOutcome.notApplicable || r.outcome == SafetyOutcome.unknown).toList()
           ..sort(_byPriority);
 
-    // 프로필: 자금 있는 핫·그 외 유형으로 고른다. 자금 있는 지갑이 없으면 보기 전용 프로필
-    final fundedOther = wallets.any((w) => w.kind != SafetyWalletKind.hot && funded(w));
-    final profile =
-        hasFundedHot ? (fundedOther ? WeightProfile.mixed : WeightProfile.hotFunded) : WeightProfile.watchOnlyOnly;
+    // 카테고리 비중. 핫월렛이 없으면 보기 전용 비중을 쓴다.
+    // 핫월렛이 있으면 "핫월렛이 얼마나 위험에 노출됐는가"(노출도, 0~1)에 따라 앱 보호 비중을 15~30%로 정한다.
+    //   노출도 = (핫 잔액이 10만에 얼마나 찼는가, 최대 1) × (전체 잔액 중 핫월렛 몫)
+    //   예) 핫 5만만 있음 → 0.5 × 1 = 0.5 / 핫 0.01 BTC + 콜드 0.01 BTC → 1 × 0.5 = 0.5 / 핫 0.01 BTC + 콜드 10 BTC → 약 0.001
+    // 콜드에 큰돈이 있고 핫월렛은 소액이면 앱 보호 비중이 거의 오르지 않는다(대신 아래 앱 잠금 상한이 잡는다)
+    final hotSats = wallets.where((w) => w.kind == SafetyWalletKind.hot).fold<int>(0, (sum, w) => sum + w.balanceSats);
+    final totalSats = wallets.fold<int>(0, (sum, w) => sum + w.balanceSats);
+    final weights =
+        hasHot
+            ? CategoryWeights.withHotWallet(
+              totalSats > 0 ? math.min(1.0, hotSats / hotExposureFullSats) * hotSats / totalSats : 0,
+            )
+            : CategoryWeights.watchOnly;
     final scores = <SafetyCategory, int?>{
       SafetyCategory.app: appScore,
       SafetyCategory.recovery: recoveryScore,
       SafetyCategory.activity: activityScore,
       SafetyCategory.privacy: privacyScore,
     };
-    final totalWeight = scores.entries.fold<int>(0, (sum, e) => e.value == null ? sum : sum + profile.weightOf(e.key));
+    final totalWeight = scores.entries.fold<double>(
+      0,
+      (sum, e) => e.value == null ? sum : sum + weights.weightOf(e.key),
+    );
     final categories = {
       for (final MapEntry(key: category, value: score) in scores.entries)
         category: CategoryScore(
           category: category,
           score: score,
-          weightPercent: score == null ? 0 : profile.weightOf(category) * 100 / totalWeight,
+          weightPercent: score == null ? 0 : weights.weightOf(category) * 100 / totalWeight,
           issueCount:
               reviewItems.where((r) => r.id.category == category).length +
               (category == SafetyCategory.activity ? criticalIncidents.length : 0),
@@ -249,8 +273,13 @@ abstract final class SafetyEngine {
                   },
         ),
     };
-    final overall =
-        (scores.entries.fold<int>(0, (sum, e) => sum + (e.value ?? 0) * profile.weightOf(e.key)) / totalWeight).round();
+    final weighted =
+        (scores.entries.fold<double>(0, (sum, e) => sum + (e.value ?? 0) * weights.weightOf(e.key)) / totalWeight)
+            .round();
+    // 앱 잠금 상한. 비중만으로는 잠금이 꺼져도 최대 76점('양호')까지 나올 수 있고, 콜드 자산이 많으면 거의 감점되지 않는다.
+    // 그래서 핫월렛에 10만 sats 이상 있는데 앱 잠금이 꺼져 있으면, 전체 자산 중 몫과 관계없이 총점을 74 이하로 묶는다.
+    final capped = !inputs.appLockEnabled && hotSats >= hotExposureFullSats && weighted > appLockOffScoreCap;
+    final overall = capped ? appLockOffScoreCap : weighted;
 
     // 상태: 지갑 0 → 위급 → (자금 || 사용 이력) && 점수 카테고리 ≥ 2 → 데이터 부족
     final enoughData = wallets.any(active) && scores.values.where((s) => s != null).length >= 2;
@@ -269,7 +298,7 @@ abstract final class SafetyEngine {
       status: status,
       score: score,
       label: score == null ? null : WalletHealthLabel.of(score),
-      profile: profile,
+      scoreCap: score != null && capped ? appLockOffScoreCap : null,
       categories: categories,
       recovery: recovery,
       criticalIncidents: criticalIncidents,

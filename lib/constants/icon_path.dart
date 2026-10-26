@@ -206,6 +206,7 @@ abstract final class FeatureWalletHealthIconPath {
   static const String checkCircleFilled = 'assets/svg/features/wallet-health/check-circle-filled.svg';
   static const String circleEmpty = 'assets/svg/features/wallet-health/circle-empty.svg';
   static const String clockFilled = 'assets/svg/features/wallet-health/clock-filled.svg';
+  static const String gauge = 'assets/svg/features/wallet-health/gauge.svg';
   static const String incognito = 'assets/svg/features/wallet-health/incognito.svg';
   static const String lightEmergencyOn = 'assets/svg/features/wallet-health/light-emergency-on.svg';
   static const String passwordLock = 'assets/svg/features/wallet-health/password-lock.svg';

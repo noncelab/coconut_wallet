@@ -243,7 +243,10 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
                       ),
                 ),
               ),
-              if (!widget._compact && !critical && (_scored(report) || widget.isChecking))
+              // 지갑 없음·데이터 부족도 점수 화면과 같은 자리: 대시는 점수 자리, 안내는 라벨 자리
+              if (!widget._compact &&
+                  !critical &&
+                  (_scored(report) || widget.isChecking || _caption(report).isNotEmpty))
                 ..._scoreAndLabel(context, report, radius - stroke / 2)
               else
                 Positioned(
@@ -275,10 +278,19 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
     final labelHalf = MediaQuery.textScalerOf(context).scale(_labelStyle.fontSize!) * _labelStyle.height! / 2;
     final labelTop = math.max(0.0, labelOffset - labelHalf);
     final labelWidth = 2 * math.sqrt(math.max(0.0, innerRadius * innerRadius - labelTop * labelTop)) - 16;
-    final text = checking ? t.wallet_health.summary.checking : walletHealthLabelText(label!);
-    final style = _labelStyle.setColor(
-      checking ? context.coconutColors.secondaryText : walletHealthLabelColor(context, label!),
-    );
+    final caption = checking || label != null ? null : _caption(report);
+    final text =
+        checking
+            ? t.wallet_health.summary.checking
+            : caption != null
+            ? safetyKoText(caption)
+            : walletHealthLabelText(label!);
+    final style =
+        caption != null
+            ? CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)
+            : _labelStyle.setColor(
+              checking ? context.coconutColors.secondaryText : walletHealthLabelColor(context, label!),
+            );
     Widget at(double dy, double maxWidth, Widget child) => Positioned(
       left: 0,
       top: 0,

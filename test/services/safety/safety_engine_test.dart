@@ -77,10 +77,19 @@ double _weight(WalletHealthReport r, int walletId) => r.recovery.singleWhere((c)
 
 void main() {
   group('status', () {
+    test('no wallet: app lock off is not a review item, so the home chip shows nothing to fix', () {
+      final r = _evaluate([], appLock: false);
+      expect(_find(r, SafetyCheckId.appLock).outcome, SafetyOutcome.notApplicable);
+      expect(r.reviewItems, isEmpty);
+      expect(r.attentionCount, 0);
+      final withWallet = _evaluate([_hot(1)], appLock: false);
+      expect(withWallet.reviewItems.map((r) => r.id), contains(SafetyCheckId.appLock));
+    });
+
     test('no wallet → no score; App Protection still checked, the rest waits for a wallet', () {
       final r = _evaluate([]);
       expect(r.status, WalletHealthStatus.noWallet);
-      expect((r.score, r.label, r.walletCount, r.profile), (null, null, 0, WeightProfile.watchOnlyOnly));
+      expect((r.score, r.label, r.walletCount, r.scoreCap), (null, null, 0, null));
       expect(_score(r, SafetyCategory.app), 100);
       expect(r.categories[SafetyCategory.recovery]!.waitingReason, NotApplicableReason.noWallet);
       expect(r.categories[SafetyCategory.activity]!.waitingReason, NotApplicableReason.noHistory);
@@ -527,29 +536,42 @@ void main() {
   });
 
   group('weights', () {
-    test('profile from funded wallets: hot / watch-only only / mixed; nothing funded → watch-only profile', () {
-      WeightProfile profile(List<SafetyWalletSnapshot> wallets) => _evaluate(wallets).profile;
-      expect(profile([_hot(1)]), WeightProfile.hotFunded);
-      expect(profile([_hot(1), _watchOnly(2)]), WeightProfile.hotFunded);
-      expect(profile([_watchOnly(1, balance: btc)]), WeightProfile.watchOnlyOnly);
-      expect(profile([_hot(1), _watchOnly(2, balance: 1)]), WeightProfile.mixed);
-      expect(profile([_hot(1), wallet(2, kind: SafetyWalletKind.multisig, balance: 1)]), WeightProfile.mixed);
-      expect(profile([_hot(1, balance: 0)]), WeightProfile.watchOnlyOnly);
+    test('App Protection weight follows how much bitcoin sits in hot wallets; Recovery stays first', () {
+      List<double> weights(List<SafetyWalletSnapshot> wallets, {SafetyState state = const SafetyState()}) {
+        final r = _evaluate(wallets, state: state);
+        return [for (final c in SafetyCategory.values) r.categories[c]!.weightPercent];
+      }
+
+      // 노출도 = min(1, 핫 잔액 / 10만) × 핫 잔액 비중. 앱 15 + 15 × 노출도, 활동·개인정보가 25:15로 나머지를 나눈다
+      expect(weights([_hot(1)]), [30, 45, 15.625, 9.375]);
+      expect(weights([_hot(1), _watchOnly(2)]), [30, 45, 15.625, 9.375]);
+      expect(weights([_hot(1, balance: 50000)]), [22.5, 45, 20.3125, 12.1875]);
+      expect(
+        weights([
+          _hot(1),
+          _watchOnly(2, balance: btc, used: true),
+        ], state: SafetyState(watchOnlyVerifications: {2: _verified(2)})),
+        [22.5, 45, 20.3125, 12.1875],
+      );
+      expect(weights([_hot(1, balance: 0)]), [15, 45, 25, 15]);
+      expect(
+        weights([
+          wallet(1, kind: SafetyWalletKind.watchOnly, balance: btc, txs: [_received]),
+        ]),
+        [10, 40, 30, 20],
+      );
     });
 
-    test('each profile combines the category scores', () {
+    test('the weights combine the category scores', () {
       // 보기 전용만: 10 × 100 + 40 × 100 + 30 × 100 + 20 × 85 = 97
       final watchOnly = _evaluate([
         wallet(1, kind: SafetyWalletKind.watchOnly, balance: btc, txs: [_received], reused: ['a']),
       ], state: SafetyState(watchOnlyVerifications: {1: _verified(1)}));
-      expect(
-        (watchOnly.profile, watchOnly.score, watchOnly.label),
-        (WeightProfile.watchOnlyOnly, 97, WalletHealthLabel.excellent),
-      );
-      // 혼합: 복구 54 → 15 × 100 + 45 × 54 + 25 × 100 + 15 × 100 = 79.3
+      expect((watchOnly.score, watchOnly.label), (97, WalletHealthLabel.excellent));
+      // 핫 1 + 보기 전용 0.5(노출도 2/3 → 25/45/18.75/11.25): 25 × 100 + 45 × 54 + 18.75 × 100 + 11.25 × 100 = 79.3
       final mixed = _evaluate([_hot(1), _watchOnly(2, balance: btc ~/ 2, used: true)]);
-      expect((mixed.profile, mixed.score, mixed.label), (WeightProfile.mixed, 79, WalletHealthLabel.good));
-      // 핫: 0 × 20 + 0 × 45 + 100 × 25 + 40 × 10 = 29
+      expect((mixed.score, mixed.label), (79, WalletHealthLabel.good));
+      // 핫만(30/45/15.625/9.375): 0 × 30 + 0 × 45 + 100 × 15.625 + 40 × 9.375 = 19.4
       final hot = _evaluate(
         [
           _hot(1, backup: false, reused: ['a', 'b', 'c', 'd'], dust: ['1', '2', '3', '4', '5']),
@@ -557,19 +579,35 @@ void main() {
         appLock: false,
         update: AppUpdateStatus.available,
       );
-      expect((hot.profile, hot.score, hot.label), (WeightProfile.hotFunded, 29, WalletHealthLabel.actionNeeded));
+      expect((hot.score, hot.label, hot.scoreCap), (19, WalletHealthLabel.actionNeeded, null));
     });
 
     test('renormalised over the scored categories; weightPercent is the share actually used', () {
-      // 개인정보 점수 없음 → 20/45/25를 90으로 나눔: (20 × 100 + 45 × 0 + 25 × 100) / 90 = 50
+      // 개인정보 점수 없음 → 30/45/15.625를 90.625로 나눔: (30 × 100 + 45 × 0 + 15.625 × 100) / 90.625 = 50.3
       final r = _evaluate([
         wallet(1, balance: btc, txs: [tx('s', height: 900)]),
       ]);
       expect((r.score, r.label), (50, WalletHealthLabel.needsAttention));
-      expect(r.categories[SafetyCategory.app]!.weightPercent, closeTo(20 / 90 * 100, 1e-9));
-      expect(r.categories[SafetyCategory.recovery]!.weightPercent, closeTo(50, 1e-9));
-      expect(r.categories[SafetyCategory.activity]!.weightPercent, closeTo(25 / 90 * 100, 1e-9));
+      expect(r.categories[SafetyCategory.app]!.weightPercent, closeTo(30 / 90.625 * 100, 1e-9));
+      expect(r.categories[SafetyCategory.recovery]!.weightPercent, closeTo(45 / 90.625 * 100, 1e-9));
+      expect(r.categories[SafetyCategory.activity]!.weightPercent, closeTo(15.625 / 90.625 * 100, 1e-9));
       expect(r.categories[SafetyCategory.privacy]!.weightPercent, 0);
+    });
+
+    test('app lock off keeps the score at 74 once a hot wallet holds 100,000 sats', () {
+      // 30 × 20 + 70 × 100 = 76 → 상한 74
+      final full = _evaluate([_hot(1)], appLock: false);
+      expect((full.score, full.label, full.scoreCap), (74, WalletHealthLabel.needsAttention, 74));
+      final justBelow = _evaluate([_hot(1, balance: 99999)], appLock: false);
+      expect((justBelow.score, justBelow.scoreCap), (76, null));
+      expect(_evaluate([_hot(1)]).scoreCap, isNull);
+      // 콜드에 자금 대부분이 있어도 핫 잔액이 10만 이상이면 상한이 걸린다
+      final mostlyCold = _evaluate(
+        [_hot(1, balance: btc ~/ 100), _watchOnly(2, balance: btc, used: true)],
+        state: SafetyState(watchOnlyVerifications: {2: _verified(2)}),
+        appLock: false,
+      );
+      expect((mostlyCold.score, mostlyCold.scoreCap), (74, 74));
     });
   });
 
@@ -657,49 +695,21 @@ void main() {
       expect(s.isAppCreated(t), isTrue);
     });
 
-    test('a recent self transfer found at re-import stays a review item until recognized (Grok G3)', () {
-      // 시드를 가진 쪽이 다시 가져오기 직전에 잔액 대부분을 수수료로 태운 자기 앞 전송
-      final burn = 'aa' * 32;
-      SafetyWalletSnapshot w({int height = 0}) => wallet(
-        1,
-        balance: btc,
-        backupVerified: true,
-        txs: [tx(burn, type: TransactionType.self, height: height, timestamp: testNow)],
-      );
-      var s = const SafetyState();
-      for (final (height, snapshot) in [(1000, w()), (1001, w(height: 1001)), (1002, w(height: 1001))]) {
-        s = IncidentDetector.detect(inputs(wallets: [snapshot], state: s, height: height)).applyTo(s);
-        final r = SafetyEngine.evaluate(inputs(wallets: [snapshot], state: s, height: height));
-        expect(_find(r, SafetyCheckId.unexpectedSelfTransfer, walletId: 1).subjects, [burn], reason: '$height');
-        expect(r.criticalIncidents, isEmpty);
-      }
-      final recognized = SafetyEngine.evaluate(
-        inputs(wallets: [w(height: 1001)], state: s.copyWith(recognizedTxids: {burn}), height: 1002),
-      );
-      expect(_all(recognized).where((c) => c.id == SafetyCheckId.unexpectedSelfTransfer), isEmpty);
-    });
-
-    test('self transfers the app did not make: action needed until recognized (red team §7)', () {
+    test('self transfers are never a review item, even ones an older version kept in the baseline', () {
       final state = SafetyState(
         baselines: {
-          1: baseline(unexpectedSelf: {'s1', 's2', 'gone'}),
+          1: baseline(unexpectedSelf: {'s1'}),
         },
-        recognizedTxids: const {'s2'},
       );
       final w = wallet(
         1,
         balance: btc,
         backupVerified: true,
-        txs: [tx('s1', type: TransactionType.self, height: 1001), tx('s2', type: TransactionType.self)],
+        txs: [tx('s1', type: TransactionType.self, height: 1001)],
       );
       final r = _evaluate([w], state: state);
-      final item = _find(r, SafetyCheckId.unexpectedSelfTransfer, walletId: 1);
-      expect((item.severity, item.id.category), (SafetySeverity.actionNeeded, null));
-      expect(item.subjects, ['s1']);
-      expect(r.attentionCount, 1);
-      expect(r.status, WalletHealthStatus.scored, reason: 'not critical');
-      final recognized = _evaluate([w], state: state.copyWith(recognizedTxids: {'s1', 's2'}));
-      expect(_all(recognized).where((c) => c.id == SafetyCheckId.unexpectedSelfTransfer), isEmpty);
+      expect(_all(r).where((c) => c.id == SafetyCheckId.unexpectedSelfTransfer), isEmpty);
+      expect((r.attentionCount, r.status), (0, WalletHealthStatus.scored));
     });
 
     test('notes & tags backup: none → not included; never exported or changed → recommended; same counts → done', () {
