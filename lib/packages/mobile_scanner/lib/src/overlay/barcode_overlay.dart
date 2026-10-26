@@ -34,10 +34,7 @@ class BarcodeOverlay extends StatefulWidget {
 }
 
 class _BarcodeOverlayState extends State<BarcodeOverlay> {
-  final _textPainter = TextPainter(
-    textAlign: TextAlign.center,
-    textDirection: TextDirection.ltr,
-  );
+  final _textPainter = TextPainter(textAlign: TextAlign.center, textDirection: TextDirection.ltr);
 
   @override
   void dispose() {
@@ -61,9 +58,7 @@ class _BarcodeOverlayState extends State<BarcodeOverlay> {
             final BarcodeCapture? barcodeCapture = snapshot.data;
 
             // No barcode or preview size.
-            if (barcodeCapture == null ||
-                barcodeCapture.size.isEmpty ||
-                barcodeCapture.barcodes.isEmpty) {
+            if (barcodeCapture == null || barcodeCapture.size.isEmpty || barcodeCapture.barcodes.isEmpty) {
               return const SizedBox();
             }
 

@@ -19,17 +19,13 @@ class AndroidSurfaceProducerDelegate {
   /// from the given [config] and [cameraDirection].
   ///
   /// Throws a [MobileScannerException] if the configuration is invalid.
-  factory AndroidSurfaceProducerDelegate.fromConfiguration(
-    Map<String, Object?> config,
-    CameraFacing cameraDirection,
-  ) {
+  factory AndroidSurfaceProducerDelegate.fromConfiguration(Map<String, Object?> config, CameraFacing cameraDirection) {
     if (config case {
       'handlesCropAndRotation': final bool handlesCropAndRotation,
       'naturalDeviceOrientation': final String naturalDeviceOrientation,
       'sensorOrientation': final int sensorOrientation,
     }) {
-      final DeviceOrientation naturalOrientation =
-          naturalDeviceOrientation.parseDeviceOrientation();
+      final DeviceOrientation naturalOrientation = naturalDeviceOrientation.parseDeviceOrientation();
 
       return AndroidSurfaceProducerDelegate(
         cameraFacingDirection: cameraDirection,
@@ -41,9 +37,7 @@ class AndroidSurfaceProducerDelegate {
 
     throw const MobileScannerException(
       errorCode: MobileScannerErrorCode.genericError,
-      errorDetails: MobileScannerErrorDetails(
-        message: 'The start method did not return a valid configuration.',
-      ),
+      errorDetails: MobileScannerErrorDetails(message: 'The start method did not return a valid configuration.'),
     );
   }
 

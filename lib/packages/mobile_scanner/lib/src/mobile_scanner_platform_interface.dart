@@ -52,10 +52,7 @@ abstract class MobileScannerPlatform extends PlatformInterface {
   /// If [formats] is empty, all barcode formats will be detected.
   ///
   /// Returns the barcodes that were found in the image.
-  Future<BarcodeCapture?> analyzeImage(
-    String path, {
-    List<BarcodeFormat> formats = const <BarcodeFormat>[],
-  }) {
+  Future<BarcodeCapture?> analyzeImage(String path, {List<BarcodeFormat> formats = const <BarcodeFormat>[]}) {
     throw UnimplementedError('analyzeImage() has not been implemented.');
   }
 

@@ -55,13 +55,9 @@ class StartOptions {
   Map<String, Object?> toMap() {
     return <String, Object?>{
       if (cameraResolution != null)
-        'cameraResolution': <int>[
-          cameraResolution!.width.toInt(),
-          cameraResolution!.height.toInt(),
-        ],
+        'cameraResolution': <int>[cameraResolution!.width.toInt(), cameraResolution!.height.toInt()],
       'facing': cameraDirection.rawValue,
-      if (formats.isNotEmpty)
-        'formats': formats.map((f) => f.rawValue).toList(),
+      if (formats.isNotEmpty) 'formats': formats.map((f) => f.rawValue).toList(),
       'returnImage': returnImage,
       'speed': detectionSpeed.rawValue,
       'timeout': detectionTimeoutMs,

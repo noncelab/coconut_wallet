@@ -63,11 +63,7 @@ class ScanWindowPainter extends CustomPainter {
     final Path cutoutPath = Path()..addRRect(cutoutRect);
 
     // Combine the two paths: overlay minus the cutout area
-    final Path overlayWithCutoutPath = Path.combine(
-      PathOperation.difference,
-      backgroundPath,
-      cutoutPath,
-    );
+    final Path overlayWithCutoutPath = Path.combine(PathOperation.difference, backgroundPath, cutoutPath);
 
     final Paint overlayWithCutoutPaint =
         Paint()

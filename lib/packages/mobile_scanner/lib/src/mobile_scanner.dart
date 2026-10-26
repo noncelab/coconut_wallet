@@ -145,8 +145,7 @@ class MobileScanner extends StatefulWidget {
   }
 }
 
-class _MobileScannerState extends State<MobileScanner>
-    with WidgetsBindingObserver {
+class _MobileScannerState extends State<MobileScanner> with WidgetsBindingObserver {
   late final MobileScannerController controller;
 
   /// The current scan window.
@@ -155,10 +154,7 @@ class _MobileScannerState extends State<MobileScanner>
   /// Calculate the scan window based on the given [constraints].
   ///
   /// If the [scanWindow] is already set, this method does nothing.
-  void _maybeUpdateScanWindow(
-    MobileScannerState scannerState,
-    BoxConstraints constraints,
-  ) {
+  void _maybeUpdateScanWindow(MobileScannerState scannerState, BoxConstraints constraints) {
     if (widget.scanWindow == null && scanWindow == null) {
       return;
     } else if (widget.scanWindow == null) {
@@ -204,8 +200,7 @@ class _MobileScannerState extends State<MobileScanner>
     final double dy = (newScanWindow.height - scanWindow!.height).abs();
 
     // The new scan window has changed enough, allow updating the scan window.
-    if (dx >= widget.scanWindowUpdateThreshold ||
-        dy >= widget.scanWindowUpdateThreshold) {
+    if (dx >= widget.scanWindowUpdateThreshold || dy >= widget.scanWindowUpdateThreshold) {
       scanWindow = newScanWindow;
 
       unawaited(controller.updateScanWindow(scanWindow));
@@ -234,18 +229,12 @@ class _MobileScannerState extends State<MobileScanner>
           builder: (context, constraints) {
             _maybeUpdateScanWindow(value, constraints);
 
-            final Widget? overlay = widget.overlayBuilder?.call(
-              context,
-              constraints,
-            );
+            final Widget? overlay = widget.overlayBuilder?.call(context, constraints);
 
             final Widget scannerWidget = ClipRect(
               child: SizedBox.fromSize(
                 size: constraints.biggest,
-                child: FittedBox(
-                  fit: widget.fit,
-                  child: CameraPreview(controller),
-                ),
+                child: FittedBox(fit: widget.fit, child: CameraPreview(controller)),
               ),
             );
 
@@ -253,10 +242,7 @@ class _MobileScannerState extends State<MobileScanner>
               return scannerWidget;
             }
 
-            return Stack(
-              alignment: Alignment.center,
-              children: <Widget>[scannerWidget, overlay],
-            );
+            return Stack(alignment: Alignment.center, children: <Widget>[scannerWidget, overlay]);
           },
         );
       },
@@ -275,8 +261,7 @@ class _MobileScannerState extends State<MobileScanner>
     // we must assume every start is a hot-restart. Related issue:
     // https://github.com/flutter/flutter/issues/10437
     if (kDebugMode) {
-      if (MobileScannerPlatform.instance
-          case final MethodChannelMobileScanner implementation) {
+      if (MobileScannerPlatform.instance case final MethodChannelMobileScanner implementation) {
         try {
           await implementation.stop(force: true);
         } on Exception catch (e) {
@@ -291,11 +276,7 @@ class _MobileScannerState extends State<MobileScanner>
     }
 
     if (widget.onDetect != null) {
-      _subscription = controller.barcodes.listen(
-        widget.onDetect,
-        onError: widget.onDetectError,
-        cancelOnError: false,
-      );
+      _subscription = controller.barcodes.listen(widget.onDetect, onError: widget.onDetectError, cancelOnError: false);
     }
 
     if (controller.autoStart) {

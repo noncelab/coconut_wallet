@@ -31,26 +31,19 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// The name of the error event that is sent when an operation is not
   /// supported.
   @visibleForTesting
-  static const String kUnsupportdOperationErrorEventName =
-      'MOBILE_SCANNER_UNSUPPORTED_OPERATION';
+  static const String kUnsupportdOperationErrorEventName = 'MOBILE_SCANNER_UNSUPPORTED_OPERATION';
 
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel(
-    'dev.steenbakker.mobile_scanner/scanner/method',
-  );
+  final methodChannel = const MethodChannel('dev.steenbakker.mobile_scanner/scanner/method');
 
   /// The event channel that sends back device orientation change events.
   @visibleForTesting
-  final deviceOrientationEventChannel = const EventChannel(
-    'dev.steenbakker.mobile_scanner/scanner/deviceOrientation',
-  );
+  final deviceOrientationEventChannel = const EventChannel('dev.steenbakker.mobile_scanner/scanner/deviceOrientation');
 
   /// The event channel that sends back scanned barcode events.
   @visibleForTesting
-  final eventChannel = const EventChannel(
-    'dev.steenbakker.mobile_scanner/scanner/event',
-  );
+  final eventChannel = const EventChannel('dev.steenbakker.mobile_scanner/scanner/event');
 
   Stream<DeviceOrientation>? _deviceOrientationStream;
   Stream<Map<Object?, Object?>>? _eventsStream;
@@ -58,18 +51,16 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// Get the event stream of device orientation change events
   /// that come from the [deviceOrientationEventChannel].
   Stream<DeviceOrientation> get deviceOrientationChangedStream {
-    _deviceOrientationStream ??= deviceOrientationEventChannel
-        .receiveBroadcastStream()
-        .cast<String>()
-        .map((String orientation) => orientation.parseDeviceOrientation());
+    _deviceOrientationStream ??= deviceOrientationEventChannel.receiveBroadcastStream().cast<String>().map(
+      (String orientation) => orientation.parseDeviceOrientation(),
+    );
 
     return _deviceOrientationStream!;
   }
 
   /// Get the event stream of barcode events that come from the [eventChannel].
   Stream<Map<Object?, Object?>> get eventsStream {
-    _eventsStream ??=
-        eventChannel.receiveBroadcastStream().cast<Map<Object?, Object?>>();
+    _eventsStream ??= eventChannel.receiveBroadcastStream().cast<Map<Object?, Object?>>();
 
     return _eventsStream!;
   }
@@ -93,14 +84,12 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       return null;
     }
 
-    final List<Map<Object?, Object?>> barcodes =
-        data.cast<Map<Object?, Object?>>();
+    final List<Map<Object?, Object?>> barcodes = data.cast<Map<Object?, Object?>>();
 
     if (defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS) {
-      final Map<Object?, Object?>? imageData =
-          event['image'] as Map<Object?, Object?>?;
+      final Map<Object?, Object?>? imageData = event['image'] as Map<Object?, Object?>?;
       final Uint8List? image = imageData?['bytes'] as Uint8List?;
       final double? width = imageData?['width'] as double?;
       final double? height = imageData?['height'] as double?;
@@ -115,9 +104,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
 
     throw MobileScannerException(
       errorCode: MobileScannerErrorCode.unsupported,
-      errorDetails: MobileScannerErrorDetails(
-        message: MobileScannerErrorCode.unsupported.message,
-      ),
+      errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.unsupported.message),
     );
   }
 
@@ -128,10 +115,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// with [kBarcodeErrorEventName] as [PlatformException.code], the error is
   /// rethrown as-is.
   Never _parseBarcodeError(Object error, StackTrace stackTrace) {
-    if (error case PlatformException(
-      :final String code,
-      :final String? message,
-    ) when code == kBarcodeErrorEventName) {
+    if (error case PlatformException(:final String code, :final String? message) when code == kBarcodeErrorEventName) {
       throw MobileScannerBarcodeException(message);
     }
 
@@ -143,10 +127,9 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// Throws a [MobileScannerException] if the permission is not granted.
   Future<void> _requestCameraPermission() async {
     try {
-      final MobileScannerAuthorizationState authorizationState =
-          MobileScannerAuthorizationState.fromRawValue(
-            await methodChannel.invokeMethod<int>('state') ?? 0,
-          );
+      final MobileScannerAuthorizationState authorizationState = MobileScannerAuthorizationState.fromRawValue(
+        await methodChannel.invokeMethod<int>('state') ?? 0,
+      );
 
       switch (authorizationState) {
         // Authorization was already granted, no need to request it again.
@@ -156,13 +139,10 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
         // So if the permission was denied, request it again.
         case MobileScannerAuthorizationState.denied:
         case MobileScannerAuthorizationState.undetermined:
-          final bool permissionGranted =
-              await methodChannel.invokeMethod<bool>('request') ?? false;
+          final bool permissionGranted = await methodChannel.invokeMethod<bool>('request') ?? false;
 
           if (!permissionGranted) {
-            throw const MobileScannerException(
-              errorCode: MobileScannerErrorCode.permissionDenied,
-            );
+            throw const MobileScannerException(errorCode: MobileScannerErrorCode.permissionDenied);
           }
       }
     } on PlatformException catch (error) {
@@ -183,10 +163,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   /// possible.
   @override
   Stream<BarcodeCapture?> get barcodesStream {
-    return eventsStream
-        .where((e) => e['name'] == kBarcodeEventName)
-        .map(_parseBarcode)
-        .handleError(_parseBarcodeError);
+    return eventsStream.where((e) => e['name'] == kBarcodeEventName).map(_parseBarcode).handleError(_parseBarcodeError);
   }
 
   @override
@@ -204,22 +181,18 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
   }
 
   @override
-  Future<BarcodeCapture?> analyzeImage(
-    String path, {
-    List<BarcodeFormat> formats = const <BarcodeFormat>[],
-  }) async {
+  Future<BarcodeCapture?> analyzeImage(String path, {List<BarcodeFormat> formats = const <BarcodeFormat>[]}) async {
     try {
-      final Map<Object?, Object?>? result = await methodChannel
-          .invokeMapMethod<Object?, Object?>('analyzeImage', {
-            'filePath': path,
-            'formats':
-                formats.isEmpty
-                    ? null
-                    : [
-                      for (final BarcodeFormat format in formats)
-                        if (format != BarcodeFormat.unknown) format.rawValue,
-                    ],
-          });
+      final Map<Object?, Object?>? result = await methodChannel.invokeMapMethod<Object?, Object?>('analyzeImage', {
+        'filePath': path,
+        'formats':
+            formats.isEmpty
+                ? null
+                : [
+                  for (final BarcodeFormat format in formats)
+                    if (format != BarcodeFormat.unknown) format.rawValue,
+                ],
+      });
 
       return _parseBarcode(result);
     } on PlatformException catch (error) {
@@ -250,8 +223,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     // On Android, the underlying device orientation stream will emit the
     // current orientation
     // when the first listener is attached.
-    if (_surfaceProducerDelegate
-        case final AndroidSurfaceProducerDelegate delegate
+    if (_surfaceProducerDelegate case final AndroidSurfaceProducerDelegate delegate
         when !delegate.handlesCropAndRotation) {
       return RotatedPreview.fromCameraDirection(
         delegate.cameraFacingDirection,
@@ -280,9 +252,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     if (!_pausing && _textureId != null) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerAlreadyInitialized,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerAlreadyInitialized.message,
-        ),
+        errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerAlreadyInitialized.message),
       );
     }
 
@@ -291,10 +261,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     Map<String, Object?>? startResult;
 
     try {
-      startResult = await methodChannel.invokeMapMethod<String, Object?>(
-        'start',
-        startOptions.toMap(),
-      );
+      startResult = await methodChannel.invokeMapMethod<String, Object?>('start', startOptions.toMap());
     } on PlatformException catch (error) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.fromPlatformException(error),
@@ -309,9 +276,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     if (startResult == null) {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.genericError,
-        errorDetails: MobileScannerErrorDetails(
-          message: 'The start method did not return a view configuration.',
-        ),
+        errorDetails: MobileScannerErrorDetails(message: 'The start method did not return a view configuration.'),
       );
     }
 
@@ -320,46 +285,31 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
     if (textureId == null) {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.genericError,
-        errorDetails: MobileScannerErrorDetails(
-          message: 'The start method did not return a texture id.',
-        ),
+        errorDetails: MobileScannerErrorDetails(message: 'The start method did not return a texture id.'),
       );
     }
 
-    final CameraFacing cameraDirection = CameraFacing.fromRawValue(
-      startResult['cameraDirection'] as int?,
-    );
+    final CameraFacing cameraDirection = CameraFacing.fromRawValue(startResult['cameraDirection'] as int?);
 
     _textureId = textureId;
 
     DeviceOrientation? initialDeviceOrientation;
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      _surfaceProducerDelegate =
-          AndroidSurfaceProducerDelegate.fromConfiguration(
-            startResult,
-            cameraDirection,
-          );
-      initialDeviceOrientation =
-          _surfaceProducerDelegate?.initialDeviceOrientation;
-    } else if (startResult
-        case {'initialDeviceOrientation': final String orientation}
-        when defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.macOS) {
+      _surfaceProducerDelegate = AndroidSurfaceProducerDelegate.fromConfiguration(startResult, cameraDirection);
+      initialDeviceOrientation = _surfaceProducerDelegate?.initialDeviceOrientation;
+    } else if (startResult case {
+      'initialDeviceOrientation': final String orientation,
+    } when defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
       initialDeviceOrientation = orientation.parseDeviceOrientation();
     }
 
     final int? numberOfCameras = startResult['numberOfCameras'] as int?;
-    final TorchState currentTorchState = TorchState.fromRawValue(
-      startResult['currentTorchState'] as int? ?? -1,
-    );
+    final TorchState currentTorchState = TorchState.fromRawValue(startResult['currentTorchState'] as int? ?? -1);
 
     final Size size;
 
-    if (startResult['size'] case {
-      'width': final double width,
-      'height': final double height,
-    }) {
+    if (startResult['size'] case {'width': final double width, 'height': final double height}) {
       size = Size(width, height);
     } else {
       size = Size.zero;
@@ -417,9 +367,7 @@ class MethodChannelMobileScanner extends MobileScannerPlatform {
       points = [window.left, window.top, window.right, window.bottom];
     }
 
-    await methodChannel.invokeMethod<void>('updateScanWindow', {
-      'rect': points,
-    });
+    await methodChannel.invokeMethod<void>('updateScanWindow', {'rect': points});
   }
 
   @override

@@ -37,19 +37,13 @@ class Barcode {
 
   /// Creates a new [Barcode] instance from the given [data].
   factory Barcode.fromNative(Map<Object?, Object?> data) {
-    final Map<Object?, Object?>? calendarEvent =
-        data['calendarEvent'] as Map<Object?, Object?>?;
-    final Map<Object?, Object?>? contactInfo =
-        data['contactInfo'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? calendarEvent = data['calendarEvent'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? contactInfo = data['contactInfo'] as Map<Object?, Object?>?;
     final List<Object?>? corners = data['corners'] as List<Object?>?;
-    final Map<Object?, Object?>? driverLicense =
-        data['driverLicense'] as Map<Object?, Object?>?;
-    final Map<Object?, Object?>? email =
-        data['email'] as Map<Object?, Object?>?;
-    final Map<Object?, Object?>? geoPoint =
-        data['geoPoint'] as Map<Object?, Object?>?;
-    final Map<Object?, Object?>? phone =
-        data['phone'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? driverLicense = data['driverLicense'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? email = data['email'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? geoPoint = data['geoPoint'] as Map<Object?, Object?>?;
+    final Map<Object?, Object?>? phone = data['phone'] as Map<Object?, Object?>?;
     final Map<Object?, Object?>? sms = data['sms'] as Map<Object?, Object?>?;
     final Map<Object?, Object?>? size = data['size'] as Map<Object?, Object?>?;
     final Map<Object?, Object?>? url = data['url'] as Map<Object?, Object?>?;
@@ -59,19 +53,13 @@ class Barcode {
     final double? barcodeHeight = size?['height'] as double?;
 
     return Barcode(
-      calendarEvent:
-          calendarEvent == null
-              ? null
-              : CalendarEvent.fromNative(calendarEvent),
-      contactInfo:
-          contactInfo == null ? null : ContactInfo.fromNative(contactInfo),
+      calendarEvent: calendarEvent == null ? null : CalendarEvent.fromNative(calendarEvent),
+      contactInfo: contactInfo == null ? null : ContactInfo.fromNative(contactInfo),
       corners:
           corners == null
               ? const <Offset>[]
               : List.unmodifiable(
-                corners.cast<Map<Object?, Object?>>().map((
-                  Map<Object?, Object?> e,
-                ) {
+                corners.cast<Map<Object?, Object?>>().map((Map<Object?, Object?> e) {
                   final double x = e['x']! as double;
                   final double y = e['y']! as double;
 
@@ -79,20 +67,14 @@ class Barcode {
                 }),
               ),
       displayValue: data['displayValue'] as String?,
-      driverLicense:
-          driverLicense == null
-              ? null
-              : DriverLicense.fromNative(driverLicense),
+      driverLicense: driverLicense == null ? null : DriverLicense.fromNative(driverLicense),
       email: email == null ? null : Email.fromNative(email),
       format: BarcodeFormat.fromRawValue(data['format'] as int? ?? -1),
       geoPoint: geoPoint == null ? null : GeoPoint.fromNative(geoPoint),
       phone: phone == null ? null : Phone.fromNative(phone),
       rawBytes: data['rawBytes'] as Uint8List?,
       rawValue: data['rawValue'] as String?,
-      size:
-          barcodeWidth == null || barcodeHeight == null
-              ? Size.zero
-              : Size(barcodeWidth, barcodeHeight),
+      size: barcodeWidth == null || barcodeHeight == null ? Size.zero : Size(barcodeWidth, barcodeHeight),
       sms: sms == null ? null : SMS.fromNative(sms),
       type: BarcodeType.fromRawValue(data['type'] as int? ?? 0),
       url: url == null ? null : UrlBookmark.fromNative(url),
