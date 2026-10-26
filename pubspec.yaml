@@ -19,9 +19,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+94
 app_versions:
   ios_regtest: 4.0.0+4
-  ios_mainnet: 1.0.0+2
+  ios_mainnet: 1.0.0+3
   aos_regtest: 4.0.0+106
-  aos_mainnet: 1.0.0+95
+  aos_mainnet: 1.0.0+96
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
