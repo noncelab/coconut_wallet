@@ -99,10 +99,7 @@ dependencies:
   file_picker: ^8.0.5
   image_picker: ^1.2.2
   image_picker_android: 0.8.13+8
-  coconut_design_system:
-    git:
-      url: https://github.com/noncelab/coconut_design_system.git
-      ref: fix/appbar-symmetric-insets
+  coconut_design_system: 0.11.4
 
 dev_dependencies:
   shared_preferences_platform_interface: 2.4.2
