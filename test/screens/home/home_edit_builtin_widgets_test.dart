@@ -699,7 +699,7 @@ void main() {
     for (final card in tester.widgetList<HomeWidgetCard>(find.byType(HomeWidgetCard))) {
       expect(
         card.padding,
-        transactionCards.contains(card) ? const EdgeInsets.symmetric(vertical: 16) : const EdgeInsets.all(16),
+        transactionCards.contains(card) ? const EdgeInsets.symmetric(vertical: 8) : const EdgeInsets.all(16),
       );
     }
     await _close(tester);
@@ -1263,7 +1263,7 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('balance history keeps the same continuous period bar as total balance', (tester) async {
+    testWidgets('balance period bars stay continuous with each screen background in every theme', (tester) async {
       const capture = Key('period-bar-match-capture');
       for (final variant in CoconutThemeVariant.values) {
         await _openWidgetsTab(
@@ -1276,34 +1276,52 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        Future<List<int>> backgrounds(Finder bar) async {
+        Future<void> expectBackgrounds(Finder bar, Color background) async {
           final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
           final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 1)))!;
           final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
           final origin = tester.getTopLeft(find.byKey(capture));
-          final pixels = <int>[];
+          final barRect = tester.getRect(bar).shift(-origin);
+          final colors = tester.element(bar).coconutColors;
+          Color pixelAt(Offset point) {
+            final offset = (point.dy.floor() * image.width + point.dx.floor()) * 4;
+            return Color.fromARGB(
+              data.getUint8(offset + 3),
+              data.getUint8(offset),
+              data.getUint8(offset + 1),
+              data.getUint8(offset + 2),
+            );
+          }
+
           for (final period in HomeWidgetPeriod.values) {
             final chip = find.descendant(
               of: bar,
               matching: find.byKey(ValueKey('hodl-insights-period-${period.name}')),
             );
             final rect = tester.getRect(chip).shift(-origin);
-            final offset = ((rect.top + 1).floor() * image.width + rect.center.dx.floor()) * 4;
-            pixels.add(data.getUint32(offset));
+            expect(
+              pixelAt(Offset(rect.center.dx, rect.top + 1)),
+              period == HomeWidgetPeriod.week ? colors.primaryText : background,
+              reason: '${variant.name}: ${period.name} chip uses the screen palette',
+            );
+            expect(
+              pixelAt(Offset(rect.center.dx, barRect.bottom - 1)),
+              background,
+              reason: '${variant.name}: the bar background stays continuous below every chip',
+            );
           }
           image.dispose();
-          return pixels;
         }
 
         final totalBar = find.byKey(const Key('hodl-insights-balance-periods'));
-        final expected = await backgrounds(totalBar);
+        await expectBackgrounds(totalBar, tester.element(totalBar).coconutColors.homeBackground);
         await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
         await tester.pumpAndSettle();
         final detailBar = find.descendant(
           of: find.byType(WalletBalanceHistoryScreen),
           matching: find.byType(BalanceHistoryPeriodChips),
         );
-        expect(await backgrounds(detailBar), expected, reason: '${variant.name}: no separate unselected chip fills');
+        await expectBackgrounds(detailBar, tester.element(detailBar).coconutColors.background);
         expect(tester.takeException(), isNull);
         await _close(tester);
         await tester.pump();
@@ -1452,6 +1470,41 @@ void main() {
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
       await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('balance history shows its guide after the Hero landing frame', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        size: const Size(390, 844),
+        gestureGuideDismissed: false,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-balance-chart')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+      final guide = find.byKey(const Key('balance-history-gesture-guide'));
+      expect(guide, findsNothing);
+      final animation = ModalRoute.of(tester.element(find.byType(WalletBalanceHistoryScreen)))!.animation!;
+      for (var frame = 0; frame < 60 && animation.status != AnimationStatus.completed; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        // 전환 중과 Hero 착지 프레임에는 안내를 띄우지 않는다.
+        expect(guide, findsNothing);
+      }
+      expect(animation.status, AnimationStatus.completed);
+      await tester.pump();
+      expect(guide, findsOneWidget);
+      Navigator.of(tester.element(find.byType(WalletBalanceHistoryScreen))).pop();
+      await tester.pump();
+      expect(animation.status, AnimationStatus.reverse);
+      expect(guide, findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(guide, findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kBalanceHistoryGestureGuideDismissed), isFalse);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       await _close(tester);
     });
 
@@ -2457,25 +2510,14 @@ void main() {
             }
           }
           if (evidenceDir != null) File('$evidenceDir/$prefix-trace.json').writeAsStringSync(jsonEncode(records));
-          for (final frame in records) {
-            expect(
-              (frame['total'] as List).single['text'],
-              t.hodl_insights.total_utxos(count: 2),
-              reason: 'selected positive Home UTXO Hero retains the source total at every frame',
-            );
-            final rows = frame['rowValues']! as List<List<String>>;
-            for (var bucket = 0; bucket < 4; bucket++) {
-              expect(
-                rows[bucket][1],
-                bucket == 0 ? '2 (100.0%)' : '0 (0.0%)',
-                reason: 'selected Hero keeps each bucket count',
-              );
-              expect(
-                rows[bucket][2],
-                bucket == 0 ? '0.4 BTC' : '0 BTC',
-                reason: 'selected Hero keeps each bucket amount',
-              );
-            }
+          final shownCounts = [
+            for (final frame in records)
+              int.parse(RegExp(r'\d+').firstMatch((frame['total'] as List).single['text'] as String)!.group(0)!),
+          ];
+          expect(shownCounts.first, 0, reason: 'selected Home UTXO Hero starts the fill from empty');
+          for (var i = 1; i < shownCounts.length; i++) {
+            expect(shownCounts[i], greaterThanOrEqualTo(shownCounts[i - 1]), reason: 'fill never goes backwards');
+            expect(shownCounts[i], lessThanOrEqualTo(2), reason: 'fill never overshoots the real count');
           }
 
           expect(

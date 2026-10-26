@@ -7,10 +7,7 @@ class Phone {
 
   /// Create a [Phone] from the given [data].
   factory Phone.fromNative(Map<Object?, Object?> data) {
-    return Phone(
-      number: data['number'] as String?,
-      type: PhoneType.fromRawValue(data['type'] as int? ?? 0),
-    );
+    return Phone(number: data['number'] as String?, type: PhoneType.fromRawValue(data['type'] as int? ?? 0));
   }
 
   /// The phone number value.

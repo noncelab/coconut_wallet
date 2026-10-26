@@ -257,7 +257,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     required bool isSelected,
     required String label,
     required VoidCallback onToggle,
-    EdgeInsets padding = const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+    EdgeInsets padding = const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 16),
   }) {
     return GestureDetector(
       onTap: onToggle,
@@ -474,12 +474,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
           width: bubbleWidth,
           isBubbleClipperSideLeft: _isSegmentTooltipForReceiving,
           tooltipType: CoconutTooltipType.placement,
-          backgroundColor: context.coconutColors.popoverBackground,
+          backgroundColor: context.coconutColors.guideBubbleBackground,
           richText: RichText(
             text: TextSpan(
               text: _isSegmentTooltipForReceiving ? t.tooltip.address_receiving : t.tooltip.address_change,
               style: CoconutTypography.body3_12
-                  .setColor(context.coconutColors.popoverText)
+                  .setColor(context.coconutColors.guideBubblePrimaryText)
                   .merge(const TextStyle(height: 1.3)),
             ),
           ),

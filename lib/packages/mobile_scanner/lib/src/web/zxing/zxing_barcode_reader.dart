@@ -23,15 +23,13 @@ final class ZXingBarcodeReader extends BarcodeReader {
   /// ZXing reports an error with this message if the code could not be
   /// detected.
   @visibleForTesting
-  static const String kNoCodeDetectedErrorMessage =
-      'No MultiFormat Readers were able to detect the code.';
+  static const String kNoCodeDetectedErrorMessage = 'No MultiFormat Readers were able to detect the code.';
 
   /// The listener for media track settings changes.
   void Function(web.MediaTrackSettings)? _onMediaTrackSettingsChanged;
 
   /// The internal media stream track constraints delegate.
-  final MediaTrackConstraintsDelegate _mediaTrackConstraintsDelegate =
-      const MediaTrackConstraintsDelegate();
+  final MediaTrackConstraintsDelegate _mediaTrackConstraintsDelegate = const MediaTrackConstraintsDelegate();
 
   /// The internal barcode reader.
   ZXingBrowserMultiFormatReader? _reader;
@@ -47,10 +45,7 @@ final class ZXingBarcodeReader extends BarcodeReader {
       return Size.zero;
     }
 
-    return Size(
-      videoElement.videoWidth.toDouble(),
-      videoElement.videoHeight.toDouble(),
-    );
+    return Size(videoElement.videoWidth.toDouble(), videoElement.videoHeight.toDouble());
   }
 
   @override
@@ -68,10 +63,7 @@ final class ZXingBarcodeReader extends BarcodeReader {
         JSMap()
           // Set the formats hint.
           // See https://github.com/zxing-js/library/blob/master/src/core/DecodeHintType.ts#L45
-          ..set(
-            2.toJS,
-            [for (final BarcodeFormat format in formats) format.toJS].toJS,
-          );
+          ..set(2.toJS, [for (final BarcodeFormat format in formats) format.toJS].toJS);
 
     return hints;
   }
@@ -82,22 +74,13 @@ final class ZXingBarcodeReader extends BarcodeReader {
   /// this point. The camera video output is then attached to both the barcode
   /// reader (to detect barcodes), and the video element (to display the camera
   /// output).
-  Future<void> _prepareVideoElement(
-    web.HTMLVideoElement videoElement,
-    web.MediaStream videoStream,
-  ) async {
+  Future<void> _prepareVideoElement(web.HTMLVideoElement videoElement, web.MediaStream videoStream) async {
     final JSPromise? result =
-        _reader?.attachStreamToVideo.callAsFunction(
-              _reader,
-              videoStream,
-              videoElement,
-            )
-            as JSPromise?;
+        _reader?.attachStreamToVideo.callAsFunction(_reader, videoStream, videoElement) as JSPromise?;
 
     await result?.toDart;
 
-    final web.MediaTrackSettings? settings = _mediaTrackConstraintsDelegate
-        .getSettings(videoStream);
+    final web.MediaTrackSettings? settings = _mediaTrackConstraintsDelegate.getSettings(videoStream);
 
     if (settings != null) {
       _onMediaTrackSettingsChanged?.call(settings);
@@ -125,9 +108,7 @@ final class ZXingBarcodeReader extends BarcodeReader {
             }
 
             if (result != null) {
-              controller.add(
-                BarcodeCapture(barcodes: [result.toBarcode], size: videoSize),
-              );
+              controller.add(BarcodeCapture(barcodes: [result.toBarcode], size: videoSize));
             }
           }.toJS,
         );
@@ -146,9 +127,7 @@ final class ZXingBarcodeReader extends BarcodeReader {
   }
 
   @override
-  void setMediaTrackSettingsListener(
-    void Function(web.MediaTrackSettings) listener,
-  ) {
+  void setMediaTrackSettingsListener(void Function(web.MediaTrackSettings) listener) {
     _onMediaTrackSettingsChanged ??= listener;
   }
 
@@ -164,10 +143,7 @@ final class ZXingBarcodeReader extends BarcodeReader {
         if (format != BarcodeFormat.unknown) format,
     ];
 
-    _reader = ZXingBrowserMultiFormatReader(
-      _createReaderHints(formats),
-      detectionTimeoutMs,
-    );
+    _reader = ZXingBrowserMultiFormatReader(_createReaderHints(formats), detectionTimeoutMs);
 
     await _prepareVideoElement(videoElement, videoStream);
   }

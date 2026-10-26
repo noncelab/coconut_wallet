@@ -75,9 +75,7 @@ final class _RotatedPreviewState extends State<RotatedPreview> {
 
   @override
   void initState() {
-    _deviceOrientationSubscription = widget.deviceOrientationStream.listen(
-      onDeviceOrientationEvent,
-    );
+    _deviceOrientationSubscription = widget.deviceOrientationStream.listen(onDeviceOrientationEvent);
     super.initState();
   }
 
@@ -110,9 +108,7 @@ final class _RotatedPreviewState extends State<RotatedPreview> {
 
     // Rotate the camera preview according to
     // https://developer.android.com/media/camera/camera2/camera-preview#orientation_calculation.
-    double rotationDegrees =
-        (sensorOrientationDegrees - deviceOrientationDegrees * sign + 360) %
-        360;
+    double rotationDegrees = (sensorOrientationDegrees - deviceOrientationDegrees * sign + 360) % 360;
 
     // Then, subtract the rotation already applied in the CameraPreview widget
     return rotationDegrees -= deviceOrientationDegrees;

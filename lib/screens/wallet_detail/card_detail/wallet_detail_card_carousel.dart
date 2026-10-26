@@ -11,7 +11,6 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -168,7 +167,6 @@ class WalletDetailCard extends StatelessWidget {
   final WalletAppearance appearance;
   final int balance;
   final BitcoinUnit unit;
-  final bool isSyncing;
   final VoidCallback? onBalanceTap;
   final List<WalletDetailCardAction> actions;
 
@@ -179,7 +177,6 @@ class WalletDetailCard extends StatelessWidget {
     required this.balance,
     required this.unit,
     required this.actions,
-    this.isSyncing = false,
     this.onBalanceTap,
   });
 
@@ -223,20 +220,18 @@ class WalletDetailCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    WalletBalanceSyncShimmer(
-                      isRefreshing: isSyncing,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: BitcoinAmountUnit(
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: BitcoinAmountUnit(
+                        currentUnit: unit,
+                        unitStyle: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
+                        child: AnimatedBalance(
+                          key: const Key('wallet-detail-card-balance'),
+                          prevValue: balance,
+                          value: balance,
+                          duration: 400,
                           currentUnit: unit,
-                          unitStyle: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
-                          child: AnimatedBalance(
-                            key: const Key('wallet-detail-card-balance'),
-                            prevValue: balance,
-                            value: balance,
-                            currentUnit: unit,
-                            textStyle: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
-                          ),
+                          textStyle: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
                         ),
                       ),
                     ),

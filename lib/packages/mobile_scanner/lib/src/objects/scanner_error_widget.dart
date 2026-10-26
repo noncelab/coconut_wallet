@@ -23,22 +23,13 @@ class ScannerErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Icon(Icons.error, color: Colors.white),
-            ),
+            const Padding(padding: EdgeInsets.only(bottom: 16), child: Icon(Icons.error, color: Colors.white)),
             if (kDebugMode) ...[
-              Text(
-                error.errorCode.message,
-                style: const TextStyle(color: Colors.white),
-              ),
+              Text(error.errorCode.message, style: const TextStyle(color: Colors.white)),
               if (error.errorDetails?.message case final String message)
                 Text(message, style: const TextStyle(color: Colors.white)),
             ] else
-              Text(
-                MobileScannerErrorCode.genericError.message,
-                style: const TextStyle(color: Colors.white),
-              ),
+              Text(MobileScannerErrorCode.genericError.message, style: const TextStyle(color: Colors.white)),
           ],
         ),
       ),

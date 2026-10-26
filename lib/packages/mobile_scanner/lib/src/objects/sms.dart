@@ -5,10 +5,7 @@ class SMS {
 
   /// Construct a new [SMS] instance from the given [data].
   factory SMS.fromNative(Map<Object?, Object?> data) {
-    return SMS(
-      message: data['message'] as String?,
-      phoneNumber: data['phoneNumber'] as String? ?? '',
-    );
+    return SMS(message: data['message'] as String?, phoneNumber: data['phoneNumber'] as String? ?? '');
   }
 
   /// The message contained in the sms.

@@ -7,6 +7,10 @@ class WalletUpdateInfo {
   WalletSyncState balance;
   WalletSyncState utxo;
   WalletSyncState transaction;
+  final bool isSyncQueued;
+
+  /// 마지막으로 지갑의 동기화 대기열 전체를 처리한 잔액 (satoshi).
+  final int? balanceSnapshot;
 
   WalletUpdateInfo(
     this.walletId, {
@@ -14,6 +18,8 @@ class WalletUpdateInfo {
     this.balance = WalletSyncState.waiting,
     this.transaction = WalletSyncState.waiting,
     this.utxo = WalletSyncState.waiting,
+    this.isSyncQueued = false,
+    this.balanceSnapshot,
   });
 
   @override
@@ -24,10 +30,12 @@ class WalletUpdateInfo {
           subscription == other.subscription &&
           balance == other.balance &&
           utxo == other.utxo &&
-          transaction == other.transaction;
+          transaction == other.transaction &&
+          isSyncQueued == other.isSyncQueued &&
+          balanceSnapshot == other.balanceSnapshot;
 
   @override
-  int get hashCode => Object.hash(walletId, subscription, balance, utxo, transaction);
+  int get hashCode => Object.hash(walletId, subscription, balance, utxo, transaction, isSyncQueued, balanceSnapshot);
 
   factory WalletUpdateInfo.fromExisting(
     WalletUpdateInfo existingInfo, {
@@ -35,6 +43,8 @@ class WalletUpdateInfo {
     WalletSyncState? balance,
     WalletSyncState? transaction,
     WalletSyncState? utxo,
+    bool? isSyncQueued,
+    int? balanceSnapshot,
   }) {
     return WalletUpdateInfo(
       existingInfo.walletId,
@@ -42,6 +52,8 @@ class WalletUpdateInfo {
       balance: balance ?? existingInfo.balance,
       transaction: transaction ?? existingInfo.transaction,
       utxo: utxo ?? existingInfo.utxo,
+      isSyncQueued: isSyncQueued ?? existingInfo.isSyncQueued,
+      balanceSnapshot: balanceSnapshot ?? existingInfo.balanceSnapshot,
     );
   }
 }

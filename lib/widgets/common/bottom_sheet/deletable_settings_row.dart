@@ -300,9 +300,7 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
                                 opacity: _isPressed ? 1 : 0,
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(_borderRadius),
-                                  child: Container(
-                                    color: pressStyle.color.withValues(alpha: pressStyle.opacity),
-                                  ),
+                                  child: Container(color: pressStyle.color.withValues(alpha: pressStyle.opacity)),
                                 ),
                               ),
                             ),

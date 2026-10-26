@@ -135,7 +135,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => UnsignedTransactionQrScreen(walletName: args.walletName),
         ),
     AppRouteNames.send:
-        (context) => _buildScreenWithArgs<SendRouteArgs>(
+        (context) => _buildLoadingScreenWithArgs<SendRouteArgs>(
           context,
           (args) => SendScreen(
             walletId: args.id,

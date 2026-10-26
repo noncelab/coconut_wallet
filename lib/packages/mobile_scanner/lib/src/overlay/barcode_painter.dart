@@ -47,26 +47,18 @@ class BarcodePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (barcodeCorners.length < 4 ||
-        barcodeSize.isEmpty ||
-        cameraPreviewSize.isEmpty) {
+    if (barcodeCorners.length < 4 || barcodeSize.isEmpty || cameraPreviewSize.isEmpty) {
       return;
     }
 
-    final ({double heightRatio, double widthRatio}) ratios =
-        calculateBoxFitRatio(boxFit, cameraPreviewSize, size);
+    final ({double heightRatio, double widthRatio}) ratios = calculateBoxFitRatio(boxFit, cameraPreviewSize, size);
 
-    final double horizontalPadding =
-        (cameraPreviewSize.width * ratios.widthRatio - size.width) / 2;
-    final double verticalPadding =
-        (cameraPreviewSize.height * ratios.heightRatio - size.height) / 2;
+    final double horizontalPadding = (cameraPreviewSize.width * ratios.widthRatio - size.width) / 2;
+    final double verticalPadding = (cameraPreviewSize.height * ratios.heightRatio - size.height) / 2;
 
     final List<Offset> adjustedOffset = [
       for (final offset in barcodeCorners)
-        Offset(
-          offset.dx * ratios.widthRatio - horizontalPadding,
-          offset.dy * ratios.heightRatio - verticalPadding,
-        ),
+        Offset(offset.dx * ratios.widthRatio - horizontalPadding, offset.dy * ratios.heightRatio - verticalPadding),
     ];
 
     if (adjustedOffset.length < 4) return;
@@ -94,9 +86,7 @@ class BarcodePainter extends CustomPainter {
     );
 
     // Set a smaller font size with auto-resizing logic
-    final double textSize =
-        (barcodeSize.width * ratios.widthRatio) *
-        0.08; // Scales with barcode size
+    final double textSize = (barcodeSize.width * ratios.widthRatio) * 0.08; // Scales with barcode size
     const double minTextSize = 6; // Minimum readable size
     const double maxTextSize = 12; // Maximum size
     final double finalTextSize = textSize.clamp(minTextSize, maxTextSize);
@@ -123,24 +113,14 @@ class BarcodePainter extends CustomPainter {
       ..rotate(angle) // Rotate the text to match the barcode
       ..translate(-center.dx, -center.dy);
 
-    final Rect textRect = Rect.fromCenter(
-      center: center,
-      width: textWidth * 1.1,
-      height: textHeight * 1.1,
-    );
+    final Rect textRect = Rect.fromCenter(center: center, width: textWidth * 1.1, height: textHeight * 1.1);
 
-    final RRect textBackground = RRect.fromRectAndRadius(
-      textRect,
-      const Radius.circular(6),
-    );
+    final RRect textBackground = RRect.fromRectAndRadius(textRect, const Radius.circular(6));
 
     final textBgPaint = Paint()..color = Colors.white.withValues(alpha: 0.8);
     canvas.drawRRect(textBackground, textBgPaint);
 
-    textPainter.paint(
-      canvas,
-      Offset(center.dx - textWidth / 2, center.dy - textHeight / 2),
-    );
+    textPainter.paint(canvas, Offset(center.dx - textWidth / 2, center.dy - textHeight / 2));
 
     canvas.restore();
   }
@@ -162,17 +142,10 @@ class BarcodePainter extends CustomPainter {
 /// Calculate the scaling ratios for width and height to fit the small box
 /// (cameraPreviewSize) into the large box (size) based on the specified BoxFit
 /// mode. Returns a record containing the width and height scaling ratios.
-({double widthRatio, double heightRatio}) calculateBoxFitRatio(
-  BoxFit boxFit,
-  Size cameraPreviewSize,
-  Size size,
-) {
+({double widthRatio, double heightRatio}) calculateBoxFitRatio(BoxFit boxFit, Size cameraPreviewSize, Size size) {
   // If the width or height of cameraPreviewSize or size is 0, return (1.0, 1.0)
   // (no scaling)
-  if (cameraPreviewSize.width <= 0 ||
-      cameraPreviewSize.height <= 0 ||
-      size.width <= 0 ||
-      size.height <= 0) {
+  if (cameraPreviewSize.width <= 0 || cameraPreviewSize.height <= 0 || size.width <= 0 || size.height <= 0) {
     return (widthRatio: 1.0, heightRatio: 1.0);
   }
 
@@ -211,8 +184,7 @@ class BarcodePainter extends CustomPainter {
     case BoxFit.scaleDown:
       // If the content is larger than the large box, scale down to fit;
       // otherwise, no scaling
-      final double ratio =
-          math.min(1, math.min(widthRatio, heightRatio)).toDouble();
+      final double ratio = math.min(1, math.min(widthRatio, heightRatio)).toDouble();
       return (widthRatio: ratio, heightRatio: ratio);
   }
 }

@@ -128,12 +128,8 @@ abstract class BarcodeReader {
   }
 
   /// Set a listener for the media stream settings.
-  void setMediaTrackSettingsListener(
-    void Function(MediaTrackSettings) listener,
-  ) {
-    throw UnimplementedError(
-      'setMediaTrackConstraintsListener() has not been implemented.',
-    );
+  void setMediaTrackSettingsListener(void Function(MediaTrackSettings) listener) {
+    throw UnimplementedError('setMediaTrackConstraintsListener() has not been implemented.');
   }
 
   /// Set the torch state for the active camera to the given [value].
@@ -150,11 +146,7 @@ abstract class BarcodeReader {
   /// The [videoElement] will become the video output element.
   /// The [videoStream] is the input for the barcode reader and video preview
   /// element.
-  Future<void> start(
-    StartOptions options, {
-    required HTMLVideoElement videoElement,
-    required MediaStream videoStream,
-  }) {
+  Future<void> start(StartOptions options, {required HTMLVideoElement videoElement, required MediaStream videoStream}) {
     throw UnimplementedError('start() has not been implemented.');
   }
 

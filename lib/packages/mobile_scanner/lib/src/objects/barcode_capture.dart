@@ -9,12 +9,7 @@ import 'package:mobile_scanner/src/objects/barcode.dart';
 /// This class represents a scanned barcode.
 class BarcodeCapture {
   /// Create a new [BarcodeCapture] instance.
-  const BarcodeCapture({
-    this.barcodes = const <Barcode>[],
-    this.image,
-    this.raw,
-    this.size = Size.zero,
-  });
+  const BarcodeCapture({this.barcodes = const <Barcode>[], this.image, this.raw, this.size = Size.zero});
 
   /// The list of scanned barcodes.
   final List<Barcode> barcodes;

@@ -34,16 +34,9 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     this.torchEnabled = false,
     this.invertImage = false,
     this.autoZoom = false,
-  }) : detectionTimeoutMs =
-           detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
-       assert(
-         detectionTimeoutMs >= 0,
-         'The detection timeout must be greater than or equal to 0.',
-       ),
-       assert(
-         facing != CameraFacing.unknown,
-         'CameraFacing.unknown is not a valid camera direction.',
-       ),
+  }) : detectionTimeoutMs = detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
+       assert(detectionTimeoutMs >= 0, 'The detection timeout must be greater than or equal to 0.'),
+       assert(facing != CameraFacing.unknown, 'CameraFacing.unknown is not a valid camera direction.'),
        super(const MobileScannerState.uninitialized());
 
   /// The desired resolution for the camera.
@@ -114,8 +107,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   final bool autoZoom;
 
   /// The internal barcode controller, that listens for detected barcodes.
-  final StreamController<BarcodeCapture> _barcodesController =
-      StreamController.broadcast();
+  final StreamController<BarcodeCapture> _barcodesController = StreamController.broadcast();
 
   /// Get the stream of scanned barcodes.
   ///
@@ -147,56 +139,52 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   }
 
   void _setupListeners() {
-    _barcodesSubscription = MobileScannerPlatform.instance.barcodesStream
-        .listen(
-          (BarcodeCapture? barcode) {
-            if (_barcodesController.isClosed || barcode == null) {
-              return;
-            }
+    _barcodesSubscription = MobileScannerPlatform.instance.barcodesStream.listen(
+      (BarcodeCapture? barcode) {
+        if (_barcodesController.isClosed || barcode == null) {
+          return;
+        }
 
-            _barcodesController.add(barcode);
-          },
-          onError: (Object error) {
-            if (_barcodesController.isClosed) {
-              return;
-            }
+        _barcodesController.add(barcode);
+      },
+      onError: (Object error) {
+        if (_barcodesController.isClosed) {
+          return;
+        }
 
-            _barcodesController.addError(error);
-          },
-          // Errors are handled gracefully by forwarding them.
-          cancelOnError: false,
-        );
+        _barcodesController.addError(error);
+      },
+      // Errors are handled gracefully by forwarding them.
+      cancelOnError: false,
+    );
 
-    _torchStateSubscription = MobileScannerPlatform.instance.torchStateStream
-        .listen((TorchState torchState) {
-          if (_isDisposed) {
-            return;
-          }
+    _torchStateSubscription = MobileScannerPlatform.instance.torchStateStream.listen((TorchState torchState) {
+      if (_isDisposed) {
+        return;
+      }
 
-          value = value.copyWith(torchState: torchState);
-        });
+      value = value.copyWith(torchState: torchState);
+    });
 
-    _zoomScaleSubscription = MobileScannerPlatform.instance.zoomScaleStateStream
-        .listen((double zoomScale) {
-          if (_isDisposed) {
-            return;
-          }
+    _zoomScaleSubscription = MobileScannerPlatform.instance.zoomScaleStateStream.listen((double zoomScale) {
+      if (_isDisposed) {
+        return;
+      }
 
-          value = value.copyWith(zoomScale: zoomScale);
-        });
+      value = value.copyWith(zoomScale: zoomScale);
+    });
 
-    if (MobileScannerPlatform.instance
-        case final MethodChannelMobileScanner implementation
+    if (MobileScannerPlatform.instance case final MethodChannelMobileScanner implementation
         when defaultTargetPlatform != TargetPlatform.macOS) {
-      _deviceOrientationSubscription = implementation
-          .deviceOrientationChangedStream
-          .listen((DeviceOrientation orientation) {
-            if (_isDisposed) {
-              return;
-            }
+      _deviceOrientationSubscription = implementation.deviceOrientationChangedStream.listen((
+        DeviceOrientation orientation,
+      ) {
+        if (_isDisposed) {
+          return;
+        }
 
-            value = value.copyWith(deviceOrientation: orientation);
-          });
+        value = value.copyWith(deviceOrientation: orientation);
+      });
     }
   }
 
@@ -204,18 +192,14 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     if (!value.isInitialized) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerUninitialized,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerUninitialized.message,
-        ),
+        errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerUninitialized.message),
       );
     }
 
     if (_isDisposed) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerDisposed.message,
-        ),
+        errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerDisposed.message),
       );
     }
   }
@@ -241,10 +225,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     // If the device does not have a torch, do not report "off".
     value = value.copyWith(
       isRunning: false,
-      torchState:
-          oldTorchState == TorchState.unavailable
-              ? TorchState.unavailable
-              : TorchState.off,
+      torchState: oldTorchState == TorchState.unavailable ? TorchState.unavailable : TorchState.off,
     );
     return true;
   }
@@ -267,10 +248,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   ///
   /// If analyzing images from a file is not supported, an [UnsupportedError]
   /// is thrown.
-  Future<BarcodeCapture?> analyzeImage(
-    String path, {
-    List<BarcodeFormat> formats = const <BarcodeFormat>[],
-  }) {
+  Future<BarcodeCapture?> analyzeImage(String path, {List<BarcodeFormat> formats = const <BarcodeFormat>[]}) {
     return MobileScannerPlatform.instance.analyzeImage(path, formats: formats);
   }
 
@@ -334,9 +312,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     if (_isDisposed) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerDisposed.message,
-        ),
+        errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerDisposed.message),
       );
     }
 
@@ -347,26 +323,25 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       // The timeout is currently an arbitrary value,
       // which should be long enough for the next frame
       // to propagate any pending changes to the widget tree.
-      await _isAttachedCompleter.future
-          .timeout(const Duration(milliseconds: 500))
-          .catchError((Object error, StackTrace stackTrace) {
-            throw MobileScannerException(
-              errorCode: MobileScannerErrorCode.controllerNotAttached,
-              errorDetails: MobileScannerErrorDetails(
-                message: MobileScannerErrorCode.controllerNotAttached.message,
-                details: stackTrace.toString(),
-              ),
-            );
-          });
+      await _isAttachedCompleter.future.timeout(const Duration(milliseconds: 500)).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        throw MobileScannerException(
+          errorCode: MobileScannerErrorCode.controllerNotAttached,
+          errorDetails: MobileScannerErrorDetails(
+            message: MobileScannerErrorCode.controllerNotAttached.message,
+            details: stackTrace.toString(),
+          ),
+        );
+      });
 
       // Abort if the controller was disposed
       // while waiting for the widget to be attached.
       if (_isDisposed) {
         throw MobileScannerException(
           errorCode: MobileScannerErrorCode.controllerDisposed,
-          errorDetails: MobileScannerErrorDetails(
-            message: MobileScannerErrorCode.controllerDisposed.message,
-          ),
+          errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerDisposed.message),
         );
       }
     }
@@ -374,9 +349,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     if (cameraDirection == CameraFacing.unknown) {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.genericError,
-        errorDetails: MobileScannerErrorDetails(
-          message: 'CameraFacing.unknown is not a valid camera direction.',
-        ),
+        errorDetails: MobileScannerErrorDetails(message: 'CameraFacing.unknown is not a valid camera direction.'),
       );
     }
 
@@ -388,9 +361,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     if (value.isStarting) {
       throw MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerInitializing,
-        errorDetails: MobileScannerErrorDetails(
-          message: MobileScannerErrorCode.controllerInitializing.message,
-        ),
+        errorDetails: MobileScannerErrorDetails(message: MobileScannerErrorCode.controllerInitializing.message),
       );
     }
 
@@ -413,8 +384,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     try {
       _setupListeners();
 
-      final MobileScannerViewAttributes viewAttributes =
-          await MobileScannerPlatform.instance.start(options);
+      final MobileScannerViewAttributes viewAttributes = await MobileScannerPlatform.instance.start(options);
 
       if (!_isDisposed) {
         value = value.copyWith(
@@ -493,8 +463,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
 
     // If the camera direction is not known,
     // or if the camera is an external camera, do not allow switching cameras.
-    if (cameraDirection == CameraFacing.unknown ||
-        cameraDirection == CameraFacing.external) {
+    if (cameraDirection == CameraFacing.unknown || cameraDirection == CameraFacing.external) {
       return;
     }
 

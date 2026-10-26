@@ -9,5 +9,13 @@ class SubscribeScriptStreamDto {
   /// 예: gap window 밖에서 발견된 개별 주소인 경우
   final bool updateUsedIndex;
 
-  SubscribeScriptStreamDto({required this.walletItem, required this.scriptStatus, this.updateUsedIndex = true});
+  /// 인덱스 저장 후 실패한 구독 확장을 같은 주소의 새 상태에서 재시도한다.
+  final bool retrySubscription;
+
+  SubscribeScriptStreamDto({
+    required this.walletItem,
+    required this.scriptStatus,
+    this.updateUsedIndex = true,
+    this.retrySubscription = false,
+  });
 }
