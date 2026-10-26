@@ -1820,6 +1820,38 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('insights activity swipes through periods independently of the balance chart', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pumpAndSettle();
+      final activity = find.byKey(const Key('hodl-insights-activity'));
+      final periods = find.byKey(const Key('hodl-insights-activity-periods'));
+      HomeWidgetPeriod selected() => tester.widget<BalanceHistoryPeriodChips>(periods).selected;
+      expect(selected(), HomeWidgetPeriod.week);
+      await tester.drag(activity, const Offset(120, 0));
+      await tester.pumpAndSettle();
+      expect(selected(), HomeWidgetPeriod.week);
+      for (final period in HomeWidgetPeriod.values.skip(1)) {
+        await tester.drag(activity, const Offset(-120, 0));
+        await tester.pumpAndSettle();
+        expect(selected(), period);
+      }
+      await tester.drag(activity, const Offset(-120, 0));
+      await tester.pumpAndSettle();
+      expect(selected(), HomeWidgetPeriod.all);
+      for (final period in HomeWidgetPeriod.values.reversed.skip(1)) {
+        await tester.drag(activity, const Offset(120, 0));
+        await tester.pumpAndSettle();
+        expect(selected(), period);
+      }
+      expect(
+        tester.widget<BalanceHistoryPeriodChips>(find.byKey(const Key('hodl-insights-balance-periods'))).selected,
+        HomeWidgetPeriod.week,
+      );
+      expect(find.byType(WalletBalanceHistoryScreen), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('Transaction Activity bars, counts and amounts rise from zero after opening', (tester) async {
       await _openWidgetsTab(tester, fake: false, screen: insights);
 

@@ -1209,22 +1209,49 @@ class _UtxoSummaryCard extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+class _ActivityCard extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
 
   const _ActivityCard({required this.viewModel});
 
   @override
+  State<_ActivityCard> createState() => _ActivityCardState();
+}
+
+class _ActivityCardState extends State<_ActivityCard> {
+  double _periodSwipeDistance = 0;
+  HodlInsightsViewModel get viewModel => widget.viewModel;
+
+  void _endPeriodSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final movement = _periodSwipeDistance.abs() >= 24 ? _periodSwipeDistance : (velocity.abs() >= 300 ? velocity : 0.0);
+    _periodSwipeDistance = 0;
+    if (movement == 0) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final index = (viewModel.activityPeriod.index + movement.sign.toInt() * direction).clamp(
+      0,
+      HomeWidgetPeriod.values.length - 1,
+    );
+    viewModel.selectActivityPeriod(HomeWidgetPeriod.values[index]);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bars = viewModel.activityBars;
     final totals = viewModel.activityTotals;
-    return KeyedSubtree(
+    return GestureDetector(
       key: const Key('hodl-insights-activity'),
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _periodSwipeDistance = 0,
+      onHorizontalDragUpdate: (details) => _periodSwipeDistance += details.primaryDelta ?? 0,
+      onHorizontalDragEnd: _endPeriodSwipe,
+      onHorizontalDragCancel: () => _periodSwipeDistance = 0,
       child: _OpenProgress(
         progress: 1,
         builder:
             (context, shown) => TransactionActivityView(
               detailed: true,
+              animateChanges: true,
               reveal: shown,
               days: bars.bars,
               rangeEnd: DateTime.now(),
