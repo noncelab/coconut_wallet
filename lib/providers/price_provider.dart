@@ -67,7 +67,7 @@ class PriceProvider extends ChangeNotifier {
 
   void _checkInitialNetworkState() {
     if (_connectivityProvider.isInternetOn == true) {
-      initWebSocketService();
+      initPriceSources();
     } else {
       _phase = _ConnectionPhase.waitingNetwork;
       Logger.log('PriceProvider: Waiting for network connection');
@@ -80,14 +80,14 @@ class PriceProvider extends ChangeNotifier {
     if (isNetworkOn == true) {
       if (_phase == _ConnectionPhase.waitingNetwork || !_allChannelsConnected) {
         Logger.log('PriceProvider: Network connected');
-        initWebSocketService();
+        initPriceSources();
       }
     } else if (isNetworkOn == false) {
       Logger.log('PriceProvider: Network disconnected');
       if (_phase != _ConnectionPhase.suspended) {
         _phase = _ConnectionPhase.waitingNetwork;
       }
-      disposeWebSocketService();
+      disposePriceSources();
     }
   }
 
@@ -95,16 +95,16 @@ class PriceProvider extends ChangeNotifier {
     // 모든 통화의 가격을 유지하므로 선택 통화 변경만으로는 재연결 불필요.
     // 끊긴 채널이 있으면 끊긴 것만 다시 연다.
     if (_connectivityProvider.isInternetOn == true) {
-      initWebSocketService();
+      initPriceSources();
     }
   }
 
-  void initWebSocketService({bool force = false}) {
+  void initPriceSources({bool force = false}) {
     if (_phase == _ConnectionPhase.suspended) return;
 
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOn != true) {
-      Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
+      Logger.log('PriceProvider: 네트워크가 연결되지 않아 가격 채널 연결을 보류합니다.');
       _phase = _ConnectionPhase.waitingNetwork;
       return;
     }
@@ -112,7 +112,7 @@ class PriceProvider extends ChangeNotifier {
     _phase = _ConnectionPhase.active;
 
     if (force) {
-      disposeWebSocketService();
+      disposePriceSources();
     }
 
     // 이미 모든 가격 채널이 연결되어 있으면 스킵
@@ -149,7 +149,7 @@ class PriceProvider extends ChangeNotifier {
         Logger.log('[CoinGecko] 폴링 시작');
       }
     } catch (e) {
-      Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
+      Logger.error('PriceProvider: 가격 채널 초기화 실패: $e');
       _phase = _ConnectionPhase.waitingNetwork;
     }
   }
@@ -172,17 +172,17 @@ class PriceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void pauseWebSocketService() {
+  void pausePriceSources() {
     _phase = _ConnectionPhase.suspended;
-    disposeWebSocketService();
+    disposePriceSources();
   }
 
-  void resumeWebSocketService({bool force = false}) {
+  void resumePriceSources({bool force = false}) {
     _phase = _ConnectionPhase.active;
-    initWebSocketService(force: force);
+    initPriceSources(force: force);
   }
 
-  void disposeWebSocketService() {
+  void disposePriceSources() {
     for (final subscription in _tickerSubscriptions) {
       unawaited(subscription.cancel());
     }
@@ -209,9 +209,9 @@ class PriceProvider extends ChangeNotifier {
     _connectivityProvider.removeListener(_connectivityListener);
     _preferenceProvider.removeListener(_preferenceListener);
     try {
-      disposeWebSocketService();
+      disposePriceSources();
     } catch (e) {
-      Logger.error('PriceProvider: dispose 중 WebSocket 오류: $e');
+      Logger.error('PriceProvider: dispose 중 가격 채널 오류: $e');
     }
     super.dispose();
   }

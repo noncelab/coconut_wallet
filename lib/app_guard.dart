@@ -118,10 +118,10 @@ class _AppGuardState extends State<AppGuard> {
             _isPaused = false;
           });
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.resumeWebSocketService(force: true);
+          _priceProvider.resumePriceSources(force: true);
         } else {
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.resumeWebSocketService();
+          _priceProvider.resumePriceSources();
         }
         _handleNodeProviderReconnect();
         for (final wallet in _walletProvider.walletItemList) {
@@ -138,7 +138,7 @@ class _AppGuardState extends State<AppGuard> {
             _isPaused = true;
           });
         }
-        _priceProvider.pauseWebSocketService();
+        _priceProvider.pausePriceSources();
         _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:

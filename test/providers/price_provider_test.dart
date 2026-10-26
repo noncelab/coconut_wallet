@@ -136,8 +136,8 @@ void main() {
 
   testWidgets('repeated force init replaces sockets instead of stacking them', (tester) async {
     await withHarness(tester, (harness) async {
-      harness.prices.initWebSocketService(force: true);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
+      harness.prices.initPriceSources(force: true);
       await tester.pump();
 
       expect(OwnedSocket.live, 4);
@@ -154,8 +154,8 @@ void main() {
 
   testWidgets('force init while offline does not connect until the network returns', (tester) async {
     await withHarness(tester, (harness) async {
-      harness.prices.initWebSocketService(force: true);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
+      harness.prices.initPriceSources(force: true);
       expect(OwnedSocket.created, 0);
 
       harness.connectivity.setOnline(true);
@@ -173,7 +173,7 @@ void main() {
       harness.notes.clear();
 
       harness.emit(FiatCode.KRW, 1);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
       harness.emit(FiatCode.KRW, 222);
       await tester.pump();
 
@@ -186,7 +186,7 @@ void main() {
   testWidgets('a failed init waits for the next online notification and retries', (tester) async {
     await withHarness(tester, (harness) async {
       harness.book.failOn = FiatCode.KRW;
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
 
       expect(OwnedSocket.live, 0);
       expect(OwnedSocket.created, 4);
@@ -210,7 +210,7 @@ void main() {
   testWidgets('a partially failed init reconnects only the missing channels', (tester) async {
     await withHarness(tester, (harness) async {
       harness.book.failOn = FiatCode.JPY;
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
 
       // KRW/USD만 열리고 JPY에서 실패 — EUR, CoinGecko는 미생성
       expect(OwnedSocket.live, 2);
