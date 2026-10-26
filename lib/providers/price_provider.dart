@@ -11,6 +11,18 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+/// 가격 채널 연결 상태
+enum _ConnectionPhase {
+  /// 연결 활성 상태 (채널 일부가 아직 안 열렸을 수 있음)
+  active,
+
+  /// 네트워크 부재 또는 초기화 실패로 연결 대기 중
+  waitingNetwork,
+
+  /// 앱이 백그라운드로 내려가 의도적으로 연결을 끊은 상태
+  suspended,
+}
+
 class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
@@ -28,8 +40,7 @@ class PriceProvider extends ChangeNotifier {
 
   late final VoidCallback _connectivityListener;
   late final VoidCallback _preferenceListener;
-  bool _isPendingConnection = false;
-  bool _isSuspended = false;
+  _ConnectionPhase _phase = _ConnectionPhase.active;
 
   /// 통화별 가격 저장
   final Map<FiatCode, int> _bitcoinPrices = {};
@@ -60,7 +71,7 @@ class PriceProvider extends ChangeNotifier {
     if (_connectivityProvider.isInternetOn == true) {
       initWebSocketService();
     } else {
-      _isPendingConnection = true;
+      _phase = _ConnectionPhase.waitingNetwork;
       Logger.log('PriceProvider: Waiting for network connection');
     }
   }
@@ -69,14 +80,15 @@ class PriceProvider extends ChangeNotifier {
     final isNetworkOn = _connectivityProvider.isInternetOn;
 
     if (isNetworkOn == true) {
-      if (_isPendingConnection || _webSocketServices.isEmpty || _coinGeckoService == null) {
+      if (_phase == _ConnectionPhase.waitingNetwork || !_allChannelsConnected) {
         Logger.log('PriceProvider: Network connected');
-        _isPendingConnection = false;
         initWebSocketService();
       }
     } else if (isNetworkOn == false) {
       Logger.log('PriceProvider: Network disconnected');
-      _isPendingConnection = true;
+      if (_phase != _ConnectionPhase.suspended) {
+        _phase = _ConnectionPhase.waitingNetwork;
+      }
       disposeWebSocketService();
     }
   }
@@ -93,32 +105,31 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void initWebSocketService({bool force = false}) {
-    if (_isSuspended) return;
+    if (_phase == _ConnectionPhase.suspended) return;
 
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOn != true) {
       Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
-      _isPendingConnection = true;
+      _phase = _ConnectionPhase.waitingNetwork;
       return;
     }
+
+    _phase = _ConnectionPhase.active;
 
     if (force) {
       disposeWebSocketService();
     }
 
-    final exchangeFiats = FiatCode.values.where((fiat) => fiat.hasExchangeSource).toList();
-
     // 이미 모든 가격 채널이 연결되어 있으면 스킵
-    if (_webSocketServices.length == exchangeFiats.length && _coinGeckoService != null) {
+    if (_allChannelsConnected) {
       Logger.log('PriceProvider: 모든 가격 채널이 이미 연결되어 있습니다.');
       return;
     }
 
     try {
       Logger.log('PriceProvider: 모든 통화의 가격 채널 초기화 중...');
-      _isPendingConnection = false;
 
-      for (final fiatCode in exchangeFiats) {
+      for (final fiatCode in FiatCode.values.where((fiat) => fiat.hasExchangeSource)) {
         if (_webSocketServices.containsKey(fiatCode)) continue;
         final service = _createWebSocket(fiatCode);
         _webSocketServices[fiatCode] = service;
@@ -149,8 +160,13 @@ class PriceProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
-      _isPendingConnection = true;
+      _phase = _ConnectionPhase.waitingNetwork;
     }
+  }
+
+  bool get _allChannelsConnected {
+    final exchangeFiatCount = FiatCode.values.where((fiat) => fiat.hasExchangeSource).length;
+    return _webSocketServices.length == exchangeFiatCount && _coinGeckoService != null;
   }
 
   /// fiatCode별로 거래소 ticker를 통해 실시간 가격 업데이트
@@ -167,12 +183,12 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void pauseWebSocketService() {
-    _isSuspended = true;
+    _phase = _ConnectionPhase.suspended;
     disposeWebSocketService();
   }
 
   void resumeWebSocketService({bool force = false}) {
-    _isSuspended = false;
+    _phase = _ConnectionPhase.active;
     initWebSocketService(force: force);
   }
 

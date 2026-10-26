@@ -183,6 +183,53 @@ void main() {
     });
   });
 
+  testWidgets('a failed init waits for the next online notification and retries', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.book.failOn = FiatCode.KRW;
+      harness.prices.initWebSocketService(force: true);
+
+      expect(OwnedSocket.live, 0);
+      expect(OwnedSocket.created, 4);
+
+      harness.connectivity.pulse();
+      expect(OwnedSocket.created, 4);
+
+      harness.book.failOn = null;
+      harness.connectivity.pulse();
+      await tester.pump();
+
+      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.live, 4);
+
+      harness.emit(FiatCode.KRW, 100000000);
+      await tester.pump();
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
+    });
+  });
+
+  testWidgets('a partially failed init reconnects only the missing channels', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.book.failOn = FiatCode.JPY;
+      harness.prices.initWebSocketService(force: true);
+
+      // KRW/USD만 열리고 JPY에서 실패 — EUR, CoinGecko는 미생성
+      expect(OwnedSocket.live, 2);
+      expect(OwnedSocket.created, 6);
+
+      harness.book.failOn = null;
+      harness.connectivity.pulse();
+      await tester.pump();
+
+      // 이미 열린 KRW/USD는 스킵하고 JPY/EUR만 새로 연다
+      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.live, 4);
+
+      harness.emit(FiatCode.JPY, 9000000);
+      await tester.pump();
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.JPY), 9000000);
+    });
+  });
+
   testWidgets('dispose drops a queued ticker and both upstream listeners', (tester) async {
     await withHarness(tester, (harness) async {
       harness.emit(FiatCode.KRW, 50);
@@ -660,7 +707,11 @@ class _CoinGecko extends Fake implements CoinGeckoPriceService {
 class SocketBook {
   final _channels = <FiatCode, List<ScriptedChannel>>{};
 
+  /// 설정하면 해당 통화의 소켓 생성이 실패한다. init 실패/재시도 경로 검증용.
+  FiatCode? failOn;
+
   WebSocketService create(FiatCode fiat) {
+    if (fiat == failOn) throw StateError('socket creation failed for ${fiat.code}');
     final channel = ScriptedChannel();
     _channels.putIfAbsent(fiat, () => []).add(channel);
     return OwnedSocket(exchangeType: _exchangeFor(fiat), symbol: _symbolFor(fiat), openChannel: (_) => channel);
