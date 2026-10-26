@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,7 +16,7 @@ class UtxoSummaryView extends StatelessWidget {
   final List<Color> bucketColors;
   final String Function(int sats) amountText;
 
-  /// 열리는 애니메이션 진행도. 개수·비율·금액·막대가 0에서 이 비율만큼 차오른다.
+  /// 열리는 애니메이션의 시간 진행도
   final double shown;
 
   /// 위젯 키 앞부분. 화면마다 다른 키로 찾을 수 있게 한다.
@@ -34,9 +36,13 @@ class UtxoSummaryView extends StatelessWidget {
     final colors = context.coconutColors;
     final total = buckets.total;
     final legibleColors = [for (final color in bucketColors) legibleOn(color, colors.homeSurface)];
-    int counted(int value) => (value * shown).round();
+    final firstSegment = buckets.counts.indexWhere((count) => count > 0);
+    final lastSegment = buckets.counts.lastIndexWhere((count) => count > 0);
+    final segmentShares = _segmentShares(total);
+    final counting = Curves.easeOutCubic.transform(shown);
+    int counted(int value) => (value * counting).round();
     String bucketCountText(int index) {
-      final percent = total == 0 ? 0.0 : buckets.counts[index] * 100 / total * shown;
+      final percent = total == 0 ? 0.0 : buckets.counts[index] * 100 / total * counting;
       return '${counted(buckets.counts[index])} (${percent.toStringAsFixed(1)}%)';
     }
 
@@ -68,8 +74,11 @@ class UtxoSummaryView extends StatelessWidget {
                                   if (buckets.counts[i] > 0)
                                     Container(
                                       key: ValueKey('$keyPrefix-utxo-segment-$i'),
-                                      width: constraints.maxWidth * buckets.counts[i] / total * shown,
-                                      padding: const EdgeInsets.symmetric(horizontal: 1),
+                                      width: constraints.maxWidth * segmentShares[i],
+                                      padding: EdgeInsets.only(
+                                        left: i == firstSegment ? 0 : 1,
+                                        right: i == lastSegment ? 0 : 1,
+                                      ),
                                       child: ColoredBox(color: legibleColors[i]),
                                     ),
                               ],
@@ -147,5 +156,23 @@ class UtxoSummaryView extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// 막대 구간별 폭 비율. 열릴 때는 구간을 똑같이 나눈 상태에서 출발해 실제 비율을 살짝 넘었다가 돌아와 안착한다.
+  List<double> _segmentShares(int total) {
+    final visible = buckets.counts.where((count) => count > 0).length;
+    if (total == 0 || visible == 0) return List.filled(buckets.counts.length, 0);
+    final progress = _spring(shown);
+    final shares = [
+      for (final count in buckets.counts)
+        count == 0 ? 0.0 : math.max(0.0, 1 / visible + (count / total - 1 / visible) * progress),
+    ];
+    final sum = shares.fold<double>(0, (a, b) => a + b);
+    return [for (final share in shares) share / sum];
+  }
+
+  static double _spring(double t) {
+    if (t >= 1) return 1;
+    return 1 - math.exp(-4 * t) * math.cos(2.5 * math.pi * t);
   }
 }

@@ -13,19 +13,20 @@ import 'package:flutter_svg/svg.dart';
 class WalletAddMfpInputBottomSheet extends StatefulWidget {
   final Function(String) onComplete;
   final VoidCallback? onSkip;
+  final String? initialMfp;
 
-  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip});
+  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip, this.initialMfp});
 
   @override
   State<WalletAddMfpInputBottomSheet> createState() => _WalletAddMfpInputBottomSheetState();
 }
 
 class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSheet> {
-  final TextEditingController _mfpController = TextEditingController();
+  late final TextEditingController _mfpController = TextEditingController(text: widget.initialMfp);
   final FocusNode _mfpFocusNode = FocusNode();
   final mfpRegex = RegExp("[0-9a-fA-F]{8}");
   bool _isError = false;
-  bool _isButtonEnabled = false;
+  late bool _isButtonEnabled = mfpRegex.hasMatch(_mfpController.text);
 
   @override
   void initState() {

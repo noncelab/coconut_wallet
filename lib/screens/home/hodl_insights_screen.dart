@@ -272,11 +272,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                   _section(
                                     HodlInsightsSection.utxo,
                                     title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
-                                    child: _UtxoSummaryCard(
-                                      viewModel: viewModel,
-                                      animateEntry:
-                                          widget.heroTag == null || widget.heroSection != HodlInsightsSection.utxo,
-                                    ),
+                                    child: _UtxoSummaryCard(viewModel: viewModel),
                                   ),
                                   _section(
                                     HodlInsightsSection.activity,
@@ -757,7 +753,7 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: _rowGap),
           LayoutBuilder(
             builder: (context, constraints) {
-              final rateStyle = CoconutTypography.body3_12_Number.copyWith(color: rateColor, height: _lineHeight);
+              final rateStyle = CoconutTypography.body3_12.copyWith(color: rateColor, height: _lineHeight);
               final rateText = hasChange ? formatHomeRate(rate) : '–';
               final rateWidth = measureHomeText(context, rateText, rateStyle) + (hasChange ? 14 + 2 : 0);
               final amount = _btcAmount(viewModel, viewModel.balance);
@@ -876,10 +872,10 @@ class _OpenProgress extends StatefulWidget {
   static const startDelay = Duration(milliseconds: 250);
 
   final double progress;
-  final bool animateEntry;
+  final Curve curve;
   final Widget Function(BuildContext context, double progress) builder;
 
-  const _OpenProgress({required this.progress, required this.builder, this.animateEntry = true});
+  const _OpenProgress({required this.progress, required this.builder, this.curve = Curves.easeOutCubic});
 
   @override
   State<_OpenProgress> createState() => _OpenProgressState();
@@ -887,7 +883,7 @@ class _OpenProgress extends StatefulWidget {
 
 class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(vsync: this, duration: _OpenProgress.fillDuration);
-  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: widget.curve);
   double _from = 0;
   late double _to = widget.progress;
   Animation<double>? _route;
@@ -903,8 +899,7 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
     final flight = context.dependOnInheritedWidgetOfExactType<_HeroFlightRoute>();
     _flightValue = flight?.revealed;
     if (_flightValue != null) return;
-    _reduceMotion =
-        !widget.animateEntry || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     if (_reduceMotion) {
       _start?.cancel();
       _route?.removeStatusListener(_onRouteStatus);
@@ -1075,16 +1070,15 @@ class _GoalCard extends StatelessWidget {
 
 class _UtxoSummaryCard extends StatelessWidget {
   final HodlInsightsViewModel viewModel;
-  final bool animateEntry;
 
-  const _UtxoSummaryCard({required this.viewModel, this.animateEntry = true});
+  const _UtxoSummaryCard({required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
     return _InsightCard(
       child: _OpenProgress(
         progress: 1,
-        animateEntry: animateEntry,
+        curve: Curves.linear,
         builder:
             (context, shown) => UtxoSummaryView(
               keyPrefix: 'hodl-insights',

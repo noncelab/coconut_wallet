@@ -118,6 +118,12 @@ class WalletInfoViewModel extends ChangeNotifier {
       (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
           WalletAddService.masterFingerprintPlaceholder;
 
+  /// 사용자가 지정해 둔 MFP. 단일서명이 아니거나 placeholder면 null
+  String? get customMfp {
+    if (_walletItemBase is! SinglesigWalletItem || isMfpPlaceholder) return null;
+    return (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+  }
+
   /// 파생 경로의 purpose로 만든 표기(예: "BIP 84"). 경로를 알 수 없으면 null.
   String? get bipLabel {
     final base = _walletItemBase.walletBase;

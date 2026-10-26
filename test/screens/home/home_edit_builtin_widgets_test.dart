@@ -2510,25 +2510,14 @@ void main() {
             }
           }
           if (evidenceDir != null) File('$evidenceDir/$prefix-trace.json').writeAsStringSync(jsonEncode(records));
-          for (final frame in records) {
-            expect(
-              (frame['total'] as List).single['text'],
-              t.hodl_insights.total_utxos(count: 2),
-              reason: 'selected positive Home UTXO Hero retains the source total at every frame',
-            );
-            final rows = frame['rowValues']! as List<List<String>>;
-            for (var bucket = 0; bucket < 4; bucket++) {
-              expect(
-                rows[bucket][1],
-                bucket == 0 ? '2 (100.0%)' : '0 (0.0%)',
-                reason: 'selected Hero keeps each bucket count',
-              );
-              expect(
-                rows[bucket][2],
-                bucket == 0 ? '0.4 BTC' : '0 BTC',
-                reason: 'selected Hero keeps each bucket amount',
-              );
-            }
+          final shownCounts = [
+            for (final frame in records)
+              int.parse(RegExp(r'\d+').firstMatch((frame['total'] as List).single['text'] as String)!.group(0)!),
+          ];
+          expect(shownCounts.first, 0, reason: 'selected Home UTXO Hero starts the fill from empty');
+          for (var i = 1; i < shownCounts.length; i++) {
+            expect(shownCounts[i], greaterThanOrEqualTo(shownCounts[i - 1]), reason: 'fill never goes backwards');
+            expect(shownCounts[i], lessThanOrEqualTo(2), reason: 'fill never overshoots the real count');
           }
 
           expect(

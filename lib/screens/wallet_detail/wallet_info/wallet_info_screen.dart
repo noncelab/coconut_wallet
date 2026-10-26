@@ -469,7 +469,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             ),
           ),
           showArrowRight: viewModel.canEditMfp,
-          onPressed: viewModel.canEditMfp ? _showMfpInputBottomSheet : null,
+          onPressed: viewModel.canEditMfp ? () => _showMfpInputBottomSheet(initialMfp: viewModel.customMfp) : null,
         ),
       if (widget.walletType == WalletType.singleSignature)
         _focus(
@@ -743,13 +743,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     await _mnemonicBackupButtonKey.currentState?.highlight();
   }
 
-  Future<String?> _showMfpInputBottomSheet() async {
+  Future<String?> _showMfpInputBottomSheet({String? initialMfp}) async {
     final result = await CommonBottomSheets.showBottomSheet_100<String>(
       context: context,
       screenName: AnalyticsScreenNames.walletInfoMfpSheet,
       backgroundColor: Colors.transparent,
       isDismissible: true,
       child: WalletAddMfpInputBottomSheet(
+        initialMfp: initialMfp,
         onComplete: (text) {
           Navigator.pop(context, text);
         },

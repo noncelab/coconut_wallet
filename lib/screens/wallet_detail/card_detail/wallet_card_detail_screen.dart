@@ -522,13 +522,13 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                                 Flexible(
                                   child: Text(
                                     t.wallet_card_detail_screen.show_balance_trend,
-                                    style: CoconutTypography.caption_10.copyWith(color: colors.primaryText),
+                                    style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 6),
                                 SvgPicture.asset(
                                   CommonNavigationIconPath.arrowRight,
-                                  height: 8,
+                                  height: 10,
                                   colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                                 ),
                               ],

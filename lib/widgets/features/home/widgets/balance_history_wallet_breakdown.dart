@@ -378,64 +378,79 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     final sentAmount = sent.fold<int>(0, (sum, tx) => sum + tx.amount).abs();
     final receivedAmount = received.fold<int>(0, (sum, tx) => sum + tx.amount).abs();
     final change = '${slice.change >= 0 ? '+' : '-'}${widget.amountText(slice.change.abs())}';
-    String flow(String label, int count, int amount, String sign) {
-      final summary =
-          count == 0
-              ? t.wallet_list.balance_history_detail.flow_count(count: count)
-              : t.wallet_list.balance_history_detail.flow_summary(
-                count: count,
-                amount: '${amount == 0 ? '' : sign}${widget.amountText(amount)}',
-              );
-      return '$label $summary';
+    final numberStyle = CoconutTypography.body3_12_NumberBold.copyWith(color: colors.primaryText);
+    List<InlineSpan> flow(String label, int count, int amount, String sign) {
+      if (count == 0) {
+        return [TextSpan(text: '$label ${t.wallet_list.balance_history_detail.flow_count(count: count)}')];
+      }
+      const placeholder = '\u0000';
+      final parts = t.wallet_list.balance_history_detail
+          .flow_summary(count: count, amount: placeholder)
+          .split(placeholder);
+      return [
+        TextSpan(text: '$label ${parts.first}'),
+        TextSpan(text: '${amount == 0 ? '' : sign}${widget.amountText(amount)}', style: numberStyle),
+        if (parts.length > 1) TextSpan(text: parts.sublist(1).join()),
+      ];
     }
 
-    Widget text(String value, {bool bold = false}) => Text(
+    Widget text(String value, {bool bold = true}) => Text(
       value,
       style: (bold ? CoconutTypography.body3_12_Bold : CoconutTypography.body3_12).copyWith(color: colors.primaryText),
     );
+    Widget rich(List<InlineSpan> spans) => Text.rich(
+      TextSpan(children: spans),
+      style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+    );
     TableRow row(String label, Widget value) => TableRow(
       children: [
-        Padding(padding: const EdgeInsets.only(right: 16, bottom: 12), child: text(label, bold: true)),
+        Padding(padding: const EdgeInsets.only(right: 16, bottom: 12), child: text(label, bold: false)),
         Padding(padding: const EdgeInsets.only(bottom: 0), child: value),
       ],
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Table(
-          columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
-          children: [
-            row(t.name, text(slice.wallet.name)),
-            row(t.home_edit.period, text(widget.periodLabel)),
-            row(
-              t.wallet_list.balance_history_detail.balance_label,
-              text('${widget.amountText(slice.balance)} ($change)'),
-            ),
-            row(
-              t.wallet_list.balance_history_detail.transactions_label,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  text(flow(t.home_widgets.sent, sent.length, sentAmount, '-')),
-                  const SizedBox(height: 8),
-                  text(flow(t.home_widgets.received, received.length, receivedAmount, '+')),
-                  if (organized.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    text(
-                      flow(
-                        t.home_widgets.organized,
-                        organized.length,
-                        organized.fold<int>(0, (sum, tx) => sum + tx.amount).abs(),
-                        '-',
-                      ),
-                    ),
-                  ],
-                ],
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(boldText: false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Table(
+            columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+            children: [
+              row(t.name, text(slice.wallet.name)),
+              row(t.home_edit.period, text(widget.periodLabel)),
+              row(
+                t.wallet_list.balance_history_detail.balance_label,
+                rich([
+                  TextSpan(text: widget.amountText(slice.balance), style: numberStyle),
+                  if (slice.change != 0) TextSpan(text: ' ($change)', style: numberStyle),
+                ]),
               ),
-            ),
-          ],
-        ),
-      ],
+              row(
+                t.wallet_list.balance_history_detail.transactions_label,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    rich(flow(t.home_widgets.sent, sent.length, sentAmount, '-')),
+                    const SizedBox(height: 8),
+                    rich(flow(t.home_widgets.received, received.length, receivedAmount, '+')),
+                    if (organized.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      rich(
+                        flow(
+                          t.home_widgets.organized,
+                          organized.length,
+                          organized.fold<int>(0, (sum, tx) => sum + tx.amount).abs(),
+                          '-',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
