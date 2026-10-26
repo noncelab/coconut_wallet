@@ -15,8 +15,13 @@ class BalanceSyncService {
   final StateManagerInterface _stateManager;
   final AddressRepository _addressRepository;
   final WalletRepository _walletRepository;
+  final Set<(int, String)> _failedBalanceFetches = {};
 
   BalanceSyncService(this._electrumService, this._stateManager, this._addressRepository, this._walletRepository);
+
+  int getWalletBalance(int walletId) => _walletRepository.getWalletBalance(walletId)?.total ?? 0;
+
+  bool hasBalanceFetchFailures(int walletId) => _failedBalanceFetches.any((entry) => entry.$1 == walletId);
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
@@ -42,19 +47,26 @@ class BalanceSyncService {
     required int index,
     required bool isChange,
   }) async {
-    final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, address);
+    try {
+      final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, address);
 
-    // GetBalanceRes에서 Balance 객체로 변환
-    final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
+      // GetBalanceRes에서 Balance 객체로 변환
+      final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
 
-    final balanceDiff = _addressRepository.updateAddressBalance(
-      walletId: walletItem.id,
-      index: index,
-      isChange: isChange,
-      balance: addressBalance,
-    );
-
-    await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
+      final walletBalance = _walletRepository.getWalletBalance(walletItem.id);
+      if (walletBalance == null) return;
+      _addressRepository.updateAddressBalance(
+        walletId: walletItem.id,
+        index: index,
+        isChange: isChange,
+        balance: addressBalance,
+        walletBalance: walletBalance,
+      );
+      _failedBalanceFetches.remove((walletItem.id, address));
+    } catch (_) {
+      _failedBalanceFetches.add((walletItem.id, address));
+      rethrow;
+    }
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
@@ -101,6 +113,7 @@ class BalanceSyncService {
               unconfirmed: balanceResponse.unconfirmed,
             );
           } catch (e) {
+            _failedBalanceFetches.add((walletItem.id, script.address));
             Logger.error('BalanceSyncService: Error fetching balance for ${script.address}: $e');
             // 조회 실패를 잔액 0으로 간주하면 기존에 저장된 잔액을 잘못 덮어쓸 수 있으므로,
             // 이번 배치에서는 제외하고 기존 저장값을 그대로 유지한다.
@@ -130,16 +143,19 @@ class BalanceSyncService {
       //   ));
       // }
 
-      final totalBalanceDiff = await _addressRepository.updateAddressBalanceBatch(walletItem.id, balanceUpdates);
-
-      // 지갑 잔액에 변화량 반영
-      await _walletRepository.accumulateWalletBalance(walletItem.id, totalBalanceDiff);
+      final walletBalance = _walletRepository.getWalletBalance(walletItem.id);
+      if (walletBalance == null) return;
+      await _addressRepository.updateAddressBalanceBatch(walletItem.id, balanceUpdates, walletBalance: walletBalance);
+      for (final update in balanceUpdates) {
+        _failedBalanceFetches.remove((walletItem.id, update.scriptStatus.address));
+      }
 
       // 동기화 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
 
       Logger.log('BalanceSyncService: Completed processing ${scriptStatuses.length} scripts');
     } catch (e, stack) {
+      _failedBalanceFetches.addAll(scriptStatuses.map((script) => (walletItem.id, script.address)));
       Logger.error('fetchScriptBalanceBatch error: $e');
       Logger.error(stack);
       // 동기화 실패 state 업데이트 (오류 시 동기화 완료 상태로 변경)

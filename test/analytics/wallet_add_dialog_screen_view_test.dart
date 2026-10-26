@@ -64,7 +64,7 @@ void main() {
     }
 
     Future<void> openFromHome() async {
-      WalletAddDialog.show(home, WalletAddDialogMode.walletType); // home + (HomeAddWalletOption.all)
+      WalletAddDialog.showTopSheet(home, WalletAddDialogMode.walletType); // home + (HomeAddWalletOption.all)
       await tester.pumpAndSettle();
     }
 

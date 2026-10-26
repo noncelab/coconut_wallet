@@ -54,6 +54,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final bool showOnlyMfpWallets;
   final BalanceMode balanceMode;
+  final List<int>? candidateWalletIds;
 
   const SelectWalletBottomSheet({
     super.key,
@@ -63,6 +64,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
     required this.showOnlyMfpWallets,
     this.scrollController,
     this.balanceMode = BalanceMode.includingPending,
+    this.candidateWalletIds,
   });
 
   @override
@@ -147,6 +149,10 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
     if (widget.showOnlyMfpWallets) {
       _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
+    }
+    final candidateWalletIds = widget.candidateWalletIds;
+    if (candidateWalletIds != null) {
+      _walletList = _walletList.where((wallet) => candidateWalletIds.contains(wallet.id)).toList();
     }
     _walletBalanceMap = _initBalanceMap();
     _selectedWalletId = widget.walletId;

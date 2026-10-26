@@ -1,6 +1,7 @@
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
-class RippleEffect extends StatefulWidget {
+class RippleEffect extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
   final double? borderRadius;
@@ -8,41 +9,15 @@ class RippleEffect extends StatefulWidget {
   const RippleEffect({super.key, required this.child, this.borderRadius, this.onTap});
 
   @override
-  State<RippleEffect> createState() => _RippleEffectState();
-}
-
-class _RippleEffectState extends State<RippleEffect> {
-  double _opacity = 1.0;
-
-  void _handleTapDown(TapDownDetails details) {
-    setState(() {
-      _opacity = 0.5;
-    });
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    setState(() {
-      _opacity = 1.0;
-    });
-  }
-
-  void _handleTapCancel() {
-    setState(() {
-      _opacity = 1.0;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(widget.borderRadius ?? 0),
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        child: AnimatedOpacity(duration: const Duration(milliseconds: 100), opacity: _opacity, child: widget.child),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(borderRadius ?? 0),
+        highlightColor: colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
+        child: child,
       ),
     );
   }

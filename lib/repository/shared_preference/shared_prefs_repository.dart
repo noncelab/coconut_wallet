@@ -162,6 +162,16 @@ class SharedPrefsRepository {
     await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
+  /// 지갑 목표 수량을 바꾼다. null이면 목표를 지우고 꺼 둔다(지갑 정보 화면과 같은 규칙).
+  Future<void> updateWalletTarget(int walletId, int? targetSats) async {
+    if (targetSats == null) {
+      await removeWalletTargetSats(walletId);
+    } else {
+      await setWalletTargetSats(walletId, targetSats);
+    }
+    await setWalletTargetDisabled(walletId, targetSats == null);
+  }
+
   bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
 
   Future<void> setWalletTargetDisabled(int walletId, bool disabled) async {

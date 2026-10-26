@@ -1,24 +1,27 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/services.dart';
 
+SystemUiOverlayStyle buildSystemBarStyle({required Color backgroundColor, required Brightness brightness}) {
+  final iconBrightness = brightness == Brightness.light ? Brightness.dark : Brightness.light;
+  return SystemUiOverlayStyle(
+    statusBarColor: const Color(0x00000000),
+    statusBarBrightness: brightness,
+    statusBarIconBrightness: iconBrightness,
+    systemNavigationBarDividerColor: backgroundColor,
+    systemNavigationBarColor: backgroundColor,
+    systemNavigationBarIconBrightness: iconBrightness,
+  );
+}
+
 /// StatusBar: 화면 상단의 시간, 배터리, 신호 표시 영역
 /// iOS는 배경 밝기, Android는 아이콘 밝기로 상태 표시줄 대비를 지정합니다.
 /// NavigationBar: 뒤로가기/홈/멀티태스킹 버튼 영역 (화면 최상단)
 void updateSystemBarColor(CoconutThemeVariant variant) {
   final theme = resolveCoconutThemeExtension(variant: variant);
-  final isLight = CoconutThemeController.brightnessOf(variant) == Brightness.light;
-  setSystemBarColor(theme.colors.background, brightness: isLight ? Brightness.dark : Brightness.light);
-}
-
-void setSystemBarColor(Color barColor, {Brightness brightness = Brightness.light}) {
   SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: barColor, //상단바 색상
-      statusBarIconBrightness: brightness, //상단바 아이콘 색상
-      statusBarBrightness: brightness == Brightness.light ? Brightness.dark : Brightness.light,
-      systemNavigationBarDividerColor: barColor, //하단바 디바이더 색상
-      systemNavigationBarColor: barColor, //하단바 색상
-      systemNavigationBarIconBrightness: brightness, //하단바 아이콘 색상
+    buildSystemBarStyle(
+      backgroundColor: theme.colors.background,
+      brightness: CoconutThemeController.brightnessOf(variant),
     ),
   );
 }

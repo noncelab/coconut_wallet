@@ -155,7 +155,12 @@ class _AppGuardState extends State<AppGuard> {
     // 2. 초기화 미완료 시 initialize 호출
     if (!_nodeProvider.isInitialized) {
       Logger.log('AppGuard: NodeProvider is not initialized yet, initializing instead of reconnect');
-      _nodeProvider.initialize();
+      try {
+        await _nodeProvider.initialize();
+      } catch (e) {
+        // initialize() already exposes the connection failure through NodeProvider's state.
+        Logger.log('AppGuard: NodeProvider initialization failed: $e');
+      }
       return;
     }
 

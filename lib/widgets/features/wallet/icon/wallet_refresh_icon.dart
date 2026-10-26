@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -57,9 +58,9 @@ class _WalletRefreshIndicatorState extends State<WalletRefreshIndicator> {
           ),
         ),
     child: SizedBox(
-      width: 48,
+      width: CoconutAppBarActionButton.actionWidth,
       height: 48,
-      child: Center(child: WalletRefreshIcon(isRefreshing: widget.isRefreshing, size: 20)),
+      child: Center(child: WalletRefreshIcon(isRefreshing: widget.isRefreshing, size: 24)),
     ),
   );
 }

@@ -208,26 +208,29 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         ),
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
+            width: CoconutAppBarActionButton.actionWidth,
             onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               FeatureUtxoIconPath.faucet,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
         CoconutAppBarActionButton(
+          width: CoconutAppBarActionButton.actionWidth,
           onPressed: () {
             _logAction(WalletDetailAction.walletInfo);
             _openWalletInfo();
           },
           icon: SvgPicture.asset(
             FeatureSettingsIconPath.settings,
-            width: 20,
-            height: 20,
+            width: 24,
+            height: 24,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -242,19 +245,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             children: [
               FiatPrice(satoshiAmount: viewModel.balance),
               CoconutLayout.spacing_100h,
-              WalletBalanceSyncShimmer(
-                isRefreshing: viewModel.isRefreshing || viewModel.isWalletSyncing,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: BitcoinAmountUnit(
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: BitcoinAmountUnit(
+                  currentUnit: viewModel.currentUnit,
+                  unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
+                  child: AnimatedBalance(
+                    prevValue: viewModel.balance,
+                    value: viewModel.balance,
+                    duration: 400,
                     currentUnit: viewModel.currentUnit,
-                    unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
-                    child: AnimatedBalance(
-                      prevValue: viewModel.balance,
-                      value: viewModel.balance,
-                      currentUnit: viewModel.currentUnit,
-                      textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
-                    ),
+                    textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
                   ),
                 ),
               ),

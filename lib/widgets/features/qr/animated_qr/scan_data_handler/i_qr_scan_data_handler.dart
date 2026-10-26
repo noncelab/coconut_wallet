@@ -1,5 +1,5 @@
-abstract class IQrScanDataHandler {
-  dynamic get result;
+abstract class IQrScanDataHandler<T> {
+  T? get result;
 
   double get progress;
 

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -76,6 +78,16 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   }
 }
 
+class _NavigationObserver extends NavigatorObserver {
+  final List<String?> navigated;
+  _NavigationObserver(this.navigated);
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (previousRoute != null && route is PageRoute) navigated.add(route.settings.name);
+  }
+}
+
 void main() {
   late TestRealmManager manager;
   late UtxoRepository repository;
@@ -100,6 +112,8 @@ void main() {
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
   Future<void> open(WidgetTester tester, {int count = 2}) async {
+    // Asset I/O must finish outside the fake clock before the send animation can start.
+    await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final tx = Transaction.withInputsAndOutputs(
       [TransactionInput.forPayment(_hash, 0, sequence: 0xfffffffd)],
@@ -152,9 +166,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          navigatorObservers: [_NavigationObserver(navigated)],
           home: const LoaderOverlay(child: BroadcastingScreen()),
           onGenerateRoute: (settings) {
-            navigated.add(settings.name);
             return MaterialPageRoute<void>(settings: settings, builder: (_) => const SizedBox());
           },
         ),
@@ -171,7 +185,10 @@ void main() {
   }
 
   Future<void> finish(WidgetTester tester, {bool success = true}) async {
-    await tester.pump(const Duration(seconds: 2));
+    // Keep the two-second bound while advancing sequential animation timers.
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(node.broadcasts, 1);
     node.pending.complete(success ? Result.success(transactionHash) : Result.failure(ErrorCodes.broadcastError));
     bool completed() =>
@@ -180,7 +197,7 @@ void main() {
         find.text(t.broadcasting_screen.error_popup_title).evaluate().isNotEmpty;
     // Native Realm commits need real async time as well as Flutter's fake-clock frames.
     for (var attempt = 0; !completed() && attempt < 100; attempt++) {
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     }
     await tester.pump();
@@ -252,7 +269,10 @@ void main() {
 
     await finish(tester);
 
-    expect(find.text(t.broadcasting_complete_screen.complete), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(Dialog), matching: find.text(t.broadcasting_complete_screen.complete)),
+      findsOneWidget,
+    );
     expect(find.text(t.broadcasting_screen.dialog.tag_apply_failed), findsOneWidget);
     expect(find.text(t.broadcasting_screen.error_popup_title), findsNothing);
     expect(navigated, isEmpty);

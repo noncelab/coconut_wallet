@@ -304,7 +304,8 @@ class _MnemonicWarningCard extends StatelessWidget {
             ShrinkAnimationButton(
               borderRadius: 12,
               defaultColor: Colors.white,
-              pressedColor: Colors.white.withValues(alpha: 0.85),
+              pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+              pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
               onPressed: onConfirm,
               child: SizedBox(
                 width: double.infinity,

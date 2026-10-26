@@ -5,6 +5,9 @@ abstract class StateManagerInterface {
   /// 지갑 상태 초기화
   void initWalletUpdateStatus(int walletId);
 
+  /// 대기열 시작 시 기존 잔액을 유지하고, 전체 성공 시에만 새 잔액을 공개한다.
+  void setWalletSyncQueueState(int walletId, bool isSyncQueued, int? balanceSnapshot);
+
   /// 지갑의 동기화 상태 추가
   void addWalletSyncState(int walletId, UpdateElement updateType);
 

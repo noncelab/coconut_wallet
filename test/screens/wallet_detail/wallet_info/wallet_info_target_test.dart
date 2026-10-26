@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -8,7 +10,9 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -21,7 +25,10 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -69,6 +76,8 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
   WalletItemBase getWalletById(int id) => wallet;
   @override
   int getWatchedAddressCount(int id) => 0;
+  @override
+  List<TransactionRecord> getTransactionRecordList(int walletId) => [];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -236,9 +245,17 @@ void main() {
     expect(model.targetSats, isNull);
   });
 
-  Future<_Analytics> openTargetSheet(WidgetTester tester) async {
+  const captureKey = ValueKey('wallet-info-capture');
+
+  Future<_Analytics> openTargetSheet(
+    WidgetTester tester, {
+    WalletInfoTarget? focus,
+    Size viewport = const Size(430, 932),
+    double bottomInset = 0,
+    double textScale = 1,
+  }) async {
     final analytics = _Analytics();
-    tester.view.physicalSize = const Size(430, 932);
+    tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -254,12 +271,26 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
-          home: const LoaderOverlay(
+          scrollBehavior: const CupertinoScrollBehavior(),
+          builder:
+              (context, child) => RepaintBoundary(
+                key: captureKey,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    padding: EdgeInsets.only(bottom: bottomInset),
+                    viewPadding: EdgeInsets.only(bottom: bottomInset),
+                    textScaler: TextScaler.linear(textScale),
+                  ),
+                  child: child!,
+                ),
+              ),
+          home: LoaderOverlay(
             child: WalletInfoScreen(
               id: 1,
               walletType: WalletType.singleSignature,
               entryPoint: '/wallet-home',
-              showTargetSetting: true,
+              showTargetSetting: focus == null,
+              initialTarget: focus,
             ),
           ),
         ),
@@ -267,9 +298,105 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(find.byType(SingleTextFieldBottomSheet), findsOneWidget);
+    expect(find.byType(SingleTextFieldBottomSheet), focus == null ? findsOneWidget : findsNothing);
     return analytics;
   }
+
+  for (final viewport in [const Size(360, 640), const Size(430, 932)]) {
+    for (final bottomInset in [0.0, 24.0, 34.0]) {
+      testWidgets('wallet info last row remains above bottom inset $bottomInset in $viewport', (tester) async {
+        final analytics = await openTargetSheet(
+          tester,
+          focus: WalletInfoTarget.appearance,
+          viewport: viewport,
+          bottomInset: bottomInset,
+          textScale: 1.3,
+        );
+        final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
+        for (var attempt = 0; attempt < 12; attempt++) {
+          await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
+          await tester.pumpAndSettle();
+          if ((scrollable.position.pixels - scrollable.position.maxScrollExtent).abs() < 0.1) break;
+        }
+        expect(scrollable.position.pixels, closeTo(scrollable.position.maxScrollExtent, 0.1));
+        final lastRow = tester.getRect(
+          find.ancestor(
+            of: find.text(t.wallet_info_screen.delete_wallet),
+            matching: find.byType(ShrinkAnimationButton),
+          ),
+        );
+        expect(lastRow.top, greaterThanOrEqualTo(0));
+        expect(lastRow.height, greaterThan(0));
+        expect(lastRow.bottom, lessThanOrEqualTo(viewport.height - bottomInset));
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(analytics.events, isEmpty);
+        expect(walletProvider.walletItemList, hasLength(1));
+      });
+    }
+  }
+
+  for (final focus in [WalletInfoTarget.extendedPublicKey, WalletInfoTarget.delete]) {
+    testWidgets('search reveals $focus without invoking its sensitive action', (tester) async {
+      final analytics = await openTargetSheet(tester, focus: focus);
+      final target = find.byKey(ValueKey('wallet-info-focus-${focus.name}'));
+      expect(target, findsOneWidget);
+      final rect = tester.getRect(target);
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(932));
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(analytics.events, isEmpty);
+      expect(walletProvider.walletItemList, hasLength(1));
+    });
+  }
+
+  testWidgets('rename search highlight stays inside the rounded edit button', (tester) async {
+    await openTargetSheet(tester, focus: WalletInfoTarget.appearance);
+    Future<ByteData> pixels() async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
+      return (await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: 1);
+        try {
+          return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        } finally {
+          image.dispose();
+        }
+      }))!;
+    }
+
+    final target = find.byKey(const ValueKey('wallet-info-focus-appearance'));
+    final opacity = find.descendant(of: target, matching: find.byType(AnimatedOpacity));
+    expect(tester.widget<AnimatedOpacity>(opacity).opacity, 1);
+    final button = find.byKey(const Key('wallet-info-appearance-edit'));
+    final cardShape = BorderRadius.circular(20).toRRect(tester.getRect(button));
+    final targetRect = tester.getRect(target);
+    final highlighted = await pixels();
+
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.widget<AnimatedOpacity>(opacity).opacity, 0);
+    expect(tester.getRect(target), targetRect);
+    final normal = await pixels();
+    final width = tester.view.physicalSize.width.toInt();
+    var outsideSamples = 0;
+    var changedOutside = 0;
+    var changedInside = 0;
+    for (var y = targetRect.top.ceil(); y < targetRect.bottom.floor(); y++) {
+      for (var x = targetRect.left.ceil(); x < targetRect.right.floor(); x++) {
+        final point = Offset(x + 0.5, y + 0.5);
+        final changed = highlighted.getUint32((y * width + x) * 4) != normal.getUint32((y * width + x) * 4);
+        // Exclude the button's antialiased edge, not the highlight's own shape.
+        if (!cardShape.inflate(1).contains(point)) {
+          outsideSamples++;
+          if (changed) changedOutside++;
+        } else if (cardShape.deflate(2).contains(point) && changed) {
+          changedInside++;
+        }
+      }
+    }
+    expect(outsideSamples, greaterThan(20));
+    expect(changedOutside, 0, reason: 'Highlight must not paint outside the rounded button corners.');
+    expect(changedInside, greaterThan(100), reason: 'The button must actually be highlighted.');
+  });
 
   testWidgets('saved event follows persistence and contains no amount', (tester) async {
     final analytics = await openTargetSheet(tester);

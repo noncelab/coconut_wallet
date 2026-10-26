@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutPulldown;
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -47,7 +47,7 @@ void main() {
   testWidgets('closing the format menu by tapping outside does not log the backup screen again', (tester) async {
     final logged = await pumpBackupScreen(tester);
 
-    await tester.tap(find.byType(CoconutPulldown));
+    await tester.tap(find.byType(UtxoListDropdownButton));
     await tester.pumpAndSettle();
     expect(find.text('Output Descriptor'), findsWidgets);
 
@@ -61,7 +61,7 @@ void main() {
   testWidgets('picking a format closes the menu without logging the backup screen again', (tester) async {
     final logged = await pumpBackupScreen(tester);
 
-    await tester.tap(find.byType(CoconutPulldown));
+    await tester.tap(find.byType(UtxoListDropdownButton));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Output Descriptor').last);
     await tester.pumpAndSettle();

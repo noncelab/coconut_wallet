@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -427,7 +428,8 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
               isSelected: _deleteFileOnSuccess,
               onChanged: (_) {},
               width: 16,
-              unSelectedColor: context.coconutColors.iconSecondary,
+              unSelectedColor: context.coconutColors.iconPrimary,
+              inactiveColor: context.coconutColors.iconDisabled,
               color:
                   _isDeleteFileOptionPressed ? context.coconutColors.iconSecondary : context.coconutColors.iconPrimary,
             ),

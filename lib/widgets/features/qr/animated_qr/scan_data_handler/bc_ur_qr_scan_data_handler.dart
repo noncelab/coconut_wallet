@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
+import 'package:ur/ur.dart';
 import 'package:ur/ur_decoder.dart';
 
 enum UrType {
@@ -14,7 +15,7 @@ enum UrType {
   const UrType(this.value);
 }
 
-class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler {
+class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler<UR> {
   URDecoder _urDecoder;
   int? _sequenceLength;
   final List<UrType>? expectedUrType;
@@ -23,7 +24,7 @@ class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler {
   BcUrQrScanDataHandler({this.expectedUrType}) : _urDecoder = URDecoder();
 
   @override
-  dynamic get result => _urDecoder.result;
+  UR? get result => _urDecoder.result as UR?;
 
   @override
   double get progress => _urDecoder.estimatedPercentComplete();

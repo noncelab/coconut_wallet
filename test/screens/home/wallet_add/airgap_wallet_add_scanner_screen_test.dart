@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -42,11 +46,31 @@ class _FakePreferenceProvider extends Fake implements PreferenceProvider {
   String get language => 'ko';
 }
 
+class _RouteObserver extends NavigatorObserver {
+  final events = <String>[];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    events.add('push ${route.settings.name} after ${previousRoute?.settings.name}');
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    events.add('pop ${route.settings.name} to ${previousRoute?.settings.name}');
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    events.add('remove ${route.settings.name}');
+  }
+}
+
 class _CameraPlatform extends MobileScannerPlatform {
   int starts = 0;
   int stops = 0;
   int disposals = 0;
   bool failNextStop = false;
+  MobileScannerErrorCode? startError;
 
   @override
   Stream<BarcodeCapture?> get barcodesStream => const Stream.empty();
@@ -63,6 +87,9 @@ class _CameraPlatform extends MobileScannerPlatform {
   @override
   Future<MobileScannerViewAttributes> start(StartOptions options) async {
     starts++;
+    if (startError != null) {
+      throw MobileScannerException(errorCode: startError!);
+    }
     return const MobileScannerViewAttributes(
       cameraDirection: CameraFacing.back,
       currentTorchMode: TorchState.off,
@@ -92,13 +119,21 @@ class _Harness {
   final camera = _CameraPlatform();
   final wallets = _FakeWalletProvider();
   final navigatorKey = GlobalKey<NavigatorState>();
+  final routes = _RouteObserver();
+  final captureKey = GlobalKey();
   int getCalls = 0;
   int hasStringsCalls = 0;
   Future<Object?> Function()? clipboardRead;
   bool failNextHasStrings = false;
   late BuildContext screenContext;
 
-  Future<void> mount(WidgetTester tester) async {
+  Future<void> mount(
+    WidgetTester tester, {
+    bool pushScanner = false,
+    WalletImportSource source = WalletImportSource.extendedPublicKey,
+    CoconutThemeVariant? theme,
+    double textScale = 1,
+  }) async {
     NetworkType.setNetworkType(NetworkType.regtest);
     LocaleSettings.setLocaleSync(AppLocale.ko);
     tester.view.physicalSize = const Size(430, 932);
@@ -132,6 +167,14 @@ class _Harness {
         null,
       );
     });
+    Widget scanner() => LoaderOverlay(
+      child: Builder(
+        builder: (context) {
+          screenContext = context;
+          return WalletAddScannerScreen(importSource: source);
+        },
+      ),
+    );
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -141,20 +184,49 @@ class _Harness {
         ],
         child: MaterialApp(
           navigatorKey: navigatorKey,
-          theme: buildCoconutThemeData(),
+          navigatorObservers: [routes],
+          theme: buildCoconutThemeData(variant: theme),
+          builder:
+              (context, child) => RepaintBoundary(
+                key: captureKey,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+                  child: child!,
+                ),
+              ),
           routes: {'/wallet-detail': (_) => const Scaffold(body: Text('imported wallet'))},
-          home: LoaderOverlay(
-            child: Builder(
-              builder: (context) {
-                screenContext = context;
-                return const WalletAddScannerScreen(importSource: WalletImportSource.extendedPublicKey);
-              },
-            ),
-          ),
+          home: pushScanner ? const Scaffold(body: Text('wallet home')) : scanner(),
         ),
       ),
     );
     await tester.pumpAndSettle();
+    if (pushScanner) {
+      unawaited(
+        navigatorKey.currentState!.push(
+          MaterialPageRoute<void>(
+            settings: const RouteSettings(name: AppRouteNames.walletAddScanner),
+            builder: (_) => scanner(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+  }
+
+  Future<void> capture(WidgetTester tester, String name) async {
+    final directory = Platform.environment['CAMERA_IMPORT_EVIDENCE_DIR'];
+    if (directory == null) return;
+    final boundary = captureKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 1);
+      try {
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await Directory(directory).create(recursive: true);
+        await File('$directory/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
+      } finally {
+        image.dispose();
+      }
+    });
   }
 
   Future<void> paste(WidgetTester tester) async {
@@ -179,6 +251,197 @@ void main() {
   });
   const publicTestKey =
       'tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN';
+
+  for (final cancel in [true, false]) {
+    testWidgets('camera denied manual paste survives ${cancel ? 'cancel' : 'barrier dismissal'} and imports', (
+      tester,
+    ) async {
+      final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
+      harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+      await harness.mount(tester, pushScanner: true);
+      expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsOneWidget);
+      await harness.capture(tester, 'denied-${cancel ? 'cancel' : 'barrier'}-dialog');
+      if (cancel) {
+        await tester.tap(find.text(t.cancel));
+      } else {
+        await tester.tapAt(const Offset(5, 5));
+      }
+      await tester.pumpAndSettle();
+      await harness.capture(tester, 'denied-${cancel ? 'cancel' : 'barrier'}-dismissed');
+      expect(find.byType(WalletAddScannerScreen), findsOneWidget);
+      expect(find.text(t.wallet_add_scanner_screen.paste.paste_button).hitTestable(), findsOneWidget);
+      expect(tester.widget<MobileScanner>(find.byType(MobileScanner)).controller!.value.isRunning, isFalse);
+      await harness.paste(tester);
+      await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+      await tester.pumpAndSettle();
+      expect(harness.wallets.syncCalls, 1);
+      expect(find.text('imported wallet'), findsOneWidget);
+      debugPrint('denied manual import navigation: ${harness.routes.events}');
+      expect(harness.camera.disposals, 1);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('wallet home'), findsOneWidget);
+      expect(find.byType(WalletAddScannerScreen), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('camera denied manual import can go back after dismissing permission dialog', (tester) async {
+    final harness = _Harness();
+    harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+    await harness.mount(tester, pushScanner: true);
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(find.byType(WalletAddScannerScreen), findsOneWidget);
+    await tester.tap(find.byTooltip(MaterialLocalizations.of(harness.screenContext).closeButtonTooltip));
+    await tester.pumpAndSettle();
+    expect(find.text('wallet home'), findsOneWidget);
+    expect(harness.camera.disposals, 1);
+    expect(harness.wallets.syncCalls, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('camera denied manual import clears its routes after delayed persistence', (tester) async {
+    final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
+    harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+    final gate = Completer<ResultOfSyncFromVault>();
+    harness.wallets.syncGate = gate;
+    await harness.mount(tester, pushScanner: true);
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+    await harness.paste(tester);
+    await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(harness.wallets.syncCalls, 1);
+    expect(harness.screenContext.loaderOverlay.visible, isTrue);
+    gate.complete(ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: 77));
+    await tester.pumpAndSettle();
+    expect(find.text('imported wallet'), findsOneWidget);
+    expect(harness.camera.disposals, 1);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('wallet home'), findsOneWidget);
+    expect(find.byType(WalletAddScannerScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('camera denied QR-only import still closes after permission dialog', (tester) async {
+    final harness = _Harness();
+    harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+    await harness.mount(tester, pushScanner: true, source: WalletImportSource.coconutVault);
+    expect(find.text(t.wallet_add_scanner_screen.paste.paste_button), findsNothing);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    harness.camera.startError = null;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(harness.camera.starts, 1);
+    expect(tester.widget<MobileScanner>(find.byType(MobileScanner)).controller!.value.isRunning, isFalse);
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(find.byType(WalletAddScannerScreen), findsNothing);
+    expect(find.text('wallet home'), findsOneWidget);
+    expect(harness.camera.disposals, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final scale in [0.8, 2.0]) {
+    testWidgets('camera denied dark manual import remains reachable at text scale $scale', (tester) async {
+      final previousErrorHandler = FlutterError.onError;
+      FlutterError.onError = (details) {
+        FlutterError.dumpErrorToConsole(details, forceReport: true);
+        previousErrorHandler?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = previousErrorHandler);
+      final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
+      harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+      await harness.mount(tester, pushScanner: true, theme: CoconutThemeVariant.dark, textScale: scale);
+      await tester.tap(find.text(t.cancel));
+      await tester.pumpAndSettle();
+      await harness.capture(tester, 'denied-dark-scale-$scale');
+      expect(find.text(t.wallet_add_scanner_screen.paste.paste_button).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await harness.paste(tester);
+      await harness.capture(tester, 'denied-dark-scale-$scale-mfp');
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+      await tester.pumpAndSettle();
+      expect(harness.wallets.syncCalls, 1);
+      expect(find.text('imported wallet'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('camera denied manual import recovers scanning after grant and resume', (tester) async {
+    final harness = _Harness();
+    harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+    await harness.mount(tester, pushScanner: true);
+    await tester.tap(find.text(t.go_to_settings));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+    harness.camera.startError = null;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    final camera = tester.widget<MobileScanner>(find.byType(MobileScanner));
+    expect(camera.controller!.value.isRunning, isFalse);
+    expect(harness.camera.starts, 1);
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(camera.controller!.value.isRunning, isTrue);
+    expect(harness.camera.starts, 2);
+    camera.onDetect!(const BarcodeCapture(barcodes: [Barcode(rawValue: publicTestKey)]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+    await tester.pumpAndSettle();
+    expect(harness.getCalls, 0);
+    expect(harness.wallets.syncCalls, 1);
+    expect(find.text('imported wallet'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('disposing manual import while permission dialog is open leaves no pending route pop', (tester) async {
+    final harness = _Harness();
+    harness.camera.startError = MobileScannerErrorCode.permissionDenied;
+    await harness.mount(tester, pushScanner: true);
+    expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsOneWidget);
+    harness.navigatorKey.currentState!.removeRoute(ModalRoute.of(harness.screenContext)!);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(find.text('wallet home'), findsOneWidget);
+    expect(find.byType(WalletAddScannerScreen), findsNothing);
+    expect(harness.camera.disposals, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('camera unavailable manual paste remains usable', (tester) async {
+    final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
+    harness.camera.startError = MobileScannerErrorCode.genericError;
+    await harness.mount(tester, pushScanner: true);
+    expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsNothing);
+    await harness.paste(tester);
+    await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+    await tester.pumpAndSettle();
+    expect(harness.wallets.syncCalls, 1);
+    expect(find.text('imported wallet'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('camera allowed manual-capable import still accepts scanned public key', (tester) async {
+    final harness = _Harness();
+    await harness.mount(tester, pushScanner: true);
+    final camera = tester.widget<MobileScanner>(find.byType(MobileScanner));
+    expect(camera.controller!.value.isRunning, isTrue);
+    camera.onDetect!(const BarcodeCapture(barcodes: [Barcode(rawValue: publicTestKey)]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
+    await tester.pumpAndSettle();
+    expect(harness.getCalls, 0);
+    expect(harness.wallets.syncCalls, 1);
+    expect(harness.camera.stops, 1);
+    expect(find.text('imported wallet'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('clipboard platform failure displays an error and allows another paste attempt', (tester) async {
     final harness = _Harness();
