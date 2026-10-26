@@ -22,7 +22,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/foundation.dart' show precisionErrorTolerance;
+import 'package:flutter/foundation.dart' show precisionErrorTolerance, listEquals;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
@@ -648,13 +648,102 @@ class _LowerBand extends StatelessWidget {
 }
 
 /// 상세 화면으로 확대되는 잔액 그래프.
-class _BalanceChart extends StatelessWidget {
+class _BalanceChart extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
   const _BalanceChart({required this.viewModel});
 
   @override
+  State<_BalanceChart> createState() => _BalanceChartState();
+}
+
+class _BalanceChartState extends State<_BalanceChart> with SingleTickerProviderStateMixin {
+  static const _columns = 120;
+  late final AnimationController _morph;
+  late final CurvedAnimation _curve;
+  late List<int> _sourceValues;
+  late List<double> _from;
+  late List<double> _to;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sourceValues = List.of(widget.viewModel.chartBalances);
+    _from = _to = _chartColumns(_sourceValues);
+    _morph = AnimationController(vsync: this, duration: const Duration(milliseconds: 400), value: 1);
+    _curve = CurvedAnimation(parent: _morph, curve: Curves.easeInOutCubic);
+  }
+
+  /// 기간마다 다른 점 개수와 Y축 범위를 같은 화면 좌표의 열로 맞춘다.
+  List<double> _chartColumns(List<int> values) {
+    if (values.isEmpty) return List.filled(_columns, 0.5);
+    final minimum = values.reduce(math.min);
+    final range = values.reduce(math.max) - minimum;
+    if (range == 0 || values.length == 1) return List.filled(_columns, 0.5);
+    final points = [
+      for (var i = 0; i < values.length; i++) Offset(i / (values.length - 1), (values[i] - minimum) / range),
+    ];
+    // 기존 곡선을 X축 기준으로 샘플링해 기간별 곡선의 모양을 유지한다.
+    final metric = smoothPath(points).computeMetrics().first;
+    return List.generate(_columns, (column) {
+      if (column == 0) return points.first.dy;
+      if (column == _columns - 1) return points.last.dy;
+      final x = column / (_columns - 1);
+      var low = 0.0;
+      var high = metric.length;
+      for (var step = 0; step < 16; step++) {
+        final middle = (low + high) / 2;
+        final point = metric.getTangentForOffset(middle)!.position;
+        if (point.dx < x) {
+          low = middle;
+        } else {
+          high = middle;
+        }
+      }
+      return metric.getTangentForOffset((low + high) / 2)!.position.dy;
+    });
+  }
+
+  List<double> get _displayed => [for (var i = 0; i < _columns; i++) _from[i] + (_to[i] - _from[i]) * _curve.value];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) _morph.value = 1;
+  }
+
+  @override
+  void didUpdateWidget(covariant _BalanceChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final values = widget.viewModel.chartBalances;
+    if (listEquals(_sourceValues, values)) return;
+    _sourceValues = List.of(values);
+    _from = _displayed;
+    _to = _chartColumns(values);
+    if (_reduceMotion) {
+      _morph.value = 1;
+    } else {
+      _morph.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _morph.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final chart = Material(color: Colors.transparent, child: HomeSparkline(values: viewModel.chartBalances));
+    final chart = Material(
+      color: Colors.transparent,
+      child: AnimatedBuilder(
+        animation: _morph,
+        builder: (_, __) => HomeSparkline(values: _displayed, minimum: 0, maximum: 1),
+      ),
+    );
     if (context.findAncestorWidgetOfExactType<Hero>() != null) return chart;
     return Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart);
   }
@@ -702,16 +791,37 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _BalanceCard extends StatelessWidget {
+class _BalanceCard extends StatefulWidget {
+  final HodlInsightsViewModel viewModel;
+
+  const _BalanceCard({required this.viewModel});
+
+  @override
+  State<_BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<_BalanceCard> {
   /// 총 잔액 라벨, 잔액, 환산액 사이 간격
   static const _rowGap = 0.0;
 
   /// 줄 위아래 여백을 줄여 세 줄을 촘촘하게 붙인다.
   static const _lineHeight = 1.15;
+  double _periodSwipeDistance = 0;
 
-  final HodlInsightsViewModel viewModel;
+  HodlInsightsViewModel get viewModel => widget.viewModel;
 
-  const _BalanceCard({required this.viewModel});
+  void _endPeriodSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final movement = _periodSwipeDistance.abs() >= 24 ? _periodSwipeDistance : (velocity.abs() >= 300 ? velocity : 0.0);
+    _periodSwipeDistance = 0;
+    if (movement == 0) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final index = (viewModel.balancePeriod.index + movement.sign.toInt() * direction).clamp(
+      0,
+      HomeWidgetPeriod.values.length - 1,
+    );
+    viewModel.selectBalancePeriod(HomeWidgetPeriod.values[index]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -827,7 +937,14 @@ class _BalanceCard extends StatelessWidget {
           SizedBox(
             key: const Key('hodl-insights-balance-chart'),
             height: 88,
-            child: RepaintBoundary(child: _BalanceChart(viewModel: viewModel)),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (_) => _periodSwipeDistance = 0,
+              onHorizontalDragUpdate: (details) => _periodSwipeDistance += details.primaryDelta ?? 0,
+              onHorizontalDragEnd: _endPeriodSwipe,
+              onHorizontalDragCancel: () => _periodSwipeDistance = 0,
+              child: RepaintBoundary(child: _BalanceChart(viewModel: viewModel)),
+            ),
           ),
           CoconutLayout.spacing_200h,
           Row(
@@ -1092,22 +1209,49 @@ class _UtxoSummaryCard extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+class _ActivityCard extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
 
   const _ActivityCard({required this.viewModel});
 
   @override
+  State<_ActivityCard> createState() => _ActivityCardState();
+}
+
+class _ActivityCardState extends State<_ActivityCard> {
+  double _periodSwipeDistance = 0;
+  HodlInsightsViewModel get viewModel => widget.viewModel;
+
+  void _endPeriodSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final movement = _periodSwipeDistance.abs() >= 24 ? _periodSwipeDistance : (velocity.abs() >= 300 ? velocity : 0.0);
+    _periodSwipeDistance = 0;
+    if (movement == 0) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final index = (viewModel.activityPeriod.index + movement.sign.toInt() * direction).clamp(
+      0,
+      HomeWidgetPeriod.values.length - 1,
+    );
+    viewModel.selectActivityPeriod(HomeWidgetPeriod.values[index]);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bars = viewModel.activityBars;
     final totals = viewModel.activityTotals;
-    return KeyedSubtree(
+    return GestureDetector(
       key: const Key('hodl-insights-activity'),
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _periodSwipeDistance = 0,
+      onHorizontalDragUpdate: (details) => _periodSwipeDistance += details.primaryDelta ?? 0,
+      onHorizontalDragEnd: _endPeriodSwipe,
+      onHorizontalDragCancel: () => _periodSwipeDistance = 0,
       child: _OpenProgress(
         progress: 1,
         builder:
             (context, shown) => TransactionActivityView(
               detailed: true,
+              animateChanges: true,
               reveal: shown,
               days: bars.bars,
               rangeEnd: DateTime.now(),

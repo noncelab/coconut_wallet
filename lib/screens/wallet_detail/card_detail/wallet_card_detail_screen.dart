@@ -663,7 +663,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     required bool moreEnabled,
   }) {
     final colors = context.coconutColors;
-    final moreColor = moreEnabled ? colors.secondaryText : colors.mutedText;
+    final moreColor = moreEnabled ? colors.primaryText : colors.mutedText;
     return Padding(
       key: key,
       padding: const EdgeInsets.fromLTRB(4, 0, 0, 6),

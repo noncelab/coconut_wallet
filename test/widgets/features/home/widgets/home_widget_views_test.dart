@@ -688,6 +688,41 @@ void main() {
     expect(find.text(t.home_widgets.months_short[11]), findsOneWidget);
   });
 
+  testWidgets('activity bars animate height changes and retarget without jumping', (tester) async {
+    final days = ValueNotifier([
+      HomeDailyActivity(day: DateTime(2026, 10, 1), received: 1),
+      HomeDailyActivity(day: DateTime(2026, 10, 2), received: 4),
+    ]);
+    addTearDown(days.dispose);
+    await _pump(
+      tester,
+      const Size(328, 240),
+      ValueListenableBuilder<List<HomeDailyActivity>>(
+        valueListenable: days,
+        builder: (_, values, __) => TransactionActivityView(days: values, detailed: true, animateChanges: true),
+      ),
+    );
+    final bar = find.byKey(const ValueKey('transaction-activity-bar-0-received'));
+    final initial = tester.getSize(bar).height;
+    expect(initial, greaterThan(0));
+    final original = days.value;
+    days.value = [
+      HomeDailyActivity(day: DateTime(2026, 10, 1), received: 4),
+      HomeDailyActivity(day: DateTime(2026, 10, 2), received: 1),
+    ];
+    await tester.pump();
+    expect(tester.getSize(bar).height, closeTo(initial, 0.01));
+    await tester.pump(const Duration(milliseconds: 200));
+    final midway = tester.getSize(bar).height;
+    expect(midway, allOf(greaterThan(initial), lessThan(initial * 4)));
+    days.value = original;
+    await tester.pump();
+    expect(tester.getSize(bar).height, closeTo(midway, 0.01));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(bar).height, closeTo(initial, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('transaction activity shows totals per type', (tester) async {
     await _pump(
       tester,
