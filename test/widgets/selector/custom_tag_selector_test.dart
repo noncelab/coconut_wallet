@@ -1,10 +1,39 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 
 void main() {
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('$variant horizontal tags retain readable active unselected labels and selection', (tester) async {
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      var selected = '';
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(variant: variant),
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder:
+                  (context, setState) => CustomTagHorizontalSelector(
+                    tags: const ['Savings'],
+                    selectedName: selected,
+                    onSelectedTag: (value) => setState(() => selected = value),
+                  ),
+            ),
+          ),
+        ),
+      );
+      final label = find.text('#Savings');
+      expect(tester.widget<Text>(label).style!.color, colors.chipUnselectedText);
+      await tester.tap(label);
+      await tester.pump();
+      expect(selected, 'Savings');
+      expect(tester.widget<Text>(label).style!.color, colors.chipSelectedText);
+    });
+  }
+
   group('CustomTagSelector', () {
     final tags = [
       const UtxoTag(id: 'uuid1', walletId: 1, name: 'Tag1', colorIndex: 0, utxoIdList: ['a', 'b', 'c', 'd', 'e']),

@@ -6,7 +6,7 @@ import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 /// 코코넛 볼트 - 지갑 내보내기 스캔용
-class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
+class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler<WatchOnlyWallet> {
   WatchOnlyWallet? _result;
 
   @override
@@ -64,7 +64,7 @@ class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   }
 
   @override
-  dynamic get result => _result;
+  WatchOnlyWallet? get result => _result;
 
   @override
   double get progress => isCompleted() ? 1.0 : 0.0;

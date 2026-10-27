@@ -74,7 +74,8 @@ class _WalletAppearanceSheetState extends State<WalletAppearanceSheet> {
                   onPressed:
                       () => widget.onDone(WalletAppearanceSelection(colorIndex: _colorIndex, iconIndex: _iconIndex)),
                   defaultColor: context.coconutColors.buttonPrimaryBackground,
-                  pressedColor: context.coconutColors.buttonPrimaryPressOverlay,
+                  pressedOverlayColor: context.coconutColors.buttonPrimaryPressOverlay,
+                  pressedOverlayOpacity: context.coconutColors.buttonPrimaryPressOverlayOpacity,
                   borderRadius: CoconutStyles.radius_200,
                   child: SizedBox(
                     height: 52,

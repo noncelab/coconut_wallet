@@ -275,8 +275,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),
     );
-    _viewModel
-        .setEstimatedFeeAndTotalUsedAmount()
+    WidgetsBinding.instance.endOfFrame
+        .then((_) async {
+          if (!mounted) return;
+          await _viewModel.setEstimatedFeeAndTotalUsedAmount();
+        })
         .then((_) {
           if (mounted) {
             context.loaderOverlay.hide();

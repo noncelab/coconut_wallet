@@ -15,7 +15,7 @@ List<({String label, int min, int max})> getUtxoBucketRanges({required int dustT
     (label: 'whole', min: 100_000_000, max: 999_999_999),
     (label: 'huge', min: 10_000_000, max: 99_999_999),
     (label: 'large', min: 1_000_001, max: 9_999_999),
-    (label: 'meduim', min: 100_001, max: 1_000_000),
+    (label: 'medium', min: 100_001, max: 1_000_000),
     (label: 'small', min: 10_001, max: 100_000),
     (label: 'tiny', min: dustThreshold + 1, max: 10_000),
     (label: 'dust', min: 0, max: dustThreshold),

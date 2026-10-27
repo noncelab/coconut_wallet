@@ -96,7 +96,11 @@ class RbfService {
 
   /// RBF를 받는 지갑 관점에서 Incoming 상태의 UTXO 트랜잭션이 유효한지 확인,
   /// RBF 발견 시 대체된 트랜잭션의 해시를 반환
-  Future<String?> detectIncomingRbfTransaction(int walletId, Transaction tx) async {
+  Future<String?> detectIncomingRbfTransaction(
+    int walletId,
+    Transaction tx, {
+    Set<String> confirmedTxHashes = const {},
+  }) async {
     List<UtxoState> unconfirmedUtxoList =
         _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.isPending).toList();
 
@@ -111,7 +115,7 @@ class RbfService {
     for (final utxo in unconfirmedUtxoList) {
       // 이미 컨펌된 트랜잭션은 RBF 대상이 아님
       final txRecord = _transactionRepository.getTransactionRecord(walletId, utxo.transactionHash);
-      if (txRecord == null || txRecord.blockHeight > 0) {
+      if (txRecord == null || txRecord.blockHeight > 0 || confirmedTxHashes.contains(utxo.transactionHash)) {
         continue;
       }
 

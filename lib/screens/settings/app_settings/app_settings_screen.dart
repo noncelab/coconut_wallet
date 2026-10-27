@@ -1,5 +1,9 @@
 import 'package:coconut_wallet/services/security/pin_auth_service.dart';
+import 'dart:async';
+
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
+import 'package:coconut_wallet/screens/common/feature_search_focus.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -31,11 +35,173 @@ import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.da
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:provider/provider.dart';
 
 class AppSettingsScreen extends StatefulWidget {
-  const AppSettingsScreen({super.key});
+  final AppSettingsTarget? initialTarget;
+
+  const AppSettingsScreen({super.key, this.initialTarget});
+
+  static final _pendingSelectionSheets = <BuildContext>{};
+
+  static Future<void> open(
+    BuildContext context,
+    AppSettingsTarget target, {
+    CoconutThemeVariant? highlightTheme,
+  }) async {
+    final selectionSheet = switch (target) {
+      AppSettingsTarget.unit ||
+      AppSettingsTarget.fiat ||
+      AppSettingsTarget.language ||
+      AppSettingsTarget.theme ||
+      AppSettingsTarget.numberFormat => true,
+      _ => false,
+    };
+    if (!selectionSheet) return _openTarget(context, target, highlightTheme: highlightTheme);
+    if (!_pendingSelectionSheets.add(context)) return;
+    bool releasePending() => _pendingSelectionSheets.remove(context);
+    final bool ready;
+    try {
+      ready = await _waitForSourceKeyboard(context);
+    } finally {
+      releasePending();
+    }
+    if (ready && context.mounted && ModalRoute.of(context)?.isCurrent != false) {
+      await _openTarget(context, target, highlightTheme: highlightTheme);
+    }
+  }
+
+  static Future<bool> _waitForSourceKeyboard(BuildContext context) {
+    final view = View.of(context);
+    if (view.viewInsets.bottom == 0 && MediaQuery.viewInsetsOf(context).bottom == 0) {
+      return Future.value(context.mounted);
+    }
+    final completed = Completer<bool>();
+    final initialFocus = FocusManager.instance.primaryFocus;
+    var focusReleased = initialFocus == null || initialFocus is FocusScopeNode;
+    var entryFocusChecked = false;
+    void focusChanged() {
+      final primary = FocusManager.instance.primaryFocus;
+      if (primary != initialFocus) focusReleased = true;
+      if (focusReleased && primary != null && primary is! FocusScopeNode && !completed.isCompleted) {
+        completed.complete(false);
+      }
+    }
+
+    FocusManager.instance.addListener(focusChanged);
+    final route = ModalRoute.of(context);
+    final focusOwner = Focus.maybeOf(context);
+    final sourceBox = context.findRenderObject();
+    final box = sourceBox is RenderBox && sourceBox.hasSize ? sourceBox : null;
+    final origin = box?.localToGlobal(Offset.zero);
+    final horizontalEnd = box?.localToGlobal(Offset(box.size.width, 0));
+    final lifecycle = AppLifecycleListener(
+      onStateChange: (state) {
+        if (state != AppLifecycleState.resumed && !completed.isCompleted) completed.complete(false);
+      },
+    );
+    // Stale IME metrics cancel this request instead of retaining its source indefinitely.
+    final watchdog = Timer(const Duration(seconds: 2), () {
+      if (!completed.isCompleted) completed.complete(false);
+    });
+    void afterFrame(Duration _) {
+      if (completed.isCompleted) return;
+      final focusExcluded =
+          focusOwner != null &&
+          (!focusOwner.descendantsAreFocusable || focusOwner.ancestors.any((node) => !node.descendantsAreFocusable));
+      // A retained pager face can leave the foreground without changing routes.
+      final sourceMoved =
+          box != null &&
+          (!box.attached ||
+              (box.localToGlobal(Offset.zero) - origin!).distance > 0.5 ||
+              (box.localToGlobal(Offset(box.size.width, 0)) - horizontalEnd!).distance > 0.5);
+      if (!context.mounted || (route != null && !route.isCurrent) || focusExcluded || sourceMoved) {
+        completed.complete(false);
+      } else {
+        if (!entryFocusChecked) {
+          entryFocusChecked = true;
+          if (initialFocus is! FocusScopeNode && initialFocus?.hasPrimaryFocus == true) initialFocus!.unfocus();
+        }
+        if (view.viewInsets.bottom == 0) {
+          completed.complete(true);
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback(afterFrame);
+        }
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback(afterFrame);
+    WidgetsBinding.instance.scheduleFrame();
+    return completed.future.whenComplete(() {
+      watchdog.cancel();
+      lifecycle.dispose();
+      FocusManager.instance.removeListener(focusChanged);
+    });
+  }
+
+  static Future<void> _openTarget(
+    BuildContext context,
+    AppSettingsTarget target, {
+    CoconutThemeVariant? highlightTheme,
+  }) async {
+    switch (target) {
+      case AppSettingsTarget.unit:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsUnitSheet,
+          heightRatio: 0.5,
+          child: const UnitBottomSheet(),
+        );
+      case AppSettingsTarget.fiat:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsFiatSheet,
+          heightRatio: 0.5,
+          child: const FiatBottomSheet(),
+        );
+      case AppSettingsTarget.language:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsLanguageSheet,
+          heightRatio: 0.6,
+          child: LanguageBottomSheet(),
+        );
+      case AppSettingsTarget.theme:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsThemeSheet,
+          heightRatio: 0.5,
+          child: ThemeBottomSheet(highlightVariant: highlightTheme),
+        );
+      case AppSettingsTarget.numberFormat:
+        await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
+          heightRatio: 0.5,
+          child: NumberFormatBottomSheet(),
+        );
+      case AppSettingsTarget.electrum:
+        await Navigator.pushNamed(context, AppRouteNames.electrumServer);
+      case AppSettingsTarget.explorer:
+        if (NetworkType.currentNetworkType == NetworkType.mainnet) {
+          await Navigator.pushNamed(context, AppRouteNames.blockExplorer);
+        }
+      case AppSettingsTarget.appInfo:
+        await Navigator.pushNamed(context, AppRouteNames.appInfo);
+      case AppSettingsTarget.pin:
+      case AppSettingsTarget.biometrics:
+      case AppSettingsTarget.pinChange:
+      case AppSettingsTarget.utxoSelection:
+        await Navigator.of(context).push(
+          CupertinoPageRoute<void>(
+            settings: const RouteSettings(name: '/app-settings'),
+            builder: (_) => AppSettingsScreen(initialTarget: target),
+          ),
+        );
+    }
+  }
 
   @override
   State<AppSettingsScreen> createState() => _AppSettingsScreen();
@@ -43,6 +209,15 @@ class AppSettingsScreen extends StatefulWidget {
 
 class _AppSettingsScreen extends State<AppSettingsScreen> {
   bool _isDisablingAppLock = false;
+
+  Widget _focus(AppSettingsTarget target, SingleButton child) =>
+      widget.initialTarget == target
+          ? FeatureSearchFocus(
+            key: ValueKey('app-settings-focus-${target.name}'),
+            borderRadius: child.buttonPosition.radius,
+            child: child,
+          )
+          : child;
 
   @override
   Widget build(BuildContext context) {
@@ -70,48 +245,57 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   _category(t.security),
                   ButtonGroup(
                     buttons: [
-                      SingleButton(
-                        title: t.settings_screen.set_password,
-                        rightElement: _buildSwitch(
-                          isOn: viewModel.isSetPin,
-                          onChanged: (isOn) async {
-                            if (isOn) {
-                              _showPinSettingScreen(useBiometrics: true);
-                              return;
-                            }
-
-                            await _disableAppLock();
-                          },
-                        ),
-                      ),
-                      if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                      _focus(
+                        AppSettingsTarget.pin,
                         SingleButton(
-                          title: t.settings_screen.use_biometric,
+                          title: t.settings_screen.set_password,
                           rightElement: _buildSwitch(
-                            isOn: viewModel.isSetBiometrics,
+                            isOn: viewModel.isSetPin,
                             onChanged: (isOn) async {
                               if (isOn) {
-                                viewModel.authenticateWithBiometrics(isSave: true);
-                              } else {
-                                viewModel.saveIsSetBiometrics(false);
+                                _showPinSettingScreen(useBiometrics: true);
+                                return;
                               }
+
+                              await _disableAppLock();
                             },
                           ),
                         ),
+                      ),
+                      if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                        _focus(
+                          AppSettingsTarget.biometrics,
+                          SingleButton(
+                            title: t.settings_screen.use_biometric,
+                            rightElement: _buildSwitch(
+                              isOn: viewModel.isSetBiometrics,
+                              onChanged: (isOn) async {
+                                if (isOn) {
+                                  viewModel.authenticateWithBiometrics(isSave: true);
+                                } else {
+                                  viewModel.saveIsSetBiometrics(false);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
                       if (viewModel.isSetPin)
-                        SingleButton(
-                          title: t.settings_screen.change_password,
-                          onPressed: () async {
-                            final authProvider = viewModel.authProvider;
-                            if (await authProvider.isBiometricsAuthValid()) {
-                              _showPinSettingScreen(useBiometrics: false);
-                              return;
-                            }
+                        _focus(
+                          AppSettingsTarget.pinChange,
+                          SingleButton(
+                            title: t.settings_screen.change_password,
+                            onPressed: () async {
+                              final authProvider = viewModel.authProvider;
+                              if (await authProvider.isBiometricsAuthValid()) {
+                                _showPinSettingScreen(useBiometrics: false);
+                                return;
+                              }
 
-                            if (await _requestPin()) {
-                              _showPinSettingScreen(useBiometrics: false);
-                            }
-                          },
+                              if (await _requestPin()) {
+                                _showPinSettingScreen(useBiometrics: false);
+                              }
+                            },
+                          ),
                         ),
                     ],
                   ),
@@ -129,12 +313,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.bitcoin,
                             subtitle: currentUnit.symbol,
                             onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsUnitSheet,
-                                heightRatio: 0.5,
-                                child: const UnitBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.unit);
                             },
                           );
                         },
@@ -164,12 +343,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.settings_screen.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsFiatSheet,
-                                heightRatio: 0.5,
-                                child: const FiatBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.fiat);
                             },
                           );
                         },
@@ -189,12 +363,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.settings_screen.language,
                             subtitle: _getCurrentLanguageDisplayName(language),
                             onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsLanguageSheet,
-                                heightRatio: 0.6,
-                                child: LanguageBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.language);
                             },
                           );
                         },
@@ -211,13 +380,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.theme,
                             subtitle: currentLabel,
                             onPressed: () {
-                              CommonBottomSheets.showBottomSheet_100(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsThemeSheet,
-                                isDismissible: true,
-                                backgroundColor: Colors.transparent,
-                                child: const ThemeBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.theme);
                             },
                           );
                         },
@@ -229,12 +392,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             title: t.settings_screen.number_format,
                             subtitle: preset.displayLabel,
                             onPressed: () {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                screenName: AnalyticsScreenNames.appSettingsNumberFormatSheet,
-                                heightRatio: 0.4,
-                                child: NumberFormatBottomSheet(),
-                              );
+                              AppSettingsScreen.open(context, AppSettingsTarget.numberFormat);
                             },
                           );
                         },
@@ -276,16 +434,19 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   _category(t.tool),
                   ButtonGroup(
                     buttons: [
-                      SingleButton(
-                        title: t.settings_screen.utxo_manual_selection,
-                        subtitle: t.settings_screen.utxo_manual_selection_description,
-                        isVerticalSubtitle: true,
-                        rightElement: _buildSwitch(
-                          isOn: viewModel.isManualUtxoSelectionMode,
-                          onChanged: (isOn) async {
-                            viewModel.setManualUtxoSelectionMode(isOn);
-                            vibrateExtraLight();
-                          },
+                      _focus(
+                        AppSettingsTarget.utxoSelection,
+                        SingleButton(
+                          title: t.settings_screen.utxo_manual_selection,
+                          subtitle: t.settings_screen.utxo_manual_selection_description,
+                          isVerticalSubtitle: true,
+                          rightElement: _buildSwitch(
+                            isOn: viewModel.isManualUtxoSelectionMode,
+                            onChanged: (isOn) async {
+                              viewModel.setManualUtxoSelectionMode(isOn);
+                              vibrateExtraLight();
+                            },
+                          ),
                         ),
                       ),
                       _buildAnimatedButton(

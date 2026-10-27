@@ -19,7 +19,7 @@ Future<bool?> showHotWalletAppLockGuideBottomSheet(BuildContext context) async {
     title: t.wallet_home_screen.hot_wallet_setup.pin_title,
     showDragHandle: true,
     showCloseButton: true,
-    ignoreTextScaling: true,
+    ignoreTextScaling: false,
     adjustForKeyboardInset: false,
     child: HotWalletAppLockGuideScreen(key: sheetKey),
   );
@@ -68,49 +68,52 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
     final strings = t.wallet_home_screen.hot_wallet_setup;
 
     return SizedBox(
-      height: 300,
+      height: 300 * (MediaQuery.textScalerOf(context).scale(16) / 16).clamp(1.0, 2.0),
       child: Stack(
         children: [
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  CoconutLayout.spacing_300h,
-                  AnimatedSlide(
-                    offset: _isDescriptionVisible ? Offset.zero : const Offset(0, 0.12),
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutCubic,
-                    child: AnimatedOpacity(
-                      opacity: _isDescriptionVisible ? 1 : 0,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 160),
+                child: Column(
+                  children: [
+                    CoconutLayout.spacing_300h,
+                    AnimatedSlide(
+                      offset: _isDescriptionVisible ? Offset.zero : const Offset(0, 0.12),
                       duration: const Duration(milliseconds: 350),
-                      child: Text(
-                        strings.pin_description,
-                        textAlign: TextAlign.center,
-                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                      curve: Curves.easeOutCubic,
+                      child: AnimatedOpacity(
+                        opacity: _isDescriptionVisible ? 1 : 0,
+                        duration: const Duration(milliseconds: 350),
+                        child: Text(
+                          strings.pin_description,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                        ),
                       ),
                     ),
-                  ),
-                  CoconutLayout.spacing_600h,
-                  AnimatedOpacity(
-                    opacity: _arePinBoxesVisible ? 1 : 0,
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOut,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var index = 0; index < 4; index++) ...[
-                          PinBox(
-                            isSet: true,
-                            pinColor: context.coconutColors.iconSecondary,
-                            backgroundColor: context.coconutColors.iconBackgroundSubtle,
-                          ),
-                          if (index < 3) CoconutLayout.spacing_200w,
+                    CoconutLayout.spacing_600h,
+                    AnimatedOpacity(
+                      opacity: _arePinBoxesVisible ? 1 : 0,
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOut,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var index = 0; index < 4; index++) ...[
+                            PinBox(
+                              isSet: true,
+                              pinColor: context.coconutColors.iconSecondary,
+                              backgroundColor: context.coconutColors.iconBackgroundSubtle,
+                            ),
+                            if (index < 3) CoconutLayout.spacing_200w,
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -121,7 +124,7 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
               subWidget: CoconutUnderlinedButton(
                 onTap: _finish,
                 text: strings.skip,
-                defaultColor: context.coconutColors.mutedText,
+                defaultColor: context.coconutColors.secondaryTextStrong,
               ),
             ).slideUpAnimation(
               duration: const Duration(milliseconds: 350),

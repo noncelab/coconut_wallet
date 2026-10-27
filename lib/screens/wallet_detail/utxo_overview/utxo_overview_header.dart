@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +26,10 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget refreshButton;
 
   @override
-  double get minExtent => topPadding + 165;
+  double get minExtent => topPadding + 161;
 
   @override
-  double get maxExtent => topPadding + 273;
+  double get maxExtent => topPadding + 261;
 
   double _lerp(double begin, double end, double progress) => begin + (end - begin) * progress;
 
@@ -53,9 +54,9 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: 4,
+              left: 0,
               top: topPadding + 4,
-              child: BackButton(onPressed: onBackPressed, color: colors.primaryText),
+              child: FeatureAwareBackButton(onPressed: onBackPressed, color: colors.primaryText),
             ),
             Positioned(right: 4, top: topPadding + 4, child: refreshButton),
             Positioned(
@@ -86,7 +87,7 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
             Positioned(
               left: 16,
-              top: topPadding + 116,
+              top: topPadding + 108,
               child: Opacity(
                 opacity: (1 - progress * 1.8).clamp(0.0, 1.0),
                 child: Transform.translate(
@@ -105,6 +106,10 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
                 horizontalLabelPadding: _lerp(8, 16, eased),
                 firstLabel: t.utxo_overview_screen.overview,
                 secondLabel: t.utxo_overview_screen.list,
+                backgroundColor: colors.segmentedControlBackground,
+                selectedColor: colors.segmentedControlSelected,
+                selectedTextColor: colors.segmentedControlSelectedText,
+                unselectedTextColor: colors.segmentedControlUnselectedText,
               ),
             ),
             Positioned(left: 0, right: 0, bottom: 0, child: bottomBar),
@@ -131,6 +136,10 @@ class _MorphingSegmentedControl extends StatelessWidget {
     required this.horizontalLabelPadding,
     required this.firstLabel,
     required this.secondLabel,
+    required this.backgroundColor,
+    required this.selectedColor,
+    required this.selectedTextColor,
+    required this.unselectedTextColor,
   });
 
   final bool isFirstSelected;
@@ -138,15 +147,15 @@ class _MorphingSegmentedControl extends StatelessWidget {
   final double horizontalLabelPadding;
   final String firstLabel;
   final String secondLabel;
+  final Color backgroundColor;
+  final Color selectedColor;
+  final Color selectedTextColor;
+  final Color unselectedTextColor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     return Container(
-      decoration: BoxDecoration(
-        color: colors.segmentedControlBackground,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
+      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(CoconutStyles.radius_200)),
       child: Stack(
         children: [
           Positioned.fill(
@@ -161,7 +170,7 @@ class _MorphingSegmentedControl extends StatelessWidget {
                   padding: const EdgeInsets.all(2),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colors.segmentedControlSelected,
+                      color: selectedColor,
                       borderRadius: BorderRadius.circular(CoconutStyles.radius_150),
                     ),
                   ),
@@ -181,7 +190,6 @@ class _MorphingSegmentedControl extends StatelessWidget {
   }
 
   Widget _buildSegment(BuildContext context, {required String label, required int index, required bool isSelected}) {
-    final colors = context.coconutColors;
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.all(2),
@@ -189,8 +197,8 @@ class _MorphingSegmentedControl extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(CoconutStyles.radius_150),
-            splashColor: colors.segmentedControlSelected.withValues(alpha: 0.2),
-            highlightColor: colors.segmentedControlSelected.withValues(alpha: 0.4),
+            splashColor: selectedColor.withValues(alpha: 0.2),
+            highlightColor: selectedColor.withValues(alpha: 0.4),
             onTap: () => onPressed(index),
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: horizontalLabelPadding, vertical: 10),
@@ -198,7 +206,7 @@ class _MorphingSegmentedControl extends StatelessWidget {
                 label,
                 textAlign: TextAlign.center,
                 style: (isSelected ? CoconutTypography.body3_12_Bold : CoconutTypography.body3_12).setColor(
-                  isSelected ? colors.segmentedControlSelectedText : colors.segmentedControlUnselectedText,
+                  isSelected ? selectedTextColor : unselectedTextColor,
                 ),
               ),
             ),

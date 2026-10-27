@@ -563,6 +563,13 @@ class UtxoSplitTransactionBuilder {
       );
     }
 
+    // 입력 주소 알림이 먼저 와도 모든 분할 출력을 내 주소로 판정할 수 있어야 한다.
+    await addressRepository.ensureAddressesExist(
+      walletItemBase: walletListItemBase,
+      cursor: addresses.last.index,
+      count: 1,
+      isChange: false,
+    );
     _cachedReceiveAddresses.addAll(addresses);
     return _cachedReceiveAddresses.sublist(0, count);
   }

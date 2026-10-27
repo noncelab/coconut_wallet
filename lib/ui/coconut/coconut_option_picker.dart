@@ -72,7 +72,7 @@ class CoconutOptionPicker extends StatelessWidget {
     final resolvedIconColor = getColorByState(
       enabled ? (isExpanded ? colors.primaryText : collapsedIconBaseColor) : colors.secondaryText,
     );
-    final collapsedDividerColor = dividerColor ?? colors.inputPlaceholder;
+    final collapsedDividerColor = dividerColor ?? colors.inputBorderUnfocused;
     final resolvedDividerColor = getColorByState(isExpanded ? colors.primaryText : collapsedDividerColor);
     final resolvedTextStyle = textStyle ?? ds.CoconutTypography.heading4_18.setColor(resolvedTextColor);
     final resolvedGuideTextColor = getColorByState(guideTextColor ?? colors.secondaryText);

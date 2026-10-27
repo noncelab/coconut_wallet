@@ -86,7 +86,7 @@ class _KeyButtonState extends State<KeyButton> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: _isPressed ? context.coconutColors.buttonPrimaryPressOverlay : Colors.transparent,
+          color: _isPressed ? context.coconutColors.surfaceMuted : Colors.transparent,
         ),
         child: Center(
           child:

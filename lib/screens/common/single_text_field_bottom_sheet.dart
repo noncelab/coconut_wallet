@@ -359,7 +359,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
                         const SizedBox(height: 2),
                         Text(
                           widget.toggleDescription!,
-                          style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                         ),
                       ],
                     ],
