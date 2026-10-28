@@ -35,6 +35,7 @@ class AnalyticsCollectionSetting extends StatelessWidget {
                 title: t.settings_screen.analytics_collection,
                 subtitle: t.settings_screen.analytics_collection_description,
                 isVerticalSubtitle: true,
+                wrapsText: true,
                 rightElement: Semantics(
                   label: t.settings_screen.analytics_collection,
                   toggled: isCollectionEnabled,

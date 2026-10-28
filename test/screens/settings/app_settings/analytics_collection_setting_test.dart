@@ -8,8 +8,10 @@ import 'package:coconut_wallet/providers/view_model/settings/analytics_collectio
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/analytics_collection_setting.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,6 +47,15 @@ class _FlakySdk extends Fake implements FirebaseAnalytics {
 }
 
 void main() {
+  setUpAll(() async {
+    for (final family in ['Pretendard', 'SpaceGrotesk']) {
+      await (FontLoader(family)
+            ..addFont(rootBundle.load('assets/fonts/$family-Regular.ttf'))
+            ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
+          .load();
+    }
+  });
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await SharedPrefsRepository().init();
@@ -238,23 +249,48 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  // SingleButton의 기본 FittedBox는 긴 문구를 줄여 2배 글씨에서도 7px대로 그렸다. 이 행은 줄바꿈해 요청한 크기를 지킨다.
   for (final locale in AppLocale.values) {
-    testWidgets('renders ${locale.languageCode} on a narrow screen with large text', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      LocaleSettings.setLocaleSync(locale);
-      final service = AnalyticsService(null, false);
-      await service.initialize();
-      await mount(tester, service, textScale: 2);
-      expect(find.text(t.settings_screen.analytics_collection), findsOneWidget);
-      expect(find.text(t.settings_screen.analytics_collection_description), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      final semantics = tester.ensureSemantics();
-      expect(find.bySemanticsLabel(t.settings_screen.analytics_collection), findsWidgets);
-      semantics.dispose();
-      await tester.pumpWidget(const SizedBox());
-    });
+    for (final width in [320.0, 390.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('keeps ${locale.languageCode} copy at the requested size: ${width.toInt()}px x$scale', (
+          tester,
+        ) async {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          LocaleSettings.setLocaleSync(locale);
+          final service = AnalyticsService(null, false);
+          await service.initialize();
+          await mount(
+            tester,
+            service,
+            textScale: scale,
+            body: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: ButtonGroup(buttons: [AnalyticsCollectionSetting()]),
+            ),
+          );
+          expect(tester.takeException(), isNull);
+
+          final switchRect = tester.getRect(find.byType(CoconutSwitch));
+          expect(switchRect.right, lessThanOrEqualTo(width - 16));
+          for (final (text, fontSize) in [
+            (t.settings_screen.analytics_collection, 14.0),
+            (t.settings_screen.analytics_collection_description, 12.0),
+          ]) {
+            final painted = tester.getRect(find.text(text));
+            final paintedFont = fontSize * scale * painted.width / tester.getSize(find.text(text)).width;
+            expect(paintedFont, greaterThanOrEqualTo(fontSize * scale - .01), reason: text);
+            expect(painted.right, lessThanOrEqualTo(switchRect.left), reason: text);
+          }
+
+          final semantics = tester.ensureSemantics();
+          expect(find.bySemanticsLabel(t.settings_screen.analytics_collection), findsWidgets);
+          semantics.dispose();
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
   }
 }
