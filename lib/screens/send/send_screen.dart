@@ -2426,20 +2426,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
                                   return;
                                 }
-                                CommonBottomSheets.showDraggableBottomSheet(
+                                SelectWalletBottomSheet.show(
                                   context: context,
                                   screenName: AnalyticsScreenNames.sendSelectWalletSheet,
-                                  childBuilder:
-                                      (scrollController) => SelectWalletBottomSheet(
-                                        showOnlyMfpWallets: false,
-                                        scrollController: scrollController,
-                                        currentUnit: _viewModel.currentUnit,
-                                        walletId: _viewModel.selectedWalletId,
-                                        onWalletChanged: (id) {
-                                          Navigator.pop(context);
-                                          showAddressListBottomSheet(id);
-                                        },
-                                      ),
+                                  child: SelectWalletBottomSheet(
+                                    showOnlyMfpWallets: false,
+
+                                    currentUnit: _viewModel.currentUnit,
+                                    walletId: _viewModel.selectedWalletId,
+                                    onWalletChanged: (id) {
+                                      Navigator.pop(context);
+                                      showAddressListBottomSheet(id);
+                                    },
+                                  ),
                                 );
                               },
                               textStyle: CoconutTypography.body3_12,

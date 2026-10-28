@@ -2190,3 +2190,6 @@ wallet_card_detail_screen:
   wallet_card: "지갑 카드"
   show_balance_trend: "잔액 변화 보기"
   chart_date_format: "M월 d일"
+
+wallet_selection_carousel: "캐러셀 보기"
+wallet_selection_grid: "그리드 보기"

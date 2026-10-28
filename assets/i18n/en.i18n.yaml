@@ -2184,3 +2184,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet Card"
   show_balance_trend: "View balance trend"
   chart_date_format: "MMM d"
+
+wallet_selection_carousel: "Carousel view"
+wallet_selection_grid: "Grid view"

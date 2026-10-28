@@ -26,6 +26,8 @@ class SharedPrefKeys {
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
   static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
+  static const String kSelectWalletGridView = 'SELECT_WALLET_GRID_VIEW';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -128,6 +130,7 @@ class SharedPrefKeys {
     kFakeBalanceTotal,
     kFakeBalanceMap,
     kWalletOrder,
+    kSelectWalletGridView,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

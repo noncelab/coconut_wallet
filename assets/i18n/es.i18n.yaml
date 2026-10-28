@@ -2175,3 +2175,6 @@ wallet_card_detail_screen:
   wallet_card: "Tarjeta de cartera"
   show_balance_trend: "Ver evolución del saldo"
   chart_date_format: "d/M"
+
+wallet_selection_carousel: "Vista de carrusel"
+wallet_selection_grid: "Vista de cuadrícula"
