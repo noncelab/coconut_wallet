@@ -46,7 +46,15 @@ class SharedPrefsRepository {
   }
 
   Future<void> setHodlInsightsWalletIds(List<int>? walletIds) async {
-    await setString(SharedPrefKeys.kHodlInsightsWalletIds, jsonEncode(walletIds));
+    try {
+      if (!await _sharedPrefs.setString(SharedPrefKeys.kHodlInsightsWalletIds, jsonEncode(walletIds))) {
+        throw StateError('Failed to save insights wallet selection');
+      }
+    } catch (_) {
+      // setString updates the in-memory cache before the platform confirms persistence.
+      await _sharedPrefs.reload();
+      rethrow;
+    }
   }
 
   /// Common--------------------------------------------------------------------

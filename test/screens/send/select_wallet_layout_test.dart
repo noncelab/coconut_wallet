@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:flutter/rendering.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import '../../mock/transaction_mock.dart';
@@ -66,6 +68,20 @@ class _Wallets extends ChangeNotifier implements WalletProvider {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _Nodes extends ChangeNotifier implements NodeProvider {
+  @override
+  final currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
+  void emitSyncUpdate() => notifyListeners();
+  @override
+  void dispose() {
+    currentBlockNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _Preferences extends ChangeNotifier implements PreferenceProvider {
   // Missing IDs in an older saved order must not hide newly added wallets.
   @override
@@ -83,6 +99,7 @@ Future<void> _open(
   double scale = 1,
   bool sheet = false,
   BalanceMode balanceMode = BalanceMode.includingPending,
+  _Nodes? nodes,
 }) async {
   final wallets = _Wallets();
   final preferences = _Preferences();
@@ -107,6 +124,7 @@ Future<void> _open(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        if (nodes != null) ChangeNotifierProvider<NodeProvider>.value(value: nodes),
         ChangeNotifierProvider<WalletProvider>.value(value: wallets),
         ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
       ],
@@ -562,6 +580,61 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final mode in BalanceMode.values) {
+    testWidgets('node-only and block-only updates refresh picker data and release listeners: $mode', (tester) async {
+      final nodes = _Nodes();
+      addTearDown(nodes.dispose);
+      await _open(tester, nodes: nodes, balanceMode: mode);
+      final wallets = tester.element(find.byType(SelectWalletBottomSheet)).read<WalletProvider>() as _Wallets;
+      final last = DateTime.now().subtract(const Duration(days: 2));
+      wallets.balanceOffset = 100000000;
+      wallets.transactions = [TransactionMock.createMockTransactionRecord(timestamp: last)];
+      wallets.utxos = [
+        UtxoState(
+          transactionHash: 'a' * 64,
+          index: 0,
+          amount: 50000000,
+          derivationPath: "m/84'/1'/0'/0/0",
+          blockHeight: 1,
+          to: 'fixture',
+          timestamp: last,
+          status: UtxoStatus.unspent,
+        ),
+      ];
+      // Repositories changed without a WalletProvider notification.
+      nodes.emitSyncUpdate();
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<WalletCard>(_card(8)).balanceDisplay,
+        BitcoinUnit.btc.displayBitcoinAmount(
+          mode == BalanceMode.includingPending ? 100008100 : 50000000,
+          withUnit: true,
+        ),
+      );
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text(formatHomeRelativeTime(last, DateTime.now())), findsOneWidget);
+      wallets.balanceOffset = 200000000;
+      wallets.utxos.clear();
+      wallets.transactions.clear();
+      nodes.currentBlockNotifier.value = BlockTimestamp(100, DateTime.now());
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<WalletCard>(_card(8)).balanceDisplay,
+        BitcoinUnit.btc.displayBitcoinAmount(mode == BalanceMode.includingPending ? 200008100 : 0, withUnit: true),
+      );
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text(t.wallet_stack_list.no_transaction), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      // Verify merged listeners were detached after the sheet was disposed.
+      // ignore: invalid_use_of_protected_member
+      expect(nodes.hasListeners, isFalse);
+      // ignore: invalid_use_of_protected_member
+      expect(nodes.currentBlockNotifier.hasListeners, isFalse);
+      nodes.emitSyncUpdate();
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('empty candidate list cannot confirm', (tester) async {
     int? selected;

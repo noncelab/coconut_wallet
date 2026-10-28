@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    show CoconutLayout, CoconutTypography, CoconutToast, CoconutToastLevel;
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
@@ -58,7 +60,7 @@ class HodlInsightsScreen extends StatefulWidget {
             data,
             initialSection: section,
             walletIds: savedWalletIds,
-            onWalletSelectionPruned: (ids) => unawaited(SharedPrefsRepository().setHodlInsightsWalletIds(ids)),
+            onWalletSelectionPruned: (ids) => unawaited(_persistPrunedWalletIds(ids)),
             balancePeriod: balancePeriod,
             activityPeriod: activityPeriod,
           ),
@@ -83,6 +85,15 @@ class HodlInsightsScreen extends StatefulWidget {
     );
   }
 
+  static Future<void> _persistPrunedWalletIds(List<int>? ids) async {
+    try {
+      await SharedPrefsRepository().setHodlInsightsWalletIds(ids);
+    } catch (error) {
+      // 다음 진입 시 다시 정리한다. 자동 정리 실패가 화면의 비동기 오류가 되지 않도록 한다.
+      Logger.error('Failed to persist pruned insights wallet selection: $error');
+    }
+  }
+
   @override
   State<HodlInsightsScreen> createState() => _HodlInsightsScreenState();
 }
@@ -92,6 +103,8 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
     for (final section in HodlInsightsSection.values) section: GlobalKey(),
   };
   bool _movedToInitialSection = false;
+  bool _savingWalletSelection = false;
+  int _settingsRevision = 0;
   HodlInsightsSection? _highlighted;
   Animation<double>? _routeAnimation;
   bool _cardHeroActive = true;
@@ -165,6 +178,8 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   }
 
   Future<void> _openSettings(BuildContext context, HodlInsightsViewModel viewModel) async {
+    if (_savingWalletSelection) return;
+    final revision = ++_settingsRevision;
     final settings = await WidgetConfigureSheet.openSettings(
       context,
       title: t.hodl_insights.settings_title,
@@ -178,10 +193,23 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
       initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
     );
     if (settings == null || !mounted) return;
-    await SharedPrefsRepository().setHodlInsightsWalletIds(settings.walletIds);
-    if (!mounted) return;
-    viewModel.setWalletIds(settings.walletIds);
-    viewModel.data.refresh();
+    await _saveWalletSelection(viewModel, settings, revision);
+  }
+
+  Future<void> _saveWalletSelection(HodlInsightsViewModel viewModel, HomeWidgetSettings settings, int revision) async {
+    if (!mounted || revision != _settingsRevision || _savingWalletSelection) return;
+    _savingWalletSelection = true;
+    try {
+      await SharedPrefsRepository().setHodlInsightsWalletIds(settings.walletIds);
+      if (!mounted || revision != _settingsRevision) return;
+      viewModel.setWalletIds(settings.walletIds);
+      viewModel.data.refresh();
+    } catch (_) {
+      if (!mounted || revision != _settingsRevision) return;
+      CoconutToast.showToast(context: context, text: t.errors.storage_write_error, level: CoconutToastLevel.warning);
+    } finally {
+      _savingWalletSelection = false;
+    }
   }
 
   @override

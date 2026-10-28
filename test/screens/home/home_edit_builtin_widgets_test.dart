@@ -65,6 +65,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
 
@@ -1518,6 +1519,69 @@ void main() {
       expect(tester.takeException(), isNull);
       await _close(tester);
     });
+
+    for (final throwsOnWrite in [false, true]) {
+      testWidgets('failed insights save preserves selection and supports retry: $throwsOnWrite', (tester) async {
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          screen:
+              (_) => Builder(
+                builder:
+                    (context) => TextButton(
+                      onPressed: () => HodlInsightsScreen.open(context, walletIds: [1]),
+                      child: const Text('open save failure insights'),
+                    ),
+              ),
+        );
+        final prefs = SharedPrefsRepository();
+        await prefs.setHodlInsightsWalletIds([1]);
+        final originalStore = SharedPreferencesStorePlatform.instance;
+        final cache = await SharedPreferences.getInstance();
+        final store = _FailingInsightsStore({
+          for (final key in cache.getKeys()) 'flutter.$key': cache.get(key)!,
+        }, throwsOnWrite: throwsOnWrite);
+        SharedPreferencesStorePlatform.instance = store;
+        addTearDown(() => SharedPreferencesStorePlatform.instance = originalStore);
+        await tester.tap(find.text('open save failure insights'));
+        await tester.pumpAndSettle();
+        final model = tester.element(find.byType(HodlInsightsScreen)).read<HodlInsightsViewModel>();
+        await tester.tap(find.byKey(const Key('hodl-insights-settings')));
+        await tester.pumpAndSettle();
+        for (final id in [2, 1]) {
+          final row = find.byKey(ValueKey('widget-configure-wallet-$id'));
+          await tester.ensureVisible(row);
+          await tester.tap(row);
+          await tester.pumpAndSettle();
+        }
+        final submit = find.byKey(const Key('widget-configure-submit'));
+        await tester.ensureVisible(submit);
+        await tester.pumpAndSettle();
+        await tester.tap(submit);
+        await tester.pumpAndSettle();
+        expect(model.walletIds, [1]);
+        expect(prefs.getHodlInsightsWalletIds(), [1]);
+        expect(find.text(t.errors.storage_write_error), findsOneWidget);
+        store.fail = false;
+        await tester.pump(const Duration(seconds: 4));
+        await tester.tap(find.byKey(const Key('hodl-insights-settings')));
+        await tester.pumpAndSettle();
+        for (final id in [2, 1]) {
+          final row = find.byKey(ValueKey('widget-configure-wallet-$id'));
+          await tester.ensureVisible(row);
+          await tester.tap(row);
+          await tester.pumpAndSettle();
+        }
+        await tester.ensureVisible(submit);
+        await tester.pumpAndSettle();
+        await tester.tap(submit);
+        await tester.pumpAndSettle();
+        expect(model.walletIds, [2]);
+        expect(prefs.getHodlInsightsWalletIds(), [2]);
+        expect(tester.takeException(), isNull);
+        await _close(tester);
+      });
+    }
 
     testWidgets('insights wallet selection persists on reentry and overrides entry scope after saving', (tester) async {
       await _openWidgetsTab(
@@ -3456,4 +3520,20 @@ void main() {
       }
     });
   });
+}
+
+class _FailingInsightsStore extends InMemorySharedPreferencesStore {
+  _FailingInsightsStore(super.data, {required this.throwsOnWrite}) : super.withData();
+
+  final bool throwsOnWrite;
+  bool fail = true;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    if (fail && key.endsWith(SharedPrefKeys.kHodlInsightsWalletIds)) {
+      if (throwsOnWrite) throw StateError('storage unavailable');
+      return false;
+    }
+    return super.setValue(valueType, key, value);
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'dart:math' as math;
@@ -110,6 +111,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
   late final PageController _pageController;
   late final WalletStackListViewModel _facts;
+  late final Listenable _walletUpdates;
   bool _grid = false;
   double? _contentHeight;
 
@@ -225,7 +227,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _facts,
+    listenable: _walletUpdates,
     builder:
         (context, _) => LayoutBuilder(
           builder: (context, constraints) {
@@ -519,6 +521,8 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     _selectedWalletId = _grid ? -1 : _lastCarouselWalletId;
     _pageController = PageController(initialPage: index < 0 ? 0 : index, viewportFraction: _carouselViewportFraction);
     _facts = WalletStackListViewModel(WalletStackKind.all, walletProvider, preferenceProvider);
+    final nodeProvider = context.read<NodeProvider?>();
+    _walletUpdates = Listenable.merge([_facts, nodeProvider, nodeProvider?.currentBlockNotifier]);
   }
 
   Map<int, int> _initBalanceMap() {
