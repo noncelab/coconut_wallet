@@ -11,7 +11,7 @@ class _ScriptSyncTestVerifier {
     expect(beforeTxList.length, 0);
 
     final beforeBalance = ScriptSyncServiceMock.walletRepository.getWalletBalance(walletId);
-    expect(beforeBalance.total, 0);
+    expect(beforeBalance?.total, 0);
 
     final beforeUtxoList = ScriptSyncServiceMock.utxoRepository.getUtxoStateList(walletId);
     expect(beforeUtxoList.length, 0);
@@ -50,7 +50,7 @@ class _ScriptSyncTestVerifier {
 
   static void verifyBalanceUpdate(int walletId, int expectedAmount) {
     final balance = ScriptSyncServiceMock.walletRepository.getWalletBalance(walletId);
-    expect(balance.total, expectedAmount, reason: '지갑 잔액이 증가해야 한다.');
+    expect(balance?.total, expectedAmount, reason: '지갑 잔액이 증가해야 한다.');
   }
 
   static void verifyTransactionRecord(int walletId, String expectedTxHash) {
@@ -105,7 +105,7 @@ class _ScriptSyncTestVerifier {
 
     // 지갑 B 잔액 증가 확인
     final walletBBalance = ScriptSyncServiceMock.walletRepository.getWalletBalance(testData.walletB.id);
-    expect(walletBBalance.total, _TestConstants.transactionAmount, reason: '지갑 B 잔액이 초기 전송 금액만큼 증가해야 합니다.');
+    expect(walletBBalance?.total, _TestConstants.transactionAmount, reason: '지갑 B 잔액이 초기 전송 금액만큼 증가해야 합니다.');
   }
 
   static Future<void> verifyCpfpTransactionProcessed(_ScriptSyncTestData testData) async {

@@ -58,13 +58,7 @@ void main() {
     ); // 수수료를 처음 올리려고 시도한 RBF 트랜잭션
 
     setUp(() async {
-      if (realmManager == null) {
-        realmManager = await setupTestRealmManager();
-      } else {
-        realmManager!.dispose();
-        realmManager = await setupTestRealmManager();
-      }
-      // await Future.delayed(const Duration(milliseconds: 300));
+      realmManager = await setupTestRealmManager();
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
@@ -87,6 +81,11 @@ void main() {
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
       electrumService = MockElectrumService();
       rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
+    });
+
+    tearDown(() {
+      realmManager?.dispose();
+      realmManager = null;
     });
 
     group('hasExistingRbfHistory', () {

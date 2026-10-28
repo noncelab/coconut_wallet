@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'dart:ui';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -9,6 +9,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CoconutAppBar {
@@ -21,6 +22,7 @@ class CoconutAppBar {
     Color? backgroundColor,
     Color? foregroundColor,
     Color? leadingHighlightColor,
+    SystemUiOverlayStyle? systemOverlayStyle,
     bool isBottom = false,
     bool isLeadingVisible = true,
     bool showSubLabel = false,
@@ -45,7 +47,12 @@ class CoconutAppBar {
                 if (onTitlePressed == null)
                   Padding(
                     padding: titlePadding,
-                    child: Text(title, style: CoconutTypography.body1_16.setColor(resolvedForegroundColor)),
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: CoconutTypography.body1_16.setColor(resolvedForegroundColor),
+                    ),
                   )
                 else
                   CoconutUnderlinedButton(
@@ -64,7 +71,10 @@ class CoconutAppBar {
 
     final leading = _AppBarLeading(
       iconKey: faucetIconKey,
-      assetName: isBottom && !isBackButton ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+      assetName:
+          (isBottom && !isBackButton) || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
+              ? CommonActionIconPath.close
+              : CommonNavigationIconPath.arrowBack,
       iconColor: resolvedForegroundColor,
       highlightColor: leadingHighlightColor,
       onPressed: () {
@@ -78,7 +88,8 @@ class CoconutAppBar {
 
     return AppBar(
       key: entireWidgetKey,
-      systemOverlayStyle: _systemOverlayStyle(brightness),
+      systemOverlayStyle:
+          systemOverlayStyle ?? buildSystemBarStyle(backgroundColor: colors.background, brightness: brightness),
       toolbarHeight: height ?? (isBottom ? 60 : 56),
       title: titleWidget,
       scrolledUnderElevation: 0,
@@ -97,7 +108,7 @@ class CoconutAppBar {
           ...actionButtonList
         else
           Visibility(visible: false, maintainSize: true, maintainState: true, maintainAnimation: true, child: leading),
-        CoconutLayout.spacing_300w,
+        CoconutLayout.spacing_100w,
       ],
       flexibleSpace:
           !isBottom && (backgroundColor == null || hasBackDropFilter)
@@ -131,10 +142,15 @@ class CoconutAppBar {
     final resolvedForegroundColor = foregroundColor ?? colors.primaryText;
 
     return AppBar(
-      systemOverlayStyle: _systemOverlayStyle(brightness),
+      systemOverlayStyle: buildSystemBarStyle(backgroundColor: colors.background, brightness: brightness),
       title: Padding(
-        padding: padding ?? const EdgeInsets.all(20),
-        child: Text(title, style: CoconutTypography.heading4_18.setColor(resolvedForegroundColor)),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 20),
+        child: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: CoconutTypography.heading4_18.setColor(resolvedForegroundColor),
+        ),
       ),
       centerTitle: true,
       scrolledUnderElevation: 0,
@@ -143,7 +159,10 @@ class CoconutAppBar {
       leading:
           Navigator.canPop(context)
               ? _AppBarLeading(
-                assetName: isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+                assetName:
+                    isBottom || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
+                        ? CommonActionIconPath.close
+                        : CommonNavigationIconPath.arrowBack,
                 iconColor: resolvedForegroundColor,
                 onPressed: () {
                   if (onBackPressed != null) {
@@ -177,16 +196,6 @@ class CoconutAppBar {
               : const SizedBox.shrink(),
     );
   }
-
-  static SystemUiOverlayStyle _systemOverlayStyle(Brightness brightness) {
-    final iconBrightness = brightness == Brightness.light ? Brightness.dark : Brightness.light;
-
-    if (Platform.isIOS) {
-      return SystemUiOverlayStyle(statusBarIconBrightness: iconBrightness);
-    }
-
-    return SystemUiOverlayStyle(statusBarIconBrightness: iconBrightness);
-  }
 }
 
 class _AppBarLeading extends StatelessWidget {
@@ -208,20 +217,41 @@ class _AppBarLeading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: CoconutAppBarActionButton(
-          buttonKey: iconKey,
-          onPressed: onPressed,
-          highlightColor: highlightColor,
-          icon: SvgPicture.asset(
-            assetName,
-            width: 24,
-            height: 24,
-            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-          ),
+      child: CoconutAppBarActionButton(
+        buttonKey: iconKey,
+        tooltip:
+            assetName == CommonActionIconPath.close
+                ? MaterialLocalizations.of(context).closeButtonTooltip
+                : MaterialLocalizations.of(context).backButtonTooltip,
+        onPressed: onPressed,
+        highlightColor: highlightColor,
+        icon: SvgPicture.asset(
+          assetName,
+          width: 24,
+          height: 24,
+          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
         ),
       ),
+    );
+  }
+}
+
+/// 직접 그린 헤더용 뒤로가기 버튼. All Features·바로가기로 연 화면이면 닫기(X) 버튼으로 보여 준다.
+/// [CoconutAppBar]의 뒤로가기와 같은 모양이므로, 헤더 왼쪽 끝(x=0)에 두면 위치도 같아진다.
+class FeatureAwareBackButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final Color color;
+
+  const FeatureAwareBackButton({super.key, required this.onPressed, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFeatureEntry = FeatureEntryRoutes.instance.contains(ModalRoute.of(context));
+    return _AppBarLeading(
+      iconKey: isFeatureEntry ? const Key('feature-aware-close-button') : null,
+      assetName: isFeatureEntry ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+      iconColor: color,
+      onPressed: onPressed,
     );
   }
 }

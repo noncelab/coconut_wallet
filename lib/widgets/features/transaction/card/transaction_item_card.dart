@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' show FontFeature;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -18,6 +21,10 @@ class TransactionItemCard extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int id;
   final Function onPressed;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+  final bool compact;
+  final Color? backgroundColor;
 
   late final TransactionStatus? status;
 
@@ -27,11 +34,15 @@ class TransactionItemCard extends StatelessWidget {
     required this.currentUnit,
     required this.id,
     required this.onPressed,
+    this.padding = const EdgeInsets.symmetric(horizontal: Sizes.size20, vertical: Sizes.size16),
+    this.borderRadius = 12,
+    this.compact = false,
+    this.backgroundColor,
   }) {
     status = TransactionUtil.getStatus(tx);
   }
 
-  Widget _buildStatus(BuildContext context) {
+  Widget _buildStatus(BuildContext context, {bool boundedLabel = false}) {
     final iconPath = TransactionUtil.getStatusIconAsset(status);
     String statusText;
     Color? iconColor;
@@ -61,10 +72,16 @@ class TransactionItemCard extends StatelessWidget {
       default:
         return const SizedBox.shrink(); // fallback
     }
-    return _buildIconStatus(context, iconPath, iconColor, statusText);
+    return _buildIconStatus(context, iconPath, iconColor, statusText, boundedLabel: boundedLabel);
   }
 
-  Widget _buildIconStatus(BuildContext context, String assetPath, Color? iconColor, String statusString) {
+  Widget _buildIconStatus(
+    BuildContext context,
+    String assetPath,
+    Color? iconColor,
+    String statusString, {
+    bool boundedLabel = false,
+  }) {
     final icon =
         iconColor == null
             ? TransactionStatusGradientMask(
@@ -82,13 +99,81 @@ class TransactionItemCard extends StatelessWidget {
               colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             );
 
+    final label = Text(statusString, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        icon,
-        CoconutLayout.spacing_200w,
-        Text(statusString, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
-      ],
+      children: [icon, CoconutLayout.spacing_200w, if (boundedLabel) Expanded(child: label) else label],
+    );
+  }
+
+  String? _statusText() {
+    switch (status) {
+      case TransactionStatus.received:
+        return t.status_received;
+      case TransactionStatus.receiving:
+        return t.status_receiving;
+      case TransactionStatus.sent:
+      case TransactionStatus.self:
+        return t.status_sent;
+      case TransactionStatus.sending:
+      case TransactionStatus.selfsending:
+        return t.status_sending;
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildCompact(BuildContext context, List<String> transactionTimeStamp) {
+    final colors = context.coconutColors;
+    final amountString = currentUnit.displayBitcoinAmount(tx.amount);
+    final isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
+    final amountLabel = '${isReceived ? '+' : ''}$amountString';
+    final amountStyle = CoconutTypography.body1_16_Number.setColor(colors.primaryText);
+    final timeStyle = CoconutTypography.body3_12
+        .setColor(colors.tertiaryText)
+        .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+    final timeLabel = transactionTimeStamp[1];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final amountWidth = _singleLineWidth(context, amountLabel, amountStyle);
+        final timeWidth =
+            [for (var digit = 0; digit <= 9; digit++) _singleLineWidth(context, '$digit$digit:$digit$digit', timeStyle)]
+                .reduce(math.max)
+                .ceilToDouble() +
+            2;
+        final time = SizedBox(width: timeWidth, child: Text(timeLabel, style: timeStyle, maxLines: 1, softWrap: false));
+        final statusText = _statusText();
+        final statusWidth =
+            statusText == null ? 0.0 : 24 + 8 + _singleLineWidth(context, statusText, CoconutTypography.body2_14);
+        final oneRow = timeWidth + 12 + statusWidth + 12 + amountWidth <= constraints.maxWidth;
+        final amount = Text(amountLabel, textAlign: TextAlign.right, style: amountStyle);
+        if (oneRow) {
+          return Row(
+            children: [
+              Expanded(child: Row(children: [time, const SizedBox(width: 12), _buildStatus(context)])),
+              const SizedBox(width: 12),
+              amount,
+            ],
+          );
+        }
+        // 좁은 화면에서는 왼쪽 그룹 안에서만 줄을 바꾸고 수량은 오른쪽에 유지한다.
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [time, const SizedBox(height: 4), _buildStatus(context, boundedLabel: true)],
+              ),
+            ),
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: math.max(0, (constraints.maxWidth - 12) * 0.5)),
+              child: amount,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -148,27 +233,43 @@ class TransactionItemCard extends StatelessWidget {
       onPressed: () {
         onPressed();
       },
-      defaultColor: colors.surface,
+      defaultColor: backgroundColor ?? colors.surface,
       pressedOverlayColor: colors.surfacePressOverlay,
       pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
       borderWidth: 0,
+      borderRadius: borderRadius,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildTimestamp(context, transactionTimeStamp),
-            CoconutLayout.spacing_200h,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
-            ),
-            if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
-          ],
-        ),
+        padding: padding,
+        child:
+            compact
+                ? _buildCompact(context, transactionTimeStamp)
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTimestamp(context, transactionTimeStamp),
+                    CoconutLayout.spacing_200h,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
+                    ),
+                    if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
+                  ],
+                ),
       ),
     );
   }
+}
+
+double _singleLineWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
+    maxLines: 1,
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }

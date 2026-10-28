@@ -16,7 +16,7 @@
 
 ## 1. 목적
 
-코코넛 월렛은 와치 온리 비트코인 월렛이에요. 새로운 기능은 사용자의 경험을 더 좋게 만들 수 있어야 하지만, 지갑의 핵심 동작과 안전성을 흔들어서는 안 돼요.
+코코넛 월렛은 보기 전용 지갑에 중점을 둔 비트코인 월렛이에요. 새로운 기능은 사용자의 경험을 더 좋게 만들 수 있어야 하지만, 지갑의 핵심 동작과 안전성을 흔들어서는 안 돼요.
 
 이 문서는 아래 질문에 답하기 위해 작성했어요.
 
@@ -91,7 +91,7 @@ lib/
 - `lib/screens/wallet_detail/`
 - `lib/screens/ccos/`
 
-화면은 보통 `lib/providers/view_model/<도메인>/`의 view model과 짝을 이뤄요. 예를 들어 `lib/screens/home/wallet_home_screen.dart`는 `lib/providers/view_model/home/wallet_home_view_model.dart`와 함께 있어요.
+화면은 보통 `lib/providers/view_model/<도메인>/`의 view model과 짝을 이뤄요. 예를 들어 `lib/screens/home/home_screen.dart`는 `lib/providers/view_model/home/home_view_model.dart`와 함께 있어요.
 
 재사용 UI는 아래 세 곳에 나뉘어 있어요.
 

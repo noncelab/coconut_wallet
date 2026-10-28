@@ -10,79 +10,87 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
 
-class AnalyticsService extends ChangeNotifier {
+/// Firebase Analytics
+class AnalyticsService {
   final FirebaseAnalytics? _analytics;
   final SharedPrefsRepository _sharedPrefs;
   final Future<Map<String, Object>> Function()? _commonParametersLoader;
 
-  bool _isCollectionEnabled = true;
+  final ValueNotifier<bool> _isCollectionEnabled = ValueNotifier(true);
   bool _isReadyToCollect = false;
   bool _isUpdating = false;
+  Future<void> _initialization = Future<void>.value();
 
+  /// [isAnalyticsDisabled]이면 SDK를 호출하지 않고 수집 선택만 저장한다.
   AnalyticsService(
-    this._analytics, {
+    FirebaseAnalytics? analytics,
+    bool isAnalyticsDisabled, {
     SharedPrefsRepository? sharedPrefs,
     Future<Map<String, Object>> Function()? commonParametersLoader,
-  }) : _sharedPrefs = sharedPrefs ?? SharedPrefsRepository(),
+  }) : _analytics = isAnalyticsDisabled ? null : analytics,
+       _sharedPrefs = sharedPrefs ?? SharedPrefsRepository(),
        _commonParametersLoader = commonParametersLoader;
 
-  bool get isCollectionEnabled => _isCollectionEnabled;
-  bool get canCollect => _analytics != null && _isCollectionEnabled && _isReadyToCollect;
-  bool get isUpdating => _isUpdating;
+  ValueListenable<bool> get collectionEnabledListenable => _isCollectionEnabled;
+  bool get isCollectionEnabled => _isCollectionEnabled.value;
+  bool get canCollect => _analytics != null && _isCollectionEnabled.value && _isReadyToCollect;
 
-  Future<void> initialize() async {
-    if (_isUpdating) throw StateError('Analytics update already in progress');
+  /// 저장된 수집 선택을 SDK에 적용한다. 적용이 끝날 때까지 로깅은 기다렸다가 수집 여부를 다시 확인한다.
+  Future<void> initialize() {
+    if (_isUpdating) return Future.error(StateError('Analytics update already in progress'));
+    return _initialization = _applyStoredChoice();
+  }
+
+  Future<void> _applyStoredChoice() async {
     _isUpdating = true;
     _isReadyToCollect = false;
-    notifyListeners();
     try {
-      _isCollectionEnabled =
+      _isCollectionEnabled.value =
           !_sharedPrefs.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled) ||
           _sharedPrefs.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled);
-      if (_analytics == null) return;
-      await _analytics.setAnalyticsCollectionEnabled(false);
-      if (!_isCollectionEnabled) return;
+      final analytics = _analytics;
+      if (analytics == null) return;
+      await analytics.setAnalyticsCollectionEnabled(false);
+      if (!_isCollectionEnabled.value) return;
       await _initializeDefaultParameters();
-      await _analytics.setAnalyticsCollectionEnabled(true);
+      await analytics.setAnalyticsCollectionEnabled(true);
       _isReadyToCollect = true;
     } catch (e) {
       Logger.error('Analytics initialization error: $e');
       await _disableCollectionAfterFailure();
     } finally {
       _isUpdating = false;
-      notifyListeners();
     }
   }
 
   Future<void> setCollectionEnabled(bool enabled) async {
     if (_isUpdating) throw StateError('Analytics update already in progress');
-    if (_isCollectionEnabled == enabled && (_analytics == null || (enabled && _isReadyToCollect))) return;
+    final analytics = _analytics;
+    if (isCollectionEnabled == enabled && (analytics == null || (enabled && _isReadyToCollect))) return;
 
     _isUpdating = true;
     _isReadyToCollect = false;
-    notifyListeners();
     try {
       if (enabled) {
-        if (_analytics != null) {
+        if (analytics != null) {
           await _initializeDefaultParameters();
         }
         await _sharedPrefs.setAnalyticsCollectionEnabled(true);
-        _isCollectionEnabled = true;
-        if (_analytics != null) {
-          await _analytics.setAnalyticsCollectionEnabled(true);
+        _isCollectionEnabled.value = true;
+        if (analytics != null) {
+          await analytics.setAnalyticsCollectionEnabled(true);
           _isReadyToCollect = true;
         }
       } else {
         await _sharedPrefs.setAnalyticsCollectionEnabled(false);
-        _isCollectionEnabled = false;
-        await _analytics?.setAnalyticsCollectionEnabled(false);
+        _isCollectionEnabled.value = false;
+        await analytics?.setAnalyticsCollectionEnabled(false);
       }
     } catch (_) {
       await _disableCollectionAfterFailure();
       rethrow;
     } finally {
       _isUpdating = false;
-      notifyListeners();
     }
   }
 
@@ -95,10 +103,15 @@ class AnalyticsService extends ChangeNotifier {
     }
   }
 
+  /// 기본 이벤트 파라미터는 선택 사항이라 실패해도 수집 선택 적용과 이벤트 전송을 막지 않는다.
   Future<void> _initializeDefaultParameters() async {
-    final parameters =
-        _commonParametersLoader != null ? await _commonParametersLoader() : (await _getCommonParameters()).toMap();
-    await _analytics!.setDefaultEventParameters(parameters);
+    try {
+      final parameters =
+          _commonParametersLoader != null ? await _commonParametersLoader() : (await _getCommonParameters()).toMap();
+      await _analytics!.setDefaultEventParameters(parameters);
+    } catch (e) {
+      Logger.error('Analytics default parameters error: $e');
+    }
   }
 
   /// 공통 이벤트 파라미터 생성
@@ -112,23 +125,38 @@ class AnalyticsService extends ChangeNotifier {
     );
   }
 
-  Future<void> logScreenView({required String screenName}) async {
-    if (!canCollect) return;
+  String? _lastScreenName;
+  Map<String, Object> _lastScreenParameters = const {};
+
+  /// Whether the last screen_view sent, also by pages that log their own (SelfLoggedScreenView), had this name and
+  /// these parameters: the same name with another segment counts as a new screen_view.
+  bool isLastScreenView(String screenName, [Map<String, Object>? parameters]) =>
+      screenName == _lastScreenName && mapEquals(normalizeParameters(parameters), _lastScreenParameters);
+
+  /// [parameters] are normalized like [logEvent]'s.
+  Future<void> logScreenView({required String screenName, Map<String, Object>? parameters}) async {
+    final normalized = normalizeParameters(parameters);
+    _lastScreenName = screenName;
+    _lastScreenParameters = normalized;
 
     try {
-      await _analytics!.logScreenView(screenName: screenName);
+      await _initialization;
+      if (!canCollect) return;
+      await _analytics!.logScreenView(screenName: screenName, parameters: normalized.isEmpty ? null : normalized);
     } catch (e) {
       Logger.error('Analytics screen_view error: $e');
     }
   }
 
   /// 커스텀 이벤트 로깅
+  ///
+  /// [parameters]의 `bool` 값은 `'true'` / `'false'` 문자열로 바뀌어 전송된다.
   Future<void> logEvent({required String eventName, Map<String, Object>? parameters}) async {
-    if (!canCollect) return;
-
     try {
-      final combinedParameters = <String, Object>{...?parameters};
+      final combinedParameters = normalizeParameters(parameters);
 
+      await _initialization;
+      if (!canCollect) return;
       await _analytics!.logEvent(name: eventName, parameters: combinedParameters);
     } catch (e) {
       // 에러 발생 시 조용히 처리 (Analytics 실패가 앱 동작에 영향을 주지 않도록)
@@ -136,11 +164,20 @@ class AnalyticsService extends ChangeNotifier {
     }
   }
 
+  /// 파이어베이스 애널리틱스는 파라미터 값으로 문자열과 숫자만 받으므로 `bool` 값을 문자열로 바꾼다.
+  @visibleForTesting
+  static Map<String, Object> normalizeParameters(Map<String, Object>? parameters) {
+    return {
+      for (final entry in (parameters ?? const <String, Object>{}).entries)
+        entry.key: entry.value is bool ? ((entry.value as bool) ? 'true' : 'false') : entry.value,
+    };
+  }
+
   /// 사용자 속성 설정
   Future<void> setUserProperty({required String name, required String value}) async {
-    if (!canCollect) return;
-
     try {
+      await _initialization;
+      if (!canCollect) return;
       await _analytics!.setUserProperty(name: name, value: value);
     } catch (e) {
       Logger.error('Analytics user property error: $e');

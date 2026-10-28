@@ -21,6 +21,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   late final int _walletId;
   bool _isInitialized = false;
+  bool _hasLoadError = false;
   bool isSplitMode = false;
 
   final List<UtxoState> _confirmedUtxoList = [];
@@ -60,6 +61,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   void initialize(List<UtxoState> selectedUtxoList) {
     if (_isInitialized) return;
 
+    _hasLoadError = false;
     try {
       _confirmedUtxoList.clear();
       _filteredUtxoList.clear();
@@ -89,13 +91,22 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       Logger.error(e);
+      _hasLoadError = true;
+      notifyListeners();
     }
+  }
+
+  /// Re-reads coins that arrived while another screen was open, keeping the tag filter.
+  void reload(List<UtxoState> selectedUtxoList) {
+    _isInitialized = false;
+    initialize(selectedUtxoList);
   }
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get isInitialized => _isInitialized;
+  bool get hasLoadError => _hasLoadError;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
   bool get isNetworkOn => _isNetworkOn == true;
   List<UtxoState> get filteredUtxoList => _filteredUtxoList;
@@ -127,17 +138,6 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
-  }
-
-  bool hasTaggedUtxo() {
-    return _selectedUtxoList.any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
-  }
-
-  void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
-    _tagProvider.cacheUsedUtxoIds(
-      _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
-      isTagsMoveAllowed: isTagsMoveAllowed,
-    );
   }
 
   void selectAllUtxo() {

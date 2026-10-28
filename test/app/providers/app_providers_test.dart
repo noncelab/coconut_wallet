@@ -24,8 +24,9 @@ void main() {
       final providers = buildAppProviders(
         realmManager: realmManager,
         isMainFlow: false,
+        isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
-        analyticsService: AnalyticsService(null),
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -61,8 +62,9 @@ void main() {
       final providers = buildAppProviders(
         realmManager: realmManager,
         isMainFlow: true,
+        isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
-        analyticsService: AnalyticsService(null),
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -79,8 +81,9 @@ void main() {
       final providers = buildAppProviders(
         realmManager: realmManager,
         isMainFlow: false,
+        isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
-        analyticsService: AnalyticsService(null),
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -88,28 +91,56 @@ void main() {
     });
   });
 
-  testWidgets('bootstrap에서 전달한 AnalyticsService 인스턴스를 그대로 제공한다', (tester) async {
-    final analytics = AnalyticsService(null);
-    addTearDown(analytics.dispose);
-    AnalyticsService? provided;
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: buildAppProviders(
-          realmManager: realmManager,
-          isMainFlow: false,
-          networkType: NetworkType.testnet,
-          analyticsService: analytics,
+  group('buildAppProviders - AnalyticsService 설정', () {
+    test('isFirebaseAnalyticsUsed=false일 때 AnalyticsService provider가 등록된다', () {
+      final providers = buildAppProviders(
+        realmManager: realmManager,
+        isMainFlow: false,
+        isFirebaseAnalyticsUsed: false,
+        networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
+      );
+
+      final providerTypes = _extractProviderTypes(providers);
+      expect(providerTypes, contains('AnalyticsService'));
+    });
+
+    test('isFirebaseAnalyticsUsed=true일 때 AnalyticsService provider가 등록된다', () {
+      final providers = buildAppProviders(
+        realmManager: realmManager,
+        isMainFlow: false,
+        isFirebaseAnalyticsUsed: true,
+        networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
+      );
+
+      final providerTypes = _extractProviderTypes(providers);
+      expect(providerTypes, contains('AnalyticsService'));
+    });
+
+    testWidgets('bootstrap에서 전달한 AnalyticsService 인스턴스를 그대로 제공한다', (tester) async {
+      final analytics = AnalyticsService(null, true);
+      AnalyticsService? provided;
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: buildAppProviders(
+            realmManager: realmManager,
+            isMainFlow: false,
+            isFirebaseAnalyticsUsed: false,
+            networkType: NetworkType.testnet,
+            analyticsService: analytics,
+          ),
+          child: Builder(
+            builder: (context) {
+              provided = context.read<AnalyticsService>();
+              return const SizedBox.shrink();
+            },
+          ),
         ),
-        child: Builder(
-          builder: (context) {
-            provided = context.read<AnalyticsService>();
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
-    );
-    expect(provided, same(analytics));
-    await tester.pumpWidget(const SizedBox.shrink());
+      );
+      expect(provided, same(analytics));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }
 

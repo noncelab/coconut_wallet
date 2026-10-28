@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is required for QR code scanning.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo access is required to set a wallet card background.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Bluetooth access is required to communicate with hardware wallets.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
@@ -38,8 +40,25 @@
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>$(LAUNCH_SCREEN)</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -79,23 +98,6 @@
 		<true/>
 	</dict>
 	
-	<!-- 대체 앱 아이콘 설정 -->
-	<key>CFBundleIcons</key>
-	<dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconName</key>
-			<string>AppIcon</string>
-		</dict>
-		<key>CFBundleAlternateIcons</key>
-		<dict>
-			<key>birthday</key>
-			<dict>
-				<key>CFBundleIconName</key>
-				<string>AppIconBirthDay</string>
-			</dict>
-		</dict>
-	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

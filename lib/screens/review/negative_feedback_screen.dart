@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -9,15 +10,22 @@ import 'package:flutter/material.dart';
 class NegativeFeedbackScreen extends StatelessWidget {
   const NegativeFeedbackScreen({super.key});
 
-  void _runKakaoOpenChat(BuildContext context) {
-    launchURL(context, 'https://open.kakao.com/me/coconutwallet');
+  Future<void> _runKakaoOpenChat(BuildContext context) async {
+    launchURL(context, 'https://open.kakao.com/me/coconutwallet', destination: ExternalLinkDestination.feedbackChat);
     AppReviewService.setHasReviewed();
-    _stopGettingFeedback(context);
+    await _stopGettingFeedback(context);
   }
 
-  void _stopGettingFeedback(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.pop(context);
+  Future<void> _stopGettingFeedback(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final currentRoute = ModalRoute.of(context);
+
+    navigator.pop();
+    await currentRoute?.completed;
+
+    if (navigator.mounted && navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   @override
@@ -71,7 +79,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
-                    onTap: () => _stopGettingFeedback(context),
+                    onTap: () async => _stopGettingFeedback(context),
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

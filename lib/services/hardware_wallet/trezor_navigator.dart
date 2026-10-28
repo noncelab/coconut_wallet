@@ -13,6 +13,7 @@ class TrezorNavigator {
 
   static Future<T?> showConnectScreen<T>({
     required BuildContext context,
+    int? walletId,
     String? psbtBase64,
     String? walletName,
     String? walletFingerprint,
@@ -30,6 +31,7 @@ class TrezorNavigator {
           screenName: AnalyticsScreenNames.trezorBleConnectResumeSheet,
           heightRatio: 0.9,
           child: TrezorBleConnectScreen(
+            walletId: walletId,
             psbtBase64: psbtBase64,
             walletName: walletName,
             walletFingerprint: walletFingerprint,
@@ -42,6 +44,7 @@ class TrezorNavigator {
         screenName: AnalyticsScreenNames.trezorUsbConnectResumeSheet,
         heightRatio: 0.9,
         child: TrezorUsbConnectScreen(
+          walletId: walletId,
           psbtBase64: psbtBase64,
           walletName: walletName,
           walletFingerprint: walletFingerprint,
@@ -55,6 +58,7 @@ class TrezorNavigator {
         screenName: AnalyticsScreenNames.trezorBleConnectSheet,
         heightRatio: 0.9,
         child: TrezorBleConnectScreen(
+          walletId: walletId,
           psbtBase64: psbtBase64,
           walletName: walletName,
           walletFingerprint: walletFingerprint,
@@ -66,6 +70,7 @@ class TrezorNavigator {
       screenName: AnalyticsScreenNames.trezorTransportSelectSheet,
       heightRatio: 0.9,
       child: TrezorTransportSelectScreen(
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,

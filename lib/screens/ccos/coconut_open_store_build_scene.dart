@@ -69,7 +69,7 @@ class BuildSceneBody extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
-        final line1 = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.24);
+        final line1 = CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.24);
         final line1HighlightStyle = line1.copyWith(fontSize: (line1.fontSize ?? 21) * 1.4, fontWeight: FontWeight.w900);
         // Reserve the line's height up front for the bigger highlighted run, so '누구나' doesn't
         // shift the instant typing reaches the highlighted '비트코인' - the line box would
@@ -79,7 +79,7 @@ class BuildSceneBody extends StatelessWidget {
           height: line1.height,
           forceStrutHeight: true,
         );
-        final line2Style = CoconutTypography.heading4_18_Bold.setColor(Colors.white).copyWith(height: 1.16);
+        final line2Style = CoconutTypography.heading4_18_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.16);
         final line2HighlightStyle = line2Style.copyWith(
           fontSize: (line2Style.fontSize ?? 18) * 1.4,
           fontWeight: FontWeight.w900,
@@ -237,7 +237,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
   late final AnimationController _glowController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..repeat(reverse: true);
+  );
 
   // Drives a slow, continuously rotating angular (sweep) gradient between white and the
   // screen background color, so different parts of coconut2 mysteriously fade in and out
@@ -245,7 +245,19 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
   late final AnimationController _sweepController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 7000),
-  )..repeat();
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _glowController.reset();
+      _sweepController.reset();
+    } else {
+      if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
+      if (!_sweepController.isAnimating) _sweepController.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -363,7 +375,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(4600.22), _frac(5350.62), curve: Curves.easeOutCubic),
               fontSize: 19,
-              color: const Color(0xFFE3F0E6),
               pulsePhase: 0.44,
               startDirection: _OrbitStartDirection.left,
               bendSign: 1,
@@ -375,7 +386,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(4779.78), _frac(5680.26), curve: Curves.easeOutCubic),
               fontSize: 14,
-              color: const Color.fromARGB(217, 251, 238, 223),
               pulsePhase: 0.10,
               startDirection: _OrbitStartDirection.topLeft,
               bendSign: -1,
@@ -387,7 +397,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(4959.34), _frac(5760.66), curve: Curves.easeOutCubic),
               fontSize: 12,
-              color: const Color(0xFFD4E7FF),
               pulsePhase: 0.56,
               startDirection: _OrbitStartDirection.right,
               bendSign: -1,
@@ -399,7 +408,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(5180.44), _frac(6030.0), curve: Curves.easeOutCubic),
               fontSize: 16,
-              color: const Color(0xFFDCEFEA),
               pulsePhase: 0.28,
               startDirection: _OrbitStartDirection.topRight,
               bendSign: 1,
@@ -411,7 +419,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(5400.2), _frac(6350.26), curve: Curves.easeOutCubic),
               fontSize: 17,
-              color: const Color(0xFFD9DFF5),
               pulsePhase: 0.68,
               startDirection: _OrbitStartDirection.bottomLeft,
               bendSign: 1,
@@ -423,7 +430,6 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               pulseAnimation: _glowController,
               interval: Interval(_frac(5629.34), _frac(6630.32), curve: Curves.easeOutCubic),
               fontSize: 17,
-              color: const Color(0xFFDCE4F4),
               pulsePhase: 0.88,
               startDirection: _OrbitStartDirection.bottomRight,
               bendSign: -1,
@@ -460,7 +466,6 @@ class _BuildOrbitLabel extends StatelessWidget {
     required this.pulseAnimation,
     required this.interval,
     required this.fontSize,
-    required this.color,
     required this.pulsePhase,
     required this.startDirection,
     required this.bendSign,
@@ -472,7 +477,6 @@ class _BuildOrbitLabel extends StatelessWidget {
   final Animation<double> pulseAnimation;
   final Interval interval;
   final double fontSize;
-  final Color color;
   final double pulsePhase;
   final _OrbitStartDirection startDirection;
   final double bendSign;
@@ -532,7 +536,7 @@ class _BuildOrbitLabel extends StatelessWidget {
                 child: Text(
                   label,
                   style: CoconutTypography.heading4_18_Bold
-                      .setColor(color)
+                      .setColor(const Color(0xFF10161C))
                       .copyWith(fontSize: fontSize, letterSpacing: -0.2),
                 ),
               ),

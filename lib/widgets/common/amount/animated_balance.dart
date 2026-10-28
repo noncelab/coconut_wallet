@@ -22,58 +22,37 @@ class AnimatedBalance extends StatefulWidget {
   State<AnimatedBalance> createState() => _AnimatedBalanceState();
 }
 
-class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProviderStateMixin {
-  late AnimationController _balanceAnimController;
-  late Animation<double> _balanceAnimation;
-  double _displayValue = 0.0;
+class _AnimatedBalanceState extends State<AnimatedBalance> {
+  late int _visibleTarget = widget.prevValue;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      widget.currentUnit.displayBitcoinAmount(_displayValue.toInt()),
-      style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold,
+    final route = ModalRoute.of(context);
+    final returnAnimation = route?.secondaryAnimation;
+    if (returnAnimation == null) return _buildAmount(context, visible: true);
+    return AnimatedBuilder(
+      animation: returnAnimation,
+      builder: (context, child) => _buildAmount(context, visible: route!.isCurrent && returnAnimation.isDismissed),
     );
   }
 
-  @override
-  void didUpdateWidget(covariant AnimatedBalance oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
-      _initializeAnimation();
-    }
-  }
-
-  @override
-  void dispose() {
-    _balanceAnimController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _balanceAnimController = AnimationController(duration: Duration(milliseconds: widget.duration), vsync: this);
-
-    _initializeAnimation();
-  }
-
-  void _initializeAnimation() {
-    double startBalance = widget.prevValue.toDouble();
-    double endBalance = widget.value.toDouble();
-
-    _balanceAnimation = Tween<double>(
-      begin: startBalance,
-      end: endBalance,
-    ).animate(CurvedAnimation(parent: _balanceAnimController, curve: Curves.easeOutCubic))..addListener(() {
-      setState(() {
-        _displayValue = _balanceAnimation.value;
-      });
-    });
-
-    if (startBalance != endBalance) {
-      _balanceAnimController.forward(from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
-    } else {
-      _displayValue = endBalance;
-    }
+  Widget _buildAmount(BuildContext context, {required bool visible}) {
+    // 서명 화면 뒤에서 새 잔액 애니메이션이 끝나지 않도록 복귀할 때 목표값을 갱신한다.
+    if (visible && TickerMode.of(context)) _visibleTarget = widget.value;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: widget.prevValue.toDouble(), end: _visibleTarget.toDouble()),
+      duration: reduceMotion ? Duration.zero : Duration(milliseconds: widget.duration),
+      curve: Curves.easeOutCubic,
+      builder:
+          (context, amount, child) => Text(
+            // 전환 중에는 소수 자릿수를 고정해 숫자가 잘리거나 폭이 매 프레임 바뀌지 않게 한다.
+            widget.currentUnit.displayBitcoinAmount(
+              amount.toInt(),
+              forceEightDecimals: amount.toInt() != _visibleTarget,
+            ),
+            style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold,
+          ),
+    );
   }
 }

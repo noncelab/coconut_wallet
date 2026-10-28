@@ -143,6 +143,8 @@ class CoconutToast {
     Color? textColor,
     String? iconPath,
     CoconutToastLevel level = CoconutToastLevel.info,
+    String? actionText,
+    VoidCallback? onAction,
   }) {
     if (removePrevToast && _currentToastOverlay != null) {
       try {
@@ -181,6 +183,8 @@ class CoconutToast {
                   textStyle: textStyle,
                   textPadding: textPadding,
                   level: level,
+                  actionText: actionText,
+                  onAction: onAction,
                   onDismiss: () {
                     overlayEntry.remove();
                     _currentToastOverlay = null;
@@ -245,10 +249,14 @@ class _CoconutToastWidget extends StatefulWidget {
     this.borderColor,
     this.textColor,
     this.iconPath,
+    this.actionText,
+    this.onAction,
   });
 
   final BuildContext context;
   final String text;
+  final String? actionText;
+  final VoidCallback? onAction;
   final bool isVisibleIcon;
   final int duration;
   final VoidCallback onDismiss;
@@ -367,6 +375,7 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                     else
                       SizedBox(height: widget.iconSize),
                     Flexible(
+                      fit: widget.actionText == null ? FlexFit.loose : FlexFit.tight,
                       child: Text(
                         widget.text,
                         style: widget.textStyle.copyWith(
@@ -376,6 +385,27 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                         ),
                       ),
                     ),
+                    if (widget.actionText != null)
+                      GestureDetector(
+                        key: const Key('coconut-toast-action'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          widget.onAction?.call();
+                          _startFadeOut();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Text(
+                            widget.actionText!,
+                            style: widget.textStyle.copyWith(
+                              decoration: TextDecoration.none,
+                              fontWeight: FontWeight.w700,
+                              color: widget.textColor ?? colors.primaryText,
+                              leadingDistribution: TextLeadingDistribution.even,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -417,6 +447,8 @@ class CoconutToolTip extends StatefulWidget {
     this.onTapRemove,
     this.padding,
     this.isBubbleClipperSideLeft = true,
+    this.isBubbleClipperCentered = false,
+    this.bubbleArrowPosition,
     this.isPlacementTooltipVisible = false,
     this.animateOnBuild = false,
     this.width,
@@ -444,6 +476,9 @@ class CoconutToolTip extends StatefulWidget {
   final Size iconSize;
   final bool? isAvailableTapToClose;
   final bool isBubbleClipperSideLeft;
+  final bool isBubbleClipperCentered;
+
+  final double? bubbleArrowPosition;
   final bool isPlacementTooltipVisible;
   final bool animateOnBuild;
   final TextStyle titleStyle;
@@ -561,7 +596,12 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
             child: GestureDetector(
               onTap: widget.onTapRemove,
               child: ClipPath(
-                clipper: widget.isBubbleClipperSideLeft ? LeftTriangleBubbleClipper() : RightTriangleBubbleClipper(),
+                clipper:
+                    widget.isBubbleClipperCentered
+                        ? CenterTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition)
+                        : widget.isBubbleClipperSideLeft
+                        ? LeftTriangleBubbleClipper()
+                        : RightTriangleBubbleClipper(arrowPosition: widget.bubbleArrowPosition),
                 child: Container(
                   padding: _padding,
                   color: _backgroundColor,
@@ -646,8 +686,10 @@ class CoconutPopup extends StatefulWidget {
     this.leftButtonText,
     this.rightButtonText,
     this.centerTitle = true,
+    this.wrapTitleByWords = false,
     this.centerDescription = true,
-    this.useFixedFontSize = true,
+    this.wrapDescriptionByWords = false,
+    this.useFixedFontSize = false,
     this.onTapLeft,
     this.backgroundColor,
     this.titleColor,
@@ -656,6 +698,11 @@ class CoconutPopup extends StatefulWidget {
     this.rightButtonColor,
     this.titleTextStyle,
     this.descriptionTextStyle,
+    this.descriptionSpan,
+    this.checkboxText,
+    this.checkboxTextStyle,
+    this.isCheckboxSelected = false,
+    this.onCheckboxChanged,
     this.leftButtonTextStyle,
     this.rightButtonTextStyle,
     this.titlePadding,
@@ -670,7 +717,9 @@ class CoconutPopup extends StatefulWidget {
   final String? leftButtonText;
   final String? rightButtonText;
   final bool centerTitle;
+  final bool wrapTitleByWords;
   final bool centerDescription;
+  final bool wrapDescriptionByWords;
   final bool useFixedFontSize;
   final Color? backgroundColor;
   final Color? titleColor;
@@ -679,6 +728,11 @@ class CoconutPopup extends StatefulWidget {
   final Color? rightButtonColor;
   final TextStyle? titleTextStyle;
   final TextStyle? descriptionTextStyle;
+  final TextStyle? checkboxTextStyle;
+  final InlineSpan? descriptionSpan;
+  final String? checkboxText;
+  final bool isCheckboxSelected;
+  final ValueChanged<bool>? onCheckboxChanged;
   final TextStyle? leftButtonTextStyle;
   final TextStyle? rightButtonTextStyle;
   final EdgeInsets? titlePadding;
@@ -691,12 +745,23 @@ class CoconutPopup extends StatefulWidget {
 }
 
 class _CoconutPopupState extends State<CoconutPopup> {
+  bool _isCheckboxTextPressing = false;
   bool _isLeftButtonPressing = false;
   bool _isRightButtonPressing = false;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final titleStyle =
+        widget.titleTextStyle?.setColor(widget.titleColor ?? colors.primaryText) ??
+        CoconutTypography.heading4_18_Bold.setColor(widget.titleColor ?? colors.primaryText);
+    final descriptionStyle =
+        widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
+        CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
+    final checkboxTextStyle = widget.checkboxTextStyle ?? CoconutTypography.body3_12;
+    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryTextStrong;
+    final checkboxTextPressingColor =
+        widget.checkboxTextStyle?.color?.withValues(alpha: checkboxTextColor.a * 0.5) ?? colors.mutedText;
 
     final content = Container(
       decoration: BoxDecoration(
@@ -709,26 +774,92 @@ class _CoconutPopupState extends State<CoconutPopup> {
           children: [
             Container(
               padding: widget.titlePadding ?? const EdgeInsets.only(top: 24, bottom: 12),
-              child: Text(
-                widget.title,
-                style:
-                    widget.titleTextStyle?.setColor(widget.titleColor ?? colors.primaryText) ??
-                    CoconutTypography.heading4_18_Bold.setColor(widget.titleColor ?? colors.primaryText),
-                textAlign: widget.centerTitle ? TextAlign.center : null,
-              ),
+              child:
+                  widget.wrapTitleByWords
+                      ? Semantics(
+                        label: widget.title,
+                        container: true,
+                        child: ExcludeSemantics(
+                          child: Wrap(
+                            alignment: widget.centerTitle ? WrapAlignment.center : WrapAlignment.start,
+                            spacing: (titleStyle.fontSize ?? 18) * 0.25,
+                            children: [
+                              for (final word in widget.title.split(RegExp(r'\s+'))) Text(word, style: titleStyle),
+                            ],
+                          ),
+                        ),
+                      )
+                      : Text(widget.title, style: titleStyle, textAlign: widget.centerTitle ? TextAlign.center : null),
             ),
             Container(
               alignment: Alignment.topCenter,
               padding: widget.descriptionPadding ?? const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12),
               constraints: const BoxConstraints(minHeight: 66),
-              child: Text(
-                widget.description,
-                textAlign: widget.centerDescription ? TextAlign.center : null,
-                style:
-                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
-                    CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText),
-              ),
+              child:
+                  widget.descriptionSpan != null
+                      ? RichText(
+                        text: TextSpan(style: descriptionStyle, children: [widget.descriptionSpan!]),
+                        textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
+                        textScaler:
+                            widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context),
+                      )
+                      : widget.wrapDescriptionByWords
+                      ? Semantics(
+                        label: widget.description,
+                        container: true,
+                        child: ExcludeSemantics(
+                          child: Wrap(
+                            alignment: widget.centerDescription ? WrapAlignment.center : WrapAlignment.start,
+                            spacing: (descriptionStyle.fontSize ?? 16) * 0.25,
+                            children: [
+                              for (final word in widget.description.split(RegExp(r'\s+')))
+                                Text(word, style: descriptionStyle),
+                            ],
+                          ),
+                        ),
+                      )
+                      : Text(
+                        widget.description,
+                        textAlign: widget.centerDescription ? TextAlign.center : null,
+                        style: descriptionStyle,
+                      ),
             ),
+            if (widget.checkboxText != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CoconutCheckbox(
+                      isSelected: widget.isCheckboxSelected,
+                      color: colors.iconPrimary,
+                      unSelectedColor: colors.iconPrimary,
+                      inactiveColor: colors.iconDisabled,
+                      onChanged: (value) => widget.onCheckboxChanged?.call(value),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() => _isCheckboxTextPressing = false);
+                          widget.onCheckboxChanged?.call(!widget.isCheckboxSelected);
+                        },
+                        onTapCancel: () => setState(() => _isCheckboxTextPressing = false),
+                        onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
+                        child: Text(
+                          widget.checkboxText!,
+                          style: checkboxTextStyle.setColor(
+                            _isCheckboxTextPressing ? checkboxTextPressingColor : checkboxTextColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 if (widget.onTapLeft != null)
@@ -797,9 +928,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
             widget.useFixedFontSize
                 ? MediaQuery(
                   data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
-                  child: content,
+                  child: SingleChildScrollView(child: content),
                 )
-                : content,
+                : SingleChildScrollView(child: content),
       ),
     );
   }

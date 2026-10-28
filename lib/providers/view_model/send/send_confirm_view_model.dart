@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/services/transaction/unsigned_psbt_service.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
@@ -7,23 +8,31 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
+  final HotWalletSigningService _hotWalletSigningService;
   late WalletItemBase _walletListItemBase;
   Psbt? _unsignedPsbt;
+  String? _serializedUnsignedPsbt;
+  int? _preparedFee;
+  bool _disposed = false;
   int? _totalUsedAmount;
   late final double _totalSendAmount;
 
-  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
+  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider, {HotWalletSigningService? hotWalletSigningService})
+    : _hotWalletSigningService = hotWalletSigningService ?? HotWalletSigningService() {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _setTotalSendAmount();
   }
 
-  int? get estimatedFee => _unsignedPsbt?.fee;
+  int? get estimatedFee => _preparedFee;
+  bool get isTransactionReady => _unsignedPsbt != null;
+  int get walletId => _walletListItemBase.id;
   String get walletName => _walletListItemBase.name;
   String? get txWaitingForSign => _sendInfoProvider.txWaitingForSign;
   int? get totalUsedAmount => _totalUsedAmount;
@@ -39,10 +48,14 @@ class SendConfirmViewModel extends ChangeNotifier {
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
   WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
-
+  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.hotWalletMetadata != null;
+  bool get shouldEnterPassphraseWhenSigning =>
+      _walletListItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false;
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.masterFingerprint;
+    }
     return '';
   }
 
@@ -50,7 +63,9 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   String? get walletExtendedPublicKey {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.extendedPublicKey.serialize();
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.extendedPublicKey.serialize();
+    }
     return null;
   }
 
@@ -81,28 +96,63 @@ class SendConfirmViewModel extends ChangeNotifier {
   }
 
   Future<void> setEstimatedFeeAndTotalUsedAmount() async {
-    _unsignedPsbt = await _generateUnsignedPsbt();
-    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_totalSendAmount) + _unsignedPsbt!.fee;
+    final result = await prepareUnsignedPsbt(
+      transaction: _sendInfoProvider.transaction!,
+      wallet: _walletListItemBase.walletBase,
+      passport: walletImportSource == WalletImportSource.passport,
+    );
+    if (_disposed) return;
+    _unsignedPsbt = result.psbt;
+    _serializedUnsignedPsbt = result.serialized;
+    _preparedFee = result.fee;
+    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_totalSendAmount) + result.fee;
     notifyListeners();
   }
 
-  /// coconut_lib이 PSBT 글로벌 맵에 붙이는 coconut 전용 proprietary 필드(BIP-174 0xfc)의 키
-  static const String _coconutProprietaryGlobalKey = 'fc07636f636f6e757401';
-
-  Future<Psbt> _generateUnsignedPsbt() async {
-    assert(_sendInfoProvider.transaction != null);
-    final psbt = Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
-    // Passport Core의 PSBT 파서가 이 proprietary 필드를 unknown 필드로 간주해
-    // PSBT 전체를 거부하는 문제(PSBT Invalid: unknown error) 회피.
-    // Prime은 필드 유무와 무관하게 서명 가능하므로 Passport는 이 필드 없는 포맷으로 통일
-    if (walletImportSource == WalletImportSource.passport) {
-      (psbt.psbtMap['global'] as Map).remove(_coconutProprietaryGlobalKey);
-    }
-    return psbt;
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   void setTxWaitingForSign() {
     assert(_unsignedPsbt != null);
-    _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
+    _sendInfoProvider.setTxWaitingForSign(_serializedUnsignedPsbt!);
+  }
+
+  Future<void> signHotWallet({Uint8List? passphrase}) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final watchOnlyWallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
+      throw StateError('Local signer is not available');
+    }
+
+    final unsignedPsbt = _serializedUnsignedPsbt!;
+    _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
+    final signedPsbt = await _hotWalletSigningService.sign((
+      storageKey: metadata.secureStorageKey,
+      passphrase: passphrase,
+      addressTypeName: watchOnlyWallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
+      unsignedPsbt: unsignedPsbt,
+    ));
+    _sendInfoProvider.setSignedResult(signedPsbt);
+  }
+
+  Future<bool> validateHotWalletPassphrase(Uint8List passphrase) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final wallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
+      return false;
+    }
+
+    return _hotWalletSigningService.validatePassphrase(
+      storageKey: metadata.secureStorageKey,
+      passphrase: passphrase,
+      addressTypeName: wallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
+    );
   }
 }

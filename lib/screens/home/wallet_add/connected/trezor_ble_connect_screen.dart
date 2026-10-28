@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'dart:io';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -12,7 +14,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
@@ -24,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TrezorBleConnectScreen extends StatefulWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
@@ -31,6 +33,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 
   const TrezorBleConnectScreen({
     super.key,
+    this.walletId,
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
@@ -44,6 +47,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   late TrezorBleConnectViewModel _viewModel;
   bool _isAddingWallet = false;
+  bool _isClosing = false;
   bool _isVerifyingPairingCode = false;
   TrezorBleConnectStep? _lastStep;
   final ScrollController _scrollController = ScrollController();
@@ -184,9 +188,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     _showFullScreenLoading();
 
     final stopwatch = Stopwatch()..start();
-    ResultOfSyncFromVault result;
+    ResultOfSyncFromVault initialResult;
     try {
-      result = await vm.addToWalletList();
+      initialResult = await vm.addToWalletList();
     } catch (e) {
       if (!mounted) return;
       _hideFullScreenLoading();
@@ -210,14 +214,18 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
 
     if (!mounted) return;
 
+    _loadingOverlayEntry?.remove();
+    _loadingOverlayEntry = null;
+    final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _isAddingWallet = false);
+      return;
+    }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();
-      Navigator.pushReplacementNamed(
-        context,
-        AppRouteNames.walletDetail,
-        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
-      );
+      WalletAddActions.finishWithWalletDetail(context, WalletDetailRouteArgs(id: result.walletId!));
       return;
     }
 
@@ -228,6 +236,17 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isClosing || !mounted) return;
+    _isClosing = true;
+    final route = ModalRoute.of(context);
+    try {
+      await _close();
+    } finally {
+      if (mounted && route?.isCurrent == true) _isClosing = false;
+    }
+  }
+
+  Future<void> _close() async {
     if (_viewModel.step == TrezorBleConnectStep.pairing) {
       _viewModel.cancelPairing();
       Navigator.pop(context);
@@ -550,6 +569,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
           context,
           AppRouteNames.trezorSign,
           arguments: TrezorSignRouteArgs(
+            walletId: widget.walletId!,
             psbtBase64: widget.psbtBase64!,
             walletName: widget.walletName ?? '',
             walletFingerprint: widget.walletFingerprint ?? '',

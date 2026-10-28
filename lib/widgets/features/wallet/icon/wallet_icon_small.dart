@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
@@ -12,6 +13,13 @@ class WalletIconSmall extends StatelessWidget {
   final int colorIndex;
   final int iconIndex;
   final List<Color>? gradientColors;
+  final bool isHotWallet;
+  final String? badgeSvgAssetPath;
+  final Color? badgeColor;
+  final Color? badgeBorderColor;
+  final double badgeSize;
+  final double badgeRight;
+  final double badgeBottom;
 
   const WalletIconSmall({
     super.key,
@@ -19,14 +27,22 @@ class WalletIconSmall extends StatelessWidget {
     this.colorIndex = 0,
     this.iconIndex = 0,
     this.gradientColors,
+    this.isHotWallet = false,
+    this.badgeSvgAssetPath,
+    this.badgeColor,
+    this.badgeBorderColor,
+    this.badgeSize = 18,
+    this.badgeRight = -2,
+    this.badgeBottom = -2,
   });
   @override
   Widget build(BuildContext context) {
     var isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
+    final resolvedBadgeSvgAssetPath = badgeSvgAssetPath ?? (isHotWallet ? FeatureWalletIconPath.hotWalletFire : null);
 
-    return Container(
-      width: 30,
-      height: 30,
+    final icon = Container(
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         gradient:
@@ -78,6 +94,33 @@ class WalletIconSmall extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        icon,
+        if (resolvedBadgeSvgAssetPath != null)
+          Positioned(right: badgeRight, bottom: badgeBottom, child: _buildBadge(context, resolvedBadgeSvgAssetPath)),
+      ],
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, String badgeAssetPath) {
+    return Container(
+      width: badgeSize,
+      height: badgeSize,
+      padding: EdgeInsets.all(badgeSize * 1.5 / 12),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: context.coconutColors.iconBackground,
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 2),
+      ),
+      child: SvgPicture.asset(
+        badgeAssetPath,
+        fit: BoxFit.contain,
+        colorFilter: badgeColor == null ? null : ColorFilter.mode(badgeColor!, BlendMode.srcIn),
       ),
     );
   }

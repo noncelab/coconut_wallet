@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -27,6 +26,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:ur/ur.dart';
 
 class SignedPsbtScannerScreen extends StatefulWidget {
   const SignedPsbtScannerScreen({super.key});
@@ -58,7 +59,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           context: context,
           backgroundColor: context.coconutColors.background.withValues(alpha: 0.95),
           actionButtonList: [
-            IconButton(
+            CoconutAppBarActionButton(
               icon: SvgPicture.asset(
                 CommonActionIconPath.arrowReload,
                 width: 20,
@@ -106,7 +107,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     );
   }
 
-  Future<void> _onCompletedScanning(dynamic signedPsbt) async {
+  Future<void> _onCompletedScanning(Object signedPsbt) async {
     final scanDataType = _qrScanDataHandler.scanDataType;
     if (!_qrScanDataHandler.isCompleted() || scanDataType == null) return;
 
@@ -120,18 +121,18 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
   }
 
-  Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
+  Future<void> _onCompletedScanningForBcUr(Object signedPsbt) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
-      await _handleProcessingResult(_viewModel.processUrSigningResult(signedPsbt));
+      await _handleProcessingResult(_viewModel.processUrSigningResult(signedPsbt as UR));
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
     }
   }
 
-  Future<void> _onCompletedScanningForBbQr(dynamic signedPsbt) async {
+  Future<void> _onCompletedScanningForBbQr(Object signedPsbt) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
@@ -193,24 +194,25 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   Future<void> _showErrorDialog(String errorMessage) async {
     if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.alert.scan_failed,
-          description: errorMessage,
-          onTapRight: () {
-            if (!mounted) return;
-
-            _isProcessing = false;
-            _controller?.start();
-            Navigator.pop(context);
-          },
-          rightButtonText: t.OK,
-        );
-      },
-    );
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.alert.scan_failed,
+            description: errorMessage,
+            onTapRight: () => Navigator.pop(context),
+            rightButtonText: t.OK,
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        _isProcessing = false;
+        await _controller?.start();
+      }
+    }
   }
 
   Future<void> _stopCamera() async {

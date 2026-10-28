@@ -122,10 +122,13 @@ lib/services/hardware_wallet/
   trezor_device.dart                # MethodChannel 래퍼 (Dart)
 
 lib/providers/view_model/wallet_add/connected/
-  trezor_connect_viewmodel.dart     # 연결 상태 관리
+  trezor_ble_connect_view_model.dart # Safe 7 BLE 연결 상태 관리
+  trezor_usb_connect_view_model.dart # USB 연결 상태 관리
 
 lib/screens/home/wallet_add/connected/
-  trezor_connect_screen.dart        # UI (현재 shell 상태)
+  trezor_transport_select_screen.dart # 연결 방식 선택
+  trezor_ble_connect_screen.dart      # Safe 7 BLE 연결 UI
+  trezor_usb_connect_screen.dart      # USB 연결 UI
 ```
 
 ---
@@ -139,10 +142,10 @@ lib/screens/home/wallet_add/connected/
 
 ```
 [Flutter UI]
-  trezor_connect_screen.dart
+  trezor_ble_connect_screen.dart
         │ ChangeNotifier
         ▼
-  trezor_connect_viewmodel.dart          # TrezorConnectStep 상태 관리
+  trezor_ble_connect_view_model.dart     # TrezorConnectStep 상태 관리
         │ TrezorDevice.connect()
         ▼
   trezor_device.dart                     # MethodChannel('trezor') 래퍼
@@ -221,8 +224,8 @@ lib/screens/home/wallet_add/connected/
 
 | 파일 | 역할 |
 |------|------|
-| `lib/screens/home/wallet_add/connected/trezor_connect_screen.dart` | UI, 페어링 다이얼로그, 로딩 오버레이 |
-| `lib/providers/view_model/wallet_add/connected/trezor_connect_viewmodel.dart` | `TrezorConnectStep` 상태, `onPairingCodeRequested` / `onPairingFailed` 콜백 |
+| `lib/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart` | BLE UI, 페어링 다이얼로그, 로딩 오버레이 |
+| `lib/providers/view_model/wallet_add/connected/trezor_ble_connect_view_model.dart` | BLE 연결 상태, `onPairingCodeRequested` / `onPairingFailed` 콜백 |
 | `lib/services/hardware_wallet/trezor_device.dart` | MethodChannel 래퍼, `showPairingCodeDialog` 역방향 핸들러 |
 | `ios/Runner/TrezorMethodHandler.swift` | BLE 관리, `getPairingCode()` semaphore, `PAIRING_CANCELLED` 에러 코드 |
 | `android/app/src/main/kotlin/.../TrezorMethodHandler.kt` | 동일 역할 (Kotlin) |

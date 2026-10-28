@@ -255,7 +255,7 @@ For real USB testing, a **physical Android device with USB OTG** is required.
 3. Home → Add Wallet → BitBox02
 4. Mock OFF → "Connect via Simulator (TCP)" → paired
 5. "Continue" → XPub retrieved → fingerprint + zpub shown
-6. "Import Wallet" → Wallet saved → navigated to /wallet-detail
+6. "Import Wallet" → Wallet saved → navigated to /transaction-list
 7. Back to Home → wallet visible in list
 8. (Future) Send → Sign via BitBox02 → broadcast
 ```
@@ -496,7 +496,7 @@ final result = await walletProvider.syncFromThirdParty(wallet);
 
 // 4. Navigate
 if (result.result == WalletSyncResult.newWalletAdded) {
-  Navigator.pushNamed(context, '/wallet-detail', arguments: {
+  Navigator.pushNamed(context, '/transaction-list', arguments: {
     'id': result.walletId, 'entryPoint': kEntryPointWalletHome,
   });
 }
@@ -531,7 +531,7 @@ idle ──[Connect via USB/TCP]──→ connecting ──→ pairing ──→
   │                         │                                    │
   └─────────────────────────┘                                    │
                                                                   │
-              Navigate to /wallet-detail                          │
+              Navigate to /transaction-list                          │
 ```
 
 ### 8.2 Sign Screen Flow
@@ -608,7 +608,6 @@ Uses `CoconutDesignSystem` widgets and styles:
 | `lib/services/wallet_add_service.dart:22-39` | `createExtendedPublicKeyWallet` |
 | `lib/utils/third_party_util.dart:5-34` | `getNextThirdPartyWalletName` |
 | `lib/providers/wallet_provider.dart:221-249` | `syncFromThirdParty` |
-| `lib/screens/home/wallet_home_screen.dart:1663-1730` | `_goToBitBox02Screen` — import wiring |
 
 ---
 

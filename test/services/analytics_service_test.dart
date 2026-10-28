@@ -91,6 +91,7 @@ void main() {
 
   AnalyticsService service() => AnalyticsService(
     analytics,
+    false,
     sharedPrefs: repository,
     commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
   );
@@ -139,7 +140,6 @@ void main() {
     await subject.setUserProperty(name: 'blocked-property', value: 'blocked-value');
 
     expect(subject.canCollect, isFalse);
-    expect(subject.isUpdating, isTrue);
     verifyNever(analytics.logEvent(name: 'blocked', parameters: anyNamed('parameters')));
     verifyNever(analytics.logScreenView(screenName: 'blocked-screen'));
     verifyNever(analytics.setUserProperty(name: 'blocked-property', value: 'blocked-value'));
@@ -170,7 +170,7 @@ void main() {
   });
 
   test('backend unavailable still saves the user choice but cannot collect', () async {
-    final subject = AnalyticsService(null, sharedPrefs: repository);
+    final subject = AnalyticsService(null, false, sharedPrefs: repository);
     await subject.initialize();
 
     await subject.setCollectionEnabled(false);
@@ -185,25 +185,35 @@ void main() {
     when(failingPreferences.containsKey(SharedPrefKeys.kAnalyticsCollectionEnabled)).thenReturn(false);
     when(failingPreferences.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false)).thenAnswer((_) async => false);
     final failingRepository = SharedPrefsRepository()..setSharedPreferencesForTest(failingPreferences);
-    final subject = AnalyticsService(null, sharedPrefs: failingRepository);
+    final subject = AnalyticsService(null, false, sharedPrefs: failingRepository);
     await subject.initialize();
 
     await expectLater(subject.setCollectionEnabled(false), throwsA(isA<StateError>()));
-    expect(subject.isUpdating, isFalse);
     expect(subject.isCollectionEnabled, isTrue);
     expect(subject.canCollect, isFalse);
   });
 
-  test('startup setup failure stays fail closed without blocking startup', () async {
-    when(analytics.setDefaultEventParameters({'app_version': 'test'})).thenThrow(StateError('setup failed'));
+  test('startup SDK enable failure stays fail closed without blocking startup', () async {
+    when(analytics.setAnalyticsCollectionEnabled(true)).thenThrow(StateError('enable failed'));
     final subject = service();
 
     await subject.initialize();
 
     expect(subject.isCollectionEnabled, isTrue);
     expect(subject.canCollect, isFalse);
-    expect(subject.isUpdating, isFalse);
-    verifyNever(analytics.setAnalyticsCollectionEnabled(true));
+    await subject.logEvent(eventName: 'blocked');
+    verifyNever(analytics.logEvent(name: 'blocked', parameters: anyNamed('parameters')));
+  });
+
+  // develop의 "기본 파라미터 실패가 이벤트 전송을 막지 않는다" 계약을 유지한다. 동의·SDK 적용 실패만 수집을 닫는다.
+  test('optional default parameter failure does not block an accepted choice', () async {
+    when(analytics.setDefaultEventParameters({'app_version': 'test'})).thenThrow(StateError('defaults failed'));
+    final subject = service();
+
+    await subject.initialize();
+
+    expect(subject.canCollect, isTrue);
+    verify(analytics.setAnalyticsCollectionEnabled(true)).called(1);
   });
 
   test('failed SDK enable keeps the committed choice but remains retryable and fail closed', () async {
@@ -321,6 +331,7 @@ void main() {
     final failingRepository = SharedPrefsRepository()..setSharedPreferencesForTest(failingPreferences);
     final subject = AnalyticsService(
       analytics,
+      false,
       sharedPrefs: failingRepository,
       commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
     );
@@ -332,6 +343,5 @@ void main() {
     verifyNever(analytics.logEvent(name: 'analytics_collection_enabled'));
     verifyNever(analytics.logEvent(name: 'analytics_collection_disabled'));
     expect(subject.canCollect, isFalse);
-    expect(subject.isUpdating, isFalse);
   });
 }

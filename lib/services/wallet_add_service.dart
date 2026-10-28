@@ -5,7 +5,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
@@ -68,16 +67,36 @@ class WalletAddService {
     try {
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
-      FileLogger.log(className, methodName, 'cbor.decode completed');
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
-      FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-      FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
-      final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
-      FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
+      final parsed = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
+      final path = parsed.derivationPath;
+      if (!WalletUtility.validateDerivationPath(path)) {
+        throw const FormatException('Invalid account derivation path');
+      }
+      final originalKey = parsed.keyStore.extendedPublicKey;
+      // coconut_lib의 fromCryptoAccountPayload가 경로의 마지막 자식 번호(하드닝 포함)를 누락해 index가 0으로 남는다.
+      // 라이브러리에서 원본 계정 정보를 보존하도록 수정해야 하며, 그전까지 월렛에서 경로로 깊이·자식 번호를 복원한다.
+      // 전달받은 공개키·체인코드·지문은 유지한다. 라이브러리 수정 버전 적용 후 확장공개키·MFP·주소 일치를 검증하고 보정을 제거한다.
+      final account = HDWallet.fromPublicKeyWithDerivationPath(originalKey.publicKey, originalKey.chainCode, path);
+      if (account.depth != originalKey.depth || account.depth > 255) {
+        throw const FormatException('Invalid account depth');
+      }
+      final accountKey = ExtendedPublicKey.fromHdWallet(
+        account,
+        originalKey.version,
+        originalKey.parentFingerprintByte,
+      );
+      final singleSigWallet = SingleSignatureWallet(
+        parsed.keyStore.masterFingerprint,
+        account,
+        parsed.addressType,
+        path,
+        accountKey,
+      );
       return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+    } catch (e) {
+      Logger.error('$className.$methodName failed: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -96,17 +115,14 @@ class WalletAddService {
       if (decodedCbor is! List<int>) {
         throw 'Unexpected UR bytes payload type: ${decodedCbor.runtimeType}';
       }
-      FileLogger.log(className, methodName, 'cbor.decode completed');
       final decodedText = utf8.decode(decodedCbor);
       final json = jsonDecode(decodedText);
       if (json is! Map<String, dynamic>) {
         throw 'Unexpected UR bytes json type: ${json.runtimeType}';
       }
-      FileLogger.log(className, methodName, 'jsonDecode completed, keys: ${json.keys.toList()}');
-      FileLogger.log(className, methodName, 'raw json: ${jsonEncode(json)}');
       return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+    } catch (e) {
+      Logger.error('$className.$methodName failed: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -165,7 +181,7 @@ class WalletAddService {
       }
     } catch (e) {
       // descriptor 파싱 실패 시 xpub으로 지갑 생성
-      Logger.error('Descriptor parsing failed, using xpub: $e');
+      Logger.error('Descriptor parsing failed, using xpub: ${e.runtimeType}');
     }
 
     // xpub으로 지갑 생성 (fallback)

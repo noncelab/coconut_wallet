@@ -1,26 +1,25 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/features/qr/camera_permission_dialog.dart';
 import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:provider/provider.dart';
 
 class CoconutQrScanner extends StatefulWidget {
   static String qrFormatErrorMessage = 'Invalid QR format.';
   static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(MobileScannerController) setMobileScannerController;
-  final Function(dynamic) onComplete;
+  final Function(Object) onComplete;
   final Function(String, String?) onFailed;
-  final IQrScanDataHandler qrDataHandler;
+  final IQrScanDataHandler<Object> qrDataHandler;
   final ValueChanged<String>? onScanData;
+  final bool closeOnPermissionDenied;
 
   const CoconutQrScanner({
     super.key,
@@ -29,13 +28,15 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onFailed,
     required this.qrDataHandler,
     this.onScanData,
+    this.closeOnPermissionDenied = true,
   });
 
   @override
   State<CoconutQrScanner> createState() => _CoconutQrScannerState();
 }
 
-class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
+class _CoconutQrScannerState extends State<CoconutQrScanner>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   bool _isScanningExtraData = false;
@@ -43,12 +44,15 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
   bool _isShowedCameraPermissionDialog = false;
+  bool _isCameraPermissionDialogOpen = false;
+  bool _retryDeniedCameraOnDialogDismiss = false;
 
   MobileScannerController? _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = MobileScannerController();
 
     widget.setMobileScannerController(_controller!);
@@ -56,9 +60,30 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _progressNotifier.dispose();
     _controller?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || widget.closeOnPermissionDenied) return;
+    if (_controller?.value.error?.errorCode != MobileScannerErrorCode.permissionDenied) return;
+    if (_isCameraPermissionDialogOpen) {
+      _retryDeniedCameraOnDialogDismiss = true;
+    } else {
+      _retryDeniedCamera();
+    }
+  }
+
+  void _retryDeniedCamera() {
+    if (!mounted || widget.closeOnPermissionDenied) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    if (_controller?.value.error?.errorCode == MobileScannerErrorCode.permissionDenied) {
+      _controller?.start();
+    }
   }
 
   void resetScanState() {
@@ -146,31 +171,29 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Stack(
-          children: [
-            MobileScanner(
-              controller: _controller!,
-              onDetect: _onDetect,
-              errorBuilder: (context, error) {
-                if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
-                  _isShowedCameraPermissionDialog = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (!context.mounted) return;
-                    await _showCameraPermissionDialog();
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  });
-                }
-                return Center(child: Text(error.errorCode.message));
-              },
-            ),
-            const ScannerOverlay(),
-            _buildProgressOverlay(context),
-          ],
-        );
+    return QrScannerView(
+      controller: _controller!,
+      onDetect: _onDetect,
+      errorBuilder: (_, error) {
+        if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+          _isShowedCameraPermissionDialog = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            _isCameraPermissionDialogOpen = true;
+            await showCameraPermissionDialog(this.context);
+            if (!mounted) return;
+            _isCameraPermissionDialogOpen = false;
+            if (widget.closeOnPermissionDenied) {
+              Navigator.pop(this.context);
+            } else if (_retryDeniedCameraOnDialogDismiss) {
+              _retryDeniedCameraOnDialogDismiss = false;
+              _retryDeniedCamera();
+            }
+          });
+        }
+        return Center(child: Text(error.errorCode.message));
       },
+      overlayBuilder: (context, _) => _buildProgressOverlay(context),
     );
   }
 
@@ -286,19 +309,6 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           );
         },
       ),
-    );
-  }
-
-  Future<void> _showCameraPermissionDialog() async {
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.coconut_qr_scanner.camera_error.title,
-      t.coconut_qr_scanner.camera_error.need_camera_permission,
-      rightButtonText: t.go_to_settings,
-      onTapRight: () {
-        openAppSettings();
-      },
     );
   }
 }

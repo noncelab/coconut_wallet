@@ -5,12 +5,15 @@ import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
@@ -19,6 +22,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:intl/intl.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
@@ -50,6 +54,16 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isFiatBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
 
+  late HomeAddWalletOption _homeAddWalletOption;
+  HomeAddWalletOption get homeAddWalletOption => _homeAddWalletOption;
+
+  late List<WalletFilter> _walletFilterOrder;
+  List<WalletFilter> get walletFilterOrder => List.unmodifiable(_walletFilterOrder);
+  late Set<WalletFilter> _visibleWalletFilters;
+  Set<WalletFilter> get visibleWalletFilters => Set.unmodifiable(_visibleWalletFilters);
+  bool isWalletFilterVisible(WalletFilter filter) =>
+      filter == WalletFilter.all || filter == WalletFilter.watchOnly || _visibleWalletFilters.contains(filter);
+
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalBtc;
@@ -70,6 +84,10 @@ class PreferenceProvider extends ChangeNotifier {
   late String _language;
   String get language => _language;
 
+  /// 숫자 형식 프리셋
+  late NumberFormatPreset _numberFormatPreset;
+  NumberFormatPreset get numberFormatPreset => _numberFormatPreset;
+
   /// UTXO 수동선택 모드 여부
   late bool _isManualUtxoSelectionMode;
   bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
@@ -85,6 +103,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// 지갑 즐겨찾기 목록
   late List<int> _favoriteWalletIds;
   List<int> get favoriteWalletIds => _favoriteWalletIds;
+  late bool _hasInitializedFavoriteWalletIds;
 
   /// 총 잔액에서 제외할 지갑 목록
   late List<int> _excludedFromTotalBalanceWalletIds;
@@ -112,13 +131,6 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 구간별 색상 테마
   late UtxoTierTheme _utxoTierTheme;
   UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
-  // 지갑 목록 화면 - 법정화폐 숨기기 여부
-  late bool _isWalletListFiatHidden;
-  bool get isWalletListFiatHidden => _isWalletListFiatHidden;
-
-  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
-  late List<FiatCode> _walletListVisibleFiats;
-  List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
   /// 테마 variant
   late CoconutThemeVariant _themeVariant;
@@ -152,6 +164,7 @@ class PreferenceProvider extends ChangeNotifier {
     // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
+    _initializeNumberFormatFromLocale();
 
     _electrumServerProvider.addListener(notifyListeners);
     _blockExplorerProvider.addListener(notifyListeners);
@@ -159,8 +172,15 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
+    _homeAddWalletOption = HomeAddWalletOption.values.firstWhere(
+      (option) => option.name == _sharedPrefs.getString(SharedPrefKeys.kHomeAddWalletOption),
+      orElse: () => HomeAddWalletOption.all,
+    );
+    _walletFilterOrder = _loadWalletFilterOrder();
+    _visibleWalletFilters = _loadVisibleWalletFilters();
     _bitcoinUnit = _loadBitcoinUnit();
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _hasInitializedFavoriteWalletIds = _walletPreferencesRepository.hasWalletPreferences();
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
@@ -178,8 +198,6 @@ class PreferenceProvider extends ChangeNotifier {
     _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
-    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
-    _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
     _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
 
@@ -232,11 +250,36 @@ class PreferenceProvider extends ChangeNotifier {
     try {
       Logger.log('Applying language setting: $_language');
       LocaleSettings.setLocaleSync(resolveAppLocale(_language));
-      NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
       Logger.log('Language initialization failed: $e');
     }
+  }
+
+  /// OS locale을 기반으로 숫자 포맷 preset을 초기화합니다.
+  /// 이미 저장된 값이 있으면 해당 값을 사용하고, 없으면 시스템 locale에서 유추하여 저장합니다.
+  void _initializeNumberFormatFromLocale() {
+    NumberFormatPreset preset;
+
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kNumberFormatPreset)) {
+      preset = NumberFormatPreset.fromCode(_sharedPrefs.getString(SharedPrefKeys.kNumberFormatPreset));
+    } else {
+      final locale = PlatformDispatcher.instance.locale;
+      final localeName = Intl.canonicalizedLocale(locale.toLanguageTag());
+      preset = NumberFormatPreset.fromLocale(localeName);
+      _sharedPrefs.setString(SharedPrefKeys.kNumberFormatPreset, preset.name);
+    }
+
+    _numberFormatPreset = preset;
+    NumberFormatConfig.instance.applyPreset(preset);
+  }
+
+  /// 설정 화면에서 사용자가 숫자 포맷 preset을 변경할 때 사용합니다.
+  Future<void> changeNumberFormatPreset(NumberFormatPreset preset) async {
+    _numberFormatPreset = preset;
+    await _sharedPrefs.setString(SharedPrefKeys.kNumberFormatPreset, preset.name);
+    NumberFormatConfig.instance.applyPreset(preset);
+    notifyListeners();
   }
 
   /// 홈 화면 잔액 숨기기
@@ -252,6 +295,78 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsFiatBalanceHidden, isOn);
 
+    notifyListeners();
+  }
+
+  /// 홈 화면 상단 지갑 추가 버튼 설정
+  Future<void> changeHomeAddWalletOption(HomeAddWalletOption option) async {
+    if (_homeAddWalletOption == option) return;
+    _homeAddWalletOption = option;
+    await _sharedPrefs.setString(SharedPrefKeys.kHomeAddWalletOption, option.name);
+    notifyListeners();
+  }
+
+  List<WalletFilter> _loadWalletFilterOrder() {
+    final storedNames = _sharedPrefs.getString(SharedPrefKeys.kWalletFilterOrder).split(',');
+    final storedFilters =
+        storedNames
+            .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+            .whereType<WalletFilter>()
+            .where((filter) => filter != WalletFilter.all)
+            .toSet()
+            .toList();
+    final movableFilters = WalletFilter.values.where((filter) => filter != WalletFilter.all);
+    return [WalletFilter.all, ...storedFilters, ...movableFilters.where((filter) => !storedFilters.contains(filter))];
+  }
+
+  Future<void> setWalletFilterOrder(List<WalletFilter> order) async {
+    final movableFilters =
+        order.where((filter) => filter != WalletFilter.all).toSet().toList()
+          ..addAll(WalletFilter.values.where((filter) => filter != WalletFilter.all && !order.contains(filter)));
+    _walletFilterOrder = [WalletFilter.all, ...movableFilters];
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletFilterOrder,
+      _walletFilterOrder.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Set<WalletFilter> _loadVisibleWalletFilters() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kVisibleWalletFilters);
+    if (stored == null) return {WalletFilter.watchOnly, WalletFilter.hot};
+    return {
+      WalletFilter.watchOnly,
+      ...stored
+          .split(',')
+          .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+          .whereType<WalletFilter>()
+          .where((filter) => filter != WalletFilter.all),
+    };
+  }
+
+  Future<void> setWalletFilterVisible(WalletFilter filter, bool isVisible) async {
+    if (filter == WalletFilter.all || filter == WalletFilter.watchOnly) return;
+    if (isVisible) {
+      _visibleWalletFilters.add(filter);
+    } else {
+      _visibleWalletFilters.remove(filter);
+    }
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Future<void> setVisibleWalletFilters(Set<WalletFilter> filters) async {
+    _visibleWalletFilters = {
+      WalletFilter.watchOnly,
+      ...filters.where((filter) => filter != WalletFilter.all && filter != WalletFilter.watchOnly),
+    };
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
     notifyListeners();
   }
 
@@ -357,11 +472,6 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
-    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
-    await _sharedPrefs.setString(
-      SharedPrefKeys.kWalletListVisibleFiats,
-      _walletListVisibleFiats.map((f) => f.code).join(','),
-    );
     notifyListeners();
   }
 
@@ -471,6 +581,7 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     _favoriteWalletIds = ids;
     await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+    _hasInitializedFavoriteWalletIds = true;
     notifyListeners();
   }
 
@@ -478,13 +589,6 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> removeFavoriteWalletId(int walletId) async {
     _favoriteWalletIds.remove(walletId);
     await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
-    notifyListeners();
-  }
-
-  /// 총 잔액에서 제외할 지갑 설정
-  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
-    _excludedFromTotalBalanceWalletIds = ids;
-    await _walletPreferencesRepository.setExcludedWalletIds(ids);
     notifyListeners();
   }
 
@@ -524,8 +628,23 @@ class PreferenceProvider extends ChangeNotifier {
       walletOrder = List.from(walletItemList.map((w) => w.id));
       await setWalletOrder(walletOrder);
     }
-    if (favoriteWalletIds.isEmpty) {
-      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+    if (!_hasInitializedFavoriteWalletIds) {
+      var watchOnlyCount = 0;
+      var hotWalletCount = 0;
+      favoriteWalletIds =
+          walletItemList
+              .where((wallet) {
+                if (wallet.hasLocalKey) {
+                  if (hotWalletCount >= kMaxFavoriteWalletCountPerType) return false;
+                  hotWalletCount++;
+                  return true;
+                }
+                if (watchOnlyCount >= kMaxFavoriteWalletCountPerType) return false;
+                watchOnlyCount++;
+                return true;
+              })
+              .map((wallet) => wallet.id)
+              .toList();
       await setFavoriteWalletIds(favoriteWalletIds);
     }
 
@@ -584,23 +703,6 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setBool(SharedPrefKeys.kIsManualUtxoSelectionMode, isManual);
     notifyListeners();
   }
-
-  // 지갑 목록 화면 법정화폐 숨기기 설정
-  Future<void> setWalletListFiatHidden(bool isHidden) async {
-    _isWalletListFiatHidden = isHidden;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, isHidden);
-    notifyListeners();
-  }
-
-  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
-  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
-
-  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
-    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
-    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
-  };
 
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
@@ -701,40 +803,6 @@ class PreferenceProvider extends ChangeNotifier {
   }) async {
     await markCcosFeaturePurchased(featureId, source: source);
     await activateCcosFeature(featureId);
-  }
-
-  List<FiatCode> _loadWalletListVisibleFiats() {
-    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
-    if (stored == null) {
-      return [_selectedFiat];
-    }
-
-    final visibleFiats =
-        stored
-            .split(',')
-            .where((code) => code.isNotEmpty)
-            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
-            .whereType<FiatCode>()
-            .toList();
-
-    if (visibleFiats.isEmpty && stored.isNotEmpty) {
-      return [_selectedFiat];
-    }
-
-    return _sortWalletListVisibleFiats(visibleFiats);
-  }
-
-  List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
-    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
-    return order.where((f) => fiats.contains(f)).toList();
-  }
-
-  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
-  Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
-    final sorted = _sortWalletListVisibleFiats(fiats);
-    _walletListVisibleFiats = sorted;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
-    notifyListeners();
   }
 
   @override

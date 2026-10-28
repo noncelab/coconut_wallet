@@ -241,7 +241,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     return sumExceptLast.roundTo8Digits();
   }
 
+  bool _hasUnvalidatedInput = false;
+
   bool get isReadyToSend {
+    if (_hasUnvalidatedInput) return false;
     if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
       return false;
     }
@@ -272,6 +275,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   List<TransactionDraft>? get drafts => _drafts;
   bool? get hasDrafts => _drafts?.isNotEmpty;
   bool get isSaved => _transactionDraftId != null;
+  bool get canUseTransactionDrafts => selectedWalletItem != null && !selectedWalletItem!.hasLocalKey;
 
   bool isMaxModeLastIndex(int index) {
     return _isMaxMode && index == lastIndex;
@@ -329,9 +333,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       }
     }
 
-    _setRecommendedFees().whenComplete(() {
-      notifyListeners();
-    });
+    _setRecommendedFees();
 
     _loadDrafts();
   }
@@ -355,24 +357,18 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       return;
     }
 
-    final selectedWalletId = _selectedWalletItem!.id;
+    final selectedWallet = _selectedWalletItem!;
     final walletAddressMap = _walletProvider.getReceiveAddressMap();
-    final order = _preferenceProvider.walletOrder;
-    assert(order.isNotEmpty);
-
+    // The bulk lookup omits wallets whose first receive address is not generated yet.
+    // Use the individual lookup to initialize those addresses, and ignore stale order IDs.
+    final wallets = [selectedWallet, ..._orderedRegisteredWallets.where((wallet) => wallet.id != selectedWallet.id)];
     _registeredWalletAddressMap = {
-      selectedWalletId: WalletAddressInfo(
-        walletAddress: walletAddressMap[selectedWalletId]!,
-        name: _selectedWalletItem!.name,
-      ),
+      for (final wallet in wallets)
+        wallet.id: WalletAddressInfo(
+          walletAddress: walletAddressMap[wallet.id] ?? _walletProvider.getReceiveAddress(wallet.id),
+          name: wallet.name,
+        ),
     };
-    for (int i = 0; i < order.length; i++) {
-      if (order[i] == selectedWalletId) continue;
-      _registeredWalletAddressMap[order[i]] = WalletAddressInfo(
-        walletAddress: walletAddressMap[order[i]]!,
-        name: _orderedRegisteredWallets.firstWhere((e) => e.id == order[i]).name,
-      );
-    }
 
     _walletAddressNeedsUpdate = List.filled(_registeredWalletAddressMap.length, false);
   }
@@ -383,6 +379,11 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
     _orderedRegisteredWallets = _getOrderedRegisteredWallets();
     _selectedWalletItem = _walletProvider.walletItemList[index];
+    if (_selectedWalletItem!.hasLocalKey) {
+      _transactionDraftId = null;
+      _sendInfoProvider.setUnsignedDraftId(null);
+      _drafts = [];
+    }
     _initRegisteredWalletsAddress();
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
@@ -425,6 +426,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     // 1. 지갑 선택 및 초기화
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
     if (walletIndex == -1) return null;
+    if (_walletProvider.walletItemList[walletIndex].hasLocalKey) {
+      throw StateError('Transaction drafts are not supported for hot wallets');
+    }
     _initializeWithSelectedWallet(walletIndex);
 
     final (validatedUtxoList, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(
@@ -485,6 +489,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
+    // 불러온 초안은 이전 수동 입력의 검증 대기 상태를 대체한다.
+    _hasUnvalidatedInput = false;
     // 10. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
     _transactionDraftId = draftId;
@@ -518,6 +524,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _buildTransaction() {
+    if (_hasUnvalidatedInput) return;
     if (_selectedWalletItem == null ||
         !hasValidRecipient ||
         _feeRateText.isEmpty ||
@@ -643,7 +650,6 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _isMaxMode = isEnabled;
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
-      updateFeeBoardVisibility();
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
@@ -659,8 +665,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
 
-    _buildTransaction();
-    _updateAmountValidationState();
+    _validateRecipientInputs();
     vibrateLight();
     notifyListeners();
   }
@@ -680,11 +685,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     setCurrentPage(_currentIndex);
     _onRecipientPageDeleted(_currentIndex);
 
-    _buildTransaction();
-
-    /// AddressError.duplicate였던 것을 해제
-    checkAndSetDuplicationError();
-    _updateAmountValidationState();
+    _validateRecipientInputs();
     vibrateLight();
     notifyListeners();
   }
@@ -764,18 +765,19 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (text.isEmpty) {
       _txBuildResult = null;
     }
-    notifyListeners();
+    _invalidateRecipientCalculation();
   }
 
   /// bip21 url에서 amount값 파싱 성공했을 때 사용
-  void setAmountText(int satoshi, int recipientIndex) {
+  void setAmountText(int satoshi, int recipientIndex, {bool validate = true}) {
     if (!_isValidRecipientIndex(recipientIndex, 'setAmountText')) return;
     if (_currentUnit.isBasedOnSatoshi) {
       _recipientList[recipientIndex].amount = satoshi.toString();
     } else {
       _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
     }
-    _updateAmountValidationState(recipientIndex: recipientIndex);
+    _invalidateRecipientCalculation();
+    if (validate) _validateRecipientInputs();
   }
 
   void setFeeRateText(String feeRate) {
@@ -870,19 +872,31 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         }
       }
     }
+    _invalidateRecipientCalculation();
+  }
+
+  void _invalidateRecipientCalculation() {
+    _hasUnvalidatedInput = true;
+    _txBuildResult = null;
+    _estimatedFee = null;
+    _unintendedDustFee = null;
+    _finalErrorMessage = '';
     notifyListeners();
   }
 
-  void validateAllFieldsOnFocusLost() {
-    // debugPrint('validateAllFieldsOnFocusLost called');
+  void validateAllFieldsOnFocusLost() => _validateRecipientInputs();
+
+  // 입력 방식과 포커스 이동 여부에 관계없이 검증 및 수수료 상태를 갱신한다.
+  void _validateRecipientInputs() {
+    _hasUnvalidatedInput = false;
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: i);
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
+    _showFeeBoard = _showFeeBoard || hasValidRecipient;
     _buildTransaction();
-    updateFeeBoardVisibility();
   }
 
   void clearAmountText() {
@@ -955,10 +969,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   // 마지막 수신자의 전송 금액을 확인한다. (전송 금액 - 예상 수수료 <= dust)
   // _isFeeSubtractedFromSendAmount가 true일 때만 체크되어야 함
   void _updateLastAmountErrorIfInsufficient() {
-    if (!_isFeeSubtractedFromSendAmount) {
-      if (_isLastAmountInsufficient.isError) {
-        _isLastAmountInsufficient = AmountError.none;
-      }
+    // 모두 보내기는 금액 계산 단계에서 수수료와 dust 검사를 완료한다.
+    if (_isMaxMode || !_isFeeSubtractedFromSendAmount) {
+      _isLastAmountInsufficient = AmountError.none;
       return;
     }
 
@@ -1052,7 +1065,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
-    _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
+    _sendInfoProvider.setUnsignedDraftId(canUseTransactionDrafts ? _transactionDraftId : null);
   }
 
   void clearSendInfo() {
@@ -1061,6 +1074,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///
   Future<TransactionDraft> saveNewDraft() async {
+    if (!canUseTransactionDrafts) {
+      throw StateError('Transaction drafts are not supported for this wallet');
+    }
     assert(_selectedWalletItem != null);
 
     final result = await _transactionDraftRepository.saveUnsignedDraft(
@@ -1084,6 +1100,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   Future<TransactionDraft> updateDraft() async {
+    if (!canUseTransactionDrafts) {
+      throw StateError('Transaction drafts are not supported for this wallet');
+    }
     assert(_selectedWalletItem != null);
     assert(_transactionDraftId != null);
 
@@ -1108,6 +1127,11 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   Future<void> _loadDrafts() async {
     if (_selectedWalletItem == null) return;
+    if (!canUseTransactionDrafts) {
+      _drafts = [];
+      notifyListeners();
+      return;
+    }
     try {
       _drafts = _transactionDraftRepository.getUnsignedTransactionDraftsByWalletId(_selectedWalletItem!.id);
     } catch (e) {

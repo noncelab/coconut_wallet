@@ -1,16 +1,14 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/locale_sort_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
 class UtxoTagProvider extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
-
-  List<String> _spentUtxoIds = [];
-  bool _isTagsMoveAllowed = false;
 
   bool _isUpdatedTagList = false;
   bool get isUpdatedTagList => _isUpdatedTagList;
@@ -33,26 +31,9 @@ class UtxoTagProvider extends ChangeNotifier {
     return false;
   }
 
-  // [utxo tag 승계 유무에 따라 Utxo 태그 적용]
-  // broadcasting_view_model.dart / updateTagsOfUsedUtxos에서 호출
-  Future applyTagsToNewUtxos(int walletId, String signedTx, List<int> outputIndexes) async {
-    List<String> newUtxoIds =
-        _isTagsMoveAllowed ? outputIndexes.map((index) => getUtxoId(signedTx, index)).toList() : [];
-
-    final result = await _utxoRepository.updateTagsOfSpentUtxos(walletId, _spentUtxoIds, newUtxoIds);
-    if (result.isFailure) {
-      Logger.error(result.error);
-    }
-    _spentUtxoIds = [];
-    _isTagsMoveAllowed = false;
-  }
-
-  // [utxo tag 승계 유무 정보 저장]
-  // send_utxo_selection_view_model.dart / cacheSpentUtxoIdsWithTag에서 호출
-  // 사용한 utxo 중, 태그된 것이 하나라도 있는 경우, 사용한 utxo id 목록을 저장
-  void cacheUsedUtxoIds(List<String> utxoIdList, {required bool isTagsMoveAllowed}) {
-    _spentUtxoIds = utxoIdList;
-    _isTagsMoveAllowed = isTagsMoveAllowed;
+  void notifyTagsChanged() {
+    _isUpdatedTagList = true;
+    notifyListeners();
   }
 
   bool deleteUtxoTag(int walletId, UtxoTag utxoTag) {
@@ -78,7 +59,8 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.log(result.error);
       return [];
     }
-    return result.value;
+    final locale = LocaleSettings.currentLocale;
+    return result.value..sort((a, b) => compareByLocaleDictionaryOrder(a.name, b.name, locale));
   }
 
   List<UtxoTag> getUtxoTagsByUtxoId(int walletId, String utxoId) {
@@ -94,8 +76,6 @@ class UtxoTagProvider extends ChangeNotifier {
 
   void reset() {
     _isUpdatedTagList = false;
-    _spentUtxoIds = [];
-    _isTagsMoveAllowed = false;
   }
 
   void resetUtxoTagsUpdateState() {

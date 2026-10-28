@@ -68,7 +68,8 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isUpdateMode = widget.updateUtxoTag != null;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom + mediaQuery.padding.bottom;
 
     return CoconutBottomSheet(
       useIntrinsicHeight: true,
@@ -82,7 +83,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
       bottomMargin: 20,
       body: Container(
         color: context.coconutColors.surfaceBottomSheet,
-        padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0, left: 16, right: 16, top: 16),
+        padding: EdgeInsets.only(bottom: bottomInset, left: 16, right: 16, top: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -563,6 +563,13 @@ class UtxoSplitTransactionBuilder {
       );
     }
 
+    // 입력 주소 알림이 먼저 와도 모든 분할 출력을 내 주소로 판정할 수 있어야 한다.
+    await addressRepository.ensureAddressesExist(
+      walletItemBase: walletListItemBase,
+      cursor: addresses.last.index,
+      count: 1,
+      isChange: false,
+    );
     _cachedReceiveAddresses.addAll(addresses);
     return _cachedReceiveAddresses.sublist(0, count);
   }
@@ -662,6 +669,7 @@ class UtxoSplitTransactionBuilder {
             changeDerivationPath: changeDerivationPath,
             walletItemBase: walletListItemBase,
             scriptPathPolicy: _scriptPathPolicy,
+            networkType: NetworkType.currentNetworkType.toString(),
           ),
         );
 
@@ -714,6 +722,7 @@ class UtxoSplitTransactionBuilder {
 
   static void _splitBuildIsolateEntry(_SplitBuildIsolateRequest request) {
     try {
+      NetworkType.setNetworkType(NetworkType.getNetworkType(request.networkType));
       final result =
           TransactionBuilder(
             availableUtxos: [request.utxo],
@@ -780,6 +789,7 @@ class _SplitBuildIsolateRequest {
   final String changeDerivationPath;
   final WalletItemBase walletItemBase;
   final Policy? scriptPathPolicy;
+  final String networkType;
 
   const _SplitBuildIsolateRequest({
     required this.sendPort,
@@ -789,5 +799,6 @@ class _SplitBuildIsolateRequest {
     required this.changeDerivationPath,
     required this.walletItemBase,
     required this.scriptPathPolicy,
+    required this.networkType,
   });
 }

@@ -5,9 +5,8 @@ import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
-    hide CoconutAppBar, CoconutUnderlinedButton, CoconutOptionPicker, CoconutTextField, CoconutTextFieldStyle;
+    hide CoconutUnderlinedButton, CoconutOptionPicker, CoconutTextField, CoconutTextFieldStyle;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_option_picker.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
@@ -58,8 +57,9 @@ part 'utxo_merge_screen_bottom_sheets.dart';
 
 class UtxoMergeScreen extends StatefulWidget {
   final int id;
+  final bool isActive;
 
-  const UtxoMergeScreen({super.key, required this.id});
+  const UtxoMergeScreen({super.key, required this.id, required this.isActive});
 
   @override
   State<UtxoMergeScreen> createState() => _UtxoMergeScreenState();
@@ -91,7 +91,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   bool _isReceiveAddressBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.inputBorderUnfocused;
 
   @override
   void initState() {
@@ -106,6 +106,14 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     )..initialize();
     _lastObservedSummaryMergeState = _viewModel.mergeState;
     _viewModel.addListener(_handleMergeSummaryStateChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant UtxoMergeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _viewModel.revalidateAvailableUtxos();
+    }
   }
 
   @override
@@ -167,22 +175,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       },
       child: ChangeNotifierProvider<UtxoMergeViewModel>.value(
         value: _viewModel,
-        child: Scaffold(
-          backgroundColor: context.coconutColors.background,
-          appBar: _buildAppBar(context),
-          body: SafeArea(child: _buildBody(context)),
-        ),
+        child: Scaffold(backgroundColor: context.coconutColors.background, body: _buildBody(context)),
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return CoconutAppBar.build(
-      context: context,
-      backgroundColor: context.coconutColors.background,
-      title: t.merge_utxos_screen.title,
-      isBottom: true,
-      isBackButton: true,
     );
   }
 
@@ -427,11 +421,14 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
       if (!mounted) return;
       context.loaderOverlay.hide();
-      Navigator.pushNamed(
+      await Navigator.pushNamed(
         context,
         AppRouteNames.sendConfirm,
         arguments: SendConfirmRouteArgs(currentUnit: context.read<PreferenceProvider>().currentUnit),
       );
+      if (mounted && widget.isActive) {
+        _viewModel.revalidateAvailableUtxos();
+      }
     } finally {
       if (mounted && context.loaderOverlay.visible) {
         context.loaderOverlay.hide();
@@ -474,6 +471,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   bool get _canAutoOpenBottomSheet {
     final route = ModalRoute.of(context);
     return mounted &&
+        widget.isActive &&
         !_isMergeMethodBottomSheetOpen &&
         !_isAmountRangeBottomSheetOpen &&
         !_isTagBottomSheetOpen &&
@@ -941,7 +939,6 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     final method = _viewModel.currentMethod;
 
     try {
-      debugPrint('sjkdjkansjdknasndkjnajksdnjaksn');
       await CommonBottomSheets.showDraggableBottomSheet<void>(
         minChildSize: 0.6,
         maxChildSize: 0.9,

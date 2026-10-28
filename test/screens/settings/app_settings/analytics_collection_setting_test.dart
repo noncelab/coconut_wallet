@@ -13,26 +13,15 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _PendingAnalyticsService extends AnalyticsService {
-  _PendingAnalyticsService() : super(null);
+  _PendingAnalyticsService() : super(null, false);
 
   final completion = Completer<void>();
   int calls = 0;
-  bool updating = false;
-
-  @override
-  bool get isUpdating => updating;
 
   @override
   Future<void> setCollectionEnabled(bool enabled) async {
     calls++;
-    updating = true;
-    notifyListeners();
-    try {
-      await completion.future;
-    } finally {
-      updating = false;
-      notifyListeners();
-    }
+    await completion.future;
   }
 }
 
@@ -45,7 +34,7 @@ void main() {
 
   Future<void> mount(WidgetTester tester, AnalyticsService service, {double textScale = 1}) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider<AnalyticsService>.value(
+      Provider<AnalyticsService>.value(
         value: service,
         child: TranslationProvider(
           child: MaterialApp(
@@ -61,7 +50,7 @@ void main() {
   }
 
   testWidgets('defaults on, toggles both ways without a dialog and restores the saved choice', (tester) async {
-    final service = AnalyticsService(null);
+    final service = AnalyticsService(null, false);
     await service.initialize();
     await mount(tester, service);
     expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isTrue);
@@ -72,7 +61,7 @@ void main() {
     expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
     expect(find.byType(AlertDialog), findsNothing);
 
-    final restored = AnalyticsService(null);
+    final restored = AnalyticsService(null, false);
     await restored.initialize();
     await mount(tester, restored);
     expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
@@ -80,12 +69,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
     await tester.pumpWidget(const SizedBox());
-    service.dispose();
-    restored.dispose();
   });
 
   testWidgets('updates the visible copy when the app language changes', (tester) async {
-    final service = AnalyticsService(null);
+    final service = AnalyticsService(null, false);
     await service.initialize();
     await mount(tester, service);
     expect(find.text('앱 사용 익명 통계 수집'), findsOneWidget);
@@ -99,7 +86,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('앱 사용 익명 통계 수집'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
-    service.dispose();
   });
 
   testWidgets('blocks repeated taps while saving and reports failure without a consent dialog', (tester) async {
@@ -123,7 +109,6 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
-    service.dispose();
   });
 
   for (final locale in AppLocale.values) {
@@ -133,7 +118,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       LocaleSettings.setLocaleSync(locale);
-      final service = AnalyticsService(null);
+      final service = AnalyticsService(null, false);
       await service.initialize();
       await mount(tester, service, textScale: 2);
       expect(find.text(t.settings_screen.analytics_collection), findsOneWidget);
@@ -143,7 +128,6 @@ void main() {
       expect(find.bySemanticsLabel(t.settings_screen.analytics_collection), findsWidgets);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox());
-      service.dispose();
     });
   }
 }

@@ -25,19 +25,20 @@
 </p>
 
 
-> **Try it risk-free!** A **REGTEST VERSION** is available on both app stores, allowing you to practice air-gapped transactions with test bitcoin — no real funds required.</br>
+> **Try it risk-free!** A **REGTEST VERSION** is available on both app stores, allowing you to practice transactions with an offline signing device using test bitcoin — no real funds required.</br>
 > [Download iOS App(ver.regtest)](https://apps.apple.com/app/id6654902298) · [Download Android App(ver.regtest)](https://play.google.com/store/apps/details?id=onl.coconut.wallet.regtest)
 
 ---
 
-**Coconut Wallet** is a **watch-only Bitcoin wallet** designed to work with [Coconut Vault](https://github.com/noncelab/coconut_vault). By operating the vault and wallet on two physically separate devices, it implements a **secure air-gapped transaction signing architecture** where private keys never touch an online device.
+**Coconut Wallet** is a Bitcoin wallet focused on the **watch-only experience** and designed to work with [Coconut Vault](https://github.com/noncelab/coconut_vault). By operating the vault and wallet on two physically separate devices, it implements a **secure offline transaction signing architecture** where private keys never touch an online device. Coconut Wallet also aims to make Bitcoin easy for newcomers to use, providing optional **hot wallet support** for a simpler way to get started.
 
 ## Features
 
-No hot wallet. Watch-only only.
+Watch-only first, with optional hot wallet support.
 
-- **Supported hardware wallets** — Keystone 3 Pro, Seedsigner, Jade, Coldcard, Krux
-- **Air-gapped signing** — Private keys never leave the offline device
+- **Supported hardware wallets** — Keystone 3 Pro, Seedsigner, Jade, Coldcard, Krux, Trezor, BitBox02
+- **Watch-only with offline signing** — Use an offline signing device so private keys never touch an online device
+- **Optional hot wallet** — Create or restore a wallet in the app for a simpler way to get started with Bitcoin
 - **SegWit** — Native SegWit (Bech32) address support
 - **Multisig** — Multi-signature wallet support
 - **RBF (Replace-By-Fee)** — Fee bumping for unconfirmed transactions
@@ -46,7 +47,7 @@ No hot wallet. Watch-only only.
 - **UTXO management** — Coin control with UTXO locking and tagging
 - **PSBT** — BIP-174 Partially Signed Bitcoin Transactions
 - **Draft transactions** — Save transactions as drafts for later signing or sending
-- **Multilingual** — 한국어, English, 日本語, Español
+- **Multilingual** — 한국어, English, 日本語, Español, Deutsch
 
 ## Architecture
 
@@ -63,13 +64,45 @@ No hot wallet. Watch-only only.
 
 The wallet stays online to keep your wallet data up to date and broadcasts signed transactions to the Bitcoin network.
 
+## Hot Wallet Security
+
+Hot wallets are optional. Each hot wallet has its own randomly generated 256-bit data encryption key (DEK), and its mnemonic and saved BIP39 passphrase are encrypted with AES-256-GCM. The encrypted payload—not the plaintext mnemonic—is stored in platform Secure Storage. The DEK is protected by the best device-backed key storage available. If the device does not provide a supported hardware-backed key, Coconut Wallet uses a separate random key stored in platform Secure Storage as a fallback.
+
+```mermaid
+flowchart LR
+    A[Mnemonic<br/>and saved passphrase] -->|AES-256-GCM| B[Encrypted wallet payload]
+    C[Per-wallet<br/>256-bit DEK] -->|Encrypts| B
+    B --> S[Platform Secure Storage<br/>encrypted payload and wrapped DEK]
+
+    C --> W[Wrapped DEK]
+    E[Android<br/>StrongBox or TEE] -->|Wraps| W
+    F[iOS<br/>Secure Enclave] -->|Wraps| W
+    G[Fallback key<br/>in platform Secure Storage] -->|Wraps| W
+    W --> S
+
+    H[Later signing or backup access] --> I{App lock enabled?}
+    I -->|Yes| J[Biometrics or app PIN]
+    I -->|No| K[Continue]
+    J --> L[Unwrap DEK and decrypt temporarily]
+    K --> L
+    L --> M{Requested operation}
+    M -->|Sign| O[Verify wallet identity and sign]
+    M -->|Backup| P[Display mnemonic]
+    O --> N[Best-effort memory wipe]
+    P --> N
+```
+
+After setup, the stored mnemonic is decrypted only when it is needed for signing or backup display. The backup shown immediately after creation or restoration uses the mnemonic already held in memory. When app lock is enabled, later access requires biometric authentication or the app PIN first. A hot wallet still keeps signing keys on an online device, so it does not provide the same isolation as a watch-only wallet used with an offline signer.
+
+See [Hot Wallet Security Architecture](./docs/security/hot_wallet_security.md) for implementation details, platform behavior, passphrase handling, deletion, and security boundaries.
+
 ## Coconut Projects
 
 | Project | Description |
 |---------|-------------|
 | [coconut_lib](https://pub.dartlang.org/packages/coconut_lib) | [![pub](https://img.shields.io/pub/v/coconut_lib.svg?label=coconut_lib&color=blue)](https://pub.dartlang.org/packages/coconut_lib) — Bitcoin wallet development library |
 | [coconut_vault](https://github.com/noncelab/coconut_vault) | [![tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_vault/main/pubspec.yaml&query=$.version&label=coconut_vault)](https://github.com/noncelab/coconut_vault) — Offline signer |
-| [coconut_wallet](https://github.com/noncelab/coconut_wallet) | [![tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_wallet/main/pubspec.yaml&query=$.version&label=coconut_wallet)](https://github.com/noncelab/coconut_wallet) — Watch-only wallet |
+| [coconut_wallet](https://github.com/noncelab/coconut_wallet) | [![tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_wallet/main/pubspec.yaml&query=$.version&label=coconut_wallet)](https://github.com/noncelab/coconut_wallet) — Watch-only-focused wallet with optional hot-wallet support |
 | [coconut_design_system](https://github.com/noncelab/coconut_design_system) | [![tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_design_system/main/pubspec.yaml&query=$.version&label=coconut_wallet)](https://github.com/noncelab/coconut_wallet) — Design System |
 
 ## Build & Run
@@ -173,7 +206,34 @@ make ready
 
 ### Environment Variables
 
-This project requires environment variables configured via `flutter_dotenv`. To obtain the env file for development, please contact us at [hello@noncelab.com](mailto:hello@noncelab.com).
+This project requires environment variables configured via `flutter_dotenv`. Create the file for the flavor you're building (`regtest.env` for local development, `mainnet.env` for mainnet builds) in the project root.
+
+`regtest.env` (used by the default `flutter run --flavor regtest` in Quick Start, no secrets required):
+
+```env
+NETWORK_TYPE=regtest
+```
+
+`mainnet.env` (only needed if you build with `--flavor mainnet`; the `FIREBASE_*` values below are only read when building with `--dart-define=USE_FIREBASE=true`, so they can be left blank for local builds):
+
+```env
+NETWORK_TYPE=mainnet
+
+# ------- Firebase (leave blank unless you have your own Firebase project) --------
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+
+# Android
+FIREBASE_API_KEY_ANDROID=
+FIREBASE_APP_ID_ANDROID=
+
+# iOS
+FIREBASE_API_KEY_IOS=
+FIREBASE_APP_ID_IOS=
+FIREBASE_IOS_BUNDLE_ID=
+# ------- Firebase End --------
+```
 
 ### Android Keystore Setup
 

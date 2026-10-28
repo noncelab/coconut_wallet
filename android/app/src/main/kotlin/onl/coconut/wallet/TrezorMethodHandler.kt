@@ -75,21 +75,21 @@ class TrezorMethodHandler(
 
         override fun success(result: Any?) {
             if (consume()) {
-                pendingConnectResult = null
+                if (pendingConnectResult === this) pendingConnectResult = null
                 delegate.success(result)
             }
         }
 
         override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
             if (consume()) {
-                pendingConnectResult = null
+                if (pendingConnectResult === this) pendingConnectResult = null
                 delegate.error(errorCode, errorMessage, errorDetails)
             }
         }
 
         override fun notImplemented() {
             if (consume()) {
-                pendingConnectResult = null
+                if (pendingConnectResult === this) pendingConnectResult = null
                 delegate.notImplemented()
             }
         }
@@ -110,6 +110,8 @@ class TrezorMethodHandler(
     private var rxChar: android.bluetooth.BluetoothGattCharacteristic? = null
     private var txChar: android.bluetooth.BluetoothGattCharacteristic? = null
     private var connectedDeviceId: String? = null
+    @Volatile
+    private var bleConnectionGeneration: Long = 0L
 
     // Thread-safe BLE read queue (notifications from device)
     private val readQueue = java.util.concurrent.LinkedBlockingQueue<ByteArray>()
@@ -123,13 +125,17 @@ class TrezorMethodHandler(
     private var pendingWriteFuture: CompletableFuture<Boolean>? = null
 
     // Called from gattCallback.onCharacteristicWrite to unblock bleWrite
-    fun onCharacteristicWriteResult(success: Boolean) {
+    fun onCharacteristicWriteResult(generation: Long, success: Boolean) {
+        if (generation != bleConnectionGeneration) return
         pendingWriteFuture?.complete(success)
     }
 
     // Blocking read used by Rust callback transport (called from executor thread)
-    fun bleRead(timeoutMs: Long = 5000): ByteArray? =
-        readQueue.poll(timeoutMs, TimeUnit.MILLISECONDS)
+    fun bleRead(generation: Long, timeoutMs: Long = 5000): ByteArray? {
+        if (generation != bleConnectionGeneration) return null
+        return readQueue.poll(timeoutMs, TimeUnit.MILLISECONDS)
+            ?.takeIf { generation == bleConnectionGeneration }
+    }
 
     fun usbRead(): ByteArray? = usbConnection?.read()
 
@@ -138,7 +144,8 @@ class TrezorMethodHandler(
     // Write to device via RX characteristic.
     // Blocks until onCharacteristicWrite fires (or 5 s timeout) to prevent concurrent writes.
     @Suppress("DEPRECATION")
-    fun bleWrite(data: ByteArray): Boolean {
+    fun bleWrite(generation: Long, data: ByteArray): Boolean {
+        if (generation != bleConnectionGeneration) return false
         val char = rxChar ?: return false
         val g = gatt ?: return false
         val future = CompletableFuture<Boolean>()
@@ -157,7 +164,7 @@ class TrezorMethodHandler(
             return false
         }
         return try {
-            future.get(5, TimeUnit.SECONDS)
+            future.get(5, TimeUnit.SECONDS) && generation == bleConnectionGeneration
         } catch (_: Exception) {
             pendingWriteFuture = null
             false
@@ -427,6 +434,11 @@ class TrezorMethodHandler(
 
     private fun connectToDevice(device: BluetoothDevice, deviceId: String, result: MethodChannel.Result) {
         // Close any stale GATT before starting a new connection
+        val generation = ++bleConnectionGeneration
+        pendingWriteFuture?.complete(false)
+        pendingWriteFuture = null
+        readQueue.clear()
+        gatt?.disconnect()
         gatt?.close()
         gatt = null
         rxChar = null
@@ -439,10 +451,22 @@ class TrezorMethodHandler(
 
         val gattCallback = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                if (generation != bleConnectionGeneration) {
+                    if (newState == BluetoothProfile.STATE_DISCONNECTED) gatt.close()
+                    return
+                }
+                if (this@TrezorMethodHandler.gatt !== gatt) {
+                    if (newState == BluetoothProfile.STATE_DISCONNECTED) gatt.close()
+                    return
+                }
                 // Allow post-connection disconnect events to pass through so the
                 // connectivity EventSink is notified even after callbackFired is set.
                 if (callbackFired) {
                     if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        ++bleConnectionGeneration
+                        pendingWriteFuture?.complete(false)
+                        pendingWriteFuture = null
+                        readQueue.clear()
                         gatt.close()
                         this@TrezorMethodHandler.gatt = null
                         connectedDeviceId = null
@@ -462,24 +486,27 @@ class TrezorMethodHandler(
                         if (status == 133 && retryCount < maxRetries) {
                             retryCount++
                             gatt.close()
-                            this@TrezorMethodHandler.gatt = null
                             Thread.sleep(500)
-                            device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
+                            this@TrezorMethodHandler.gatt =
+                                device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
                             return
                         }
                         if (!callbackFired) {
                             callbackFired = true
+                            ++bleConnectionGeneration
+                            pendingWriteFuture?.complete(false)
+                            pendingWriteFuture = null
+                            readQueue.clear()
                             gatt.close()
                             this@TrezorMethodHandler.gatt = null
                             connectedDeviceId = null
                             mainHandler.post {
-                                if (status != BluetoothGatt.GATT_SUCCESS) {
-                                    result.error("CONNECT_FAILED", "BLE connection failed (status=$status).", null)
-                                } else {
-                                    connectivityEventSink?.let { sink ->
-                                        mainHandler.post { sink.success(false) }
-                                    }
-                                }
+                                connectivityEventSink?.success(false)
+                                result.error(
+                                    "CONNECT_FAILED",
+                                    "BLE device disconnected before connection completed (status=$status).",
+                                    null,
+                                )
                             }
                         }
                     }
@@ -487,11 +514,13 @@ class TrezorMethodHandler(
             }
 
             override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+                if (generation != bleConnectionGeneration || this@TrezorMethodHandler.gatt !== gatt) return
                 if (callbackFired) return
                 gatt.discoverServices()
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                if (generation != bleConnectionGeneration || this@TrezorMethodHandler.gatt !== gatt) return
                 if (callbackFired) return
                 if (status != BluetoothGatt.GATT_SUCCESS) {
                     callbackFired = true
@@ -533,15 +562,16 @@ class TrezorMethodHandler(
                 } else {
                     // No descriptor — hand off to Rust immediately
                     callbackFired = true
-                    doRustConnect(deviceId, result)
+                    doRustConnect(deviceId, generation, result)
                 }
             }
 
             override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: android.bluetooth.BluetoothGattDescriptor, status: Int) {
+                if (generation != bleConnectionGeneration || this@TrezorMethodHandler.gatt !== gatt) return
                 if (callbackFired) return
                 callbackFired = true
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    doRustConnect(deviceId, result)
+                    doRustConnect(deviceId, generation, result)
                 } else {
                     gatt.disconnect()
                     mainHandler.post { result.error("NOTIFY_ENABLE_FAILED", "Failed to enable BLE notifications (status=$status).", null) }
@@ -550,28 +580,39 @@ class TrezorMethodHandler(
 
             @Suppress("DEPRECATION")
             override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-                onCharacteristicWriteResult(status == BluetoothGatt.GATT_SUCCESS)
+                if (this@TrezorMethodHandler.gatt !== gatt) return
+                onCharacteristicWriteResult(generation, status == BluetoothGatt.GATT_SUCCESS)
             }
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-                characteristic.value?.let { readQueue.offer(it) }
+                if (generation == bleConnectionGeneration && this@TrezorMethodHandler.gatt === gatt) {
+                    characteristic.value?.let { readQueue.offer(it) }
+                }
             }
 
             @Suppress("DEPRECATION")
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-                readQueue.offer(value)
+                if (generation == bleConnectionGeneration && this@TrezorMethodHandler.gatt === gatt) readQueue.offer(value)
             }
         }
 
-        device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        gatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
     }
 
     // Called on executor thread once BLE notifications are enabled.
     // Mirrors iOS drainThenConnect(delay:2.0): flush stale Trezor packets for 2 s before handshake.
-    private fun doRustConnect(deviceId: String, result: MethodChannel.Result) {
+    private fun doRustConnect(deviceId: String, generation: Long, result: MethodChannel.Result) {
         executor.execute {
+            if (generation != bleConnectionGeneration) {
+                mainHandler.post { result.error("CANCELLED", "Trezor connection was replaced by a new attempt.", null) }
+                return@execute
+            }
             val deadline = System.currentTimeMillis() + 2000L
             while (System.currentTimeMillis() < deadline) {
+                if (generation != bleConnectionGeneration) {
+                    mainHandler.post { result.error("CANCELLED", "Trezor connection was cancelled.", null) }
+                    return@execute
+                }
                 readQueue.clear()
                 Thread.sleep(100)
             }
@@ -579,13 +620,20 @@ class TrezorMethodHandler(
             try {
                 if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
                 val handle = (nextHandle++).toULong()
-                val cbs = KotlinBleCallbacks(this)
+                val cbs = KotlinBleCallbacks(this, generation)
                 val credPath = credentialFilePath()
                 uniffi.trezor_bridge.trezorRegisterCallbacks(handle, cbs)
                 val rustDeviceId = uniffi.trezor_bridge.trezorConnect(handle, deviceId, credPath)
-                activeHandle = handle
-                activeDeviceId = rustDeviceId
-                mainHandler.post { result.success(rustDeviceId) }
+                if (generation == bleConnectionGeneration) {
+                    activeHandle = handle
+                    activeDeviceId = rustDeviceId
+                    mainHandler.post { result.success(rustDeviceId) }
+                } else {
+                    try {
+                        uniffi.trezor_bridge.trezorDisconnect(rustDeviceId)
+                    } catch (_: Exception) {}
+                    mainHandler.post { result.error("CANCELLED", "Trezor connection was cancelled.", null) }
+                }
             } catch (e: Exception) {
                 val msg = e.message ?: "Unknown error"
                 val code = when {
@@ -793,6 +841,10 @@ class TrezorMethodHandler(
     }
 
     private fun cancel(result: MethodChannel.Result) {
+        ++bleConnectionGeneration
+        pendingWriteFuture?.complete(false)
+        pendingWriteFuture = null
+        readQueue.clear()
         pendingPairingFuture?.takeIf { !it.isDone }?.complete("")
         pendingPinFuture?.takeIf { !it.isDone }?.complete("")
         pendingPassphraseFuture?.takeIf { !it.isDone }?.complete("{\"type\":\"cancel\"}")
@@ -827,7 +879,8 @@ class TrezorMethodHandler(
         result.success(null)
     }
 
-    fun requestPairingCode(): String {
+    fun requestPairingCode(generation: Long? = null): String {
+        if (generation != null && generation != bleConnectionGeneration) return ""
         val future = CompletableFuture<String>()
         pendingPairingFuture = future
         mainHandler.post {
@@ -838,15 +891,15 @@ class TrezorMethodHandler(
                     override fun success(result: Any?) {
                         val code = (result as? String) ?: ""
                         future.complete(code)
-                        pendingPairingFuture = null
+                        if (pendingPairingFuture === future) pendingPairingFuture = null
                     }
                     override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
                         future.complete("")
-                        pendingPairingFuture = null
+                        if (pendingPairingFuture === future) pendingPairingFuture = null
                     }
                     override fun notImplemented() {
                         future.complete("")
-                        pendingPairingFuture = null
+                        if (pendingPairingFuture === future) pendingPairingFuture = null
                     }
                 }
             )
@@ -856,7 +909,7 @@ class TrezorMethodHandler(
         } catch (_: Exception) {
             ""
         } finally {
-            pendingPairingFuture = null
+            if (pendingPairingFuture === future) pendingPairingFuture = null
         }
     }
 
@@ -934,15 +987,16 @@ class TrezorMethodHandler(
  */
 class KotlinBleCallbacks(
     private val handler: TrezorMethodHandler,
+    private val generation: Long,
 ) : uniffi.trezor_bridge.TrezorBleCallbacks {
 
     override fun write(data: List<UByte>): Boolean {
         val bytes = data.map { it.toByte() }.toByteArray()
-        return handler.bleWrite(bytes)
+        return handler.bleWrite(generation, bytes)
     }
 
     override fun read(): List<UByte>? {
-        val bytes = handler.bleRead() ?: return null
+        val bytes = handler.bleRead(generation) ?: return null
         return bytes.map { it.toUByte() }
     }
 
@@ -951,7 +1005,7 @@ class KotlinBleCallbacks(
     override fun getPassphrase(onDevice: Boolean): String = handler.requestPassphrase(onDevice)
 
     override fun getPairingCode(): String {
-        return handler.requestPairingCode()
+        return handler.requestPairingCode(generation)
     }
 }
 

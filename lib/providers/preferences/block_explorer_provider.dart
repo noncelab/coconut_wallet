@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -29,14 +28,6 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) => '$blockExplorerUrl/${pathType.name}/$value';
 
-  String sanitizedExplorerAnalyticsDestination(BlockExplorerPathType pathType) {
-    final path = pathType.name;
-    if (isCustomExplorerEnabled) {
-      return '${AnalyticsParameterValues.customExplorer}/${path.toUpperCase()}';
-    }
-    return '$blockExplorerUrl/$path';
-  }
-
   String get blockExplorerUrl {
     if (NetworkType.currentNetworkType == NetworkType.regtest) {
       return DEFAULT_EXPLORER_URL_REGTEST;
@@ -55,10 +46,16 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String _getDefaultMempoolUrl() {
     // 언어 설정은 SharedPrefs에서 직접 가져옴
+    // mempool.space는 en 전용 경로(/en) 없음. en은 bare 도메인을 사용하고, 나머지 언어만 경로 적용
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
+    final appLanguage = AppLanguage.fromCode(effectiveLanguage);
 
-    return '$DEFAULT_EXPLORER_URL_MAINNET/${AppLanguage.fromCode(effectiveLanguage).code}';
+    if (appLanguage == AppLanguage.en) {
+      return DEFAULT_EXPLORER_URL_MAINNET;
+    }
+
+    return '$DEFAULT_EXPLORER_URL_MAINNET/${appLanguage.code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {

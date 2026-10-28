@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -9,6 +11,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -25,6 +28,7 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
@@ -34,50 +38,88 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/features/send/tag_inheritance_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingScreen extends StatefulWidget {
   final int? signedTransactionDraftId;
-  const BroadcastingScreen({super.key, this.signedTransactionDraftId});
+  final bool animateHotWalletEntry;
+  final int? initialAmount;
+  final int? initialTotalAmount;
+  const BroadcastingScreen({
+    super.key,
+    this.signedTransactionDraftId,
+    this.animateHotWalletEntry = false,
+    this.initialAmount,
+    this.initialTotalAmount,
+  });
 
   @override
   State<BroadcastingScreen> createState() => _BroadcastingScreenState();
 }
 
-class _BroadcastingScreenState extends State<BroadcastingScreen> {
+enum _BroadcastAnimationOutcome { pending, succeeded, failed }
+
+class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTickerProviderStateMixin {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  late bool _showEntryChrome;
+  late bool _showTransactionFlow;
+  late bool _showOutputDetail;
+  late bool _showBottomButton;
+  late final AnimationController _broadcastLottieController;
+  late final ScrollController _scrollController;
+  final Completer<void> _broadcastLottieLoaded = Completer<void>();
+  _BroadcastAnimationOutcome _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
+  bool _isBroadcasting = false;
+  bool _isPreparingBroadcast = false;
+  bool _showBroadcastLottie = false;
+  bool _isBroadcastCompletionPhase = false;
+  bool _isOverlayLoading = false;
 
-  String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
+  int? get _displayAmount => _viewModel.amount ?? widget.initialAmount;
+
+  int? get _displayTotalAmount => _viewModel.totalAmount ?? widget.initialTotalAmount;
+
+  String get confirmText => _currentUnit.displayBitcoinAmount(_displayAmount);
 
   String get totalCostText =>
-      _currentUnit.displayBitcoinAmount(_viewModel.totalAmount, defaultWhenNull: t.calculation_failed);
+      _currentUnit.displayBitcoinAmount(_displayTotalAmount, defaultWhenNull: t.calculation_failed);
 
   String get unitText => _currentUnit.symbol;
 
   void _setOverlayLoading(bool value) {
-    if (value) {
-      context.loaderOverlay.show();
-    } else {
-      context.loaderOverlay.hide();
-    }
+    if (!mounted || _isOverlayLoading == value) return;
+    setState(() => _isOverlayLoading = value);
   }
 
-  void broadcast() async {
-    if (context.loaderOverlay.visible) return;
-    _setOverlayLoading(true);
-    await Future.delayed(const Duration(seconds: 1));
+  Future<void> broadcast({required List<String> inheritedTagIds}) async {
+    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading) {
+      return;
+    }
+    _isPreparingBroadcast = true;
+    if (_scrollController.hasClients && _scrollController.offset > 0) {
+      await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
+    }
+    if (!mounted) return;
+    await _prepareBroadcastAnimation();
+    if (!mounted) return;
+    final lottieAnimation = _runBroadcastLottie();
     try {
-      Result<String> result = await _viewModel.broadcast();
-      _setOverlayLoading(false);
+      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
 
       if (result.isFailure) {
+        _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
+        await lottieAnimation;
+        if (!mounted) return;
+        _restoreAfterBroadcastFailure();
         vibrateMedium();
         String message = result.error.message;
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
@@ -94,27 +136,54 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       }
 
       if (result.isSuccess) {
-        vibrateLight();
-        await _viewModel.updateTagsOfUsedUtxos();
-        await _viewModel.deleteDraftsIfNeeded();
-
+        try {
+          await _viewModel.deleteDraftsIfNeeded();
+        } catch (e) {
+          Logger.error('Transaction sent, but draft cleanup failed: $e');
+        }
         if (!mounted) return;
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRouteNames.broadcastingComplete, // 이동할 경로
-          _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
-              ? ModalRoute.withName(AppRouteNames.walletDetail) // AppRouteNames.walletDetail 경로를 남기고 그 외의 경로 제거
-              : (route) => route.isFirst, // HomeScreen까지 제거
-          arguments: BroadcastingCompleteRouteArgs(
-            id: _viewModel.walletId!,
-            txHash: _viewModel.signedTx!.transactionHash,
+        _broadcastAnimationOutcome = _BroadcastAnimationOutcome.succeeded;
+        await lottieAnimation;
+        if (!mounted) return;
+        if (_viewModel.tagInheritanceFailed) {
+          await showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_complete_screen.complete,
+            t.broadcasting_screen.dialog.tag_apply_failed,
+          );
+          if (!mounted) return;
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder<void>(
+            settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
+            transitionDuration: const Duration(milliseconds: 280),
+            reverseTransitionDuration: const Duration(milliseconds: 200),
+            pageBuilder:
+                (_, animation, secondaryAnimation) => BroadcastingCompleteScreen(
+                  id: _viewModel.walletId!,
+                  txHash: _viewModel.signedTx!.transactionHash,
+                  animateEntry: true,
+                ),
+            transitionsBuilder:
+                (_, animation, secondaryAnimation, child) => FadeTransition(
+                  opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                  child: child,
+                ),
           ),
+          switch (_viewModel.sendEntryPoint) {
+            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
+            SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
+            SendEntryPoint.home || null => (route) => route.isFirst,
+          },
         );
       }
     } catch (e) {
       Logger.error(">>>>> broadcast error: $e");
-      _setOverlayLoading(false);
+      _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
+      await lottieAnimation;
+      if (!mounted) return;
+      _restoreAfterBroadcastFailure();
       String message = e.toString();
       if (e.toString().contains('min relay fee not met')) {
         message = t.alert.error_send.insufficient_fee;
@@ -128,6 +197,68 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       );
       vibrateMedium();
     }
+  }
+
+  Future<void> _prepareBroadcastAnimation() async {
+    setState(() {
+      _isBroadcasting = true;
+      _showEntryChrome = false;
+      _showBottomButton = false;
+      _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
+      _isBroadcastCompletionPhase = false;
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    setState(() => _showTransactionFlow = false);
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    setState(() => _showOutputDetail = false);
+    await Future.delayed(const Duration(milliseconds: 320));
+    if (!mounted) return;
+    setState(() => _showBroadcastLottie = true);
+    await WidgetsBinding.instance.endOfFrame;
+    await _broadcastLottieLoaded.future;
+  }
+
+  Future<void> _runBroadcastLottie() async {
+    const pivot = 22 / 60;
+    const pivotDuration = Duration(milliseconds: 733);
+    _broadcastLottieController.value = 0;
+    while (_broadcastAnimationOutcome == _BroadcastAnimationOutcome.pending) {
+      await _broadcastLottieController.animateTo(pivot, duration: pivotDuration, curve: Curves.easeInOut);
+      if (_broadcastAnimationOutcome != _BroadcastAnimationOutcome.pending) {
+        break;
+      }
+      await _broadcastLottieController.animateBack(0, duration: pivotDuration, curve: Curves.easeInOut);
+    }
+
+    if (_broadcastAnimationOutcome == _BroadcastAnimationOutcome.succeeded) {
+      if (mounted) {
+        vibrateLight();
+        setState(() => _isBroadcastCompletionPhase = true);
+      }
+      await _broadcastLottieController.animateTo(
+        1,
+        duration: Duration(milliseconds: ((1 - _broadcastLottieController.value) * 2000).round()),
+        curve: Curves.linear,
+      );
+    } else {
+      _broadcastLottieController.stop();
+      _broadcastLottieController.value = 0;
+    }
+  }
+
+  void _restoreAfterBroadcastFailure() {
+    setState(() {
+      _isBroadcasting = false;
+      _showBroadcastLottie = false;
+      _showEntryChrome = true;
+      _showTransactionFlow = true;
+      _showOutputDetail = true;
+      _showBottomButton = true;
+      _isBroadcastCompletionPhase = false;
+      _isPreparingBroadcast = false;
+    });
   }
 
   @override
@@ -148,68 +279,161 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           return viewModel;
         },
         child: Consumer<BroadcastingViewModel>(
-          builder:
-              (context, viewModel, child) => Scaffold(
-                floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-                backgroundColor: context.coconutColors.background,
-                appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
-                body: SafeArea(
-                  child: Stack(
-                    children: [
-                      _buildNormalBroadcastInfo(
-                        viewModel,
-                        viewModel.amount,
-                        viewModel.fee,
-                        viewModel.totalAmount,
-                        viewModel.sendingAmountWhenAddressIsMyChange,
-                        viewModel.isSendingToMyAddress,
-                        viewModel.recipientAddresses,
-                        viewModel.isNetworkOn,
-                      ),
-                      if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
-                        FixedBottomTweenButton(
-                          leftButtonRatio: 0.35,
-                          leftButtonClicked: () async {
-                            if (viewModel.isAlreadySaved) {
-                              CoconutToast.showToast(
-                                context: context,
-                                text: t.broadcasting_screen.toast.already_saved_draft,
-                                isVisibleIcon: true,
-                              );
-                              return;
-                            }
-                            try {
-                              final result = await viewModel.saveTransactionDraft();
-                              if (result.isSuccess) {
-                                _showTransactionDraftSavedDialog();
-                              } else {
-                                _showTransactionDraftSaveFailedDialog(result.error.message);
-                              }
-                            } catch (e) {
-                              _showTransactionDraftSaveFailedDialog(e.toString());
-                            }
-                          },
-                          rightButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          leftText: t.transaction_draft.save,
-                          rightText: t.broadcasting_screen.btn_submit,
-                          rightButtonBackgroundColor: context.coconutColors.primary,
+          builder: (context, viewModel, child) {
+            final appBar = CoconutAppBar.build(title: t.broadcasting_screen.title, context: context);
+            return Stack(
+              children: [
+                Scaffold(
+                  floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                  backgroundColor: context.coconutColors.background,
+                  appBar: PreferredSize(
+                    preferredSize: appBar.preferredSize,
+                    child: AnimatedOpacity(
+                      opacity: _showEntryChrome && !_isBroadcasting ? 1 : 0,
+                      duration: const Duration(milliseconds: 280),
+                      child: IgnorePointer(ignoring: !_showEntryChrome || _isBroadcasting, child: appBar),
+                    ),
+                  ),
+                  body: SafeArea(
+                    child: Stack(
+                      children: [
+                        _buildNormalBroadcastInfo(
+                          viewModel,
+                          viewModel.amount,
+                          viewModel.fee,
+                          viewModel.totalAmount,
+                          viewModel.sendingAmountWhenAddressIsMyChange,
+                          viewModel.isSendingToMyAddress,
+                          viewModel.recipientAddresses,
+                          viewModel.isNetworkOn,
                         ),
-                      } else ...{
-                        FixedBottomButton(
-                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                          onButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          text: t.broadcasting_screen.btn_submit,
-                          backgroundColor: context.coconutColors.primary,
-                        ),
-                      },
-                    ],
+                        if (_isBroadcasting)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 320),
+                            curve: Curves.easeInOutCubic,
+                            top:
+                                _isBroadcastCompletionPhase
+                                    ? MediaQuery.sizeOf(context).height * 0.3 - appBar.preferredSize.height
+                                    : (MediaQuery.sizeOf(context).height -
+                                            MediaQuery.paddingOf(context).vertical -
+                                            appBar.preferredSize.height -
+                                            118) /
+                                        2,
+                            left: 0,
+                            right: 0,
+                            child: AnimatedOpacity(
+                              opacity: _showBroadcastLottie ? 1 : 0,
+                              duration: const Duration(milliseconds: 220),
+                              child: Column(
+                                children: [
+                                  Lottie.asset(
+                                    TransactionLottiePath.checkSpinning,
+                                    controller: _broadcastLottieController,
+                                    width: 70,
+                                    height: 70,
+                                    repeat: false,
+                                    onLoaded: (composition) {
+                                      _broadcastLottieController.duration = composition.duration;
+                                      if (!_broadcastLottieLoaded.isCompleted) {
+                                        _broadcastLottieLoaded.complete();
+                                      }
+                                    },
+                                  ),
+                                  CoconutLayout.spacing_400h,
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 280),
+                                    layoutBuilder:
+                                        (currentChild, previousChildren) => Stack(
+                                          alignment: Alignment.center,
+                                          children: [...previousChildren, if (currentChild != null) currentChild],
+                                        ),
+                                    transitionBuilder: (child, animation) {
+                                      final isIncoming = child.key == ValueKey(_isBroadcastCompletionPhase);
+                                      final curvedAnimation = CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                        reverseCurve: Curves.easeInCubic,
+                                      );
+                                      final slideAnimation = Tween<Offset>(
+                                        begin: isIncoming ? const Offset(0, 0.3) : const Offset(0, -0.4),
+                                        end: Offset.zero,
+                                      ).animate(curvedAnimation);
+
+                                      return FadeTransition(
+                                        opacity: curvedAnimation,
+                                        child: SlideTransition(position: slideAnimation, child: child),
+                                      );
+                                    },
+                                    child: Text(
+                                      _isBroadcastCompletionPhase
+                                          ? t.broadcasting_complete_screen.complete
+                                          : t.broadcasting_screen.requesting,
+                                      key: ValueKey(_isBroadcastCompletionPhase),
+                                      style: CoconutTypography.heading4_18_Bold.setColor(
+                                        context.coconutColors.primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (viewModel.canUseTransactionDrafts &&
+                            viewModel.feeBumpingType == null &&
+                            widget.signedTransactionDraftId == null) ...{
+                          _BroadcastEntryTransition(
+                            visible: _showBottomButton,
+                            child: FixedBottomTweenButton(
+                              leftButtonRatio: 0.35,
+                              leftButtonClicked: () async {
+                                if (viewModel.isAlreadySaved) {
+                                  CoconutToast.showToast(
+                                    context: context,
+                                    text: t.broadcasting_screen.toast.already_saved_draft,
+                                    isVisibleIcon: true,
+                                  );
+                                  return;
+                                }
+                                try {
+                                  final result = await viewModel.saveTransactionDraft();
+                                  if (result.isSuccess) {
+                                    _showTransactionDraftSavedDialog();
+                                  } else {
+                                    _showTransactionDraftSaveFailedDialog(result.error.message);
+                                  }
+                                } catch (e) {
+                                  _showTransactionDraftSaveFailedDialog(e.toString());
+                                }
+                              },
+                              rightButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              leftText: t.transaction_draft.save,
+                              rightText: t.broadcasting_screen.btn_submit,
+                              rightButtonBackgroundColor: context.coconutColors.primary,
+                            ),
+                          ),
+                        } else ...{
+                          _BroadcastEntryTransition(
+                            visible: _showBottomButton,
+                            child: FixedBottomButton(
+                              isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                              onButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              text: t.broadcasting_screen.btn_submit,
+                              backgroundColor: context.coconutColors.primary,
+                            ),
+                          ),
+                        },
+                      ],
+                    ),
                   ),
                 ),
-              ),
+                if (_isOverlayLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -259,29 +483,62 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     );
   }
 
-  void _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
-    if (viewModel.isNetworkOn == false) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: CommonStateIconPath.triangleWarning,
-        text: ErrorCodes.networkError.message,
-        level: CoconutToastLevel.warning,
+  Future<void> _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
+    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading || !viewModel.isInitDone) return;
+    _isPreparingBroadcast = true;
+    try {
+      if (viewModel.isNetworkOn == false) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: CommonStateIconPath.triangleWarning,
+          text: ErrorCodes.networkError.message,
+          level: CoconutToastLevel.warning,
+        );
+        return;
+      }
+      if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+        await TransactionUtil.showTransactionConfirmedDialog(context);
+        return;
+      }
+      final candidates = viewModel.prepareTagInheritance();
+      final inheritedTagIds =
+          candidates.isEmpty
+              ? <String>[]
+              : await showDialog<List<String>>(
+                context: context,
+                builder:
+                    (_) => TagInheritanceDialog(
+                      tags: candidates,
+                      languageCode: context.read<PreferenceProvider>().language,
+                    ),
+              );
+      if (!mounted || inheritedTagIds == null) return;
+      _isPreparingBroadcast = false;
+      await broadcast(inheritedTagIds: inheritedTagIds);
+    } catch (e) {
+      Logger.error('Preparing tag inheritance failed: $e');
+      if (!mounted) return;
+      showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.broadcasting_screen.error_popup_title,
+        e.toString(),
       );
-      return;
-    }
-    if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-      await TransactionUtil.showTransactionConfirmedDialog(context);
-      return;
-    }
-    if (viewModel.isInitDone) {
-      broadcast();
+    } finally {
+      _isPreparingBroadcast = false;
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _showEntryChrome = !widget.animateHotWalletEntry;
+    _showTransactionFlow = !widget.animateHotWalletEntry;
+    _showOutputDetail = !widget.animateHotWalletEntry;
+    _showBottomButton = !widget.animateHotWalletEntry;
+    _broadcastLottieController = AnimationController(vsync: this);
+    _scrollController = ScrollController();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = BroadcastingViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
@@ -296,6 +553,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((duration) async {
+      if (widget.animateHotWalletEntry) {
+        await Future.delayed(const Duration(milliseconds: 250));
+        if (mounted) {
+          setState(() {
+            _showEntryChrome = true;
+            _showTransactionFlow = true;
+            _showOutputDetail = true;
+            _showBottomButton = true;
+          });
+        }
+      }
       _setOverlayLoading(true);
 
       try {
@@ -363,6 +631,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _broadcastLottieController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Widget _buildNormalBroadcastInfo(
     BroadcastingViewModel viewModel,
     int? amount,
@@ -376,32 +651,52 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollController,
+        physics: _isBroadcasting ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             if (!isNetworkOn) ErrorTooltip(isShown: !isNetworkOn, errorMessage: t.errors.network_error),
             CoconutLayout.spacing_1000h,
-            Text(
-              t.broadcasting_screen.description,
-              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-            ),
-            CoconutLayout.spacing_400h,
-            SendAmountHeader(
-              amountText: confirmText,
-              unit: _currentUnit,
-              satoshiAmount: amount ?? 0,
-              totalCostAmountText: totalCostText,
-              onTap: _toggleUnit,
-              topMargin: 0,
-              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+            AnimatedSlide(
+              offset:
+                  _isBroadcastCompletionPhase
+                      ? const Offset(0, -0.35)
+                      : _isBroadcasting
+                      ? const Offset(0, -0.12)
+                      : Offset.zero,
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeInOutCubic,
+              child: AnimatedOpacity(
+                opacity: _isBroadcastCompletionPhase ? 0 : 1,
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                child: Column(
+                  children: [
+                    Text(
+                      t.broadcasting_screen.description,
+                      style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                      textAlign: TextAlign.center,
+                    ),
+                    CoconutLayout.spacing_400h,
+                    SendAmountHeader(
+                      amountText: confirmText,
+                      unit: _currentUnit,
+                      satoshiAmount: amount ?? widget.initialAmount ?? 0,
+                      totalCostAmountText: totalCostText,
+                      onTap: _toggleUnit,
+                      topMargin: 0,
+                      fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+                    ),
+                  ],
+                ),
+              ),
             ),
             CoconutLayout.spacing_300h,
-            _buildTransactionFlowCard(viewModel),
+            _BroadcastEntryTransition(visible: _showTransactionFlow, child: _buildTransactionFlowCard(viewModel)),
             CoconutLayout.spacing_500h,
-            _buildOutputDetailCardSection(viewModel),
+            _BroadcastEntryTransition(visible: _showOutputDetail, child: _buildOutputDetailCardSection(viewModel)),
             if (isSendingToMyAddress) ...[
               const SizedBox(height: 20),
               Text(
@@ -436,6 +731,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
       externalOutputAmounts: viewModel.externalOutputAmounts,
+      externalOutputTapTargets: [
+        for (final item in viewModel.outputDetailItems)
+          if (!item.isChange)
+            FlowOutputTapTarget(address: item.address, amount: item.amount, outputIndex: item.outputIndex),
+      ],
       changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.fee,
       currentUnit: _currentUnit,
@@ -448,14 +748,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       return const SizedBox.shrink();
     }
 
-    int outputIndex = 0;
     final uiItems =
         detailItems.map((item) {
-          if (!item.isChange) {
-            outputIndex += 1;
-          }
           return OutputDetailItem(
-            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
+            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: item.outputIndex),
             address: item.address,
             amountSats: item.amount,
             isChange: item.isChange,
@@ -464,4 +760,22 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
     return SendOutputDetailCard(items: uiItems, currentUnit: _currentUnit);
   }
+}
+
+class _BroadcastEntryTransition extends StatelessWidget {
+  const _BroadcastEntryTransition({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: !visible,
+    child: AnimatedSlide(
+      offset: visible ? Offset.zero : const Offset(0, 0.12),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(opacity: visible ? 1 : 0, duration: const Duration(milliseconds: 240), child: child),
+    ),
+  );
 }

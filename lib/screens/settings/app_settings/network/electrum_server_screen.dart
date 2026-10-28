@@ -515,7 +515,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     color:
                                         serverConnectionStatus == NodeConnectionStatus.connected
                                             ? context.coconutColors.success
-                                            : context.coconutColors.danger,
+                                            : context.coconutColors.dangerText,
                                   ),
                                 ),
                               ],
@@ -606,7 +606,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     errorText: t.settings_screen.electrum_server.error_msg.invalid_domain_format,
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
-                    backgroundColor: context.coconutColors.background,
+                    backgroundColor: context.coconutColors.inputSurface,
                     maxLines: 1,
                     clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
@@ -679,7 +679,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
-                    backgroundColor: context.coconutColors.background,
+                    backgroundColor: context.coconutColors.inputSurface,
                     clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
                       setState(() {
@@ -798,7 +798,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           return SvgPicture.asset(
             CommonFormIconPath.circleCheck,
             height: 20,
-            colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
           );
         }
       default:

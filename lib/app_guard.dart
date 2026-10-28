@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +22,7 @@ import 'package:screen_capture_event/screen_capture_event.dart';
 /// 백그라운드 체류가 이보다 길었을 때만 resume 시 소켓 생존 여부 확인
 const Duration _kBackgroundSocketHealthCheckThreshold = Duration(seconds: 30);
 
-// 앱 root 화면(WalletListScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
+// 앱 root 화면(HomeScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
   static bool _isPrivacyEnabled = true;
 
@@ -38,6 +37,20 @@ class AppGuard extends StatefulWidget {
   /// 화면보호기를 비활성화합니다.
   static void disablePrivacyScreen() {
     _isPrivacyEnabled = false;
+  }
+
+  /// 생체인증처럼 앱이 일시적으로 inactive 상태가 되는 작업 동안 화면보호기를
+  /// 비활성화하고, 성공·취소·예외 여부와 관계없이 이전 상태로 복원합니다.
+  static Future<T> runWithoutPrivacyScreen<T>(Future<T> Function() action) async {
+    final wasPrivacyEnabled = _isPrivacyEnabled;
+    disablePrivacyScreen();
+    try {
+      return await action();
+    } finally {
+      if (wasPrivacyEnabled) {
+        enablePrivacyScreen();
+      }
+    }
   }
 
   final Widget child;
@@ -113,7 +126,7 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
-        FileLogger.dispose();
+        break;
       case AppLifecycleState.paused:
         _pausedAt = DateTime.now();
         if (_isPaused) break;
@@ -142,7 +155,12 @@ class _AppGuardState extends State<AppGuard> {
     // 2. 초기화 미완료 시 initialize 호출
     if (!_nodeProvider.isInitialized) {
       Logger.log('AppGuard: NodeProvider is not initialized yet, initializing instead of reconnect');
-      _nodeProvider.initialize();
+      try {
+        await _nodeProvider.initialize();
+      } catch (e) {
+        // initialize() already exposes the connection failure through NodeProvider's state.
+        Logger.log('AppGuard: NodeProvider initialization failed: $e');
+      }
       return;
     }
 

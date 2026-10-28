@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -9,11 +10,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class TrezorTransportSelectScreen extends StatelessWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
 
-  const TrezorTransportSelectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorTransportSelectScreen({
+    super.key,
+    this.walletId,
+    this.psbtBase64,
+    this.walletName,
+    this.walletFingerprint,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +70,7 @@ class TrezorTransportSelectScreen extends StatelessWidget {
       context,
       AppRouteNames.trezorBleConnect,
       arguments: TrezorBleConnectRouteArgs(
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,
@@ -75,6 +84,7 @@ class TrezorTransportSelectScreen extends StatelessWidget {
       context,
       AppRouteNames.trezorUsbConnect,
       arguments: TrezorUsbConnectRouteArgs(
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,

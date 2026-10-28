@@ -4,27 +4,6 @@ import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/number_symbols.dart';
-
-String getNumberFormatLocaleName() {
-  final locales = PlatformDispatcher.instance.locales;
-  final locale = locales.isNotEmpty ? locales.first : PlatformDispatcher.instance.locale;
-
-  return Intl.canonicalizedLocale(locale.toLanguageTag());
-}
-
-NumberSymbols getNumberFormatSymbols({String? localeName}) {
-  return NumberFormat.decimalPattern(localeName ?? getNumberFormatLocaleName()).symbols;
-}
-
-String getNumberDecimalSeparator({String? localeName}) {
-  return getNumberFormatSymbols(localeName: localeName).DECIMAL_SEP;
-}
-
-String getNumberGroupingSeparator({String? localeName}) {
-  return getNumberFormatSymbols(localeName: localeName).GROUP_SEP;
-}
 
 /// 시스템 언어를 감지하여 앱 내부 언어 코드로 반환합니다.
 String getSystemLanguageCode() {

@@ -12,6 +12,13 @@ class WalletIcon extends StatelessWidget {
   final int colorIndex;
   final int iconIndex;
   final bool isInnerWallet;
+  final bool isHotWallet;
+  final String? badgeSvgAssetPath;
+  final Color? badgeColor;
+  final Color? badgeBorderColor;
+  final double badgeSize;
+  final double badgeRight;
+  final double badgeBottom;
 
   const WalletIcon({
     super.key,
@@ -19,10 +26,31 @@ class WalletIcon extends StatelessWidget {
     this.colorIndex = 0,
     this.iconIndex = 0,
     this.isInnerWallet = true,
+    this.isHotWallet = false,
+    this.badgeSvgAssetPath,
+    this.badgeColor,
+    this.badgeBorderColor,
+    this.badgeSize = 18,
+    this.badgeRight = -1,
+    this.badgeBottom = -0.5,
   });
 
   @override
   Widget build(BuildContext context) {
+    final icon = _buildIcon(context);
+    final resolvedBadgeSvgAssetPath = badgeSvgAssetPath ?? (isHotWallet ? FeatureWalletIconPath.hotWalletFire : null);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        icon,
+        if (resolvedBadgeSvgAssetPath != null)
+          Positioned(right: badgeRight, bottom: badgeBottom, child: _buildBadge(context, resolvedBadgeSvgAssetPath)),
+      ],
+    );
+  }
+
+  Widget _buildIcon(BuildContext context) {
     if (walletImportSource == null) {
       return Container(
         padding: const EdgeInsets.all(10),
@@ -57,6 +85,27 @@ class WalletIcon extends StatelessWidget {
                 colorFilter: ColorFilter.mode(WalletVisualStyleUtil.getColor(colorIndex).color, BlendMode.srcIn),
                 width: 18.0,
               ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, String badgeAssetPath) {
+    final isEditBadge = badgeAssetPath == CommonActionIconPath.editOutlined;
+    final badgePadding = badgeSize * (isEditBadge ? 2 : 1.5) / 12;
+
+    return Container(
+      width: badgeSize,
+      height: badgeSize,
+      padding: EdgeInsets.all(badgePadding),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: context.coconutColors.iconBackground,
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 1.5),
+      ),
+      child: SvgPicture.asset(
+        badgeAssetPath,
+        fit: BoxFit.contain,
+        colorFilter: badgeColor == null ? null : ColorFilter.mode(badgeColor!, BlendMode.srcIn),
+      ),
     );
   }
 }

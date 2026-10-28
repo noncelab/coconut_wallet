@@ -1,8 +1,11 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/core/transaction/unsigned_psbt_summary.dart';
+import 'package:coconut_wallet/widgets/features/send/unsigned_psbt_summary_card.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -20,6 +23,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class TrezorSignScreen extends StatefulWidget {
+  final int walletId;
   final String psbtBase64;
   final String walletName;
   final String walletFingerprint;
@@ -28,6 +32,7 @@ class TrezorSignScreen extends StatefulWidget {
 
   const TrezorSignScreen({
     super.key,
+    required this.walletId,
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
@@ -144,97 +149,17 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
   }
 
   Widget _buildTransactionSummaryCard() {
-    final summary = _parsePsbtSummary();
+    final wallet = context.read<WalletProvider>().getWalletById(widget.walletId).walletBase;
+    final summary = UnsignedPsbtSummary.tryParse(psbtBase64: widget.psbtBase64, wallet: wallet);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0),
-          child: Text(
-            t.trezor_sign_screen.tx_card.title,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.left,
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.coconutColors.surface,
-            borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          ),
-          child: Column(
-            children: [
-              if (summary != null) ...[
-                _buildDetailRow(
-                  t.trezor_sign_screen.tx_card.send,
-                  _currentUnit.displayBitcoinAmount(summary.amount, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                if (summary.recipientAddresses.isNotEmpty)
-                  _buildDetailRow(t.trezor_sign_screen.tx_card.to, summary.recipientAddresses.join('\n')),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.trezor_sign_screen.tx_card.fee,
-                  _currentUnit.displayBitcoinAmount(summary.fee, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.trezor_sign_screen.tx_card.total_cost,
-                  _currentUnit.displayBitcoinAmount(summary.amount + summary.fee, withUnit: true),
-                ),
-              ] else ...[
-                _buildDetailRow(
-                  t.trezor_sign_screen.tx_card.send,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-                _buildDetailRow(
-                  t.trezor_sign_screen.tx_card.fee,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-              ],
-            ],
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-      ],
-    );
-  }
-
-  _PsbtSummary? _parsePsbtSummary() {
-    try {
-      final psbt = Psbt.parse(widget.psbtBase64);
-
-      int amount = (psbt.outputs).where((o) => o.isChange != true).fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
-      int fee = psbt.fee;
-
-      final outputs = psbt.outputs;
-
-      final addresses = outputs.where((o) => o.isChange != true).map((o) => o.outAddress).whereType<String>().toList();
-
-      return _PsbtSummary(amount: amount, fee: fee, recipientAddresses: addresses);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
+    return UnsignedPsbtSummaryCard(
+      summary: summary,
+      currentUnit: _currentUnit,
+      title: t.trezor_sign_screen.tx_card.title,
+      sendLabel: t.trezor_sign_screen.tx_card.send,
+      toLabel: t.trezor_sign_screen.tx_card.to,
+      feeLabel: t.trezor_sign_screen.tx_card.fee,
+      totalCostLabel: t.trezor_sign_screen.tx_card.total_cost,
     );
   }
 
@@ -280,10 +205,10 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        CommonFormIconPath.circleCheckOutline,
+        CommonFormIconPath.circleCheck,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        width: 16,
-        height: 16,
+        width: 20,
+        height: 20,
       );
       stateLabel = t.trezor_sign_screen.done.title;
       detailText = t.trezor_sign_screen.done.description;
@@ -325,8 +250,8 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                   if (vm.fingerprint != null) ...[
                     Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
                     CoconutLayout.spacing_100w,
-                    Text(
-                      vm.fingerprint!.toUpperCase(),
+                    MfpText(
+                      mfp: vm.fingerprint!.toUpperCase(),
                       style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                     ),
                     const Spacer(),
@@ -377,6 +302,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
           navigator.pop();
           await TrezorNavigator.showConnectScreen(
             context: navigator.context,
+            walletId: widget.walletId,
             psbtBase64: widget.psbtBase64,
             walletName: widget.walletName,
             walletFingerprint: widget.walletFingerprint,
@@ -396,6 +322,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 navigator.pop();
                 TrezorNavigator.showConnectScreen(
                   context: navigator.context,
+                  walletId: widget.walletId,
                   psbtBase64: widget.psbtBase64,
                   walletName: widget.walletName,
                   walletFingerprint: widget.walletFingerprint,
@@ -412,6 +339,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 navigator.pop();
                 await TrezorNavigator.showConnectScreen(
                   context: navigator.context,
+                  walletId: widget.walletId,
                   psbtBase64: widget.psbtBase64,
                   walletName: widget.walletName,
                   walletFingerprint: widget.walletFingerprint,
@@ -438,11 +366,4 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
               : null,
     );
   }
-}
-
-class _PsbtSummary {
-  final int amount;
-  final int fee;
-  final List<String> recipientAddresses;
-  const _PsbtSummary({required this.amount, required this.fee, required this.recipientAddresses});
 }

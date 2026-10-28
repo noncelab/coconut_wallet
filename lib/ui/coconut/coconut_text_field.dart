@@ -25,6 +25,14 @@ class LiteralTextEditingController extends TextEditingController {
 
   LiteralTextEditingController.fromValue(super.value) : super.fromValue();
 
+  String ghostText = '';
+  Color? ghostTextColor;
+
+  void updateGhostText(String text, Color? color) {
+    ghostText = text;
+    ghostTextColor = color;
+  }
+
   @override
   TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
     final composingRange = value.composing;
@@ -33,10 +41,10 @@ class LiteralTextEditingController extends TextEditingController {
 
     return TextSpan(
       style: style,
-      children: _buildLiteralCharacterSpans(
-        text: text,
-        composingRange: shouldStyleComposingRange ? composingRange : null,
-      ),
+      children: [
+        ..._buildLiteralCharacterSpans(text: text, composingRange: shouldStyleComposingRange ? composingRange : null),
+        if (ghostText.isNotEmpty) TextSpan(text: ghostText, style: style?.copyWith(color: ghostTextColor)),
+      ],
     );
   }
 
@@ -71,6 +79,10 @@ class CoconutTextField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function(String) onChanged;
+  final VoidCallback? onTap;
+  final ScrollController? scrollController;
+  final ScrollPhysics? scrollPhysics;
+  final bool showScrollFades;
   final VoidCallback? onEditingComplete;
   final EdgeInsets? padding;
   final Color? activeColor;
@@ -79,17 +91,21 @@ class CoconutTextField extends StatefulWidget {
   final Color? errorColor;
   final Color? borderColor;
   final Color? backgroundColor;
+  final Color? textColor;
   final int? maxLength;
   final int? maxLines;
   final Widget? prefix;
   final Widget? suffix;
   final String? suffixIconAsset;
+  final String? suffixSemanticLabel;
   final VoidCallback? onSuffixPressed;
   final Color? suffixIconColor;
   final double suffixIconSize;
   final CoconutTextFieldClearButtonVisibility clearButtonVisibility;
   final VoidCallback? onClear;
   final String? placeholderText;
+  final String ghostText;
+  final Color? ghostTextColor;
   final String? errorText;
   final String? descriptionText;
   final bool isErrorTextMultiline;
@@ -111,6 +127,7 @@ class CoconutTextField extends StatefulWidget {
   final bool autocorrect;
   final bool enableSuggestions;
   final bool enabled;
+  final bool readOnly;
   final bool unfocusOnTapOutside;
   final TextOverflow? textOverflow;
   final List<FontFeature>? fontFeatures;
@@ -124,7 +141,12 @@ class CoconutTextField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    this.onTap,
+    this.scrollController,
+    this.scrollPhysics,
+    this.showScrollFades = false,
     this.onEditingComplete,
+    this.readOnly = false,
     this.padding,
     this.activeColor,
     this.cursorColor,
@@ -132,17 +154,21 @@ class CoconutTextField extends StatefulWidget {
     this.errorColor,
     this.borderColor,
     this.backgroundColor,
+    this.textColor,
     this.maxLength,
     this.maxLines,
     this.prefix,
     this.suffix,
     this.suffixIconAsset,
+    this.suffixSemanticLabel,
     this.onSuffixPressed,
     this.suffixIconColor,
     this.suffixIconSize = 16,
     this.clearButtonVisibility = CoconutTextFieldClearButtonVisibility.never,
     this.onClear,
     this.placeholderText,
+    this.ghostText = '',
+    this.ghostTextColor,
     this.errorText,
     this.descriptionText,
     this.isErrorTextMultiline = false,
@@ -171,7 +197,7 @@ class CoconutTextField extends StatefulWidget {
     this.style = CoconutTextFieldStyle.bordered,
     this.size = CoconutTextFieldSize.standard,
     this.underlineSpacing = CoconutTextFieldUnderlineSpacing.standard,
-  });
+  }) : assert(!showScrollFades || scrollController != null);
 
   static TextStyle withDefaultFontFeatures(TextStyle style, {List<FontFeature>? fontFeatures}) {
     return style.copyWith(fontFeatures: [...?style.fontFeatures, ...?fontFeatures, ..._defaultTextFieldFontFeatures]);
@@ -190,6 +216,8 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   String _text = '';
   String _placeholderText = '';
   bool _isFocus = false;
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
 
   late Color _activeColor;
   late Color _cursorColor;
@@ -205,10 +233,12 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   void initState() {
     super.initState();
     _placeholderText = widget.placeholderText ?? '';
+    _isFocus = widget.focusNode.hasFocus;
     _inputController = LiteralTextEditingController.fromValue(widget.controller.value);
     _inputController.addListener(_inputControllerListener);
     widget.controller.addListener(_controllerListener);
     widget.focusNode.addListener(_focusNodeListener);
+    widget.scrollController?.addListener(_updateScrollEdges);
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
   }
 
@@ -216,6 +246,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _updateResolvedColors();
+    _updateGhostText();
   }
 
   @override
@@ -227,7 +258,18 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
       widget.controller.addListener(_controllerListener);
       _syncInputControllerFromWidget();
     }
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_focusNodeListener);
+      widget.focusNode.addListener(_focusNodeListener);
+      _isFocus = widget.focusNode.hasFocus;
+    }
+
+    if (oldWidget.scrollController != widget.scrollController) {
+      oldWidget.scrollController?.removeListener(_updateScrollEdges);
+      widget.scrollController?.addListener(_updateScrollEdges);
+    }
     _updateResolvedColors();
+    _updateGhostText();
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
   }
 
@@ -237,6 +279,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     _inputController.dispose();
     widget.controller.removeListener(_controllerListener);
     widget.focusNode.removeListener(_focusNodeListener);
+    widget.scrollController?.removeListener(_updateScrollEdges);
     super.dispose();
   }
 
@@ -300,15 +343,25 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     final colors = context.coconutColors;
     _activeColor = widget.activeColor ?? colors.primaryText;
     _cursorColor = widget.cursorColor ?? colors.primaryText;
-    _placeholderColor = widget.placeholderColor ?? colors.inputPlaceholder;
-    _errorColor = widget.errorColor ?? colors.danger;
+    _placeholderColor = widget.placeholderColor ?? (widget.enabled ? colors.inputPlaceholder : colors.mutedText);
+    _errorColor = widget.errorColor ?? colors.dangerText;
     _borderColor = widget.borderColor ?? colors.inputBorderUnfocused;
     _focusedBorderColor = widget.activeColor ?? colors.inputBorderFocused;
     _backgroundColor = widget.backgroundColor ?? colors.inputSurface;
     _text = widget.controller.text;
   }
 
+  void _updateGhostText() {
+    (_inputController as LiteralTextEditingController).updateGhostText(
+      widget.ghostText,
+      widget.ghostTextColor ?? context.coconutColors.tertiaryText,
+    );
+  }
+
   void _measureAffixes() {
+    if (!mounted) return;
+    _updateScrollEdges();
+
     Size nextPrefixSize = const Size(0, 0);
     Size nextSuffixSize = const Size(0, 0);
 
@@ -324,6 +377,47 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
         _suffixSize = nextSuffixSize;
       });
     }
+  }
+
+  void _updateScrollEdges() {
+    if (!mounted) return;
+    final controller = widget.scrollController;
+    final position = controller != null && controller.hasClients ? controller.position : null;
+    final canFade =
+        widget.showScrollFades && position != null && position.hasContentDimensions && position.axis == Axis.horizontal;
+    final left = canFade && position.pixels > position.minScrollExtent + 0.5;
+    final right = canFade && position.pixels < position.maxScrollExtent - 0.5;
+    if (left == _canScrollLeft && right == _canScrollRight) return;
+    setState(() {
+      _canScrollLeft = left;
+      _canScrollRight = right;
+    });
+  }
+
+  Widget _buildEdgeFade({double? left, double? right, required double width}) {
+    return Positioned(
+      top: 0,
+      bottom: 0,
+      left: left,
+      right: right,
+      child: IgnorePointer(
+        child: Container(
+          width: width,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: left != null ? Alignment.centerRight : Alignment.centerLeft,
+              end: left != null ? Alignment.centerLeft : Alignment.centerRight,
+              colors: [
+                _backgroundColor.withValues(alpha: 0),
+                _backgroundColor.withValues(alpha: 0.78),
+                _backgroundColor,
+              ],
+              stops: const [0, 0.55, 1],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   bool get _showClearButton {
@@ -342,28 +436,38 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
 
   Color _resolvedClearButtonColor(BuildContext context) {
     final colors = context.coconutColors;
+    if (!widget.enabled) return colors.iconDisabled;
     if (widget.isError) {
-      return _errorColor;
+      return widget.errorColor ?? colors.danger;
     }
-    return colors.inputPlaceholder;
+    return colors.iconSecondary;
   }
 
   Widget _buildClearButton(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(left: 6, right: _hasTrailingSuffix ? 4 : 0),
-      child: CupertinoButton(
-        padding: EdgeInsets.zero,
-        minSize: 16,
-        onPressed: widget.onClear,
-        child: SizedBox(
-          width: 16,
-          height: 16,
-          child: Center(
-            child: SvgPicture.asset(
-              CommonFormIconPath.textFieldClear,
-              width: 14,
-              height: 14,
-              colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
+      child: MergeSemantics(
+        child: Semantics(
+          enabled: widget.enabled,
+          child: IgnorePointer(
+            ignoring: !widget.enabled,
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(24, 24),
+              onPressed: widget.enabled ? widget.onClear : null,
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonFormIconPath.textFieldClear,
+                    semanticsLabel: CupertinoLocalizations.of(context).clearButtonLabel,
+                    width: 16,
+                    height: 16,
+                    colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -376,19 +480,31 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   Widget _buildSuffixIconButton(BuildContext context) {
     final colors = context.coconutColors;
 
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      minSize: 20,
-      onPressed: widget.onSuffixPressed,
-      child: SizedBox(
-        width: 20,
-        height: 20,
-        child: Center(
-          child: SvgPicture.asset(
-            widget.suffixIconAsset!,
-            width: widget.suffixIconSize,
-            height: widget.suffixIconSize,
-            colorFilter: ColorFilter.mode(widget.suffixIconColor ?? colors.iconPrimary, BlendMode.srcIn),
+    return MergeSemantics(
+      child: Semantics(
+        enabled: widget.enabled && widget.onSuffixPressed != null,
+        child: IgnorePointer(
+          ignoring: !widget.enabled || widget.onSuffixPressed == null,
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(20, 20),
+            onPressed: widget.enabled ? widget.onSuffixPressed : null,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: Center(
+                child: SvgPicture.asset(
+                  widget.suffixIconAsset!,
+                  semanticsLabel: widget.suffixSemanticLabel,
+                  width: widget.suffixIconSize,
+                  height: widget.suffixIconSize,
+                  colorFilter: ColorFilter.mode(
+                    widget.enabled ? (widget.suffixIconColor ?? colors.iconPrimary) : colors.iconDisabled,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -470,7 +586,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
       case CoconutTextFieldSize.compact:
         return 30;
       case CoconutTextFieldSize.search:
-        return 40;
+        return 48;
     }
   }
 
@@ -505,19 +621,24 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     final resolvedMaxLines = widget.obscureText ? 1 : widget.maxLines;
     final resolvedTextHeight = _resolvedTextHeight(resolvedMaxLines);
 
+    final errorBorderColor = widget.errorColor ?? context.coconutColors.danger;
     final resolvedBorderColor =
         widget.isError
-            ? _errorColor
+            ? errorBorderColor
             : _isFocus
-            ? (widget.maxLength != null && _text.runes.length > widget.maxLength! ? _errorColor : _focusedBorderColor)
+            ? (widget.maxLength != null && _text.runes.length > widget.maxLength!
+                ? errorBorderColor
+                : _focusedBorderColor)
             : _borderColor;
 
-    final resolvedTextColor = widget.enabled ? context.coconutColors.primaryText : context.coconutColors.secondaryText;
+    final resolvedTextColor =
+        widget.enabled ? widget.textColor ?? context.coconutColors.primaryText : context.coconutColors.secondaryText;
     final placeholderLeftInset = widget.prefix == null ? resolvedPadding.left : _prefixSize.width;
     final placeholderRightInset =
         resolvedSuffix != null ? _suffixSize.width + resolvedSuffixEdgePadding : resolvedPadding.right;
     final clearFadeWidth = _resolvedClearFadeWidth();
     final suffixBackgroundWidth = _resolvedSuffixBackgroundWidth(resolvedSuffixEdgePadding);
+    final showClearFade = resolvedSuffix != null && clearFadeWidth > 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -536,83 +657,102 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             color: _backgroundColor,
           ),
           child: Stack(
+            fit: StackFit.passthrough,
             children: [
-              CupertinoTextField(
-                focusNode: widget.focusNode,
-                controller: _inputController,
-                inputFormatters: widget.textInputFormatter,
-                obscureText: widget.obscureText,
-                textAlign: widget.textAlign ?? TextAlign.start,
-                padding: resolvedPadding.copyWith(right: resolvedPadding.right + _suffixSize.width),
-                style: CoconutTextField.withDefaultFontFeatures(
-                  CoconutTypography.body2_14.copyWith(
-                    color: resolvedTextColor,
-                    fontSize: widget.fontSize,
-                    fontFamily: widget.fontFamily,
-                    letterSpacing: widget.letterSpacing,
-                    fontWeight: widget.fontWeight,
-                    height: resolvedTextHeight,
+              Semantics(
+                label: widget.placeholderText,
+                child: NotificationListener<ScrollMetricsNotification>(
+                  onNotification: (_) {
+                    _updateScrollEdges();
+                    return false;
+                  },
+                  child: CupertinoTextField(
+                    focusNode: widget.focusNode,
+                    controller: _inputController,
+                    onTap: widget.onTap,
+                    scrollController: widget.scrollController,
+                    scrollPhysics: widget.scrollPhysics,
+                    inputFormatters: widget.textInputFormatter,
+                    obscureText: widget.obscureText,
+                    textAlign: widget.textAlign ?? TextAlign.start,
+                    padding: resolvedPadding.copyWith(right: resolvedPadding.right + _suffixSize.width),
+                    style: CoconutTextField.withDefaultFontFeatures(
+                      CoconutTypography.body2_14.copyWith(
+                        color: resolvedTextColor,
+                        fontSize: widget.fontSize,
+                        fontFamily: widget.fontFamily,
+                        letterSpacing: widget.letterSpacing,
+                        fontWeight: widget.fontWeight,
+                        height: resolvedTextHeight,
+                      ),
+                      fontFeatures: widget.fontFeatures,
+                    ),
+                    strutStyle: StrutStyle(
+                      fontSize: widget.fontSize,
+                      height: resolvedTextHeight,
+                      fontFamily: widget.fontFamily,
+                      fontWeight: widget.fontWeight,
+                      forceStrutHeight: true,
+                    ),
+                    cursorColor: _cursorColor,
+                    decoration: const BoxDecoration(color: Colors.transparent),
+                    maxLength: widget.maxLength,
+                    maxLines: resolvedMaxLines,
+                    prefix:
+                        widget.prefix == null
+                            ? null
+                            : Container(key: _prefixGlobalKey, alignment: Alignment.center, child: widget.prefix),
+                    suffix: null,
+                    keyboardType: widget.textInputType,
+                    textInputAction: widget.textInputAction,
+                    textAlignVertical: TextAlignVertical.center,
+                    enableInteractiveSelection: widget.enableInteractiveSelection,
+                    autocorrect: widget.autocorrect,
+                    enableSuggestions: widget.enableSuggestions,
+                    onEditingComplete: widget.onEditingComplete,
+                    onTapOutside: widget.unfocusOnTapOutside ? (_) => widget.focusNode.unfocus() : null,
+                    enabled: widget.enabled,
+                    readOnly: widget.readOnly,
                   ),
-                  fontFeatures: widget.fontFeatures,
                 ),
-                strutStyle: StrutStyle(
-                  fontSize: widget.fontSize,
-                  height: resolvedTextHeight,
-                  fontFamily: widget.fontFamily,
-                  fontWeight: widget.fontWeight,
-                  forceStrutHeight: true,
-                ),
-                cursorColor: _cursorColor,
-                decoration: const BoxDecoration(color: Colors.transparent),
-                maxLength: widget.maxLength,
-                maxLines: resolvedMaxLines,
-                prefix: Container(key: _prefixGlobalKey, alignment: Alignment.center, child: widget.prefix),
-                suffix: null,
-                keyboardType: widget.textInputType,
-                textInputAction: widget.textInputAction,
-                textAlignVertical: TextAlignVertical.center,
-                enableInteractiveSelection: widget.enableInteractiveSelection,
-                autocorrect: widget.autocorrect,
-                enableSuggestions: widget.enableSuggestions,
-                onEditingComplete: widget.onEditingComplete,
-                onTapOutside: widget.unfocusOnTapOutside ? (_) => widget.focusNode.unfocus() : null,
-                enabled: widget.enabled,
               ),
               Positioned.fill(
-                child: IgnorePointer(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: placeholderLeftInset,
-                      right: placeholderRightInset,
-                      top: resolvedPadding.top,
-                      bottom: resolvedPadding.bottom,
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child:
-                          widget.placeholderText == null || _isFocus || _text.isNotEmpty
-                              ? Text(
-                                '',
-                                style: CoconutTypography.body2_14.copyWith(
-                                  color: _placeholderColor,
-                                  fontSize: widget.fontSize,
-                                  fontWeight: widget.fontWeight,
-                                  height: resolvedTextHeight,
-                                ),
-                              )
-                              : FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  _placeholderText,
+                child: ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: placeholderLeftInset,
+                        right: placeholderRightInset,
+                        top: resolvedPadding.top,
+                        bottom: resolvedPadding.bottom,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child:
+                            widget.placeholderText == null || _isFocus || _text.isNotEmpty
+                                ? Text(
+                                  '',
                                   style: CoconutTypography.body2_14.copyWith(
                                     color: _placeholderColor,
                                     fontSize: widget.fontSize,
                                     fontWeight: widget.fontWeight,
                                     height: resolvedTextHeight,
                                   ),
+                                )
+                                : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    _placeholderText,
+                                    style: CoconutTypography.body2_14.copyWith(
+                                      color: _placeholderColor,
+                                      fontSize: widget.fontSize,
+                                      fontWeight: widget.fontWeight,
+                                      height: resolvedTextHeight,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                      ),
                     ),
                   ),
                 ),
@@ -632,29 +772,10 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                     ),
                   ),
                 ),
-              if (resolvedSuffix != null && clearFadeWidth > 0)
-                Positioned(
-                  top: 0,
-                  right: suffixBackgroundWidth,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: clearFadeWidth,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            _backgroundColor.withValues(alpha: 0),
-                            _backgroundColor.withValues(alpha: 0.78),
-                            _backgroundColor,
-                          ],
-                          stops: const [0, 0.55, 1],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              if (showClearFade) _buildEdgeFade(right: suffixBackgroundWidth, width: clearFadeWidth),
+              if (_canScrollLeft) _buildEdgeFade(left: _prefixSize.width + resolvedPadding.left, width: 20),
+              if (_canScrollRight && !showClearFade)
+                _buildEdgeFade(right: _suffixSize.width + resolvedPadding.right, width: 20),
               if (resolvedSuffix != null)
                 Positioned(
                   right: 0,
@@ -694,8 +815,9 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     widget.descriptionText ?? '',
-                    style: CoconutTypography.body3_12.copyWith(color: _isFocus ? _activeColor : _placeholderColor),
-                    textScaler: const TextScaler.linear(1),
+                    style: CoconutTypography.body3_12.copyWith(
+                      color: _isFocus ? _activeColor : context.coconutColors.secondaryTextStrong,
+                    ),
                   ),
                 ),
               ),
@@ -705,7 +827,9 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '${_text.runes.length}/${widget.maxLength}',
-                  style: CoconutTypography.body3_12_Number.copyWith(color: _isFocus ? _activeColor : _placeholderColor),
+                  style: CoconutTypography.body3_12_Number.copyWith(
+                    color: _isFocus ? _activeColor : context.coconutColors.secondaryTextStrong,
+                  ),
                 ),
               ),
             ],

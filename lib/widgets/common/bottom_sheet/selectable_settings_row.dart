@@ -6,6 +6,22 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+class SettingsRowPressStyle {
+  final Color color;
+  final double opacity;
+
+  const SettingsRowPressStyle({required this.color, required this.opacity});
+
+  static SettingsRowPressStyle resolve(BuildContext context) {
+    final colors = context.coconutColors;
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    return SettingsRowPressStyle(
+      color: isDarkTheme ? colors.primaryText : colors.surfacePressOverlay,
+      opacity: isDarkTheme ? 0.12 : colors.surfacePressOverlayOpacity,
+    );
+  }
+}
+
 /// 설정류 바텀싯(테마/단위/화폐/언어)에서 공통으로 쓰는 선택 가능한 행
 ///
 /// title은 필수, subtitle은 선택, 선택된 상태에서 오른쪽에 체크 아이콘이 붙는다.
@@ -14,6 +30,7 @@ class SelectableSettingsRow extends StatelessWidget {
   const SelectableSettingsRow({
     super.key,
     required this.title,
+    this.titleStyle,
     this.subtitle,
     this.subtitleStyle,
     required this.isSelected,
@@ -21,6 +38,7 @@ class SelectableSettingsRow extends StatelessWidget {
   });
 
   final String title;
+  final TextStyle? titleStyle;
   final String? subtitle;
   final TextStyle? subtitleStyle;
   final bool isSelected;
@@ -28,18 +46,22 @@ class SelectableSettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pressStyle = SettingsRowPressStyle.resolve(context);
     return ShrinkAnimationButton(
       onPressed: () {
         vibrateExtraLight();
         onTap();
       },
       defaultColor: Colors.transparent,
-      borderRadius: 0,
+      pressedOverlayColor: pressStyle.color,
+      pressedOverlayOpacity: pressStyle.opacity,
+      borderRadius: 12,
       borderWidth: 0,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
         child: SelectableSettingsRowContent(
           title: title,
+          titleStyle: titleStyle,
           subtitle: subtitle,
           subtitleStyle: subtitleStyle,
           isSelected: isSelected,
@@ -57,12 +79,14 @@ class SelectableSettingsRowContent extends StatelessWidget {
   const SelectableSettingsRowContent({
     super.key,
     required this.title,
+    this.titleStyle,
     this.subtitle,
     this.subtitleStyle,
     required this.isSelected,
   });
 
   final String title;
+  final TextStyle? titleStyle;
   final String? subtitle;
 
   // 지정하지 않으면 기본값(body3_12_Number/primaryText Color)을 쓴다.
@@ -72,34 +96,37 @@ class SelectableSettingsRowContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
-                if (subtitle != null)
-                  Text(
-                    subtitle!,
-                    style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(colors.primaryText),
-                  ),
-              ],
+    return Semantics(
+      selected: isSelected,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText).merge(titleStyle)),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (isSelected)
-          Padding(
-            padding: const EdgeInsets.only(right: Sizes.size8),
-            child: SvgPicture.asset(
-              CommonActionIconPath.check,
-              colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+          if (isSelected)
+            Padding(
+              padding: const EdgeInsets.only(right: Sizes.size8),
+              child: SvgPicture.asset(
+                CommonActionIconPath.check,
+                colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

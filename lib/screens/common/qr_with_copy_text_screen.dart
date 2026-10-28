@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
@@ -6,6 +9,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutPulldownMenu, CoconutPulldownMenuItem, CoconutPulldownMenuGroup;
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -14,13 +18,13 @@ import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart'
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -51,6 +55,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final bool showQrEmbedImage;
   final Color? backgroundColor;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
+  final TextStyle? textStyle;
 
   const QrWithCopyTextScreen({
     super.key,
@@ -72,6 +78,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.showQrEmbedImage = false,
     this.backgroundColor,
     this.qrInternalPadding,
+    this.qrPadding = const EdgeInsets.all(10),
+    this.textStyle,
   });
 
   @override
@@ -82,7 +90,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _pulldownKey = GlobalKey();
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
-  bool _isPulldownOpen = false;
   int? _amountInSats; // bip21 포맷의 amount를 sats로 변환한 값
 
   String _selectedKey = "";
@@ -156,60 +163,54 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final size = renderBox.size;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    Navigator.of(context)
-        .push(
-          PageRouteBuilder(
-            opaque: false,
-            barrierDismissible: true,
-            barrierColor: Colors.transparent,
-            transitionDuration: Duration.zero,
-            pageBuilder: (context, _, __) {
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    behavior: HitTestBehavior.translucent,
-                    child: const SizedBox.expand(),
-                  ),
-                  Positioned(
-                    top: offset.dy + size.height + 8.0,
-                    right: screenWidth - (offset.dx + size.width),
-                    child: MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: CoconutPulldownMenu(
-                        entries:
-                            _optionKeys.map((key) {
-                              return CoconutPulldownMenuItem(title: key);
-                            }).toList(),
+    // 팝업 route로 연다. 이름 없는 PageRoute는 화면 기록에서 다른 화면으로 나간 것으로 보여, 닫을 때 이 화면이 한 번 더 기록된다.
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, _, __) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.translucent,
+              child: const SizedBox.expand(),
+            ),
+            Positioned(
+              top: offset.dy + size.height + 8.0,
+              right: screenWidth - (offset.dx + size.width),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                child: CoconutPulldownMenu(
+                  entries:
+                      _optionKeys.map((key) {
+                        return CoconutPulldownMenuItem(title: key);
+                      }).toList(),
 
-                        selectedIndex: _selectedIndex,
+                  selectedIndex: _selectedIndex,
 
-                        onSelected: (index, title) {
-                          setState(() {
-                            _selectedKey = _optionKeys[index];
-                          });
-                          Navigator.pop(context);
-                        },
-                        backgroundColor: context.coconutColors.pulldownMenuBackground,
-                        shadowColor: context.coconutColors.shadowDefault,
-                        dividerColor: context.coconutColors.pulldownMenuDividerColor,
-                        splashColor: context.coconutColors.pulldownMenuPressedColor,
-                        borderRadius: 8,
-                        isSelectedItemBold: true,
-                        buttonPadding: const EdgeInsets.only(right: 16, left: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        )
-        .then((_) {
-          setState(() {
-            _isPulldownOpen = false;
-          });
-        });
+                  onSelected: (index, title) {
+                    setState(() {
+                      _selectedKey = _optionKeys[index];
+                    });
+                    Navigator.pop(context);
+                  },
+                  backgroundColor: context.coconutColors.pulldownMenuBackground,
+                  shadowColor: context.coconutColors.shadowDefault,
+                  dividerColor: context.coconutColors.pulldownMenuDividerColor,
+                  splashColor: context.coconutColors.pulldownMenuPressedColor,
+                  borderRadius: 8,
+                  isSelectedItemBold: true,
+                  buttonPadding: const EdgeInsets.only(right: 16, left: 16),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -230,29 +231,30 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: brightness == Brightness.light ? Brightness.dark : Brightness.light,
-          statusBarBrightness: brightness == Brightness.light ? Brightness.light : Brightness.dark,
-        ),
+        toolbarHeight: widget.isBottom ? 60 : 56,
+        systemOverlayStyle: buildSystemBarStyle(backgroundColor: backgroundColor, brightness: brightness),
         leading:
             Navigator.canPop(context)
-                ? IconButton(
-                  icon: SvgPicture.asset(
-                    widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: SvgPicture.asset(
+                      widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
                 )
                 : null,
         title:
             widget.title.isEmpty
                 ? null
                 : Text(widget.title, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
-        actions: [if (widget.actionButton != null) widget.actionButton!, CoconutLayout.spacing_300w],
+        actions: [if (widget.actionButton != null) widget.actionButton!, CoconutLayout.spacing_100w],
       ),
       body: InputAndShareOverlay(
         scrollController: widget.scrollController,
@@ -311,23 +313,19 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8, right: 16),
                     child: Container(
-                      key: _pulldownKey,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: context.coconutColors.pulldownMenuBackground,
-                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: context.coconutColors.border),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: MediaQuery(
                         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                        child: CoconutPulldown(
-                          title: _displayTitle,
-                          isOpen: _isPulldownOpen,
-                          onChanged: (isOpen) {
-                            setState(() {
-                              _isPulldownOpen = true;
-                            });
-                            _showDropdownMenu();
-                          },
+                        child: UtxoListDropdownButton(
+                          dropdownGlobalKey: _pulldownKey,
+                          activeOption: _displayTitle,
+                          isEnabled: true,
+                          alignRight: false,
+                          onTapDropdown: _showDropdownMenu,
                         ),
                       ),
                     ),
@@ -343,6 +341,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   embedWidget: widget.showQrEmbedImage ? const CoconutLogoIcon(size: 16) : null,
                   isAddress: widget.isAddress,
                   qrInternalPadding: widget.qrInternalPadding,
+                  qrPadding: widget.qrPadding,
+                  textStyle: widget.textStyle,
+                  qrViewDataHandler:
+                      _selectedKey == 'Keystone Multisig' ? Utf8BcUrQrViewHandler(displayTextData) : null,
                 ),
               ),
               if (widget.footer != null) widget.footer!,

@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ShrinkAnimationButton extends StatefulWidget {
   final Widget? child;
@@ -16,6 +17,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Gradient? borderGradient;
   final double? animationEndValue;
   final bool isActive;
+  final bool shrinkContentOnly;
 
   const ShrinkAnimationButton({
     super.key,
@@ -33,6 +35,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderGradient,
     this.animationEndValue = 0.97,
     this.isActive = true,
+    this.shrinkContentOnly = false,
   }) : assert(child != null || childBuilder != null, 'Either child or childBuilder must be provided.');
 
   @override
@@ -43,6 +46,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _isPressed = false;
+  bool _showFocus = false;
 
   @override
   void initState() {
@@ -72,18 +76,20 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
   void _onTapUp(TapUpDetails details) {
     if (!widget.isActive) return;
 
-    _controller.reverse().then((_) {
-      widget.onPressed();
-      setState(() {
-        _isPressed = false;
-      });
+    _controller.reverse();
+    setState(() {
+      _isPressed = false;
     });
+  }
+
+  void _activate() {
+    if (widget.isActive) widget.onPressed();
   }
 
   void _onTapCancel() {
     if (!widget.isActive) return;
 
-    _controller.reverse();
+    _controller.value = 0;
     setState(() {
       _isPressed = false;
     });
@@ -93,6 +99,15 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     if (!widget.isActive || widget.onLongPress == null) return;
 
     widget.onLongPress!();
+  }
+
+  @override
+  void didUpdateWidget(covariant ShrinkAnimationButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isActive && oldWidget.isActive) {
+      _isPressed = false;
+      _controller.reverse();
+    }
   }
 
   double _clampOpacity(double value) => value.clamp(0.0, 1.0);
@@ -107,6 +122,12 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     return 0.12;
   }
 
+  double _contrast(Color foreground, Color background) {
+    final a = foreground.computeLuminance() + 0.05;
+    final b = background.computeLuminance() + 0.05;
+    return a > b ? a / b : b / a;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
@@ -118,36 +139,71 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
             : _resolveOverlayOpacity(widget.pressedOverlayColor!));
     final defaultColor = widget.defaultColor ?? colors.surface;
     final disabledColor = widget.disabledColor ?? colors.surface;
+
     final Color baseColor = widget.isActive ? defaultColor : disabledColor;
+    final backgroundColor =
+        widget.isActive && _isPressed
+            ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
+            : baseColor;
+    final focusSurface = Color.alphaBlend(backgroundColor, colors.surface);
+    final focusColor =
+        _contrast(colors.primaryText, focusSurface) >= _contrast(colors.buttonPrimaryForeground, focusSurface)
+            ? colors.primaryText
+            : colors.buttonPrimaryForeground;
     final bool useGradientBorder = widget.borderGradient != null;
     final child = widget.childBuilder != null ? widget.childBuilder!(context, _isPressed) : widget.child!;
 
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      onLongPress: widget.onLongPress != null ? _onLongPress : null,
-      child: ScaleTransition(
-        scale: _animation,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius + 2),
-            gradient: useGradientBorder ? widget.borderGradient : null,
-            border: useGradientBorder ? null : widget.border,
+    final background = Container(
+      foregroundDecoration:
+          _showFocus && widget.isActive
+              ? BoxDecoration(
+                border: Border.all(color: focusColor, width: 3),
+                borderRadius: BorderRadius.circular(widget.borderRadius + 2),
+              )
+              : null,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.borderRadius + 2),
+        gradient: useGradientBorder ? widget.borderGradient : null,
+        border: useGradientBorder ? null : widget.border ?? Border.all(color: Colors.transparent),
+      ),
+      child: AnimatedContainer(
+        margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
+        duration: const Duration(milliseconds: 100),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(widget.borderRadius)),
+        child: widget.shrinkContentOnly ? ScaleTransition(scale: _animation, child: child) : child,
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      enabled: widget.isActive,
+      onTap: widget.isActive ? _activate : null,
+      onLongPress: widget.isActive && widget.onLongPress != null ? _onLongPress : null,
+      child: FocusableActionDetector(
+        enabled: widget.isActive,
+        mouseCursor: widget.isActive ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onShowFocusHighlight: (value) => setState(() => _showFocus = value),
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              _activate();
+              return null;
+            },
           ),
-          child: AnimatedContainer(
-            margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
-            duration: const Duration(milliseconds: 100),
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color:
-                  widget.isActive && _isPressed
-                      ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
-                      : baseColor,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-            ),
-            child: child,
-          ),
+        },
+        child: GestureDetector(
+          excludeFromSemantics: true,
+          onTap: widget.isActive ? _activate : null,
+          onTapDown: widget.isActive ? _onTapDown : null,
+          onTapUp: widget.isActive ? _onTapUp : null,
+          onTapCancel: widget.isActive ? _onTapCancel : null,
+          onLongPress: widget.isActive && widget.onLongPress != null ? _onLongPress : null,
+          child: widget.shrinkContentOnly ? background : ScaleTransition(scale: _animation, child: background),
         ),
       ),
     );
