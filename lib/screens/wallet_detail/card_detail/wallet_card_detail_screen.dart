@@ -391,32 +391,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _sectionHeader(
-                        context,
-                        key: const Key('wallet-detail-utxo-header'),
-                        title: 'UTXO • ${viewModel.utxoCount}',
-                        onMore: _openUtxoOverview,
-                        moreEnabled: viewModel.utxoCount > 0,
-                      ),
-                      _lifted(
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: context.coconutColors.homeSurface,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: UtxoSummaryView(
-                              keyPrefix: 'wallet-detail',
-                              buckets: viewModel.utxoBuckets,
-                              bucketColors: viewModel.widgets.utxoBucketColors,
-                              amountText: viewModel.amountText,
-                            ),
-                          ),
-                        ),
-                        radius: 20,
-                      ),
-                      const SizedBox(height: 28),
                       Column(
                         key: _recentTransactionsKey,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -443,6 +417,32 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 28),
+                      _sectionHeader(
+                        context,
+                        key: const Key('wallet-detail-utxo-header'),
+                        title: 'UTXO • ${viewModel.utxoCount}',
+                        onMore: _openUtxoOverview,
+                        moreEnabled: viewModel.utxoCount > 0,
+                      ),
+                      _lifted(
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: context.coconutColors.homeSurface,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: UtxoSummaryView(
+                              keyPrefix: 'wallet-detail',
+                              buckets: viewModel.utxoBuckets,
+                              bucketColors: viewModel.widgets.utxoBucketColors,
+                              amountText: viewModel.amountText,
+                            ),
+                          ),
+                        ),
+                        radius: 20,
                       ),
                       SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
                     ],
