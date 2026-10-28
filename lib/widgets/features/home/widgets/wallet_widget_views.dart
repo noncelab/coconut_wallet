@@ -6,12 +6,17 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 /// 스택을 눌러 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
 /// 목록에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다.
@@ -72,51 +77,280 @@ class _WalletStackViewState extends State<WalletStackView> {
 
   final PageController _controller = PageController();
   bool _indicatorVisible = false;
+  double? _indicatorDragDistance;
+  Offset? _indicatorPointerDown;
+  Timer? _indicatorRepeat;
+  int _indicatorDragDirection = 0;
+  bool _indicatorAutoMode = false;
+  static const _indicatorPageDistance = 18.0;
+  static const _indicatorRepeatInterval = Duration(milliseconds: 500);
   Timer? _hideIndicator;
+  Timer? _cardRepeat;
+  double? _cardDragDistance;
+  int _cardDragDirection = 0;
+  static const _cardRepeatInterval = Duration(milliseconds: 450);
 
   int get _pageCount => widget.wallets.length + (widget.onAddPressed == null ? 0 : 1);
 
   @override
   void dispose() {
     _hideIndicator?.cancel();
+    _cardRepeat?.cancel();
+    _indicatorRepeat?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
+  void _showIndicator() {
+    _hideIndicator?.cancel();
+    if (!_indicatorVisible) setState(() => _indicatorVisible = true);
+  }
+
+  void _scheduleIndicatorHide() {
+    _hideIndicator?.cancel();
+    if (_indicatorDragDistance != null || _cardDragDistance != null) return;
+    _hideIndicator = Timer(_indicatorHideDelay, () {
+      if (mounted) setState(() => _indicatorVisible = false);
+    });
+  }
+
   bool _onScroll(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
-      _hideIndicator?.cancel();
-      if (!_indicatorVisible) setState(() => _indicatorVisible = true);
+      _showIndicator();
     } else if (notification is ScrollEndNotification) {
-      _hideIndicator?.cancel();
-      _hideIndicator = Timer(_indicatorHideDelay, () {
-        if (mounted) setState(() => _indicatorVisible = false);
-      });
+      _scheduleIndicatorHide();
     }
     return false;
   }
 
+  void _startCardDrag(DragStartDetails details) {
+    if (!_controller.hasClients || _pageCount < 2) return;
+    _cardRepeat?.cancel();
+    _cardDragDistance = 0;
+    _cardDragDirection = 0;
+    _showIndicator();
+    _controller.jumpToPage(_page.round().clamp(0, _pageCount - 1));
+  }
+
+  void _updateCardDrag(DragUpdateDetails details) {
+    if (_cardDragDistance == null) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final movement = (details.primaryDelta ?? 0) * direction;
+    if (movement == 0) return;
+    if (movement.sign == _cardDragDirection) {
+      _cardDragDistance = 0;
+      return;
+    }
+    _cardDragDistance = _cardDragDistance! + movement;
+    if (_cardDragDistance!.abs() < _indicatorPageDistance) return;
+    _cardDragDirection = _cardDragDistance!.sign.toInt();
+    _cardDragDistance = 0;
+    _cardRepeat?.cancel();
+    _advanceCard();
+    _cardRepeat = Timer.periodic(_cardRepeatInterval, (_) => _advanceCard());
+  }
+
+  void _advanceCard() {
+    if (!mounted || !_controller.hasClients || _cardDragDistance == null || _pageCount < 2) {
+      _cardRepeat?.cancel();
+      return;
+    }
+    final current = _page.round().clamp(0, _pageCount - 1);
+    final next = (current + _cardDragDirection).clamp(0, _pageCount - 1);
+    if (next == current) return;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (reduceMotion) {
+      _controller.jumpToPage(next);
+    } else {
+      _controller.animateToPage(next, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
+    }
+    vibrateExtraLight();
+  }
+
+  void _endCardDrag() {
+    _cardRepeat?.cancel();
+    _cardRepeat = null;
+    _cardDragDistance = null;
+    _cardDragDirection = 0;
+    _scheduleIndicatorHide();
+  }
+
+  void _startIndicatorDrag(DragStartDetails details) {
+    if (!_controller.hasClients) return;
+    _indicatorRepeat?.cancel();
+    _indicatorDragDistance = 0;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+    _showIndicator();
+    _controller.jumpToPage(_page.round().clamp(0, _pageCount - 1));
+    // 제스처 인식에 쓰인 첫 이동도 포함해, 한 번 민 뒤 멈춰도 반복을 시작한다.
+    if (_pageCount > 5 && _indicatorPointerDown != null) {
+      final direction = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+      _moveIndicator((details.globalPosition.dx - _indicatorPointerDown!.dx) * direction);
+    }
+  }
+
+  void _updateIndicatorDrag(DragUpdateDetails details) {
+    final direction = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+    _moveIndicator((details.primaryDelta ?? 0) * direction);
+  }
+
+  bool get _canRepeatIndicator {
+    if (!_controller.hasClients || _pageCount <= 5) return false;
+    final current = _page.round();
+    return current >= 2 && current <= _pageCount - 3;
+  }
+
+  void _stopIndicatorRepeat() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorDragDirection = 0;
+  }
+
+  void _repeatIndicator(int direction) {
+    _stopIndicatorRepeat();
+    if (!_indicatorAutoMode && !_canRepeatIndicator) return;
+    // 같은 드래그에서 시작한 자동 전환은 양 끝 두 페이지에 들어가도 유지한다.
+    _indicatorAutoMode = true;
+    _indicatorDragDirection = direction;
+    _indicatorDragDistance = 0;
+    if ((direction < 0 && _page <= 0) || (direction > 0 && _page >= _pageCount - 1)) return;
+    _indicatorRepeat = Timer.periodic(_indicatorRepeatInterval, (_) {
+      if (!mounted || _indicatorDragDistance == null || !_controller.hasClients || _pageCount <= 5) {
+        _stopIndicatorRepeat();
+        return;
+      }
+      _stepIndicator(_indicatorDragDirection);
+      if ((_indicatorDragDirection < 0 && _page <= 0) || (_indicatorDragDirection > 0 && _page >= _pageCount - 1)) {
+        _indicatorDragDistance = 0;
+        _stopIndicatorRepeat();
+      }
+    });
+  }
+
+  void _moveIndicator(double movement) {
+    if (_indicatorDragDistance == null || !_controller.hasClients || movement == 0) return;
+    if (_indicatorAutoMode || _canRepeatIndicator) {
+      _indicatorAutoMode = true;
+      // 자동 전환 중에는 같은 방향으로 더 끌어도 페이지를 건너뛰지 않는다.
+      if (movement.sign == _indicatorDragDirection) {
+        _indicatorDragDistance = 0;
+        return;
+      }
+      _indicatorDragDistance = _indicatorDragDistance! + movement;
+      if (_indicatorDragDistance!.abs() < _indicatorPageDistance) return;
+      final direction = _indicatorDragDistance!.sign.toInt();
+      _indicatorDragDistance = 0;
+      _stepIndicator(direction);
+      _repeatIndicator(direction);
+      return;
+    }
+
+    // 양 끝 두 페이지는 손가락 이동량만큼만 전환한다.
+    _stopIndicatorRepeat();
+    _indicatorDragDistance = _indicatorDragDistance! + movement;
+    final steps = (_indicatorDragDistance! / _indicatorPageDistance).truncate();
+    if (steps != 0) {
+      _indicatorDragDistance = _indicatorDragDistance! - steps * _indicatorPageDistance;
+      final current = _page.round();
+      final target = (current + steps).clamp(0, _pageCount - 1);
+      for (var page = current; page != target;) {
+        page += steps.sign;
+        _stepIndicator(steps.sign);
+        if (_canRepeatIndicator) {
+          _repeatIndicator(steps.sign);
+          break;
+        }
+      }
+    }
+    if ((_page <= 0 && _indicatorDragDistance! < 0) || (_page >= _pageCount - 1 && _indicatorDragDistance! > 0)) {
+      _indicatorDragDistance = 0;
+    }
+  }
+
+  void _stepIndicator(int direction) {
+    if (!_controller.hasClients || _pageCount < 2) return;
+    final current = _page.round().clamp(0, _pageCount - 1);
+    final next = (current + direction).clamp(0, _pageCount - 1);
+    if (current == next) return;
+    _controller.jumpToPage(next);
+    vibrateExtraLight();
+  }
+
+  void _endIndicatorDrag() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorPointerDown = null;
+    _indicatorDragDistance = null;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+    _scheduleIndicatorHide();
+  }
+
   Widget _indicator(BuildContext context) {
     final colors = context.coconutColors;
+    final slotWidth = _pageCount > 5 ? 14.0 : 16.0;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final current = _page.round();
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < _pageCount; i++)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                width: i == current ? 12 : 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: i == current ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
-                  borderRadius: BorderRadius.circular(3),
-                ),
+        final current = _page.round().clamp(0, _pageCount - 1);
+        final visibleCount = math.min(_pageCount, 5);
+        final first = (current - 2).clamp(0, _pageCount - visibleCount).toDouble();
+        final width = visibleCount * slotWidth;
+        final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+        return Semantics(
+          value: '${current + 1}/$_pageCount',
+          child: SizedBox(
+            key: Key('${widget.keyPrefix}-indicator-window'),
+            width: width,
+            height: 5,
+            child: ClipRect(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: first, end: first),
+                duration: Duration(milliseconds: reduceMotion ? 0 : 300),
+                // 선택 표시가 먼저 바뀐 뒤 양 끝의 점이 사라지고 나타나며 한 칸 이동한다.
+                curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
+                builder: (context, position, _) {
+                  final start = math.max(0, position.floor() - 1);
+                  final end = math.min(_pageCount, position.ceil() + visibleCount + 1);
+                  double visibility(int index) =>
+                      (math.min((index - position + 0.5) * slotWidth, width - (index - position + 0.5) * slotWidth) /
+                              (slotWidth / 2))
+                          .clamp(0.0, 1.0);
+                  return Stack(
+                    children: [
+                      for (var i = start; i < end; i++)
+                        Positioned(
+                          key: ValueKey('${widget.keyPrefix}-indicator-slot-$i'),
+                          left: (i - position) * slotWidth,
+                          width: slotWidth,
+                          top: 0,
+                          bottom: 0,
+                          child: Opacity(
+                            opacity: visibility(i),
+                            child: Transform.scale(
+                              scale: visibility(i),
+                              child: Center(
+                                child: AnimatedContainer(
+                                  key: ValueKey('${widget.keyPrefix}-indicator-dot-$i'),
+                                  duration: Duration(milliseconds: reduceMotion ? 0 : 150),
+                                  width: i == current ? 12 : 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: i == current ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
-          ],
+            ),
+          ),
         );
       },
     );
@@ -150,10 +384,12 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   Widget _card(WalletItemBase wallet) {
+    final appearances = context.watchWalletAppearance();
     return WalletCard(
       key: ValueKey('${widget.keyPrefix}-card-${wallet.id}'),
       wallet: wallet,
-      appearance: WalletAppearance.of(wallet),
+      appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+      backgroundPhoto: appearances?.photoFileFor(wallet.id),
       size: widget.size,
       balanceDisplay: widget.balanceTextOf?.call(wallet),
       secondaryText: widget.secondaryTextOf?.call(wallet),
@@ -176,7 +412,14 @@ class _WalletStackViewState extends State<WalletStackView> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                child: Icon(CupertinoIcons.add, size: 16, color: colors.primaryText),
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 12,
+                    height: 12,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -258,11 +501,20 @@ class _WalletStackViewState extends State<WalletStackView> {
                 Positioned.fill(
                   child: NotificationListener<ScrollNotification>(
                     onNotification: _onScroll,
-                    child: PageView.builder(
-                      key: Key('${widget.keyPrefix}-pager'),
-                      controller: _controller,
-                      itemCount: _pageCount,
-                      itemBuilder: (context, index) => const SizedBox.expand(),
+                    child: GestureDetector(
+                      key: Key('${widget.keyPrefix}-card-slider'),
+                      behavior: HitTestBehavior.opaque,
+                      onHorizontalDragStart: _startCardDrag,
+                      onHorizontalDragUpdate: _updateCardDrag,
+                      onHorizontalDragEnd: (_) => _endCardDrag(),
+                      onHorizontalDragCancel: _endCardDrag,
+                      child: PageView.builder(
+                        key: Key('${widget.keyPrefix}-pager'),
+                        controller: _controller,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _pageCount,
+                        itemBuilder: (context, index) => const SizedBox.expand(),
+                      ),
                     ),
                   ),
                 ),
@@ -270,13 +522,31 @@ class _WalletStackViewState extends State<WalletStackView> {
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 6,
-                    child: IgnorePointer(
+                    bottom: 0,
+                    height: 32,
+                    child: GestureDetector(
+                      key: Key('${widget.keyPrefix}-indicator-scrubber'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        _showIndicator();
+                        _scheduleIndicatorHide();
+                      },
+                      onHorizontalDragDown: (details) => _indicatorPointerDown = details.globalPosition,
+                      onHorizontalDragStart: _startIndicatorDrag,
+                      onHorizontalDragUpdate: _updateIndicatorDrag,
+                      onHorizontalDragEnd: (_) => _endIndicatorDrag(),
+                      onHorizontalDragCancel: _endIndicatorDrag,
                       child: AnimatedOpacity(
                         key: Key('${widget.keyPrefix}-indicator'),
                         opacity: _indicatorVisible ? 1 : 0,
                         duration: const Duration(milliseconds: 200),
-                        child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: _indicator(context))),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: FittedBox(fit: BoxFit.scaleDown, child: _indicator(context)),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -307,14 +577,25 @@ class BalanceByWalletView extends StatelessWidget {
     this.reveal = 1,
   });
 
-  static Color colorOf(BuildContext context, HomeBalanceShare share) =>
-      share.walletId == null || share.colorIndex == null
-          ? context.coconutColors.surfaceMuted
-          : WalletVisualStyleUtil.getColorByIndex(share.colorIndex!);
+  /// 배경을 지정한 지갑은 배경 색, 아니면 아이콘 색. 잔액 변화의 기간별 요약 막대와 같은 기준이다.
+  static const _strokeRatio = 0.2;
+
+  static Color colorOf(BuildContext context, HomeBalanceShare share, {WalletAppearanceProvider? appearances}) {
+    final walletId = share.walletId;
+    if (walletId == null) return context.coconutColors.surfaceMuted;
+    final background = WalletCardBackground.representativeColorOf(appearances?.backgroundOf(walletId));
+    if (background != null) return background;
+    final colorIndex = share.colorIndex;
+    return colorIndex == null ? context.coconutColors.iconSecondary : WalletVisualStyleUtil.getColorByIndex(colorIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final appearances = context.watchWalletAppearance();
+    final shareColors = [for (final share in shares) colorOf(context, share, appearances: appearances)];
+    final surface = HomeCardSurface.of(context);
+    final shareBorders = [for (final color in shareColors) homeChartSegmentBorderOf(context, color, surface)];
     final sum = shares.fold<int>(0, (total, share) => total + share.balance);
     return HomeWidgetCard(
       onPressed: onPressed,
@@ -327,98 +608,140 @@ class BalanceByWalletView extends StatelessWidget {
               child: CustomPaint(
                 painter: _DonutPainter(
                   [for (final share in shares) share.balance.toDouble()],
-                  [for (final share in shares) colorOf(context, share)],
+                  shareColors,
                   colors.surfaceMuted,
-                  strokeRatio: 0.2,
+                  borders: shareBorders,
+                  strokeRatio: _strokeRatio,
                   reveal: reveal,
                 ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Column(
-                        key: const Key('balance-by-wallet-total'),
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            total.number,
-                            style: CoconutTypography.body1_16_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                          Text(
-                            total.unit,
-                            style: CoconutTypography.body1_16_NumberBold.copyWith(color: colors.primaryText),
-                          ),
-                        ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final numberStyle = CoconutTypography.body1_16_NumberBold.copyWith(
+                      color: colors.primaryText,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    );
+                    final number = measureHomeTextSize(context, total.number, numberStyle);
+                    final width = number.width;
+                    final height = number.height;
+                    final hole = math.max(0.0, constraints.biggest.shortestSide * (1 - 2 * _strokeRatio) - 8);
+                    final diagonal = math.sqrt(width * width + height * height);
+                    final scale = diagonal <= hole || diagonal == 0 ? 1.0 : hole / diagonal;
+                    return Center(
+                      child: SizedBox(
+                        width: width * scale,
+                        height: height * scale,
+                        child: FittedBox(
+                          child: Text(total.number, key: const Key('balance-by-wallet-total'), style: numberStyle),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (final share in shares)
-                  Column(
-                    key: ValueKey('balance-by-wallet-entry-${share.walletId ?? 'others'}'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final nameStyle = CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText);
+                final percentStyle = CoconutTypography.body3_12_NumberBold.copyWith(
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                );
+                final amountStyle = CoconutTypography.caption_10_NumberBold.copyWith(
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                );
+                final entryHeight =
+                    [
+                      10.0,
+                      measureHomeTextSize(context, '0', nameStyle).height,
+                      measureHomeTextSize(context, '0', percentStyle).height,
+                    ].reduce(math.max) +
+                    measureHomeTextSize(context, '0', amountStyle).height;
+                final needed = entryHeight * shares.length;
+                final scale = needed > constraints.maxHeight ? constraints.maxHeight / needed : 1.0;
+                final entries = Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final share in shares)
+                      Column(
+                        key: ValueKey('balance-by-wallet-entry-${share.walletId ?? 'others'}'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(color: colorOf(context, share), shape: BoxShape.circle),
+                          LayoutBuilder(
+                            builder:
+                                (context, rowConstraints) => Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: shareColors[shares.indexOf(share)],
+                                        border: switch (shareBorders[shares.indexOf(share)]) {
+                                          final border? => Border.all(color: border, width: 1),
+                                          null => null,
+                                        },
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        share.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: nameStyle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(maxWidth: math.max(0, rowConstraints.maxWidth - 22)),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          '${sum == 0 ? '0' : (share.balance * 100 / sum).toStringAsFixed(1)}%',
+                                          style: percentStyle,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              share.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${sum == 0 ? '0' : (share.balance * 100 / sum).toStringAsFixed(1)}%',
-                            style: CoconutTypography.body3_12_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                          Padding(
+                            padding: const EdgeInsets.only(left: 18),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                total.unit.isEmpty
+                                    ? amountText(share.balance)
+                                    : total.unitFirst
+                                    ? '${total.unit} ${amountText(share.balance)}'
+                                    : '${amountText(share.balance)} ${total.unit}',
+                                maxLines: 1,
+                                style: amountStyle,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 18),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            total.unit.isEmpty
-                                ? amountText(share.balance)
-                                : total.unitFirst
-                                ? '${total.unit} ${amountText(share.balance)}'
-                                : '${amountText(share.balance)} ${total.unit}',
-                            maxLines: 1,
-                            style: CoconutTypography.caption_10_NumberBold.copyWith(
-                              color: colors.primaryText,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  ],
+                );
+                if (scale == 1) return entries;
+                return FittedBox(
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: constraints.maxWidth / scale,
+                    height: constraints.maxHeight / scale,
+                    child: entries,
                   ),
-              ],
+                );
+              },
             ),
           ),
         ],
@@ -433,10 +756,35 @@ class _DonutPainter extends CustomPainter {
   final Color emptyColor;
   final double strokeRatio;
 
+  /// 조각마다 두를 얇은 테두리 색. null이면 두르지 않는다.
+  final List<Color?> borders;
+
   /// 0이면 빈 고리, 1이면 다 그린 고리. 위에서부터 시계 방향으로 차오른다.
   final double reveal;
 
-  _DonutPainter(this.values, this.colors, this.emptyColor, {this.strokeRatio = 0.14, this.reveal = 1});
+  _DonutPainter(
+    this.values,
+    this.colors,
+    this.emptyColor, {
+    this.strokeRatio = 0.14,
+    this.reveal = 1,
+    this.borders = const [],
+  });
+
+  static const _borderWidth = 1.0;
+
+  Color? _borderAt(int index) => index < borders.length ? borders[index] : null;
+
+  void _outline(Canvas canvas, Path path, Color? color) {
+    if (color == null) return;
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _borderWidth
+        ..color = color,
+    );
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -459,20 +807,29 @@ class _DonutPainter extends CustomPainter {
       return;
     }
     if (visible.length == 1) {
+      final border = _borderAt(visible.single);
       if (shown >= 1) {
         canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
+        if (border != null) {
+          final outline =
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = _borderWidth
+                ..color = border;
+          canvas.drawCircle(size.center(Offset.zero), radius + stroke / 2, outline);
+          canvas.drawCircle(size.center(Offset.zero), radius - stroke / 2, outline);
+        }
       } else if (shown > 0) {
-        canvas.drawPath(
-          _roundedSector(
-            size.center(Offset.zero),
-            radius - stroke / 2,
-            radius + stroke / 2,
-            -math.pi / 2,
-            math.pi * 2 * shown,
-            stroke * 0.1,
-          ),
-          Paint()..color = colors[visible.single],
+        final path = _roundedSector(
+          size.center(Offset.zero),
+          radius - stroke / 2,
+          radius + stroke / 2,
+          -math.pi / 2,
+          math.pi * 2 * shown,
+          stroke * 0.1,
         );
+        canvas.drawPath(path, Paint()..color = colors[visible.single]);
+        _outline(canvas, path, border);
       }
       return;
     }
@@ -487,17 +844,16 @@ class _DonutPainter extends CustomPainter {
       final from = start + before;
       final until = math.min(start + sweep - after, limit);
       if (until > from) {
-        canvas.drawPath(
-          _roundedSector(
-            size.center(Offset.zero),
-            radius - stroke / 2,
-            radius + stroke / 2,
-            from - math.pi / 2,
-            until - from,
-            stroke * 0.1,
-          ),
-          Paint()..color = colors[visible[n]],
+        final path = _roundedSector(
+          size.center(Offset.zero),
+          radius - stroke / 2,
+          radius + stroke / 2,
+          from - math.pi / 2,
+          until - from,
+          stroke * 0.1,
         );
+        canvas.drawPath(path, Paint()..color = colors[visible[n]]);
+        _outline(canvas, path, _borderAt(visible[n]));
       }
       start += sweep;
     }
@@ -532,6 +888,7 @@ class _DonutPainter extends CustomPainter {
   bool shouldRepaint(_DonutPainter oldDelegate) =>
       !listEquals(values, oldDelegate.values) ||
       !listEquals(colors, oldDelegate.colors) ||
+      !listEquals(borders, oldDelegate.borders) ||
       emptyColor != oldDelegate.emptyColor ||
       strokeRatio != oldDelegate.strokeRatio ||
       reveal != oldDelegate.reveal;

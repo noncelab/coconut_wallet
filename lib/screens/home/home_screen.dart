@@ -60,7 +60,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
 
-  static const _addWalletHintRightOverhang = 52.0;
+  /// 온보딩 - 지갑 추가 말풍선
+  static const _addWalletHintRightOverhang = 32.0;
   static const _safetyHintTailFromLeft = 40.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
@@ -389,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Align(
                           alignment: Alignment.topRight,
                           child: AddWalletHint(
-                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.addWalletButtonSize / 2,
+                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.actionButtonWidth / 2,
                             nudges: viewModel.addWalletHintNudges,
                             onClose: viewModel.dismissAddWalletHint,
                           ),
@@ -469,6 +470,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           onArrangeDone: _finishArranging,
                           onResize: (item, span) => viewModel.resizeItem(item.id, span),
                           badgeInset: _gridBadgeInset,
+                          wrapDragFeedback:
+                              (child) => MultiProvider(
+                                providers: [
+                                  ChangeNotifierProvider.value(value: _viewModel),
+                                  ChangeNotifierProvider.value(value: _widgetsViewModel),
+                                ],
+                                child: child,
+                              ),
                           minHeight: math.max(
                             0,
                             constraints.viewportMainAxisExtent -
@@ -487,12 +496,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();
-    final arranging = context.watch<HomeViewModel>().isArranging;
+    final home = context.watch<HomeViewModel>();
+    final arranging = home.isArranging;
     final safety = context.watch<SafetyProvider?>();
+    final isSyncing = status.isSyncing && home.wallets.isNotEmpty;
     return HomeAppBar(
       networkStatus: status.networkStatus,
       showReconnected: status.showElectrumReconnected,
-      isSyncing: status.isSyncing,
+      isSyncing: isSyncing,
       isArranging: arranging,
       homeAddWalletOption: _viewModel.homeAddWalletOption,
       addWalletButtonLink: _addWalletButtonLink,
@@ -508,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 report: safety.report,
                 networkStatus: status.networkStatus,
                 showReconnected: status.showElectrumReconnected,
-                isSyncing: status.isSyncing,
+                isSyncing: isSyncing,
               ),
       statusChipLink: _statusChipLink,
       onStatusTap: () {

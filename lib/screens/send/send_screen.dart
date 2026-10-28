@@ -70,6 +70,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
@@ -78,6 +79,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -113,6 +115,9 @@ class SendScreen extends StatefulWidget {
 }
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  /// 수신자 카드의 `모두 보내기` 버튼 중앙과 맞춘 안내 말풍선의 y 좌표.
+  static const double _addRecipientHintCenterY = 95;
+
   final GlobalKey _viewMoreButtonKey = GlobalKey();
   final GlobalKey _addressInputFieldKey = GlobalKey();
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
@@ -858,7 +863,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _hotWalletSigningViewModel = signingViewModel;
     Uint8List? passphrase;
     try {
-      await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      context.loaderOverlay.show();
+      try {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      } finally {
+        if (mounted) context.loaderOverlay.hide();
+      }
       if (!mounted) return;
       final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
       if (signingViewModel.shouldEnterPassphraseWhenSigning) {
@@ -1751,20 +1763,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildPageView(BuildContext context) {
     return Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) {
-        if (_isLeftDragGuideViewVisible) {
-          setState(() {
-            _isLeftDragGuideViewVisible = false;
-          });
-        }
-      },
       onPointerMove: (_) {
         _hideVaultInfo();
-        if (_isLeftDragGuideViewVisible) {
-          setState(() {
-            _isLeftDragGuideViewVisible = false;
-          });
-        }
       },
       child: Stack(
         children: [
@@ -1780,10 +1780,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   controller: _recipientPageController,
                   onPageChanged: (index) {
                     // 수신자 추가 카드 확인 여부 업데이트
-                    if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
-                      hasSeenAddRecipientCard = true;
-                      context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
-                    }
+                    if (index == _viewModel.addRecipientCardIndex) _completeAddRecipientGuide();
 
                     _viewModel.setCurrentPage(index);
                   },
@@ -1803,35 +1800,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             opacity: _isLeftDragGuideViewVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 500),
             child: IgnorePointer(
-              ignoring: true,
-              child: Container(
-                height: kPageViewHeight,
-                width: MediaQuery.of(context).size.width,
-                color: context.coconutColors.background.withValues(alpha: 0.6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Lottie.asset(
-                      CommonLottiePath.swipeLeft,
-                      width: 60,
-                      height: 60,
-                      delegates: LottieDelegates(
-                        values: [
-                          ValueDelegate.colorFilter([
-                            '**',
-                          ], value: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcATop)),
-                        ],
+              ignoring: !_isLeftDragGuideViewVisible,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: _addRecipientHintCenterY,
+                    right: 8,
+                    child: FractionalTranslation(
+                      translation: const Offset(0, -0.5),
+                      child: AllFeaturesHint(
+                        title: t.add_recipient_hint.title,
+                        description: t.add_recipient_hint.description,
+                        onOpen: _openAddRecipientCard,
+                        onClose: _completeAddRecipientGuide,
                       ),
                     ),
-                    CoconutLayout.spacing_200h,
-                    Text(
-                      t.send_screen.swipe_to_add_address,
-                      textAlign: TextAlign.center,
-                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1877,6 +1862,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
+    );
+  }
+
+  void _hideLeftDragGuide() {
+    if (!_isLeftDragGuideViewVisible) return;
+    setState(() {
+      _isLeftDragGuideViewVisible = false;
+    });
+  }
+
+  void _completeAddRecipientGuide() {
+    if (!hasSeenAddRecipientCard) {
+      hasSeenAddRecipientCard = true;
+      unawaited(context.read<PreferenceProvider>().setHasSeenAddRecipientCard());
+    }
+    _hideLeftDragGuide();
+  }
+
+  void _openAddRecipientCard() {
+    _recipientPageController.animateToPage(
+      _viewModel.addRecipientCardIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 
@@ -2205,6 +2213,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String walletName,
     String derivationPath, {
     required bool isCurrentWallet,
+    bool isSelected = false,
   }) {
     return ShrinkAnimationButton(
       onPressed: () {
@@ -2246,22 +2255,36 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.only(left: 14, right: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              CoconutLayout.spacing_100h,
-              Text(
-                shortenAddress(address, head: 12, tail: 14),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CoconutLayout.spacing_100h,
+                    Text(
+                      shortenAddress(address, head: 12, tail: 14),
+                      style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                    ),
+                    _buildAddressRowSubtitle(
+                      context,
+                      walletName,
+                      derivationPath,
+                      isCurrentWallet,
+                      addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
+                    ),
+                    CoconutLayout.spacing_100h,
+                  ],
+                ),
               ),
-              _buildAddressRowSubtitle(
-                context,
-                walletName,
-                derivationPath,
-                isCurrentWallet,
-                addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
-              ),
-              CoconutLayout.spacing_100h,
+              if (isSelected)
+                SvgPicture.asset(
+                  CommonActionIconPath.check,
+                  key: ValueKey('vault-address-selected-$address'),
+                  width: 12,
+                  height: 12,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                ),
             ],
           ),
         ),
@@ -2373,6 +2396,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   _receivingVaultName,
                                   address.derivationPath,
                                   isCurrentWallet: false,
+                                  isSelected:
+                                      selection.item1 < selection.item2.length &&
+                                      selection.item2[selection.item1] == address.address,
                                 );
                               },
                             );
@@ -2638,14 +2664,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
         _amountController.text = _formatDecimalTextForDisplay(amountText);
-        _viewModel.setAmountText(bip21Data.amount!, index);
+        _viewModel.setAmountText(bip21Data.amount!, index, validate: false);
       }
+      _viewModel.validateAllFieldsOnFocusLost();
       return;
     }
 
     final normalized = normalizeAddress(scannedData);
     _addressControllerList[index].text = normalized;
     _viewModel.setAddressText(normalized, index);
+    _viewModel.validateAllFieldsOnFocusLost();
   }
 
   void _recipientPageListener() {
@@ -2730,10 +2758,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          if (hasAddressTextChangedSinceFocus(index, controller.text)) {
-            if (controller.text.toLowerCase().startsWith('bitcoin:')) {
-              _applyIncomingBitcoinUri(controller.text, index);
-            }
+          if (_hasAddressTextChangedSinceFocus(index, controller.text) &&
+              controller.text.toLowerCase().startsWith('bitcoin:')) {
+            _applyIncomingBitcoinUri(controller.text, index);
+          } else {
+            // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
             _viewModel.validateAllFieldsOnFocusLost();
           }
         } else {
@@ -2765,7 +2794,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.add(focusNode);
   }
 
-  bool hasAddressTextChangedSinceFocus(int index, String currentText) {
+  bool _hasAddressTextChangedSinceFocus(int index, String currentText) {
     return _addressFocusInTextList[index] != currentText;
   }
 
@@ -2799,9 +2828,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      if (_isLeftDragGuideViewVisible || _isDropdownMenuVisible) {
+      if (_isDropdownMenuVisible) {
         setState(() {
-          _isLeftDragGuideViewVisible = false;
           _isDropdownMenuVisible = false;
         });
       }

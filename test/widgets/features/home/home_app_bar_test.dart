@@ -55,6 +55,7 @@ void main() {
         List<Rect>? baseline;
 
         for (final scenario in scenarios) {
+          final actionTaps = [0, 0, 0];
           await tester.pumpWidget(
             MaterialApp(
               theme: buildCoconutThemeData(),
@@ -73,9 +74,9 @@ void main() {
                       isArranging: false,
                       addWalletButtonLink: LayerLink(),
                       onArrangeDone: () {},
-                      onAddWallet: () {},
-                      onSettings: () {},
-                      onEdit: () {},
+                      onEdit: () => actionTaps[0]++,
+                      onAddWallet: () => actionTaps[1]++,
+                      onSettings: () => actionTaps[2]++,
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 900)),
                   ],
@@ -108,13 +109,21 @@ void main() {
           for (var i = 0; i < actions.length; i++) {
             expect(actions[i].left, closeTo(baseline[i].left, 0.01), reason: label);
             expect(actions[i].right, lessThanOrEqualTo(width), reason: label);
-            expect(actions[i].width, 48, reason: label);
+            expect(actions[i].width, HomeAppBar.actionButtonWidth, reason: label);
+            expect(actions[i].height, greaterThanOrEqualTo(kMinInteractiveDimension), reason: label);
+            if (i > 0) {
+              expect(actions[i].left, greaterThanOrEqualTo(actions[i - 1].right), reason: label);
+            }
           }
           expect(
             tester.getRect(find.byType(HomeConnectionStatusIndicator)).right,
             lessThanOrEqualTo(actions.first.left),
             reason: label,
           );
+          await tester.tap(find.byKey(const Key('home-edit-button')));
+          await tester.tap(find.byKey(const Key('home-add-wallet-button')));
+          await tester.tap(find.byKey(const Key('home-settings-button')));
+          expect(actionTaps, [1, 1, 1], reason: label);
         }
       }
     }

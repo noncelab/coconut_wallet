@@ -57,7 +57,7 @@ class WalletHealthScreen extends StatefulWidget {
   State<WalletHealthScreen> createState() => _WalletHealthScreenState();
 }
 
-class _WalletHealthScreenState extends State<WalletHealthScreen> {
+class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTickerProviderStateMixin {
   /// 깜빡임 방지(지갑 상세 당겨서 새로고침과 같은 값)
   static const _minimumCheckingDuration = Duration(milliseconds: 700);
 
@@ -68,9 +68,16 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
   /// 직전 빌드가 위급 배치였는지(위급으로 바뀌는 순간을 안다)
   bool _wasCritical = false;
 
+  /// 카테고리 카드를 누르면 그 카테고리의 검토 필요 행으로 스크롤해 깜빡인다(지갑 상세 최근 거래 강조와 같은 효과)
+  late final AnimationController _highlight;
+  SafetyCategory? _highlightedCategory;
+  final _firstHighlightedRowKey = GlobalKey();
+  int _highlightRun = 0;
+
   @override
   void initState() {
     super.initState();
+    _highlight = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
     if (widget.startCheck) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<SafetyProvider?>()?.refresh();
@@ -87,6 +94,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
   @override
   void dispose() {
     _cancelSettle?.call();
+    _highlight.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -105,6 +113,43 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       });
     }
     _wasCritical = critical;
+  }
+
+  /// 검토 필요 목록에서 [category]에 속한 행. 위급 머리가 보여 주는 점검([inHero])은 목록에 없으므로 뺀다
+  bool _hasReviewRows(WalletHealthReport report, SafetyCategory category, {SafetyCheckResult? inHero}) =>
+      report.reviewItems.any((r) => r != inHero && r.id.category == category) ||
+      (category == SafetyCategory.activity && report.infoIncidents.isNotEmpty);
+
+  Future<void> _highlightCategory(
+    WalletHealthReport report,
+    SafetyCategory category, {
+    SafetyCheckResult? inHero,
+  }) async {
+    if (!_hasReviewRows(report, category, inHero: inHero)) return;
+    final run = ++_highlightRun;
+    _highlight.value = 0;
+    setState(() => _highlightedCategory = category);
+    await WidgetsBinding.instance.endOfFrame;
+    final target = _firstHighlightedRowKey.currentContext;
+    if (!mounted || run != _highlightRun || target == null || !target.mounted) return;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted || run != _highlightRun) return;
+    if (safetyReduceMotion(context)) {
+      _highlight.value = 1;
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      if (mounted && run == _highlightRun) _highlight.value = 0;
+      return;
+    }
+    await _highlight.forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (!mounted || run != _highlightRun) return;
+    await _highlight.reverse();
   }
 
   /// 다시 검사: 버튼·당겨서 새로고침·바로가기. 분석 이벤트는 provider가 남긴다
@@ -169,8 +214,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             onPressed: () => showWalletHealthAboutSheet(context),
             icon: SvgPicture.asset(
               CommonStateIconPath.circleInfo,
-              width: 24,
-              height: 24,
+              width: 20,
+              height: 20,
               colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
             ),
           ),
@@ -245,7 +290,9 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
       WalletHealthCategoryGrid(
         report: report,
         isChecking: checking,
-        onTap: (category) => showSafetyCategorySheet(context, category),
+        onTap: (category) {
+          if (report != null) _highlightCategory(report, category);
+        },
       ),
       if (report != null) ...[
         ..._reviewSection(report),
@@ -322,12 +369,28 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
         if (r != inHero) r,
     ];
     if (items.isEmpty && report.infoIncidents.isEmpty) return const [];
+    final highlighted = _highlightedCategory;
+    final categories = [
+      for (final item in items) item.id.category,
+      for (final _ in report.infoIncidents) SafetyCategory.activity,
+    ];
+    final first = categories.indexOf(highlighted ?? SafetyCategory.activity);
+    Widget wrap(int index, Widget row) {
+      if (highlighted == null || categories[index] != highlighted) return row;
+      return _ReviewRowHighlight(
+        key: index == first ? _firstHighlightedRowKey : null,
+        animation: _highlight,
+        child: row,
+      );
+    }
+
     return [
       SafetySectionTitle(t.wallet_health.section.review_needed),
       SafetyListCard(
         rows: [
-          for (final item in items) SafetyReviewRow(check: item),
-          for (final incident in report.infoIncidents) _InfoIncidentRow(incident: incident),
+          for (final (i, item) in items.indexed) wrap(i, SafetyReviewRow(check: item)),
+          for (final (i, incident) in report.infoIncidents.indexed)
+            wrap(items.length + i, _InfoIncidentRow(incident: incident)),
         ],
       ),
     ];
@@ -570,7 +633,11 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> {
             SafetyCategory.privacy,
             if (incident == null) SafetyCategory.activity,
           ])
-            _OtherCheckRow(report: report, category: category, onTap: () => showSafetyCategorySheet(context, category)),
+            _OtherCheckRow(
+              report: report,
+              category: category,
+              onTap: () => _highlightCategory(report, category, inHero: incident == null ? check : null),
+            ),
         ],
       ),
       ..._reviewSection(report, inHero: incident == null ? check : null),
@@ -762,6 +829,32 @@ class _IncidentCard extends StatelessWidget {
 }
 
 /// 멤풀에서 사라진 사건(정보). 확인 필요 수·🔔 점에 넣지 않는다
+/// 검토 필요 행 위에 잠깐 겹치는 강조(지갑 상세 최근 거래 강조와 같은 색·세기)
+class _ReviewRowHighlight extends StatelessWidget {
+  const _ReviewRowHighlight({super.key, required this.animation, required this.child});
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder:
+          (context, child) => DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              color: context.coconutColors.primaryText.withValues(
+                alpha: 0.08 * Curves.easeInOut.transform(animation.value),
+              ),
+            ),
+            child: child,
+          ),
+    );
+  }
+}
+
 class _InfoIncidentRow extends StatelessWidget {
   const _InfoIncidentRow({required this.incident});
 

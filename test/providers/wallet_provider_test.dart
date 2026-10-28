@@ -1,5 +1,11 @@
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:cbor/simple.dart';
+import 'package:ur/ur.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -74,6 +80,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   late MultisigWalletItem addMultisigWalletResult;
 
   int updateWalletUICallCount = 0;
+  WatchOnlyWallet? lastUpdatedWallet;
 
   @override
   Future<List<WalletItemBase>> getWalletItemList() async => walletItems;
@@ -207,6 +214,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   @override
   void updateWalletUI(int id, WatchOnlyWallet watchOnlyWallet) {
     updateWalletUICallCount++;
+    lastUpdatedWallet = watchOnlyWallet;
   }
 }
 
@@ -646,6 +654,49 @@ void main() {
       provider.dispose();
     });
 
+    test('다른 계정 탭루트 이름과 팔레트는 updateWalletUI로 저장되고 멀티시그는 거절된다', () async {
+      final vault = TaprootVault.fromSeedList([Seed.random()], const <Policy>[], accountIndex: 1);
+      final item = TaprootWalletItem(
+        id: 7,
+        name: 'Account 1',
+        colorIndex: 1,
+        iconIndex: 2,
+        descriptor: vault.descriptor,
+        keyPathSeedInfos: const [],
+        scriptPathSeedInfos: const [],
+      );
+      final account = (item.walletBase as TaprootWallet).derivationPath.split('/');
+      expect(int.parse(account[3].replaceAll(RegExp(r"['hH]"), '')), 1);
+
+      final walletRepo = FakeWalletRepository()..walletItems = [item];
+      final provider = await _buildProvider(walletRepo);
+
+      await provider.updateWalletName(item.id, 'Renamed');
+      expect(walletRepo.updateWalletUICallCount, 1);
+      expect(walletRepo.lastUpdatedWallet?.name, 'Renamed');
+      expect(walletRepo.lastUpdatedWallet?.descriptor, item.descriptor);
+      expect(walletRepo.lastUpdatedWallet?.keyPathSeedInfos, isNull);
+      expect(walletRepo.lastUpdatedWallet?.scriptPathSeedInfos, isNull);
+      expect(item.keyPathSeedInfos, isEmpty);
+      expect(item.scriptPathSeedInfos, isEmpty);
+
+      await provider.updateWalletPalette(item.id, 4, 5);
+      expect(walletRepo.updateWalletUICallCount, 2);
+      expect(walletRepo.lastUpdatedWallet?.iconIndex, 4);
+      expect(walletRepo.lastUpdatedWallet?.colorIndex, 5);
+      expect(walletRepo.lastUpdatedWallet?.descriptor, item.descriptor);
+      expect(walletRepo.lastUpdatedWallet?.keyPathSeedInfos, isNull);
+      expect(item.descriptor, vault.descriptor);
+
+      provider.dispose();
+
+      final multisigRepo = FakeWalletRepository()..walletItems = [_createMultisigWalletListItem(id: 8)];
+      final multisigProvider = await _buildProvider(multisigRepo);
+      await expectLater(multisigProvider.updateWalletName(8, 'No'), throwsA(isA<Exception>()));
+      expect(multisigRepo.updateWalletUICallCount, 0);
+      multisigProvider.dispose();
+    });
+
     test('다른 지갑과 이름 충돌 시 existingName 반환', () async {
       final existingItem = _createSinglesigWalletListItem(name: 'Shared Name');
       final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
@@ -665,6 +716,55 @@ void main() {
   // 싱글시그
   // ───────────────────────────────────────────
   group('WalletProvider - syncFromCoconutVault (싱글시그)', () {
+    test('corrected UR import rejects an existing wallet with legacy child metadata', () async {
+      final previousNetwork = NetworkType.currentNetworkType;
+      addTearDown(() => NetworkType.setNetworkType(previousNetwork));
+      NetworkType.setNetworkType(NetworkType.regtest);
+      final source = SingleSignatureWallet.fromDescriptor(_singlesigDescriptor);
+      final key = source.keyStore.extendedPublicKey;
+      final payload = <int, dynamic>{
+        1: int.parse(source.keyStore.masterFingerprint, radix: 16),
+        2: [
+          {
+            3: key.publicKey,
+            4: key.chainCode,
+            6: {
+              1: [84, true, 1, true, 0, true],
+            },
+            8: int.parse(key.parentFingerprint, radix: 16),
+          },
+        ],
+      };
+      final legacy = SingleSignatureWallet.fromCryptoAccountPayload(convertKeysToString(payload));
+      expect(legacy.keyStore.extendedPublicKey.index, 0);
+      final item = SinglesigWalletItem(
+        id: 42,
+        name: 'Existing UR wallet',
+        colorIndex: 0,
+        iconIndex: 0,
+        descriptor: legacy.descriptor,
+        walletImportSource: WalletImportSource.keystone,
+      );
+      final repo = FakeWalletRepository()..walletItems = [item];
+      final provider = await _buildProvider(repo);
+      addTearDown(provider.dispose);
+      final imported = WalletAddService().createWalletFromUrCryptoAccount(
+        ur: UR('crypto-account', Uint8List.fromList(cbor.encode(payload))),
+        name: 'Reimported UR wallet',
+        walletImportSource: WalletImportSource.keystone,
+      );
+      final corrected = SingleSignatureWallet.fromDescriptor(imported.descriptor);
+      expect(corrected.keyStore.extendedPublicKey.index, 0x80000000);
+      expect(corrected.getAddress(0), legacy.getAddress(0));
+      expect(imported.descriptor, isNot(legacy.descriptor));
+      final result = await provider.syncFromThirdParty(imported);
+      expect(result.result, WalletSyncResult.existingWalletUpdateImpossible);
+      expect(result.walletId, 42);
+      expect(repo.addSinglesigWalletCallCount, 0);
+      expect(repo.updateWalletUICallCount, 0);
+      expect(repo.walletItems.single.descriptor, legacy.descriptor);
+    });
+
     test('신규 지갑 추가 시 addSinglesigWallet 호출 및 newWalletAdded 반환', () async {
       final walletRepo = FakeWalletRepository();
       walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem();

@@ -9,8 +9,6 @@ const kHomeErrorDisplayDelayDuration = Duration(seconds: 5);
 const kHomeReconnectedNoticeDuration = Duration(seconds: 2);
 
 /// 새 홈 App Bar 왼쪽에 표시할 네트워크·동기화 상태.
-///
-/// 기존 홈(WalletHomeViewModel)의 연결 상태 판정과 같은 규칙을 쓴다. 구 홈을 지우는 0.12 이후에는 이 클래스만 남는다.
 class HomeConnectionStatusViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;

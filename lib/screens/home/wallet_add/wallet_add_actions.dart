@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -24,7 +25,7 @@ abstract final class WalletAddActions {
     WalletImportSource.coldCard,
     WalletImportSource.krux,
     WalletImportSource.passport,
-    WalletImportSource.extendedPublicKey,
+    WalletImportSource.extendedPublicKey, // 이 값을 통해 진입하는 화면에서 WalletImportSource.descriptor도 수용
   ];
 
   /// USB·블루투스로 연결하는 기기
@@ -80,6 +81,7 @@ abstract final class WalletAddActions {
     WalletAddScreen.routeName,
     WalletAddScreen.sourcesRouteName,
     AppRouteNames.walletAddScanner,
+    AnalyticsScreenNames.walletAddAirgapMfpSheet,
     AppRouteNames.bitbox02Connect,
     AppRouteNames.trezorTransportSelect,
     AppRouteNames.trezorBleConnect,

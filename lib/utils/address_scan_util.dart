@@ -44,18 +44,21 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
                   scrolledUnderElevation: 0,
                   surfaceTintColor: Colors.transparent,
                   centerTitle: true,
-                  leading: IconButton(
-                    icon: SvgPicture.asset(
-                      CommonNavigationIconPath.arrowBack,
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  leading: Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: SvgPicture.asset(
+                        CommonNavigationIconPath.arrowBack,
+                        width: 24,
+                        height: 24,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      ),
+                      onPressed: () {
+                        qrViewController = null;
+                        isQrDataHandling = false;
+                        Navigator.of(sheetContext).pop<String?>(null);
+                      },
                     ),
-                    onPressed: () {
-                      qrViewController = null;
-                      isQrDataHandling = false;
-                      Navigator.of(sheetContext).pop<String?>(null);
-                    },
                   ),
                   title: title.isEmpty ? null : Text(title, style: CoconutTypography.body1_16.setColor(Colors.white)),
                   actions: [
@@ -70,6 +73,7 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
                         qrViewController?.switchCamera();
                       },
                     ),
+                    CoconutLayout.spacing_100w,
                   ],
                 ),
                 body: AddressQrScannerBody(

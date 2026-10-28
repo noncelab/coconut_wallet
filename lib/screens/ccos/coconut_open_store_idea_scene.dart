@@ -208,15 +208,13 @@ class _IdeaQuestionMorphLine extends StatefulWidget {
 class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with SingleTickerProviderStateMixin {
   static const int _suffixDurationMs = 3700;
 
-  late final AnimationController _suffixController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: _suffixDurationMs),
-  );
+  late final AnimationController _suffixController;
   bool _hasStartedSuffixAnimation = false;
 
   @override
   void initState() {
     super.initState();
+    _suffixController = AnimationController(vsync: this, duration: const Duration(milliseconds: _suffixDurationMs));
     widget.animation.addListener(_handleParentAnimation);
   }
 

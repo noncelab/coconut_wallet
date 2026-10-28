@@ -242,7 +242,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     return sumExceptLast.roundTo8Digits();
   }
 
+  bool _hasUnvalidatedInput = false;
+
   bool get isReadyToSend {
+    if (_hasUnvalidatedInput) return false;
     if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
       return false;
     }
@@ -331,9 +334,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       }
     }
 
-    _setRecommendedFees().whenComplete(() {
-      notifyListeners();
-    });
+    _setRecommendedFees();
 
     _loadDrafts();
   }
@@ -489,6 +490,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
+    // 불러온 초안은 이전 수동 입력의 검증 대기 상태를 대체한다.
+    _hasUnvalidatedInput = false;
     // 10. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
     _transactionDraftId = draftId;
@@ -522,6 +525,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _buildTransaction() {
+    if (_hasUnvalidatedInput) return;
     if (_selectedWalletItem == null ||
         !hasValidRecipient ||
         _feeRateText.isEmpty ||
@@ -647,7 +651,6 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _isMaxMode = isEnabled;
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
-      updateFeeBoardVisibility();
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
@@ -663,8 +666,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
 
-    _buildTransaction();
-    _updateAmountValidationState();
+    _validateRecipientInputs();
     vibrateLight();
     notifyListeners();
   }
@@ -684,11 +686,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     setCurrentPage(_currentIndex);
     _onRecipientPageDeleted(_currentIndex);
 
-    _buildTransaction();
-
-    /// AddressError.duplicate였던 것을 해제
-    checkAndSetDuplicationError();
-    _updateAmountValidationState();
+    _validateRecipientInputs();
     vibrateLight();
     notifyListeners();
   }
@@ -768,18 +766,19 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (text.isEmpty) {
       _txBuildResult = null;
     }
-    notifyListeners();
+    _invalidateRecipientCalculation();
   }
 
   /// bip21 url에서 amount값 파싱 성공했을 때 사용
-  void setAmountText(int satoshi, int recipientIndex) {
+  void setAmountText(int satoshi, int recipientIndex, {bool validate = true}) {
     if (!_isValidRecipientIndex(recipientIndex, 'setAmountText')) return;
     if (_currentUnit.isBasedOnSatoshi) {
       _recipientList[recipientIndex].amount = satoshi.toString();
     } else {
       _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
     }
-    _updateAmountValidationState(recipientIndex: recipientIndex);
+    _invalidateRecipientCalculation();
+    if (validate) _validateRecipientInputs();
   }
 
   void setFeeRateText(String feeRate) {
@@ -874,6 +873,15 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         }
       }
     }
+    _invalidateRecipientCalculation();
+  }
+
+  void _invalidateRecipientCalculation() {
+    _hasUnvalidatedInput = true;
+    _txBuildResult = null;
+    _estimatedFee = null;
+    _unintendedDustFee = null;
+    _finalErrorMessage = '';
     notifyListeners();
   }
 
@@ -890,19 +898,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         _currentUnit.isBasedOnSatoshi ? SatoshiAmountInputFormatter.maxSats : BtcAmountInputFormatter.maxBtc.toInt();
     if (Decimal.parse(amount) > Decimal.fromInt(maxAmount)) return;
     _recipientList[_currentIndex].amount = amount;
-    notifyListeners();
+    _invalidateRecipientCalculation();
   }
 
-  void validateAllFieldsOnFocusLost() {
-    // debugPrint('validateAllFieldsOnFocusLost called');
+  void validateAllFieldsOnFocusLost() => _validateRecipientInputs();
+
+  // 입력 방식과 포커스 이동 여부에 관계없이 검증 및 수수료 상태를 갱신한다.
+  void _validateRecipientInputs() {
+    _hasUnvalidatedInput = false;
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: i);
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
+    _showFeeBoard = _showFeeBoard || hasValidRecipient;
     _buildTransaction();
-    updateFeeBoardVisibility();
   }
 
   void clearAmountText() {

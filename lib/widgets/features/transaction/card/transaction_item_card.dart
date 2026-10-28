@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' show FontFeature;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -126,47 +129,49 @@ class TransactionItemCard extends StatelessWidget {
     final isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
     final amountLabel = '${isReceived ? '+' : ''}$amountString';
     final amountStyle = CoconutTypography.body1_16_Number.setColor(colors.primaryText);
-    final timeStyle = CoconutTypography.body3_12_Number.setColor(colors.tertiaryText);
+    final timeStyle = CoconutTypography.body3_12
+        .setColor(colors.tertiaryText)
+        .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
     final timeLabel = transactionTimeStamp[1];
     return LayoutBuilder(
       builder: (context, constraints) {
         final amountWidth = _singleLineWidth(context, amountLabel, amountStyle);
-        final timeWidth = _singleLineWidth(context, timeLabel, timeStyle);
+        final timeWidth =
+            [for (var digit = 0; digit <= 9; digit++) _singleLineWidth(context, '$digit$digit:$digit$digit', timeStyle)]
+                .reduce(math.max)
+                .ceilToDouble() +
+            2;
+        final time = SizedBox(width: timeWidth, child: Text(timeLabel, style: timeStyle, maxLines: 1, softWrap: false));
         final statusText = _statusText();
         final statusWidth =
             statusText == null ? 0.0 : 24 + 8 + _singleLineWidth(context, statusText, CoconutTypography.body2_14);
         final oneRow = timeWidth + 12 + statusWidth + 12 + amountWidth <= constraints.maxWidth;
+        final amount = Text(amountLabel, textAlign: TextAlign.right, style: amountStyle);
         if (oneRow) {
           return Row(
             children: [
-              Text(timeLabel, style: timeStyle),
+              Expanded(child: Row(children: [time, const SizedBox(width: 12), _buildStatus(context)])),
               const SizedBox(width: 12),
-              _buildStatus(context),
-              const SizedBox(width: 12),
-              _buildAmount(context),
+              amount,
             ],
           );
         }
-        final amount = Text(amountLabel, textAlign: TextAlign.right, style: amountStyle);
-        final time = Text(timeLabel, style: timeStyle);
-        final statusLabel = _buildStatus(context, boundedLabel: true);
-        final timeAndAmount = timeWidth + 12 + amountWidth <= constraints.maxWidth;
-        if (timeAndAmount) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        // 좁은 화면에서는 왼쪽 그룹 안에서만 줄을 바꾸고 수량은 오른쪽에 유지한다.
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [time, const SizedBox(width: 12), Expanded(child: amount)],
+                children: [time, const SizedBox(height: 4), _buildStatus(context, boundedLabel: true)],
               ),
-              const SizedBox(height: 4),
-              statusLabel,
-            ],
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [time, const SizedBox(height: 4), amount, const SizedBox(height: 4), statusLabel],
+            ),
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: math.max(0, (constraints.maxWidth - 12) * 0.5)),
+              child: amount,
+            ),
+          ],
         );
       },
     );
@@ -259,7 +264,7 @@ class TransactionItemCard extends StatelessWidget {
 
 double _singleLineWidth(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
+    text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style)),
     maxLines: 1,
     textDirection: Directionality.of(context),
     textScaler: MediaQuery.textScalerOf(context),

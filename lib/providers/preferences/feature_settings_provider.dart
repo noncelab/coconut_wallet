@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';

@@ -7,7 +7,6 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/composed_scan_data_handler2.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/extended_pub_key_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
@@ -23,7 +22,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
   final PreferenceProvider _preferenceProvider;
-  late final IQrScanDataHandler _qrDataHandler;
+  late final IQrScanDataHandler<Object> _qrDataHandler;
 
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._preferenceProvider) {
     switch (_walletImportSource) {
@@ -35,7 +34,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.seedSigner:
-        _qrDataHandler = ComposedScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        _qrDataHandler = ComposedScanDataHandler([
+          DescriptorQrScanDataHandler(),
+          BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]),
+        ]);
         break;
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
@@ -45,11 +47,14 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.bytes]);
         break;
       case WalletImportSource.coldCard:
-        _qrDataHandler = BbQrScanDataHandler();
+        // 지갑 추가에는 ColdCard의 지갑 export(BBQR JSON)만 받는다. P(PSBT)·T(transaction)은 지갑 정보가 아니다.
+        _qrDataHandler = BbQrScanDataHandler(allowedDataTypes: const {'J'});
         break;
       case WalletImportSource.extendedPublicKey:
+      // UI 진입 경로는 extendedPublicKey뿐이다. descriptor는 스캔 결과로만 결정되는 저장 출처 값이며,
+      // 진입 소스로 오는 경로는 없지만 enum 호환을 위해 같은 구성을 유지한다.
       case WalletImportSource.descriptor:
-        _qrDataHandler = ComposedScanDataHandler2();
+        _qrDataHandler = ComposedScanDataHandler([DescriptorQrScanDataHandler(), ExtendedPublicKeyQrScanDataHandler()]);
         break;
       case WalletImportSource.bitbox02:
       case WalletImportSource.trezor:
@@ -57,15 +62,16 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  IQrScanDataHandler get qrDataHandler => _qrDataHandler;
+  IQrScanDataHandler<Object> get qrDataHandler => _qrDataHandler;
 
-  bool get isExtendedPublicKeyScanned =>
-      _walletImportSource == WalletImportSource.extendedPublicKey &&
-      (_qrDataHandler as ComposedScanDataHandler2).selectedHandler is ExtendedPublicKeyQrScanDataHandler;
+  bool get isExtendedPublicKeyScanned => switch (_qrDataHandler) {
+    ComposedScanDataHandler(:final selectedHandler) => selectedHandler is ExtendedPublicKeyQrScanDataHandler,
+    _ => false,
+  };
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(
-    dynamic additionInfo, {
+    Object additionInfo, {
     bool? isExtendedPublicKey,
     String? masterFingerPrint,
   }) async {
@@ -75,7 +81,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       if (additionInfo is WatchOnlyWallet) {
         return _addCoconutVaultWallet(additionInfo);
       } else if (additionInfo is UR) {
-        if (_walletImportSource == WalletImportSource.passport) {
+        if (additionInfo.type == UrType.bytes.value) {
           return _addUrBytesWallet(_walletImportSource, additionInfo);
         }
         return _addBcUrWallet(_walletImportSource, additionInfo);
@@ -126,14 +132,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
-      _walletImportSource,
+      WalletImportSource.descriptor,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromDescriptor(
-      descriptor: descriptor,
-      name: name,
-      walletImportSource: _walletImportSource,
-    );
+    final wallet = _walletAddService.createWalletFromDescriptor(descriptor: descriptor, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

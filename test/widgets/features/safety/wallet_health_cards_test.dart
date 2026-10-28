@@ -348,7 +348,7 @@ void main() {
           count: 3,
         ),
       ),
-      t.wallet_health.check.metadata_backup.changed(n: 3),
+      t.wallet_health.check.metadata_backup.issue_changed(n: 3),
     );
   });
 

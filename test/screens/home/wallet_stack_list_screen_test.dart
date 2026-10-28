@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -93,15 +94,17 @@ Future<void> _pumpHome(
   WalletStackKind kind = WalletStackKind.all,
   WalletCardSize? stack,
   CoconutThemeVariant variant = CoconutThemeVariant.dark,
+  List<WalletItemBase>? walletItems,
 }) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final wallets = orderStackWallets(_wallets, const [], kind: kind);
+  final sourceWallets = walletItems ?? _wallets;
+  final wallets = orderStackWallets(sourceWallets, const [], kind: kind);
   return tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(_wallets)),
+        ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(sourceWallets)),
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
       ],
       child: MaterialApp(
@@ -304,6 +307,405 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('holding a swiped home wallet card repeats every 450ms and release stops it', (tester) async {
+    await _pumpHome(
+      tester,
+      walletItems: [for (var id = 1; id <= 8; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await tester.pumpAndSettle();
+    final controller = tester.widget<PageView>(find.byKey(const Key('stack-pager'))).controller!;
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-card-slider'))));
+    await gesture.moveBy(const Offset(-24, 0));
+    await gesture.moveBy(const Offset(-24, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+    expect(controller.page, closeTo(1, 0.01));
+    await tester.pump(const Duration(milliseconds: 229));
+    expect(controller.page, closeTo(1, 0.01));
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 220));
+    expect(controller.page, closeTo(2, 0.01));
+    await tester.pump(const Duration(milliseconds: 230));
+    await tester.pump(const Duration(milliseconds: 220));
+    expect(controller.page, closeTo(3, 0.01));
+    expect(tester.widget<AnimatedOpacity>(find.byKey(const Key('stack-indicator'))).opacity, 1);
+    await gesture.up();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(controller.page, closeTo(3, 0.01));
+    expect(find.byType(WalletStackListScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('held card swipes clamp at the edge and reverse direction before cancelling', (tester) async {
+    await _pumpHome(tester);
+    await tester.pumpAndSettle();
+    final controller = tester.widget<PageView>(find.byKey(const Key('stack-pager'))).controller!;
+    controller.jumpToPage(2);
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-card-slider'))));
+    await gesture.moveBy(const Offset(-24, 0));
+    await gesture.moveBy(const Offset(-24, 0));
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(controller.page, closeTo(2, 0.01));
+    await gesture.moveBy(const Offset(24, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+    expect(controller.page, closeTo(1, 0.01));
+    await gesture.cancel();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(controller.page, closeTo(1, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('home indicator uses distance at the first two pages and 500ms repeats through to the edge', (
+    tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      walletItems: [for (var id = 1; id <= 8; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await tester.pumpAndSettle();
+    final controller = tester.widget<PageView>(find.byKey(const Key('stack-pager'))).controller!;
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-indicator-scrubber'))));
+    await gesture.moveBy(const Offset(24, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(1, 0.01));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(1, 0.01), reason: 'holding at the second page must not repeat');
+    await gesture.moveBy(const Offset(180, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(2, 0.01), reason: 'distance-based movement stops on entering the middle');
+    await gesture.moveBy(const Offset(180, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(2, 0.01), reason: 'extra distance is ignored in the middle');
+    await tester.pump(const Duration(milliseconds: 499));
+    expect(controller.page, closeTo(2, 0.01));
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(controller.page, closeTo(3, 0.01));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(controller.page, closeTo(4, 0.01));
+    await gesture.moveBy(const Offset(-24, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(3, 0.01));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(controller.page, closeTo(2, 0.01));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(controller.page, closeTo(1, 0.01));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(0, 0.01), reason: 'automatic movement continues through the first two pages');
+    await gesture.up();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(controller.page, closeTo(0, 0.01));
+    final secondGesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('stack-indicator-scrubber'))),
+    );
+    await secondGesture.moveBy(const Offset(24, 0));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(1, 0.01), reason: 'a new drag at the edge returns to distance-based movement');
+    await secondGesture.up();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('home indicator uses distance at the last two pages and repeats from the third-last', (tester) async {
+    await _pumpHome(
+      tester,
+      walletItems: [for (var id = 1; id <= 8; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await tester.pumpAndSettle();
+    final controller = tester.widget<PageView>(find.byKey(const Key('stack-pager'))).controller!;
+    controller.jumpToPage(7);
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-indicator-scrubber'))));
+    await gesture.moveBy(const Offset(24, 0));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(7, 0.01));
+    await gesture.moveBy(const Offset(-18, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(6, 0.01));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(6, 0.01));
+    await gesture.moveBy(const Offset(-18, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(5, 0.01));
+    await tester.pump(const Duration(milliseconds: 499));
+    expect(controller.page, closeTo(5, 0.01));
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(controller.page, closeTo(4, 0.01));
+    await gesture.moveBy(const Offset(18, 0));
+    await tester.pump();
+    expect(controller.page, closeTo(5, 0.01));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(controller.page, closeTo(6, 0.01));
+    await tester.pump(const Duration(milliseconds: 1200));
+    expect(controller.page, closeTo(7, 0.01), reason: 'automatic movement continues through the last two pages');
+    await gesture.cancel();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(controller.page, closeTo(7, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('home wallet indicator slides five markers and stops shifting near either end', (tester) async {
+    await _pumpHome(
+      tester,
+      walletItems: [for (var id = 1; id <= 9; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await tester.pumpAndSettle();
+    final controller = tester.widget<PageView>(find.byKey(const Key('stack-pager'))).controller!;
+    final window = find.byKey(const Key('stack-indicator-window'));
+    Finder slot(int page) => find.byKey(ValueKey('stack-indicator-slot-$page'));
+    double left(int page) => tester.getTopLeft(slot(page)).dx - tester.getTopLeft(window).dx;
+    int visibleCount() =>
+        find
+            .descendant(of: window, matching: find.byType(Opacity))
+            .evaluate()
+            .where((element) => (element.widget as Opacity).opacity > 0)
+            .length;
+
+    expect(visibleCount(), 5);
+    expect(left(0), closeTo(0, 0.01));
+    controller.jumpToPage(2);
+    await tester.pumpAndSettle();
+    expect(left(0), closeTo(0, 0.01));
+    controller.jumpToPage(3);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(left(0), closeTo(0, 0.01), reason: 'the selected marker changes before the row moves');
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(left(0), lessThan(0));
+    expect(left(1), greaterThan(0));
+    final incoming = tester.widget<Opacity>(find.descendant(of: slot(5), matching: find.byType(Opacity)));
+    expect(incoming.opacity, greaterThan(0));
+    expect(incoming.opacity, lessThan(1));
+    final incomingScale = tester.widget<Transform>(find.descendant(of: slot(5), matching: find.byType(Transform)));
+    expect(incomingScale.transform.storage[0], closeTo(incoming.opacity, 0.001));
+    final departingScale = tester.widget<Transform>(find.descendant(of: slot(0), matching: find.byType(Transform)));
+    expect(departingScale.transform.storage[0], lessThan(1));
+    await tester.pumpAndSettle();
+    expect(left(1), closeTo(0, 0.01));
+    expect(visibleCount(), 5);
+
+    for (final page in [6, 7, 8, 7, 6]) {
+      controller.jumpToPage(page);
+      await tester.pumpAndSettle();
+      expect(left(4), closeTo(0, 0.01), reason: 'the final two pages keep the window still');
+      expect(visibleCount(), 5);
+    }
+    controller.jumpToPage(5);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(left(4), greaterThan(0), reason: 'moving back slides the markers to the right');
+    await tester.pumpAndSettle();
+    expect(left(3), closeTo(0, 0.01));
+    for (final page in [2, 1, 0]) {
+      controller.jumpToPage(page);
+      await tester.pumpAndSettle();
+      expect(left(0), closeTo(0, 0.01));
+      expect(visibleCount(), 5);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('home wallet indicator switches whole pages and stays visible during scrubbing', (tester) async {
+    await _pumpHome(tester);
+    await tester.pumpAndSettle();
+    final pager = tester.widget<PageView>(find.byKey(const Key('stack-pager')));
+    final indicator = find.byKey(const Key('stack-indicator'));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-indicator-scrubber'))));
+    await gesture.moveBy(const Offset(24, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(12, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(0, 0.01));
+    await gesture.moveBy(const Offset(6, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.widget<AnimatedOpacity>(indicator).opacity, 1);
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 801));
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    expect(tester.widget<AnimatedOpacity>(indicator).opacity, 0);
+    expect(find.byType(WalletStackListScreen), findsNothing);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('home wallet indicator clamps and reverses at the first and last wallet', (tester) async {
+    await _pumpHome(tester);
+    await tester.pumpAndSettle();
+    final pager = tester.widget<PageView>(find.byKey(const Key('stack-pager')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-indicator-scrubber'))));
+    await gesture.moveBy(const Offset(24, 0));
+    await gesture.moveBy(const Offset(120, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(2, 0.01));
+    await gesture.moveBy(const Offset(-18, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    await gesture.moveBy(const Offset(-120, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(0, 0.01));
+    await gesture.moveBy(const Offset(18, 0));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    await gesture.cancel();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('indicator scrubbing switches whole pages only at each movement threshold', (tester) async {
+    await _pumpHome(tester);
+    await _open(tester);
+    final pager = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager')));
+    final scrubber = find.byKey(const Key('wallet-stack-list-indicator-scrubber'));
+    final gesture = await tester.startGesture(tester.getCenter(scrubber));
+    await gesture.moveBy(const Offset(0, 24));
+    await tester.pump();
+    final start = pager.controller!.page!;
+    await gesture.moveBy(const Offset(0, 12));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(start, 0.01));
+    await gesture.moveBy(const Offset(0, 6));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(start + 1, 0.01));
+    await gesture.moveBy(const Offset(0, 17));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(start + 1, 0.01));
+    await gesture.moveBy(const Offset(0, 1));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(start + 2, 0.01));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(pager.controller!.page, closeTo(start + 2, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('indicator scrubbing clamps at the add page and reverses immediately at either end', (tester) async {
+    await _pumpHome(tester);
+    await _open(tester);
+    final pager = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager')));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('wallet-stack-list-indicator-scrubber'))),
+    );
+    await gesture.moveBy(const Offset(0, 24));
+    await gesture.moveBy(const Offset(0, 120));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(3, 0.01));
+    expect(find.byKey(const Key('wallet-stack-list-add-card')), findsOneWidget);
+    await gesture.moveBy(const Offset(0, -9));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(3, 0.01));
+    await gesture.moveBy(const Offset(0, -9));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(2, 0.01));
+    await gesture.moveBy(const Offset(0, -120));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(0, 0.01));
+    await gesture.moveBy(const Offset(0, 9));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(0, 0.01));
+    await gesture.moveBy(const Offset(0, 9));
+    await tester.pump();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    await gesture.cancel();
+    await tester.pumpAndSettle();
+    expect(pager.controller!.page, closeTo(1, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wheel indicator switches from distance to 500ms repeat at the fifth page', (tester) async {
+    await _pumpCupertinoHome(
+      tester,
+      items: [for (var id = 1; id <= 12; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await _open(tester);
+    final controller = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager'))).controller!;
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('wallet-stack-list-indicator-scrubber'))),
+    );
+    await gesture.moveBy(const Offset(0, 24));
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.page, closeTo(1, 0.01));
+    await gesture.moveBy(const Offset(0, 72));
+    await tester.pump();
+    expect(controller.page, closeTo(4, 0.01));
+    await gesture.moveBy(const Offset(0, 180));
+    await tester.pump(const Duration(milliseconds: 499));
+    expect(controller.page, closeTo(4, 0.01));
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(controller.page, closeTo(5, 0.01));
+    await tester.pump(const Duration(milliseconds: 200));
+    final departing = tester.getTopLeft(find.byKey(const ValueKey('wallet-stack-list-indicator-slot-0'))).dy;
+    final window = tester.getTopLeft(find.byKey(const Key('wallet-stack-list-indicator'))).dy;
+    expect(departing, lessThan(window));
+    final incomingSlot = find.byKey(const ValueKey('wallet-stack-list-indicator-slot-9'));
+    final incomingOpacity = tester.widget<Opacity>(find.descendant(of: incomingSlot, matching: find.byType(Opacity)));
+    final incomingScale = tester.widget<Transform>(find.descendant(of: incomingSlot, matching: find.byType(Transform)));
+    expect(incomingOpacity.opacity, greaterThan(0));
+    expect(incomingScale.transform.storage[0], closeTo(incomingOpacity.opacity, 0.001));
+    expect(incomingScale.transform.storage[0], lessThan(1));
+    final departingSlot = find.byKey(const ValueKey('wallet-stack-list-indicator-slot-0'));
+    final departingScale = tester.widget<Transform>(
+      find.descendant(of: departingSlot, matching: find.byType(Transform)),
+    );
+    expect(departingScale.transform.storage[0], lessThan(1));
+    await gesture.moveBy(const Offset(0, -24));
+    await tester.pump();
+    expect(controller.page, closeTo(4, 0.01));
+    for (final page in [3, 2, 1, 0]) {
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(controller.page, closeTo(page, 0.01));
+    }
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.page, closeTo(0, 0.01));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wheel indicator starts with distance near the end and auto repeat continues to the add page', (
+    tester,
+  ) async {
+    await _pumpCupertinoHome(
+      tester,
+      items: [for (var id = 1; id <= 12; id++) WalletMock.createSingleSigWalletItem(id: id)],
+    );
+    await _open(tester);
+    final controller = tester.widget<PageView>(find.byKey(const Key('wallet-stack-list-pager'))).controller!;
+    controller.jumpToPage(12);
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('wallet-stack-list-indicator-scrubber'))),
+    );
+    await gesture.moveBy(const Offset(0, 24));
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.page, closeTo(12, 0.01));
+    await gesture.moveBy(const Offset(0, -72));
+    await tester.pump();
+    expect(controller.page, closeTo(8, 0.01));
+    await gesture.moveBy(const Offset(0, 24));
+    await tester.pump();
+    expect(controller.page, closeTo(9, 0.01));
+    for (final page in [10, 11, 12]) {
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(controller.page, closeTo(page, 0.01));
+    }
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.page, closeTo(12, 0.01));
+    await gesture.cancel();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('wallet-stack-list-add-card')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final walletCount in [9, 40]) {
     testWidgets('bounded indicator follows first middle and add pages with $walletCount wallets', (tester) async {
       await _pumpCupertinoHome(
@@ -331,9 +733,12 @@ void main() {
                 (widget.key! as ValueKey<String>).value.startsWith('wallet-stack-list-indicator-dot-'),
           ),
         );
-        expect(dots.evaluate().length, lessThanOrEqualTo(9));
-        final rects = [for (final dot in dots.evaluate()) tester.getRect(find.byWidget(dot.widget))];
-        expect(rects.where((rect) => rect.height > 20).length, 1);
+        final visibleDots = dots.evaluate().where(
+          (element) => element.findAncestorWidgetOfExactType<Opacity>()!.opacity > 0,
+        );
+        expect(visibleDots.length, lessThanOrEqualTo(9));
+        final rects = [for (final dot in visibleDots) tester.getRect(find.byWidget(dot.widget))];
+        expect(rects.where((rect) => rect.height > 6).length, 1);
         for (final rect in rects) {
           expect(rect.top, greaterThanOrEqualTo(bounds.top));
           expect(rect.bottom, lessThanOrEqualTo(bounds.bottom));
@@ -555,6 +960,26 @@ void main() {
     expect(find.byKey(const ValueKey('stack-card-3')), findsOneWidget);
   });
 
+  testWidgets('returning from wallet detail shows the wallet the detail screen ended on', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    final firstId = _wallets.first.id;
+    await tester.tapAt(tester.getCenter(find.byKey(ValueKey('wallet-stack-list-card-$firstId'))));
+    await tester.pumpAndSettle();
+
+    final detail = tester.element(find.byKey(_detailKey));
+    final args = ModalRoute.of(detail)!.settings.arguments! as WalletDetailRouteArgs;
+    expect(args.walletIds, isNotEmpty);
+    final otherId = args.walletIds![2];
+    args.onFocusChanged!(otherId);
+    await tester.pump();
+    Navigator.of(detail).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(ValueKey('wallet-stack-list-facts-$otherId')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opened from My Wallets, the wheel shows its title', (tester) async {
     await tester.pumpWidget(
       MultiProvider(
@@ -579,5 +1004,27 @@ void main() {
 
     expect(find.text('My Wallets'), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-stack-list-card-1')), findsOneWidget);
+  });
+
+  testWidgets('opening a wallet expands its card background from the card to the whole screen', (tester) async {
+    await _pumpCupertinoHome(tester);
+    await _open(tester);
+    await tester.pumpAndSettle();
+    final firstId = _wallets.first.id;
+    final card = tester.getRect(find.byKey(ValueKey('wallet-stack-list-card-$firstId')));
+    await tester.tapAt(card.center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final layer = tester.getRect(
+      find.descendant(of: find.byType(WalletDetailExpandTransition), matching: find.byType(ClipRRect)).first,
+    );
+    final screen = Offset.zero & tester.view.physicalSize;
+    expect(layer.width, greaterThan(card.width));
+    expect(layer.width, lessThanOrEqualTo(screen.width));
+    expect(layer.contains(card.center), isTrue);
+
+    await tester.pumpAndSettle();
+    expect(find.byKey(_detailKey), findsOneWidget);
   });
 }

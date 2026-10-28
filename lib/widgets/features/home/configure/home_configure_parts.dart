@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutChip, CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    show CoconutChip, CoconutLayout, CoconutTypography, Sizes;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -6,7 +7,8 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// 위젯·바로가기 설정 시트의 공통 틀: 닫기 앱 바, 제목·설명, 설정 목록, 하단 고정 버튼
+/// 위젯·바로가기 설정 시트의 공통 틀.
+/// 닫기 앱 바, 제목·설명, 설정 목록, 하단 고정 버튼으로 구성된다.
 class HomeConfigureSheetLayout extends StatelessWidget {
   final String title;
   final String heading;
@@ -18,6 +20,8 @@ class HomeConfigureSheetLayout extends StatelessWidget {
   final VoidCallback onSubmit;
   final ScrollController? scrollController;
   final bool showIntro;
+  final TextStyle? introHeadingStyle;
+  final TextStyle? introDescriptionStyle;
 
   const HomeConfigureSheetLayout({
     super.key,
@@ -31,6 +35,8 @@ class HomeConfigureSheetLayout extends StatelessWidget {
     this.isButtonActive = true,
     this.scrollController,
     this.showIntro = true,
+    this.introHeadingStyle,
+    this.introDescriptionStyle,
   });
 
   @override
@@ -65,10 +71,17 @@ class HomeConfigureSheetLayout extends StatelessWidget {
                           children: [
                             Text(
                               heading,
-                              style: CoconutTypography.heading4_18_Bold.copyWith(color: colors.primaryText),
+                              style: (introHeadingStyle ?? CoconutTypography.heading4_18_Bold).copyWith(
+                                color: colors.primaryText,
+                              ),
                             ),
-                            CoconutLayout.spacing_200h,
-                            Text(description, style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText)),
+                            CoconutLayout.spacing_100h,
+                            Text(
+                              description,
+                              style: (introDescriptionStyle ?? CoconutTypography.body2_14).copyWith(
+                                color: colors.secondaryText,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -93,13 +106,14 @@ class HomeConfigureSheetLayout extends StatelessWidget {
 
 class HomeConfigureSectionTitle extends StatelessWidget {
   final String text;
+  final double bottomPadding;
 
-  const HomeConfigureSectionTitle(this.text, {super.key});
+  const HomeConfigureSectionTitle(this.text, {super.key, this.bottomPadding = Sizes.size8});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+      padding: EdgeInsets.fromLTRB(20, 32, 20, bottomPadding),
       child: Text(text, style: CoconutTypography.body1_16_Bold.copyWith(color: context.coconutColors.primaryText)),
     );
   }

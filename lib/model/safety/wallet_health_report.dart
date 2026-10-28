@@ -21,22 +21,31 @@ enum WalletHealthLabel {
           : actionNeeded;
 }
 
-/// 카테고리 기본 가중치 %(App/Recovery/Activity/Privacy). 점수 없는 카테고리는 빼고 다시 나눈다.
-enum WeightProfile {
-  hotFunded(20, 45, 25, 10),
-  watchOnlyOnly(10, 40, 30, 20),
-  mixed(15, 45, 25, 15);
+/// 카테고리 비중 %(App/Recovery/Activity/Privacy). 점수 없는 카테고리는 빼고 다시 나눈다.
+class CategoryWeights extends Equatable {
+  const CategoryWeights(this.app, this.recovery, this.activity, this.privacy);
 
-  const WeightProfile(this.app, this.recovery, this.activity, this.privacy);
+  static const watchOnly = CategoryWeights(10, 40, 30, 20);
 
-  final int app, recovery, activity, privacy;
+  /// 핫월렛이 있을 때의 비중. 앱 보호 = 15 + 15 × 노출도(0~1)라서 15%(핫월렛에 돈 없음)~30%(돈이 다 핫월렛에 있음).
+  /// 복구는 가장 중요하므로 45%로 고정하고, 앱 보호가 늘어난 만큼 활동·개인정보에서 25:15 비율로 덜어 낸다.
+  factory CategoryWeights.withHotWallet(double exposure) {
+    final app = 15 + 15 * exposure;
+    final rest = 40 - 15 * exposure;
+    return CategoryWeights(app, 45, rest * 25 / 40, rest * 15 / 40);
+  }
 
-  int weightOf(SafetyCategory category) => switch (category) {
+  final double app, recovery, activity, privacy;
+
+  double weightOf(SafetyCategory category) => switch (category) {
     SafetyCategory.app => app,
     SafetyCategory.recovery => recovery,
     SafetyCategory.activity => activity,
     SafetyCategory.privacy => privacy,
   };
+
+  @override
+  List<Object?> get props => [app, recovery, activity, privacy];
 }
 
 /// `AnalyticsWalletType.of`와 같은 분류(hot = hasLocalKey)
@@ -120,7 +129,7 @@ class WalletHealthReport extends Equatable {
     required this.status,
     this.score,
     this.label,
-    required this.profile,
+    this.scoreCap,
     this.categories = const {},
     this.recovery = const [],
     this.criticalIncidents = const [],
@@ -141,7 +150,9 @@ class WalletHealthReport extends Equatable {
   /// criticalOverride에서도 점수를 보존한다
   final int? score;
   final WalletHealthLabel? label;
-  final WeightProfile profile;
+
+  /// 상한이 점수를 낮췄을 때 그 상한(핫월렛 잔액이 있는데 앱 잠금이 꺼짐)
+  final int? scoreCap;
   final Map<SafetyCategory, CategoryScore> categories;
   final List<WalletRecoveryContribution> recovery;
 
@@ -172,7 +183,7 @@ class WalletHealthReport extends Equatable {
     status,
     score,
     label,
-    profile,
+    scoreCap,
     categories,
     recovery,
     criticalIncidents,

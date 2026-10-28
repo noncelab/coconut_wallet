@@ -122,9 +122,7 @@ void main() {
     await tester.pumpWidget(const SizedBox()); // 반복 애니메이션 정리
   });
 
-  testWidgets('C8: score and checking labels stay on one line and scale down; S0/S4 captions may use two', (
-    tester,
-  ) async {
+  testWidgets('C8: score, checking and S0/S4 labels stay on one line in the label slot and scale down', (tester) async {
     Text label(String text) => tester.widget<Text>(_text(text));
     // de "Handlungsbedarf"가 가장 긴 라벨
     Future<void> pump(WalletHealthReport report, {bool checking = false}) => pumpWalletHealthApp(
@@ -142,8 +140,14 @@ void main() {
     expect(labelRect.width, lessThanOrEqualTo(gauge.width * 0.65));
     await pump(scoredReport(score: 86), checking: true);
     expect(label(t.wallet_health.summary.checking).maxLines, 1);
+    // 지갑 없음 안내도 점수 라벨 자리(원호 아래 열린 곳)에 같은 폭 규칙으로 놓인다
     await pump(noWalletReport());
-    expect(label(t.wallet_health.hero.no_wallet_title).maxLines, 2);
+    final caption = _text(t.wallet_health.hero.no_wallet_title);
+    expect(label(t.wallet_health.hero.no_wallet_title).maxLines, 1);
+    expect(
+      tester.getRect(find.ancestor(of: caption, matching: find.byType(FittedBox))).width,
+      lessThanOrEqualTo(gauge.width * 0.65),
+    );
     expect(tester.takeException(), isNull);
   });
 

@@ -122,6 +122,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       actionButtonList: [
                         if (widget.showSkipButton)
                           CoconutUnderlinedButton(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
                             text: t.utxo_selection_screen.skip,
                             textStyle: CoconutTypography.body2_14,
                             onTap: () {

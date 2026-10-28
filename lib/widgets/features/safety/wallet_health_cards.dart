@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dar
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -185,8 +184,8 @@ String safetyIssueText(SafetyCheckResult item) {
     },
     SafetyCheckId.unrecognizedOutgoing => t.wallet_health.incident.outgoing_title,
     SafetyCheckId.txConflict => c.tx_conflict.issue,
-    SafetyCheckId.addressReuse => t.wallet_health.category.addresses_reused(n: item.subjects.length),
-    SafetyCheckId.possibleDusting => t.wallet_health.category.possible_dusting(n: item.subjects.length),
+    SafetyCheckId.addressReuse => c.address_reuse.issue(n: item.subjects.length),
+    SafetyCheckId.possibleDusting => c.possible_dusting.issue(n: item.subjects.length),
     SafetyCheckId.pendingOutgoingAtBaseline => c.recent_at_add.issue,
     SafetyCheckId.unexpectedSelfTransfer => c.self_transfer.issue,
     SafetyCheckId.serverCert => switch (detail) {
@@ -195,7 +194,9 @@ String safetyIssueText(SafetyCheckResult item) {
       _ => t.wallet_health.incident.server_identity_title,
     },
     SafetyCheckId.metadataBackup =>
-      detail == SafetyCheckDetail.changed ? c.metadata_backup.changed(n: count) : c.metadata_backup.never_exported,
+      detail == SafetyCheckDetail.changed
+          ? c.metadata_backup.issue_changed(n: count)
+          : c.metadata_backup.issue_never_exported,
   };
 }
 
@@ -448,7 +449,7 @@ class WalletHealthHeaderCard extends StatelessWidget {
                 width: HealthGauge.arcEndSpan(),
                 child: _CheckAgainButton(isChecking: isChecking, onTap: onCheckAgain),
               ),
-          if (report != null) ...[
+          if (report != null && !noWallet) ...[
             CoconutLayout.spacing_100h,
             Text(
               safetyKoText(
@@ -457,19 +458,17 @@ class WalletHealthHeaderCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: lineStyle,
             ),
-            if (!noWallet) ...[
-              CoconutLayout.spacing_100h,
-              Text(
-                safetyKoText(
-                  [
-                    hero.wallets_checked(n: report.walletCount),
-                    if (report.fundedWalletCount > 0) hero.funded_wallets(n: report.fundedWalletCount),
-                  ].join(' · '),
-                ),
-                textAlign: TextAlign.center,
-                style: lineStyle,
+            CoconutLayout.spacing_100h,
+            Text(
+              safetyKoText(
+                [
+                  hero.wallets_checked(n: report.walletCount),
+                  if (report.fundedWalletCount > 0) hero.funded_wallets(n: report.fundedWalletCount),
+                ].join(' · '),
               ),
-            ],
+              textAlign: TextAlign.center,
+              style: lineStyle,
+            ),
             // 점수를 제한하는 정보라 점수 바로 밑에 둔다
             if (!report.isConnected) ...[
               CoconutLayout.spacing_200h,
@@ -580,7 +579,12 @@ class _AddWalletButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(CupertinoIcons.add, size: 16, color: colors.buttonPrimaryForeground),
+              SvgPicture.asset(
+                CommonActionIconPath.plus,
+                width: 12,
+                height: 12,
+                colorFilter: ColorFilter.mode(colors.buttonPrimaryForeground, BlendMode.srcIn),
+              ),
               CoconutLayout.spacing_100w,
               Flexible(
                 child: Text(
@@ -1022,7 +1026,7 @@ class WalletHealthUnlockCard extends StatelessWidget {
     final s = t.wallet_health.section;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: colors.surfaceMuted, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1069,7 +1073,7 @@ class WalletHealthUnlockCard extends StatelessWidget {
                 ),
                 CoconutLayout.spacing_200w,
                 Expanded(
-                  child: Text(safetyKoText(text), style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                  child: Text(safetyKoText(text), style: CoconutTypography.body3_12.setColor(colors.primaryText)),
                 ),
               ],
             ),

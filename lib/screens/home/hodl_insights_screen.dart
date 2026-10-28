@@ -16,17 +16,19 @@ import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/wallet_onboarding_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/utxo_summary_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
-import 'package:coconut_wallet/utils/legible_color_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/foundation.dart' show precisionErrorTolerance;
+import 'package:flutter/foundation.dart' show precisionErrorTolerance, listEquals;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
-/// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서 기간을 바꿔 가며 본다.
+/// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서
+/// 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
   static const transitionDuration = Duration(milliseconds: 480);
 
@@ -36,7 +38,8 @@ class HodlInsightsScreen extends StatefulWidget {
 
   const HodlInsightsScreen({super.key, this.heroTag, this.heroSection});
 
-  /// 홈 위젯이나 모든 기능에서 연다. 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
+  /// 홈 위젯이나 모든 기능에서 연다.
+  /// 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
   static Future<void> open(
     BuildContext context, {
     List<int>? walletIds,
@@ -68,12 +71,9 @@ class HodlInsightsScreen extends StatefulWidget {
         reverseTransitionDuration: transitionDuration,
         pageBuilder: (context, _, __) => page(context),
         transitionsBuilder:
-            (context, animation, __, child) => ColoredBox(
-              color: context.coconutColors.homeBackground,
-              child: FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
-                child: child,
-              ),
+            (context, animation, __, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+              child: child,
             ),
       ),
     );
@@ -89,7 +89,6 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   };
   bool _movedToInitialSection = false;
   HodlInsightsSection? _highlighted;
-  double _leadingSpace = 0;
   Animation<double>? _routeAnimation;
   bool _cardHeroActive = true;
 
@@ -126,18 +125,6 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   Future<void> _centerInitialSection(HodlInsightsSection section) async {
     final target = _sectionKeys[section]!.currentContext;
     if (target == null || !mounted) return;
-    final scrollable = Scrollable.maybeOf(target);
-    final viewport = scrollable?.context.findRenderObject();
-    final card = target.findRenderObject();
-    if (_leadingSpace == 0 && section != HodlInsightsSection.activity && viewport is RenderBox && card is RenderBox) {
-      final viewportCenter = viewport.localToGlobal(viewport.size.center(Offset.zero)).dy;
-      final cardCenter = card.localToGlobal(card.size.center(Offset.zero)).dy;
-      if (cardCenter < viewportCenter) {
-        setState(() => _leadingSpace = viewportCenter - cardCenter);
-        WidgetsBinding.instance.addPostFrameCallback((_) => _centerInitialSection(section));
-        return;
-      }
-    }
     await Scrollable.ensureVisible(
       target,
       alignment: 0.5,
@@ -177,8 +164,11 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
     final settings = await WidgetConfigureSheet.openSettings(
       context,
       title: t.hodl_insights.settings_title,
-      heading: t.hodl_insights.title,
+      heading: t.hodl_insights.settings_heading,
       description: t.hodl_insights.settings_description,
+      headingStyle: CoconutTypography.body1_16_Bold,
+      descriptionStyle: CoconutTypography.body3_12,
+      showWalletsTitle: false,
       spec: const HomeWidgetSettingsSpec(wallets: true, goals: true),
       wallets: viewModel.data.wallets,
       initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
@@ -201,12 +191,10 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
         title: t.hodl_insights.title,
         actionButtonList: [
           if (!viewModel.hasNoWallets)
-            CupertinoButton(
+            CoconutAppBarActionButton(
               key: const Key('hodl-insights-settings'),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(40, 40),
               onPressed: () => _openSettings(context, viewModel),
-              child: SvgPicture.asset(
+              icon: SvgPicture.asset(
                 FeatureSettingsIconPath.settings,
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
@@ -227,19 +215,13 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                   key: const Key('hodl-insights-list'),
                   slivers: [
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        0,
-                        widget.heroTag == null ? 8 + _leadingSpace : 0,
-                        0,
-                        _contentBottomPadding,
-                      ),
+                      padding: EdgeInsets.fromLTRB(0, widget.heroTag == null ? 8 : 0, 0, _contentBottomPadding),
                       sliver: _InitialSectionSliver(
                         targetKey:
                             widget.heroTag != null && viewModel.initialSection != HodlInsightsSection.balance
                                 ? _sectionKeys[viewModel.initialSection]
                                 : null,
                         topPadding: widget.heroTag != null ? 8 : 0,
-                        allowLeadingSpace: viewModel.initialSection != HodlInsightsSection.activity,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -290,11 +272,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                   _section(
                                     HodlInsightsSection.utxo,
                                     title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
-                                    child: _UtxoSummaryCard(
-                                      viewModel: viewModel,
-                                      animateEntry:
-                                          widget.heroTag == null || widget.heroSection != HodlInsightsSection.utxo,
-                                    ),
+                                    child: _UtxoSummaryCard(viewModel: viewModel),
                                   ),
                                   _section(
                                     HodlInsightsSection.activity,
@@ -305,6 +283,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                         key: const Key('hodl-insights-activity-periods'),
                                         selected: viewModel.activityPeriod,
                                         onSelected: viewModel.selectActivityPeriod,
+                                        backgroundColor: HomeCardSurface.of(context),
                                       ),
                                     ),
                                     child: _ActivityCard(viewModel: viewModel),
@@ -346,27 +325,19 @@ class _RenderInitialSectionTarget extends RenderProxyBox {
 class _InitialSectionSliver extends SingleChildRenderObjectWidget {
   final GlobalKey? targetKey;
   final double topPadding;
-  final bool allowLeadingSpace;
 
-  const _InitialSectionSliver({
-    required this.targetKey,
-    required this.topPadding,
-    required this.allowLeadingSpace,
-    required super.child,
-  });
+  const _InitialSectionSliver({required this.targetKey, required this.topPadding, required super.child});
 
   @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderInitialSectionSliver(targetKey, topPadding, allowLeadingSpace);
+  RenderObject createRenderObject(BuildContext context) => _RenderInitialSectionSliver(targetKey, topPadding);
 }
 
 class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
   final GlobalKey? targetKey;
-  final bool allowLeadingSpace;
-  double _leading;
+  final double _leading;
   bool _positioned = false;
 
-  _RenderInitialSectionSliver(this.targetKey, this._leading, this.allowLeadingSpace);
+  _RenderInitialSectionSliver(this.targetKey, this._leading);
 
   @override
   void performLayout() {
@@ -377,8 +348,6 @@ class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
       final target = targetKey!.currentContext?.findRenderObject();
       if (target is _RenderInitialSectionTarget && target.hasSize) {
         final bounds = MatrixUtils.transformRect(target.getTransformTo(child), target.layoutBounds);
-        final desired = bounds.center.dy + _leading - constraints.viewportMainAxisExtent / 2;
-        if (allowLeadingSpace && desired < 0) _leading -= desired;
         final maxOffset = math.max(
           0.0,
           child!.size.height + _leading + _contentBottomPadding - constraints.viewportMainAxisExtent,
@@ -418,7 +387,8 @@ class _RenderInitialSectionSliver extends RenderSliverToBoxAdapter {
 /// 지갑별 잔액 · UTXO 요약 · 거래 활동 사이: 위 카드 아래에서 다음 제목 글자까지
 const _sectionGap = 40.0;
 
-/// 카드 이동 중 출발 내용을 먼저 걷고 도착 내용을 나타낸다. 각 내용은 제 크기에서 폭에 맞춰 줄인다.
+/// 카드 이동 중 출발 내용을 먼저 걷고 도착 내용을 나타낸다.
+/// 각 내용은 제 크기에서 폭에 맞춰 줄인다.
 Widget _cardShuttle(
   BuildContext flightContext,
   Animation<double> animation,
@@ -514,7 +484,8 @@ String _btcText(HodlInsightsViewModel viewModel, int sats) =>
 HomeAmount _btcAmount(HodlInsightsViewModel viewModel, int sats) =>
     HomeAmount(_btcNumber(viewModel, sats), viewModel.data.unit.symbol, unitFirst: viewModel.data.unit.isPrefixSymbol);
 
-/// 잔액 숫자와 단위. [HomeAmountText]와 같은 순서지만 FittedBox 없이 그려서 옆 글자와 기준선을 맞출 수 있다.
+/// 잔액 숫자와 단위.
+/// [HomeAmountText]와 같은 순서지만 FittedBox 없이 그려서 옆 글자와 기준선을 맞출 수 있다.
 List<TextSpan> _amountSpans(HomeAmount amount, TextStyle numberStyle, TextStyle unitStyle, Color color) {
   final number = TextSpan(
     text: amount.number,
@@ -642,7 +613,8 @@ class _NoWalletsView extends StatelessWidget {
   }
 }
 
-/// 지갑별 잔액 구역: 회색 띠가 카드 중간부터 천천히 옅어져 UTXO 요약 제목에서 끝난다. 띠 위 카드는 바탕색으로 뒤집는다.
+/// 지갑별 잔액 구역: 회색 띠가 카드 중간부터 천천히 옅어져 UTXO 요약 제목에서 끝난다.
+/// 띠 위 카드는 바탕색으로 뒤집는다.
 class _LowerBand extends StatelessWidget {
   /// 카드 아래 띠의 끝 여백. 띠는 카드 중간부터 천천히 옅어져 이 여백 끝에서 사라진다.
   static const _fadeHeight = _sectionGap;
@@ -676,22 +648,104 @@ class _LowerBand extends StatelessWidget {
 }
 
 /// 상세 화면으로 확대되는 잔액 그래프.
-class _BalanceChart extends StatelessWidget {
+class _BalanceChart extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
   const _BalanceChart({required this.viewModel});
 
   @override
+  State<_BalanceChart> createState() => _BalanceChartState();
+}
+
+class _BalanceChartState extends State<_BalanceChart> with SingleTickerProviderStateMixin {
+  static const _columns = 120;
+  late final AnimationController _morph;
+  late final CurvedAnimation _curve;
+  late List<int> _sourceValues;
+  late List<double> _from;
+  late List<double> _to;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sourceValues = List.of(widget.viewModel.chartBalances);
+    _from = _to = _chartColumns(_sourceValues);
+    _morph = AnimationController(vsync: this, duration: const Duration(milliseconds: 400), value: 1);
+    _curve = CurvedAnimation(parent: _morph, curve: Curves.easeInOutCubic);
+  }
+
+  /// 기간마다 다른 점 개수와 Y축 범위를 같은 화면 좌표의 열로 맞춘다.
+  List<double> _chartColumns(List<int> values) {
+    if (values.isEmpty) return List.filled(_columns, 0.5);
+    final minimum = values.reduce(math.min);
+    final range = values.reduce(math.max) - minimum;
+    if (range == 0 || values.length == 1) return List.filled(_columns, 0.5);
+    final points = [
+      for (var i = 0; i < values.length; i++) Offset(i / (values.length - 1), (values[i] - minimum) / range),
+    ];
+    // 기존 곡선을 X축 기준으로 샘플링해 기간별 곡선의 모양을 유지한다.
+    final metric = smoothPath(points).computeMetrics().first;
+    return List.generate(_columns, (column) {
+      if (column == 0) return points.first.dy;
+      if (column == _columns - 1) return points.last.dy;
+      final x = column / (_columns - 1);
+      var low = 0.0;
+      var high = metric.length;
+      for (var step = 0; step < 16; step++) {
+        final middle = (low + high) / 2;
+        final point = metric.getTangentForOffset(middle)!.position;
+        if (point.dx < x) {
+          low = middle;
+        } else {
+          high = middle;
+        }
+      }
+      return metric.getTangentForOffset((low + high) / 2)!.position.dy;
+    });
+  }
+
+  List<double> get _displayed => [for (var i = 0; i < _columns; i++) _from[i] + (_to[i] - _from[i]) * _curve.value];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) _morph.value = 1;
+  }
+
+  @override
+  void didUpdateWidget(covariant _BalanceChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final values = widget.viewModel.chartBalances;
+    if (listEquals(_sourceValues, values)) return;
+    _sourceValues = List.of(values);
+    _from = _displayed;
+    _to = _chartColumns(values);
+    if (_reduceMotion) {
+      _morph.value = 1;
+    } else {
+      _morph.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _morph.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final chart = Material(color: Colors.transparent, child: HomeSparkline(values: viewModel.chartBalances));
-    final hasCardHero = context.findAncestorWidgetOfExactType<Hero>() != null;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: hasCardHero ? null : () => WalletBalanceHistoryScreen.open(context, viewModel),
-      child:
-          hasCardHero
-              ? chart
-              : Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart),
+    final chart = Material(
+      color: Colors.transparent,
+      child: AnimatedBuilder(
+        animation: _morph,
+        builder: (_, __) => HomeSparkline(values: _displayed, minimum: 0, maximum: 1),
+      ),
     );
+    if (context.findAncestorWidgetOfExactType<Hero>() != null) return chart;
+    return Hero(tag: walletBalanceHistoryHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: chart);
   }
 }
 
@@ -737,16 +791,37 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _BalanceCard extends StatelessWidget {
+class _BalanceCard extends StatefulWidget {
+  final HodlInsightsViewModel viewModel;
+
+  const _BalanceCard({required this.viewModel});
+
+  @override
+  State<_BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<_BalanceCard> {
   /// 총 잔액 라벨, 잔액, 환산액 사이 간격
   static const _rowGap = 0.0;
 
   /// 줄 위아래 여백을 줄여 세 줄을 촘촘하게 붙인다.
   static const _lineHeight = 1.15;
+  double _periodSwipeDistance = 0;
 
-  final HodlInsightsViewModel viewModel;
+  HodlInsightsViewModel get viewModel => widget.viewModel;
 
-  const _BalanceCard({required this.viewModel});
+  void _endPeriodSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final movement = _periodSwipeDistance.abs() >= 24 ? _periodSwipeDistance : (velocity.abs() >= 300 ? velocity : 0.0);
+    _periodSwipeDistance = 0;
+    if (movement == 0) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final index = (viewModel.balancePeriod.index + movement.sign.toInt() * direction).clamp(
+      0,
+      HomeWidgetPeriod.values.length - 1,
+    );
+    viewModel.selectBalancePeriod(HomeWidgetPeriod.values[index]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -758,7 +833,7 @@ class _BalanceCard extends StatelessWidget {
     final rate = viewModel.changeRate;
     final rateColor = homePriceColorOf(context, rate, neutral: colors.tertiaryText);
     final hasChange = rate != null && rate != 0;
-    return _InsightCard(
+    final card = _InsightCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -788,7 +863,7 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: _rowGap),
           LayoutBuilder(
             builder: (context, constraints) {
-              final rateStyle = CoconutTypography.body3_12_Number.copyWith(color: rateColor, height: _lineHeight);
+              final rateStyle = CoconutTypography.body3_12.copyWith(color: rateColor, height: _lineHeight);
               final rateText = hasChange ? formatHomeRate(rate) : '–';
               final rateWidth = measureHomeText(context, rateText, rateStyle) + (hasChange ? 14 + 2 : 0);
               final amount = _btcAmount(viewModel, viewModel.balance);
@@ -821,7 +896,11 @@ class _BalanceCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   if (hasChange) ...[
-                    Icon(rate > 0 ? CupertinoIcons.arrow_up : CupertinoIcons.arrow_down, size: 14, color: rateColor),
+                    Icon(
+                      rate > 0 ? CupertinoIcons.arrowtriangle_up_fill : CupertinoIcons.arrowtriangle_down_fill,
+                      size: 12,
+                      color: rateColor,
+                    ),
                     const SizedBox(width: 2),
                   ],
                   Text(rateText, key: const Key('hodl-insights-balance-rate'), style: rateStyle),
@@ -858,7 +937,14 @@ class _BalanceCard extends StatelessWidget {
           SizedBox(
             key: const Key('hodl-insights-balance-chart'),
             height: 88,
-            child: RepaintBoundary(child: _BalanceChart(viewModel: viewModel)),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (_) => _periodSwipeDistance = 0,
+              onHorizontalDragUpdate: (details) => _periodSwipeDistance += details.primaryDelta ?? 0,
+              onHorizontalDragEnd: _endPeriodSwipe,
+              onHorizontalDragCancel: () => _periodSwipeDistance = 0,
+              child: RepaintBoundary(child: _BalanceChart(viewModel: viewModel)),
+            ),
           ),
           CoconutLayout.spacing_200h,
           Row(
@@ -880,19 +966,33 @@ class _BalanceCard extends StatelessWidget {
         ],
       ),
     );
+    if (context.findAncestorWidgetOfExactType<Hero>() != null) return card;
+    return GestureDetector(
+      key: const Key('hodl-insights-balance-card'),
+      behavior: HitTestBehavior.opaque,
+      onTap:
+          () => WalletBalanceHistoryScreen.open(
+            context,
+            viewModel,
+            cardHeight: (context.findRenderObject() as RenderBox?)?.size.height,
+          ),
+      child: card,
+    );
   }
 }
 
-/// 화면을 열 때 차오르는 값(목표 막대, 지갑별 잔액 도넛). 화면이 다 열린 뒤 잠깐 쉬었다가 0에서 천천히 차오르고, 값이 바뀌면 지금 값에서 이어서 움직인다.
+/// 화면을 열 때 차오르는 값(목표 막대, 지갑별 잔액 도넛).
+/// 화면이 다 열린 뒤 잠깐 쉬었다가 0에서 천천히 차오르고,
+/// 값이 바뀌면 지금 값에서 이어서 움직인다.
 class _OpenProgress extends StatefulWidget {
   static const fillDuration = Duration(milliseconds: 1600);
   static const startDelay = Duration(milliseconds: 250);
 
   final double progress;
-  final bool animateEntry;
+  final Curve curve;
   final Widget Function(BuildContext context, double progress) builder;
 
-  const _OpenProgress({required this.progress, required this.builder, this.animateEntry = true});
+  const _OpenProgress({required this.progress, required this.builder, this.curve = Curves.easeOutCubic});
 
   @override
   State<_OpenProgress> createState() => _OpenProgressState();
@@ -900,7 +1000,7 @@ class _OpenProgress extends StatefulWidget {
 
 class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(vsync: this, duration: _OpenProgress.fillDuration);
-  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: widget.curve);
   double _from = 0;
   late double _to = widget.progress;
   Animation<double>? _route;
@@ -916,8 +1016,7 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
     final flight = context.dependOnInheritedWidgetOfExactType<_HeroFlightRoute>();
     _flightValue = flight?.revealed;
     if (_flightValue != null) return;
-    _reduceMotion =
-        !widget.animateEntry || MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     if (_reduceMotion) {
       _start?.cancel();
       _route?.removeStatusListener(_onRouteStatus);
@@ -985,7 +1084,7 @@ class _GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final goal = viewModel.goal;
-    return _InsightCard(
+    final card = _InsightCard(
       child: Column(
         key: const Key('hodl-insights-goal'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,244 +1096,162 @@ class _GoalCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_300h,
           if (goal == null)
-            GestureDetector(
+            Row(
               key: const Key('hodl-insights-goal-empty'),
-              behavior: HitTestBehavior.opaque,
-              onTap: onSetGoal,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      t.hodl_insights.no_goal,
-                      style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-                    ),
+              children: [
+                Expanded(
+                  child: Text(
+                    t.hodl_insights.no_goal,
+                    style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
                   ),
-                  Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
-                ],
-              ),
+                ),
+                Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
+              ],
             )
-          else ...[
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '${_btcNumber(viewModel, goal.balance)} / ${_btcText(viewModel, goal.target)}',
-                style: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
-              ),
-            ),
-            CoconutLayout.spacing_200h,
+          else
             Builder(
               builder: (context) {
-                final percentStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
+                final numberStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
                   color: colors.primaryText,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 );
                 return _OpenProgress(
                   progress: goal.ratio,
-                  builder:
-                      (context, ratio) => Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: SizedBox(
-                                height: 12,
-                                child: Stack(
-                                  children: [
-                                    Container(color: colors.surfaceMuted),
-                                    FractionallySizedBox(
-                                      key: const Key('goal-progress-fill'),
-                                      widthFactor: ratio.clamp(0.0, 1.0),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: colors.success,
-                                          borderRadius: BorderRadius.circular(6),
+                  builder: (context, ratio) {
+                    final animatedBalance =
+                        goal.ratio == 0 ? goal.balance : (goal.balance * ratio / goal.ratio).round();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${_btcNumber(viewModel, animatedBalance)} / ${_btcText(viewModel, goal.target)}',
+                            key: const Key('goal-progress-amount'),
+                            style: numberStyle,
+                          ),
+                        ),
+                        CoconutLayout.spacing_200h,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: SizedBox(
+                                  height: 12,
+                                  child: Stack(
+                                    children: [
+                                      Container(color: colors.surfaceMuted),
+                                      FractionallySizedBox(
+                                        key: const Key('goal-progress-fill'),
+                                        widthFactor: ratio.clamp(0.0, 1.0),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: colors.success,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          CoconutLayout.spacing_400w,
-                          SizedBox(
-                            width: measureHomeText(context, goal.percentText, percentStyle) + 1,
-                            child: Text(
-                              formatGoalPercent(ratio),
-                              key: const Key('goal-progress-percent'),
-                              textAlign: TextAlign.right,
-                              maxLines: 1,
-                              style: percentStyle,
+                            CoconutLayout.spacing_400w,
+                            SizedBox(
+                              width: measureHomeText(context, goal.percentText, numberStyle) + 1,
+                              child: Text(
+                                formatGoalPercent(ratio),
+                                key: const Key('goal-progress-percent'),
+                                textAlign: TextAlign.right,
+                                maxLines: 1,
+                                style: numberStyle,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
-          ],
         ],
       ),
     );
+    if (goal != null) return card;
+    return GestureDetector(behavior: HitTestBehavior.opaque, onTap: onSetGoal, child: card);
   }
 }
 
 class _UtxoSummaryCard extends StatelessWidget {
-  static const bucketLabels = UtxoStatusView.bucketLabels;
-  static const _columnGap = 8.0;
-
   final HodlInsightsViewModel viewModel;
-  final bool animateEntry;
 
-  const _UtxoSummaryCard({required this.viewModel, this.animateEntry = true});
+  const _UtxoSummaryCard({required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final buckets = viewModel.utxoBuckets;
-    final total = buckets.total;
-    final bucketColors = [for (final color in viewModel.data.utxoBucketColors) legibleOn(color, colors.homeSurface)];
     return _InsightCard(
       child: _OpenProgress(
         progress: 1,
-        animateEntry: animateEntry,
-        builder: (context, shown) {
-          int counted(int value) => (value * shown).round();
-          String bucketCountText(int index) {
-            final percent = total == 0 ? 0.0 : buckets.counts[index] * 100 / total * shown;
-            return '${counted(buckets.counts[index])} (${percent.toStringAsFixed(1)}%)';
-          }
-
-          return Column(
-            key: const Key('hodl-insights-utxo'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.hodl_insights.total_utxos(count: counted(total)),
-                key: const Key('hodl-insights-utxo-total'),
-                style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
-              ),
-              CoconutLayout.spacing_300h,
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(
-                  height: 12,
-                  child: ColoredBox(
-                    color: colors.surfaceMuted,
-                    child:
-                        total == 0
-                            ? const SizedBox.expand()
-                            : LayoutBuilder(
-                              builder:
-                                  (context, constraints) => Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      for (var i = 0; i < buckets.counts.length; i++)
-                                        if (buckets.counts[i] > 0)
-                                          Container(
-                                            key: ValueKey('hodl-insights-utxo-segment-$i'),
-                                            width: constraints.maxWidth * buckets.counts[i] / total * shown,
-                                            padding: const EdgeInsets.symmetric(horizontal: 1),
-                                            child: ColoredBox(color: bucketColors[i]),
-                                          ),
-                                    ],
-                                  ),
-                            ),
-                  ),
-                ),
-              ),
-              CoconutLayout.spacing_200h,
-              Padding(
-                padding: const EdgeInsets.only(left: 18),
-                child: Text(
-                  t.hodl_insights.utxo_ranges_unit,
-                  key: const Key('hodl-insights-utxo-ranges-unit'),
-                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryTextStrong),
-                ),
-              ),
-              CoconutLayout.spacing_100h,
-              for (var i = 0; i < buckets.counts.length; i++) ...[
-                if (i > 0) Divider(height: 1, color: colors.divider),
-                Padding(
-                  key: ValueKey('hodl-insights-utxo-row-$i'),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(color: bucketColors[i], shape: BoxShape.circle),
-                      ),
-                      CoconutLayout.spacing_200w,
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          key: ValueKey('hodl-insights-utxo-label-$i'),
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            bucketLabels[i],
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: _columnGap),
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          key: ValueKey('hodl-insights-utxo-count-$i'),
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            bucketCountText(i),
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: _columnGap),
-                      Expanded(
-                        flex: 4,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            buckets.amounts.length > i ? _btcText(viewModel, counted(buckets.amounts[i])) : '-',
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
+        curve: Curves.linear,
+        builder:
+            (context, shown) => UtxoSummaryView(
+              keyPrefix: 'hodl-insights',
+              buckets: viewModel.utxoBuckets,
+              bucketColors: viewModel.data.utxoBucketColors,
+              amountText: (sats) => _btcText(viewModel, sats),
+              shown: shown,
+            ),
       ),
     );
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+class _ActivityCard extends StatefulWidget {
   final HodlInsightsViewModel viewModel;
 
   const _ActivityCard({required this.viewModel});
 
   @override
+  State<_ActivityCard> createState() => _ActivityCardState();
+}
+
+class _ActivityCardState extends State<_ActivityCard> {
+  double _periodSwipeDistance = 0;
+  HodlInsightsViewModel get viewModel => widget.viewModel;
+
+  void _endPeriodSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final movement = _periodSwipeDistance.abs() >= 24 ? _periodSwipeDistance : (velocity.abs() >= 300 ? velocity : 0.0);
+    _periodSwipeDistance = 0;
+    if (movement == 0) return;
+    final direction = Directionality.of(context) == TextDirection.rtl ? 1 : -1;
+    final index = (viewModel.activityPeriod.index + movement.sign.toInt() * direction).clamp(
+      0,
+      HomeWidgetPeriod.values.length - 1,
+    );
+    viewModel.selectActivityPeriod(HomeWidgetPeriod.values[index]);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bars = viewModel.activityBars;
     final totals = viewModel.activityTotals;
-    return KeyedSubtree(
+    return GestureDetector(
       key: const Key('hodl-insights-activity'),
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _periodSwipeDistance = 0,
+      onHorizontalDragUpdate: (details) => _periodSwipeDistance += details.primaryDelta ?? 0,
+      onHorizontalDragEnd: _endPeriodSwipe,
+      onHorizontalDragCancel: () => _periodSwipeDistance = 0,
       child: _OpenProgress(
         progress: 1,
         builder:
             (context, shown) => TransactionActivityView(
               detailed: true,
+              animateChanges: true,
               reveal: shown,
               days: bars.bars,
               rangeEnd: DateTime.now(),

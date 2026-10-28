@@ -64,7 +64,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get walletId => _walletId;
   WalletProvider get walletProvider => _walletProvider;
   WalletItemBase get wallet => _wallet;
-  int get balance => _walletProvider.getWalletBalance(_walletId).total;
+  int get balance => _walletUpdateInfo?.balanceSnapshot ?? _walletProvider.getWalletBalance(_walletId).total;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
   bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
@@ -243,8 +243,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   void _handleTransactionChanged() => notifyListeners();
 
   void _handleWalletUpdate(WalletUpdateInfo updateInfo) {
+    final previousBalance = _walletUpdateInfo?.balanceSnapshot;
     _walletUpdateInfo = updateInfo;
     _updateWalletSyncingState();
+    if (previousBalance != updateInfo.balanceSnapshot && !_isDisposed) notifyListeners();
     if (updateInfo.transaction == WalletSyncState.completed) {
       _transactionProvider.initTxList(_walletId);
     }
@@ -256,6 +258,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   bool _calculateIsWalletSyncing() {
+    if (_walletUpdateInfo?.balanceSnapshot != null && _nodeSyncState != NodeSyncState.failed) {
+      return _walletUpdateInfo!.isSyncQueued;
+    }
     if (_nodeSyncState == NodeSyncState.completed || _nodeSyncState == NodeSyncState.failed) {
       return false;
     }

@@ -15,7 +15,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/legacy_utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'dart:convert';
@@ -217,6 +216,12 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
   final chartFinder = name.startsWith('tags-') ? find.byType(UtxoTagChart) : find.byType(UtxoSummaryChart);
   final summary = tester.getRect(chartFinder);
   final context = tester.element(chartFinder);
+  final bottomPadding =
+      tester
+          .widget<Padding>(find.descendant(of: chartFinder, matching: find.byType(Padding)).first)
+          .padding
+          .resolve(Directionality.of(context))
+          .bottom;
   final expectedBackground = context.coconutColors.background.toARGB32();
   final expectedDivider = context.coconutColors.divider.toARGB32();
   final expectedChipSurface = context.coconutColors.utxoOverviewAvailabilitySurface.toARGB32();
@@ -246,7 +251,7 @@ Future<void> _captureScreenPixels(WidgetTester tester, GlobalKey key, String nam
       final points = <String, int>{
         'summaryTop': (summary.top + 2).round(),
         'summaryBottom': (summary.bottom - 2).round(),
-        'chipBottomPadding': (summary.bottom - 12).round(),
+        'chipBottomPadding': (summary.bottom - bottomPadding / 2).round(),
         'afterSummary': (summary.bottom + 2).round(),
         'aboveNativeInset': image.height - 56,
         'insideNativeInset': image.height - 2,
@@ -318,7 +323,7 @@ void main() {
     }
   });
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final variant in CoconutThemeVariant.values) {
       for (final populated in [false, true]) {
         for (final scale in [1.0, 2.0]) {
@@ -358,7 +363,7 @@ void main() {
                           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
                           child: child!,
                         ),
-                    home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+                    home: const UtxoOverviewScreen(id: 7),
                   ),
                 ),
               ),
@@ -373,7 +378,7 @@ void main() {
     }
   }
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final variant in CoconutThemeVariant.values) {
       for (final populated in [false, true]) {
         for (final scale in [1.0, 2.0]) {
@@ -424,7 +429,7 @@ void main() {
                           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
                           child: child!,
                         ),
-                    home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+                    home: const UtxoOverviewScreen(id: 7),
                   ),
                 ),
               ),
@@ -434,6 +439,18 @@ void main() {
             await tester.pumpAndSettle();
             expect(find.byType(UtxoTagChart), findsOneWidget);
             await _captureScreenPixels(tester, boundary, name);
+            final chart = tester.getRect(find.byType(UtxoTagChart));
+            expect(chart.height, greaterThanOrEqualTo(UtxoSummaryChart.estimatedHeight));
+            if (!populated) {
+              for (final text
+                  in find.descendant(of: find.byType(UtxoTagChart), matching: find.byType(Text)).evaluate()) {
+                final rect = tester.getRect(find.byWidget(text.widget));
+                expect(rect.top, greaterThanOrEqualTo(chart.top));
+                expect(rect.bottom, lessThanOrEqualTo(chart.bottom));
+                expect(rect.left, greaterThanOrEqualTo(chart.left));
+                expect(rect.right, lessThanOrEqualTo(chart.right));
+              }
+            }
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox.shrink());
           });
@@ -442,7 +459,7 @@ void main() {
     }
   }
 
-  for (final legacy in [false, true]) {
+  for (final legacy in [false]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets('actual ${legacy ? 'legacy' : 'current'} caller tracks 3 buckets and restores at ${scale}x with warning', (
         tester,
@@ -474,7 +491,7 @@ void main() {
                   ),
               onGenerateRoute:
                   (_) => MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('detail fixture'))),
-              home: legacy ? const LegacyUtxoOverviewScreen(id: 7) : const UtxoOverviewScreen(id: 7),
+              home: const UtxoOverviewScreen(id: 7),
             ),
           ),
         );
@@ -549,10 +566,14 @@ void main() {
           expect(find.textContaining('coins'), findsNWidgets(2));
           expect(find.byIcon(Icons.info_outline_rounded), populated ? findsOneWidget : findsNothing);
           if (populated) {
-            expect(metrics['summaryHeight'], UtxoSummaryChart.estimatedHeight);
+            expect(metrics['summaryHeight'], greaterThanOrEqualTo(UtxoSummaryChart.amountViewMinHeight));
+            if (metrics['summaryHeight']! > UtxoSummaryChart.amountViewMinHeight) {
+              expect(metrics['chipTop'], 8, reason: 'Content beyond the minimum leaves only its padding.');
+            }
+            expect(metrics['followingTop'], greaterThanOrEqualTo(metrics['summaryHeight']!));
           } else {
-            expect(metrics['chipTop'], 16, reason: 'The hidden balance header uses compact top padding.');
-            expect(metrics['summaryHeight']! - metrics['chipBottom']!, 24);
+            expect(metrics['chipTop'], 8, reason: 'The hidden balance header uses compact top padding.');
+            expect(metrics['summaryHeight']! - metrics['chipBottom']!, 8);
             expect(metrics['summaryHeight'], lessThan(UtxoSummaryChart.estimatedHeight));
           }
           await tester.pumpWidget(const SizedBox.shrink());
@@ -567,7 +588,7 @@ void main() {
         await _captureSummary(tester, '${variant.name}-populated-warning-${scale}x');
         expect(tester.takeException(), isNull);
         final summary = tester.getRect(find.byType(UtxoSummaryChart));
-        if (scale == 1) expect(summary.height, UtxoSummaryChart.estimatedHeight);
+        expect(summary.height, greaterThanOrEqualTo(UtxoSummaryChart.amountViewMinHeight));
         for (final text in find.descendant(of: find.byType(UtxoSummaryChart), matching: find.byType(Text)).evaluate()) {
           final rect = tester.getRect(find.byWidget(text.widget));
           expect(rect.top, greaterThanOrEqualTo(summary.top));

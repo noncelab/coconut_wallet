@@ -100,7 +100,6 @@ abstract final class IncidentDetector {
         // 높이 0(첫 블록 조회 전)이나 동기화 중엔 기준점을 만들지 않는다(ARCH F5). 만든 실행에선 판정하지 않는다
         if (w.isSettled && heightKnown) baselines[w.id] = _baseline(w, state, inputs.currentBlockHeight, inputs.now);
       } else if (w.isSettled) {
-        final unexpectedSelf = <String>{};
         for (final tx in w.txs) {
           if (baseline.knows(tx.txid, tx.blockHeight) ||
               state.isAppCreated(tx.txid) ||
@@ -117,15 +116,7 @@ abstract final class IncidentDetector {
                 txState: tx.blockHeight == 0 ? IncidentTxState.pending : IncidentTxState.confirmed,
               ),
             );
-          } else if (tx.type == TransactionType.self && !baseline.unexpectedSelfTxids.contains(tx.txid)) {
-            // 앱이 만들지 않은 자기 앞 전송: 지갑 안에서 옮기거나 수수료로 태우는 경우(레드팀 §7) → 검토 항목
-            unexpectedSelf.add(tx.txid);
           }
-        }
-        if (unexpectedSelf.isNotEmpty) {
-          baselines[w.id] = baseline.copyWith(
-            unexpectedSelfTxids: {...baseline.unexpectedSelfTxids, ...unexpectedSelf},
-          );
         }
       }
 
@@ -157,10 +148,12 @@ abstract final class IncidentDetector {
     );
   }
 
-  /// 출금 = sent, 또는 received로 잘못 분류됐지만 내 UTXO를 쓰는 대기 거래(ARCH R4). self는 출금이 아니다
+  /// 위험한 출금 = 내 지갑이 아닌 곳으로 나간 거래. sent, 또는 received로 잘못 분류됐지만 내 UTXO를 쓰는 대기 거래(ARCH R4).
+  /// 이 지갑 안에서 옮긴 거래(self)와 앱에 추가한 내 다른 지갑으로 보낸 거래는 돈이 내 손을 떠나지 않았으므로 아니다
   static bool _isOutgoing(SafetyTx tx, SafetyWalletSnapshot w) =>
-      tx.type == TransactionType.sent ||
-      (tx.type == TransactionType.received && w.pendingSpentByTxids.contains(tx.txid));
+      !tx.paysOwnWallet &&
+      (tx.type == TransactionType.sent ||
+          (tx.type == TransactionType.received && w.pendingSpentByTxids.contains(tx.txid)));
 
   static WalletBaseline _baseline(SafetyWalletSnapshot w, SafetyState state, int height, DateTime now) {
     final known = _known(w);
@@ -177,11 +170,6 @@ abstract final class IncidentDetector {
           if (_isOutgoing(tx, w) && recent(tx)) tx.txid,
         for (final txid in w.pendingSpentByTxids)
           if (!listed.contains(txid)) txid,
-      },
-      // 출력이 모두 내 주소여도 큰 수수료로 잔액을 태울 수 있다(G3). 기준점 뒤의 자기 앞 전송과 같은 검토로 남긴다
-      unexpectedSelfTxids: {
-        for (final tx in w.txs)
-          if (tx.type == TransactionType.self && recent(tx) && !state.isAppCreated(tx.txid)) tx.txid,
       },
     );
   }

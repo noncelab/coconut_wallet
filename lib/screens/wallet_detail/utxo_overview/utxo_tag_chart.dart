@@ -151,11 +151,12 @@ class UtxoTagChart extends StatelessWidget {
     }
 
     return Container(
-      height: height,
+      constraints: height != null ? BoxConstraints(minHeight: height!) : null,
       color: colors.background,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 12 : 8, 16, showBalanceHeader ? 24 : 8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -187,7 +188,7 @@ class UtxoTagChart extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
-      height: height,
+      constraints: height != null ? BoxConstraints(minHeight: height!) : null,
       color: colors.background,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
@@ -414,7 +415,7 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
-                        untaggedColor: colors.utxoOverviewChartSurface,
+                        untaggedColor: colors.surfaceMuted,
                         overlayBlendColor: colors.divider,
                         multiTagFallbackColor: colors.iconSecondary,
                         tagBlendColor: colors.secondaryText,

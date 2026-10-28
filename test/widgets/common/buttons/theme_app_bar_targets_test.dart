@@ -84,7 +84,7 @@ void main() {
           expect(tester.widget<AppBar>(find.byType(AppBar)).centerTitle, isTrue);
           expect(find.byType(BackdropFilter), findsOneWidget);
           final back = find.byTooltip('Back');
-          expect(tester.getRect(back).size, const Size(48, 48));
+          expect(tester.getRect(back).size, const Size.square(CoconutAppBarActionButton.highlightSize));
           expect(tester.getRect(back).center.dx, 24);
           for (final point in [one.topLeft + const Offset(1, 1), one.bottomRight - const Offset(1, 1)]) {
             await tester.tapAt(point);

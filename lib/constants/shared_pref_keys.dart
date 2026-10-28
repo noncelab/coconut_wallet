@@ -61,8 +61,12 @@ class SharedPrefKeys {
 
   /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
   static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
+
+  /// 지갑별 꾸미기 값(배경 등) - Map<walletId, json> JSON
+  static const String kWalletAppearanceMap = "WALLET_APPEARANCE_MAP";
   static const String kAllFeaturesRecentIds = "ALL_FEATURES_RECENT_IDS"; // All Features 최근 사용 기능(쉼표 구분)
   static const String kAddWalletHintDismissed = "ADD_WALLET_HINT_DISMISSED"; // 홈 지갑 추가 말풍선을 닫았는지
+  static const String kBalanceHistoryGestureGuideDismissed = 'BALANCE_HISTORY_GESTURE_GUIDE_DISMISSED';
   static const String kAllFeaturesHintDismissed =
       "ALL_FEATURES_HINT_DISMISSED"; // All Features 안내 말풍선을 닫았거나 All Features를 열었는지
 
@@ -136,8 +140,10 @@ class SharedPrefKeys {
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,
+    kWalletAppearanceMap,
     kAllFeaturesRecentIds,
     kAddWalletHintDismissed,
+    kBalanceHistoryGestureGuideDismissed,
     kAllFeaturesHintDismissed,
     kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
     kSafetyState,

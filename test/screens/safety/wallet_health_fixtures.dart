@@ -61,59 +61,63 @@ const _allGood = [
 ];
 
 /// WH-S1(issues) / WH-S2(issues: false)
-WalletHealthReport scoredReport({int score = 86, bool issues = true, bool connected = true}) => WalletHealthReport(
-  status: WalletHealthStatus.scored,
-  score: score,
-  label: WalletHealthLabel.of(score),
-  profile: WeightProfile.mixed,
-  categories: categories(recoveryIssues: issues ? 1 : 0, privacyIssues: issues ? 1 : 0),
-  recovery: const [
-    WalletRecoveryContribution(
-      walletId: 1,
-      kind: SafetyWalletKind.watchOnly,
-      balanceSats: 5000000,
-      score: 0,
-      weight: 2.2,
-      failing: [SafetyCheckId.watchOnlyVerify],
-    ),
-  ],
-  reviewItems:
-      issues
-          ? const [
-            SafetyCheckResult(
-              SafetyCheckId.watchOnlyVerify,
-              SafetyOutcome.failed,
-              walletId: 1,
-              severity: SafetySeverity.actionNeeded,
-            ),
-            SafetyCheckResult(
-              SafetyCheckId.addressReuse,
-              SafetyOutcome.failed,
-              walletId: 1,
-              severity: SafetySeverity.warning,
-              subjects: reusedAddresses,
-            ),
-          ]
-          : const [],
-  allGoodItems: const [
-    ..._allGood,
-    SafetyCheckResult(SafetyCheckId.unrecognizedOutgoing, SafetyOutcome.passed),
-    SafetyCheckResult(SafetyCheckId.possibleDusting, SafetyOutcome.passed, evidence: SafetyEvidence.heuristic),
-  ],
-  notIncluded: const [
-    SafetyCheckResult(SafetyCheckId.metadataBackup, SafetyOutcome.notApplicable, reason: NotApplicableReason.noLabels),
-  ],
-  recommended: const [RecommendedItem(id: RecommendedCheckId.hotPhysicalBackup)],
-  walletCount: 2,
-  fundedWalletCount: 1,
-  evaluatedAt: DateTime.now().subtract(const Duration(minutes: 8)),
-  isConnected: connected,
-);
+WalletHealthReport scoredReport({int score = 86, bool issues = true, bool connected = true, int? scoreCap}) =>
+    WalletHealthReport(
+      status: WalletHealthStatus.scored,
+      score: score,
+      label: WalletHealthLabel.of(score),
+      scoreCap: scoreCap,
+      categories: categories(recoveryIssues: issues ? 1 : 0, privacyIssues: issues ? 1 : 0),
+      recovery: const [
+        WalletRecoveryContribution(
+          walletId: 1,
+          kind: SafetyWalletKind.watchOnly,
+          balanceSats: 5000000,
+          score: 0,
+          weight: 2.2,
+          failing: [SafetyCheckId.watchOnlyVerify],
+        ),
+      ],
+      reviewItems:
+          issues
+              ? const [
+                SafetyCheckResult(
+                  SafetyCheckId.watchOnlyVerify,
+                  SafetyOutcome.failed,
+                  walletId: 1,
+                  severity: SafetySeverity.actionNeeded,
+                ),
+                SafetyCheckResult(
+                  SafetyCheckId.addressReuse,
+                  SafetyOutcome.failed,
+                  walletId: 1,
+                  severity: SafetySeverity.warning,
+                  subjects: reusedAddresses,
+                ),
+              ]
+              : const [],
+      allGoodItems: const [
+        ..._allGood,
+        SafetyCheckResult(SafetyCheckId.unrecognizedOutgoing, SafetyOutcome.passed),
+        SafetyCheckResult(SafetyCheckId.possibleDusting, SafetyOutcome.passed, evidence: SafetyEvidence.heuristic),
+      ],
+      notIncluded: const [
+        SafetyCheckResult(
+          SafetyCheckId.metadataBackup,
+          SafetyOutcome.notApplicable,
+          reason: NotApplicableReason.noLabels,
+        ),
+      ],
+      recommended: const [RecommendedItem(id: RecommendedCheckId.hotPhysicalBackup)],
+      walletCount: 2,
+      fundedWalletCount: 1,
+      evaluatedAt: DateTime.now().subtract(const Duration(minutes: 8)),
+      isConnected: connected,
+    );
 
 /// WH-S4
 WalletHealthReport notEnoughDataReport() => WalletHealthReport(
   status: WalletHealthStatus.notEnoughData,
-  profile: WeightProfile.watchOnlyOnly,
   categories: categories(recovery: null, activity: null, privacy: null),
   allGoodItems: _allGood,
   notIncluded: const [
@@ -151,7 +155,6 @@ WalletHealthReport notEnoughDataReport() => WalletHealthReport(
 /// WH-S0
 WalletHealthReport noWalletReport() => WalletHealthReport(
   status: WalletHealthStatus.noWallet,
-  profile: WeightProfile.watchOnlyOnly,
   categories: categories(recovery: null, activity: null, privacy: null, waiting: NotApplicableReason.noWallet),
   allGoodItems: _allGood,
   notIncluded: const [
@@ -177,7 +180,6 @@ WalletHealthReport criticalReport({int incidents = 1}) => WalletHealthReport(
   status: WalletHealthStatus.criticalOverride,
   score: 76,
   label: WalletHealthLabel.good,
-  profile: WeightProfile.hotFunded,
   categories: categories(privacyIssues: 0),
   criticalIncidents: [
     for (var i = 0; i < incidents; i++)

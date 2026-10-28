@@ -368,7 +368,7 @@ class _BsmsScannerScreenState extends State<_BsmsScannerScreen> {
 }
 
 // 기존 UR 조립기를 재사용하고 원문 QR·단일 UR도 받는다.
-class _BsmsQrDataHandler implements IFragmentedQrScanDataHandler {
+class _BsmsQrDataHandler implements IFragmentedQrScanDataHandler<Object> {
   static const _maxSequenceLength = 1024;
   static const _maxMessageBytes = WalletVerification.maxBackupBytes + 9;
   static const _maxFrameCharacters = 2 * (_maxMessageBytes + 64) + 32;

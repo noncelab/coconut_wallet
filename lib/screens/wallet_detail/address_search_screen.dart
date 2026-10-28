@@ -116,16 +116,19 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   scrolledUnderElevation: 0,
                   toolbarHeight: 56,
                   backgroundColor: context.coconutColors.background,
-                  leading: IconButton(
-                    icon: SvgPicture.asset(
-                      CommonNavigationIconPath.arrowBack,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                      width: 24,
-                      height: 24,
+                  leading: Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: SvgPicture.asset(
+                        CommonNavigationIconPath.arrowBack,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
                   ),
                   title: Padding(
                     padding: const EdgeInsets.only(right: Sizes.size16, top: Sizes.size4),

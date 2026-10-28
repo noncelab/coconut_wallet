@@ -47,7 +47,6 @@ void main() {
     final safety = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.criticalOverride,
-        profile: WeightProfile.hotFunded,
         criticalIncidents: [detected, responding],
         infoIncidents: [dropped],
         evaluatedAt: DateTime(2026, 10, 20, 9),
@@ -152,7 +151,6 @@ void main() {
     final safety = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.scored,
-        profile: WeightProfile.hotFunded,
         reviewItems: const [
           SafetyCheckResult(SafetyCheckId.appUpdate, SafetyOutcome.failed, severity: SafetySeverity.warning),
         ],
@@ -174,7 +172,6 @@ void main() {
     final detected = testIncident(txid: 'a');
     WalletHealthReport report() => WalletHealthReport(
       status: WalletHealthStatus.criticalOverride,
-      profile: WeightProfile.hotFunded,
       criticalIncidents: [detected],
       evaluatedAt: DateTime(2026, 10, 20, 9),
     );
@@ -229,7 +226,6 @@ void main() {
         final safety = SafetyProvider.fixed(
           WalletHealthReport(
             status: WalletHealthStatus.scored,
-            profile: WeightProfile.hotFunded,
             evaluatedAt: DateTime(2026, 10, 20, 9),
           ),
           state: SafetyState(incidents: [recognized]),
@@ -265,7 +261,6 @@ void main() {
     final safety = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.scored,
-        profile: WeightProfile.hotFunded,
         infoIncidents: [dropped],
         evaluatedAt: DateTime(2026, 10, 20, 9),
       ),
@@ -291,7 +286,6 @@ void main() {
       final safety = SafetyProvider.fixed(
         WalletHealthReport(
           status: WalletHealthStatus.criticalOverride,
-          profile: WeightProfile.hotFunded,
           criticalIncidents: [detected],
           evaluatedAt: DateTime(2026, 10, 20, 9),
         ),
@@ -332,7 +326,6 @@ void main() {
     final safety = SafetyProvider.fixed(
       WalletHealthReport(
         status: WalletHealthStatus.criticalOverride,
-        profile: WeightProfile.hotFunded,
         criticalIncidents: [detected],
         reviewItems: const [
           SafetyCheckResult(SafetyCheckId.appUpdate, SafetyOutcome.failed, severity: SafetySeverity.warning),

@@ -50,8 +50,7 @@ class FakePriceProvider extends Fake implements PriceProvider {
   final Map<FiatCode, int?> _prices;
   final BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
-  FakePriceProvider({int? defaultPrice})
-    : _prices = {FiatCode.KRW: defaultPrice, FiatCode.USD: defaultPrice, FiatCode.JPY: defaultPrice};
+  FakePriceProvider({int? defaultPrice}) : _prices = {for (final currency in FiatCode.values) currency: defaultPrice};
 
   FakePriceProvider.withPrices(this._prices);
 
@@ -96,6 +95,71 @@ void main() {
 
     return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider, walletProvider);
   }
+
+  group('editing the result preserves the selected premium equation', () {
+    test('fiat input inverse divides by the discount instead of adding a premium', () {
+      final model = createViewModel(btcPrice: 100000000);
+      model.setPremiumRate(5);
+      model.setInputAmount(100000);
+      expect(model.inputAssetType, InputAssetType.fiat);
+      expect(model.inputAmount, 100000);
+      expect(model.calculate(100000), 95000);
+      model.setResultAmount(95000);
+      expect(model.inputAmount, 100000);
+      expect(model.resultAmount, 95000);
+      model.setPremiumRate(0);
+      expect(model.inputAmount, 95000);
+      expect(model.resultAmount, 95000);
+      model.setInputAmount(200000);
+      expect(model.resultAmount, 200000);
+    });
+
+    test('BTC input inverse divides by the premium and preserves fiat cents', () {
+      final model = createViewModel(fiatCode: FiatCode.USD, btcPrice: 50000);
+      model.setInputAssetType(InputAssetType.btc);
+      model.setPremiumRate(5);
+      model.setInputAmount(100000);
+      expect(model.inputAssetType, InputAssetType.btc);
+      expect(model.inputAmount, 100000);
+      expect(model.calculate(100000), 5250);
+      model.setResultAmount(5250);
+      expect(model.inputAmount, 100000);
+      expect(model.resultAmount, 5250);
+      model.setResultAmount(null);
+      expect(model.inputAmount, isNull);
+      expect(model.resultAmount, isNull);
+    });
+
+    test('unavailable price and full discount produce zero without division faults', () {
+      final unavailable = createViewModel(btcPrice: 0);
+      expect(unavailable.calculate(100), 0);
+      expect(unavailable.calculateInputFromResult(100), isNull);
+      final model = createViewModel();
+      model.setPremiumRate(100);
+      expect(model.calculate(100), 0);
+      expect(model.calculateInputFromResult(100), isNull);
+      model.setPremiumRate(double.nan);
+      expect(model.calculateInputFromResult(100), isNull);
+    });
+
+    test('inverse result retains minor units for all supported currencies without accumulating roundoff', () {
+      for (final currency in FiatCode.values) {
+        final model = createViewModel(fiatCode: currency, btcPrice: 50000);
+        model.setPremiumRate(5);
+        model.setResultAmount(190000);
+        expect(model.inputAmount, 100 * currency.minorUnitsPerWhole);
+        for (var i = 0; i < 10; i++) {
+          model.setPremiumRate(0);
+          model.setPremiumRate(5);
+        }
+        expect(model.resultAmount, 190000);
+        expect(model.inputAmount, 100 * currency.minorUnitsPerWhole);
+        model.setInputAssetType(InputAssetType.btc);
+        model.setResultAmount(105 * currency.minorUnitsPerWhole);
+        expect(model.inputAmount, 200000);
+      }
+    });
+  });
 
   group('calculateSatsFromFiat - Fiat → Sats 변환', () {
     test('[Fiat -> Sats] 기본 변환: 1,000,000원을 수수료 1%로 Sats 변환', () {

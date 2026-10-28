@@ -68,20 +68,20 @@ void main() {
       });
     });
 
-    test('recent self transfers the app did not make go to the self-transfer review at baseline (Grok G3)', () {
+    test('self transfers and sends to my other wallets are not recent outgoing at baseline', () {
       final w = wallet(
         1,
         txs: [
           tx('selfPending', type: TransactionType.self),
           tx('selfRecent', type: TransactionType.self, height: 990, timestamp: day(-2)),
-          tx('selfOld', type: TransactionType.self, height: 900, timestamp: day(-8)),
-          tx('selfMine', type: TransactionType.self),
+          tx('toMyOtherWallet', toOwnWallet: true),
+          tx('toSomeoneElse'),
         ],
       );
-      final b = detect([w], state: SafetyState(appTxidPrefixes: {p('selfMine')})).baselines[1]!;
-      expect(b.unexpectedSelfTxids, {'selfPending', 'selfRecent'});
-      expect(b.pendingSentAtBaseline, isEmpty, reason: 'self is not outgoing');
-      expect(b.knownTxids, containsAll([p('selfPending'), p('selfRecent'), p('selfOld'), p('selfMine')]));
+      final b = detect([w]).baselines[1]!;
+      expect(b.unexpectedSelfTxids, isEmpty);
+      expect(b.pendingSentAtBaseline, {'toSomeoneElse'});
+      expect(b.knownTxids, containsAll([p('selfPending'), p('selfRecent'), p('toMyOtherWallet'), p('toSomeoneElse')]));
     });
 
     test('the run that creates the baseline creates no incident', () {
@@ -182,34 +182,25 @@ void main() {
     });
   });
 
-  group('unexpected self transfers (red team §7)', () {
-    test('a self transfer the app did not make after the baseline is kept once for review', () {
-      var s = SafetyState(
+  group('only bitcoin leaving my wallets is an incident', () {
+    test('after the baseline a self transfer or a send to my other wallet is not an incident; a send elsewhere is', () {
+      final s = SafetyState(
         baselines: {
           1: baseline(known: {'old'}),
         },
       );
       final w = wallet(
         1,
-        txs: [tx('old', type: TransactionType.self), tx('s', type: TransactionType.self, height: 1005)],
+        txs: [
+          tx('old'),
+          tx('self', type: TransactionType.self, height: 1005),
+          tx('toMyOtherWallet', toOwnWallet: true),
+          tx('toSomeoneElse'),
+        ],
       );
       final d = detect([w], state: s);
-      expect(d.created, isEmpty);
-      expect(d.baselines[1]!.unexpectedSelfTxids, {'s'});
-      s = d.applyTo(s);
-      expect(detect([w], state: s).isEmpty, isTrue);
-    });
-
-    test('app-created, recognized and not-yet-settled self transfers are not kept', () {
-      final s = SafetyState(baselines: {1: baseline()}, appTxidPrefixes: {p('mine')}, recognizedTxids: const {'ok'});
-      final w = wallet(1, txs: [tx('mine', type: TransactionType.self), tx('ok', type: TransactionType.self)]);
-      expect(detect([w], state: s).baselines, isEmpty);
-      expect(
-        detect([
-          wallet(1, settled: false, txs: [tx('x', type: TransactionType.self)]),
-        ], state: s).baselines,
-        isEmpty,
-      );
+      expect(d.created.map((i) => i.txid), ['toSomeoneElse']);
+      expect(d.baselines, isEmpty, reason: 'self transfers are no longer kept for review');
     });
   });
 

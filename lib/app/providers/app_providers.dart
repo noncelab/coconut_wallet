@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
@@ -23,8 +24,10 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
+import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -90,6 +93,15 @@ List<SingleChildWidget> buildAppProviders({
             Provider.of<PreferenceProvider>(context, listen: false),
           );
         },
+      ),
+      ChangeNotifierProvider<WalletAppearanceProvider>(
+        lazy: false,
+        create:
+            (context) => WalletAppearanceProvider(
+              repository: WalletAppearanceRepository(),
+              photoStore: WalletBackgroundPhotoStore(),
+              lifecycleEvents: context.read<WalletProvider>().lifecycleEvents,
+            )..init(),
       ),
       ChangeNotifierProvider<NodeProvider>(
         create: (context) {

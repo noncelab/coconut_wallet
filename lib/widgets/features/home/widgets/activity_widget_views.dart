@@ -22,7 +22,14 @@ class RecentTransactionsView extends StatelessWidget {
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
   final DateTime now;
+  final bool showAllTransactions;
+  final String? emptyMessage;
+  final String? highlightedTxHash;
+  final Animation<double>? highlightAnimation;
   final void Function(int walletId)? onTransactionTap;
+
+  /// 지갑 하나만 보여 주는 곳(지갑 상세)에서 거래 자체를 열 때 쓴다. 있으면 [onTransactionTap]보다 먼저 쓴다.
+  final void Function(HomeRecentTransaction tx)? onTransactionSelected;
 
   const RecentTransactionsView({
     super.key,
@@ -30,7 +37,33 @@ class RecentTransactionsView extends StatelessWidget {
     required this.amountText,
     required this.now,
     this.onTransactionTap,
+    this.onTransactionSelected,
+    this.showAllTransactions = false,
+    this.emptyMessage,
+    this.highlightedTxHash,
+    this.highlightAnimation,
   });
+
+  Widget _highlightRow(BuildContext context, HomeRecentTransaction tx, Widget child) {
+    final animation = highlightAnimation;
+    if (highlightedTxHash == null || tx.txHash != highlightedTxHash || animation == null) return child;
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder:
+          (context, child) => DecoratedBox(
+            key: ValueKey('recent-transaction-highlight-${tx.txHash}'),
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              color: context.coconutColors.primaryText.withValues(
+                alpha: 0.08 * Curves.easeInOut.transform(animation.value),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: child,
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,17 +73,52 @@ class RecentTransactionsView extends StatelessWidget {
         key: const Key('recent-transactions-empty'),
         child: Center(
           child: Text(
-            t.home_widgets.no_recent_transactions,
+            emptyMessage ?? t.home_widgets.no_recent_transactions,
             textAlign: TextAlign.center,
             style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
           ),
         ),
       );
     }
+    if (showAllTransactions) {
+      return SizedBox(
+        height: 16 + transactions.length * 64 + transactions.length - 1,
+        child: HomeWidgetCard(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (index, tx) in transactions.indexed) ...[
+                if (index > 0)
+                  Container(margin: const EdgeInsets.symmetric(horizontal: 16), height: 1, color: colors.divider),
+                _highlightRow(
+                  context,
+                  tx,
+                  _TransactionRow(
+                    key: ValueKey('recent-transactions-row-$index'),
+                    tx: tx,
+                    amountText: amountText,
+                    now: now,
+                    height: 64,
+                    onTap:
+                        onTransactionSelected != null
+                            ? () => onTransactionSelected!(tx)
+                            : onTransactionTap == null
+                            ? null
+                            : () => onTransactionTap!(tx.walletId),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
     final shown = transactions.take(rows).toList();
     final emptyRows = rows - shown.length;
-    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 12), height: 1, color: colors.divider);
+    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 16), height: 1, color: colors.divider);
     return HomeWidgetCard(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final rowHeight = (constraints.maxHeight - (rows - 1)) / rows;
@@ -59,13 +127,22 @@ class RecentTransactionsView extends StatelessWidget {
             children: [
               for (final (index, tx) in shown.indexed) ...[
                 if (index > 0) divider(),
-                _TransactionRow(
-                  key: ValueKey('recent-transactions-row-$index'),
-                  tx: tx,
-                  amountText: amountText,
-                  now: now,
-                  height: rowHeight,
-                  onTap: onTransactionTap == null ? null : () => onTransactionTap!(tx.walletId),
+                _highlightRow(
+                  context,
+                  tx,
+                  _TransactionRow(
+                    key: ValueKey('recent-transactions-row-$index'),
+                    tx: tx,
+                    amountText: amountText,
+                    now: now,
+                    height: rowHeight,
+                    onTap:
+                        onTransactionSelected != null
+                            ? () => onTransactionSelected!(tx)
+                            : onTransactionTap == null
+                            ? null
+                            : () => onTransactionTap!(tx.walletId),
+                  ),
                 ),
               ],
               if (emptyRows > 0) ...[
@@ -125,76 +202,79 @@ class _TransactionRow extends StatelessWidget {
     };
     final row = SizedBox(
       height: height,
-      child: Row(
-        children: [
-          TransactionStatusGradientMask(
-            enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
-            child: SvgPicture.asset(
-              TransactionUtil.getStatusIconAsset(status),
-              key: ValueKey('recent-transactions-icon-${status.name}'),
-              fit: BoxFit.fill,
-              width: 30,
-              height: 30,
-              colorFilter: ColorFilter.mode(switch (status) {
-                TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                _ => colors.iconPrimary,
-              }, BlendMode.srcIn),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            TransactionStatusGradientMask(
+              enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+              child: SvgPicture.asset(
+                TransactionUtil.getStatusIconAsset(status),
+                key: ValueKey('recent-transactions-icon-${status.name}'),
+                fit: BoxFit.fill,
+                width: 30,
+                height: 30,
+                colorFilter: ColorFilter.mode(switch (status) {
+                  TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                  TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                  _ => colors.iconPrimary,
+                }, BlendMode.srcIn),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        statusText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
                         child: Text(
-                          '$sign ${amountText(tx.amount.abs())}',
-                          style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText),
+                          statusText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-
-                Row(
-                  children: [
-                    Text(
-                      formatHomeDateTime(tx.time, now),
-                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        tx.walletName,
-                        maxLines: 1,
-                        textAlign: TextAlign.right,
-                        overflow: TextOverflow.ellipsis,
-                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '$sign ${amountText(tx.amount.abs())}',
+                            style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        formatHomeDateTime(tx.time, now),
+                        style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          tx.walletName,
+                          maxLines: 1,
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                          style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
     if (onTap == null) return row;
@@ -215,9 +295,14 @@ class _PressableRow extends StatefulWidget {
 
 class _PressableRowState extends State<_PressableRow> {
   bool _pressed = false;
+  bool _snapBack = false;
 
-  void _setPressed(bool pressed) {
-    if (_pressed != pressed) setState(() => _pressed = pressed);
+  void _setPressed(bool pressed, {bool snap = false}) {
+    if (_pressed == pressed) return;
+    setState(() {
+      _pressed = pressed;
+      _snapBack = snap;
+    });
   }
 
   @override
@@ -227,13 +312,13 @@ class _PressableRowState extends State<_PressableRow> {
       behavior: HitTestBehavior.opaque,
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
+      onTapCancel: () => _setPressed(false, snap: true),
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1,
-        duration: const Duration(milliseconds: 100),
+        duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
+          duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color:
@@ -265,6 +350,9 @@ class TransactionActivityView extends StatelessWidget {
   /// 처음 화면을 열 때 막대와 요약 숫자를 함께 채우는 비율.
   final double reveal;
 
+  /// 호들 인사이트에서 기간 변경 시 막대 높이를 자연스럽게 전환한다.
+  final bool animateChanges;
+
   const TransactionActivityView({
     super.key,
     required this.days,
@@ -273,6 +361,7 @@ class TransactionActivityView extends StatelessWidget {
     this.amountTexts,
     this.detailed = false,
     this.reveal = 1,
+    this.animateChanges = false,
   });
 
   static const double detailedChartHeight = 84;
@@ -316,6 +405,7 @@ class TransactionActivityView extends StatelessWidget {
                         color: receivedColor,
                         reveal: reveal,
                         barKey: ValueKey('transaction-activity-bar-$index-received'),
+                        animateChanges: animateChanges,
                       ),
                       _Bar(
                         count: day.sent,
@@ -323,6 +413,7 @@ class TransactionActivityView extends StatelessWidget {
                         color: sentColor,
                         reveal: reveal,
                         barKey: ValueKey('transaction-activity-bar-$index-sent'),
+                        animateChanges: animateChanges,
                       ),
                       _Bar(
                         count: day.organized,
@@ -330,6 +421,7 @@ class TransactionActivityView extends StatelessWidget {
                         color: organizedColor,
                         reveal: reveal,
                         barKey: ValueKey('transaction-activity-bar-$index-organized'),
+                        animateChanges: animateChanges,
                       ),
                     ],
                   ),
@@ -454,29 +546,61 @@ class TransactionActivityView extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  static const double _width = 4;
-  static const double _margin = 1;
-
+class _Bar extends StatefulWidget {
   final int count;
   final int max;
   final Color color;
   final double reveal;
   final Key? barKey;
+  final bool animateChanges;
 
-  const _Bar({required this.count, required this.max, required this.color, required this.reveal, this.barKey});
+  const _Bar({
+    required this.count,
+    required this.max,
+    required this.color,
+    required this.reveal,
+    required this.animateChanges,
+    this.barKey,
+  });
+
+  @override
+  State<_Bar> createState() => _BarState();
+}
+
+class _BarState extends State<_Bar> {
+  static const double _width = 4;
+  static const double _margin = 1;
+  bool _animateChange = false;
+
+  @override
+  void didUpdateWidget(covariant _Bar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 진입 시에는 바깥 reveal 애니메이션을 그대로 따르고, 이후 값 변경만 보간한다.
+    _animateChange = widget.animateChanges && oldWidget.reveal >= 1 && widget.reveal >= 1;
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder:
-          (context, constraints) => Container(
-            key: barKey,
-            width: _width,
-            margin: const EdgeInsets.symmetric(horizontal: _margin),
-            height: count == 0 ? 0 : math.max(2, constraints.maxHeight * count / max) * reveal,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
-          ),
+      builder: (context, constraints) {
+        final height =
+            widget.count == 0 ? 0.0 : math.max(2, constraints.maxHeight * widget.count / widget.max) * widget.reveal;
+        final animate =
+            _animateChange && !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context);
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: height),
+          duration: Duration(milliseconds: animate ? 400 : 0),
+          curve: Curves.easeInOutCubic,
+          builder:
+              (context, value, _) => Container(
+                key: widget.barKey,
+                width: _width,
+                margin: const EdgeInsets.symmetric(horizontal: _margin),
+                height: value,
+                decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(2)),
+              ),
+        );
+      },
     );
   }
 }

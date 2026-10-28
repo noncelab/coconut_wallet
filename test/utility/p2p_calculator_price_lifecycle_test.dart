@@ -278,7 +278,7 @@ class _Harness {
 }
 
 class _Preference extends ScriptedPreference {
-  _Preference(FiatCode fiat) : super(fiat);
+  _Preference(super.selectedFiat);
 
   @override
   BitcoinUnit get currentUnit => BitcoinUnit.sats;

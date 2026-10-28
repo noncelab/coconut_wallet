@@ -211,7 +211,7 @@ home_edit:
   fake_balance_description: "설정한 금액은 홈 잔액 위젯에만 표시돼요"
   size: "크기"
   wallet_goals: "지갑별 목표 수량"
-  wallet_goals_description: "비워 두면 그 지갑은 목표가 없어요"
+  wallet_goals_description: "지갑별로 저축 목표를 정해보세요"
   wallet_goal_placeholder: "목표 수량"
   categories:
     balance: "잔액"
@@ -227,12 +227,14 @@ home_menu:
   remove_shortcut: "바로가기 제거"
   removed: "홈에서 제거했어요"
 hodl_insights:
-  no_goal: "설정에서 지갑별 목표 수량을 정해 보세요"
+  no_goal: "여기를 눌러 목표 수량을 입력해 보세요"
   title: "호들 인사이트"
   settings_title: "인사이트 설정"
-  settings_description: "인사이트에 포함할 지갑을 고르세요."
+  settings_heading: "지갑 선택"
+  settings_description: "분석에 포함할 지갑을 고르세요"
   total_balance: "총 잔액"
   goal: "목표"
+  goal_reached: "목표 달성"
   utxo_summary: "UTXO 요약"
   utxo_ranges_unit: "BTC 기준"
   total_utxos: "전체 UTXO ${count}개"
@@ -351,8 +353,11 @@ feature_sub_labels:
   wallet_detail_resync: "지갑 재동기화"
   wallet_detail_delete: "지갑 삭제하기"
 all_features_hint:
-  title: "모든 기능은 옆에 있어요"
+  title: "빠르게 기능 찾기"
   description: "홈을 왼쪽으로 밀면 모든 기능을 볼 수 있어요"
+add_recipient_hint:
+  title: "수신자 추가하기"
+  description: "화면을 왼쪽으로 밀면 수신자를 추가할 수 있어요"
 wallet_stack_list:
   utxos: "UTXO"
   last_transaction: "마지막 거래"
@@ -399,7 +404,7 @@ home_widgets:
   utxo_count: "UTXO $count개"
   today: "오늘"
 home_presets:
-  header: "쓰는 방식에 맞춰\n홈을 빠르게 구성해 보세요"
+  header: "지갑 사용 방식에 맞는\n홈 화면을 빠르게 구성해 보세요"
   preview: "미리보기"
   current: "적용 중"
   safety_name: "안전"
@@ -409,7 +414,7 @@ home_presets:
   simple_name: "간단하게"
   simple_description: "지갑과 자주 쓰는 기능만 보여 줘요"
   hide_balances_name: "잔액 없이"
-  hide_balances_description: "홈에 실제 잔액이나 법정화폐 금액을 보여 주지 않아요"
+  hide_balances_description: "잔액이나 법정화폐 금액을 보여 주지 않아요"
   statistics_name: "저축 현황"
   statistics_description: "잔액 추이와 저축 목표, UTXO 현황을 함께 봐요"
   apply: "홈에 적용"
@@ -428,7 +433,7 @@ all_features:
     tools: "도구"
     safety: "안전"
     settings: "설정"
-    added: "추가 기능"
+    open_store: "코코넛 오픈 스토어"
 feature_registry:
   hodl_insights: "호들 인사이트"
   hodl_insights_short: "인사이트"
@@ -440,14 +445,14 @@ feature_registry:
   my_wallets: "내 지갑"
   transaction_draft: "임시 저장 트랜잭션"
   transaction_draft_short: "임시 트랜잭션"
-  calculator: "계산기"
+  calculator: "P2P 계산기"
   label_management: "메모 관리"
   label_management_short: "메모"
   mnemonic_word_list: "니모닉 문구 단어집"
   mnemonic_word_list_short: "단어집"
   glossary: "용어집"
   tutorial: "튜토리얼"
-  open_store: "오픈 스토어"
+  open_store: "오픈 스토어 소개"
   open_store_short: "오픈스토어"
   wallet_detail: "지갑 상세"
   receive: "받기"
@@ -521,12 +526,8 @@ wallet_home_screen:
     description: "앱 잠금을 설정해 지갑을 안전하게 보호하세요"
   view_all_wallets: "내 지갑 전체보기"
   wallet_filter:
-    all: "전체"
     watch_only: "보기 전용"
     hot: "핫월렛"
-  add_wallet_type_all: "지갑을 추가해 보세요!"
-  add_wallet_type_watch_only: "보기 전용 지갑을 추가해 보세요!"
-  add_wallet_type_hot: "핫월렛을 추가해 보세요!"
   wallet_type_selection:
     watch_only:
       title: "보기 전용 지갑 추가하기"
@@ -537,10 +538,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "새 지갑 만들기"
-      description: "자동으로 안전하게"
     restore:
       title: "지갑 복원하기"
-      description: "기존 지갑을 그대로"
     device_passcode_required:
       title: "기기 비밀번호 설정이 필요해요"
       description: "핫월렛을 안전하게 보호하려면 먼저 기기 설정에서 화면 잠금 비밀번호를 설정해 주세요."
@@ -557,7 +556,6 @@ wallet_home_screen:
     passphrase_used: "패스프레이즈 사용"
     passphrase_unused: "패스프레이즈 미사용"
     create_wallet: "지갑 생성하기"
-    mnemonic_backup_guide: "생성된 니모닉은 다음 백업 화면에서 확인할 수 있어요"
     mnemonic_length: "단어 수"
     word_count(count): "${count}단어"
     use_passphrase: "패스프레이즈 사용"
@@ -567,13 +565,11 @@ wallet_home_screen:
     passphrase_mismatch: "패스프레이즈가 일치하지 않아요"
     show_passphrase: "패스프레이즈 보기"
     hide_passphrase: "패스프레이즈 숨기기"
-    enter_passphrase_when_signing: "서명할 때마다 패스프레이즈를 입력할게요"
     store_passphrase: "패스프레이즈 저장"
     store_passphrase_off_description: "서명할 때마다 패스프레이즈를 직접 입력합니다"
     store_passphrase_on_description: "편리하지만 패스프레이즈의 보안 효과가 상쇄됩니다"
     passphrase_not_stored_title: "패스프레이즈를 꼭 기억해 주세요"
     passphrase_not_stored_description: "패스프레이즈는 기기에 저장되지 않아요. 잊어버리면 지갑을 복구하거나 송금할 수 없으니 꼭 기억해 주세요."
-    passphrase_not_stored_confirm: "기억할게요"
     creation_failed: "지갑을 생성하지 못했어요. 다시 시도해 주세요."
     duplicate_name_title: "지갑 이름 중복"
     duplicate_name_description: "이미 같은 이름의 지갑이 있어요"
@@ -608,7 +604,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "직접 입력으로 변경"
     switch_to_mnemonic_description: "스캔한 정보를 지우고 니모닉을 직접 입력할까요?"
   hot_wallet_setup:
-    title: "새 지갑 생성하기"
     wallet_created_title: "새로운 핫월렛을\n만들었어요!"
     backup_title: "니모닉 백업하기"
     backup_preparation_title: "니모닉을\n안전하게 보관하세요"
@@ -637,89 +632,16 @@ wallet_home_screen:
     passphrase_correct: "패스프레이즈가 일치해요"
     backup_complete_title: "니모닉 백업을 확인했어요"
     backup_complete_description: "선택한 단어를 모두 정확하게 확인했어요. 앞으로 니모닉 백업 안내가 표시되지 않습니다."
-    set: "설정됨"
     skip: "나중에 할게요"
   add_wallet: "지갑 추가"
   add_wallet_action: "지갑 추가하기"
   view_all: "모두 보기"
-  wallet_menu:
-    rename: "이름 변경"
-    backup: "백업하기"
-    wallet_info: "지갑 정보"
-    remove_from_home: "홈에서 제거"
-    delete: "지갑 삭제"
-  edit_home_screen: "홈 화면 편집하기"
-  backup_update_notice_action: "자세히 보기"
-  backup_update_notice:
-    title: "상속 지갑 백업 업데이트 알림"
-    description: "상속 지갑의 백업 문구가 일부 변경되었어요.\n코코넛 볼트도 최신 버전으로 업데이트해 주세요.\n볼트를 업데이트하면 변경 사항이 자동으로 반영돼요.\n이후 구성 정보를 다시 백업해 주세요."
-    action: "자세히 보기"
   edit:
-    title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
-    hide_balance: "잔액 숨기기"
-    hide_balance_on_home: "홈 화면에 잔액을 표시하지 않아요"
     fake_balance:
       fake_balance_setting: "가짜 잔액 설정"
       fake_balance_display: "가짜 잔액 표시"
       fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요"
-      fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요"
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    hide_fiat_price: "법정 화폐 잔액 숨기기"
-    hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요"
-    home_add_wallet_button:
-      title: "홈 화면 상단 버튼"
-      sheet_title: "홈 화면 상단 버튼"
-      preview: "홈 화면 미리보기"
-      preview_all: "모든 지갑 추가 버튼"
-      preview_all_emphasis: "모든"
-      preview_watch_only: "보기 전용 지갑 추가 버튼"
-      preview_hot_wallet: "핫월렛 추가 버튼"
-      preview_hidden: "지갑 추가 버튼 숨김"
-      preview_hidden_emphasis: "숨김"
-      all:
-        title: "전체"
-        description: "모든 종류의 지갑을 선택할 수 있도록 할게요."
-      watch_only:
-        title: "보기 전용"
-        description: "보안이 우수한 보기 전용 지갑을 추가할게요."
-      hot_wallet:
-        title: "핫월렛"
-        description: "바로 사용 가능한 핫월렛을 추가할게요."
-      hidden:
-        title: "표시 안 함"
-        description: "홈 상단에 지갑 추가 버튼을 표시하지 않아요."
-    category:
-      total_balance: "잔액 합계"
-      wallet_list: "지갑 목록"
-      recent_transactions: "24시간 내\n거래"
-      analysis: "분석"
-    alert: 
-      empty_fake_balance: "가짜 잔액 입력"
-      empty_fake_balance_description: "금액이 설정되지 않았어요.\n금액을 다시 입력하거나,\n 0 BTC로 설정할 수 있어요."
-      set_to_0: "0 BTC로 설정"
-      enter_again: "다시 입력"
-  last_24_hours_transactions: "지난 24시간 거래"
-  syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
-  cannot_modify_fixed_widget: "이 요소는 표시/숨김을 변경할 수 없어요."
-  no_change_in_amount: "수량 변화가 없어요!"
-  analysis_period: "최근 ${days}일 • ${transaction_type}"
-  analysis_period_custom: "직접 설정 • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "조회 기간"
-    days_15: "15일"
-    days_30: "30일"
-    days_60: "60일"
-    days_90: "90일"
-    custom: "직접 설정"
-    transaction_type: "거래 유형"
-
-  transaction_count: "트랜잭션 $count회"
-  count: "$count회"
-  increase: "증가했어요"
-  decrease: "감소했어요"
-  sent: "보냈어요"
-  received: "받았어요"
-
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"
@@ -957,6 +879,16 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "기간별 요약"
+    gesture_guide_title: "그래프를 움직여 보세요"
+    gesture_guide_pan: "좌우로 움직여 보는 기간을 이동해요."
+    gesture_guide_zoom: "위아래로 움직이거나 두 손가락으로 확대·축소해 1주·1개월·3개월 등의 범위를 조절해요."
+    balance_label: "잔액"
+    transactions_label: "트랜잭션"
+    flow_count: "${count}회"
+    flow_summary: "${count}회 · ${amount}"
+    no_transactions_at_date: "선택한 날짜에 거래 내역이 없어요"
+    transactions_at_date: "이 시점의 거래 내역"
     wallets_at_date: "이 시점의 지갑"
     no_wallets: "이 시점에 표시할 지갑이 없어요"
     changed_wallets_only: "변동이 있는 지갑만 보기"
@@ -1081,7 +1013,6 @@ send_screen:
   drag_to_add_address: "받을 주소를 추가하려면 왼쪽으로 드래그 해주세요"
   dialog:
     load_draft_failed: "불러오기 실패"
-  swipe_to_add_address: "수신자를 추가하려면 왼쪽으로 스와이프 해주세요"
   toast:
     draft_utxo_used: "이전에 선택한 비트코인이 이미 사용되었어요. UTXO를 다시 골라주세요."
     draft_utxo_locked: "이전에 선택한 비트코인이 사용 잠금 되었어요. UTXO를 다시 골라주세요."
@@ -1441,6 +1372,11 @@ utxo_tag_screen:
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "비트코인을 받을 보기 전용 지갑을 선택해 주세요."
+  vault_unused_title: "거래 내역이 없는 금고예요"
+  vault_unused_description: "선택한 금고에 거래 내역이 없어요. 잘못된 금고로 보내지 않도록, 하드월렛에서 수신 주소를 확인한 후 진행해 주세요."
+  vault_unused_continue: "확인 후 계속하기"
+  vault_sync_required_title: "동기화 후 이용해 주세요"
+  vault_sync_required_description: "아직 금고의 거래 내역과 수신 주소를 확인할 수 없어요. 네트워크 연결과 동기화 상태를 확인하고, 동기화가 완료된 후 다시 선택해 주세요."
   vault_select_receiving_wallet: "받을 금고 선택"
   vault_connect_watch_only_wallet: "금고 확인용 지갑 연결하기"
   vault_watch_only_description: "앱에 ‘금고 확인용(보기 전용) 지갑’을 등록해 보세요. 전용 기기를 매번 켜지 않아도, 비트코인이 잘 있는지 앱에서 실시간으로 안전하게 볼 수 있습니다."
@@ -1460,6 +1396,20 @@ wallet_detail_screen:
   utxo_organize_description: "나누기 • 합치기"
 
 wallet_info_screen:
+  section_security: "보안"
+  section_details: "지갑 상세"
+  section_data: "지갑 데이터"
+  section_danger: "위험 구역"
+  wallet_type: "지갑 유형"
+  master_fingerprint: "마스터 핑거프린트"
+  mfp_enter: "입력하기"
+  multisig_setup: "다중서명 구성"
+  quorum: "필요한 서명 수"
+  bsms: "BSMS"
+  inheritance_setup: "상속 구성"
+  taproot_participants: "참여 지갑"
+  taproot_participant_count: "부모 ${parent} · 자식 ${child}"
+  descriptor: "디스크립터"
   title: "$name 정보"
   transaction: "트랜잭션"
   utxo: "UTXO"
@@ -1491,6 +1441,7 @@ wallet_info_screen:
   export_labels_description: "지갑에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
   view_descriptor: "디스크립터 보기"
   view_wallet_backup_data: "지갑 백업 데이터 보기"
+  backup_data: "백업 데이터"
   backup_update_dialog:
     title: "상속 지갑 백업 업데이트 알림"
     step1_title: "1. 기존 상속 지갑의 백업 데이터를 다른 곳에 저장하신 경우 새로운 백업 데이터로 업데이트해주세요."
@@ -2371,9 +2322,9 @@ wallet_health:
       other: "${n}개 자금 보유"
     no_score: "아직 점수가 없어요"
     no_wallet_title: "아직 지갑이 없어요"
-    no_wallet_body: "지갑을 추가하면 복구 준비, 지갑 활동, 개인정보 보호 항목을 점검할 수 있어요."
+    no_wallet_body: "지갑을 추가하고 모든 항목을 점검하세요"
     not_enough_data_title: "아직 데이터가 부족해요"
-    not_enough_data_body: "지갑을 쓰기 시작하거나 비트코인을 받으면 더 많은 항목을 점검할 수 있어요."
+    not_enough_data_body: "지갑을 사용하면 더 많은 항목을 점검할 수 있어요."
     offline_line: "오프라인 · 저장된 데이터 기준"
     how_score_works: "점수 계산 기준 보기"
   critical:
@@ -2394,8 +2345,8 @@ wallet_health:
     privacy: "개인정보 보호"
     waiting: "대기 중"
     available: "사용 가능"
-    reason_add_wallet: "지갑 추가가 필요해요"
-    reason_onchain_activity: "온체인 활동이 필요해요"
+    reason_add_wallet: "지갑이 없어요"
+    reason_onchain_activity: "온체인 이력이 없어요"
     reason_tx_history: "거래 기록이 필요해요"
     reason_funds_or_usage: "자금이나 사용 기록이 필요해요"
     reason_checks_available: "지금 확인할 수 있어요"
@@ -2417,12 +2368,12 @@ wallet_health:
     available_now: "지금 확인 가능"
     not_included_yet: "아직 포함되지 않음"
     after_adding_wallet: "지갑을 추가하면 확인할 수 있어요"
-    not_included_footer_no_wallet: "지갑을 추가하면 이 점검이 자동으로 실행돼요."
+    not_included_footer_no_wallet: "지갑을 추가하면 이 항목들을 자동으로 점검해요."
     not_included_footer_usage: "지갑에 비트코인이 들어오거나 사용 기록이 생기면 자동으로 점검해요."
     unlock_more: "더 많은 점검을 하려면"
     unlock_add_wallet: "지갑 만들기 또는 가져오기"
     unlock_verify_watch_only: "보기 전용 지갑 검증 완료하기"
-    unlock_use_bitcoin: "비트코인 받거나 보내기"
+    unlock_use_bitcoin: "비트코인을 받거나 보내기"
     mempool_dropped: "거래가 멤풀에서 사라졌어요 · 다음 동기화 때 다시 확인해요"
     recommended_progress: "${total}개 중 ${done}개 완료"
   toast:
@@ -2449,7 +2400,7 @@ wallet_health:
       name: "앱 잠금"
       enabled: "켜짐"
       disabled: "꺼짐"
-      issue: "앱 잠금이 꺼져 있어요"
+      issue: "앱 잠금이 해제되어 있어요"
     app_update:
       name: "앱 업데이트"
       up_to_date: "최신 버전"
@@ -2459,7 +2410,7 @@ wallet_health:
       name: "니모닉 백업"
       confirmed: "확인됨"
       needed: "백업 필요"
-      issue: "니모닉 백업 확인 필요"
+      issue: "니모닉 백업을 아직 확인하지 않았어요"
     passphrase_verify:
       name: "패스프레이즈 검증"
       not_verified: "미검증"
@@ -2468,7 +2419,7 @@ wallet_health:
       name: "보기 전용 지갑 검증"
       not_verified: "미검증"
       mismatch: "주소 불일치"
-      issue_not_verified: "지갑 확인 필요"
+      issue_not_verified: "지갑이 일치하는지 확인하세요"
       issue_mismatch: "서명 기기의 주소와 일치하지 않아요"
     multisig_config:
       name: "다중 서명 구성"
@@ -2494,7 +2445,7 @@ wallet_health:
       issue: "지갑을 추가하기 전 7일 안에 보낸 거래가 있어요"
     self_transfer:
       name: "코코넛 밖에서 만든 지갑 안 이동"
-      issue: "코코넛에서 만들지 않은 거래로 이 지갑 안에서 비트코인이 옮겨졌어요"
+      issue: "코코넛 월렛에서 생성하지 않은 거래가 감지되었어요"
     tx_conflict:
       name: "거래 충돌"
       issue: "받기로 한 거래가 대체돼 들어오지 않았어요"
@@ -2503,11 +2454,17 @@ wallet_health:
       count(cardinal):
         one: "주소 1개"
         other: "주소 ${n}개"
+      issue(cardinal):
+        one: "재사용된 주소가 1개 있어요"
+        other: "재사용된 주소가 ${n}개 있어요"
     possible_dusting:
       name: "더스팅 의심"
       count(cardinal):
         one: "의심 UTXO 1개"
         other: "의심 UTXO ${n}개"
+      issue(cardinal):
+        one: "더스팅이 의심되는 UTXO가 1개 있어요"
+        other: "더스팅이 의심되는 UTXO가 ${n}개 있어요"
     server_cert:
       name: "서버 인증서"
       valid: "정상"
@@ -2526,6 +2483,10 @@ wallet_health:
       changed(cardinal):
         one: "1건 바뀜"
         other: "${n}건 바뀜"
+      issue_never_exported: "메모·태그를 아직 백업하지 않았어요"
+      issue_changed(cardinal):
+        one: "백업한 뒤 메모·태그가 1건 바뀌었어요"
+        other: "백업한 뒤 메모·태그가 ${n}건 바뀌었어요"
   connection:
     connected: "연결됨"
   recommended:
@@ -2554,13 +2515,14 @@ wallet_health:
   about:
     title: "지갑 상태 점수 안내"
     meaning_title: "점수의 의미"
-    meaning_body: "지갑 상태 점수는 지금 앱에 있는 지갑 정보로 코코넛이 확인할 수 있는 항목만으로 계산해요. 점수가 높다고 해서 지갑의 안전이 보장되는 것은 아니에요."
+    meaning_body: "지갑 상태 점수는 코코넛 월렛이 확인할 수 있는 지갑 데이터로 계산해요. 점수가 높다고 해서 지갑의 안전이 보장되는 것은 아니에요."
     no_score_body: "지갑을 추가하고 점검할 수 있는 항목이 충분해지면 점수가 생겨요."
     min_coverage: "점수는 4개 영역 중 2개 이상을 점검할 수 있을 때 표시돼요."
     formula_title: "점수 계산 방법"
     formula_total: "합계"
     formula_not_scored: "점수 없음"
     formula_note: "카테고리 점수에 비중을 곱해 더해요. 아직 확인할 수 없는 카테고리는 빼고, 그 비중은 나머지 카테고리가 나눠 가져요."
+    formula_cap: "앱 잠금 해제 시 최대 점수"
     range_title: "점수 구간"
     range_excellent: "점검한 항목이 모두 잘 관리되고 있어요."
     range_good: "몇 가지만 개선하면 더 좋아져요."
@@ -3091,3 +3053,25 @@ premium:
     error_self_address: "이 지갑이나 같은 시드를 쓰는 지갑의 주소예요. 다른 주소를 입력해 주세요."
     error_affected_address: "모르는 거래가 발견된 지갑의 주소예요. 다른 주소를 입력해 주세요."
     external_warning: "직접 입력한 주소는 코코넛이 확인할 수 없어요. 내 주소가 맞는지 한 번 더 확인해 주세요."
+wallet_appearance_screen:
+  hue: "색상"
+  brightness: "밝기"
+  crop_title: "이동 및 크기 조절"
+  wallet_tab: "지갑"
+  name_placeholder: "이름"
+  icon: "아이콘"
+  color: "색상"
+  edit_button: "편집"
+  skins: "기본 배경"
+  colors: "단색"
+  photos: "사진"
+  default_background: "기본"
+  choose_photo: "사진 선택"
+  adjust_hint: "선택한 사진을 한 번 더 누르면 위치와 크기를 다시 조절할 수 있어요"
+  photo_pick_failed: "사진을 불러오지 못했어요. 다른 사진을 골라 주세요"
+wallet_card_detail_screen:
+  details: "상세"
+  chart: "차트"
+  wallet_card: "지갑 카드"
+  show_balance_trend: "잔액 변화 보기"
+  chart_date_format: "M월 d일"

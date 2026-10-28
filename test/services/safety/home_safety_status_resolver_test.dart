@@ -8,7 +8,6 @@ WalletHealthReport _report(WalletHealthStatus status, {int? score, List<SafetySe
     WalletHealthReport(
       status: status,
       score: score,
-      profile: WeightProfile.hotFunded,
       reviewItems: [
         for (final severity in review)
           SafetyCheckResult(SafetyCheckId.addressReuse, SafetyOutcome.failed, severity: severity),
@@ -68,7 +67,7 @@ void main() {
   test('idle: no issues with a score, up to date without one', () {
     expect(_resolve(scored).kind, HomeSafetyStatusKind.noIssues);
     for (final report in [_report(WalletHealthStatus.notEnoughData), _report(WalletHealthStatus.noWallet), null]) {
-      expect(_resolve(report).kind, HomeSafetyStatusKind.upToDate);
+      expect(_resolve(report).kind, HomeSafetyStatusKind.noScore);
     }
   });
 }

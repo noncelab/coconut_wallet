@@ -27,7 +27,6 @@ WalletHealthReport _report({
   bool checked = true,
 }) => WalletHealthReport(
   status: incidents.isNotEmpty ? WalletHealthStatus.criticalOverride : WalletHealthStatus.scored,
-  profile: WeightProfile.watchOnlyOnly,
   evaluatedAt: DateTime(2026),
   reviewItems: issues,
   criticalIncidents: incidents,

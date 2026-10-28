@@ -12,7 +12,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
@@ -47,7 +46,8 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_appearance_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
@@ -93,7 +93,14 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
-          (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
+          (args) => WalletCardDetailScreen(
+            id: args.id,
+            entryPoint: args.entryPoint,
+            walletIds: args.walletIds,
+            onFocusChanged: args.onFocusChanged,
+            focusRecentTransactions: args.focusRecentTransactions,
+            focusedTransactionHash: args.focusedTransactionHash,
+          ),
         ),
     AppRouteNames.walletBackupData:
         (context) => _buildScreenWithArgs<WalletBackupDataRouteArgs>(
@@ -128,7 +135,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => UnsignedTransactionQrScreen(walletName: args.walletName),
         ),
     AppRouteNames.send:
-        (context) => _buildScreenWithArgs<SendRouteArgs>(
+        (context) => _buildLoadingScreenWithArgs<SendRouteArgs>(
           context,
           (args) => SendScreen(
             walletId: args.id,
@@ -163,6 +170,9 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => WalletAddScannerScreen(importSource: args.walletImportSource),
         ),
+    AppRouteNames.walletAppearance:
+        (context) =>
+            _buildScreenWithArgs<WalletAppearanceRouteArgs>(context, (args) => WalletAppearanceScreen(id: args.id)),
     AppRouteNames.walletInfo:
         (context) => _buildLoadingScreenWithArgs<WalletInfoRouteArgs>(
           context,
@@ -211,7 +221,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => TransactionDraftScreen(isSignedTabActive: args.isSignedTabActive),
         ),
-    AppRouteNames.walletHomeEdit: (context) => const WalletHomeEditScreen(),
     AppRouteNames.trezorTransportSelect:
         (context) => _buildScreenWithArgs<TrezorTransportSelectRouteArgs>(
           context,

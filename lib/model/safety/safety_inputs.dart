@@ -4,7 +4,8 @@ import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 
 /// 엔진이 보는 거래 한 건. blockHeight 0 = 미확정, timestamp = 블록 시각(미확정이면 처음 본 시각),
-/// [ownReceiveOutputs] = 이 거래가 지급한 내 받기 주소
+/// [ownReceiveOutputs] = 이 거래가 지급한 내 받기 주소,
+/// [paysOwnWallet] = 앱에 추가한 내 다른 지갑의 주소로 보낸 출력이 있음(내 지갑끼리 옮긴 출금)
 typedef SafetyTx =
     ({
       String txid,
@@ -14,6 +15,7 @@ typedef SafetyTx =
       DateTime timestamp,
       DateTime createdAt,
       Set<String> ownReceiveOutputs,
+      bool paysOwnWallet,
     });
 
 enum AppUpdateStatus { unknown, upToDate, available }

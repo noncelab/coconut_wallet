@@ -17,6 +17,7 @@ SafetyTx tx(
   DateTime? timestamp,
   DateTime? createdAt,
   Set<String> paid = const {},
+  bool toOwnWallet = false,
 }) => (
   txid: txid,
   type: type,
@@ -25,6 +26,7 @@ SafetyTx tx(
   timestamp: timestamp ?? DateTime(2026, 9, 1),
   createdAt: createdAt ?? DateTime(2026, 10, 1),
   ownReceiveOutputs: paid,
+  paysOwnWallet: toOwnWallet,
 );
 
 SafetyWalletSnapshot wallet(

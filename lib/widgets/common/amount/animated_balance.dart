@@ -1,7 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/extensions/string_extensions.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
 class AnimatedBalance extends StatefulWidget {
@@ -24,77 +22,37 @@ class AnimatedBalance extends StatefulWidget {
   State<AnimatedBalance> createState() => _AnimatedBalanceState();
 }
 
-class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProviderStateMixin {
-  late AnimationController _balanceAnimController;
-  late Animation<double> _balanceAnimation;
-  double _displayValue = 0.0;
+class _AnimatedBalanceState extends State<AnimatedBalance> {
+  late int _visibleTarget = widget.prevValue;
 
   @override
   Widget build(BuildContext context) {
-    return Text(_displayAmount, style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold);
+    final route = ModalRoute.of(context);
+    final returnAnimation = route?.secondaryAnimation;
+    if (returnAnimation == null) return _buildAmount(context, visible: true);
+    return AnimatedBuilder(
+      animation: returnAnimation,
+      builder: (context, child) => _buildAmount(context, visible: route!.isCurrent && returnAnimation.isDismissed),
+    );
   }
 
-  String get _displayAmount {
-    final displayValue = _displayValue.toInt();
-    if (!widget.currentUnit.isBtcUnit) {
-      return widget.currentUnit.displayBitcoinAmount(displayValue);
-    }
-
-    final fractionDigits = _targetBtcFractionDigits;
-    if (fractionDigits == 0) {
-      return (displayValue ~/ 100000000).toString().toBtcDisplayString();
-    }
-
-    return UnitUtil.convertSatoshiToBitcoin(displayValue).toStringAsFixed(fractionDigits).toBtcDisplayString();
-  }
-
-  int get _targetBtcFractionDigits {
-    final fixedAmount = UnitUtil.convertSatoshiToBitcoinString(widget.value.abs());
-    final fraction = fixedAmount.split('.').last.replaceFirst(RegExp(r'0+$'), '');
-
-    // 기존 BTC 표시 규칙은 소수부가 4자리를 넘으면 8자리 전체를 표시한다.
-    return fraction.length > 4 ? 8 : fraction.length;
-  }
-
-  @override
-  void didUpdateWidget(covariant AnimatedBalance oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
-      _initializeAnimation();
-    }
-  }
-
-  @override
-  void dispose() {
-    _balanceAnimController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _balanceAnimController = AnimationController(duration: Duration(milliseconds: widget.duration), vsync: this);
-
-    _initializeAnimation();
-  }
-
-  void _initializeAnimation() {
-    double startBalance = widget.prevValue.toDouble();
-    double endBalance = widget.value.toDouble();
-
-    _balanceAnimation = Tween<double>(
-      begin: startBalance,
-      end: endBalance,
-    ).animate(CurvedAnimation(parent: _balanceAnimController, curve: Curves.easeOutCubic))..addListener(() {
-      setState(() {
-        _displayValue = _balanceAnimation.value;
-      });
-    });
-
-    if (startBalance != endBalance) {
-      _balanceAnimController.forward(from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
-    } else {
-      _displayValue = endBalance;
-    }
+  Widget _buildAmount(BuildContext context, {required bool visible}) {
+    // 서명 화면 뒤에서 새 잔액 애니메이션이 끝나지 않도록 복귀할 때 목표값을 갱신한다.
+    if (visible && TickerMode.of(context)) _visibleTarget = widget.value;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: widget.prevValue.toDouble(), end: _visibleTarget.toDouble()),
+      duration: reduceMotion ? Duration.zero : Duration(milliseconds: widget.duration),
+      curve: Curves.easeOutCubic,
+      builder:
+          (context, amount, child) => Text(
+            // 전환 중에는 소수 자릿수를 고정해 숫자가 잘리거나 폭이 매 프레임 바뀌지 않게 한다.
+            widget.currentUnit.displayBitcoinAmount(
+              amount.toInt(),
+              forceEightDecimals: amount.toInt() != _visibleTarget,
+            ),
+            style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold,
+          ),
+    );
   }
 }

@@ -48,10 +48,11 @@ class WidgetConfigureViewModel extends ChangeNotifier {
        _targetOf = targetOf ?? ((_) => null),
        _saveTarget = saveTarget ?? ((_, __) async {}),
        isNew = initial == null {
-    final ids = initial?.walletIds?.where((id) => wallets.any((wallet) => wallet.id == id)).toList() ?? const [];
-    if (ids.isNotEmpty) {
+    // null은 전체 지갑. 저장된 목록이 비었거나 id가 모두 사라져도 남은 지갑으로 넓히지 않는다.
+    final savedIds = initial?.walletIds;
+    if (savedIds != null) {
       _allWallets = false;
-      _walletIds.addAll(ids);
+      _walletIds.addAll(savedIds.where((id) => wallets.any((wallet) => wallet.id == id)));
     }
     _fiats = switch (spec.currencies) {
       HomeWidgetCurrencyMode.none => const [],

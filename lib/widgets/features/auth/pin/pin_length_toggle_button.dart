@@ -15,8 +15,8 @@ class PinLengthToggleButton extends StatelessWidget {
     final colors = context.coconutColors;
     final text = currentPinLength == 4 ? t.pin_setting_screen.set_to_6_digit : t.pin_setting_screen.set_to_4_digit;
     const outerBorderRadius = 8.0;
-    const borderWidth = 0.5;
-    const innerBorderRadius = outerBorderRadius + borderWidth * 2;
+    const borderWidth = 1.0;
+    const innerBorderRadius = outerBorderRadius + borderWidth;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -25,7 +25,7 @@ class PinLengthToggleButton extends StatelessWidget {
         defaultColor: colors.surfaceButton,
         pressedOverlayColor: colors.surfacePressOverlay,
         borderRadius: outerBorderRadius,
-        borderWidth: borderWidth,
+        border: Border.all(color: colors.border, width: borderWidth),
         childBuilder:
             (context, isPressed) => Container(
               padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),

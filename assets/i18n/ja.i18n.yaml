@@ -210,7 +210,7 @@ home_edit:
   fake_balance_description: "設定した金額はホームの残高ウィジェットにのみ表示されます"
   size: "サイズ"
   wallet_goals: "ウォレットごとの目標数量"
-  wallet_goals_description: "空欄にするとそのウォレットの目標はなくなります"
+  wallet_goals_description: "ウォレットごとに貯蓄目標を設定してみましょう"
   wallet_goal_placeholder: "目標数量"
   categories:
     balance: "残高"
@@ -226,12 +226,14 @@ home_menu:
   remove_shortcut: "ショートカットを削除"
   removed: "ホームから削除しました"
 hodl_insights:
-  no_goal: "設定でウォレットごとの目標数量を決めてみましょう"
+  no_goal: "ここをタップして目標数量を入力してみましょう"
   title: "ガチホインサイト"
   settings_title: "インサイト設定"
-  settings_description: "インサイトに含めるウォレットを選んでください。"
+  settings_heading: "ウォレット選択"
+  settings_description: "分析に含めるウォレットを選んでください"
   total_balance: "総残高"
   goal: "目標"
+  goal_reached: "目標達成"
   utxo_summary: "UTXOサマリー"
   utxo_ranges_unit: "BTC単位の範囲"
   total_utxos: "UTXO 合計${count}個"
@@ -352,6 +354,9 @@ feature_sub_labels:
 all_features_hint:
   title: "すべての機能は横にあります"
   description: "ホームを左にスワイプするとすべての機能が見られます"
+add_recipient_hint:
+  title: "受取人を追加"
+  description: "画面を左にスワイプすると受取人を追加できます"
 wallet_stack_list:
   utxos: "UTXO"
   last_transaction: "最終取引"
@@ -427,7 +432,7 @@ all_features:
     tools: "ツール"
     safety: "安全"
     settings: "設定"
-    added: "追加機能"
+    open_store: "Coconut Open Store"
 feature_registry:
   hodl_insights: "ガチホインサイト"
   hodl_insights_short: "インサイト"
@@ -439,14 +444,14 @@ feature_registry:
   my_wallets: "マイウォレット"
   transaction_draft: "一時保存トランザクション"
   transaction_draft_short: "一時保存"
-  calculator: "計算機"
+  calculator: "P2P計算機"
   label_management: "メモ管理"
   label_management_short: "メモ"
   mnemonic_word_list: "ニーモニック単語リスト"
   mnemonic_word_list_short: "単語リスト"
   glossary: "用語集"
   tutorial: "チュートリアル"
-  open_store: "オープンストア"
+  open_store: "オープンストアの紹介"
   open_store_short: "オープンストア"
   wallet_detail: "ウォレット詳細"
   receive: "受取"
@@ -520,12 +525,8 @@ wallet_home_screen:
     description: "アプリロックを設定してウォレットを安全に保護してください"
   view_all_wallets: "マイウォレット一覧"
   wallet_filter:
-    all: "すべて"
     watch_only: "閲覧専用"
     hot: "ホットウォレット"
-  add_wallet_type_all: "ウォレットを追加してみましょう！"
-  add_wallet_type_watch_only: "閲覧専用ウォレットを追加してみましょう！"
-  add_wallet_type_hot: "ホットウォレットを追加してみましょう！"
   wallet_type_selection:
     watch_only:
       title: "閲覧専用ウォレットを追加"
@@ -536,10 +537,8 @@ wallet_home_screen:
   hot_wallet_add:
     create:
       title: "新しいウォレットを作成"
-      description: "自動で安全に"
     restore:
       title: "ニーモニックから復元"
-      description: "既存のウォレットをそのまま"
     device_passcode_required:
       title: "デバイスのパスコードが必要です"
       description: "ホットウォレットを安全に保護するため、先にデバイスの設定で画面ロックのパスコードを設定してください。"
@@ -556,7 +555,6 @@ wallet_home_screen:
     passphrase_used: "パスフレーズ使用"
     passphrase_unused: "パスフレーズ未使用"
     create_wallet: "ウォレットを作成"
-    mnemonic_backup_guide: "生成されたニーモニックは次のバックアップ画面で確認できます"
     mnemonic_length: "ニーモニックの単語数"
     word_count(count): "$count単語"
     use_passphrase: "パスフレーズを使用"
@@ -566,13 +564,11 @@ wallet_home_screen:
     passphrase_mismatch: "パスフレーズが一致しません"
     show_passphrase: "パスフレーズを表示"
     hide_passphrase: "パスフレーズを隠す"
-    enter_passphrase_when_signing: "署名するたびにパスフレーズを入力します"
     store_passphrase: "パスフレーズを保存"
     store_passphrase_off_description: "署名するたびにパスフレーズを手動で入力します"
     store_passphrase_on_description: "便利ですが、パスフレーズによるセキュリティ効果が低下します"
     passphrase_not_stored_title: "パスフレーズを必ず覚えてください"
     passphrase_not_stored_description: "パスフレーズは端末に保存されません。忘れるとウォレットの復元や送金ができなくなるため、必ず覚えておいてください。"
-    passphrase_not_stored_confirm: "覚えておきます"
     creation_failed: "ウォレットを作成できませんでした。もう一度お試しください。"
     duplicate_name_title: "ウォレット名の重複"
     duplicate_name_description: "同じ名前のウォレットが既にあります"
@@ -607,7 +603,6 @@ wallet_home_screen:
     switch_to_mnemonic_title: "直接入力に切り替える"
     switch_to_mnemonic_description: "スキャンした情報を消去して、ニーモニックを直接入力しますか？"
   hot_wallet_setup:
-    title: "新しいウォレットを作成"
     wallet_created_title: "新しいホットウォレットが\nできました！"
     backup_title: "ニーモニックをバックアップ"
     backup_preparation_title: "ニーモニックを\n安全に保管してください"
@@ -636,89 +631,16 @@ wallet_home_screen:
     passphrase_correct: "パスフレーズが一致しました"
     backup_complete_title: "ニーモニックのバックアップを確認しました"
     backup_complete_description: "選択した単語をすべて正しく確認しました。今後、ニーモニックのバックアップ案内は表示されません。"
-    set: "設定済み"
     skip: "あとで行う"
   add_wallet: "ウォレットを追加"
   add_wallet_action: "ウォレットを追加"
   view_all: "すべて表示"
-  wallet_menu:
-    rename: "名前を変更"
-    backup: "バックアップ"
-    wallet_info: "ウォレット情報"
-    remove_from_home: "ホームから削除"
-    delete: "ウォレットを削除"
-  edit_home_screen: "ホーム画面を編集"
-  backup_update_notice_action: "詳しく見る"
-  backup_update_notice:
-    title: "継承ウォレットのバックアップ更新のお知らせ"
-    description: "継承ウォレットのバックアップ情報が一部変更されました。\nCoconut Walletを最新バージョンに更新してください。\nVaultを更新すると変更が自動的に反映されます。\nその後、ウォレット情報をもう一度バックアップしてください。"
-    action: "詳しく見る"
   edit:
-    title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
-    hide_balance: "残高を非表示"
-    hide_balance_on_home: "ホーム画面に残高を表示しません"
     fake_balance:
       fake_balance_setting: "フェイク残高"
       fake_balance_display: "フェイク残高表示"
       fake_balance_input_placeholder: "偽の総残高を設定してください"
-      fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます"
       fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます。"
-    hide_fiat_price: "フィアット残高を非表示"
-    hide_fiat_price_on_home: "ホーム画面にフィアット残高を表示しません"
-    home_add_wallet_button:
-      title: "ホーム画面上部のボタン"
-      sheet_title: "ホーム画面上部のボタン"
-      preview: "ホーム画面のプレビュー"
-      preview_all: "すべてのウォレット追加ボタン"
-      preview_all_emphasis: "すべて"
-      preview_watch_only: "閲覧専用ウォレット追加ボタン"
-      preview_hot_wallet: "ホットウォレット追加ボタン"
-      preview_hidden: "ウォレット追加ボタンを非表示"
-      preview_hidden_emphasis: "非表示"
-      all:
-        title: "すべて"
-        description: "すべての種類のウォレットから選択できます。"
-      watch_only:
-        title: "閲覧専用"
-        description: "セキュリティに優れた閲覧専用ウォレットを追加します。"
-      hot_wallet:
-        title: "ホットウォレット"
-        description: "すぐに使えるホットウォレットを追加します。"
-      hidden:
-        title: "表示しない"
-        description: "ホーム上部にウォレット追加ボタンを表示しません。"
-    category:
-      total_balance: "残高合計"
-      wallet_list: "ウォレット\n一覧"
-      recent_transactions: "最近の\n取引 (24時間)"
-      analysis: "分析"
-    alert: 
-      empty_fake_balance: "フェイク残高を入力"
-      empty_fake_balance_description: "金額が設定されていません。\nもう一度入力するか、0 BTCに設定しますか？"
-      set_to_0: "0 BTCに設定"
-      enter_again: "再入力"
-  last_24_hours_transactions: "直近24時間の取引"
-  syncing_recent_transaction: "最近の取引履歴を読み込んでいます"
-  cannot_modify_fixed_widget: "この項目は表示／非表示を変更できません。"
-  no_change_in_amount: "金額に変化がありません！"
-  analysis_period: "直近${days}日 • ${transaction_type}"
-  analysis_period_custom: "直接設定 • ${transaction_type}"
-  analysis_period_bottom_sheet:
-    period_for_analysis: "照会期間"
-    days_15: "15日"
-    days_30: "30日"
-    days_60: "60日"
-    days_90: "90日"
-    custom: "直接設定"
-    transaction_type: "取引タイプ"
-
-  transaction_count: "取引 $count回"
-  count: "$count回"
-  increase: "増加しました"
-  decrease: "減少しました"
-  sent: "送りました"
-  received: "いただきました"
-
 wallet_add_scanner_screen:
   add_wallet: "ウォレット追加"
   add_watch_only_wallet: "ウォッチオンリー\nウォレット追加"
@@ -828,6 +750,16 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   balance_history_detail:
+    period_summary: "期間別サマリー"
+    gesture_guide_title: "グラフを動かしてみましょう"
+    gesture_guide_pan: "左右にスワイプして表示期間を移動できます。"
+    gesture_guide_zoom: "上下にスワイプするか、2本の指で拡大・縮小して、1週間・1か月・3か月などの範囲を調整できます。"
+    balance_label: "残高"
+    transactions_label: "取引"
+    flow_count: "${count}件"
+    flow_summary: "${count}件 · ${amount}"
+    no_transactions_at_date: "選択した日に取引はありません"
+    transactions_at_date: "選択した日の取引"
     wallets_at_date: "この時点のウォレット"
     no_wallets: "この時点で表示できるウォレットはありません"
     changed_wallets_only: "残高が変動したウォレットのみ"
@@ -1080,7 +1012,6 @@ send_screen:
   drag_to_add_address: "送信先アドレスを追加するには、左にスワイプしてください"
   dialog:
     load_draft_failed: "読み込み失敗"
-  swipe_to_add_address: "受取人を追加するには、左にスワイプしてください"
   toast:
     draft_utxo_used: "以前に選択したビットコインはすでに使用されています。UTXOを再選択してください。"
     draft_utxo_locked: "以前に選択したビットコインがロックされています。UTXOを再選択してください。"
@@ -1425,6 +1356,11 @@ utxo_tag_screen:
   add_tag: "+ボタンを押して最初のタグを作成"
 wallet_detail_screen:
   vault_select_receiving_wallet_description: "ビットコインを受け取る閲覧専用ウォレットを選択してください。"
+  vault_unused_title: "取引履歴のない金庫です"
+  vault_unused_description: "この金庫には取引履歴がありません。送金先を間違えないよう、ハードウェアウォレットで受取アドレスを確認してから進んでください。"
+  vault_unused_continue: "確認して続ける"
+  vault_sync_required_title: "先に同期を完了してください"
+  vault_sync_required_description: "金庫の取引履歴と受取アドレスをまだ確認できません。接続と同期の状態を確認し、同期完了後にもう一度選択してください。"
   vault_select_receiving_wallet: "受け取り先の金庫を選択"
   vault_connect_watch_only_wallet: "金庫確認用ウォレットを接続する"
   vault_watch_only_description: "アプリに「金庫確認用（閲覧専用）ウォレット」を登録してみましょう。専用機器を毎回起動しなくても、ビットコインが保管されていることをアプリでリアルタイムに安全に確認できます。"
@@ -1444,6 +1380,20 @@ wallet_detail_screen:
   utxo_organize_description: "分割 • 統合"
 
 wallet_info_screen:
+  section_security: "セキュリティ"
+  section_details: "ウォレット詳細"
+  section_data: "ウォレットデータ"
+  section_danger: "危険な操作"
+  wallet_type: "ウォレットの種類"
+  master_fingerprint: "マスターフィンガープリント"
+  mfp_enter: "入力する"
+  multisig_setup: "マルチシグ構成"
+  quorum: "必要署名数"
+  bsms: "BSMS"
+  inheritance_setup: "相続構成"
+  taproot_participants: "参加ウォレット"
+  taproot_participant_count: "親 ${parent} · 子 ${child}"
+  descriptor: "ディスクリプター"
   title: "$name情報"
   transaction: "トランザクション"
   utxo: "UTXO"
@@ -1475,6 +1425,7 @@ wallet_info_screen:
   export_labels_description: "現在のウォレットに記録されているすべてのメモをJSONLファイル形式でエクスポートします。このファイルは、他のデバイスやウォレットソフトウェアでメモを復元するために使用できます。"
   view_descriptor: "ディスクリプタを表示"
   view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  backup_data: "バックアップデータ"
   backup_update_dialog:
     title: "相続ウォレットのバックアップ更新のお知らせ"
     step1_title: "1. 既存の相続ウォレットのバックアップフレーズを別の場所に保存している場合は、新しいバックアップフレーズに更新してください。"
@@ -2353,9 +2304,9 @@ wallet_health:
       other: "残高あり${n}個"
     no_score: "まだスコアはありません"
     no_wallet_title: "まだウォレットがありません"
-    no_wallet_body: "ウォレットを追加すると、復元の準備、ウォレットの動き、プライバシーをチェックできます。"
+    no_wallet_body: "ウォレットを追加して、すべての項目をチェックしましょう。"
     not_enough_data_title: "まだデータが足りません"
-    not_enough_data_body: "ウォレットを使い始めたりビットコインを受け取ったりすると、チェックできる項目が増えます。"
+    not_enough_data_body: "ウォレットを使うと、より多くの項目をチェックできます。"
     offline_line: "オフライン・保存済みのデータに基づく"
     how_score_works: "スコアの仕組み"
   critical:
@@ -2376,8 +2327,8 @@ wallet_health:
     privacy: "プライバシー"
     waiting: "待機中"
     available: "利用可能"
-    reason_add_wallet: "ウォレットの追加が必要"
-    reason_onchain_activity: "オンチェーンの動きが必要"
+    reason_add_wallet: "ウォレットがありません"
+    reason_onchain_activity: "オンチェーンの履歴がありません"
     reason_tx_history: "トランザクション履歴が必要"
     reason_funds_or_usage: "残高か利用履歴が必要"
     reason_checks_available: "今すぐチェック可能"
@@ -2450,7 +2401,7 @@ wallet_health:
       name: "閲覧専用ウォレットの検証"
       not_verified: "未検証"
       mismatch: "アドレス不一致"
-      issue_not_verified: "検証が必要です"
+      issue_not_verified: "署名デバイスのアドレスとまだ照合していません"
       issue_mismatch: "署名デバイスのアドレスと一致しません"
     multisig_config:
       name: "マルチシグの構成"
@@ -2485,11 +2436,17 @@ wallet_health:
       count(cardinal):
         one: "アドレス1個"
         other: "アドレス${n}個"
+      issue(cardinal):
+        one: "再利用されたアドレスが1個あります"
+        other: "再利用されたアドレスが${n}個あります"
     possible_dusting:
       name: "ダスティングの疑い"
       count(cardinal):
         one: "疑わしいUTXO 1個"
         other: "疑わしいUTXO ${n}個"
+      issue(cardinal):
+        one: "ダスティングが疑われるUTXOが1個あります"
+        other: "ダスティングが疑われるUTXOが${n}個あります"
     server_cert:
       name: "サーバー証明書"
       valid: "有効"
@@ -2508,6 +2465,10 @@ wallet_health:
       changed(cardinal):
         one: "変更 1件"
         other: "変更 ${n}件"
+      issue_never_exported: "メモとタグをまだバックアップしていません"
+      issue_changed(cardinal):
+        one: "バックアップ後にメモとタグが1件変更されました"
+        other: "バックアップ後にメモとタグが${n}件変更されました"
   connection:
     connected: "接続済み"
   recommended:
@@ -2536,13 +2497,14 @@ wallet_health:
   about:
     title: "ウォレットの状態スコアについて"
     meaning_title: "スコアの意味"
-    meaning_body: "ウォレットの状態スコアは、アプリ内のウォレット情報からCoconutが確認できる項目だけで計算します。スコアが高くても、安全が保証されるわけではありません。"
+    meaning_body: "ウォレットの状態スコアは、Coconut Walletが確認できるウォレットデータで計算します。スコアが高くても、ウォレットの安全が保証されるわけではありません。"
     no_score_body: "ウォレットを追加し、チェックできる項目が十分になるとスコアが表示されます。"
     min_coverage: "スコアは4つの分野のうち2つ以上をチェックできると表示されます。"
     formula_title: "スコアの計算方法"
     formula_total: "合計"
     formula_not_scored: "スコアなし"
     formula_note: "各カテゴリのスコアに比重を掛けて合計します。まだ確認できないカテゴリは除き、その比重は残りのカテゴリで分け合います。"
+    formula_cap: "アプリロック無効時の最高点"
     range_title: "スコアの範囲"
     range_excellent: "チェックした項目はすべてよく管理されています。"
     range_good: "いくつか改善するとさらに良くなります。"
@@ -3073,3 +3035,25 @@ premium:
     error_self_address: "このウォレットか、同じシードを使うウォレットのアドレスです。別のアドレスを入力してください。"
     error_affected_address: "心当たりのないトランザクションが見つかったウォレットのアドレスです。別のアドレスを入力してください。"
     external_warning: "直接入力したアドレスはCoconutでは確認できません。ご自身のアドレスか、もう一度確認してください。"
+wallet_appearance_screen:
+  hue: "色相"
+  brightness: "明るさ"
+  crop_title: "移動と拡大/縮小"
+  wallet_tab: "ウォレット"
+  name_placeholder: "名前"
+  icon: "アイコン"
+  color: "色"
+  edit_button: "編集"
+  skins: "基本背景"
+  colors: "単色"
+  photos: "写真"
+  default_background: "デフォルト"
+  choose_photo: "写真を選択"
+  adjust_hint: "選択した写真をもう一度タップすると、位置とサイズを調整し直せます"
+  photo_pick_failed: "写真を読み込めませんでした。別の写真を選んでください"
+wallet_card_detail_screen:
+  details: "詳細"
+  chart: "チャート"
+  wallet_card: "ウォレットカード"
+  show_balance_trend: "残高推移を見る"
+  chart_date_format: "M月d日"

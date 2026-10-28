@@ -14,11 +14,11 @@ void main() {
     expect(WalletHealthLabel.of(0), WalletHealthLabel.actionNeeded);
   });
 
-  test('weight profiles are 20/45/25/10, 10/40/30/20, 15/45/25/15', () {
-    List<int> weights(WeightProfile p) => [for (final c in SafetyCategory.values) p.weightOf(c)];
-    expect(weights(WeightProfile.hotFunded), [20, 45, 25, 10]);
-    expect(weights(WeightProfile.watchOnlyOnly), [10, 40, 30, 20]);
-    expect(weights(WeightProfile.mixed), [15, 45, 25, 15]);
+  test('category weights: watch-only 10/40/30/20, hot 15→30 by exposure with Recovery fixed at 45', () {
+    List<double> weights(CategoryWeights w) => [for (final c in SafetyCategory.values) w.weightOf(c)];
+    expect(weights(CategoryWeights.watchOnly), [10, 40, 30, 20]);
+    expect(weights(CategoryWeights.withHotWallet(0)), [15, 45, 25, 15]);
+    expect(weights(CategoryWeights.withHotWallet(1)), [30, 45, 15.625, 9.375]);
   });
 
   test('report equality ignores evaluatedAt only', () {
@@ -26,7 +26,6 @@ void main() {
       status: WalletHealthStatus.scored,
       score: score,
       label: WalletHealthLabel.of(score),
-      profile: WeightProfile.hotFunded,
       evaluatedAt: at,
     );
     expect(report(DateTime(2026, 10, 20)), report(DateTime(2026, 10, 21)));
@@ -36,7 +35,6 @@ void main() {
   test('attentionCount = action needed + warning review items; actionNeededCount = action needed only', () {
     final report = WalletHealthReport(
       status: WalletHealthStatus.criticalOverride,
-      profile: WeightProfile.hotFunded,
       evaluatedAt: DateTime(2026, 10, 20),
       reviewItems: const [
         SafetyCheckResult(SafetyCheckId.serverCert, SafetyOutcome.failed, severity: SafetySeverity.critical),

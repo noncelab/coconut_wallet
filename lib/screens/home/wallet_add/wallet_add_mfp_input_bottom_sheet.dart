@@ -13,19 +13,20 @@ import 'package:flutter_svg/svg.dart';
 class WalletAddMfpInputBottomSheet extends StatefulWidget {
   final Function(String) onComplete;
   final VoidCallback? onSkip;
+  final String? initialMfp;
 
-  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip});
+  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip, this.initialMfp});
 
   @override
   State<WalletAddMfpInputBottomSheet> createState() => _WalletAddMfpInputBottomSheetState();
 }
 
 class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSheet> {
-  final TextEditingController _mfpController = TextEditingController();
+  late final TextEditingController _mfpController = TextEditingController(text: widget.initialMfp);
   final FocusNode _mfpFocusNode = FocusNode();
   final mfpRegex = RegExp("[0-9a-fA-F]{8}");
   bool _isError = false;
-  bool _isButtonEnabled = false;
+  late bool _isButtonEnabled = mfpRegex.hasMatch(_mfpController.text);
 
   @override
   void initState() {
@@ -218,9 +219,11 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       ),
                       CoconutLayout.spacing_100w,
-                      Text(
-                        t.wallet_add_scanner_screen.paste.mfp_description_title,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                      Expanded(
+                        child: Text(
+                          t.wallet_add_scanner_screen.paste.mfp_description_title,
+                          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                        ),
                       ),
                     ],
                   ),

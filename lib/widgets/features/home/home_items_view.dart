@@ -5,18 +5,17 @@ import 'dart:ui' as ui;
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
-import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/services/home/home_item_registry.dart';
+import 'package:coconut_wallet/widgets/features/home/span_size_option.dart';
 import 'package:coconut_wallet/widgets/features/home/home_item_draggable.dart';
 import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 
 class HomeItemsView extends StatefulWidget {
   static const double cell = 80;
@@ -44,6 +43,9 @@ class HomeItemsView extends StatefulWidget {
   /// 그리드 둘레의 여백. 편집 중 꼭짓점에 걸치는 제거 버튼이 이 안에서 눌리도록 둔다.
   final double badgeInset;
 
+  /// 드래그 중 떠 있는 항목을 감싼다. Overlay에는 없는 화면 Provider를 다시 넣을 때 쓴다.
+  final Widget Function(Widget child)? wrapDragFeedback;
+
   const HomeItemsView({
     super.key,
     required this.configuration,
@@ -58,6 +60,7 @@ class HomeItemsView extends StatefulWidget {
     this.onArrangeStart,
     this.onResize,
     this.badgeInset = 0,
+    this.wrapDragFeedback,
   });
 
   @override
@@ -79,14 +82,21 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
   String? _draggedId;
   int? _dragPointer;
+  Drag? _activeDrag;
+  bool _disposing = false;
   bool _dragCanceled = false;
   bool _dropInsideSurface = false;
   Offset _dragAnchor = Offset.zero;
+  Offset _initialDragAnchor = Offset.zero;
+  final _feedbackGeometry = ValueNotifier<({Size size, Offset translation})?>(null);
   HomeConfiguration? _previewConfiguration;
   String? _previewDraggedId;
   String? _previewTargetId;
   HomeGridPosition? _previewCell;
   Offset? _dragGlobalPosition;
+  double? _geometryCellExtent;
+  double? _anchorCellExtent;
+  double? _dragLayoutWidth;
 
   @override
   void initState() {
@@ -112,11 +122,15 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   @override
   void dispose() {
+    _disposing = true;
     WidgetsBinding.instance.removeObserver(this);
-    if (_dragPointer case final pointer?) GestureBinding.instance.cancelPointer(pointer);
+    final pointer = _dragPointer;
+    _activeDrag?.cancel();
+    if (pointer != null) GestureBinding.instance.cancelPointer(pointer);
     _previewTimer?.cancel();
     _dropSettleTimer?.cancel();
     _stopAutoScroll();
+    _feedbackGeometry.dispose();
     super.dispose();
   }
 
@@ -125,11 +139,19 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     if (state != AppLifecycleState.resumed) cancelActiveDrag();
   }
 
+  @override
+  void didChangeMetrics() {
+    // A fold or rotation moves the grid without moving the held finger.
+    _refreshActiveDragGeometry();
+  }
+
   /// Back cancels only the held gesture. Previously committed placements remain saved.
   bool cancelActiveDrag() {
     final pointer = _dragPointer;
     if (pointer == null) return false;
     _dragCanceled = true;
+    // End the avatar now; queued pointer cancellation can be delayed or filtered.
+    _activeDrag?.cancel();
     GestureBinding.instance.cancelPointer(pointer);
     // A configuration swap can unmount the dragged child first, and Flutter skips onDragEnd for it.
     _endDrag();
@@ -138,19 +160,18 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   void _startDrag(String id, int pointer) {
     _menuKeys[id]?.currentState?.dismissMenu();
-    _dropSettleTimer?.cancel();
-    setState(() {
-      _settlingDroppedId = null;
-      _draggedId = id;
-    });
+    setState(() => _draggedId = id);
     _dragPointer = pointer;
     _dragCanceled = false;
+    _anchorCellExtent = _geometryCellExtent;
     if (!widget.isArranging) widget.onArrangeStart?.call();
   }
 
   void _endDrag() {
+    _activeDrag = null;
     _dragPointer = null;
     _stopAutoScroll();
+    if (_disposing) return;
     _clearPreview();
     if (mounted) setState(() => _draggedId = null);
   }
@@ -199,6 +220,36 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
         if (_dragGlobalPosition != null) _updatePreview(draggedId, _dragGlobalPosition!);
       }
     });
+  }
+
+  /// The held finger stays still while the window width changes. Re-snap that point,
+  /// and scale the grabbed offset so a corner grab does not select a different cell.
+  void _refreshActiveDragGeometry() {
+    final draggedId = _draggedId;
+    if (draggedId == null || _dragGlobalPosition == null || _dragCanceled) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _dragCanceled || _draggedId != draggedId || _dragGlobalPosition == null) return;
+      _rescaleDragAnchor();
+      _updatePreview(draggedId, _dragGlobalPosition!);
+    });
+  }
+
+  void _rescaleDragAnchor() {
+    final next = _geometryCellExtent;
+    final previous = _anchorCellExtent;
+    if (next == null || previous == null || previous == 0 || next == previous) return;
+    final draggedId = _draggedId;
+    final dragged = draggedId == null ? null : _itemById(draggedId);
+    if (dragged == null) return;
+    final previousSize = HomeGridGeometry(cellExtent: previous, gap: _gap).sizeOf(dragged.span);
+    final nextSize = HomeGridGeometry(cellExtent: next, gap: _gap).sizeOf(dragged.span);
+    // Multi-cell spans include fixed gaps, so each axis needs its full-size ratio.
+    _dragAnchor = Offset(
+      _dragAnchor.dx * nextSize.width / previousSize.width,
+      _dragAnchor.dy * nextSize.height / previousSize.height,
+    );
+    _anchorCellExtent = next;
+    _feedbackGeometry.value = (size: nextSize, translation: _initialDragAnchor - _dragAnchor);
   }
 
   void _clearPreview() {
@@ -344,9 +395,11 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth - inset * 2;
         final cellExtent =
-            maxWidth.isFinite
-                ? ((maxWidth - (_columns - 1) * _gap) / _columns).clamp(1.0, HomeItemsView.cell).toDouble()
-                : HomeItemsView.cell;
+            maxWidth.isFinite ? math.max(1.0, (maxWidth - (_columns - 1) * _gap) / _columns) : HomeItemsView.cell;
+        final widthChanged = _dragLayoutWidth != null && _dragLayoutWidth != constraints.maxWidth;
+        _dragLayoutWidth = constraints.maxWidth;
+        _geometryCellExtent = cellExtent;
+        if (widthChanged) _refreshActiveDragGeometry();
         // Keep the surface fixed while dragging so a centered grid does not move under the pointer.
         final rowCount = math.max(1, layout.rows);
         final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
@@ -355,7 +408,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
         final lead =
             widget.isArranging && widget.onRemove != null && widget.menuItemsOf != null ? _RemoveBadge.lead : 0.0;
         HomeGridPosition dropPositionFor(HomeItem dragged, Offset globalOffset) =>
-            geometry.dropPosition(layout, dragged, _toSurface(globalOffset));
+            geometry.dropPosition(layout, dragged, _toSurface(globalOffset + _initialDragAnchor - _dragAnchor));
         final grid = Padding(
           padding: EdgeInsets.symmetric(horizontal: sidePadding),
           child: SizedBox(
@@ -458,6 +511,25 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     }
   }
 
+  Widget _dragFeedback(Size size, Widget content) {
+    // Flutter captures this widget and the initial anchor for the entire drag.
+    final feedback = ValueListenableBuilder<({Size size, Offset translation})?>(
+      valueListenable: _feedbackGeometry,
+      child: content,
+      builder: (context, geometry, child) {
+        final currentSize = geometry?.size ?? size;
+        return Transform.translate(
+          offset: geometry?.translation ?? Offset.zero,
+          child: Opacity(
+            opacity: 0.7,
+            child: SizedBox(width: currentSize.width, height: currentSize.height, child: child),
+          ),
+        );
+      },
+    );
+    return widget.wrapDragFeedback?.call(feedback) ?? feedback;
+  }
+
   Widget _buildItem(
     BuildContext context,
     HomeItem item,
@@ -470,20 +542,6 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final content = definition.buildTile(item);
     final box = SizedBox(width: size.width, height: size.height, child: content);
     if (!_draggable) return SizedBox(key: ValueKey('home-item-${item.id}'), child: box);
-
-    // Drag feedback lives in the route overlay, outside the home providers.
-    final widgetsViewModel = context.read<HomeWidgetsViewModel?>();
-    final feedback = Opacity(
-      opacity: 0.7,
-      child: SizedBox(
-        width: size.width,
-        height: size.height,
-        child:
-            widgetsViewModel == null
-                ? content
-                : ChangeNotifierProvider<HomeWidgetsViewModel>.value(value: widgetsViewModel, child: content),
-      ),
-    );
 
     if (widget.menuItemsOf != null) {
       final menuKey = _menuKeys.putIfAbsent(item.id, () => GlobalKey<LongPressedMenuWidgetState>());
@@ -501,15 +559,18 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             isArranging: () => widget.isArranging,
             onLongPress: () => menuKey.currentState?.showMenu(),
             onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
             canStartDrag: () => _draggedId == null,
             maxSimultaneousDrags: 1,
             onDragUpdate: (details) => _onDragUpdate(item.id, details),
             onDragEnd: (_) => _endDrag(),
             dragAnchorStrategy: (_, dragContext, point) {
               final box = dragContext.findRenderObject()! as RenderBox;
-              return _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
             },
-            feedback: feedback,
+            feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
             child: _Jiggle(
               enabled: arranging && !MediaQuery.disableAnimationsOf(context),
@@ -575,15 +636,18 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
             isArranging: () => widget.isArranging,
             onLongPress: () {},
             onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
             canStartDrag: () => _draggedId == null,
             maxSimultaneousDrags: 1,
             onDragUpdate: (details) => _onDragUpdate(item.id, details),
             onDragEnd: (_) => _endDrag(),
             dragAnchorStrategy: (_, dragContext, point) {
               final box = dragContext.findRenderObject()! as RenderBox;
-              return _dragAnchor = box.globalToLocal(point);
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
             },
-            feedback: feedback,
+            feedback: _dragFeedback(size, content),
             childWhenDragging: SizedBox(width: size.width, height: size.height),
             child: box,
           ),
@@ -735,32 +799,16 @@ class _SizePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         for (final span in spans)
-          GestureDetector(
+          SpanSizeOption(
             key: ValueKey('home-item-size-$itemId-${span.toJson()}'),
-            behavior: HitTestBehavior.opaque,
+            columns: span.width,
+            rows: span.height,
+            isSelected: span == selected,
             onTap: () => onSelected(span),
-            child: Container(
-              width: 52,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: span == selected ? colors.primaryText.withValues(alpha: 0.08) : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                width: span.width >= 4 ? 30 : 18,
-                height: span.height >= 2 ? 16 : 10,
-                decoration: BoxDecoration(
-                  border: Border.all(color: colors.primaryText, width: 1.6),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
           ),
       ],
     );
