@@ -9,7 +9,6 @@ import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 /// 가격 채널 연결 상태
 enum _ConnectionPhase {
@@ -27,7 +26,7 @@ class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
-  final CoinGeckoPriceService Function() _createCoinGeckoService;
+  final CoinGeckoPriceService Function(List<FiatCode> fiats) _createCoinGeckoService;
 
   /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
   final Map<FiatCode, WebSocketService> _webSocketServices = {};
@@ -36,8 +35,14 @@ class PriceProvider extends ChangeNotifier {
   /// 거래소 웹소켓이 없는 통화용 CoinGecko 폴링 서비스
   CoinGeckoPriceService? _coinGeckoService;
   StreamSubscription<Map<FiatCode, int>>? _coinGeckoSubscription;
+  Set<FiatCode> _coinGeckoFiats = {};
+
+  /// 홈 위젯에서 고른 통화. 선택 통화와 함께 조회 대상이 된다.
+  Set<FiatCode> _homeWidgetFiats = {};
+  late FiatCode _lastSelectedFiat;
 
   late final VoidCallback _connectivityListener;
+  late final VoidCallback _preferenceListener;
   _ConnectionPhase _phase = _ConnectionPhase.active;
 
   /// 통화별 가격 저장
@@ -50,15 +55,17 @@ class PriceProvider extends ChangeNotifier {
     this._connectivityProvider,
     this._preferenceProvider, {
     @visibleForTesting WebSocketService Function(FiatCode fiatCode)? webSocketFactory,
-    @visibleForTesting CoinGeckoPriceService Function()? coinGeckoFactory,
+    @visibleForTesting CoinGeckoPriceService Function(List<FiatCode> fiats)? coinGeckoFactory,
   }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create,
-       _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new {
+       _createCoinGeckoService = coinGeckoFactory ?? ((fiats) => CoinGeckoPriceService(fiats: fiats)) {
     Logger.log('PriceProvider: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;
+    _preferenceListener = _onPreferenceChanged;
+    _lastSelectedFiat = _preferenceProvider.selectedFiat;
 
-    // 가격 채널은 선택 통화와 무관하게 전 통화를 구독하므로 preference 리스너는 등록하지 않는다.
     _connectivityProvider.addListener(_connectivityListener);
+    _preferenceProvider.addListener(_preferenceListener);
 
     _checkInitialNetworkState();
   }
@@ -87,6 +94,44 @@ class PriceProvider extends ChangeNotifier {
       }
       disposePriceSources();
     }
+  }
+
+  void _onPreferenceChanged() {
+    final selectedFiat = _preferenceProvider.selectedFiat;
+    if (selectedFiat == _lastSelectedFiat) return;
+    _lastSelectedFiat = selectedFiat;
+    _syncCoinGecko();
+  }
+
+  /// 홈 위젯 설정이 바뀔 때 호출한다. 선택 통화와 [fiats]만 조회한다.
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {
+    final next = fiats.toSet();
+    if (setEquals(next, _homeWidgetFiats)) return;
+    _homeWidgetFiats = next;
+    _syncCoinGecko();
+  }
+
+  Set<FiatCode> get _requiredCoinGeckoFiats =>
+      {_preferenceProvider.selectedFiat, ..._homeWidgetFiats}.where((fiat) => !fiat.hasExchangeSource).toSet();
+
+  void _syncCoinGecko() {
+    if (_phase != _ConnectionPhase.active || _connectivityProvider.isInternetOn != true) return;
+    final required = _requiredCoinGeckoFiats;
+    if (_coinGeckoService != null && setEquals(required, _coinGeckoFiats)) return;
+
+    _disposeCoinGecko();
+    _bitcoinPrices.removeWhere((fiat, _) => !fiat.hasExchangeSource && !required.contains(fiat));
+    if (required.isEmpty) return;
+
+    final service = _createCoinGeckoService(required.toList());
+    _coinGeckoService = service;
+    _coinGeckoFiats = required;
+    _coinGeckoSubscription = service.priceStream.listen(
+      _updateCoinGeckoPrices,
+      onError: (error) => Logger.error('[CoinGecko] 스트림 오류: $error'),
+    );
+    service.start();
+    Logger.log('[CoinGecko] 폴링 시작: ${required.map((fiat) => fiat.code).join(',')}');
   }
 
   void initPriceSources({bool force = false}) {
@@ -127,17 +172,8 @@ class PriceProvider extends ChangeNotifier {
         Logger.log('[${fiatCode.code} WebSocket] 연결 완료');
       }
 
-      // 거래소 웹소켓이 없는 통화는 CoinGecko 폴링
-      if (_coinGeckoService == null) {
-        final service = _createCoinGeckoService();
-        _coinGeckoService = service;
-        _coinGeckoSubscription = service.priceStream.listen(
-          _updateCoinGeckoPrices,
-          onError: (error) => Logger.error('[CoinGecko] 스트림 오류: $error'),
-        );
-        service.start();
-        Logger.log('[CoinGecko] 폴링 시작');
-      }
+      // 거래소 웹소켓이 없는 통화는 필요한 것만 CoinGecko 폴링
+      _syncCoinGecko();
     } catch (e) {
       Logger.error('PriceProvider: 가격 채널 초기화 실패: $e');
       _phase = _ConnectionPhase.waitingNetwork;
@@ -146,7 +182,12 @@ class PriceProvider extends ChangeNotifier {
 
   bool get _allChannelsConnected {
     final exchangeFiatCount = FiatCode.values.where((fiat) => fiat.hasExchangeSource).length;
-    return _webSocketServices.length == exchangeFiatCount && _coinGeckoService != null;
+    final required = _requiredCoinGeckoFiats;
+    final isCoinGeckoReady =
+        required.isEmpty
+            ? _coinGeckoService == null
+            : _coinGeckoService != null && setEquals(required, _coinGeckoFiats);
+    return _webSocketServices.length == exchangeFiatCount && isCoinGeckoReady;
   }
 
   /// fiatCode별로 거래소 ticker를 통해 실시간 가격 업데이트
@@ -188,15 +229,21 @@ class PriceProvider extends ChangeNotifier {
     }
     _webSocketServices.clear();
 
+    _disposeCoinGecko();
+  }
+
+  void _disposeCoinGecko() {
     _coinGeckoSubscription?.cancel();
     _coinGeckoSubscription = null;
     _coinGeckoService?.dispose();
     _coinGeckoService = null;
+    _coinGeckoFiats = {};
   }
 
   @override
   void dispose() {
     _connectivityProvider.removeListener(_connectivityListener);
+    _preferenceProvider.removeListener(_preferenceListener);
     try {
       disposePriceSources();
     } catch (e) {

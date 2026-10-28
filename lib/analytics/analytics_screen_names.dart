@@ -47,6 +47,7 @@ class AnalyticsScreenNames {
   static const String appSettingsPinSetSheet = 'app-settings-pin-set-sheet';
   static const String appSettingsPinCheckSheet = 'app-settings-pin-check-sheet';
   static const String p2pCalculatorSelectWalletSheet = 'p2p-calculator-select-wallet-sheet';
+  static const String p2pCalculatorFiatSheet = 'p2p-calculator-fiat-sheet';
   static const String addressListAddressQrSheet = 'address-list-address-qr-sheet';
   static const String addressSearchAddressQrSheet = 'address-search-address-qr-sheet';
   static const String mergeUtxosPreviewUtxosSheet = 'merge-utxos-preview-utxos-sheet';

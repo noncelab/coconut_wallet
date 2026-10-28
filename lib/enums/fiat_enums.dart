@@ -51,7 +51,6 @@ enum FiatCode {
   TRY('TRY', 'Turkish Lira', '₺', 2),
   TWD('TWD', 'New Taiwan Dollar', r'NT$', 2),
   UAH('UAH', 'Ukrainian Hryvnia', '₴', 2),
-  VEF('VEF', 'Venezuelan Bolívar', 'Bs', 2),
   VND('VND', 'Vietnamese Dong', '₫', 0),
   ZAR('ZAR', 'South African Rand', 'R', 2);
 
@@ -143,7 +142,6 @@ const Map<FiatCode, List<int>> kFiatQuickAddAmounts = {
   FiatCode.BDT: [1000, 5000, 10000, 50000],
   FiatCode.INR: [1000, 5000, 10000, 50000],
   FiatCode.RUB: [1000, 5000, 10000, 50000],
-  FiatCode.VEF: [1000, 5000, 10000, 50000],
   FiatCode.PKR: [1000, 10000, 50000, 100000],
 
   // 5,000/10,000/50,000/100,000

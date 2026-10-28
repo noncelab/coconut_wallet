@@ -142,6 +142,9 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
 }
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {}
+
   bool available;
 
   _Prices({this.available = true});
@@ -700,7 +703,8 @@ void main() {
       expect(sheet.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
       expect(sheet.clipBehavior, Clip.antiAlias);
       expect(find.text(t.home_edit.configure_widget_description_add), findsOneWidget);
-      expect(find.text(t.home_edit.currency_default), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-KRW')), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-AED')), findsNothing);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsOneWidget);
       expect(homeViewModelOf(tester).configuration.items, isEmpty);
 
@@ -844,13 +848,15 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('fiat values allows and displays all four currencies', (tester) async {
+    testWidgets('fiat values offers every currency and displays the first four', (tester) async {
       await _openWidgetsTab(tester, fake: false);
       await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
 
       expect(find.byKey(const Key('widget-configure-all-wallets')), findsNothing);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsNothing);
       expect(find.text(t.home_edit.currencies_limit(count: 3)), findsNothing);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-AED')), findsNothing);
+      await tapKey(tester, const Key('widget-configure-fiat-toggle'));
       for (final fiat in FiatCode.values) {
         expect(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')), findsOneWidget);
       }
@@ -858,10 +864,12 @@ void main() {
       expect(homeViewModelOf(tester).configuration.items.single.configuration, {
         'fiats': ['KRW', 'USD', 'JPY', 'EUR'],
       });
-      expect(
-        tester.widget<FiatValuesView>(find.byType(FiatValuesView).first).rows.map((row) => row.fiat),
-        FiatCode.values,
-      );
+      expect(tester.widget<FiatValuesView>(find.byType(FiatValuesView).first).rows.map((row) => row.fiat), [
+        FiatCode.KRW,
+        FiatCode.USD,
+        FiatCode.JPY,
+        FiatCode.EUR,
+      ]);
       await _close(tester);
     });
 

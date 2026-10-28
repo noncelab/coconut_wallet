@@ -1,12 +1,48 @@
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selection_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FiatBottomSheet extends StatelessWidget {
-  const FiatBottomSheet({super.key, this.title, this.closeOnSelect = false, this.selectedValue, this.onSelected});
+  const FiatBottomSheet({
+    super.key,
+    required this.scrollController,
+    this.title,
+    this.closeOnSelect = false,
+    this.selectedValue,
+    this.onSelected,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    String screenName = AnalyticsScreenNames.appSettingsFiatSheet,
+    String? title,
+    bool closeOnSelect = false,
+    FiatCode? selectedValue,
+    void Function(FiatCode fiat)? onSelected,
+  }) {
+    return CommonBottomSheets.showDraggableBottomSheet<void>(
+      context: context,
+      screenName: screenName,
+      title: title ?? t.fiat_bottom_sheet.title,
+      backgroundColor: context.coconutColors.background,
+      childBuilder:
+          (scrollController) => FiatBottomSheet(
+            scrollController: scrollController,
+            title: title,
+            closeOnSelect: closeOnSelect,
+            selectedValue: selectedValue,
+            onSelected: onSelected,
+          ),
+    );
+  }
+
+  final ScrollController scrollController;
 
   /// true면 통화 선택 즉시 시트를 닫는다 (계산기 등 선택 결과만 필요한 진입점용).
   final bool closeOnSelect;
@@ -27,16 +63,31 @@ class FiatBottomSheet extends StatelessWidget {
     return SelectionBottomSheet<FiatCode>(
       title: title ?? t.fiat_bottom_sheet.title,
       selectedValue: selected,
+      scrollController: scrollController,
+      showAppBar: false,
       items: [
         for (final fiat in FiatCode.values)
           SelectionItem<FiatCode>(
-            title: '${fiat.code} ${fiat.symbol}',
-            subtitle: _priceSourceLabel(fiat),
+            title: fiat.code,
+            subtitle: _subtitle(fiat),
+            sectionTitle: _sectionTitle(fiat),
             value: fiat,
             onTap: () => _onFiatSelected(context, fiat),
           ),
       ],
     );
+  }
+
+  String _subtitle(FiatCode fiat) {
+    final name = t.fiat_names[fiat.code] ?? fiat.fullName;
+    return fiat.hasExchangeSource ? '$name · ${_priceSourceLabel(fiat)}' : name;
+  }
+
+  String? _sectionTitle(FiatCode fiat) {
+    final isFirstOfGroup =
+        fiat.index == 0 || FiatCode.values[fiat.index - 1].hasExchangeSource != fiat.hasExchangeSource;
+    if (!isFirstOfGroup) return null;
+    return fiat.hasExchangeSource ? t.fiat_bottom_sheet.exchange_section : t.fiat_bottom_sheet.coingecko_price;
   }
 
   String _priceSourceLabel(FiatCode fiat) {

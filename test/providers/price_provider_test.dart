@@ -86,6 +86,51 @@ void main() {
     });
   });
 
+  testWidgets('CoinGecko stays off while only exchange currencies are needed', (tester) async {
+    await withHarness(tester, (harness) async {
+      expect(harness.coinGeckoRequests, isEmpty);
+    });
+  });
+
+  testWidgets('a CoinGecko currency is polled only while it is selected', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.preference.select(FiatCode.CHF);
+      expect(harness.coinGeckoRequests, [
+        {FiatCode.CHF},
+      ]);
+
+      final polling = harness.coinGecko!;
+      harness.preference.select(FiatCode.KRW);
+      expect(polling.disposed, isTrue);
+      expect(harness.coinGeckoRequests, hasLength(1));
+      expect(OwnedSocket.live, 4);
+    });
+  });
+
+  testWidgets('home widget currencies are polled with the selected currency', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.preference.select(FiatCode.CHF);
+      harness.prices.setHomeWidgetFiats([FiatCode.AED, FiatCode.USD]);
+      harness.prices.setHomeWidgetFiats([FiatCode.USD, FiatCode.AED]);
+
+      expect(harness.coinGeckoRequests, [
+        {FiatCode.CHF},
+        {FiatCode.CHF, FiatCode.AED},
+      ]);
+    });
+  });
+
+  testWidgets('a currency that is no longer polled drops its last price', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.prices.setHomeWidgetFiats([FiatCode.CHF]);
+      harness.coinGecko!.emit({FiatCode.CHF: 70000});
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.CHF), 70000);
+
+      harness.prices.setHomeWidgetFiats(const []);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.CHF), isNull);
+    });
+  });
+
   testWidgets('offline startup waits, then one online notification opens four sockets', (tester) async {
     await withHarness(tester, (harness) async {
       expect(OwnedSocket.created, 0);
@@ -509,7 +554,7 @@ void main() {
           },
         );
       },
-      coinGeckoFactory: _CoinGecko.new,
+      coinGeckoFactory: (_) => _CoinGecko(),
     );
     addTearDown(prices.dispose);
     addTearDown(connectivity.dispose);
@@ -621,7 +666,15 @@ class Harness {
   Harness({bool online = true, FiatCode fiat = FiatCode.KRW})
     : connectivity = ScriptedConnectivity(online: online),
       preference = ScriptedPreference(fiat) {
-    prices = PriceProvider(connectivity, preference, webSocketFactory: book.create, coinGeckoFactory: _CoinGecko.new);
+    prices = PriceProvider(
+      connectivity,
+      preference,
+      webSocketFactory: book.create,
+      coinGeckoFactory: (fiats) {
+        coinGeckoRequests.add(fiats.toSet());
+        return coinGecko = _CoinGecko();
+      },
+    );
     prices.addListener(() {
       notes.add(
         PriceNote(
@@ -637,6 +690,8 @@ class Harness {
   final ScriptedConnectivity connectivity;
   final ScriptedPreference preference;
   final SocketBook book = SocketBook();
+  final coinGeckoRequests = <Set<FiatCode>>[];
+  _CoinGecko? coinGecko;
   late final PriceProvider prices;
   final notes = <PriceNote>[];
   var _pricesDisposed = false;
@@ -684,6 +739,7 @@ class PriceNote {
 
 class _CoinGecko extends Fake implements CoinGeckoPriceService {
   final _controller = StreamController<Map<FiatCode, int>>.broadcast(sync: true);
+  bool disposed = false;
 
   @override
   Stream<Map<FiatCode, int>> get priceStream => _controller.stream;
@@ -700,6 +756,7 @@ class _CoinGecko extends Fake implements CoinGeckoPriceService {
 
   @override
   void dispose() {
+    disposed = true;
     _controller.close();
   }
 }

@@ -113,8 +113,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   void _onPriceChanged() {
-    // 현재 선택된 fiatCode에 맞는 가격만 업데이트
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    // 현재 선택된 fiatCode에 맞는 가격만 업데이트. 조회 대상이 아닌 통화는 REST로 받은 값을 유지
+    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode) ?? _btcPrice;
     notifyListeners();
   }
 

@@ -1130,18 +1130,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
-              await CommonBottomSheets.showCustomHeightBottomSheet(
-                context: context,
-                screenName: AnalyticsScreenNames.appSettingsFiatSheet,
-                heightRatio: 1.0,
-                child: FiatBottomSheet(
-                  title: t.fiat_bottom_sheet.select_title,
-                  closeOnSelect: true,
-                  selectedValue: _viewModel.fiatCode,
-                  onSelected: _viewModel.setFiatCode,
-                ),
+              final previousFiatCode = _viewModel.fiatCode;
+              await FiatBottomSheet.show(
+                context,
+                screenName: AnalyticsScreenNames.p2pCalculatorFiatSheet,
+                title: t.fiat_bottom_sheet.select_title,
+                closeOnSelect: true,
+                selectedValue: previousFiatCode,
+                onSelected: _viewModel.setFiatCode,
               );
-              _resetCalculator();
+              if (_viewModel.fiatCode != previousFiatCode) _resetCalculator();
               _inputFocusNode.unfocus();
             },
             defaultColor: context.coconutColors.surface,

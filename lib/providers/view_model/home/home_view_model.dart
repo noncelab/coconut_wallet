@@ -8,7 +8,10 @@ import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/home/home_preset.dart';
 import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
@@ -28,6 +31,7 @@ class HomeViewModel extends ChangeNotifier {
   final bool _legacyFakeBalanceActive;
   final bool _legacyBalanceHidden;
   final PreferenceProvider? _preferenceProvider;
+  final PriceProvider? _priceProvider;
   late final HomeItemRegistry registry;
   late HomeConfiguration _configuration;
   final Listenable? _walletListChanges;
@@ -50,6 +54,7 @@ class HomeViewModel extends ChangeNotifier {
     bool legacyFakeBalanceActive = false,
     bool legacyBalanceHidden = false,
     PreferenceProvider? preferenceProvider,
+    PriceProvider? priceProvider,
     Listenable? walletListChanges,
     bool addWalletHintDismissed = false,
     void Function()? onAddWalletHintDismissed,
@@ -65,6 +70,7 @@ class HomeViewModel extends ChangeNotifier {
        _legacyFakeBalanceActive = legacyFakeBalanceActive,
        _legacyBalanceHidden = legacyBalanceHidden,
        _preferenceProvider = preferenceProvider,
+       _priceProvider = priceProvider,
        _wallets = wallets,
        _presets = presets ?? builtinHomePresets(),
        features = features ?? FeatureRegistry.builtin() {
@@ -74,6 +80,7 @@ class HomeViewModel extends ChangeNotifier {
     }
     registry.registerShortcuts(this.features, onTap: onShortcutTap, noWallets: _noWallets);
     _configuration = _load();
+    _priceProvider?.setHomeWidgetFiats(widgetFiats);
     _walletListChanges?.addListener(_onWalletListChanged);
     _preferenceProvider?.addListener(notifyListeners);
   }
@@ -134,6 +141,11 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   HomeConfiguration get configuration => _configuration;
+
+  /// 홈 위젯 설정에서 고른 통화. 고르지 않은 위젯은 선택 통화를 쓴다.
+  Set<FiatCode> get widgetFiats => {
+    for (final item in _configuration.items) ...?HomeWidgetSettings.fromConfiguration(item.configuration).fiats,
+  };
 
   /// 현재 배치가 프리셋과 같으면 그 프리셋을 표시한다. 위젯의 개별 설정은 배치에 영향을 주지 않는다.
   String? get currentPresetId {
@@ -219,6 +231,7 @@ class HomeViewModel extends ChangeNotifier {
     _previousArrangement = rememberArrangement ? _configuration : null;
     _configuration = positioned;
     _repository.save(_configuration);
+    _priceProvider?.setHomeWidgetFiats(widgetFiats);
     notifyListeners();
     return _configuration;
   }

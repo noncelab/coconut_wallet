@@ -158,12 +158,7 @@ class AppSettingsScreen extends StatefulWidget {
           child: const UnitBottomSheet(),
         );
       case AppSettingsTarget.fiat:
-        await CommonBottomSheets.showCustomHeightBottomSheet(
-          context: context,
-          screenName: AnalyticsScreenNames.appSettingsFiatSheet,
-          heightRatio: 1.0,
-          child: const FiatBottomSheet(),
-        );
+        await FiatBottomSheet.show(context);
       case AppSettingsTarget.language:
         await CommonBottomSheets.showCustomHeightBottomSheet(
           context: context,
