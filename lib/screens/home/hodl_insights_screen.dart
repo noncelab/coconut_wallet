@@ -30,6 +30,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 /// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서
 /// 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
+  static const routeName = '/hodl-insights';
   static const transitionDuration = Duration(milliseconds: 480);
 
   /// 홈 위젯에서 열면 해당 인사이트 카드로 날아오며 바뀐다.
@@ -60,7 +61,7 @@ class HodlInsightsScreen extends StatefulWidget {
           ),
       child: HodlInsightsScreen(heroTag: heroTag, heroSection: section),
     );
-    const settings = RouteSettings(name: '/hodl-insights');
+    const settings = RouteSettings(name: routeName);
     if (heroTag == null) {
       return Navigator.of(context).push(CupertinoPageRoute(settings: settings, builder: page));
     }

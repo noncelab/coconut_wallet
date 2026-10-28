@@ -25,9 +25,6 @@ class AnalyticsScreenNames {
   static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
   static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
   static const String walletHomeAddHotWalletActionSheet = 'wallet-home-add-hot-wallet-action-sheet';
-  static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
-  static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
-  static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
   static const String bitbox02SignReconnectDeviceSheet = 'bitbox02-sign-reconnect-device-sheet';
   static const String sendConfirmConnectBitbox02Sheet = 'send-confirm-connect-bitbox02-sheet';
   static const String sendSelectUtxoSheet = 'send-select-utxo-sheet';
@@ -93,7 +90,6 @@ class AnalyticsScreenNames {
   static const String utxoTagEditTagSheet = 'utxo-tag-edit-tag-sheet';
   static const String utxoTagAddTagSheet = 'utxo-tag-add-tag-sheet';
   static const String utxoDetailTagApplySheet = 'utxo-detail-tag-apply-sheet';
-  static const String utxoListTagApplySheet = 'utxo-list-tag-apply-sheet';
   static const String walletAddAirgapMfpSheet = 'wallet-add-airgap-mfp-sheet';
   static const String tagApplyEditTagSheet = 'tag-apply-edit-tag-sheet';
   static const String tagApplyAddTagSheet = 'tag-apply-add-tag-sheet';

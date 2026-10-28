@@ -22,18 +22,43 @@ class UtxoListFilterHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeTagName = viewModel.activeUtxoTagName;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
       child: Row(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Stack(
-                children: [
-                  _buildChipRow(activeTagName, foreground: false),
-                  IgnorePointer(child: _buildChipRow(activeTagName, foreground: true)),
-                ],
-              ),
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 16, right: 24),
+                  child: Stack(
+                    children: [
+                      _buildChipRow(activeTagName, foreground: false),
+                      IgnorePointer(child: _buildChipRow(activeTagName, foreground: true)),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 24,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            context.coconutColors.background.withValues(alpha: 0),
+                            context.coconutColors.background,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           CoconutLayout.spacing_200w,
@@ -57,10 +82,20 @@ class UtxoListFilterHeader extends StatelessWidget {
   }
 
   Widget _buildChipRow(String activeTagName, {required bool foreground}) {
-    final filters = <({String label, int count})>[
-      (label: t.all, count: viewModel.utxoList.length),
-      (label: t.utxo_detail_screen.utxo_locked, count: viewModel.utxoList.where((utxo) => utxo.isLocked).length),
-      (label: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
+    final filters = <({String label, String text, int count})>[
+      (label: t.all, text: t.all, count: viewModel.utxoList.length),
+      (
+        label: t.utxo_detail_screen.utxo_locked,
+        text: t.utxo_detail_screen.utxo_locked,
+        count: viewModel.utxoList.where((utxo) => utxo.isLocked).length,
+      ),
+      (label: t.change, text: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
+      for (final tag in viewModel.utxoTagList)
+        (
+          label: tag.name,
+          text: '#${tag.name}',
+          count: viewModel.utxoList.where((utxo) => utxo.tags?.any((e) => e.name == tag.name) ?? false).length,
+        ),
     ];
 
     return Row(
@@ -71,7 +106,7 @@ class UtxoListFilterHeader extends StatelessWidget {
           Opacity(
             opacity: (filter.label == activeTagName) == foreground ? 1 : 0,
             child: AnimatedUtxoFilterChip(
-              label: filter.label,
+              label: filter.text,
               count: filter.count,
               isSelected: filter.label == activeTagName,
               onTap: () => viewModel.setActiveUtxoTagName(filter.label),
@@ -174,7 +209,7 @@ class AnimatedUtxoFilterChip extends StatelessWidget {
         labelColor: isSelected ? colors.chipSelectedText : colors.chipUnselectedText,
         labelSize: 12,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minWidth: 0,
+        minWidth: 48,
         isSelected: isSelected ? true : null,
         borderWidth: 0,
         selectedBorderWidth: 0,

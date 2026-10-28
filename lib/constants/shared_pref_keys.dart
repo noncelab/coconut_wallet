@@ -102,13 +102,6 @@ class SharedPrefKeys {
   /// UTXO 수동선택 모드 여부
   static const String kIsManualUtxoSelectionMode = 'IS_MANUAL_UTXO_SELECTION_MODE';
 
-  /// 지갑 목록 화면 - 법정화폐 관련
-  static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
-  static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
-  static const String kWalletListBitcoinPriceHidden = 'WALLET_LIST_BITCOIN_PRICE_HIDDEN'; // 지갑 목록 화면의 1 BTC 가격 정보 숨김 여부
-  static const String kWalletListBalanceChartHidden =
-      'WALLET_LIST_BALANCE_CHART_HIDDEN'; // 지갑 목록 화면의 총 보유 수량 변화 그래프 숨김 여부
-
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
 

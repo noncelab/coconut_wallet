@@ -64,7 +64,6 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -310,22 +309,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               arguments: WalletInfoRouteArgs(
                 id: walletId,
                 walletType: _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
-                entryPoint: kEntryPointWalletHome,
                 showMfpInput: true,
               ),
             );
           } else {
             navigator.pop(); // SendScreen 닫기
-            navigator.pushNamed(
-              AppRouteNames.walletDetail,
-              arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
-            );
+            navigator.pushNamed(AppRouteNames.walletDetail, arguments: WalletDetailRouteArgs(id: walletId));
             navigator.pushNamed(
               AppRouteNames.walletInfo,
               arguments: WalletInfoRouteArgs(
                 id: walletId,
                 walletType: _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
-                entryPoint: kEntryPointWalletHome,
                 showMfpInput: true,
               ),
             );
