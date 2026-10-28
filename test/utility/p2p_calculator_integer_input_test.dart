@@ -35,6 +35,39 @@ void main() {
     NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
   });
 
+  testWidgets('fiat sheet cancel and unchanged selection preserve input and premium; a change resets them', (
+    tester,
+  ) async {
+    await _pumpCalculator(tester, fiat: FiatCode.KRW);
+    final field = _amountField();
+    final calculator = _viewModelOf(tester, field);
+    await _replaceAmount(tester, field, '1000');
+    calculator.setPremiumRate(3);
+    _editable(tester, field).focusNode.unfocus();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('KRW'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect((calculator.fiatCode, calculator.inputAmount, calculator.premiumRate), (FiatCode.KRW, 1000, 3.0));
+    expect(_textOf(tester, field), '1,000');
+
+    await tester.tap(find.text('KRW'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('KRW').hitTestable().last);
+    await tester.pumpAndSettle();
+    expect((calculator.fiatCode, calculator.inputAmount, calculator.premiumRate), (FiatCode.KRW, 1000, 3.0));
+    expect(_textOf(tester, field), '1,000');
+
+    await tester.tap(find.text('KRW'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('USD').hitTestable());
+    await tester.pumpAndSettle();
+    expect((calculator.fiatCode, calculator.inputAmount, calculator.premiumRate), (FiatCode.USD, null, 1.0));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   for (final preset in NumberFormatPreset.values) {
     for (final p2pMode in [false, true]) {
       testWidgets('BTC ${preset.name} preserves the caret when refocus keeps the text in P2P mode $p2pMode', (

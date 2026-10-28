@@ -39,6 +39,7 @@ class PriceProvider extends ChangeNotifier {
 
   /// 홈 위젯에서 고른 통화. 선택 통화와 함께 조회 대상이 된다.
   Set<FiatCode> _homeWidgetFiats = {};
+  final Map<Object, FiatCode> _calculatorFiats = {};
   late FiatCode _lastSelectedFiat;
 
   late final VoidCallback _connectivityListener;
@@ -111,8 +112,23 @@ class PriceProvider extends ChangeNotifier {
     _syncCoinGecko();
   }
 
+  /// 계산기 수명 동안 필요한 통화를 등록하고, 닫힐 때 null로 해제한다.
+  void setCalculatorFiat(Object owner, FiatCode? fiat) {
+    if (_calculatorFiats[owner] == fiat) return;
+    if (fiat == null) {
+      _calculatorFiats.remove(owner);
+    } else {
+      _calculatorFiats[owner] = fiat;
+    }
+    _syncCoinGecko();
+  }
+
   Set<FiatCode> get _requiredCoinGeckoFiats =>
-      {_preferenceProvider.selectedFiat, ..._homeWidgetFiats}.where((fiat) => !fiat.hasExchangeSource).toSet();
+      {
+        _preferenceProvider.selectedFiat,
+        ..._homeWidgetFiats,
+        ..._calculatorFiats.values,
+      }.where((fiat) => !fiat.hasExchangeSource).toSet();
 
   void _syncCoinGecko() {
     if (_phase != _ConnectionPhase.active || _connectivityProvider.isInternetOn != true) return;

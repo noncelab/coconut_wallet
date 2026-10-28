@@ -58,6 +58,9 @@ class FakePriceProvider extends Fake implements PriceProvider {
   @override
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => _prices[fiatCode];
 
+  @override
+  void setCalculatorFiat(Object owner, FiatCode? fiat) {}
+
   BitcoinUnit get currentUnit => _currentUnit;
 
   @override

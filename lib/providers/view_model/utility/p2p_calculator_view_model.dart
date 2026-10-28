@@ -23,6 +23,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   final PriceProvider _priceProvider;
   final WalletProvider _walletProvider;
+  int _priceRequestGeneration = 0;
+  bool _isDisposed = false;
 
   /// 현재 법정 화폐
   late FiatCode _fiatCode;
@@ -92,12 +94,15 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
     _isNetworkOn = _connectivityProvider.isInternetOn;
     _currentUnit = _preferenceProvider.currentUnit;
+    _priceProvider.setCalculatorFiat(this, _fiatCode);
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _priceProvider.removeListener(_onPriceChanged);
+    _priceProvider.setCalculatorFiat(this, null);
     super.dispose();
   }
 
@@ -113,7 +118,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   void _onPriceChanged() {
-    // 현재 선택된 fiatCode에 맞는 가격만 업데이트. 조회 대상이 아닌 통화는 REST로 받은 값을 유지
+    // 현재 통화의 공유 시세를 사용하고, 거래소 첫 시세가 없으면 REST 값을 유지한다.
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode) ?? _btcPrice;
     notifyListeners();
   }
@@ -277,16 +282,20 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   /// 통화 변경 (fiat bottom sheet 선택 시 호출)
   Future<void> setFiatCode(FiatCode fiatCode) async {
+    if (_isDisposed) return;
+    final generation = ++_priceRequestGeneration;
     _fiatCode = fiatCode;
+    _priceProvider.setCalculatorFiat(this, fiatCode);
 
-    // PriceProvider가 웹소켓으로 실시간 제공하는 가격 사용
+    // 거래소 웹소켓과 CoinGecko 폴링의 공유 시세를 사용한다.
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
 
-    // 웹소켓 가격이 없으면 fallback으로 HTTP API 호출
-    if (_btcPrice == null) {
+    // 거래소 첫 웹소켓 시세가 없을 때만 기존 REST fallback을 사용한다.
+    if (_btcPrice == null && fiatCode.hasExchangeSource) {
       final fetchedPrice = await _fetchPriceForFiat(_fiatCode);
+      if (_isDisposed || generation != _priceRequestGeneration) return;
       if (fetchedPrice != null) {
-        _btcPrice = fetchedPrice;
+        _btcPrice = _priceProvider.getBitcoinPriceForFiat(fiatCode) ?? fetchedPrice;
       }
     }
 
@@ -336,14 +345,6 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           return null;
 
         default:
-          final response = await dio.get(
-            'https://api.coingecko.com/api/v3/simple/price',
-            queryParameters: {'ids': 'bitcoin', 'vs_currencies': fiatCode.vsCurrency},
-          );
-          if (response.statusCode == 200) {
-            final price = response.data?['bitcoin']?[fiatCode.vsCurrency];
-            return (price is num) ? price.toInt() : null;
-          }
           return null;
       }
     } catch (e) {
