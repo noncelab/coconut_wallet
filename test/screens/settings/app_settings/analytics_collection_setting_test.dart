@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/view_model/settings/analytics_collection_setting_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/analytics_collection_setting.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -29,11 +30,13 @@ class _PendingAnalyticsService extends AnalyticsService {
 /// SDK 켜기/끄기를 원하는 방향만 실패시키는 가짜. 실제 Firebase로 아무것도 보내지 않는다.
 class _FlakySdk extends Fake implements FirebaseAnalytics {
   bool? failing;
+  Completer<void>? enableGate;
   final calls = <bool>[];
 
   @override
   Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
     calls.add(enabled);
+    if (enabled) await enableGate?.future;
     if (enabled == failing) throw StateError('SDK $enabled failed');
   }
 
@@ -48,7 +51,24 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
   });
 
-  Future<void> mount(WidgetTester tester, AnalyticsService service, {double textScale = 1}) async {
+  Future<AnalyticsService> gatedService(_FlakySdk sdk) async {
+    await SharedPrefsRepository().setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    sdk.enableGate = Completer<void>();
+    return service;
+  }
+
+  Future<void> mount(
+    WidgetTester tester,
+    AnalyticsService service, {
+    double textScale = 1,
+    Widget body = const AnalyticsCollectionSetting(),
+  }) async {
     await tester.pumpWidget(
       Provider<AnalyticsService>.value(
         value: service,
@@ -57,7 +77,7 @@ void main() {
             theme: buildCoconutThemeData(),
             home: MediaQuery(
               data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-              child: const Scaffold(body: AnalyticsCollectionSetting()),
+              child: Scaffold(body: body),
             ),
           ),
         ),
@@ -162,6 +182,61 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  test('a second call while saving keeps the first call busy until it settles', () async {
+    final sdk = _FlakySdk();
+    final viewModel = AnalyticsCollectionSettingViewModel(await gatedService(sdk));
+
+    final first = viewModel.setCollectionEnabled(true);
+    expect(await viewModel.setCollectionEnabled(true), isTrue);
+    expect(viewModel.isSaving, isTrue);
+
+    sdk.enableGate!.complete();
+    expect(await first, isTrue);
+    expect(viewModel.isSaving, isFalse);
+    expect(sdk.calls.where((enabled) => enabled), hasLength(1));
+    viewModel.dispose();
+  });
+
+  testWidgets('leaving the screen while saving neither notifies a disposed row nor shows a toast', (tester) async {
+    final sdk = _FlakySdk()..failing = true;
+    final service = await gatedService(sdk);
+    await mount(tester, service);
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pump();
+
+    await tester.pumpWidget(const SizedBox());
+    sdk.enableGate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+    expect(service.isCollectionEnabled, isFalse);
+  });
+
+  testWidgets('a second settings row cannot start another change while one is pending', (tester) async {
+    final sdk = _FlakySdk();
+    final service = await gatedService(sdk);
+    await mount(
+      tester,
+      service,
+      body: const Column(children: [AnalyticsCollectionSetting(), AnalyticsCollectionSetting()]),
+    );
+    final switches = find.byType(CoconutSwitch);
+    await tester.tap(switches.first);
+    await tester.pump();
+
+    await tester.tap(switches.last);
+    await tester.pumpAndSettle();
+    expect(find.text(t.settings_screen.analytics_collection_error), findsOneWidget);
+    sdk.enableGate!.complete();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    expect(sdk.calls.where((enabled) => enabled), hasLength(1));
+    expect(tester.widgetList<CoconutSwitch>(switches).map((s) => s.isOn), [true, true]);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   for (final locale in AppLocale.values) {
     testWidgets('renders ${locale.languageCode} on a narrow screen with large text', (tester) async {

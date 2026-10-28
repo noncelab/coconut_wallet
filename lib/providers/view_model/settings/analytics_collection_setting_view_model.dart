@@ -12,8 +12,9 @@ class AnalyticsCollectionSettingViewModel extends ChangeNotifier {
   ValueListenable<bool> get isCollectionEnabled => _analyticsService.collectionEnabledListenable;
   bool get isSaving => _isSaving;
 
-  /// 변경하지 못했으면 false를 돌려준다.
+  /// 변경하지 못했으면 false를 돌려준다. 저장 중에 다시 들어온 호출은 진행 중인 변경을 건드리지 않고 무시한다.
   Future<bool> setCollectionEnabled(bool enabled) async {
+    if (_isSaving) return true;
     _isSaving = true;
     notifyListeners();
     try {
