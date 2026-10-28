@@ -20,6 +20,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
   HomeWidgetPeriod _balancePeriod;
   HomeWidgetPeriod _activityPeriod;
   List<int>? _walletIds;
+  final ValueChanged<List<int>?>? onWalletSelectionPruned;
 
   /// 처음 열 때 스크롤하고 잠깐 강조할 구역
   /// 맨 위(총 잔액)면 스크롤하지 않는다.
@@ -29,12 +30,29 @@ class HodlInsightsViewModel extends ChangeNotifier {
     this._data, {
     this.initialSection = HodlInsightsSection.balance,
     List<int>? walletIds,
+    this.onWalletSelectionPruned,
     HomeWidgetPeriod balancePeriod = HomeWidgetPeriod.week,
     HomeWidgetPeriod activityPeriod = HomeWidgetPeriod.week,
   }) : _walletIds = walletIds,
        _balancePeriod = balancePeriod,
        _activityPeriod = activityPeriod {
-    _data.addListener(notifyListeners);
+    _pruneWalletSelection();
+    _data.addListener(_onDataChanged);
+  }
+
+  void _pruneWalletSelection() {
+    if (_data.isWalletDataLoading || _walletIds == null) return;
+    final existingIds = _data.wallets.map((wallet) => wallet.id).toSet();
+    final validIds = _walletIds!.where(existingIds.contains).toList();
+    final nextIds = validIds.isEmpty ? null : validIds;
+    if (listEquals(nextIds, _walletIds)) return;
+    _walletIds = nextIds;
+    onWalletSelectionPruned?.call(nextIds == null ? null : List.unmodifiable(nextIds));
+  }
+
+  void _onDataChanged() {
+    _pruneWalletSelection();
+    notifyListeners();
   }
 
   HomeWidgetsViewModel get data => _data;
@@ -115,7 +133,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _data.removeListener(notifyListeners);
+    _data.removeListener(_onDataChanged);
     if (!_data.usesFakeBalance) _data.dispose();
     super.dispose();
   }

@@ -58,6 +58,7 @@ class HodlInsightsScreen extends StatefulWidget {
             data,
             initialSection: section,
             walletIds: savedWalletIds,
+            onWalletSelectionPruned: (ids) => unawaited(SharedPrefsRepository().setHodlInsightsWalletIds(ids)),
             balancePeriod: balancePeriod,
             activityPeriod: activityPeriod,
           ),

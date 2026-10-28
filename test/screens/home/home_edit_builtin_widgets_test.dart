@@ -1014,6 +1014,30 @@ void main() {
     expect(now.difference(recent[2].time).inDays, 40);
   });
 
+  test('insights does not prune saved wallets before wallet loading completes', () {
+    final wallets = _Wallets([], [], loadState: WalletLoadState.loadingFromDB);
+    final data = HomeWidgetsViewModel(
+      walletProvider: wallets,
+      preferenceProvider: _Preferences(),
+      priceProvider: _Prices(),
+      targetSatsOf: (_) => null,
+      historicalPriceService: _History(),
+    );
+    final changes = <List<int>?>[];
+    final model = HodlInsightsViewModel(data, walletIds: [7], onWalletSelectionPruned: changes.add);
+    addTearDown(() {
+      model.dispose();
+      data.dispose();
+    });
+    expect(model.walletIds, [7]);
+    expect(changes, isEmpty);
+    wallets.wallets.add(WalletMock.createSingleSigWalletItem(id: 7));
+    wallets.loadState = WalletLoadState.loadCompleted;
+    wallets.walletItemListNotifier.value = List.of(wallets.wallets);
+    expect(model.walletIds, [7]);
+    expect(changes, isEmpty);
+  });
+
   test('fake balance changes home widgets only; the insights copy keeps real balances', () {
     final home = HomeWidgetsViewModel(
       walletProvider: _Wallets([WalletMock.createSingleSigWalletItem(id: 1)], const []),
@@ -1577,6 +1601,87 @@ void main() {
       Navigator.of(tester.element(find.byKey(const Key('widget-configure-all-wallets')))).pop();
       await tester.pumpAndSettle();
       await leaveInsights();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('deleted saved wallets fall back to all wallets and persist selection', (tester) async {
+      final wallets = [for (var id = 1; id <= 2; id++) WalletMock.createSingleSigWalletItem(id: id)];
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        walletList: wallets,
+        screen:
+            (_) => Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed: () => HodlInsightsScreen.open(context),
+                    child: const Text('open pruned insights'),
+                  ),
+            ),
+      );
+      final prefs = SharedPrefsRepository();
+      await prefs.setHodlInsightsWalletIds([999]);
+      await tester.tap(find.text('open pruned insights'));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(HodlInsightsScreen));
+      final model = context.read<HodlInsightsViewModel>();
+      expect(model.walletIds, isNull);
+      expect(prefs.getHodlInsightsWalletIds(), isNull);
+      expect(model.balance, 30000000);
+      expect(find.byKey(const Key('hodl-insights-balance')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('hodl-insights-settings')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<HomeConfigureCheckRow>(find.byKey(const Key('widget-configure-all-wallets'))).checked,
+        isTrue,
+      );
+      await tester.tap(find.byKey(const ValueKey('widget-configure-wallet-2')));
+      await tester.pumpAndSettle();
+      final submit = find.byKey(const Key('widget-configure-submit'));
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+      expect(model.walletIds, [2]);
+      // Deletion while the screen is open also switches to all remaining wallets.
+      wallets.removeWhere((wallet) => wallet.id == 2);
+      model.data.refresh();
+      await tester.pumpAndSettle();
+      expect(model.walletIds, isNull);
+      expect(prefs.getHodlInsightsWalletIds(), isNull);
+      expect(model.balance, 10000000);
+      await tester.tap(find.byKey(const Key('hodl-insights-settings')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<HomeConfigureCheckRow>(find.byKey(const Key('widget-configure-all-wallets'))).checked,
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('partial deleted selection preserves remaining wallets and saves cleaned ids', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen:
+            (_) => Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed: () => HodlInsightsScreen.open(context),
+                    child: const Text('open partially pruned insights'),
+                  ),
+            ),
+      );
+      final prefs = SharedPrefsRepository();
+      await prefs.setHodlInsightsWalletIds([1, 999]);
+      await tester.tap(find.text('open partially pruned insights'));
+      await tester.pumpAndSettle();
+      final model = tester.element(find.byType(HodlInsightsScreen)).read<HodlInsightsViewModel>();
+      expect(model.walletIds, [1]);
+      expect(prefs.getHodlInsightsWalletIds(), [1]);
+      expect(find.byKey(const Key('hodl-insights-balance')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _close(tester);
     });
