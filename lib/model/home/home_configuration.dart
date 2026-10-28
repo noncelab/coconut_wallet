@@ -15,6 +15,7 @@ class HomeConfiguration {
   static const currentVersion = 1;
 
   final int version;
+  final int columns;
 
   /// 홈에 놓인 위젯·바로가기·빈 공간. 생성 시 [HomeItem.order] 순으로 정렬된다.
   final List<HomeItem> items;
@@ -24,19 +25,24 @@ class HomeConfiguration {
 
   HomeConfiguration({
     this.version = currentVersion,
+    this.columns = 4,
     required List<HomeItem> items,
     this.shortcutWalletContext = const ShortcutWalletContext.askEveryTime(),
-  }) : items = List.unmodifiable([...items]..sort((a, b) => a.order.compareTo(b.order)));
+  }) : assert(columns >= 4 && columns.isEven),
+       items = List.unmodifiable([...items]..sort((a, b) => a.order.compareTo(b.order)));
 
   static HomeConfiguration? fromJson(Object? json) {
     if (json is! Map) return null;
     final version = json['version'];
     if (version is! int || version > currentVersion) return null;
+    final rawColumns = json['columns'];
+    final columns = rawColumns is int && rawColumns >= 4 && rawColumns.isEven ? rawColumns : 4;
     final rawItems = json['items'];
     if (rawItems is! List) return null;
     final rawContext = json['shortcutWalletContext'];
     return HomeConfiguration(
       version: version,
+      columns: columns,
       items: rawItems.map(HomeItem.fromJson).whereType<HomeItem>().toList(),
       shortcutWalletContext:
           rawContext is Map
@@ -47,6 +53,7 @@ class HomeConfiguration {
 
   Map<String, Object?> toJson() => {
     'version': version,
+    if (columns != 4) 'columns': columns,
     'items': items.map((item) => item.toJson()).toList(),
     'shortcutWalletContext': shortcutWalletContext.toJson(),
   };
@@ -69,7 +76,12 @@ class HomeConfiguration {
         normalized.add(item.copyWith(span: definition.supportedSpans.first));
       }
     }
-    return HomeConfiguration(version: version, items: normalized, shortcutWalletContext: shortcutWalletContext);
+    return HomeConfiguration(
+      version: version,
+      columns: columns,
+      items: normalized,
+      shortcutWalletContext: shortcutWalletContext,
+    );
   }
 
   /// [item]을 맨 뒤에 추가한다.
@@ -91,6 +103,7 @@ class HomeConfiguration {
   HomeConfiguration _withOrderedItems(List<HomeItem> ordered) {
     return HomeConfiguration(
       version: version,
+      columns: columns,
       items: [for (var i = 0; i < ordered.length; i++) ordered[i].copyWith(order: i)],
       shortcutWalletContext: shortcutWalletContext,
     );
@@ -100,9 +113,10 @@ class HomeConfiguration {
   bool operator ==(Object other) =>
       other is HomeConfiguration &&
       other.version == version &&
+      other.columns == columns &&
       const ListEquality<HomeItem>().equals(other.items, items) &&
       other.shortcutWalletContext == shortcutWalletContext;
 
   @override
-  int get hashCode => Object.hash(version, Object.hashAll(items), shortcutWalletContext);
+  int get hashCode => Object.hash(version, columns, Object.hashAll(items), shortcutWalletContext);
 }

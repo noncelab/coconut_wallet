@@ -10,6 +10,34 @@ HomeItem _placed(String id, HomeSpan span, HomeItemKind kind, int column, int ro
     HomeItem(id: id, definitionId: id, kind: kind, order: order, span: span, position: HomeGridPosition(column, row));
 
 void main() {
+  test('adaptive column boundaries use even counts and finite safe fallbacks', () {
+    for (final (width, expected) in [
+      (-1.0, 4),
+      (0.0, 4),
+      (356.0, 4),
+      (539.9, 4),
+      (540.0, 6),
+      (723.9, 6),
+      (724.0, 8),
+      (908.0, 10),
+      (1092.0, 12),
+      (double.infinity, 4),
+      (double.nan, 4),
+    ]) {
+      expect(HomeGridGeometry.columnsForWidth(width), expected, reason: '$width');
+    }
+  });
+
+  test('expanded drop bounds use the layout count and retain wide tile columns', () {
+    const geometry = HomeGridGeometry(cellExtent: 80, gap: 12, columns: 8);
+    expect(geometry.snap(const Offset(999, 92), HomeSpan.shortcut), const HomeGridPosition(7, 1));
+    expect(geometry.snap(const Offset(999, 92), HomeSpan.small), const HomeGridPosition(6, 1));
+    expect(geometry.snap(const Offset(999, 92), HomeSpan.wide), const HomeGridPosition(4, 1));
+    final wide = _placed('wide', HomeSpan.wide, HomeItemKind.widget, 0, 0, 0);
+    final layout = HomeGridLayout(HomeConfiguration(columns: 8, items: [wide]));
+    expect(geometry.dropPosition(layout, wide, const Offset(276, 276)), const HomeGridPosition(3, 3));
+  });
+
   const geometry = HomeGridGeometry(cellExtent: 80, gap: 12);
   Offset cell(int column, int row) => Offset(column * 92.0, row * 92.0);
 

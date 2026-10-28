@@ -79,6 +79,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   Timer? _previewTimer;
   Timer? _dropSettleTimer;
   String? _settlingDroppedId;
+  bool _settlingPreview = false;
   final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
   String? _draggedId;
   int? _dragPointer;
@@ -96,7 +97,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   Offset? _dragGlobalPosition;
   double? _geometryCellExtent;
   double? _anchorCellExtent;
-  double? _dragLayoutWidth;
+  Size? _layoutSize;
 
   @override
   void initState() {
@@ -141,8 +142,15 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   @override
   void didChangeMetrics() {
-    // A fold or rotation moves the grid without moving the held finger.
+    // Menus capture screen coordinates, so a fold or rotation invalidates them.
+    _dismissMenus();
     _refreshActiveDragGeometry();
+  }
+
+  void _dismissMenus() {
+    for (final key in _menuKeys.values) {
+      key.currentState?.dismissMenu();
+    }
   }
 
   /// Back cancels only the held gesture. Previously committed placements remain saved.
@@ -160,7 +168,12 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
 
   void _startDrag(String id, int pointer) {
     _menuKeys[id]?.currentState?.dismissMenu();
-    setState(() => _draggedId = id);
+    _dropSettleTimer?.cancel();
+    setState(() {
+      _settlingDroppedId = null;
+      _settlingPreview = false;
+      _draggedId = id;
+    });
     _dragPointer = pointer;
     _dragCanceled = false;
     _anchorCellExtent = _geometryCellExtent;
@@ -270,7 +283,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     if (dragged == null || surface is! RenderBox || !surface.hasSize) return;
     final local = _toSurface(globalPosition);
     final cellExtent = (surface.size.width - widget.badgeInset * 2 - (_columns - 1) * _gap) / _columns;
-    final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
+    final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap, columns: _columns);
     final dragOrigin = local - _dragAnchor;
     // Use the content center so grabbing a corner does not select a different cell.
     final center = dragOrigin + geometry.sizeOf(dragged.span).center(Offset.zero);
@@ -291,7 +304,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     }
     _dropInsideSurface = true;
 
-    final layout = HomeGridLayout(widget.configuration);
+    final layout = _layout;
     HomeItem? target;
     for (final item in layout.itemsInVisualOrder.reversed) {
       if (item.id == draggedId) continue;
@@ -322,7 +335,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     if (widget.onMoveToCell != null) {
       cell =
           target != null && target.span == dragged.span
-              ? HomeGridLayout.anchorForSpan(layout.positionOf(target.id)!, dragged.span)
+              ? HomeGridLayout.anchorForSpan(layout.positionOf(target.id)!, dragged.span, columns: _columns)
               : geometry.dropPosition(layout, dragged, dragOrigin);
     } else if (target != null && target.id != draggedId && widget.onInsertBefore != null) {
       targetId = target.id;
@@ -348,11 +361,26 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   void _commitDrop(String id, VoidCallback fallback) {
     if (_dragCanceled || !_dropInsideSurface) return;
     _previewTimer?.cancel();
-    // The feedback already reached this cell. Only its neighbors need to travel.
+    // Commit a running preview together; quick drops still animate their neighbors.
     _dropSettleTimer?.cancel();
-    setState(() => _settlingDroppedId = id);
+    setState(() {
+      _settlingDroppedId = id;
+      _settlingPreview = _previewConfiguration != null;
+    });
+    if (_settlingPreview) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _settlingDroppedId == id && _settlingPreview) {
+          setState(() => _settlingPreview = false);
+        }
+      });
+    }
     _dropSettleTimer = Timer(HomeItemsView.reorderDuration, () {
-      if (mounted) setState(() => _settlingDroppedId = null);
+      if (mounted) {
+        setState(() {
+          _settlingDroppedId = null;
+          _settlingPreview = false;
+        });
+      }
     });
     if (_previewDraggedId == id && _previewTargetId != null) {
       widget.onInsertBefore?.call(id, _previewTargetId!);
@@ -370,7 +398,12 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
   }
 
   static const double _gap = HomeItemsView.gap;
-  static const int _columns = HomeGridLayout.columns;
+  int _columns = HomeGridLayout.columns;
+
+  HomeGridLayout get _layout {
+    final layout = HomeGridLayout(widget.configuration);
+    return layout.columnCount == _columns ? layout : HomeGridLayout(layout.reflow(_columns));
+  }
 
   bool get _draggable => widget.onMoveToCell != null || widget.onInsertBefore != null;
 
@@ -388,21 +421,45 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
       ...items.where((item) => item.id != _settlingDroppedId),
       ...items.where((item) => item.id == _settlingDroppedId),
     ];
-    final layout = HomeGridLayout(widget.configuration);
-    final previewLayout = _previewConfiguration == null ? layout : HomeGridLayout(_previewConfiguration!);
     final inset = widget.badgeInset;
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth - inset * 2;
+        final columns = HomeGridGeometry.columnsForWidth(maxWidth);
+        if (columns != _columns) {
+          _columns = columns;
+          // Block stale drop callbacks now; ending the avatar must wait until after layout.
+          _dragCanceled = true;
+          _previewTimer?.cancel();
+          _previewConfiguration = null;
+          _previewDraggedId = null;
+          _previewTargetId = null;
+          _previewCell = null;
+          _dropInsideSurface = false;
+          _stopAutoScroll();
+          final pointer = _dragPointer;
+          if (pointer != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _dragPointer == pointer) cancelActiveDrag();
+            });
+          }
+        }
+        final layout = _layout;
+        final previewLayout = _previewConfiguration == null ? layout : HomeGridLayout(_previewConfiguration!);
         final cellExtent =
             maxWidth.isFinite ? math.max(1.0, (maxWidth - (_columns - 1) * _gap) / _columns) : HomeItemsView.cell;
-        final widthChanged = _dragLayoutWidth != null && _dragLayoutWidth != constraints.maxWidth;
-        _dragLayoutWidth = constraints.maxWidth;
+        final widthChanged = _layoutSize != null && _layoutSize!.width != constraints.maxWidth;
+        if (_layoutSize != null && _layoutSize != constraints.biggest) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _dismissMenus();
+          });
+        }
+        _layoutSize = constraints.biggest;
         _geometryCellExtent = cellExtent;
         if (widthChanged) _refreshActiveDragGeometry();
         // Keep the surface fixed while dragging so a centered grid does not move under the pointer.
         final rowCount = math.max(1, layout.rows);
-        final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
+        final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap, columns: _columns);
         final gridWidth = HomeGridGeometry.extent(_columns, cellExtent, _gap);
         final sidePadding = maxWidth.isFinite ? math.max(0.0, (maxWidth - gridWidth) / 2) : 0.0;
         final lead =
@@ -448,16 +505,12 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
                                 key: ValueKey('home-item-position-${item.id}'),
                                 left: inset - lead,
                                 top: inset - lead,
-                                child: TweenAnimationBuilder<Offset>(
-                                  tween: Tween(
-                                    begin: geometry.originOf(position),
-                                    end: geometry.originOf(previewLayout.positionOf(item.id) ?? position),
-                                  ),
-                                  duration:
-                                      item.id == _settlingDroppedId || MediaQuery.disableAnimationsOf(context)
-                                          ? Duration.zero
-                                          : HomeItemsView.reorderDuration,
-                                  curve: Curves.easeInOutCubic,
+                                child: _ReorderPosition(
+                                  offset: geometry.originOf(previewLayout.positionOf(item.id) ?? position),
+                                  snap:
+                                      (_settlingDroppedId != null &&
+                                          (item.id == _settlingDroppedId || _settlingPreview)) ||
+                                      MediaQuery.disableAnimationsOf(context),
                                   // Hold logical drop slots still during a drag. At rest, hit the painted item,
                                   // including when a new gesture begins before its neighbors finish moving.
                                   builder:
@@ -505,7 +558,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     final onMoveToCell = widget.onMoveToCell;
     final onInsertBefore = widget.onInsertBefore;
     if (onMoveToCell != null) {
-      onMoveToCell(draggedId, HomeGridLayout.anchorForSpan(position, dragged?.span));
+      onMoveToCell(draggedId, HomeGridLayout.anchorForSpan(position, dragged?.span, columns: _columns));
     } else if (onInsertBefore != null) {
       onInsertBefore(draggedId, target.id);
     }
@@ -538,7 +591,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     double cellExtent,
     double lead,
   ) {
-    final size = HomeGridGeometry(cellExtent: cellExtent, gap: _gap).sizeOf(item.span);
+    final size = HomeGridGeometry(cellExtent: cellExtent, gap: _gap, columns: _columns).sizeOf(item.span);
     final content = definition.buildTile(item);
     final box = SizedBox(width: size.width, height: size.height, child: content);
     if (!_draggable) return SizedBox(key: ValueKey('home-item-${item.id}'), child: box);
@@ -653,6 +706,38 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
           ),
     );
   }
+}
+
+class _ReorderPosition extends ImplicitlyAnimatedWidget {
+  final Offset offset;
+  final bool snap;
+  final Widget Function(BuildContext, Offset, Widget?) builder;
+  final Widget child;
+
+  const _ReorderPosition({required this.offset, required this.snap, required this.builder, required this.child})
+    : super(duration: HomeItemsView.reorderDuration, curve: Curves.easeInOutCubic);
+
+  @override
+  AnimatedWidgetBaseState<_ReorderPosition> createState() => _ReorderPositionState();
+}
+
+class _ReorderPositionState extends AnimatedWidgetBaseState<_ReorderPosition> {
+  Tween<Offset>? _offset;
+
+  @override
+  void forEachTween(TweenVisitor<dynamic> visitor) {
+    _offset = visitor(_offset, widget.offset, (value) => Tween<Offset>(begin: value as Offset)) as Tween<Offset>?;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReorderPosition oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A zero duration alone does not finish an in-flight tween with an unchanged target.
+    if (widget.snap) controller.value = 1;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _offset!.evaluate(animation), widget.child);
 }
 
 /// 편집 중 항목 왼쪽 위 꼭짓점에 걸치는 제거 버튼. 모양은 기존 홈 편집 모드와 같고 항목과 함께 흔들린다.

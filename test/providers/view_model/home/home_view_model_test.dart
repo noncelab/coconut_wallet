@@ -66,6 +66,87 @@ void main() {
         ],
   );
 
+  test('expanded edits persist their grid count and undo restores canonical positions', () async {
+    await repository.save(
+      HomeConfiguration(
+        items: [
+          const HomeItem(id: 'a', definitionId: 'w', kind: HomeItemKind.widget, order: 0, span: HomeSpan.small),
+          _shortcut('b', FeatureIds.calculator, 1),
+        ],
+      ),
+    );
+    final viewModel = create(
+      widgetDefinitions: [
+        _Widget(spans: [HomeSpan.small, HomeSpan.wide]),
+      ],
+    );
+    addTearDown(viewModel.dispose);
+    final original = viewModel.configuration;
+    final stored = repository.load();
+    for (final columns in [6, 8, 4, 6, 4]) {
+      HomeGridLayout(viewModel.configuration).reflow(columns);
+      expect(repository.load(), stored);
+    }
+    viewModel.moveToCell('b', const HomeGridPosition(5, 3), columns: 6);
+    expect(viewModel.configuration.columns, 6);
+    expect(repository.load(), viewModel.configuration);
+    expect(HomeGridLayout(repository.load()!).positionOf('b'), const HomeGridPosition(5, 3));
+    final reloaded = create(
+      widgetDefinitions: [
+        _Widget(spans: [HomeSpan.small, HomeSpan.wide]),
+      ],
+    );
+    expect(reloaded.configuration, viewModel.configuration);
+    reloaded.dispose();
+    viewModel.undoArrangement();
+    expect(viewModel.configuration, original);
+    viewModel.insertBefore('b', 'a', columns: 8);
+    expect(viewModel.configuration.columns, 8);
+    viewModel.undoArrangement();
+    expect(viewModel.configuration, original);
+    viewModel.resizeItem('a', HomeSpan.wide, columns: 6);
+    expect(viewModel.configuration.columns, 6);
+    expect(viewModel.configuration.items.firstWhere((item) => item.id == 'a').span, HomeSpan.wide);
+    expect(repository.load(), viewModel.configuration);
+    viewModel.updateItemConfiguration('a', {'label': 'expanded'});
+    viewModel.updateShortcutWalletContext(const ShortcutWalletContext.wallet(7));
+    expect(viewModel.configuration.columns, 6);
+    viewModel.removeItem('b');
+    expect(repository.load()!.columns, 6);
+  });
+
+  for (final (columns, positions, rows) in [
+    (6, [(0, 0), (4, 0), (0, 2), (2, 2), (4, 2), (5, 2), (4, 3), (5, 3), (0, 4)], 6),
+    (8, [(0, 0), (4, 0), (6, 0), (0, 2), (2, 2), (3, 2), (2, 3), (3, 3), (4, 2)], 4),
+    (10, [(0, 0), (4, 0), (6, 0), (8, 0), (0, 2), (1, 2), (0, 3), (1, 3), (2, 2)], 4),
+  ]) {
+    test('real default preset preserves its shortcut block in $columns-column projection', () {
+      final viewModel = create(widgetDefinitions: builtinHomeWidgets());
+      addTearDown(viewModel.dispose);
+      final canonical = viewModel.configuration;
+      final preset = builtinHomePresets().firstWhere((preset) => preset.id == defaultPresetId);
+      final projected = HomeGridLayout(HomeGridLayout(canonical).reflow(columns));
+      expect(canonical.items.map((item) => item.definitionId), preset.definitionIds);
+      expect(projected.rows, rows);
+      final occupied = <(int, int)>{};
+      for (final (index, definitionId) in preset.definitionIds.indexed) {
+        final item = canonical.items.singleWhere((item) => item.definitionId == definitionId);
+        final position = projected.positionOf(item.id)!;
+        expect(position, HomeGridPosition(positions[index].$1, positions[index].$2), reason: definitionId);
+        for (var y = position.row; y < position.row + item.span.height; y++) {
+          for (var x = position.column; x < position.column + item.span.width; x++) {
+            expect(occupied.add((x, y)), isTrue, reason: 'overlap at ($x, $y)');
+          }
+        }
+        expect(projected.configuration.items.singleWhere((other) => other.id == item.id).span, item.span);
+      }
+      expect(projected.configuration.items.length, canonical.items.length);
+      expect(HomeGridLayout(canonical).reflow(4), canonical);
+      expect(repository.load(), canonical);
+      expect(viewModel.configuration, canonical);
+    });
+  }
+
   group('loading', () {
     test('legacy hidden balance selects the hide balances preset on first load', () {
       final viewModel = create(widgetDefinitions: builtinHomeWidgets(), legacyBalanceHidden: true);
@@ -227,6 +308,49 @@ void main() {
   });
 
   group('presets', () {
+    test('default preset preview and apply remain tidy after a saved eight-column edit', () {
+      wallets = [WalletMock.createSingleSigWalletItem(id: 7)];
+      final viewModel = create(widgetDefinitions: builtinHomeWidgets());
+      addTearDown(viewModel.dispose);
+      final preset = builtinHomePresets().firstWhere((preset) => preset.id == defaultPresetId);
+      final recent = viewModel.configuration.items.singleWhere(
+        (item) => item.definitionId == HomeItemIds.recentTransactions,
+      );
+      viewModel.moveToCell(recent.id, const HomeGridPosition(4, 8), columns: 8);
+      final previous = viewModel.configuration;
+      expect(previous.columns, 8);
+      expect(repository.load(), previous);
+      expect(previous.shortcutWalletContext, const ShortcutWalletContext.wallet(7));
+
+      final preview = viewModel.previewOf(preset);
+      void expectTidy(HomeConfiguration configuration) {
+        final projected = HomeGridLayout(HomeGridLayout(configuration).reflow(8));
+        expect(projected.rows, 4);
+        expect(configuration.columns, 4);
+        final positions = {
+          for (final item in projected.positionedConfiguration.items) item.definitionId: item.position,
+        };
+        expect(positions[HomeItemIds.allWalletStack], const HomeGridPosition(0, 2));
+        expect(positions[HomeItemIds.shortcut(FeatureIds.utxoOrganizer)], const HomeGridPosition(2, 3));
+        expect(positions[HomeItemIds.recentTransactions], const HomeGridPosition(4, 2));
+        expect(configuration.shortcutWalletContext, previous.shortcutWalletContext);
+      }
+
+      expectTidy(preview);
+      expect(repository.load(), previous);
+      expect(viewModel.configuration, previous);
+
+      final undo = viewModel.applyPreset(preset);
+      expect(undo, previous);
+      expectTidy(viewModel.configuration);
+      expect(viewModel.configuration, preview);
+      expect(repository.load(), preview);
+      viewModel.restore(undo);
+      expect(viewModel.configuration, previous);
+      expect(repository.load(), previous);
+      expect(viewModel.configuration.shortcutWalletContext, const ShortcutWalletContext.wallet(7));
+    });
+
     final preset = HomePreset(
       id: 'p',
       name: () => 'p',
@@ -497,6 +621,35 @@ void main() {
       expect(viewModel.configuration, before);
       expect(repository.load(), before);
     });
+
+    for (final savedColumns in [4, 6, 8]) {
+      test('projected no-op edits preserve canonical gaps and prior undo from $savedColumns columns', () async {
+        final viewModel = await editableHome();
+        final before = viewModel.configuration;
+        viewModel.moveToCell('c', const HomeGridPosition(0, 8), columns: savedColumns);
+        final moved = viewModel.configuration;
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString(HomeConfigurationRepository.key);
+        var notifications = 0;
+        viewModel.addListener(() => notifications++);
+        for (final columns in [4, 6, 8, 10]) {
+          final projected = HomeGridLayout(HomeGridLayout(moved).reflow(columns));
+          viewModel.moveToCell('c', projected.positionOf('c')!, columns: columns);
+          viewModel.moveToCell('c', const HomeGridPosition(-1, 0), columns: columns);
+          viewModel.moveToCell('missing', const HomeGridPosition(0, 0), columns: columns);
+          viewModel.insertBefore('c', 'c', columns: columns);
+          viewModel.insertBefore('c', 'missing', columns: columns);
+          viewModel.insertBefore('missing', 'c', columns: columns);
+          expect(viewModel.configuration, moved);
+          expect(prefs.getString(HomeConfigurationRepository.key), stored);
+          expect(viewModel.canUndoArrangement, isTrue);
+          expect(notifications, 0);
+        }
+        viewModel.undoArrangement();
+        expect(viewModel.configuration, before);
+        expect(repository.load(), before);
+      });
+    }
 
     final mutations = <String, void Function(HomeViewModel)>{
       'remove': (model) => model.removeItem('a'),

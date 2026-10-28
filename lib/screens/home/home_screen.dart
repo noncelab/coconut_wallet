@@ -31,6 +31,7 @@ import 'package:coconut_wallet/screens/home/home_fake_balance_search.dart';
 import 'package:coconut_wallet/screens/home/home_item_configure_sheets.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -384,25 +385,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return CustomScrollView(
       slivers: [
         Builder(builder: _buildAppBar),
-        SliverPadding(
-          padding: const EdgeInsets.all(16 - _gridBadgeInset),
-          sliver: SliverLayoutBuilder(
-            builder:
-                (context, constraints) => SliverToBoxAdapter(
+        SliverSafeArea(
+          top: false,
+          bottom: false,
+          sliver: SliverPadding(
+            padding: const EdgeInsets.all(16 - _gridBadgeInset),
+            sliver: SliverLayoutBuilder(
+              builder: (context, constraints) {
+                final columns = HomeGridGeometry.columnsForWidth(constraints.crossAxisExtent - _gridBadgeInset * 2);
+                return SliverToBoxAdapter(
                   child: Consumer<HomeViewModel>(
                     builder:
                         (context, viewModel, _) => HomeItemsView(
                           key: _itemsKey,
                           configuration: viewModel.configuration,
                           registry: viewModel.registry,
-                          onMoveToCell: viewModel.moveToCell,
-                          onInsertBefore: viewModel.insertBefore,
+                          onMoveToCell: (id, position) => viewModel.moveToCell(id, position, columns: columns),
+                          onInsertBefore: (id, beforeId) => viewModel.insertBefore(id, beforeId, columns: columns),
                           menuItemsOf: (item) => _menuItemsOf(context, item),
                           isArranging: viewModel.isArranging,
                           onRemove: _remove,
                           onArrangeStart: viewModel.startArranging,
                           onArrangeDone: _finishArranging,
-                          onResize: (item, span) => viewModel.resizeItem(item.id, span),
+                          onResize: (item, span) => viewModel.resizeItem(item.id, span, columns: columns),
                           badgeInset: _gridBadgeInset,
                           wrapDragFeedback:
                               (child) => MultiProvider(
@@ -421,7 +426,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                   ),
-                ),
+                );
+              },
+            ),
           ),
         ),
       ],

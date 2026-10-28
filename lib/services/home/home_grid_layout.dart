@@ -13,6 +13,60 @@ class HomeGridLayout {
 
   HomeGridLayout(this.configuration);
 
+  int get columnCount => configuration.columns;
+
+  /// Viewport changes derive a layout without replacing the saved canonical positions.
+  HomeConfiguration reflow(int columns) {
+    if (columns == columnCount) return positionedConfiguration;
+    final ordered = itemsInVisualOrder;
+    final target = HomeGridLayout(
+      HomeConfiguration(
+        version: configuration.version,
+        columns: columns,
+        items: [for (final (index, item) in ordered.indexed) item.copyWith(order: index)],
+        shortcutWalletContext: configuration.shortcutWalletContext,
+      ),
+    );
+    final flowItems = <HomeItem>[];
+    final groups = <({List<HomeItem> items, HomeGridPosition origin})>[];
+    bool isShortcut(HomeItem item) => item.kind == HomeItemKind.shortcut && item.span == HomeSpan.shortcut;
+    for (var index = 0; index < ordered.length;) {
+      final item = ordered[index];
+      if (columns <= HomeGridLayout.columns || !isShortcut(item)) {
+        flowItems.add(item);
+        index++;
+        continue;
+      }
+      final run = ordered.skip(index).takeWhile(isShortcut).toList();
+      index += run.length;
+      final cells = run.map((item) => _positions[item.id]!).toSet();
+      final left = cells.map((cell) => cell.column).reduce(math.min);
+      final top = cells.map((cell) => cell.row).reduce(math.min);
+      final width = cells.map((cell) => cell.column).reduce(math.max) - left + 1;
+      final height = cells.map((cell) => cell.row).reduce(math.max) - top + 1;
+      // Preserve filled multi-row shortcut blocks instead of stretching them into a strip.
+      if (height > 1 && width <= columns && cells.length == run.length && width * height == run.length) {
+        flowItems.add(run.first.copyWith(span: HomeSpan(width, height)));
+        groups.add((items: run, origin: HomeGridPosition(left, top)));
+      } else {
+        flowItems.addAll(run);
+      }
+    }
+    final positions = <String, HomeGridPosition>{};
+    target._flowWithoutCollisions(flowItems, positions);
+    for (final group in groups) {
+      final anchor = positions[group.items.first.id]!;
+      for (final item in group.items) {
+        final source = _positions[item.id]!;
+        positions[item.id] = HomeGridPosition(
+          anchor.column + source.column - group.origin.column,
+          anchor.row + source.row - group.origin.row,
+        );
+      }
+    }
+    return target._withPositions(positions);
+  }
+
   HomeGridPosition? positionOf(String id) => _positions[id];
 
   int get rows => _bottom(_positions);
@@ -31,12 +85,13 @@ class HomeGridLayout {
   HomeConfiguration resizeItem(String id, HomeSpan span) {
     final ordered = itemsInVisualOrder;
     final index = ordered.indexWhere((item) => item.id == id);
-    if (index < 0 || ordered[index].span == span || span.width <= 0 || span.width > columns || span.height <= 0) {
+    if (index < 0 || ordered[index].span == span || span.width <= 0 || span.width > columnCount || span.height <= 0) {
       return positionedConfiguration;
     }
     final resized = HomeGridLayout(
       HomeConfiguration(
         version: configuration.version,
+        columns: columnCount,
         items: [for (final (i, item) in ordered.indexed) item.copyWith(order: i, span: i == index ? span : item.span)],
         shortcutWalletContext: configuration.shortcutWalletContext,
       ),
@@ -45,7 +100,7 @@ class HomeGridLayout {
     final previous = index == 0 ? null : ordered[index - 1];
     final start =
         previous == null
-            ? anchorForSpan(_positions[id]!, span)
+            ? anchorForSpan(_positions[id]!, span, columns: columnCount)
             : HomeGridPosition(_positions[previous.id]!.column + previous.span.width, _positions[previous.id]!.row);
     final target = resized._firstFreeFrom(span, positions, start);
     positions[id] = target;
@@ -63,11 +118,17 @@ class HomeGridLayout {
     return item != null && _withinBounds(item.span, target);
   }
 
-  static HomeGridPosition anchorForSpan(HomeGridPosition position, HomeSpan? span) {
+  static HomeGridPosition anchorForSpan(
+    HomeGridPosition position,
+    HomeSpan? span, {
+    int columns = HomeGridLayout.columns,
+  }) {
     if (span == HomeSpan.small) {
       return HomeGridPosition(position.column.clamp(0, columns - HomeSpan.small.width), position.row);
     }
-    if (span == HomeSpan.wide) return HomeGridPosition(0, position.row);
+    if (span == HomeSpan.wide) {
+      return HomeGridPosition(position.column.clamp(0, columns - HomeSpan.wide.width), position.row);
+    }
     return position;
   }
 
@@ -105,7 +166,11 @@ class HomeGridLayout {
   /// A wide destination can use the source row if its companions fit beside the moving widget.
   /// Keep this local to two complete, disjoint row bands; otherwise use ordinary collision handling.
   HomeConfiguration? _exchangeWithWideRow(HomeItem moving, HomeGridPosition source, HomeGridPosition target) {
-    if (moving.span != HomeSpan.small || (source.row - target.row).abs() < HomeSpan.small.height) return null;
+    if (columnCount != columns ||
+        moving.span != HomeSpan.small ||
+        (source.row - target.row).abs() < HomeSpan.small.height) {
+      return null;
+    }
     final wide =
         configuration.items.where((other) {
           final position = _positions[other.id]!;
@@ -152,7 +217,8 @@ class HomeGridLayout {
     final moving = _itemsById[id];
     final before = _itemsById[beforeId];
     if (moving == null || before == null) return positionedConfiguration;
-    if (moving.span == HomeSpan.shortcut &&
+    if (columnCount == columns &&
+        moving.span == HomeSpan.shortcut &&
         before.span == HomeSpan.wide &&
         _positions[id]!.row > _positions[beforeId]!.row) {
       final target = HomeGridPosition(0, _positions[beforeId]!.row);
@@ -177,6 +243,7 @@ class HomeGridLayout {
     _flow(ordered.skip(insertionIndex), positions, prefix, start, rowHeight);
     return HomeConfiguration(
       version: configuration.version,
+      columns: columnCount,
       items: [
         for (var index = 0; index < ordered.length; index++)
           ordered[index].copyWith(order: index, position: positions[ordered[index].id]),
@@ -233,20 +300,20 @@ class HomeGridLayout {
               final position = positions[previous.id]!;
               return position.row == row && position.column > 0 && previous.span.height > item.span.height;
             });
-        if (column > 0 && (column + item.span.width > columns || followsStaggeredTallItem)) {
+        if (column > 0 && (column + item.span.width > columnCount || followsStaggeredTallItem)) {
           nextRow();
           continue;
         }
         if (_isFlowColumn(item.span, column) && _fits(item.span, HomeGridPosition(column, row), positions)) break;
         column++;
-        if (column >= columns) nextRow();
+        if (column >= columnCount) nextRow();
       }
       positions[item.id] = HomeGridPosition(column, row);
       placed.add(item);
       column += item.span.width;
       rowHeight = math.max(rowHeight, item.span.height);
       first = false;
-      if (column == columns) {
+      if (column == columnCount) {
         row += rowHeight;
         column = 0;
         rowHeight = 0;
@@ -353,7 +420,7 @@ class HomeGridLayout {
     var rowHeight = 0;
     for (final item in items) {
       while (true) {
-        if (column + item.span.width > columns) {
+        if (column + item.span.width > columnCount) {
           row += math.max(rowHeight, 1);
           column = 0;
           rowHeight = 0;
@@ -365,7 +432,7 @@ class HomeGridLayout {
       placed[item.id] = HomeGridPosition(column, row);
       column += item.span.width;
       rowHeight = math.max(rowHeight, item.span.height);
-      if (column == columns) {
+      if (column == columnCount) {
         row += rowHeight;
         column = 0;
         rowHeight = 0;
@@ -380,7 +447,7 @@ class HomeGridLayout {
     bool useFlowColumns = false,
   }) {
     for (var row = start.row; ; row++) {
-      for (var column = row == start.row ? start.column : 0; column <= columns - span.width; column++) {
+      for (var column = row == start.row ? start.column : 0; column <= columnCount - span.width; column++) {
         final candidate = HomeGridPosition(column, row);
         if ((!useFlowColumns || _isFlowColumn(span, column)) && _fits(span, candidate, placed)) return candidate;
       }
@@ -409,7 +476,7 @@ class HomeGridLayout {
   }
 
   bool _withinBounds(HomeSpan span, HomeGridPosition position) =>
-      position.column >= 0 && position.row >= 0 && position.column + span.width <= columns;
+      position.column >= 0 && position.row >= 0 && position.column + span.width <= columnCount;
 
   // Keep preset and insertion flow unchanged; explicit positions may use any fitting column.
   bool _isFlowColumn(HomeSpan span, int column) => span != HomeSpan.small || column.isEven;
@@ -429,6 +496,7 @@ class HomeGridLayout {
 
   HomeConfiguration _withPositions(Map<String, HomeGridPosition> positions) => HomeConfiguration(
     version: configuration.version,
+    columns: columnCount,
     items: [for (final item in configuration.items) item.copyWith(position: positions[item.id])],
     shortcutWalletContext: configuration.shortcutWalletContext,
   );
