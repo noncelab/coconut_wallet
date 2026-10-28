@@ -88,7 +88,7 @@ FiatCode _fiatOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings settings) =>
 List<FiatCode> _fiatsOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings settings, int max) =>
     (settings.fiats ?? fiatsWithDefaultFirst(viewModel.fiat)).take(max).toList();
 
-/// 누른 위젯의 지갑 범위·기간으로 인사이트를 열고, 그 위젯에 해당하는 구역으로 이동한다.
+/// 저장한 인사이트 지갑 선택(미저장 시 위젯 범위)과 위젯의 기간으로 열고 해당 구역으로 이동한다.
 /// 홈 위젯과 호들 인사이트의 대응 카드를 잇는 Hero 태그
 Object insightsHeroTag(String itemId) => ('insights-widget', itemId);
 

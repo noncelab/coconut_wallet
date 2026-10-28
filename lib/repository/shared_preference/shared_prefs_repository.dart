@@ -31,6 +31,24 @@ class SharedPrefsRepository {
     _isInitialized = true;
   }
 
+  /// 저장 전에는 진입 위젯의 범위를 사용하고, 저장된 null은 명시적인 '모든 지갑'이다.
+  List<int>? getHodlInsightsWalletIds({List<int>? fallback}) {
+    final encoded = getStringOrNull(SharedPrefKeys.kHodlInsightsWalletIds);
+    if (encoded == null) return fallback;
+    try {
+      final decoded = jsonDecode(encoded);
+      if (decoded == null) return null;
+      if (decoded is List && decoded.every((id) => id is int)) return decoded.cast<int>();
+    } on FormatException {
+      return fallback;
+    }
+    return fallback;
+  }
+
+  Future<void> setHodlInsightsWalletIds(List<int>? walletIds) async {
+    await setString(SharedPrefKeys.kHodlInsightsWalletIds, jsonEncode(walletIds));
+  }
+
   /// Common--------------------------------------------------------------------
   Future clearSharedPref() async {
     await _sharedPrefs.clear();

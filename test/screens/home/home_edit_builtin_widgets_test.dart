@@ -1495,6 +1495,92 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('insights wallet selection persists on reentry and overrides entry scope after saving', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        walletList: [for (var id = 1; id <= 3; id++) WalletMock.createSingleSigWalletItem(id: id)],
+        screen:
+            (_) => Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed: () => HodlInsightsScreen.open(context, walletIds: [1, 2]),
+                    child: const Text('open persistent insights'),
+                  ),
+            ),
+      );
+      Future<void> openInsights() async {
+        await tester.tap(find.text('open persistent insights'));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> openSettings() async {
+        await tester.tap(find.byKey(const Key('hodl-insights-settings')));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> submit() async {
+        final button = find.byKey(const Key('widget-configure-submit'));
+        await tester.ensureVisible(button);
+        await tester.pumpAndSettle();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> leaveInsights() async {
+        Navigator.of(tester.element(find.byType(HodlInsightsScreen))).pop();
+        await tester.pumpAndSettle();
+      }
+
+      HodlInsightsViewModel model() => tester.element(find.byType(HodlInsightsScreen)).read<HodlInsightsViewModel>();
+      await openInsights();
+      expect(model().walletIds, [1, 2]);
+      await openSettings();
+      for (final id in [3, 1, 2]) {
+        final row = find.byKey(ValueKey('widget-configure-wallet-$id'));
+        await tester.ensureVisible(row);
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+      }
+      await submit();
+      expect(model().walletIds, [3]);
+      await leaveInsights();
+      await openInsights();
+      expect(model().walletIds, [3]);
+      await openSettings();
+      expect(
+        tester.widget<HomeConfigureCheckRow>(find.byKey(const ValueKey('widget-configure-wallet-3'))).checked,
+        isTrue,
+      );
+      expect(
+        tester.widget<HomeConfigureCheckRow>(find.byKey(const Key('widget-configure-all-wallets'))).checked,
+        isFalse,
+      );
+      // Canceling a change must leave the last saved selection intact.
+      await tester.tap(find.byKey(const ValueKey('widget-configure-wallet-1')));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byKey(const Key('widget-configure-all-wallets')))).pop();
+      await tester.pumpAndSettle();
+      expect(model().walletIds, [3]);
+      await openSettings();
+      await tester.tap(find.byKey(const Key('widget-configure-all-wallets')));
+      await tester.pumpAndSettle();
+      await submit();
+      await leaveInsights();
+      await openInsights();
+      expect(model().walletIds, isNull);
+      await openSettings();
+      expect(
+        tester.widget<HomeConfigureCheckRow>(find.byKey(const Key('widget-configure-all-wallets'))).checked,
+        isTrue,
+      );
+      Navigator.of(tester.element(find.byKey(const Key('widget-configure-all-wallets')))).pop();
+      await tester.pumpAndSettle();
+      await leaveInsights();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('balance history preserves multiple selected wallets and their combined balance', (tester) async {
       final now = DateTime(2026, 10, 20, 12);
       await _openWidgetsTab(

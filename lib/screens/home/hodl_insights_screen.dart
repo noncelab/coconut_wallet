@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
@@ -39,7 +40,8 @@ class HodlInsightsScreen extends StatefulWidget {
   const HodlInsightsScreen({super.key, this.heroTag, this.heroSection});
 
   /// 홈 위젯이나 모든 기능에서 연다.
-  /// 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
+  /// 저장한 지갑 선택을 복원한다. 저장 전에는 진입 위젯의 지갑 범위를 사용한다.
+  /// 기간은 진입 위젯의 설정으로 시작한다.
   static Future<void> open(
     BuildContext context, {
     List<int>? walletIds,
@@ -49,12 +51,13 @@ class HodlInsightsScreen extends StatefulWidget {
     Object? heroTag,
   }) {
     final data = context.read<HomeWidgetsViewModel>().withoutFakeBalance();
+    final savedWalletIds = SharedPrefsRepository().getHodlInsightsWalletIds(fallback: walletIds);
     Widget page(BuildContext _) => ChangeNotifierProvider(
       create:
           (_) => HodlInsightsViewModel(
             data,
             initialSection: section,
-            walletIds: walletIds,
+            walletIds: savedWalletIds,
             balancePeriod: balancePeriod,
             activityPeriod: activityPeriod,
           ),
@@ -173,7 +176,9 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
       wallets: viewModel.data.wallets,
       initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
     );
-    if (settings == null) return;
+    if (settings == null || !mounted) return;
+    await SharedPrefsRepository().setHodlInsightsWalletIds(settings.walletIds);
+    if (!mounted) return;
     viewModel.setWalletIds(settings.walletIds);
     viewModel.data.refresh();
   }
