@@ -1180,9 +1180,10 @@ split_utxo_screen:
     fee: "수수료"
     above_is_expected: "위 결과는 예상값이에요."
   big_tx_confirm:
-    create: "생성하기"
-    preview: "예상 보기"
-    description: "트랜잭션 크기가 커서 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
+    title: "대용량 트랜잭션"
+    create: "바로 생성"
+    preview: "예상 결과 보기"
+    description: "생성하는 데 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인해 보세요."
 
 label_management_screen:
   title: "메모 관리하기"

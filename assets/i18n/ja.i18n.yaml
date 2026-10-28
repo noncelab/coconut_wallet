@@ -1162,9 +1162,10 @@ split_utxo_screen:
     fee: "手数料"
     above_is_expected: "上の結果は予想値です。"
   big_tx_confirm:
-    create: "作成する"
-    preview: "結果を確認"
-    description: "トランザクションのサイズが大きいため、作成に時間がかかる場合があります。先に予想結果を確認しますか？"
+    title: "大容量トランザクション"
+    create: "すぐに作成"
+    preview: "予想結果を見る"
+    description: "作成に時間がかかる場合があります。先に予想結果をご確認ください。"
 
 label_management_screen:
   title: "メモの管理"

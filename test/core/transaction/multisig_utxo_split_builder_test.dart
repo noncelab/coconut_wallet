@@ -658,15 +658,34 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result, expectedInputCount: 2);
-      // multisig는 input당 vBytes가 소수(105.25)라 반올림 오차 발생 가능
-      expect(preview.estimatedFee, closeTo(result.estimatedFee, 2));
+      expect(preview.estimatedFee, result.estimatedFee);
 
-      // input 1개 대비 추가 input분의 수수료가 반영됐는지 확인 (2-of-3 P2WSH input ≈ 105.25 vBytes)
+      // input 1개 대비 추가 input분의 수수료가 반영됐는지 확인 (2-of-3 P2WSH input ≈ 104.25 vBytes)
       final singleInputBuilder = createBuilder([createUtxo(1000000, index: 0)]);
       final singleInputResult = await singleInputBuilder.buildEqualAmountSplit(splitCount: 5).future;
       expect(result.estimatedFee, greaterThan(singleInputResult.estimatedFee));
-      expect(result.estimatedFee - singleInputResult.estimatedFee, greaterThanOrEqualTo(105));
+      expect(result.estimatedFee - singleInputResult.estimatedFee, greaterThanOrEqualTo(104));
     });
+
+    for (final feeRate in [1.0, 10.0]) {
+      for (final inputCount in [2, 10, 253]) {
+        test('input $inputCount개, $feeRate sat/vB 균등 분할 시 preview 수수료가 실제와 같고 출력 간 차이가 1 sat 이내', () async {
+          final utxos = List.generate(inputCount, (i) => createUtxo(50000, index: i));
+          final builder = createBuilder(utxos, feeRate);
+
+          final preview = await builder.getEqualAmountSplitPreview(splitCount: 2);
+          final result = await builder.buildEqualAmountSplit(splitCount: 2).future;
+
+          expect(result.isSuccess, isTrue);
+          expect(preview.estimatedFee, result.estimatedFee);
+          final amounts = result.transaction!.outputs.map((output) => output.amount).toList();
+          expect(
+            amounts.reduce((a, b) => a > b ? a : b) - amounts.reduce((a, b) => a < b ? a : b),
+            lessThanOrEqualTo(1),
+          );
+        });
+      }
+    }
 
     test('다중 입력에서 getMaxEqualSplitCount로 계산한 최대 분할 수로 빌드 성공', () async {
       // input당 수수료를 반영하지 않으면 maxCount가 실제보다 크게 계산되어 빌드가 실패한다

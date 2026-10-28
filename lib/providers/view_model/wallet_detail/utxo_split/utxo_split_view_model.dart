@@ -8,9 +8,11 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -46,10 +48,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final WalletProvider _walletProvider;
   final AddressRepository _addressRepository;
   final SendInfoProvider _sendInfoProvider;
+  final UtxoTagProvider _utxoTagProvider;
   final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
 
   // State
   List<UtxoState> _selectedUtxoList = [];
+  List<UtxoTag> _selectedUtxoTags = [];
   SplitMethod? _selectedMethod;
   List<int> _recommendedSplitCounts = [];
 
@@ -99,6 +103,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   bool get isDustError => _isDustError;
   bool get isPreparingNextStep => _isPreparingNextStep;
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
+  List<UtxoTag> get selectedUtxoTags => _selectedUtxoTags;
   SplitMethod? get selectedMethod => _selectedMethod;
   bool get isUtxoSelected => _selectedUtxoList.isNotEmpty;
   bool get hasFeeRate => feeRateController.text.isNotEmpty;
@@ -157,6 +162,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._walletProvider,
     this._addressRepository,
     this._sendInfoProvider,
+    this._utxoTagProvider,
     this._showUsePreviewConfirmPrompt,
   ) {
     amountController.addListener(() {
@@ -522,6 +528,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     final isChanged = !oldIds.containsAll(newIds) || !newIds.containsAll(oldIds);
 
     _selectedUtxoList = utxoList;
+    final seenTagIds = <String>{};
+    _selectedUtxoTags =
+        utxoList
+            .expand((utxo) => _utxoTagProvider.getUtxoTagsByUtxoId(walletId, utxo.utxoId))
+            .where((tag) => seenTagIds.add(tag.id))
+            .toList();
 
     if (_selectedUtxoList.isEmpty || hasSelectedUtxoAmountError) {
       _selectedMethod = null;

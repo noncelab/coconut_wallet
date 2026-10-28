@@ -627,24 +627,6 @@ void main() {
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
-
-    /// feeRate 커질수록 예상 수수료 예측값이 차이가 커지는 상황
-    test('EqualAmountSplit 989807 / 20개로 나누기 / feeRate 1000', () async {
-      final utxo = createUtxo(989807);
-      final builder = createBuilder([utxo], 1000.0);
-
-      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 20);
-      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 20).future;
-
-      print('--- preview.amountCountMap ---');
-      print(formatAmountCountMap(preview.amountCountMap));
-      print('--- result.splitAmountMap ---');
-      print(formatAmountCountMap(result.splitAmountMap));
-      print('--- fee ---');
-      print(preview.estimatedFee);
-      print(result.estimatedFee);
-      expect(preview.estimatedFee, isNot(equals(result.estimatedFee)));
-    });
   });
 
   group('다중 UTXO 입력', () {

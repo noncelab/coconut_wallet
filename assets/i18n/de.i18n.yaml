@@ -1113,9 +1113,10 @@ split_utxo_screen:
     fee: "Gebühr"
     above_is_expected: "Das obige Ergebnis ist eine Schätzung"
   big_tx_confirm:
-    create: "Erstellen"
-    preview: "Vorschau"
-    description: "Die Transaktion ist groß, daher kann die Erstellung einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+    title: "Große Transaktion"
+    create: "Jetzt erstellen"
+    preview: "Ergebnis ansehen"
+    description: "Die Erstellung kann einige Zeit dauern. Sehen Sie sich zuerst das voraussichtliche Ergebnis an."
 
 label_management_screen:
   title: "Notizen verwalten"

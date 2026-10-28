@@ -327,7 +327,7 @@ class CommonBottomSheets {
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo(draggableController.size + delta);
+                            draggableController.jumpTo((draggableController.size + delta).clamp(0.0, 1.0));
                           },
                           onVerticalDragEnd: (details) {
                             handleDrag();
@@ -353,7 +353,7 @@ class CommonBottomSheets {
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo(draggableController.size + delta);
+                            draggableController.jumpTo((draggableController.size + delta).clamp(0.0, 1.0));
                           },
                           onVerticalDragEnd: (details) {
                             handleDrag();
@@ -793,7 +793,7 @@ class _SheetDragForwarderState extends State<_SheetDragForwarder> {
       onVerticalDragUpdate: (details) {
         if (!widget.controller.isAttached) return;
         final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-        widget.controller.jumpTo(widget.controller.size + delta);
+        widget.controller.jumpTo((widget.controller.size + delta).clamp(0.0, 1.0));
       },
       onVerticalDragEnd: (_) => _handleDragEnd(),
       child: widget.child,

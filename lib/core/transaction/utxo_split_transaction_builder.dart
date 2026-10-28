@@ -7,7 +7,6 @@ import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.d
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -174,46 +173,34 @@ class UtxoSplitTransactionBuilder {
     }
   }
 
-  double _getOneOutputTxVBytesOfInheritancePolicy() {
-    assert(_scriptPathPolicy != null);
-    assert(_scriptPathPolicy is InheritancePolicy);
-    return 131;
-  }
-
   Future<void> _initOutputVBytes() async {
     if (_outputVBytes != null) return;
 
-    switch (walletListItemBase.walletType) {
-      case WalletType.singleSignature:
-        _oneOutputTxVBytes = 110;
-        _outputVBytes = 31;
-      case WalletType.multiSignature:
-        final wallet = walletListItemBase as MultisigWalletItem;
-        _oneOutputTxVBytes = 132 + (wallet.signers.length - 2) * 8 + (wallet.requiredSignatureCount - 1) * 18;
-        _outputVBytes = 43;
-      case WalletType.taproot:
-        _oneOutputTxVBytes = _scriptPathPolicy == null ? 111 : _getOneOutputTxVBytesOfInheritancePolicy();
-        _outputVBytes = 43;
+    /// Transaction.forBatchSweep이 실제 사용하는 추정기와 동일하게 vBytes를 계산
+    /// (input·output 크기가 개수에 선형이므로 1개씩 늘린 tx와의 차이로 구함)
+    final addressType = walletListItemBase.walletType.addressType;
+    final dummyAddress = walletListItemBase.walletBase.getAddress(0);
+    double estimateVBytes(int inputCount, int outputCount) {
+      final tx = Transaction.withInputsAndOutputs(
+        List.generate(inputCount, (index) => TransactionInput.forPayment('00' * 32, index)),
+        List.generate(outputCount, (_) => TransactionOutput.forPayment(0, dummyAddress)),
+        addressType,
+      );
+      if (_scriptPathPolicy != null) {
+        tx.setPolicy(_scriptPathPolicy);
+      }
+      return tx.estimateVirtualByte(
+        addressType,
+        requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+        totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+        leafCount:
+            _scriptPathPolicy != null ? (walletListItemBase.walletBase as TaprootWallet).policyList.length : null,
+      );
     }
-    assert(_outputVBytes != null && _oneOutputTxVBytes != null);
 
-    /// TransactionBuilder가 실제 사용하는 추정기와 동일하게 input당 vBytes를 계산
-    /// (witness가 input 수에 선형이므로 2 inputs - 1 input의 차이로 구함)
-    final taprootConfig =
-        _scriptPathPolicy != null
-            ? (walletListItemBase as TaprootWalletItem).scriptPathConfigFor(_scriptPathPolicy)
-            : null;
-    double vBytesForInputCount(int inputCount) => WalletUtility.estimateVirtualByte(
-      walletListItemBase.walletType.addressType,
-      inputCount,
-      1,
-      requiredSignature: walletListItemBase.multisigConfig?.requiredSignature ?? taprootConfig?.requiredSignature,
-      totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-      isScriptPath: _scriptPathPolicy != null,
-      leafCount: taprootConfig?.leafCount,
-      tapScriptSize: taprootConfig?.tapScriptSize,
-    );
-    _inputVBytes = vBytesForInputCount(2) - vBytesForInputCount(1);
+    _oneOutputTxVBytes = estimateVBytes(1, 1);
+    _inputVBytes = estimateVBytes(2, 1) - _oneOutputTxVBytes!;
+    _outputVBytes = estimateVBytes(1, 2) - _oneOutputTxVBytes!;
   }
 
   /// 최대 균등 분할 수를 계산하고 실제 빌드로 검증하여 조정
@@ -316,7 +303,9 @@ class UtxoSplitTransactionBuilder {
               exactAmounts.removeLast();
               splitPreview = await _buildSplitPreview(
                 exactAmounts,
-                (_oneOutputTxVBytesWithInputCount(utxos.length) + _outputVBytes! * (exactAmounts.length - 1)) * feeRate,
+                ((_oneOutputTxVBytesWithInputCount(utxos.length) + _outputVBytes! * (exactAmounts.length - 1)) *
+                        feeRate)
+                    .ceilToDouble(),
                 utxos,
               );
               if (isCancelled) {
@@ -422,8 +411,9 @@ class UtxoSplitTransactionBuilder {
     final totalOutputCount = amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
 
     final double estimatedFee =
-        (_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * totalOutputCount) * feeRate +
-        (totalOutputCount >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0);
+        ((_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * totalOutputCount) * feeRate +
+                (totalOutputCount >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0))
+            .ceilToDouble();
     if (estimatedFee >= totalAmount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: estimatedFee);
     }
@@ -451,7 +441,8 @@ class UtxoSplitTransactionBuilder {
 
     final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput, effectiveUtxos);
     final estimatedFee =
-        (_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * (exactAmounts.length)) * feeRate;
+        ((_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * (exactAmounts.length)) * feeRate)
+            .ceilToDouble();
     return _buildSplitPreview(exactAmounts, estimatedFee, effectiveUtxos);
   }
 
