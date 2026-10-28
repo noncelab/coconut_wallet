@@ -178,6 +178,10 @@ void main() {
     expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    await subject.setCollectionEnabled(true);
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isFalse);
+    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
   });
 
   test('a storage write returning false makes the update fail', () async {
@@ -216,43 +220,102 @@ void main() {
     verify(analytics.setAnalyticsCollectionEnabled(true)).called(1);
   });
 
-  test('failed SDK enable keeps the committed choice but remains retryable and fail closed', () async {
+  test('failed SDK enable keeps OFF and the saved choice so the same tap retries ON', () async {
     await repository.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
     final subject = service();
     await subject.initialize();
+    clearInteractions(analytics);
     when(analytics.setAnalyticsCollectionEnabled(true)).thenThrow(StateError('enable failed'));
 
-    await expectLater(subject.setCollectionEnabled(true), throwsA(isA<StateError>()));
-
-    expect(subject.isCollectionEnabled, isTrue);
-    expect(subject.canCollect, isFalse);
-    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
-
-    when(analytics.setAnalyticsCollectionEnabled(true)).thenAnswer((_) async {});
-    await subject.setCollectionEnabled(true);
-    expect(subject.canCollect, isTrue);
-  });
-
-  test('failed SDK disable persists opt-out across restart and permits a retry', () async {
-    final subject = service();
-    await subject.initialize();
-    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
-
-    await expectLater(subject.setCollectionEnabled(false), throwsA(isA<StateError>()));
+    await expectLater(subject.setCollectionEnabled(true), throwsStateError);
 
     expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
+    final restarted = service();
+    await restarted.initialize();
+    expect(restarted.isCollectionEnabled, isFalse);
+
+    when(analytics.setAnalyticsCollectionEnabled(true)).thenAnswer((_) async {});
+    await subject.setCollectionEnabled(true);
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isTrue);
+    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
+  });
+
+  test('a failing fail-safe disable still reports the enable failure and stays closed', () async {
+    await repository.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+    final subject = service();
+    await subject.initialize();
+    when(analytics.setAnalyticsCollectionEnabled(true)).thenThrow(StateError('enable failed'));
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
+
+    await expectLater(
+      subject.setCollectionEnabled(true),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', 'enable failed')),
+    );
+
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.canCollect, isFalse);
+  });
+
+  test('failed ON persistence turns the enabled SDK back off and keeps OFF', () async {
+    final failingPreferences = FailingSharedPreferences();
+    when(failingPreferences.containsKey(SharedPrefKeys.kAnalyticsCollectionEnabled)).thenReturn(true);
+    when(failingPreferences.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled)).thenReturn(false);
+    when(failingPreferences.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, true)).thenAnswer((_) async => false);
+    final subject = AnalyticsService(
+      analytics,
+      false,
+      sharedPrefs: SharedPrefsRepository()..setSharedPreferencesForTest(failingPreferences),
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await subject.initialize();
+    clearInteractions(analytics);
+
+    await expectLater(subject.setCollectionEnabled(true), throwsStateError);
+
+    verifyInOrder([analytics.setAnalyticsCollectionEnabled(true), analytics.setAnalyticsCollectionEnabled(false)]);
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.canCollect, isFalse);
+  });
+
+  test('failed SDK disable keeps the saved opt-out but shows ON so the same tap retries OFF', () async {
+    final subject = service();
+    await subject.initialize();
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
+
+    await expectLater(subject.setCollectionEnabled(false), throwsStateError);
+
+    // 거부는 SDK보다 먼저 저장되고 되돌리지 않는다. SDK 끄기(fail-safe 재시도 포함)가 실패했으니 화면은 켜짐으로 남는다.
+    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isFalse);
+    await subject.logEvent(eventName: 'blocked');
+    verifyNever(analytics.logEvent(name: 'blocked', parameters: anyNamed('parameters')));
     final restarted = service();
     await restarted.initialize();
     expect(restarted.isCollectionEnabled, isFalse);
     expect(restarted.canCollect, isFalse);
+
     when(analytics.setAnalyticsCollectionEnabled(false)).thenAnswer((_) async {});
     clearInteractions(analytics);
     await subject.setCollectionEnabled(false);
     verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
     expect(subject.isCollectionEnabled, isFalse);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+  });
+
+  test('startup SDK failure never rewrites the stored choice', () async {
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
+    final subject = service();
+
+    await subject.initialize();
+
+    expect(repository.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isFalse);
   });
 
   test('password reset does not clear the analytics collection choice', () {
@@ -342,6 +405,16 @@ void main() {
 
     verifyNever(analytics.logEvent(name: 'analytics_collection_enabled'));
     verifyNever(analytics.logEvent(name: 'analytics_collection_disabled'));
+    verify(analytics.setAnalyticsCollectionEnabled(false)).called(2);
+    expect(subject.isCollectionEnabled, isTrue);
     expect(subject.canCollect, isFalse);
+    final restarted = AnalyticsService(
+      analytics,
+      false,
+      sharedPrefs: SharedPrefsRepository(),
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await restarted.initialize();
+    expect(restarted.isCollectionEnabled, isTrue);
   });
 }

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/analytics_collection_setting.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,21 @@ class _PendingAnalyticsService extends AnalyticsService {
     calls++;
     await completion.future;
   }
+}
+
+/// SDK 켜기/끄기를 원하는 방향만 실패시키는 가짜. 실제 Firebase로 아무것도 보내지 않는다.
+class _FlakySdk extends Fake implements FirebaseAnalytics {
+  bool? failing;
+  final calls = <bool>[];
+
+  @override
+  Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
+    calls.add(enabled);
+    if (enabled == failing) throw StateError('SDK $enabled failed');
+  }
+
+  @override
+  Future<void> setDefaultEventParameters(Map<String, Object?>? defaultParameters) async {}
 }
 
 void main() {
@@ -110,6 +126,42 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
   });
+
+  for (final target in [true, false]) {
+    testWidgets('failed ${target ? 'ON' : 'OFF'} keeps the switch and the same tap retries it', (tester) async {
+      await SharedPrefsRepository().setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, !target);
+      final sdk = _FlakySdk();
+      final service = AnalyticsService(
+        sdk,
+        false,
+        commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+      );
+      await service.initialize();
+      await mount(tester, service);
+      bool isOn() => tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn;
+      expect(isOn(), !target);
+
+      sdk.failing = target;
+      await tester.tap(find.byType(CoconutSwitch));
+      await tester.pumpAndSettle();
+      expect(find.text(t.settings_screen.analytics_collection_error), findsOneWidget);
+      expect(isOn(), !target);
+      expect(service.canCollect, isFalse);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+
+      sdk.failing = null;
+      sdk.calls.clear();
+      await tester.tap(find.byType(CoconutSwitch));
+      await tester.pumpAndSettle();
+      expect(sdk.calls, [target]);
+      expect(isOn(), target);
+      expect(service.canCollect, target);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), target);
+      expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   for (final locale in AppLocale.values) {
     testWidgets('renders ${locale.languageCode} on a narrow screen with large text', (tester) async {

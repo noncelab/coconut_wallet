@@ -63,6 +63,8 @@ class AnalyticsService {
     }
   }
 
+  /// 저장과 SDK 적용이 모두 끝나야 선택을 바꾼다. 실패하면 선택은 그대로 두고 이번 실행의 수집을 닫으므로
+  /// 같은 동작으로 다시 시도할 수 있다. 수집 거부는 SDK 적용보다 먼저 저장하고 되돌리지 않는다.
   Future<void> setCollectionEnabled(bool enabled) async {
     if (_isUpdating) throw StateError('Analytics update already in progress');
     final analytics = _analytics;
@@ -74,18 +76,15 @@ class AnalyticsService {
       if (enabled) {
         if (analytics != null) {
           await _initializeDefaultParameters();
+          await analytics.setAnalyticsCollectionEnabled(true);
         }
         await _sharedPrefs.setAnalyticsCollectionEnabled(true);
-        _isCollectionEnabled.value = true;
-        if (analytics != null) {
-          await analytics.setAnalyticsCollectionEnabled(true);
-          _isReadyToCollect = true;
-        }
+        _isReadyToCollect = analytics != null;
       } else {
         await _sharedPrefs.setAnalyticsCollectionEnabled(false);
-        _isCollectionEnabled.value = false;
         await analytics?.setAnalyticsCollectionEnabled(false);
       }
+      _isCollectionEnabled.value = enabled;
     } catch (_) {
       await _disableCollectionAfterFailure();
       rethrow;
