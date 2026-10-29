@@ -128,6 +128,48 @@ void main() {
     verify(analytics.setDefaultEventParameters({'app_version': 'test'})).called(1);
   });
 
+  test('user property success means SDK call completion, without waiting for server delivery', () async {
+    final subject = service();
+    await subject.initialize();
+    final sdkCall = Completer<void>();
+    when(analytics.setUserProperty(name: 'hot_wallet_in_use', value: 'true')).thenAnswer((_) => sdkCall.future);
+    var completed = false;
+    final result = expectLater(
+      subject.setUserProperty(name: 'hot_wallet_in_use', value: 'true'),
+      completion(isTrue),
+    ).then((_) => completed = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(completed, isFalse);
+
+    sdkCall.complete();
+    await result;
+    verify(analytics.setUserProperty(name: 'hot_wallet_in_use', value: 'true')).called(1);
+  });
+
+  test('a property blocked by saved OFF reports no successful SDK call', () async {
+    await repository.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+    final subject = service();
+    await subject.initialize();
+
+    await expectLater(subject.setUserProperty(name: 'hot_wallet_in_use', value: 'true'), completion(isFalse));
+    verifyNever(analytics.setUserProperty(name: 'hot_wallet_in_use', value: 'true'));
+  });
+
+  test('a failed SDK property call reports failure without throwing into its caller', () async {
+    final subject = service();
+    await subject.initialize();
+    when(analytics.setUserProperty(name: 'hot_wallet_in_use', value: 'true')).thenThrow(StateError('property failed'));
+
+    await expectLater(subject.setUserProperty(name: 'hot_wallet_in_use', value: 'true'), completion(isFalse));
+  });
+
+  test('a property without an analytics backend reports no successful SDK call', () async {
+    final subject = AnalyticsService(null, false, sharedPrefs: repository);
+    await subject.initialize();
+
+    await expectLater(subject.setUserProperty(name: 'hot_wallet_in_use', value: 'true'), completion(isFalse));
+  });
+
   test('opt out blocks events immediately and persists before awaiting SDK disable', () async {
     final subject = service();
     await subject.initialize();

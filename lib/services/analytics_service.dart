@@ -172,14 +172,16 @@ class AnalyticsService {
     };
   }
 
-  /// 사용자 속성 설정
-  Future<void> setUserProperty({required String name, required String value}) async {
+  /// 수집이 허용되고 SDK 호출이 오류 없이 끝나면 true를 반환한다. 서버 수신을 보장하지는 않는다.
+  Future<bool> setUserProperty({required String name, required String value}) async {
     try {
       await _initialization;
-      if (!canCollect) return;
+      if (!canCollect) return false;
       await _analytics!.setUserProperty(name: name, value: value);
+      return true;
     } catch (e) {
       Logger.error('Analytics user property error: $e');
+      return false;
     }
   }
 }

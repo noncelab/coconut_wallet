@@ -29,13 +29,21 @@ class HotWalletUsageTracker {
   final AnalyticsService _analyticsService;
   late final StreamSubscription<NodeSyncState> _syncStateSubscription;
   bool _hasSent = false;
+  bool _isSending = false;
 
-  void _update() {
-    if (_hasSent) return;
+  Future<void> _update() async {
+    if (_hasSent || _isSending) return;
     final isInUse = _walletItemList.value.any((wallet) => wallet.hasLocalKey && _hasTransactionHistory(wallet.id));
     if (!isInUse) return;
-    _hasSent = true;
-    _analyticsService.setUserProperty(name: AnalyticsUserPropertyNames.hotWalletInUse, value: 'true');
+    _isSending = true;
+    try {
+      _hasSent = await _analyticsService.setUserProperty(
+        name: AnalyticsUserPropertyNames.hotWalletInUse,
+        value: 'true',
+      );
+    } finally {
+      _isSending = false;
+    }
   }
 
   void dispose() {
