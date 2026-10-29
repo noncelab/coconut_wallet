@@ -131,11 +131,19 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
+    final walletImportSource =
+        _walletImportSource == WalletImportSource.extendedPublicKey
+            ? WalletImportSource.descriptor
+            : _walletImportSource;
     final name = getNextThirdPartyWalletName(
-      WalletImportSource.descriptor,
+      walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromDescriptor(descriptor: descriptor, name: name);
+    final wallet = _walletAddService.createWalletFromDescriptor(
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: walletImportSource,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
