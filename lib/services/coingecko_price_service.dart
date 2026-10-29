@@ -17,8 +17,10 @@ class CoinGeckoPriceService {
   Timer? _retryWait;
   Duration _currentInterval = _interval;
   bool _isDisposed = false;
-  bool _isFetching = false;
   int _generation = 0;
+
+  /// 진행 중인 요청의 세대. 멈췄다 다시 시작하면 이전 요청이 새 요청을 막지 않는다.
+  int? _fetchingGeneration;
 
   final StreamController<Map<FiatCode, int>> _priceController = StreamController.broadcast();
   Stream<Map<FiatCode, int>> get priceStream => _priceController.stream;
@@ -53,9 +55,9 @@ class CoinGeckoPriceService {
   }
 
   Future<void> _fetch() async {
-    if (_isDisposed || _isFetching || _fiats.isEmpty) return;
     final generation = _generation;
-    _isFetching = true;
+    if (_isDisposed || _fetchingGeneration == generation || _fiats.isEmpty) return;
+    _fetchingGeneration = generation;
 
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -86,7 +88,7 @@ class CoinGeckoPriceService {
       Logger.log('CoinGeckoPriceService: 조회 실패: $e');
       _increaseBackoff();
     } finally {
-      _isFetching = false;
+      if (_fetchingGeneration == generation) _fetchingGeneration = null;
     }
   }
 

@@ -95,6 +95,28 @@ void main() {
     service.dispose();
   });
 
+  testWidgets('a quick restart while a request is pending sends a fresh request', (tester) async {
+    final pending = Completer<Response<dynamic>>();
+    final dio = _FakeDio((call) => call == 1 ? pending.future : _ok({'aed': 2}));
+    final service = CoinGeckoPriceService(dio: dio, fiats: const [FiatCode.AED]);
+    final emitted = <Map<FiatCode, int>>[];
+    service.priceStream.listen(emitted.add);
+
+    service.start();
+    await tester.pump();
+    service.stop();
+    service.start();
+    await tester.pump();
+    expect(dio.requestCount, 2);
+
+    pending.complete(_response({'aed': 1}));
+    await tester.pump();
+    expect(emitted, [
+      {FiatCode.AED: 2},
+    ]);
+    service.dispose();
+  });
+
   testWidgets('caps the backoff at 10 minutes', (tester) async {
     final dio = _FakeDio((_) => _error());
     final service = serviceWith(dio);
