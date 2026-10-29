@@ -27,6 +27,10 @@ class PriceProvider extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
   final CoinGeckoPriceService Function() _createCoinGeckoService;
+  final DateTime Function() _now;
+
+  /// 정상 조회 주기(CoinGecko 60초)를 넘겨 새 시세가 오지 않았다고 보는 기준
+  static const staleAfter = Duration(seconds: 90);
 
   /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
   final Map<FiatCode, WebSocketService> _webSocketServices = {};
@@ -47,17 +51,31 @@ class PriceProvider extends ChangeNotifier {
 
   /// 통화별 가격 저장
   final Map<FiatCode, int> _bitcoinPrices = {};
+  final Map<FiatCode, DateTime> _priceReceivedAt = {};
 
   /// 특정 통화의 BTC 가격 조회
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => _bitcoinPrices[fiatCode];
+
+  /// 특정 통화의 시세를 받은 시각
+  DateTime? priceReceivedAt(FiatCode fiatCode) => _priceReceivedAt[fiatCode];
+
+  bool isPriceStale(FiatCode fiatCode) {
+    final receivedAt = _priceReceivedAt[fiatCode];
+    return receivedAt == null || _now().difference(receivedAt) > staleAfter;
+  }
+
+  /// CoinGecko를 조회 중이면 다음 주기를 기다리지 않고 바로 요청한다. 백오프 중에는 요청하지 않는다.
+  void refreshCoinGeckoNow() => _coinGeckoService?.refreshNow();
 
   PriceProvider(
     this._connectivityProvider,
     this._preferenceProvider, {
     @visibleForTesting WebSocketService Function(FiatCode fiatCode)? webSocketFactory,
     @visibleForTesting CoinGeckoPriceService Function()? coinGeckoFactory,
+    @visibleForTesting DateTime Function()? now,
   }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create,
-       _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new {
+       _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new,
+       _now = now ?? DateTime.now {
     Logger.log('PriceProvider: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;
@@ -133,6 +151,7 @@ class PriceProvider extends ChangeNotifier {
     if (!_needsCoinGecko) {
       _coinGeckoService?.stop();
       _bitcoinPrices.removeWhere((fiat, _) => !fiat.hasExchangeSource);
+      _priceReceivedAt.removeWhere((fiat, _) => !fiat.hasExchangeSource);
       return;
     }
 
@@ -206,11 +225,16 @@ class PriceProvider extends ChangeNotifier {
     if (ticker == null) return;
 
     _bitcoinPrices[fiatCode] = ticker.tradePrice;
+    _priceReceivedAt[fiatCode] = _now();
     notifyListeners();
   }
 
   void _updateCoinGeckoPrices(Map<FiatCode, int> prices) {
     _bitcoinPrices.addAll(prices);
+    final receivedAt = _now();
+    for (final fiat in prices.keys) {
+      _priceReceivedAt[fiat] = receivedAt;
+    }
     notifyListeners();
   }
 

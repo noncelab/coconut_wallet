@@ -23,6 +23,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   final PriceProvider _priceProvider;
   final WalletProvider _walletProvider;
+  final Future<int?> Function(FiatCode fiatCode) _fetchRestPrice;
   int _priceRequestGeneration = 0;
   bool _isDisposed = false;
 
@@ -60,6 +61,18 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   int? _btcPrice;
   int? get btcPrice => _btcPrice;
 
+  /// 기준 BTC 가격을 받은 시각. 계산서의 기준 시세 아래에 출처와 함께 표시한다.
+  DateTime? _btcPriceAt;
+  DateTime? get btcPriceAt => _btcPriceAt;
+
+  /// 기준 시세 출처 이름
+  String get priceSourceName => switch (_fiatCode) {
+    FiatCode.KRW => t.utility.p2p_calculator.source_upbit,
+    FiatCode.USD || FiatCode.EUR => t.utility.p2p_calculator.source_binance,
+    FiatCode.JPY => t.utility.p2p_calculator.source_bitflyer,
+    _ => t.utility.p2p_calculator.source_coingecko,
+  };
+
   /// BTC 가격이 사용 가능한지 여부
   bool get isBtcPriceAvailable => _btcPrice != null && _btcPrice! > 0 && _isNetworkOn;
 
@@ -88,16 +101,16 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._connectivityProvider,
     this._priceProvider,
-    this._walletProvider,
-  ) {
+    this._walletProvider, {
+    @visibleForTesting Future<int?> Function(FiatCode fiatCode)? restPriceFetcher,
+  }) : _fetchRestPrice = restPriceFetcher ?? _fetchPriceForFiat {
     _connectivityProvider.addListener(_onConnectivityChanged);
     _priceProvider.addListener(_onPriceChanged);
 
     _fiatCode = _preferenceProvider.selectedFiat;
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
     _isNetworkOn = _connectivityProvider.isInternetOn;
     _currentUnit = _preferenceProvider.currentUnit;
-    _priceProvider.setCalculatorFiat(this, _fiatCode);
+    unawaited(setFiatCode(_fiatCode));
   }
 
   @override
@@ -122,9 +135,19 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   void _onPriceChanged() {
-    // 현재 통화의 공유 시세를 사용하고, 거래소 첫 시세가 없으면 REST 값을 유지한다.
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode) ?? _btcPrice;
+    _takeSharedPriceIfNewer();
     notifyListeners();
+  }
+
+  /// 공유 시세가 지금 쓰는 시세(REST로 직접 받은 값 포함)보다 오래되지 않았으면 바꾼다.
+  void _takeSharedPriceIfNewer() {
+    final price = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    final receivedAt = _priceProvider.priceReceivedAt(_fiatCode);
+    if (price == null) return;
+    final current = _btcPriceAt;
+    if (current != null && receivedAt != null && receivedAt.isBefore(current)) return;
+    _btcPrice = price;
+    _btcPriceAt = receivedAt;
   }
 
   void setInputAssetType(InputAssetType type) {
@@ -322,14 +345,22 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     _priceProvider.setCalculatorFiat(this, fiatCode);
 
     // 거래소 웹소켓과 CoinGecko 폴링의 공유 시세를 사용한다.
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    _btcPrice = null;
+    _btcPriceAt = null;
+    _takeSharedPriceIfNewer();
 
-    // 거래소 첫 웹소켓 시세가 없을 때만 기존 REST fallback을 사용한다.
-    if (_btcPrice == null && fiatCode.hasExchangeSource) {
-      final fetchedPrice = await _fetchPriceForFiat(_fiatCode);
-      if (_isDisposed || generation != _priceRequestGeneration) return;
-      if (fetchedPrice != null) {
-        _btcPrice = _priceProvider.getBitcoinPriceForFiat(fiatCode) ?? fetchedPrice;
+    // 공유 시세가 없거나 정상 주기를 넘겨 오래됐으면 새로 받는다. 못 받으면 마지막 시세를 계속 쓴다.
+    if (_priceProvider.isPriceStale(fiatCode)) {
+      if (!fiatCode.hasExchangeSource) {
+        _priceProvider.refreshCoinGeckoNow();
+      } else {
+        final requestedAt = DateTime.now();
+        final fetchedPrice = await _fetchRestPrice(fiatCode);
+        if (_isDisposed || generation != _priceRequestGeneration) return;
+        if (fetchedPrice != null && (_btcPriceAt == null || _btcPriceAt!.isBefore(requestedAt))) {
+          _btcPrice = fetchedPrice;
+          _btcPriceAt = DateTime.now();
+        }
       }
     }
 
@@ -337,7 +368,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// 특정 Fiat에 대한 BTC 가격을 REST API로 가져옴
-  Future<int?> _fetchPriceForFiat(FiatCode fiatCode) async {
+  static Future<int?> _fetchPriceForFiat(FiatCode fiatCode) async {
     try {
       final dio = Dio(
         BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
@@ -389,9 +420,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String generateTransactionBill(
     String btcPriceStr,
+    String priceSourceStr,
     String fiatAmountStr,
     String btcAmountStr,
-    String referenceDateTime,
+    String billCreatedAt,
     String feeRateStr,
     String feeAmountStr,
     String feeSatsStr,
@@ -404,7 +436,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         btcAmount: btcAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
-        referenceTime: referenceDateTime,
+        referencePriceSource: priceSourceStr,
+        billCreatedAt: billCreatedAt,
         transactionPremiumRate: feeRateStr,
         transactionPremium: feeAmountStr,
         premiumToSats: feeSatsStr,
@@ -417,7 +450,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         btcAmount: fiatAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
-        referenceTime: referenceDateTime,
+        referencePriceSource: priceSourceStr,
+        billCreatedAt: billCreatedAt,
         transactionPremiumRate: feeRateStr,
         transactionPremium: feeAmountStr,
         premiumToSats: feeSatsStr,

@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
 import 'package:coconut_wallet/services/coingecko_price_service.dart';
+import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -201,6 +202,72 @@ void main() {
     }
   });
 
+  testWidgets('the bill time is when the calculator price was received, not when the bill is made', (tester) async {
+    final h = _Harness(fiat: FiatCode.CHF);
+    try {
+      final calculator = h.calculator();
+      await tester.pump();
+      h.dio.requests.last.reply({'chf': 70000});
+      await tester.pump();
+      final receivedAt = h.clock;
+
+      h.clock = h.clock.add(const Duration(seconds: 30));
+      expect(calculator.btcPriceAt, receivedAt);
+      expect(h.prices.isPriceStale(FiatCode.CHF), isFalse);
+      h.clock = h.clock.add(const Duration(seconds: 61));
+      expect(h.prices.isPriceStale(FiatCode.CHF), isTrue);
+    } finally {
+      h.dispose();
+    }
+  });
+
+  testWidgets('opening the calculator with a stale CoinGecko price asks for one at once', (tester) async {
+    final h = _Harness(fiat: FiatCode.CHF);
+    try {
+      final first = h.calculator();
+      await tester.pump();
+      h.dio.requests.last.reply({'chf': 70000});
+      await tester.pump();
+      h.close(first);
+
+      h.prices.setHomeWidgetFiats([FiatCode.CHF]);
+      h.clock = h.clock.add(const Duration(seconds: 91));
+      final second = h.calculator();
+      await tester.pump();
+      expect(h.dio.requests, hasLength(2), reason: 'did not wait for the next 60s tick');
+      expect(second.btcPrice, 70000, reason: 'keeps the last price until the new one arrives');
+
+      h.dio.requests.last.reply({'chf': 71000});
+      await tester.pump();
+      expect((second.btcPrice, second.btcPriceAt), (71000, h.clock));
+    } finally {
+      h.dispose();
+    }
+  });
+
+  testWidgets('a stale exchange price is replaced by a REST quote, and only a newer shared quote replaces that', (
+    tester,
+  ) async {
+    final h = _Harness();
+    try {
+      h.restPrices[FiatCode.USD] = 60000;
+      final calculator = h.calculator();
+      await calculator.setFiatCode(FiatCode.USD);
+      expect(calculator.btcPrice, 60000);
+      final restAt = calculator.btcPriceAt!;
+
+      h.clock = restAt.subtract(const Duration(minutes: 5));
+      h.prices.updatePriceForFiat(FiatCode.USD, BinanceResponse.fromJson({'c': '59000'}));
+      expect(calculator.btcPrice, 60000, reason: 'an older shared quote does not replace the REST quote');
+
+      h.clock = restAt.add(const Duration(seconds: 1));
+      h.prices.updatePriceForFiat(FiatCode.USD, BinanceResponse.fromJson({'c': '61000'}));
+      expect((calculator.btcPrice, calculator.btcPriceAt), (61000, h.clock));
+    } finally {
+      h.dispose();
+    }
+  });
+
   testWidgets('selectFiat resets input and premium only when the currency changes', (tester) async {
     final h = _Harness(fiat: FiatCode.CHF);
     try {
@@ -254,17 +321,27 @@ class _Harness {
       preference,
       webSocketFactory: SocketBook().create,
       coinGeckoFactory: () => CoinGeckoPriceService(dio: dio),
+      now: () => clock,
     );
   }
+
+  DateTime clock = DateTime(2026, 10, 29, 12);
 
   final ScriptedConnectivity connectivity;
   final _Preference preference;
   final _QuoteDio dio = _QuoteDio();
   final _calculators = <P2PCalculatorViewModel>[];
+  final restPrices = <FiatCode, int>{};
   late final PriceProvider prices;
 
   P2PCalculatorViewModel calculator() {
-    final calculator = P2PCalculatorViewModel(preference, connectivity, prices, FakeWalletProvider());
+    final calculator = P2PCalculatorViewModel(
+      preference,
+      connectivity,
+      prices,
+      FakeWalletProvider(),
+      restPriceFetcher: (fiat) async => restPrices[fiat],
+    );
     _calculators.add(calculator);
     return calculator;
   }

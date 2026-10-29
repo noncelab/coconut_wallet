@@ -46,7 +46,7 @@ void main() {
         calculator.setPremiumRate(0);
         expect((calculator.fiatCode, calculator.btcPrice), (FiatCode.TWD, 3000000));
         expect(calculator.calculateSatsFromFiat(100000), 33333);
-        expect(network.requests, hasLength(1));
+        expect(network.requests.where((request) => request.currency == allCoinGecko), hasLength(1));
       } finally {
         calculator.dispose();
         prices.dispose();
@@ -86,14 +86,14 @@ void main() {
     final network = _Network();
     await HttpOverrides.runZoned(() async {
       final h = Harness();
-      final calculator = P2PCalculatorViewModel(
-        FakePreferenceProvider(),
-        h.connectivity,
-        h.prices,
-        FakeWalletProvider(),
-      );
       try {
         await tester.runAsync(() async {
+          final calculator = P2PCalculatorViewModel(
+            FakePreferenceProvider(),
+            h.connectivity,
+            h.prices,
+            FakeWalletProvider(),
+          );
           final selected = calculator.setFiatCode(FiatCode.USD);
           final usd = await network.requestFor('usd');
           calculator.dispose();
@@ -115,11 +115,14 @@ Future<void> _withExchange(
   final network = _Network();
   await HttpOverrides.runZoned(() async {
     final h = Harness();
-    final calculator = P2PCalculatorViewModel(FakePreferenceProvider(), h.connectivity, h.prices, FakeWalletProvider());
+    P2PCalculatorViewModel? calculator;
     try {
-      await tester.runAsync(() => body(h, calculator, network));
+      await tester.runAsync(() async {
+        calculator = P2PCalculatorViewModel(FakePreferenceProvider(), h.connectivity, h.prices, FakeWalletProvider());
+        await body(h, calculator!, network);
+      });
     } finally {
-      calculator.dispose();
+      calculator?.dispose();
       h.dispose();
     }
   }, createHttpClient: (_) => network);

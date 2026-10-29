@@ -117,6 +117,30 @@ void main() {
     service.dispose();
   });
 
+  testWidgets('refreshNow fetches at once unless backing off', (tester) async {
+    var fail = false;
+    final dio = _FakeDio((_) => fail ? _error() : _ok({'aed': 1}));
+    final service = CoinGeckoPriceService(dio: dio, fiats: const [FiatCode.AED]);
+
+    service.refreshNow();
+    await tester.pump();
+    expect(dio.requestCount, 0, reason: 'not polling yet');
+
+    service.start();
+    await tester.pump();
+    service.refreshNow();
+    await tester.pump();
+    expect(dio.requestCount, 2);
+
+    fail = true;
+    service.refreshNow();
+    await tester.pump();
+    service.refreshNow();
+    await tester.pump();
+    expect(dio.requestCount, 3, reason: 'the failure started a backoff');
+    service.dispose();
+  });
+
   testWidgets('caps the backoff at 10 minutes', (tester) async {
     final dio = _FakeDio((_) => _error());
     final service = serviceWith(dio);

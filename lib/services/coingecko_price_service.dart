@@ -42,6 +42,13 @@ class CoinGeckoPriceService {
     _schedule(_currentInterval);
   }
 
+  /// 조회 중이고 백오프 중이 아니면 다음 주기를 기다리지 않고 바로 요청한다.
+  void refreshNow() {
+    if (_timer == null || _isBackingOff) return;
+    unawaited(_fetch());
+    _schedule(_currentInterval);
+  }
+
   /// 멈춘 뒤 도착하는 응답은 반영하지 않는다.
   void stop() {
     _timer?.cancel();
