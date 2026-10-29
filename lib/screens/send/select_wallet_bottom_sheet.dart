@@ -19,6 +19,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -209,7 +210,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
         backgroundColor: backgroundColor,
         isBottom: true,
         actionButtonList: [
-          IconButton(
+          CoconutAppBarActionButton(
             key: const Key('select-wallet-layout-toggle'),
             tooltip: _grid ? t.wallet_selection_carousel : t.wallet_selection_grid,
             onPressed: _toggleLayout,
