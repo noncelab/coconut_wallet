@@ -31,18 +31,28 @@ class SharedPrefsRepository {
     _isInitialized = true;
   }
 
-  /// 저장 전에는 진입 위젯의 범위를 사용하고, 저장된 null은 명시적인 '모든 지갑'이다.
-  List<int>? getHodlInsightsWalletIds({List<int>? fallback}) {
+  ({bool saved, List<int>? ids}) _readHodlInsightsWalletSelection() {
     final encoded = getStringOrNull(SharedPrefKeys.kHodlInsightsWalletIds);
-    if (encoded == null) return fallback;
+    if (encoded == null) return (saved: false, ids: null);
     try {
       final decoded = jsonDecode(encoded);
-      if (decoded == null) return null;
-      if (decoded is List && decoded.every((id) => id is int)) return decoded.cast<int>();
+      if (decoded == null) return (saved: true, ids: null);
+      if (decoded is List && decoded.every((id) => id is int)) {
+        return (saved: true, ids: decoded.cast<int>());
+      }
     } on FormatException {
-      return fallback;
+      return (saved: false, ids: null);
     }
-    return fallback;
+    return (saved: false, ids: null);
+  }
+
+  /// 저장된 null(모든 지갑)과 저장값 없음·잘못된 저장값을 구분한다.
+  bool get hasSavedHodlInsightsWalletSelection => _readHodlInsightsWalletSelection().saved;
+
+  /// 저장 전에는 진입 위젯의 범위를 사용하고, 저장된 null은 명시적인 '모든 지갑'이다.
+  List<int>? getHodlInsightsWalletIds({List<int>? fallback}) {
+    final selection = _readHodlInsightsWalletSelection();
+    return selection.saved ? selection.ids : fallback;
   }
 
   Future<void> setHodlInsightsWalletIds(List<int>? walletIds) async {

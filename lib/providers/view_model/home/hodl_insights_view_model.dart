@@ -24,6 +24,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
   HomeWidgetPeriod _activityPeriod;
   List<int>? _walletIds;
   final SharedPrefsRepository? _selectionRepository;
+  bool _hasSavedWalletSelection;
   bool _isSavingWalletSelection = false;
   bool _disposed = false;
   Future<void> _selectionWrite = Future<void>.value();
@@ -44,6 +45,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
     HomeWidgetPeriod balancePeriod = HomeWidgetPeriod.week,
     HomeWidgetPeriod activityPeriod = HomeWidgetPeriod.week,
   }) : _selectionRepository = selectionRepository,
+       _hasSavedWalletSelection = selectionRepository?.hasSavedHodlInsightsWalletSelection ?? false,
        _walletIds =
            selectionRepository == null ? walletIds : selectionRepository.getHodlInsightsWalletIds(fallback: walletIds),
        _balancePeriod = balancePeriod,
@@ -60,7 +62,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
     if (listEquals(nextIds, _walletIds)) return;
     _walletIds = nextIds;
     onWalletSelectionPruned?.call(nextIds == null ? null : List.unmodifiable(nextIds));
-    if (_selectionRepository != null) unawaited(_persistPrunedWalletIds(nextIds));
+    if (_hasSavedWalletSelection) unawaited(_persistPrunedWalletIds(nextIds));
   }
 
   Future<void> _writeSelection(List<int>? ids, {bool onlyIfCurrent = false, VoidCallback? onSaved}) {
@@ -93,6 +95,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
       await _writeSelection(
         snapshot,
         onSaved: () {
+          _hasSavedWalletSelection = true;
           if (_disposed) return;
           setWalletIds(snapshot);
           _data.refresh();
