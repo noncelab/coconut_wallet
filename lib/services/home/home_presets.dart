@@ -50,15 +50,14 @@ List<HomePreset> builtinHomePresets() => [
     id: 'hide_balances',
     name: () => t.home_presets.hide_balances_name,
     description: () => t.home_presets.hide_balances_description,
-    spans: const {HomeItemIds.watchOnlyWalletStack: HomeSpan.small, HomeItemIds.hotWalletStack: HomeSpan.small},
+    spans: const {HomeItemIds.allWalletStack: HomeSpan.small},
     definitionIds: [
       HomeItemIds.allWalletStack,
-      HomeItemIds.transactionActivity,
-      HomeItemIds.utxoStatus,
       HomeItemIds.shortcut(FeatureIds.receive),
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
       HomeItemIds.shortcut(FeatureIds.utxoOverview),
+      HomeItemIds.transactionActivity,
     ],
   ),
   // Epic 3에서 안전 위젯이 완성되면 다시 켠다.

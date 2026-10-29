@@ -80,6 +80,7 @@ void main() {
       isFalse,
     );
     expect(preset.definitionIds, isNot(contains(HomeItemIds.balanceByWallet)));
+    expect(preset.definitionIds, isNot(contains(HomeItemIds.utxoStatus)));
   });
 
   test('non-default presets fit within one phone screen', () {
