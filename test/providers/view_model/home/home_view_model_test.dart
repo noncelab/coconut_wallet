@@ -147,6 +147,42 @@ void main() {
     });
   }
 
+  for (final (columns, left, top) in [(6, 4, 2), (4, 2, 4)]) {
+    test('saved eight-column default edits keep the shortcut rectangle when projected to $columns columns', () {
+      final viewModel = create(widgetDefinitions: builtinHomeWidgets());
+      addTearDown(viewModel.dispose);
+      final price = viewModel.configuration.items.singleWhere(
+        (item) => item.definitionId == HomeItemIds.fiatPriceTrend,
+      );
+      viewModel.moveToCell(price.id, const HomeGridPosition(6, 0), columns: 8);
+      final saved = repository.load()!;
+      final reloaded = create(widgetDefinitions: builtinHomeWidgets());
+      addTearDown(reloaded.dispose);
+      expect(reloaded.configuration, saved);
+      expect(saved.columns, 8);
+      final shortcutIds = [FeatureIds.receive, FeatureIds.send, FeatureIds.utxoOrganizer, FeatureIds.hodlInsights];
+      for (final (index, featureId) in shortcutIds.indexed) {
+        final shortcut = saved.items.singleWhere((item) => item.definitionId == HomeItemIds.shortcut(featureId));
+        expect(shortcut.position, HomeGridPosition(2 + index % 2, 2 + index ~/ 2));
+      }
+      final projected = HomeGridLayout(HomeGridLayout(reloaded.configuration).reflow(columns));
+      for (final (index, featureId) in shortcutIds.indexed) {
+        final shortcut = saved.items.singleWhere((item) => item.definitionId == HomeItemIds.shortcut(featureId));
+        expect(
+          projected.positionOf(shortcut.id),
+          HomeGridPosition(left + index % 2, top + index ~/ 2),
+          reason: featureId,
+        );
+      }
+      for (final viewportColumns in [4, 8, 6, 10, 6]) {
+        HomeGridLayout(reloaded.configuration).reflow(viewportColumns);
+        expect(repository.load(), saved);
+        expect(reloaded.configuration, saved);
+      }
+      expect(HomeGridLayout(reloaded.configuration).reflow(columns), projected.configuration);
+    });
+  }
+
   group('loading', () {
     test('legacy hidden balance selects the hide balances preset on first load', () {
       final viewModel = create(widgetDefinitions: builtinHomeWidgets(), legacyBalanceHidden: true);

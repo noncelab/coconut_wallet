@@ -105,6 +105,83 @@ void expectPositions(HomeConfiguration actual, HomeConfiguration before, Map<Str
 }
 
 void main() {
+  test('projection preserves separate shortcut rectangles around interleaved cards', () {
+    final canonical = HomeConfiguration(
+      columns: 8,
+      shortcutWalletContext: const ShortcutWalletContext.wallet(7),
+      items: [
+        for (final (index, (id, span, column, row))
+            in [
+              ('a0', HomeSpan.shortcut, 0, 0),
+              ('a1', HomeSpan.shortcut, 1, 0),
+              ('card', HomeSpan.small, 2, 0),
+              ('b0', HomeSpan.shortcut, 4, 0),
+              ('b1', HomeSpan.shortcut, 5, 0),
+              ('a2', HomeSpan.shortcut, 0, 1),
+              ('a3', HomeSpan.shortcut, 1, 1),
+              ('b2', HomeSpan.shortcut, 4, 1),
+              ('b3', HomeSpan.shortcut, 5, 1),
+              ('manual', HomeSpan.shortcut, 7, 3),
+              ('footer', HomeSpan.wide, 0, 4),
+            ].indexed)
+          item(
+            id,
+            index,
+            span,
+            span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+          ).copyWith(position: HomeGridPosition(column, row), configuration: {'label': id}),
+      ],
+    );
+    final layout = HomeGridLayout(canonical);
+    final projected = layout.reflow(6);
+    const expected = {
+      'a0': HomeGridPosition(0, 0),
+      'a1': HomeGridPosition(1, 0),
+      'a2': HomeGridPosition(0, 1),
+      'a3': HomeGridPosition(1, 1),
+      'card': HomeGridPosition(2, 0),
+      'b0': HomeGridPosition(4, 0),
+      'b1': HomeGridPosition(5, 0),
+      'b2': HomeGridPosition(4, 1),
+      'b3': HomeGridPosition(5, 1),
+      'manual': HomeGridPosition(0, 2),
+      'footer': HomeGridPosition(1, 2),
+    };
+    for (final original in canonical.items) {
+      expect(
+        projected.items.singleWhere((item) => item.id == original.id),
+        original.copyWith(position: expected[original.id]),
+        reason: original.id,
+      );
+    }
+    expect(projected.shortcutWalletContext, canonical.shortcutWalletContext);
+    expectValidLayout(projected);
+    for (final columns in [4, 10, 8, 6, 6]) {
+      expectValidLayout(layout.reflow(columns));
+      expect(layout.reflow(6), projected);
+      expect(layout.reflow(8), canonical);
+    }
+  });
+
+  test('a shortcut rectangle with an attached manual edit keeps ordinary flow', () {
+    final canonical = HomeConfiguration(
+      columns: 8,
+      items: [
+        for (final (index, (column, row)) in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1)].indexed)
+          item(
+            's$index',
+            index,
+            HomeSpan.shortcut,
+            HomeItemKind.shortcut,
+          ).copyWith(position: HomeGridPosition(column, row)),
+      ],
+    );
+    final projected = HomeGridLayout(canonical).reflow(6);
+    expect(projected.items.map((item) => item.position), [for (var i = 0; i < 5; i++) HomeGridPosition(i, 0)]);
+    expectValidLayout(projected);
+    expect(HomeGridLayout(canonical).reflow(8), canonical);
+  });
+
   test('projection keeps generic rectangular shortcut offsets and saved edits intact', () {
     final canonical = HomeConfiguration(
       items: [

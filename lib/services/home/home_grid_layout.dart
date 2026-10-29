@@ -30,15 +30,34 @@ class HomeGridLayout {
     final flowItems = <HomeItem>[];
     final groups = <({List<HomeItem> items, HomeGridPosition origin})>[];
     bool isShortcut(HomeItem item) => item.kind == HomeItemKind.shortcut && item.span == HomeSpan.shortcut;
-    for (var index = 0; index < ordered.length;) {
-      final item = ordered[index];
-      if (columns <= HomeGridLayout.columns || !isShortcut(item)) {
+    final remaining = {for (final item in ordered.where(isShortcut)) _positions[item.id]!: item};
+    final grouped = <String>{};
+    for (final item in ordered) {
+      if (grouped.contains(item.id)) continue;
+      if (!isShortcut(item)) {
         flowItems.add(item);
-        index++;
         continue;
       }
-      final run = ordered.skip(index).takeWhile(isShortcut).toList();
-      index += run.length;
+      // Source-cell neighbors stay together even when unrelated cards interleave in visual order.
+      final members = <HomeItem>{};
+      final pending = [_positions[item.id]!];
+      while (pending.isNotEmpty) {
+        final cell = pending.removeLast();
+        final neighbor = remaining.remove(cell);
+        if (neighbor == null) continue;
+        members.add(neighbor);
+        pending.addAll([
+          HomeGridPosition(cell.column - 1, cell.row),
+          HomeGridPosition(cell.column + 1, cell.row),
+          HomeGridPosition(cell.column, cell.row - 1),
+          HomeGridPosition(cell.column, cell.row + 1),
+        ]);
+      }
+      final run = ordered.where(members.contains).toList();
+      if (run.isEmpty) {
+        flowItems.add(item);
+        continue;
+      }
       final cells = run.map((item) => _positions[item.id]!).toSet();
       final left = cells.map((cell) => cell.column).reduce(math.min);
       final top = cells.map((cell) => cell.row).reduce(math.min);
@@ -48,8 +67,9 @@ class HomeGridLayout {
       if (height > 1 && width <= columns && cells.length == run.length && width * height == run.length) {
         flowItems.add(run.first.copyWith(span: HomeSpan(width, height)));
         groups.add((items: run, origin: HomeGridPosition(left, top)));
+        grouped.addAll(run.map((item) => item.id));
       } else {
-        flowItems.addAll(run);
+        flowItems.add(item);
       }
     }
     final positions = <String, HomeGridPosition>{};
