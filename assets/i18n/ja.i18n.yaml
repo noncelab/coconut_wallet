@@ -2173,5 +2173,5 @@ wallet_card_detail_screen:
   show_balance_trend: "残高推移を見る"
   chart_date_format: "M月d日"
 
-wallet_selection_carousel: "カルーセル表示"
-wallet_selection_grid: "グリッド表示"
+wallet_selection_carousel: "1枚ずつ表示"
+wallet_selection_grid: "まとめて表示"
