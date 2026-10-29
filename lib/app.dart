@@ -1,8 +1,4 @@
-import 'dart:async';
-import 'dart:ui' as ui;
-
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/app/bootstrap/system_ui_bootstrap.dart';
 import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
@@ -44,11 +40,10 @@ class CoconutWalletApp extends StatefulWidget {
   State<CoconutWalletApp> createState() => _CoconutWalletAppState();
 }
 
-class _CoconutWalletAppState extends State<CoconutWalletApp> with WidgetsBindingObserver {
+class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
   int _homePage = 0;
-  ui.FlutterView? _view;
 
   final RealmManager _realmManager = RealmManager();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -60,7 +55,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> with WidgetsBinding
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _saveMigratedWalletIds();
     BitBox02ConnectivityService.startMonitoring();
     TrezorConnectivityService.startMonitoring();
@@ -68,25 +62,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> with WidgetsBinding
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     BitBox02ConnectivityService.stopMonitoring();
     TrezorConnectivityService.stopMonitoring();
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _view = View.of(context);
-    _updateOrientation();
-  }
-
-  @override
-  void didChangeMetrics() => _updateOrientation();
-
-  void _updateOrientation() {
-    final view = _view;
-    if (view != null) unawaited(updatePreferredOrientations(view));
   }
 
   void _logScreenView(String screenName) {

@@ -3,83 +3,58 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('an unfolded physical display unlocks even when the app viewport is letterboxed', (tester) async {
-    final orientations = <Object?>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'SystemChrome.setPreferredOrientations') orientations.add(call.arguments);
-      return null;
-    });
-    addTearDown(() {
-      tester.view.reset();
-      tester.view.display.reset();
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
-    });
-    tester.view.devicePixelRatio = 3;
-    tester.view.physicalSize = const Size(1398, 2034);
-    tester.view.display.size = const Size(2007, 2853);
+  testWidgets(
+    'bootstrap preserves native orientation for every display shape while configuring system UI',
+    (tester) async {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        calls.add(call);
+        return null;
+      });
+      addTearDown(() {
+        tester.view.reset();
+        tester.view.display.reset();
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+      // Ensure bootstrap must send its bar style even if a previous test configured it.
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle());
+      await tester.pump();
+      calls.clear();
 
-    await configureSystemUi();
+      tester.view.devicePixelRatio = 3;
+      tester.view.display.devicePixelRatio = 3;
+      const shapes = [
+        (name: 'portrait phone', display: Size(1080, 1920), view: Size(1080, 1920)),
+        (name: 'rotated phone', display: Size(1920, 1080), view: Size(1920, 1080)),
+        (name: 'portrait tablet', display: Size(1800, 2700), view: Size(1800, 2700)),
+        (name: 'rotated tablet', display: Size(2700, 1800), view: Size(2700, 1800)),
+        (name: 'unfolded', display: Size(2208, 1840), view: Size(2208, 1840)),
+        (name: 'rotated unfolded', display: Size(1840, 2208), view: Size(1840, 2208)),
+        (name: 'letterboxed view', display: Size(2208, 1840), view: Size(1380, 1840)),
+        (name: 'stale outer display', display: Size(1080, 2092), view: Size(2208, 1840)),
+        (name: 'transient zero metrics', display: Size.zero, view: Size.zero),
+      ];
+      for (final shape in shapes) {
+        tester.view.display.size = shape.display;
+        tester.view.physicalSize = shape.view;
+        await configureSystemUi();
+        await tester.pump();
 
-    expect(orientations, [isEmpty]);
-  });
+        expect(
+          calls.where((call) => call.method == 'SystemChrome.setPreferredOrientations'),
+          isEmpty,
+          reason: '${shape.name} must retain native orientation ownership.',
+        );
+      }
 
-  testWidgets('folding, partial opening and rotation change the orientation policy only at the display boundary', (
-    tester,
-  ) async {
-    final orientations = <Object?>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'SystemChrome.setPreferredOrientations') orientations.add(call.arguments);
-      return null;
-    });
-    addTearDown(() {
-      tester.view.reset();
-      tester.view.display.reset();
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
-    });
-    tester.view.devicePixelRatio = 3;
-    for (final size in const [
-      Size(1398, 2034), // Closed Duo display: 466 x 678 logical.
-      Size(1398, 2034), // Hinge movement that keeps the outer display active.
-      Size(2007, 2853), // Unfolded: 669 x 951.
-      Size(2853, 2007), // Unfolded landscape.
-      Size(2007, 2853),
-      Size(1398, 2034),
-      Size(2007, 2853),
-    ]) {
-      tester.view.display.size = size;
-      tester.view.physicalSize = size;
-      await updatePreferredOrientations(tester.view);
-    }
-    const portrait = ['DeviceOrientation.portraitUp', 'DeviceOrientation.portraitDown'];
-    expect(orientations, [portrait, isEmpty, portrait, isEmpty]);
-  });
-
-  testWidgets('an unfolded view unlocks when the engine retains the outer display metadata', (tester) async {
-    final orientations = <Object?>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'SystemChrome.setPreferredOrientations') orientations.add(call.arguments);
-      return null;
-    });
-    addTearDown(() {
-      tester.view.reset();
-      tester.view.display.reset();
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
-    });
-    tester.view.devicePixelRatio = 3;
-    tester.view.display.size = const Size(1398, 2034);
-    tester.view.physicalSize = const Size(1398, 2034);
-    await configureSystemUi();
-    orientations.clear();
-
-    tester.view.physicalSize = const Size(2007, 2853);
-    await configureSystemUi();
-    expect(orientations, [isEmpty]);
-
-    tester.view.physicalSize = const Size(1398, 2034);
-    await configureSystemUi();
-    expect(orientations, [
-      isEmpty,
-      ['DeviceOrientation.portraitUp', 'DeviceOrientation.portraitDown'],
-    ]);
-  });
+      final overlayCalls = calls.where((call) => call.method == 'SystemChrome.setEnabledSystemUIOverlays');
+      expect(overlayCalls, hasLength(shapes.length));
+      for (final call in overlayCalls) {
+        expect(call.arguments, ['SystemUiOverlay.top', 'SystemUiOverlay.bottom']);
+      }
+      expect(calls.where((call) => call.method == 'SystemChrome.setSystemUIOverlayStyle'), isNotEmpty);
+      expect(tester.takeException(), isNull);
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
 }
