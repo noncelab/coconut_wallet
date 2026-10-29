@@ -1,3 +1,6 @@
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+import 'dart:async';
+import 'package:coconut_wallet/providers/view_model/send/select_wallet_view_model.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:flutter/rendering.dart';
@@ -171,6 +174,151 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
   tearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+  for (final throwsOnWrite in [false, true]) {
+    test('layout persistence rejects failed writes and restores the preference cache: $throwsOnWrite', () async {
+      final original = SharedPreferencesStorePlatform.instance;
+      addTearDown(() => SharedPreferencesStorePlatform.instance = original);
+      SharedPreferencesStorePlatform.instance = _RejectedLayoutStore(throwsOnWrite);
+      final repository = SharedPrefsRepository();
+      await expectLater(repository.setSelectWalletGridView(true), throwsStateError);
+      expect(repository.getBool(SharedPrefKeys.kSelectWalletGridView), isFalse);
+    });
+  }
+
+  test('selection view model owns candidates, layout transitions and ordered preference writes', () async {
+    final repository = _LayoutPreferences();
+    final gate = Completer<void>();
+    repository.firstWrite = gate.future;
+    final model = SelectWalletViewModel(
+      walletProvider: _Wallets(),
+      preferenceProvider: _Preferences(),
+      walletId: 6,
+      candidateWalletIds: [1, 6, 8],
+      balanceMode: BalanceMode.includingPending,
+      preferences: repository,
+    );
+    addTearDown(model.dispose);
+    expect(model.wallets.map((wallet) => wallet.id), [8, 6, 1]);
+    expect(model.selectedWalletId, 6);
+    final first = model.toggleLayout();
+    expect(model.isGrid, isTrue);
+    expect(model.selectedWalletId, -1);
+    model.selectWallet(1);
+    model.selectWallet(1);
+    expect(model.selectedWalletId, -1);
+    model.selectWallet(8);
+    final second = model.toggleLayout();
+    expect(model.selectedWalletId, 8);
+    expect(model.carouselIndex, 0);
+    final third = model.toggleLayout();
+    await Future<void>.delayed(Duration.zero);
+    expect(repository.writes, [true]);
+    gate.complete();
+    expect(await Future.wait([first, second, third]), [true, true, true]);
+    expect(repository.writes, [true, false, true]);
+    expect(repository.grid, isTrue);
+  });
+
+  test('layout save failure is reported and a later layout save can succeed', () async {
+    final repository = _LayoutPreferences()..fail = true;
+    final model = SelectWalletViewModel(
+      walletProvider: _Wallets(),
+      preferenceProvider: _Preferences(),
+      walletId: 8,
+      balanceMode: BalanceMode.includingPending,
+      preferences: repository,
+    );
+    addTearDown(model.dispose);
+    expect(await model.toggleLayout(), isFalse);
+    expect(model.layoutSaveFailed, isTrue);
+    expect(repository.grid, isFalse);
+    expect(model.isGrid, isFalse);
+    expect(model.selectedWalletId, 8);
+    repository.fail = false;
+    expect(await model.toggleLayout(), isTrue);
+    expect(model.layoutSaveFailed, isFalse);
+    expect(model.isGrid, isTrue);
+  });
+
+  for (final firstFails in [false, true]) {
+    test('latest failure restores a saved layout without undoing newer requests: firstFails=$firstFails', () async {
+      final repository = _LayoutPreferences();
+      final gate = Completer<void>();
+      repository.firstWrite = gate.future;
+      repository.failedWrites.addAll(firstFails ? [1, 2] : [2]);
+      final model = SelectWalletViewModel(
+        walletProvider: _Wallets(),
+        preferenceProvider: _Preferences(),
+        walletId: 6,
+        balanceMode: BalanceMode.includingPending,
+        preferences: repository,
+      );
+      addTearDown(model.dispose);
+      final first = model.toggleLayout();
+      model.selectWallet(8);
+      final second = model.toggleLayout();
+      expect(model.isGrid, isFalse);
+      expect(model.selectedWalletId, 8);
+      gate.complete();
+      expect(await first, !firstFails);
+      await second;
+      expect(model.isGrid, !firstFails);
+      expect(model.selectedWalletId, firstFails ? 6 : 8);
+      expect(model.isGrid, repository.grid);
+    });
+  }
+
+  test('a stale layout failure cannot roll back a newer successful layout', () async {
+    final repository = _LayoutPreferences()..failedWrites.add(1);
+    final gate = Completer<void>();
+    repository.firstWrite = gate.future;
+    final model = SelectWalletViewModel(
+      walletProvider: _Wallets(),
+      preferenceProvider: _Preferences(),
+      walletId: 6,
+      balanceMode: BalanceMode.includingPending,
+      preferences: repository,
+    );
+    addTearDown(model.dispose);
+    final first = model.toggleLayout();
+    model.selectWallet(8);
+    final second = model.toggleLayout();
+    gate.complete();
+    expect(await first, isFalse);
+    expect(await second, isTrue);
+    expect(model.isGrid, isFalse);
+    expect(model.selectedWalletId, 8);
+    expect(model.layoutSaveFailed, isFalse);
+    expect(repository.grid, model.isGrid);
+  });
+
+  for (final grid in [false, true]) {
+    testWidgets('failed layout save restores visible layout, selection and carousel page: grid=$grid', (tester) async {
+      await SharedPrefsRepository().setSelectWalletGridView(grid);
+      await _open(tester, initial: 6);
+      if (grid) {
+        await tester.tap(_card(7));
+        await tester.pumpAndSettle();
+      }
+      final original = SharedPreferencesStorePlatform.instance;
+      addTearDown(() => SharedPreferencesStorePlatform.instance = original);
+      SharedPreferencesStorePlatform.instance = _RejectedLayoutStore(false, grid: grid);
+      await tester.tap(_toggle);
+      await tester.pumpAndSettle();
+      expect(find.byType(GridView), grid ? findsOneWidget : findsNothing);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kSelectWalletGridView), grid);
+      if (grid) {
+        expect(find.byKey(const ValueKey('select-wallet-selected-7')), findsOneWidget);
+      } else {
+        expect(tester.widget<PageView>(find.byKey(const Key('select-wallet-carousel'))).controller!.page, 2);
+      }
+      expect(find.text(t.errors.storage_write_error), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('carousel swipes and confirms the centered wallet', (tester) async {
     int? selected;
@@ -666,4 +814,36 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+}
+
+class _LayoutPreferences extends Fake implements SharedPrefsRepository {
+  bool grid = false;
+  bool fail = false;
+  Future<void>? firstWrite;
+  final writes = <bool>[];
+  final failedWrites = <int>{};
+
+  @override
+  bool getBool(String key) => grid;
+
+  @override
+  Future<void> setSelectWalletGridView(bool value) async {
+    writes.add(value);
+    final attempt = writes.length;
+    if (attempt == 1) await firstWrite;
+    if (fail || failedWrites.contains(attempt)) throw StateError('storage unavailable');
+    grid = value;
+  }
+}
+
+class _RejectedLayoutStore extends InMemorySharedPreferencesStore {
+  _RejectedLayoutStore(this.throwsOnWrite, {bool grid = false})
+    : super.withData({'flutter.${SharedPrefKeys.kSelectWalletGridView}': grid});
+  final bool throwsOnWrite;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    if (throwsOnWrite) throw StateError('storage unavailable');
+    return false;
+  }
 }

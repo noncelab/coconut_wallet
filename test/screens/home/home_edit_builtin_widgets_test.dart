@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -1013,6 +1014,70 @@ void main() {
     expect(recent.take(2).map((tx) => tx.status), everyElement(TransactionStatus.receiving));
     expect(recent.take(2).map((tx) => tx.walletId).toSet(), {1, 2});
     expect(now.difference(recent[2].time).inDays, 40);
+  });
+
+  test('insights view model guards pending saves and preview instances do not persist', () async {
+    HomeWidgetsViewModel data() => HomeWidgetsViewModel(
+      walletProvider: _Wallets([
+        WalletMock.createSingleSigWalletItem(id: 1),
+        WalletMock.createSingleSigWalletItem(id: 2),
+      ], const []),
+      preferenceProvider: _Preferences(),
+      priceProvider: _Prices(),
+      targetSatsOf: (_) => null,
+      historicalPriceService: _History(),
+    );
+    final repository = _SelectionPreferences();
+    final model = HodlInsightsViewModel(data(), walletIds: [2], selectionRepository: repository);
+    expect(model.walletIds, [1]);
+    final pending = model.saveWalletSelection([2]);
+    expect(model.isSavingWalletSelection, isTrue);
+    expect(model.walletIds, [1]);
+    expect(await model.saveWalletSelection(null), isFalse);
+    repository.gate.complete();
+    expect(await pending, isTrue);
+    expect(model.isSavingWalletSelection, isFalse);
+    expect(model.walletIds, [2]);
+    expect(repository.writes, [
+      [2],
+    ]);
+    model.dispose();
+    final preview = HodlInsightsViewModel(data(), walletIds: [1]);
+    expect(await preview.saveWalletSelection([2]), isFalse);
+    expect(preview.walletIds, [1]);
+    expect(repository.writes, [
+      [2],
+    ]);
+    preview.dispose();
+  });
+
+  test('automatic pruning queued during a save does not overwrite the newer manual selection', () async {
+    final wallets = _Wallets([
+      WalletMock.createSingleSigWalletItem(id: 1),
+      WalletMock.createSingleSigWalletItem(id: 2),
+    ], const []);
+    final data = HomeWidgetsViewModel(
+      walletProvider: wallets,
+      preferenceProvider: _Preferences(),
+      priceProvider: _Prices(),
+      targetSatsOf: (_) => null,
+      historicalPriceService: _History(),
+    );
+    final repository = _SelectionPreferences();
+    final model = HodlInsightsViewModel(data, selectionRepository: repository);
+    addTearDown(model.dispose);
+    final save = model.saveWalletSelection([2]);
+    await Future<void>.delayed(Duration.zero);
+    wallets.wallets.removeWhere((wallet) => wallet.id == 1);
+    data.refresh();
+    expect(model.walletIds, isNull);
+    repository.gate.complete();
+    expect(await save, isTrue);
+    await Future<void>.delayed(Duration.zero);
+    expect(model.walletIds, [2]);
+    expect(repository.writes, [
+      [2],
+    ]);
   });
 
   test('insights does not prune saved wallets before wallet loading completes', () {
@@ -3535,5 +3600,19 @@ class _FailingInsightsStore extends InMemorySharedPreferencesStore {
       return false;
     }
     return super.setValue(valueType, key, value);
+  }
+}
+
+class _SelectionPreferences extends Fake implements SharedPrefsRepository {
+  final gate = Completer<void>();
+  final writes = <List<int>?>[];
+
+  @override
+  List<int>? getHodlInsightsWalletIds({List<int>? fallback}) => [1];
+
+  @override
+  Future<void> setHodlInsightsWalletIds(List<int>? ids) async {
+    writes.add(ids);
+    await gate.future;
   }
 }

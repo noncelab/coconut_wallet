@@ -57,6 +57,17 @@ class SharedPrefsRepository {
     }
   }
 
+  Future<void> setSelectWalletGridView(bool grid) async {
+    try {
+      if (!await _sharedPrefs.setBool(SharedPrefKeys.kSelectWalletGridView, grid)) {
+        throw StateError('Failed to save wallet selection layout');
+      }
+    } catch (_) {
+      await _sharedPrefs.reload();
+      rethrow;
+    }
+  }
+
   /// Common--------------------------------------------------------------------
   Future clearSharedPref() async {
     await _sharedPrefs.clear();

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
@@ -20,6 +23,11 @@ class HodlInsightsViewModel extends ChangeNotifier {
   HomeWidgetPeriod _balancePeriod;
   HomeWidgetPeriod _activityPeriod;
   List<int>? _walletIds;
+  final SharedPrefsRepository? _selectionRepository;
+  bool _isSavingWalletSelection = false;
+  bool _disposed = false;
+  Future<void> _selectionWrite = Future<void>.value();
+  bool get isSavingWalletSelection => _isSavingWalletSelection;
   final ValueChanged<List<int>?>? onWalletSelectionPruned;
 
   /// 처음 열 때 스크롤하고 잠깐 강조할 구역
@@ -31,9 +39,13 @@ class HodlInsightsViewModel extends ChangeNotifier {
     this.initialSection = HodlInsightsSection.balance,
     List<int>? walletIds,
     this.onWalletSelectionPruned,
+    // 상세 화면 등의 미리보기는 저장하지 않는다. 인사이트 화면에서만 명시적으로 전달한다.
+    SharedPrefsRepository? selectionRepository,
     HomeWidgetPeriod balancePeriod = HomeWidgetPeriod.week,
     HomeWidgetPeriod activityPeriod = HomeWidgetPeriod.week,
-  }) : _walletIds = walletIds,
+  }) : _selectionRepository = selectionRepository,
+       _walletIds =
+           selectionRepository == null ? walletIds : selectionRepository.getHodlInsightsWalletIds(fallback: walletIds),
        _balancePeriod = balancePeriod,
        _activityPeriod = activityPeriod {
     _pruneWalletSelection();
@@ -48,6 +60,51 @@ class HodlInsightsViewModel extends ChangeNotifier {
     if (listEquals(nextIds, _walletIds)) return;
     _walletIds = nextIds;
     onWalletSelectionPruned?.call(nextIds == null ? null : List.unmodifiable(nextIds));
+    if (_selectionRepository != null) unawaited(_persistPrunedWalletIds(nextIds));
+  }
+
+  Future<void> _writeSelection(List<int>? ids, {bool onlyIfCurrent = false, VoidCallback? onSaved}) {
+    final snapshot = ids == null ? null : List<int>.unmodifiable(ids);
+    final write = _selectionWrite.then((_) async {
+      if (onlyIfCurrent && !listEquals(_walletIds, snapshot)) return;
+      await _selectionRepository!.setHodlInsightsWalletIds(snapshot);
+      onSaved?.call();
+    });
+    // 자동 정리와 수동 저장을 직렬화해 이전 쓰기가 최신 선택을 덮어쓰지 않도록 한다.
+    _selectionWrite = write.catchError((Object _) {});
+    return write;
+  }
+
+  Future<void> _persistPrunedWalletIds(List<int>? ids) async {
+    try {
+      await _writeSelection(ids, onlyIfCurrent: true);
+    } catch (error) {
+      Logger.error('Failed to persist pruned insights wallet selection: $error');
+    }
+  }
+
+  /// 저장 성공 후에만 화면 선택을 변경한다. 재사용되는 미리보기 모델은 저장하지 않는다.
+  Future<bool> saveWalletSelection(List<int>? ids) async {
+    if (_disposed || _isSavingWalletSelection || _selectionRepository == null) return false;
+    _isSavingWalletSelection = true;
+    final snapshot = ids == null ? null : List<int>.unmodifiable(ids);
+    notifyListeners();
+    try {
+      await _writeSelection(
+        snapshot,
+        onSaved: () {
+          if (_disposed) return;
+          setWalletIds(snapshot);
+          _data.refresh();
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      _isSavingWalletSelection = false;
+      if (!_disposed) notifyListeners();
+    }
   }
 
   void _onDataChanged() {
@@ -133,6 +190,7 @@ class HodlInsightsViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _data.removeListener(_onDataChanged);
     if (!_data.usesFakeBalance) _data.dispose();
     super.dispose();

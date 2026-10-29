@@ -1,13 +1,11 @@
+import 'package:coconut_wallet/providers/view_model/send/select_wallet_view_model.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'dart:math' as math;
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
-import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_carousel_indicator.dart';
@@ -16,48 +14,16 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-enum BalanceMode {
-  includingPending,
-  onlyUnspent, // UtxoStatus.unspent (UtxoStatus.locked 제외)
-}
-
-Map<int, int> _buildBalanceMapIncludingPending(BuildContext context) {
-  final walletProvider = context.read<WalletProvider>();
-  return walletProvider.fetchWalletBalanceMap().map((key, Balance value) {
-    return MapEntry(key, value.total);
-  });
-}
-
-Map<int, int> _buildBalanceMapOnlyUnspent(BuildContext context, List<WalletItemBase> walletList) {
-  final walletProvider = context.read<WalletProvider>();
-  Map<int, int> balanceMap = {};
-  for (var wallet in walletList) {
-    balanceMap[wallet.id] = _getUnspentUtxoSum(walletProvider.getUtxoList(wallet.id));
-  }
-
-  return balanceMap;
-}
-
-int _getUnspentUtxoSum(List<UtxoState> utxos) {
-  return utxos.fold(0, (accu, utxo) {
-    if (utxo.status == UtxoStatus.unspent) {
-      return accu + utxo.amount;
-    }
-    return accu;
-  });
-}
+export 'package:coconut_wallet/providers/view_model/send/select_wallet_view_model.dart' show BalanceMode;
 
 class SelectWalletBottomSheet extends StatefulWidget {
   final Function(int) onWalletChanged;
@@ -104,15 +70,14 @@ class SelectWalletBottomSheet extends StatefulWidget {
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   static const _carouselViewportFraction = 0.50;
-  late List<WalletItemBase> _walletList;
-  int _selectedWalletId = -1;
-  late int _lastCarouselWalletId;
+  late final SelectWalletViewModel _viewModel;
+  List<WalletItemBase> get _walletList => _viewModel.wallets;
+  int get _selectedWalletId => _viewModel.selectedWalletId;
+  bool get _grid => _viewModel.isGrid;
+  WalletStackListViewModel get _facts => _viewModel.facts;
   bool _restoringCarousel = false;
 
   late final PageController _pageController;
-  late final WalletStackListViewModel _facts;
-  late final Listenable _walletUpdates;
-  bool _grid = false;
   double? _contentHeight;
 
   void _updateCarouselHeight(Size size) {
@@ -122,33 +87,32 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     }
   }
 
-  void _toggleLayout() {
+  Future<void> _toggleLayout() async {
     if (_grid) {
       final scrollController = widget.scrollController ?? PrimaryScrollController.maybeOf(context);
       if (scrollController != null && scrollController.hasClients) {
         scrollController.jumpTo(scrollController.position.minScrollExtent);
       }
     }
-    setState(() {
-      _grid = !_grid;
-      if (_grid) {
-        _lastCarouselWalletId = _selectedWalletId;
-        _selectedWalletId = -1;
-      } else {
-        if (_selectedWalletId == -1) _selectedWalletId = _lastCarouselWalletId;
-        _lastCarouselWalletId = _selectedWalletId;
-        _restoringCarousel = true;
-      }
-    });
-    SharedPrefsRepository().setBool(SharedPrefKeys.kSelectWalletGridView, _grid);
-    if (!_grid) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _grid || !_pageController.hasClients) return;
+    _restoringCarousel = _grid;
+    final save = _viewModel.toggleLayout();
+    if (!_grid) _restoreCarouselPage();
+    if (!await save && mounted && _viewModel.layoutSaveFailed) {
+      _restoringCarousel = !_grid;
+      if (!_grid) _restoreCarouselPage();
+      CoconutToast.showToast(context: context, text: t.errors.storage_write_error);
+    }
+  }
+
+  void _restoreCarouselPage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_grid && _pageController.hasClients) {
         final index = _walletList.indexWhere((wallet) => wallet.id == _selectedWalletId);
         if (index >= 0) _pageController.jumpToPage(index);
-        _restoringCarousel = false;
-      });
-    }
+      }
+      _restoringCarousel = false;
+    });
   }
 
   Widget _card(WalletItemBase wallet, {required bool grid, required int balance}) {
@@ -164,7 +128,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
           backgroundPhoto: appearances?.photoFileFor(wallet.id),
           size: WalletCardSize.small,
           balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),
-          onPressed: () => setState(() => _selectedWalletId = grid && selected ? -1 : wallet.id),
+          onPressed: () => _viewModel.selectWallet(wallet.id),
         ),
         if (grid && selected)
           Positioned.fill(
@@ -227,7 +191,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _walletUpdates,
+    listenable: _viewModel,
     builder:
         (context, _) => LayoutBuilder(
           builder: (context, constraints) {
@@ -357,10 +321,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                                               if (_grid || _restoringCarousel) return;
                                               final walletId = _walletList[index].id;
                                               if (_selectedWalletId != walletId) vibrateExtraLight();
-                                              setState(() {
-                                                _selectedWalletId = walletId;
-                                                _lastCarouselWalletId = walletId;
-                                              });
+                                              _viewModel.focusCarouselWallet(walletId);
                                             },
                                             itemBuilder:
                                                 (context, index) => AnimatedBuilder(
@@ -490,7 +451,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   @override
   void dispose() {
     _pageController.dispose();
-    _facts.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
@@ -500,39 +461,22 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     final walletProvider = context.read<WalletProvider>();
     final preferenceProvider = context.read<PreferenceProvider>();
 
-    _walletList = walletProvider.walletItemList;
-    if (preferenceProvider.walletOrder.isNotEmpty) {
-      final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
-      var orderedList = preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
-      final orderedIds = orderedList.map((wallet) => wallet.id).toSet();
-      _walletList = [...orderedList, ..._walletList.where((wallet) => !orderedIds.contains(wallet.id))];
-    }
-
-    if (widget.showOnlyMfpWallets) {
-      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
-    }
-    final candidateWalletIds = widget.candidateWalletIds;
-    if (candidateWalletIds != null) {
-      _walletList = _walletList.where((wallet) => candidateWalletIds.contains(wallet.id)).toList();
-    }
-    _grid = SharedPrefsRepository().getBool(SharedPrefKeys.kSelectWalletGridView);
-    final index = _walletList.indexWhere((wallet) => wallet.id == widget.walletId);
-    _lastCarouselWalletId = _walletList.isEmpty ? -1 : (index >= 0 ? widget.walletId : _walletList.first.id);
-    _selectedWalletId = _grid ? -1 : _lastCarouselWalletId;
-    _pageController = PageController(initialPage: index < 0 ? 0 : index, viewportFraction: _carouselViewportFraction);
-    _facts = WalletStackListViewModel(WalletStackKind.all, walletProvider, preferenceProvider);
-    final nodeProvider = context.read<NodeProvider?>();
-    _walletUpdates = Listenable.merge([_facts, nodeProvider, nodeProvider?.currentBlockNotifier]);
+    _viewModel = SelectWalletViewModel(
+      walletProvider: walletProvider,
+      preferenceProvider: preferenceProvider,
+      nodeProvider: context.read<NodeProvider?>(),
+      walletId: widget.walletId,
+      balanceMode: widget.balanceMode,
+      showOnlyMfpWallets: widget.showOnlyMfpWallets,
+      candidateWalletIds: widget.candidateWalletIds,
+    );
+    _pageController = PageController(
+      initialPage: _viewModel.carouselIndex,
+      viewportFraction: _carouselViewportFraction,
+    );
   }
 
-  Map<int, int> _initBalanceMap() {
-    switch (widget.balanceMode) {
-      case BalanceMode.includingPending:
-        return _buildBalanceMapIncludingPending(context);
-      case BalanceMode.onlyUnspent:
-        return _buildBalanceMapOnlyUnspent(context, _walletList);
-    }
-  }
+  Map<int, int> _initBalanceMap() => _viewModel.balances;
 }
 
 class P2PSelectWalletBottomSheet extends StatefulWidget {
