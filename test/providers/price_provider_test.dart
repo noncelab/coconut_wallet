@@ -88,39 +88,60 @@ void main() {
 
   testWidgets('CoinGecko stays off while only exchange currencies are needed', (tester) async {
     await withHarness(tester, (harness) async {
-      expect(harness.coinGeckoRequests, isEmpty);
+      expect(harness.coinGecko, isNull);
     });
   });
 
-  testWidgets('a CoinGecko currency is polled only while it is selected', (tester) async {
+  testWidgets('one CoinGecko service follows the selected currency and stops when it is not needed', (tester) async {
     await withHarness(tester, (harness) async {
       harness.preference.select(FiatCode.CHF);
-      expect(harness.coinGeckoRequests, [
-        {FiatCode.CHF},
-      ]);
-
       final polling = harness.coinGecko!;
+      expect(polling.running, isTrue);
+
       harness.preference.select(FiatCode.KRW);
-      expect(polling.disposed, isTrue);
-      expect(harness.coinGeckoRequests, hasLength(1));
+      expect(polling.running, isFalse);
+      expect(polling.disposed, isFalse);
+
+      harness.preference.select(FiatCode.AED);
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
       expect(OwnedSocket.live, 4);
     });
   });
 
-  testWidgets('home widget currencies are polled with the selected currency', (tester) async {
+  testWidgets('a home widget CoinGecko currency keeps polling after the selected currency changes', (tester) async {
     await withHarness(tester, (harness) async {
-      harness.preference.select(FiatCode.CHF);
       harness.prices.setHomeWidgetFiats([FiatCode.AED, FiatCode.USD]);
-      harness.prices.setHomeWidgetFiats([FiatCode.USD, FiatCode.AED]);
+      final polling = harness.coinGecko!;
+      expect(polling.running, isTrue);
 
-      expect(harness.coinGeckoRequests, [
-        {FiatCode.CHF},
-        {FiatCode.CHF, FiatCode.AED},
-      ]);
+      harness.preference.select(FiatCode.CHF);
+      harness.preference.select(FiatCode.KRW);
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
+
+      harness.prices.setHomeWidgetFiats([FiatCode.USD]);
+      expect(polling.running, isFalse);
     });
   });
 
-  testWidgets('a currency that is no longer polled drops its last price', (tester) async {
+  testWidgets('going offline stops CoinGecko and coming back reuses the same service', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.preference.select(FiatCode.CHF);
+      final polling = harness.coinGecko!;
+
+      harness.connectivity.setOnline(false);
+      await tester.pump();
+      expect(polling.running, isFalse);
+
+      harness.connectivity.setOnline(true);
+      await tester.pump();
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
+    });
+  });
+
+  testWidgets('stopping CoinGecko drops its last prices', (tester) async {
     await withHarness(tester, (harness) async {
       harness.prices.setHomeWidgetFiats([FiatCode.CHF]);
       harness.coinGecko!.emit({FiatCode.CHF: 70000});
@@ -554,7 +575,7 @@ void main() {
           },
         );
       },
-      coinGeckoFactory: (_) => _CoinGecko(),
+      coinGeckoFactory: _CoinGecko.new,
     );
     addTearDown(prices.dispose);
     addTearDown(connectivity.dispose);
@@ -670,8 +691,8 @@ class Harness {
       connectivity,
       preference,
       webSocketFactory: book.create,
-      coinGeckoFactory: (fiats) {
-        coinGeckoRequests.add(fiats.toSet());
+      coinGeckoFactory: () {
+        coinGeckoCreated++;
         return coinGecko = _CoinGecko();
       },
     );
@@ -690,7 +711,7 @@ class Harness {
   final ScriptedConnectivity connectivity;
   final ScriptedPreference preference;
   final SocketBook book = SocketBook();
-  final coinGeckoRequests = <Set<FiatCode>>[];
+  var coinGeckoCreated = 0;
   _CoinGecko? coinGecko;
   late final PriceProvider prices;
   final notes = <PriceNote>[];
@@ -740,6 +761,10 @@ class PriceNote {
 class _CoinGecko extends Fake implements CoinGeckoPriceService {
   final _controller = StreamController<Map<FiatCode, int>>.broadcast(sync: true);
   bool disposed = false;
+  bool running = false;
+
+  @override
+  bool get isRunning => running;
 
   @override
   Stream<Map<FiatCode, int>> get priceStream => _controller.stream;
@@ -749,14 +774,15 @@ class _CoinGecko extends Fake implements CoinGeckoPriceService {
   }
 
   @override
-  void start() {}
+  void start() => running = true;
 
   @override
-  void stop() {}
+  void stop() => running = false;
 
   @override
   void dispose() {
     disposed = true;
+    running = false;
     _controller.close();
   }
 }

@@ -17,9 +17,7 @@ void main() {
       final calculator = h.calculator();
       unawaited(calculator.setFiatCode(FiatCode.CHF));
       await tester.pump();
-      expect(h.dio.currencies, [
-        {'chf'},
-      ]);
+      expect(h.dio.currencies, [_allCoinGecko]);
       h.dio.requests.last.reply({'chf': 70000});
       await tester.pump();
       expect(calculator.btcPrice, 70000);
@@ -76,9 +74,7 @@ void main() {
       expect(h.dio.requests, isEmpty);
       h.connectivity.setOnline(true);
       await tester.pump();
-      expect(h.dio.currencies, [
-        {'chf'},
-      ]);
+      expect(h.dio.currencies, [_allCoinGecko]);
       h.dio.requests.last.reply({'chf': 70000});
       await tester.pump();
       expect(calculator.btcPrice, 70000);
@@ -101,44 +97,40 @@ void main() {
       expect(h.dio.requests, hasLength(2));
       h.prices.resumePriceSources();
       await tester.pump();
-      expect(h.dio.currencies.last, {'twd'});
+      expect(h.dio.currencies.last, _allCoinGecko);
     } finally {
       h.dispose();
     }
   });
 
-  testWidgets('calculator demand overlaps global and home demand without removing their prices', (tester) async {
+  testWidgets('calculator demand overlaps global and home demand on one polling schedule', (tester) async {
     final h = _Harness(fiat: FiatCode.CHF);
     try {
       final calculator = h.calculator();
       await tester.pump();
-      h.dio.requests.last.reply({'chf': 70000});
+      h.dio.requests.last.reply({'chf': 70000, 'aed': 300000});
       await tester.pump();
       h.prices.setHomeWidgetFiats([FiatCode.AED, FiatCode.USD]);
       await tester.pump();
-      expect(h.dio.currencies.last, {'chf', 'aed'});
-      h.dio.requests.last.reply({'chf': 71000, 'aed': 300000});
-      await tester.pump();
+      expect(h.dio.requests, hasLength(1), reason: 'AED came with the same all-currency request');
 
       h.preference.select(FiatCode.KRW);
       await tester.pump();
-      expect(h.dio.requests, hasLength(2), reason: 'mounted calculator still needs CHF');
-      expect(calculator.btcPrice, 71000);
+      expect(calculator.btcPrice, 70000);
       unawaited(calculator.setFiatCode(FiatCode.AED));
       await tester.pump();
-      expect(h.dio.currencies.last, {'aed'});
+      expect(h.dio.requests, hasLength(1));
       expect(calculator.btcPrice, 300000);
-      expect(h.prices.getBitcoinPriceForFiat(FiatCode.CHF), isNull);
 
       h.close(calculator);
-      await tester.pump();
-      expect(h.dio.requests, hasLength(3), reason: 'home keeps AED without restarting polling');
+      await tester.pump(const Duration(seconds: 60));
+      expect(h.dio.requests, hasLength(2), reason: 'home keeps AED on the same polling schedule');
       h.dio.requests.last.reply({'aed': 310000});
       await tester.pump();
       expect(h.prices.getBitcoinPriceForFiat(FiatCode.AED), 310000);
       h.prices.setHomeWidgetFiats([]);
       await tester.pump(const Duration(minutes: 5));
-      expect(h.dio.requests, hasLength(3));
+      expect(h.dio.requests, hasLength(2));
       expect(h.prices.getBitcoinPriceForFiat(FiatCode.AED), isNull);
     } finally {
       h.dispose();
@@ -168,31 +160,23 @@ void main() {
     }
   });
 
-  testWidgets('late replaced quote cannot overwrite the active fiat or sats calculation', (tester) async {
+  testWidgets('switching CoinGecko currencies reuses the pending all-currency quote', (tester) async {
     final h = _Harness();
     try {
       final calculator = h.calculator();
       unawaited(calculator.setFiatCode(FiatCode.CHF));
       await tester.pump();
-      expect(h.dio.requests, hasLength(1));
-      final chf = h.dio.requests.last;
+      final pending = h.dio.requests.single;
       unawaited(calculator.setFiatCode(FiatCode.TWD));
       await tester.pump();
-      expect(h.dio.currencies.last, {'twd'});
-      h.dio.requests.last.reply({'twd': 3000000});
+      expect(h.dio.requests, hasLength(1));
+
+      pending.reply({'chf': 70000, 'twd': 3000000});
       await tester.pump();
       calculator.setPremiumRate(0);
       calculator.setInputAmount(100000);
+      expect((calculator.fiatCode, calculator.btcPrice), (FiatCode.TWD, 3000000));
       expect(calculator.calculate(calculator.inputAmount!), 33333);
-      var notifications = 0;
-      calculator.addListener(() => notifications++);
-
-      chf.reply({'chf': 70000});
-      await tester.pump();
-      expect((calculator.fiatCode, calculator.btcPrice, calculator.inputAmount), (FiatCode.TWD, 3000000, 100000));
-      expect(calculator.calculate(calculator.inputAmount!), 33333);
-      expect(notifications, 0);
-      expect(h.prices.getBitcoinPriceForFiat(FiatCode.CHF), isNull);
     } finally {
       h.dispose();
     }
@@ -212,6 +196,24 @@ void main() {
       expect(h.prices.getBitcoinPriceForFiat(FiatCode.CHF), isNull);
       expect(h.dio.requests, hasLength(1));
       expect(tester.takeException(), isNull);
+    } finally {
+      h.dispose();
+    }
+  });
+
+  testWidgets('selectFiat resets input and premium only when the currency changes', (tester) async {
+    final h = _Harness(fiat: FiatCode.CHF);
+    try {
+      final calculator = h.calculator();
+      calculator.setPremiumRate(3);
+      calculator.setInputAmount(100000);
+
+      expect(calculator.selectFiat(FiatCode.CHF), isFalse);
+      expect((calculator.inputAmount, calculator.premiumRate), (100000, 3.0));
+
+      expect(calculator.selectFiat(FiatCode.AED), isTrue);
+      await tester.pump();
+      expect((calculator.fiatCode, calculator.inputAmount, calculator.premiumRate), (FiatCode.AED, null, 1.0));
     } finally {
       h.dispose();
     }
@@ -238,6 +240,11 @@ void main() {
   });
 }
 
+final _allCoinGecko = {
+  for (final fiat in FiatCode.values)
+    if (!fiat.hasExchangeSource) fiat.vsCurrency,
+};
+
 class _Harness {
   _Harness({bool online = true, FiatCode fiat = FiatCode.KRW})
     : connectivity = ScriptedConnectivity(online: online),
@@ -246,7 +253,7 @@ class _Harness {
       connectivity,
       preference,
       webSocketFactory: SocketBook().create,
-      coinGeckoFactory: (fiats) => CoinGeckoPriceService(dio: dio, fiats: fiats),
+      coinGeckoFactory: () => CoinGeckoPriceService(dio: dio),
     );
   }
 

@@ -15,7 +15,7 @@ import 'p2p_calculator_test.dart' show FakePreferenceProvider, FakeWalletProvide
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('late CHF HTTP response cannot replace the newer TWD quote', () async {
+  test('switching from CHF to TWD needs no new CoinGecko request and shows the TWD quote', () async {
     final network = _Network();
     await HttpOverrides.runZoned(() async {
       final h = Harness();
@@ -23,32 +23,30 @@ void main() {
         h.connectivity,
         h.preference,
         webSocketFactory: SocketBook().create,
-        coinGeckoFactory: (fiats) => CoinGeckoPriceService(fiats: fiats),
+        coinGeckoFactory: CoinGeckoPriceService.new,
       );
       final calculator = P2PCalculatorViewModel(FakePreferenceProvider(), h.connectivity, prices, FakeWalletProvider());
       try {
-        final first = calculator.setFiatCode(FiatCode.CHF);
-        final chf = await network.requestFor('chf');
-        final second = calculator.setFiatCode(FiatCode.TWD);
-        final twd = await network.requestFor('twd');
+        final allCoinGecko = [
+          for (final fiat in FiatCode.values)
+            if (!fiat.hasExchangeSource) fiat.vsCurrency,
+        ].join(',');
+        await calculator.setFiatCode(FiatCode.CHF);
+        final quote = await network.requestFor(allCoinGecko);
+        await calculator.setFiatCode(FiatCode.TWD);
         final currentQuote = Completer<void>();
         void onQuote() {
           if (calculator.btcPrice == 3000000 && !currentQuote.isCompleted) currentQuote.complete();
         }
 
         calculator.addListener(onQuote);
-        twd.reply(3000000);
-        await second;
+        quote.replyPrices({'chf': 70000, 'twd': 3000000});
         await currentQuote.future.timeout(const Duration(seconds: 2));
         calculator.removeListener(onQuote);
         calculator.setPremiumRate(0);
-        expect(calculator.btcPrice, 3000000);
-        expect(calculator.calculateSatsFromFiat(100000), 33333);
-        chf.reply(70000);
-        await first;
-        await Future<void>.delayed(Duration.zero);
         expect((calculator.fiatCode, calculator.btcPrice), (FiatCode.TWD, 3000000));
         expect(calculator.calculateSatsFromFiat(100000), 33333);
+        expect(network.requests, hasLength(1));
       } finally {
         calculator.dispose();
         prices.dispose();
@@ -174,6 +172,8 @@ class _Request extends Fake implements HttpClientRequest {
   bool persistentConnection = true;
   @override
   Future<HttpClientResponse> close() => _response.future;
+  void replyPrices(Map<String, int> prices) => _response.complete(_Response(jsonEncode({'bitcoin': prices})));
+
   void reply(int quote) => _response.complete(
     _Response(
       jsonEncode(

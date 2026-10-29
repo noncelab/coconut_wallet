@@ -307,6 +307,14 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// 통화 변경 (fiat bottom sheet 선택 시 호출)
+  /// 다른 통화를 고르면 입력과 프리미엄을 초기화하고 true를 돌려준다.
+  bool selectFiat(FiatCode fiatCode) {
+    if (fiatCode == _fiatCode) return false;
+    resetInput();
+    unawaited(setFiatCode(fiatCode));
+    return true;
+  }
+
   Future<void> setFiatCode(FiatCode fiatCode) async {
     if (_isDisposed) return;
     final generation = ++_priceRequestGeneration;

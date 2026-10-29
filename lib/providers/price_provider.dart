@@ -26,7 +26,7 @@ class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
   final WebSocketService Function(FiatCode fiatCode) _createWebSocket;
-  final CoinGeckoPriceService Function(List<FiatCode> fiats) _createCoinGeckoService;
+  final CoinGeckoPriceService Function() _createCoinGeckoService;
 
   /// 통화별 웹소켓 서비스 (거래소 실시간 시세)
   final Map<FiatCode, WebSocketService> _webSocketServices = {};
@@ -35,7 +35,6 @@ class PriceProvider extends ChangeNotifier {
   /// 거래소 웹소켓이 없는 통화용 CoinGecko 폴링 서비스
   CoinGeckoPriceService? _coinGeckoService;
   StreamSubscription<Map<FiatCode, int>>? _coinGeckoSubscription;
-  Set<FiatCode> _coinGeckoFiats = {};
 
   /// 홈 위젯에서 고른 통화. 선택 통화와 함께 조회 대상이 된다.
   Set<FiatCode> _homeWidgetFiats = {};
@@ -56,9 +55,9 @@ class PriceProvider extends ChangeNotifier {
     this._connectivityProvider,
     this._preferenceProvider, {
     @visibleForTesting WebSocketService Function(FiatCode fiatCode)? webSocketFactory,
-    @visibleForTesting CoinGeckoPriceService Function(List<FiatCode> fiats)? coinGeckoFactory,
+    @visibleForTesting CoinGeckoPriceService Function()? coinGeckoFactory,
   }) : _createWebSocket = webSocketFactory ?? WebSocketServiceFactory.create,
-       _createCoinGeckoService = coinGeckoFactory ?? ((fiats) => CoinGeckoPriceService(fiats: fiats)) {
+       _createCoinGeckoService = coinGeckoFactory ?? CoinGeckoPriceService.new {
     Logger.log('PriceProvider: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;
@@ -123,31 +122,31 @@ class PriceProvider extends ChangeNotifier {
     _syncCoinGecko();
   }
 
-  Set<FiatCode> get _requiredCoinGeckoFiats =>
-      {
-        _preferenceProvider.selectedFiat,
-        ..._homeWidgetFiats,
-        ..._calculatorFiats.values,
-      }.where((fiat) => !fiat.hasExchangeSource).toSet();
+  /// CoinGecko 통화가 하나라도 필요할 때만 조회한다. 조회하면 대상 통화 전체를 함께 받는다.
+  bool get _needsCoinGecko =>
+      !_preferenceProvider.selectedFiat.hasExchangeSource ||
+      _homeWidgetFiats.any((fiat) => !fiat.hasExchangeSource) ||
+      _calculatorFiats.values.any((fiat) => !fiat.hasExchangeSource);
 
   void _syncCoinGecko() {
     if (_phase != _ConnectionPhase.active || _connectivityProvider.isInternetOn != true) return;
-    final required = _requiredCoinGeckoFiats;
-    if (_coinGeckoService != null && setEquals(required, _coinGeckoFiats)) return;
+    if (!_needsCoinGecko) {
+      _coinGeckoService?.stop();
+      _bitcoinPrices.removeWhere((fiat, _) => !fiat.hasExchangeSource);
+      return;
+    }
 
-    _disposeCoinGecko();
-    _bitcoinPrices.removeWhere((fiat, _) => !fiat.hasExchangeSource && !required.contains(fiat));
-    if (required.isEmpty) return;
-
-    final service = _createCoinGeckoService(required.toList());
-    _coinGeckoService = service;
-    _coinGeckoFiats = required;
-    _coinGeckoSubscription = service.priceStream.listen(
-      _updateCoinGeckoPrices,
-      onError: (error) => Logger.error('[CoinGecko] 스트림 오류: $error'),
-    );
+    var service = _coinGeckoService;
+    if (service == null) {
+      service = _createCoinGeckoService();
+      _coinGeckoService = service;
+      _coinGeckoSubscription = service.priceStream.listen(
+        _updateCoinGeckoPrices,
+        onError: (error) => Logger.error('[CoinGecko] 스트림 오류: $error'),
+      );
+    }
+    if (!service.isRunning) Logger.log('[CoinGecko] 폴링 시작');
     service.start();
-    Logger.log('[CoinGecko] 폴링 시작: ${required.map((fiat) => fiat.code).join(',')}');
   }
 
   void initPriceSources({bool force = false}) {
@@ -198,11 +197,7 @@ class PriceProvider extends ChangeNotifier {
 
   bool get _allChannelsConnected {
     final exchangeFiatCount = FiatCode.values.where((fiat) => fiat.hasExchangeSource).length;
-    final required = _requiredCoinGeckoFiats;
-    final isCoinGeckoReady =
-        required.isEmpty
-            ? _coinGeckoService == null
-            : _coinGeckoService != null && setEquals(required, _coinGeckoFiats);
+    final isCoinGeckoReady = (_coinGeckoService?.isRunning ?? false) == _needsCoinGecko;
     return _webSocketServices.length == exchangeFiatCount && isCoinGeckoReady;
   }
 
@@ -245,7 +240,7 @@ class PriceProvider extends ChangeNotifier {
     }
     _webSocketServices.clear();
 
-    _disposeCoinGecko();
+    _coinGeckoService?.stop();
   }
 
   void _disposeCoinGecko() {
@@ -253,7 +248,6 @@ class PriceProvider extends ChangeNotifier {
     _coinGeckoSubscription = null;
     _coinGeckoService?.dispose();
     _coinGeckoService = null;
-    _coinGeckoFiats = {};
   }
 
   @override
@@ -262,6 +256,7 @@ class PriceProvider extends ChangeNotifier {
     _preferenceProvider.removeListener(_preferenceListener);
     try {
       disposePriceSources();
+      _disposeCoinGecko();
     } catch (e) {
       Logger.error('PriceProvider: dispose 중 가격 채널 오류: $e');
     }

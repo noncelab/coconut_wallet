@@ -26,6 +26,23 @@ void main() {
     service.dispose();
   });
 
+  testWidgets('by default requests every CoinGecko currency so the request does not reveal which one is used', (
+    tester,
+  ) async {
+    final dio = _FakeDio((_) => _ok({'chf': 1}));
+    final service = CoinGeckoPriceService(dio: dio);
+
+    service.start();
+    await tester.pump();
+
+    final requested = (dio.queries.single!['vs_currencies'] as String).split(',').toSet();
+    expect(requested, {
+      for (final fiat in FiatCode.values)
+        if (!fiat.hasExchangeSource) fiat.vsCurrency,
+    });
+    service.dispose();
+  });
+
   testWidgets('backs off after failures and returns to the normal interval after a success', (tester) async {
     final results = [false, false, true, true];
     final dio = _FakeDio((call) => call <= results.length && results[call - 1] ? _ok({'aed': 1}) : _error());
@@ -47,6 +64,34 @@ void main() {
 
     await tester.pump(const Duration(seconds: 60));
     expect(dio.requestCount, equals(4), reason: 'a success resets the interval to 60s');
+    service.dispose();
+  });
+
+  testWidgets('a restart keeps the backoff after a failure', (tester) async {
+    final dio = _FakeDio((_) => _error());
+    final service = CoinGeckoPriceService(dio: dio, fiats: const [FiatCode.AED]);
+
+    service.start();
+    await tester.pump(const Duration(seconds: 30));
+    service.stop();
+    service.start();
+    await tester.pump(const Duration(seconds: 119));
+    expect(dio.requestCount, 1, reason: 'a restart does not skip the 120s backoff');
+    service.dispose();
+  });
+
+  testWidgets('a restart after the backoff wait has passed fetches at once', (tester) async {
+    final dio = _FakeDio((_) => _error());
+    final service = CoinGeckoPriceService(dio: dio, fiats: const [FiatCode.AED]);
+
+    service.start();
+    await tester.pump();
+    service.stop();
+    await tester.pump(const Duration(minutes: 3));
+    service.start();
+    await tester.pump();
+
+    expect(dio.requestCount, 2);
     service.dispose();
   });
 

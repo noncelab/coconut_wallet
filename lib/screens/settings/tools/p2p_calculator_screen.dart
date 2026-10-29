@@ -107,12 +107,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _resetCalculator() {
+    _clearInputFields();
+    _viewModel.resetInput();
+  }
+
+  void _clearInputFields() {
     _isUpdatingController = true;
     _inputController.clear();
     _resultController.clear();
     _premiumController.text = _formatLocaleDecimalText('1.0');
     _isUpdatingController = false;
-    _viewModel.resetInput();
   }
 
   @override
@@ -1182,16 +1186,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
-              final previousFiatCode = _viewModel.fiatCode;
               await FiatBottomSheet.show(
                 context,
                 screenName: AnalyticsScreenNames.p2pCalculatorFiatSheet,
                 title: t.fiat_bottom_sheet.select_title,
                 closeOnSelect: true,
-                selectedValue: previousFiatCode,
-                onSelected: _viewModel.setFiatCode,
+                selectedValue: _viewModel.fiatCode,
+                onSelected: (fiat) {
+                  if (_viewModel.selectFiat(fiat)) _clearInputFields();
+                },
               );
-              if (_viewModel.fiatCode != previousFiatCode) _resetCalculator();
               _inputFocusNode.unfocus();
             },
             defaultColor: context.coconutColors.surface,
