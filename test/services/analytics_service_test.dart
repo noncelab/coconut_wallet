@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -187,6 +188,8 @@ void main() {
     verifyNever(analytics.setUserProperty(name: 'blocked-property', value: 'blocked-value'));
     expect(repository.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.collectionStatusListenable.value.isUpdating, isTrue);
     disableCompleter.complete();
     await update;
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
@@ -219,6 +222,7 @@ void main() {
 
     expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isFalse);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
     await subject.setCollectionEnabled(true);
     expect(subject.isCollectionEnabled, isTrue);
@@ -273,6 +277,7 @@ void main() {
 
     expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: false));
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
     verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
     final restarted = service();
@@ -300,6 +305,15 @@ void main() {
 
     expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isTrue);
+
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenAnswer((_) async {});
+    clearInteractions(analytics);
+    await subject.setCollectionEnabled(false);
+    expect(subject.collectionStatusListenable.value.disablePending, isFalse);
+    verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
+    verifyNever(analytics.setAnalyticsCollectionEnabled(true));
+    verifyNever(analytics.setDefaultEventParameters(any));
   });
 
   test('failed ON persistence turns the enabled SDK back off and keeps OFF', () async {
@@ -323,17 +337,18 @@ void main() {
     expect(subject.canCollect, isFalse);
   });
 
-  test('failed SDK disable keeps the saved opt-out but shows ON so the same tap retries OFF', () async {
+  test('failed SDK disable shows the saved opt-out and an explicit OFF retry never enables collection', () async {
     final subject = service();
     await subject.initialize();
     when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
 
     await expectLater(subject.setCollectionEnabled(false), throwsStateError);
 
-    // 거부는 SDK보다 먼저 저장되고 되돌리지 않는다. SDK 끄기(fail-safe 재시도 포함)가 실패했으니 화면은 켜짐으로 남는다.
+    // 저장된 거부가 화면의 기준이다. SDK 실패를 재시도할 때는 이 값을 뒤집지 않고 OFF를 명시한다.
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
-    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.isCollectionEnabled, isFalse);
     expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isTrue);
     await subject.logEvent(eventName: 'blocked');
     verifyNever(analytics.logEvent(name: 'blocked', parameters: anyNamed('parameters')));
     final restarted = service();
@@ -347,6 +362,7 @@ void main() {
     verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
     expect(subject.isCollectionEnabled, isFalse);
     expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isFalse);
   });
 
   test('startup SDK failure never rewrites the stored choice', () async {
@@ -360,8 +376,117 @@ void main() {
     expect(subject.canCollect, isFalse);
   });
 
+  test('startup saved OFF with two failed disables exposes a safe OFF retry', () async {
+    await repository.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
+    final subject = service();
+    await subject.initialize();
+
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: true, hasError: true));
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenAnswer((_) async {});
+    clearInteractions(analytics);
+    await subject.setCollectionEnabled(false);
+
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: false));
+    verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
+    verifyNever(analytics.setAnalyticsCollectionEnabled(true));
+    verifyNever(analytics.setDefaultEventParameters(any));
+    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+  });
+
+  test('OFF saved before a one-shot SDK failure is resolved by a successful fail-safe disable', () async {
+    final subject = service();
+    await subject.initialize();
+    var attempts = 0;
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenAnswer((_) async {
+      if (attempts++ == 0) throw StateError('one-shot disable failure');
+    });
+
+    await subject.setCollectionEnabled(false);
+
+    expect(attempts, 2);
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(repository.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: false));
+  });
+
+  test('startup saved OFF one-shot SDK failure is resolved by the successful fail-safe disable', () async {
+    await repository.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+    var attempts = 0;
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenAnswer((_) async {
+      if (attempts++ == 0) throw StateError('one-shot disable failure');
+    });
+    final subject = service();
+
+    await subject.initialize();
+
+    expect(attempts, 2);
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: false));
+  });
+
+  test('startup saved ON with two failed disables shows a neutral error without inventing a refusal', () async {
+    when(analytics.setAnalyticsCollectionEnabled(false)).thenThrow(StateError('disable failed'));
+    final subject = service();
+
+    await subject.initialize();
+
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: true));
+    expect(repository.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    when(analytics.setAnalyticsCollectionEnabled(true)).thenThrow(StateError('enable failed'));
+    await expectLater(subject.setCollectionEnabled(true), throwsStateError);
+    expect(subject.collectionStatusListenable.value, (isUpdating: false, disablePending: false, hasError: true));
+  });
+
+  test('OFF storage failure stays pending until retry saves the refusal and disables the SDK', () async {
+    final preferences = FailingSharedPreferences();
+    var allowWrite = false;
+    var saved = false;
+    when(preferences.containsKey(SharedPrefKeys.kAnalyticsCollectionEnabled)).thenAnswer((_) => saved);
+    when(preferences.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled)).thenReturn(false);
+    when(preferences.setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false)).thenAnswer((_) async {
+      if (!allowWrite) return false;
+      saved = true;
+      return true;
+    });
+    final subject = AnalyticsService(
+      analytics,
+      false,
+      sharedPrefs: SharedPrefsRepository()..setSharedPreferencesForTest(preferences),
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await subject.initialize();
+    await expectLater(subject.setCollectionEnabled(false), throwsStateError);
+
+    expect(saved, isFalse);
+    expect(subject.isCollectionEnabled, isTrue);
+    expect(subject.canCollect, isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isTrue);
+    allowWrite = true;
+    clearInteractions(analytics);
+    await subject.setCollectionEnabled(false);
+
+    expect(saved, isTrue);
+    expect(subject.isCollectionEnabled, isFalse);
+    expect(subject.collectionStatusListenable.value.disablePending, isFalse);
+    verify(analytics.setAnalyticsCollectionEnabled(false)).called(1);
+    verifyNever(analytics.setAnalyticsCollectionEnabled(true));
+    verifyNever(analytics.setDefaultEventParameters(any));
+  });
+
   test('password reset does not clear the analytics collection choice', () {
     expect(SharedPrefKeys.keysToReset, isNot(contains(SharedPrefKeys.kAnalyticsCollectionEnabled)));
+  });
+
+  test('iOS startup refusal uses the legacy-prefixed analytics choice key', () {
+    final nativeStartup = File('ios/Runner/AppDelegate.swift').readAsStringSync();
+    expect(nativeStartup, contains('"flutter.${SharedPrefKeys.kAnalyticsCollectionEnabled}"'));
   });
 
   test('concurrent toggles are rejected while an update is in progress', () async {

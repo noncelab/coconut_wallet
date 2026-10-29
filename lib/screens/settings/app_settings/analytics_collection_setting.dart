@@ -31,7 +31,8 @@ class AnalyticsCollectionSetting extends StatelessWidget {
             builder: (context, isCollectionEnabled, _) {
               final colors = context.coconutColors;
               final t = context.t;
-              return SingleButton(
+              final canToggle = !viewModel.isSaving && !(viewModel.disablePending && !isCollectionEnabled);
+              final setting = SingleButton(
                 title: t.settings_screen.analytics_collection,
                 subtitle: t.settings_screen.analytics_collection_description,
                 isVerticalSubtitle: true,
@@ -39,11 +40,11 @@ class AnalyticsCollectionSetting extends StatelessWidget {
                 rightElement: Semantics(
                   label: t.settings_screen.analytics_collection,
                   toggled: isCollectionEnabled,
-                  enabled: !viewModel.isSaving,
-                  onTap: viewModel.isSaving ? null : () => _update(context, viewModel, !isCollectionEnabled),
+                  enabled: canToggle,
+                  onTap: canToggle ? () => _update(context, viewModel, !isCollectionEnabled) : null,
                   child: ExcludeSemantics(
                     child: IgnorePointer(
-                      ignoring: viewModel.isSaving,
+                      ignoring: !canToggle,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: CoconutSwitch(
@@ -59,6 +60,40 @@ class AnalyticsCollectionSetting extends StatelessWidget {
                     ),
                   ),
                 ),
+              );
+              if (!viewModel.hasError) return setting;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  setting,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            t.settings_screen.analytics_collection_apply_error,
+                            style: CoconutTypography.body2_14.setColor(colors.dangerText),
+                          ),
+                        ),
+                        if (viewModel.disablePending)
+                          Semantics(
+                            button: true,
+                            enabled: !viewModel.isSaving,
+                            child: SingleButton(
+                              title: t.settings_screen.analytics_collection_retry_disable,
+                              titleStyle: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                              wrapsText: true,
+                              customPadding: const EdgeInsets.symmetric(vertical: 12),
+                              onPressed: viewModel.isSaving ? null : () => _update(context, viewModel, false),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
           );

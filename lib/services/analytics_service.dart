@@ -10,6 +10,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
 
+typedef AnalyticsCollectionStatus = ({bool isUpdating, bool disablePending, bool hasError});
+
 /// Firebase Analytics
 class AnalyticsService {
   final FirebaseAnalytics? _analytics;
@@ -17,8 +19,12 @@ class AnalyticsService {
   final Future<Map<String, Object>> Function()? _commonParametersLoader;
 
   final ValueNotifier<bool> _isCollectionEnabled = ValueNotifier(true);
+  final _collectionStatus = ValueNotifier<AnalyticsCollectionStatus>((
+    isUpdating: false,
+    disablePending: false,
+    hasError: false,
+  ));
   bool _isReadyToCollect = false;
-  bool _isUpdating = false;
   Future<void> _initialization = Future<void>.value();
 
   /// [isAnalyticsDisabled]이면 SDK를 호출하지 않고 수집 선택만 저장한다.
@@ -32,8 +38,19 @@ class AnalyticsService {
        _commonParametersLoader = commonParametersLoader;
 
   ValueListenable<bool> get collectionEnabledListenable => _isCollectionEnabled;
+  ValueListenable<AnalyticsCollectionStatus> get collectionStatusListenable => _collectionStatus;
   bool get isCollectionEnabled => _isCollectionEnabled.value;
   bool get canCollect => _analytics != null && _isCollectionEnabled.value && _isReadyToCollect;
+  bool get _isUpdating => _collectionStatus.value.isUpdating;
+
+  void _updateCollectionStatus({bool? isUpdating, bool? disablePending, bool? hasError}) {
+    final previous = _collectionStatus.value;
+    _collectionStatus.value = (
+      isUpdating: isUpdating ?? previous.isUpdating,
+      disablePending: disablePending ?? previous.disablePending,
+      hasError: hasError ?? previous.hasError,
+    );
+  }
 
   /// 저장된 수집 선택을 SDK에 적용한다. 적용이 끝날 때까지 로깅은 기다렸다가 수집 여부를 다시 확인한다.
   Future<void> initialize() {
@@ -42,36 +59,50 @@ class AnalyticsService {
   }
 
   Future<void> _applyStoredChoice() async {
-    _isUpdating = true;
     _isReadyToCollect = false;
+    _updateCollectionStatus(isUpdating: true);
     try {
       _isCollectionEnabled.value =
           !_sharedPrefs.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled) ||
           _sharedPrefs.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled);
       final analytics = _analytics;
-      if (analytics == null) return;
-      await analytics.setAnalyticsCollectionEnabled(false);
-      if (!_isCollectionEnabled.value) return;
-      await _initializeDefaultParameters();
-      await analytics.setAnalyticsCollectionEnabled(true);
-      _isReadyToCollect = true;
+      if (analytics != null) {
+        await analytics.setAnalyticsCollectionEnabled(false);
+        if (_isCollectionEnabled.value) {
+          await _initializeDefaultParameters();
+          await analytics.setAnalyticsCollectionEnabled(true);
+          _isReadyToCollect = true;
+        }
+      }
+      _updateCollectionStatus(disablePending: false, hasError: false);
     } catch (e) {
       Logger.error('Analytics initialization error: $e');
-      await _disableCollectionAfterFailure();
+      final disabled = await _disableCollectionAfterFailure();
+      _updateCollectionStatus(
+        disablePending: !isCollectionEnabled && !disabled,
+        hasError: isCollectionEnabled || !disabled,
+      );
     } finally {
-      _isUpdating = false;
+      _updateCollectionStatus(isUpdating: false);
     }
   }
 
-  /// 저장과 SDK 적용이 모두 끝나야 선택을 바꾼다. 실패하면 선택은 그대로 두고 이번 실행의 수집을 닫으므로
-  /// 같은 동작으로 다시 시도할 수 있다. 수집 거부는 SDK 적용보다 먼저 저장하고 되돌리지 않는다.
+  /// 스위치는 저장된 선택을 나타낸다. 수집 거부는 SDK 적용보다 먼저 저장·표시하고 되돌리지 않는다.
+  /// 적용 실패 시 Dart 수집을 닫고, 확인되지 않은 끄기는 화면 수명과 무관하게 명시적으로 재시도한다.
   Future<void> setCollectionEnabled(bool enabled) async {
     if (_isUpdating) throw StateError('Analytics update already in progress');
     final analytics = _analytics;
-    if (isCollectionEnabled == enabled && (analytics == null || (enabled && _isReadyToCollect))) return;
+    final status = _collectionStatus.value;
+    if (!status.disablePending &&
+        !status.hasError &&
+        isCollectionEnabled == enabled &&
+        (analytics == null || (enabled && _isReadyToCollect))) {
+      return;
+    }
 
-    _isUpdating = true;
     _isReadyToCollect = false;
+    _updateCollectionStatus(isUpdating: true);
+    var choiceSaved = false;
     try {
       if (enabled) {
         if (analytics != null) {
@@ -82,23 +113,34 @@ class AnalyticsService {
         _isReadyToCollect = analytics != null;
       } else {
         await _sharedPrefs.setAnalyticsCollectionEnabled(false);
+        choiceSaved = true;
+        _isCollectionEnabled.value = false;
         await analytics?.setAnalyticsCollectionEnabled(false);
       }
       _isCollectionEnabled.value = enabled;
-    } catch (_) {
-      await _disableCollectionAfterFailure();
+      _updateCollectionStatus(disablePending: false, hasError: false);
+    } catch (e) {
+      final disabled = await _disableCollectionAfterFailure();
+      final disablePending = (!enabled && !choiceSaved) || (!isCollectionEnabled && !disabled);
+      _updateCollectionStatus(disablePending: disablePending, hasError: disablePending || !disabled);
+      if (!enabled && choiceSaved && disabled) {
+        Logger.error('Analytics disable recovered after error: ${e.runtimeType}');
+        return;
+      }
       rethrow;
     } finally {
-      _isUpdating = false;
+      _updateCollectionStatus(isUpdating: false);
     }
   }
 
-  Future<void> _disableCollectionAfterFailure() async {
+  Future<bool> _disableCollectionAfterFailure() async {
     _isReadyToCollect = false;
     try {
       await _analytics?.setAnalyticsCollectionEnabled(false);
+      return true;
     } catch (e) {
       Logger.error('Analytics fail-safe disable error: $e');
+      return false;
     }
   }
 

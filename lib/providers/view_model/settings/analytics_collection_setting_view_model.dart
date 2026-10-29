@@ -7,14 +7,22 @@ class AnalyticsCollectionSettingViewModel extends ChangeNotifier {
   bool _isSaving = false;
   bool _isDisposed = false;
 
-  AnalyticsCollectionSettingViewModel(this._analyticsService);
+  AnalyticsCollectionSettingViewModel(this._analyticsService) {
+    _analyticsService.collectionStatusListenable.addListener(_onCollectionStatusChanged);
+  }
 
   ValueListenable<bool> get isCollectionEnabled => _analyticsService.collectionEnabledListenable;
-  bool get isSaving => _isSaving;
+  bool get isSaving => _isSaving || _analyticsService.collectionStatusListenable.value.isUpdating;
+  bool get disablePending => _analyticsService.collectionStatusListenable.value.disablePending;
+  bool get hasError => _analyticsService.collectionStatusListenable.value.hasError;
+
+  void _onCollectionStatusChanged() {
+    if (!_isDisposed) notifyListeners();
+  }
 
   /// 변경하지 못했으면 false를 돌려준다. 저장 중에 다시 들어온 호출은 진행 중인 변경을 건드리지 않고 무시한다.
   Future<bool> setCollectionEnabled(bool enabled) async {
-    if (_isSaving) return true;
+    if (isSaving || (enabled && disablePending && !isCollectionEnabled.value)) return true;
     _isSaving = true;
     notifyListeners();
     try {
@@ -31,6 +39,7 @@ class AnalyticsCollectionSettingViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _analyticsService.collectionStatusListenable.removeListener(_onCollectionStatusChanged);
     super.dispose();
   }
 }

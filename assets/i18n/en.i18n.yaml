@@ -1179,6 +1179,8 @@ settings_screen:
   analytics_collection: "Anonymous app usage statistics"
   analytics_collection_description: "Collect anonymous usage statistics to improve the app"
   analytics_collection_error: "We couldn't change the setting. Please try again."
+  analytics_collection_apply_error: "We couldn't apply the collection setting."
+  analytics_collection_retry_disable: "Retry turning off"
   import_labels: "Import Notes"
   import_all_labels_description: "Applies notes recorded on other devices\nto Coconut Wallet.\n\nDo you want to proceed with the import?"
   export_labels: "Export Notes"

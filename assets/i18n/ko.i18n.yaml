@@ -1176,6 +1176,8 @@ settings_screen:
   analytics_collection: "앱 사용 익명 통계 수집"
   analytics_collection_description: "앱 개선을 위해 익명 사용 통계를 수집해요"
   analytics_collection_error: "설정을 변경하지 못했어요. 다시 시도해 주세요."
+  analytics_collection_apply_error: "수집 설정을 적용하지 못했어요."
+  analytics_collection_retry_disable: "끄기 재시도"
   import_labels: "메모 가져오기"
   import_all_labels_description: "다른 기기에서 기록한 메모들을\n코코넛 월렛에 적용합니다.\n\n가져오기를 진행하시겠습니까?"
   export_labels: "메모 내보내기"

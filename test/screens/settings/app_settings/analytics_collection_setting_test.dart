@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -33,17 +34,42 @@ class _PendingAnalyticsService extends AnalyticsService {
 class _FlakySdk extends Fake implements FirebaseAnalytics {
   bool? failing;
   Completer<void>? enableGate;
+  Completer<void>? disableGate;
+  bool failNextDisable = false;
   final calls = <bool>[];
 
   @override
   Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
     calls.add(enabled);
     if (enabled) await enableGate?.future;
+    if (!enabled) await disableGate?.future;
+    if (!enabled && failNextDisable) {
+      failNextDisable = false;
+      throw StateError('one-shot disable failure');
+    }
     if (enabled == failing) throw StateError('SDK $enabled failed');
   }
 
   @override
   Future<void> setDefaultEventParameters(Map<String, Object?>? defaultParameters) async {}
+}
+
+class _FailingOffPreferences extends Fake implements SharedPreferences {
+  bool choice = true;
+  bool failOff = true;
+
+  @override
+  bool containsKey(String key) => key == SharedPrefKeys.kAnalyticsCollectionEnabled;
+
+  @override
+  bool? getBool(String key) => key == SharedPrefKeys.kAnalyticsCollectionEnabled ? choice : null;
+
+  @override
+  Future<bool> setBool(String key, bool value) async {
+    if (!value && failOff) return false;
+    choice = value;
+    return true;
+  }
 }
 
 void main() {
@@ -159,7 +185,9 @@ void main() {
   });
 
   for (final target in [true, false]) {
-    testWidgets('failed ${target ? 'ON' : 'OFF'} keeps the switch and the same tap retries it', (tester) async {
+    testWidgets('failed ${target ? 'ON' : 'OFF'} shows the saved choice and retries the explicit target', (
+      tester,
+    ) async {
       await SharedPrefsRepository().setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, !target);
       final sdk = _FlakySdk();
       final service = AnalyticsService(
@@ -176,20 +204,244 @@ void main() {
       await tester.tap(find.byType(CoconutSwitch));
       await tester.pumpAndSettle();
       expect(find.text(t.settings_screen.analytics_collection_error), findsOneWidget);
-      expect(isOn(), !target);
+      expect(isOn(), isFalse);
       expect(service.canCollect, isFalse);
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
 
       sdk.failing = null;
       sdk.calls.clear();
-      await tester.tap(find.byType(CoconutSwitch));
+      await tester.tap(target ? find.byType(CoconutSwitch) : find.text('끄기 재시도'));
       await tester.pumpAndSettle();
       expect(sdk.calls, [target]);
       expect(isOn(), target);
       expect(service.canCollect, target);
       expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), target);
       expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  testWidgets('saved OFF and its explicit disable retry survive leaving and re-entering settings', (tester) async {
+    final sdk = _FlakySdk();
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    sdk.failing = false;
+    await expectLater(service.setCollectionEnabled(false), throwsStateError);
+
+    await mount(tester, service);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    await tester.pumpWidget(const SizedBox());
+    await mount(tester, service);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+
+    sdk.failing = null;
+    sdk.calls.clear();
+    await tester.tap(find.text('끄기 재시도'));
+    await tester.pumpAndSettle();
+    expect(sdk.calls, [false]);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(service.canCollect, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('re-entering settings while saving keeps the new row disabled', (tester) async {
+    final sdk = _FlakySdk();
+    final service = await gatedService(sdk);
+    await mount(tester, service);
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    await mount(tester, service);
+
+    final pointer = find.ancestor(of: find.byType(CoconutSwitch), matching: find.byType(IgnorePointer)).first;
+    expect(tester.widget<IgnorePointer>(pointer).ignoring, isTrue);
+    await tester.tapAt(tester.getCenter(find.byType(CoconutSwitch)));
+    await tester.pump();
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+    sdk.enableGate!.complete();
+    await tester.pumpAndSettle();
+    expect(sdk.calls.where((enabled) => enabled), [true]);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('repeated disable retries and switch taps cannot turn collection on during the retry', (tester) async {
+    final sdk = _FlakySdk();
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    sdk.failing = false;
+    await expectLater(service.setCollectionEnabled(false), throwsStateError);
+    await mount(tester, service);
+    sdk.failing = null;
+    sdk.disableGate = Completer<void>();
+    sdk.calls.clear();
+
+    await tester.tap(find.text('끄기 재시도'));
+    await tester.pump();
+    await tester.tapAt(tester.getCenter(find.text('끄기 재시도')));
+    await tester.tapAt(tester.getCenter(find.byType(CoconutSwitch)));
+    await tester.pump();
+    expect(sdk.calls, [false]);
+    expect(service.collectionStatusListenable.value.isUpdating, isTrue);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    sdk.disableGate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(sdk.calls, [false]);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('pending saved OFF locks the switch so a mistaken retry cannot opt in', (tester) async {
+    final sdk = _FlakySdk();
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    sdk.failing = false;
+    await expectLater(service.setCollectionEnabled(false), throwsStateError);
+    await mount(tester, service);
+    sdk.calls.clear();
+
+    await tester.tapAt(tester.getCenter(find.byType(CoconutSwitch)));
+    await tester.pumpAndSettle();
+
+    expect(sdk.calls, isEmpty);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a recovered OFF failure has no retry toast beside the unlocked OFF switch', (tester) async {
+    final sdk = _FlakySdk();
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    await mount(tester, service);
+    sdk.failNextDisable = true;
+
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pumpAndSettle();
+
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('startup saved ON failure shows a neutral error without a turn-off retry or switch lock', (tester) async {
+    final sdk = _FlakySdk()..failing = false;
+    final service = AnalyticsService(sdk, false);
+    await service.initialize();
+    await mount(tester, service);
+
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isTrue);
+    expect(find.text(t.settings_screen.analytics_collection_apply_error), findsOneWidget);
+    expect(find.text('끄기 재시도'), findsNothing);
+    final pointer = find.ancestor(of: find.byType(CoconutSwitch), matching: find.byType(IgnorePointer)).first;
+    expect(tester.widget<IgnorePointer>(pointer).ignoring, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('OFF storage failure shows saved ON and a switch tap safely retries OFF', (tester) async {
+    final preferences = _FailingOffPreferences();
+    // ignore: deprecated_member_use_from_same_package
+    SharedPrefsRepository().setSharedPreferencesForTest(preferences);
+    final service = AnalyticsService(null, true);
+    await service.initialize();
+    await mount(tester, service);
+
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pumpAndSettle();
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isTrue);
+    expect(preferences.choice, isTrue);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    expect(service.canCollect, isFalse);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    preferences.failOff = false;
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pumpAndSettle();
+    expect(preferences.choice, isFalse);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(service.canCollect, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('leaving during failed disable preserves its saved OFF and retry without a disposed notification', (
+    tester,
+  ) async {
+    final sdk = _FlakySdk();
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{'app_version': 'test'},
+    );
+    await service.initialize();
+    sdk.disableGate = Completer<void>();
+    sdk.failing = false;
+    await mount(tester, service);
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pump();
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    await tester.pumpWidget(const SizedBox());
+    sdk.disableGate!.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await mount(tester, service);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  for (final locale in AppLocale.values) {
+    testWidgets('persistent disable error and retry remain readable in ${locale.languageCode} at 320px x2', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      LocaleSettings.setLocaleSync(locale);
+      final sdk = _FlakySdk()..failing = false;
+      await SharedPrefsRepository().setBool(SharedPrefKeys.kAnalyticsCollectionEnabled, false);
+      final service = AnalyticsService(sdk, false);
+      await service.initialize();
+
+      await mount(tester, service, textScale: 2);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(t.settings_screen.analytics_collection_apply_error), findsOneWidget);
+      final retry = find.text(t.settings_screen.analytics_collection_retry_disable);
+      expect(retry, findsOneWidget);
+      expect(tester.getRect(retry).right, lessThanOrEqualTo(300));
+      final semantics = tester.ensureSemantics();
+      expect(tester.getSemantics(retry).getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox());
     });
   }
@@ -206,6 +458,29 @@ void main() {
     expect(await first, isTrue);
     expect(viewModel.isSaving, isFalse);
     expect(sdk.calls.where((enabled) => enabled), hasLength(1));
+    viewModel.dispose();
+  });
+
+  test('a stale ON action is ignored while saved OFF is pending without requiring a widget rebuild', () async {
+    final sdk = _FlakySdk();
+    final service = await gatedService(sdk);
+    sdk.enableGate = null;
+    sdk.failing = false;
+    await expectLater(service.setCollectionEnabled(false), throwsStateError);
+    final viewModel = AnalyticsCollectionSettingViewModel(service);
+    sdk.failing = null;
+    sdk.calls.clear();
+
+    expect(await viewModel.setCollectionEnabled(true), isTrue);
+
+    expect(sdk.calls, isEmpty);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(viewModel.disablePending, isTrue);
+    expect(await viewModel.setCollectionEnabled(false), isTrue);
+    expect(viewModel.disablePending, isFalse);
+    expect(await viewModel.setCollectionEnabled(true), isTrue);
+    expect(sdk.calls, [false, true]);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isTrue);
     viewModel.dispose();
   });
 
@@ -237,9 +512,9 @@ void main() {
     await tester.tap(switches.first);
     await tester.pump();
 
-    await tester.tap(switches.last);
+    await tester.tapAt(tester.getCenter(switches.last));
     await tester.pumpAndSettle();
-    expect(find.text(t.settings_screen.analytics_collection_error), findsOneWidget);
+    expect(find.text(t.settings_screen.analytics_collection_error), findsNothing);
     sdk.enableGate!.complete();
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
