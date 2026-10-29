@@ -303,9 +303,7 @@ class UtxoSplitTransactionBuilder {
               exactAmounts.removeLast();
               splitPreview = await _buildSplitPreview(
                 exactAmounts,
-                ((_oneOutputTxVBytesWithInputCount(utxos.length) + _outputVBytes! * (exactAmounts.length - 1)) *
-                        feeRate)
-                    .ceilToDouble(),
+                _fixedSplitFee(utxos.length, exactAmounts.length).toDouble(),
                 utxos,
               );
               if (isCancelled) {
@@ -412,7 +410,7 @@ class UtxoSplitTransactionBuilder {
 
     final double estimatedFee =
         ((_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * totalOutputCount) * feeRate +
-                (totalOutputCount >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0))
+                (totalOutputCount + 1 >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0))
             .ceilToDouble();
     if (estimatedFee >= totalAmount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: estimatedFee);
@@ -440,9 +438,7 @@ class UtxoSplitTransactionBuilder {
     }
 
     final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput, effectiveUtxos);
-    final estimatedFee =
-        ((_oneOutputTxVBytesWithInputCount(effectiveUtxos.length) + _outputVBytes! * (exactAmounts.length)) * feeRate)
-            .ceilToDouble();
+    final estimatedFee = _fixedSplitFee(effectiveUtxos.length, exactAmounts.length).toDouble();
     return _buildSplitPreview(exactAmounts, estimatedFee, effectiveUtxos);
   }
 
@@ -564,33 +560,25 @@ class UtxoSplitTransactionBuilder {
     if (oneOutputFee >= totalAmount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: oneOutputFee);
     }
-    double firstLeft = totalAmount - oneOutputFee - amountPerOutput;
-    final feePerOutput = _outputVBytes! * feeRate;
-    if (firstLeft <= dustThreshold + feePerOutput) {
+    int sweepAmount(int exactCount) =>
+        totalAmount - amountPerOutput * exactCount - _fixedSplitFee(utxos.length, exactCount);
+    if (sweepAmount(1) <= dustThreshold) {
       throw SplitInsufficientAmountException(estimatedFee: oneOutputFee); // 수수료를 포함하면 나눌 수 없는 금액이에요
     }
 
-    var neededSatsPerOneMore = amountPerOutput + feePerOutput;
-    double left = firstLeft;
-    List<int> exactAmounts = [amountPerOutput];
     int count = 1;
-
-    while (left - neededSatsPerOneMore > dustThreshold + feePerOutput) {
-      if (count + 1 == _varIntCountThreshold) {
-        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustThreshold + feePerOutput) {
-          break;
-        } else {
-          left -= _outputCountVarIntFeeMargin;
-        }
-      }
-
-      left -= neededSatsPerOneMore;
-      exactAmounts.add(amountPerOutput);
+    while (sweepAmount(count + 1) > dustThreshold) {
       count++;
     }
 
-    return exactAmounts;
+    return List.filled(count, amountPerOutput);
   }
+
+  /// exact output [exactCount]개 + sweep output 1개인 tx의 수수료
+  int _fixedSplitFee(int inputCount, int exactCount) =>
+      ((_oneOutputTxVBytesWithInputCount(inputCount) + _outputVBytes! * exactCount) * feeRate +
+              (exactCount + 1 >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0))
+          .ceil();
 
   Future<List<WalletAddress>> _getReceiveAddresses(int count, {bool Function()? isCancelled}) async {
     if (_cachedReceiveAddresses.length >= count) {

@@ -42,6 +42,9 @@ class UtxoSelectionScreen extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
   final bool showSkipButton;
+
+  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
+  final int? minimumSelectableUtxoAmount;
   final Color? backgroundColor;
 
   const UtxoSelectionScreen({
@@ -51,6 +54,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.walletId,
     this.scrollController,
     this.showSkipButton = false,
+    this.minimumSelectableUtxoAmount,
     this.backgroundColor,
   });
 
@@ -238,7 +242,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-      );
+      )..minimumSelectableUtxoAmount = widget.minimumSelectableUtxoAmount;
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -405,16 +409,24 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           );
         }
 
+        final bool isDisabledByMinAmount = viewModel.isBelowMinimumSelectableAmount(utxo);
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
-          child: UtxoSelectionCard(
-            key: ValueKey(utxo.utxoId),
-            currentUnit: widget.currentUnit,
-            utxo: utxo,
-            isSelectable: true,
-            isSelected: viewModel.selectedUtxoIdSet.contains(utxo.utxoId),
-            utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-            onSelected: _toggleSelection,
+          child: IgnorePointer(
+            ignoring: isDisabledByMinAmount,
+            child: Opacity(
+              opacity: isDisabledByMinAmount ? 0.4 : 1.0,
+              child: UtxoSelectionCard(
+                key: ValueKey(utxo.utxoId),
+                currentUnit: widget.currentUnit,
+                utxo: utxo,
+                isSelectable: true,
+                isSelected: viewModel.selectedUtxoIdSet.contains(utxo.utxoId),
+                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                onSelected: _toggleSelection,
+              ),
+            ),
           ),
         );
       },

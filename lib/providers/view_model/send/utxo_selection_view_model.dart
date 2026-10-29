@@ -22,6 +22,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late final int _walletId;
   bool _isInitialized = false;
 
+  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
+  int? minimumSelectableUtxoAmount;
+
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   final Set<String> _selectedUtxoIdSet = {};
@@ -130,15 +133,20 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void selectAllUtxo() {
     // locked 상태가 아닌 UTXO만 선택
-    setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
+    setSelectedUtxoList(confirmedUtxoList.where(_isSelectable).toList());
   }
+
+  bool isBelowMinimumSelectableAmount(UtxoState utxo) =>
+      minimumSelectableUtxoAmount != null && utxo.amount < minimumSelectableUtxoAmount!;
+
+  bool _isSelectable(UtxoState utxo) => utxo.status != UtxoStatus.locked && !isBelowMinimumSelectableAmount(utxo);
 
   void deselectAllUtxo() {
     _clearUtxoList();
   }
 
   void selectTaggedUtxo(String selectedTagName) {
-    setSelectedUtxoList(filteredUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
+    setSelectedUtxoList(filteredUtxoList.where(_isSelectable).toList());
   }
 
   void deselectTaggedUtxo() {

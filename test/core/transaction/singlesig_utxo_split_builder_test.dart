@@ -598,6 +598,68 @@ void main() {
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
 
+    group('FixedAmountSplit sweep output이 dust 경계에 걸리는 경우', () {
+      Future<void> expectPreviewMatchesBuild(UtxoSplitTransactionBuilder builder, int amountPerOutput) async {
+        final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
+        final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: amountPerOutput).future;
+
+        expectSuccessfulTransaction(result);
+        expect(result.splitAmountMap, equals(preview.amountCountMap));
+        expect(result.estimatedFee, equals(preview.estimatedFee));
+      }
+
+      test('단일 입력 20000, 19565 → sweep이 dust가 되므로 SplitInsufficientAmountException', () async {
+        final builder = createBuilder([createUtxo(20000)], 1.0);
+
+        expect(
+          () => builder.getFixedAmountSplitPreview(amountPerOutput: 19565),
+          throwsA(isA<SplitInsufficientAmountException>()),
+        );
+        await expectLater(
+          builder.buildFixedAmountSplit(amountPerOutput: 19565).future,
+          throwsA(isA<SplitInsufficientAmountException>()),
+        );
+      });
+
+      test('단일 입력 20000, 19564 → sweep이 dust + 1이므로 미리보기와 동일하게 생성', () async {
+        final builder = createBuilder([createUtxo(20000)], 1.0);
+
+        await expectPreviewMatchesBuild(builder, 19564);
+      });
+
+      test('입력 10000 x 2, 19497 → sweep이 dust가 되므로 SplitInsufficientAmountException', () async {
+        final builder = createBuilder([createUtxo(10000, index: 0), createUtxo(10000, index: 1)], 1.0);
+
+        expect(
+          () => builder.getFixedAmountSplitPreview(amountPerOutput: 19497),
+          throwsA(isA<SplitInsufficientAmountException>()),
+        );
+        await expectLater(
+          builder.buildFixedAmountSplit(amountPerOutput: 19497).future,
+          throwsA(isA<SplitInsufficientAmountException>()),
+        );
+      });
+
+      test('입력 10000 x 2, 19496 → sweep이 dust + 1이므로 미리보기와 동일하게 생성', () async {
+        final builder = createBuilder([createUtxo(10000, index: 0), createUtxo(10000, index: 1)], 1.0);
+
+        await expectPreviewMatchesBuild(builder, 19496);
+      });
+
+      test('여러 output으로 나눌 때 sweep이 dust 경계 근처여도 미리보기와 동일하게 생성', () async {
+        final builder = createBuilder([createUtxo(20000)], 1.0);
+
+        for (int amount = 9500; amount <= 9850; amount++) {
+          final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: amount);
+          final sweepAmount = preview.amountCountMap.keys.reduce((a, b) => a < b ? a : b);
+          expect(sweepAmount, greaterThan(DustThresholds.p2wpkh), reason: 'amountPerOutput: $amount');
+          if (sweepAmount <= DustThresholds.p2wpkh + 2) {
+            await expectPreviewMatchesBuild(builder, amount);
+          }
+        }
+      });
+    });
+
     test('CustomAmountSplit 21000 / 10000', () async {
       final utxo = createUtxo(21000);
       final builder = createBuilder([utxo], 1.0);
@@ -611,6 +673,18 @@ void main() {
       print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('CustomAmountSplit 300000 x 252 - sweep 포함 output 253개로 varInt threshold 경계', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder([utxo], 1.0);
+
+      final SplitPreview preview = await builder.getCustomAmountSplitPreview(amountCountMap: {300000: 252});
+      final UtxoSplitResult result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 252}).future;
+
+      expectSuccessfulTransaction(result, expectedOutputCount: 253);
+      expect(result.splitAmountMap, equals(preview.amountCountMap));
+      expect(result.estimatedFee, equals(preview.estimatedFee));
     });
 
     test('EqualAmountSplit 99990000 / 5000개로 나누기', () async {

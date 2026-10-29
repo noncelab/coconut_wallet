@@ -1233,6 +1233,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 walletId: widget.id,
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
+                minimumSelectableUtxoAmount: 1000,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),
