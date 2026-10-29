@@ -58,7 +58,7 @@ class _WalletCarouselIndicatorState extends State<WalletCarouselIndicator> {
         height: 32,
         child: Align(
           alignment: Alignment.bottomCenter,
-          child: Padding(padding: const EdgeInsets.only(bottom: 6), child: _indicator(context)),
+          child: Padding(padding: const EdgeInsets.only(bottom: 8), child: _indicator(context)),
         ),
       ),
     );
