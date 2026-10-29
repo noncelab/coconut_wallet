@@ -31,8 +31,16 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final DateTime Function() _now;
   final Listenable? _walletUpdates;
 
-  final Map<FiatCode, List<double>?> _dailyCloses = {};
+  final Map<FiatCode, List<double>> _dailyCloses = {};
   final Set<FiatCode> _loadingCloses = {};
+
+  /// 과거 시세를 못 받은 CoinGecko 통화와 그때의 시세. 같은 서버의 시세가 새로 들어오면 다시 받는다.
+  final Map<FiatCode, int?> _failedClosesAtPrice = {};
+
+  /// 과거 시세를 못 받은 거래소 통화의 재시도 대기. 실패할 때마다 간격을 늘린다.
+  final Map<FiatCode, Timer> _closesRetryTimers = {};
+  final Map<FiatCode, Duration> _closesRetryDelays = {};
+  static const _closesRetryMaxDelay = Duration(minutes: 10);
   static const priceWaitLimit = Duration(seconds: 10);
 
   final Map<String, Object?> _cache = {};
@@ -61,7 +69,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     _walletProvider.walletItemListNotifier.addListener(_onDataChanged);
     _preferenceProvider.addListener(_onDataChanged);
     _walletUpdates?.addListener(_onDataChanged);
-    _priceProvider.addListener(notifyListeners);
+    _priceProvider.addListener(_onPriceChanged);
     _priceWaitTimer = Timer(priceWaitLimit, () {
       _priceWaitExpired = true;
       if (!_disposed) notifyListeners();
@@ -93,6 +101,14 @@ class HomeWidgetsViewModel extends ChangeNotifier {
 
   void _onDataChanged() {
     _cache.clear();
+    notifyListeners();
+  }
+
+  void _onPriceChanged() {
+    _failedClosesAtPrice.removeWhere((fiat, failedAt) {
+      final price = priceOf(fiat);
+      return price != null && price != failedAt;
+    });
     notifyListeners();
   }
 
@@ -160,10 +176,12 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   }
 
   List<double>? _closesOf(FiatCode fiatCode) {
-    if (!_dailyCloses.containsKey(fiatCode) && _loadingCloses.add(fiatCode)) {
+    final closes = _dailyCloses[fiatCode];
+    final isWaitingToRetry = _failedClosesAtPrice.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
+    if (closes == null && !isWaitingToRetry && _loadingCloses.add(fiatCode)) {
       unawaited(_loadCloses(fiatCode));
     }
-    return _dailyCloses[fiatCode];
+    return closes;
   }
 
   Future<void> _loadCloses(FiatCode fiatCode) async {
@@ -175,8 +193,28 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     }
     if (_disposed) return;
     _loadingCloses.remove(fiatCode);
-    _dailyCloses[fiatCode] = closes;
+    if (closes != null && closes.isNotEmpty) {
+      _dailyCloses[fiatCode] = closes;
+      _closesRetryDelays.remove(fiatCode);
+    } else if (fiatCode.hasExchangeSource) {
+      _scheduleClosesRetry(fiatCode);
+    } else {
+      _failedClosesAtPrice[fiatCode] = priceOf(fiatCode);
+    }
     notifyListeners();
+  }
+
+  void _scheduleClosesRetry(FiatCode fiatCode) {
+    final previous = _closesRetryDelays[fiatCode];
+    final delay =
+        previous == null
+            ? const Duration(minutes: 1)
+            : (previous * 2 > _closesRetryMaxDelay ? _closesRetryMaxDelay : previous * 2);
+    _closesRetryDelays[fiatCode] = delay;
+    _closesRetryTimers[fiatCode] = Timer(delay, () {
+      _closesRetryTimers.remove(fiatCode);
+      if (!_disposed) notifyListeners();
+    });
   }
 
   /// 최근 [days]일의 시세: 지난 날들은 일별 종가, 마지막은 현재 시세. 시세나 종가가 없으면 null.
@@ -383,11 +421,14 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _priceWaitTimer?.cancel();
+    for (final timer in _closesRetryTimers.values) {
+      timer.cancel();
+    }
     _walletProvider.walletLoadStateNotifier.removeListener(_onDataChanged);
     _walletProvider.walletItemListNotifier.removeListener(_onDataChanged);
     _preferenceProvider.removeListener(_onDataChanged);
     _walletUpdates?.removeListener(_onDataChanged);
-    _priceProvider.removeListener(notifyListeners);
+    _priceProvider.removeListener(_onPriceChanged);
     super.dispose();
   }
 }
