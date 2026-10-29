@@ -339,11 +339,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       final outputCount = preview.amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
       bool isBuildTx = true;
       if (_selectedUtxoList.length + outputCount > _bigTxIoThreshold) {
-        _usePreview ??= await _showUsePreviewConfirmPrompt();
+        final usePreview = _usePreview ?? await _showUsePreviewConfirmPrompt();
         if (requestId != _buildRequestId) {
           return;
         }
-        isBuildTx = !_usePreview!;
+        _usePreview = usePreview;
+        isBuildTx = !usePreview;
       }
 
       if (isBuildTx) {

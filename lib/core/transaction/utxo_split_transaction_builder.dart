@@ -233,14 +233,14 @@ class UtxoSplitTransactionBuilder {
   CancelableTask<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) {
     final completer = Completer<UtxoSplitResult>();
     CancelableTask<TransactionBuildResult>? txTask;
-    var isCancelled = false;
+    var isBuildCancelled = false;
 
     () async {
       try {
         /// 빌드 도중 setUtxos로 _utxos가 교체돼도 이 빌드는 시작 시점의 UTXO들로 완결된다
         final utxos = _requiredUtxos;
         final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount, utxos: utxos);
-        if (isCancelled) {
+        if (isBuildCancelled) {
           if (!completer.isCompleted) {
             completer.completeError(const TaskCancelledException());
           }
@@ -268,7 +268,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
-        isCancelled = true;
+        isBuildCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
           completer.completeError(const TaskCancelledException());
@@ -281,13 +281,13 @@ class UtxoSplitTransactionBuilder {
   CancelableTask<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) {
     final completer = Completer<UtxoSplitResult>();
     CancelableTask<TransactionBuildResult>? txTask;
-    var isCancelled = false;
+    var isBuildCancelled = false;
 
     () async {
       try {
         final utxos = _requiredUtxos;
         var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput, utxos: utxos);
-        if (isCancelled) {
+        if (isBuildCancelled) {
           if (!completer.isCompleted) {
             completer.completeError(const TaskCancelledException());
           }
@@ -306,7 +306,7 @@ class UtxoSplitTransactionBuilder {
                 _fixedSplitFee(utxos.length, exactAmounts.length).toDouble(),
                 utxos,
               );
-              if (isCancelled) {
+              if (isBuildCancelled) {
                 if (!completer.isCompleted) {
                   completer.completeError(const TaskCancelledException());
                 }
@@ -338,7 +338,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
-        isCancelled = true;
+        isBuildCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
           completer.completeError(const TaskCancelledException());
@@ -351,13 +351,13 @@ class UtxoSplitTransactionBuilder {
   CancelableTask<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) {
     final completer = Completer<UtxoSplitResult>();
     CancelableTask<TransactionBuildResult>? txTask;
-    var isCancelled = false;
+    var isBuildCancelled = false;
 
     () async {
       try {
         final utxos = _requiredUtxos;
         final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap, utxos: utxos);
-        if (isCancelled) {
+        if (isBuildCancelled) {
           if (!completer.isCompleted) {
             completer.completeError(const TaskCancelledException());
           }
@@ -383,7 +383,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
-        isCancelled = true;
+        isBuildCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
           completer.completeError(const TaskCancelledException());
@@ -580,7 +580,7 @@ class UtxoSplitTransactionBuilder {
               (exactCount + 1 >= _varIntCountThreshold ? _outputCountVarIntFeeMargin : 0))
           .ceil();
 
-  Future<List<WalletAddress>> _getReceiveAddresses(int count, {bool Function()? isCancelled}) async {
+  Future<List<WalletAddress>> _getReceiveAddresses(int count, {bool Function()? isBuildCancelled}) async {
     if (_cachedReceiveAddresses.length >= count) {
       return _cachedReceiveAddresses.sublist(0, count);
     }
@@ -593,7 +593,7 @@ class UtxoSplitTransactionBuilder {
       additionalCount,
       false,
       true,
-      cancelCheck: isCancelled,
+      shouldStopGenerating: isBuildCancelled,
     );
 
     if (addresses.length < additionalCount) {
@@ -609,12 +609,12 @@ class UtxoSplitTransactionBuilder {
   Future<Map<String, int>> _buildSweepRecipients(
     List<int> exactAmounts,
     List<UtxoState> utxos, {
-    bool Function()? isCancelled,
+    bool Function()? isBuildCancelled,
   }) async {
     final totalAmount = _sumOfAmounts(utxos);
     final totalOutputCount = exactAmounts.length + 1; // +1 for sweep output
 
-    final addresses = await _getReceiveAddresses(totalOutputCount, isCancelled: isCancelled);
+    final addresses = await _getReceiveAddresses(totalOutputCount, isBuildCancelled: isBuildCancelled);
 
     if (addresses.length < totalOutputCount) {
       throw StateError('Not enough unused addresses. Required: $totalOutputCount, Available: ${addresses.length}');
@@ -670,13 +670,13 @@ class UtxoSplitTransactionBuilder {
     List<int> desiredAmounts,
     List<UtxoState> utxos,
   ) {
-    return _createTransactionBuildTask((isCancelled) async {
+    return _createTransactionBuildTask((isBuildCancelled) async {
       final exactAmounts = List<int>.from(desiredAmounts);
       if (exactAmounts.isEmpty) {
         throw StateError('desiredAmounts must contain at least one output');
       }
       exactAmounts.removeLast();
-      return _buildSweepRecipients(exactAmounts, utxos, isCancelled: isCancelled);
+      return _buildSweepRecipients(exactAmounts, utxos, isBuildCancelled: isBuildCancelled);
     }, utxos);
   }
 
@@ -700,7 +700,7 @@ class UtxoSplitTransactionBuilder {
     final completer = Completer<TransactionBuildResult>();
     StreamSubscription? subscription;
     Isolate? isolate;
-    var isCancelled = false;
+    var isBuildCancelled = false;
 
     () async {
       try {
@@ -718,7 +718,7 @@ class UtxoSplitTransactionBuilder {
         );
 
         /// spawn 진행 중 취소됐으면 아무도 참조하지 않는 고아 isolate가 되기 전에 즉시 종료한다
-        if (isCancelled) {
+        if (isBuildCancelled) {
           spawned.kill(priority: Isolate.immediate);
           return;
         }
@@ -760,7 +760,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
-        isCancelled = true;
+        isBuildCancelled = true;
         isolate?.kill(priority: Isolate.immediate);
         isolate = null;
         await subscription?.cancel();
@@ -792,17 +792,17 @@ class UtxoSplitTransactionBuilder {
   }
 
   CancelableTask<TransactionBuildResult> _createTransactionBuildTask(
-    Future<Map<String, int>> Function(bool Function() isCancelled) prepareRecipients,
+    Future<Map<String, int>> Function(bool Function() isBuildCancelled) prepareRecipients,
     List<UtxoState> utxos,
   ) {
     final completer = Completer<TransactionBuildResult>();
     CancelableTask<TransactionBuildResult>? innerTask;
-    var isCancelled = false;
+    var isBuildCancelled = false;
 
     () async {
       try {
-        final recipients = await prepareRecipients(() => isCancelled);
-        if (isCancelled) {
+        final recipients = await prepareRecipients(() => isBuildCancelled);
+        if (isBuildCancelled) {
           if (!completer.isCompleted) {
             completer.completeError(const TaskCancelledException());
           }
@@ -823,7 +823,7 @@ class UtxoSplitTransactionBuilder {
     return CancelableTask(
       future: completer.future,
       cancel: () async {
-        isCancelled = true;
+        isBuildCancelled = true;
         await innerTask?.cancel();
         if (!completer.isCompleted) {
           completer.completeError(const TaskCancelledException());

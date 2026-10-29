@@ -34,7 +34,7 @@ class AddressRepository extends BaseRepository {
     int count,
     bool isChange,
     bool showOnlyUnusedAddresses, {
-    bool Function()? cancelCheck,
+    bool Function()? shouldStopGenerating,
   }) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
     final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
@@ -70,7 +70,7 @@ class AddressRepository extends BaseRepository {
       startIndex: startIndex,
       count: remainingCount,
       isChange: isChange,
-      cancelCheck: cancelCheck,
+      shouldStopGenerating: shouldStopGenerating,
     );
 
     return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
@@ -270,12 +270,12 @@ class AddressRepository extends BaseRepository {
     required int startIndex,
     required int count,
     required bool isChange,
-    bool Function()? cancelCheck,
+    bool Function()? shouldStopGenerating,
   }) async {
     final List<WalletAddress> addresses = [];
 
     for (int i = 0; i < count; i++) {
-      if (cancelCheck?.call() == true) {
+      if (shouldStopGenerating?.call() == true) {
         throw const TaskCancelledException();
       }
       await Future.delayed(Duration.zero);

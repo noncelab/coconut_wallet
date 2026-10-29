@@ -20,6 +20,14 @@ mixin FeeRateMixin on ChangeNotifier {
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
 
+  bool _isFeeRateMixinDisposed = false;
+
+  @override
+  void dispose() {
+    _isFeeRateMixinDisposed = true;
+    super.dispose();
+  }
+
   Future<bool> fetchRecommendedFees({
     required String currentFeeRateText,
     required void Function(String) onDefaultFeeRateSet,
@@ -30,6 +38,7 @@ mixin FeeRateMixin on ChangeNotifier {
     notifyListeners();
 
     final recommendedFees = await FeeService().getRecommendedFees();
+    if (_isFeeRateMixinDisposed) return false;
 
     if (recommendedFees == null) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
