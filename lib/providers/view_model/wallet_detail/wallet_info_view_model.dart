@@ -118,7 +118,64 @@ class WalletInfoViewModel extends ChangeNotifier {
       (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
           WalletAddService.masterFingerprintPlaceholder;
 
+  /// 사용자가 지정해 둔 MFP. 단일서명이 아니거나 placeholder면 null
+  String? get customMfp {
+    if (_walletItemBase is! SinglesigWalletItem || isMfpPlaceholder) return null;
+    return (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+  }
+
+  /// 파생 경로의 purpose로 만든 표기(예: "BIP 84"). 경로를 알 수 없으면 null.
+  String? get bipLabel {
+    final base = _walletItemBase.walletBase;
+    final path = switch (base) {
+      SingleSignatureWallet() => base.derivationPath,
+      TaprootWallet() => base.derivationPath,
+      _ => _walletItemBase is MultisigWalletItem ? getSignerBsms(0).derivationPath : null,
+    };
+    if (path == null) return null;
+    final segments = path.split('/').where((segment) => segment.isNotEmpty && segment != 'm');
+    final purpose = segments.isEmpty ? null : int.tryParse(segments.first.replaceAll(RegExp(r"['hH]"), ''));
+    return purpose == null ? null : 'BIP $purpose';
+  }
+
+  bool get _isCustomAccount {
+    final base = _walletItemBase.walletBase;
+    final path = switch (base) {
+      SingleSignatureWallet() => base.derivationPath,
+      TaprootWallet() => base.derivationPath,
+      _ => null,
+    };
+    if (path == null) return false;
+    final segments = path.split('/');
+    if (segments.length <= 3) return false;
+    return (int.tryParse(segments[3].replaceAll("'", '')) ?? 0) != 0;
+  }
+
+  bool get isCustomAccount => _isCustomAccount;
+
+  bool get isExternalWallet {
+    final source = _walletItemBase.walletImportSource;
+    return source != WalletImportSource.coconutVault;
+  }
+
+  /// 이름·아이콘을 바꿀 수 있는 지갑. 볼트에서 가져온 지갑은 볼트 값을 따른다.
+  bool get canEditWalletInfo => isExternalWallet || _isCustomAccount || _walletItemBase.hasLocalKey;
+
+  /// 마스터 핑거프린트를 직접 넣을 수 있는 지갑(MFP 없이 추가했거나 확장 공개키로 추가한 단일서명 지갑).
+  bool get canEditMfp =>
+      _walletItemBase is SinglesigWalletItem &&
+      (isMfpPlaceholder || _walletItemBase.walletImportSource == WalletImportSource.extendedPublicKey);
+
+  String get descriptor => _walletItemBase.descriptor;
+
   int get transactionCount => _walletProvider.getTransactionRecordList(_walletId).length;
+
+  DateTime? get lastTransactionTime {
+    final transactions = _walletProvider.getTransactionRecordList(_walletId);
+    if (transactions.isEmpty) return null;
+    return transactions.map((tx) => tx.timestamp).reduce((a, b) => a.isAfter(b) ? a : b);
+  }
+
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
   int get watchedAddressCount => _walletProvider.getWatchedAddressCount(_walletId);
   Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
@@ -146,6 +203,12 @@ class WalletInfoViewModel extends ChangeNotifier {
     if (taprootWallet is! TaprootWallet) return false;
 
     return taprootWallet.keyStoreList.length == 1;
+  }
+
+  ({int parent, int child}) get taprootParticipantCount {
+    final participants = getTaprootParticipants(taprootSpendTypeIndex);
+    final parent = participants.where((participant) => participant.role == TaprootParticipantRole.parent).length;
+    return (parent: parent, child: participants.length - parent);
   }
 
   List<TaprootParticipantCard> getTaprootParticipants(int currentSegmentIndex) {

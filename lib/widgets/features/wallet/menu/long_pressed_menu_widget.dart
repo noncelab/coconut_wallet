@@ -21,6 +21,9 @@ class LongPressedMenuWidget extends StatefulWidget {
 
   final VoidCallback? onMenuOpen;
 
+  /// 다른 제스처 인식기가 길게 누르기를 처리하는 경우 false로 설정한다.
+  final bool enableLongPress;
+
   /// dropdown 바깥을 탭하면 닫히도록 할지 여부
   final bool dismissOnTapOutside;
 
@@ -42,11 +45,25 @@ class LongPressedMenuWidget extends StatefulWidget {
   /// 메뉴에 사용할 고정 배경색. null이면 기존 glass 배경을 사용한다.
   final Color? menuBackgroundColor;
 
+  /// 메뉴를 child 아래에 먼저 띄울지 여부. 아래에 공간이 없으면 위에 띄운다.
+  final bool preferMenuBelow;
+
+  /// 메뉴의 왼쪽 끝을 child의 왼쪽 끝에 맞출지 여부
+  final bool alignMenuToChildLeft;
+
+  /// 메뉴 항목 아이콘 크기
+  final double menuIconSize;
+
+  /// 메뉴 항목 위에 붙는 머리 영역(예: 위젯 크기 고르기). 인자로 메뉴를 닫는 함수를 받는다.
+  final Widget Function(VoidCallback close)? menuHeaderBuilder;
+  final double menuHeaderHeight;
+
   const LongPressedMenuWidget({
     super.key,
     required this.child,
     required this.menuItems,
     this.onMenuOpen,
+    this.enableLongPress = true,
     this.dismissOnTapOutside = true,
     this.spacing = 8.0,
     this.isEditMode = false,
@@ -54,33 +71,53 @@ class LongPressedMenuWidget extends StatefulWidget {
     this.useGlassOverlay = false,
     this.alignMenuToChildRight = false,
     this.menuBackgroundColor,
+    this.preferMenuBelow = false,
+    this.alignMenuToChildLeft = false,
+    this.menuIconSize = 16,
+    this.menuHeaderBuilder,
+    this.menuHeaderHeight = 0,
   });
 
   @override
-  State<LongPressedMenuWidget> createState() => _LongPressedMenuWidgetState();
+  LongPressedMenuWidgetState createState() => LongPressedMenuWidgetState();
 }
 
-class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with TickerProviderStateMixin {
+class LongPressedMenuWidgetState extends State<LongPressedMenuWidget>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _childRepaintBoundaryKey = GlobalKey();
+  final GlobalKey _menuContentKey = GlobalKey();
   OverlayEntry? _overlayEntry;
+  LocalHistoryEntry? _menuHistory;
+  ModalRoute<dynamic>? _menuRoute;
+  _MenuPopEntry? _menuPopEntry;
   ui.Image? _capturedChildImage;
   bool _isCapturingChild = false;
-  Rect? _menuRect;
+  int _menuGeneration = 0;
   int? _hoveredMenuIndex;
   bool _isMenuPointerActive = false;
-  double _menuItemHeight = 44;
+  final List<GlobalKey> _menuItemKeys = [];
   late AnimationController _menuAnimationController;
   late AnimationController _shakeController;
   late AnimationController _closeButtonController;
   late Animation<double> _shakeAnimation;
   final math.Random _random = math.Random();
+  bool _reduceMotion = false;
+  Timer? _shakeTimer;
+  double _closeStartScale = 1;
+  double _closeStartProgress = 1;
   bool _isClosing = false;
+  bool _isClosingForAction = false;
 
   @override
   void initState() {
     super.initState();
-    _menuAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
+    WidgetsBinding.instance.addObserver(this);
+    _menuAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      reverseDuration: const Duration(milliseconds: 170),
+    );
 
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
 
@@ -106,7 +143,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     }
 
     _menuAnimationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _isClosing) {
+      if (status == AnimationStatus.dismissed && _isClosing) {
         _removeOverlay();
       }
     });
@@ -115,13 +152,38 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
   void _startShakeWithRandomDelay() {
     final delayMs = _random.nextInt(100); // 0 ~ 199ms
 
-    Future.delayed(Duration(milliseconds: delayMs), () {
+    _shakeTimer?.cancel();
+    if (_reduceMotion) return;
+    _shakeTimer = Timer(Duration(milliseconds: delayMs), () {
       if (!mounted) return;
-      if (!widget.isEditMode) return;
+      if (!widget.isEditMode || _reduceMotion) return;
       if (_shakeController.isAnimating) return;
 
       _shakeController.repeat();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    if (_reduceMotion) {
+      _shakeTimer?.cancel();
+      _shakeController.reset();
+      _closeButtonController.value = widget.isEditMode ? 1 : 0;
+      if (_overlayEntry != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_reduceMotion || _overlayEntry == null) return;
+          if (_isClosing) {
+            dismissMenu();
+          } else if (_menuAnimationController.value != 1) {
+            _menuAnimationController.value = 1;
+          }
+        });
+      }
+    } else if (widget.isEditMode && !_shakeController.isAnimating) {
+      _startShakeWithRandomDelay();
+    }
   }
 
   @override
@@ -130,20 +192,33 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
     if (oldWidget.isEditMode != widget.isEditMode) {
       if (widget.isEditMode) {
+        dismissMenu();
         // 편집 모드 진입 → 쉐이킹 시작 및 닫기 버튼 표시
         _startShakeWithRandomDelay();
-        _closeButtonController.forward();
+        if (_reduceMotion) {
+          _closeButtonController.value = 1;
+        } else {
+          _closeButtonController.forward();
+        }
       } else {
         // 편집 모드 해제 → 쉐이킹 정지 및 닫기 버튼 숨김
         _shakeController.stop();
         _shakeController.reset();
-        _closeButtonController.reverse();
+        _shakeTimer?.cancel();
+        if (_reduceMotion) {
+          _closeButtonController.value = 0;
+        } else {
+          _closeButtonController.reverse();
+        }
       }
     }
   }
 
   @override
   void dispose() {
+    _shakeTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _menuGeneration++;
     _removeOverlay();
     _menuAnimationController.dispose();
     _shakeController.dispose();
@@ -151,44 +226,113 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     super.dispose();
   }
 
+  double get _headerHeight => widget.menuHeaderBuilder == null ? 0 : widget.menuHeaderHeight;
+
+  void _registerMenuHistory(ModalRoute<dynamic> route) {
+    _removeMenuHistory();
+    late final LocalHistoryEntry entry;
+    entry = LocalHistoryEntry(
+      onRemove: () {
+        if (!identical(_menuHistory, entry)) return;
+        _menuHistory = null;
+        _startHideAnimation();
+      },
+    );
+    _menuHistory = entry;
+    route.addLocalHistoryEntry(entry);
+    // Local history alone does not notify Android's ahead-of-time Back handling.
+    _menuRoute = route;
+    _menuPopEntry = _MenuPopEntry(() {
+      if (mounted && identical(_menuHistory, entry)) _startHideAnimation();
+    });
+    route.registerPopEntry(_menuPopEntry!);
+  }
+
+  void _removeMenuHistory() {
+    final entry = _menuHistory;
+    _menuHistory = null;
+    entry?.remove();
+    final popEntry = _menuPopEntry;
+    if (popEntry != null) {
+      _menuRoute?.unregisterPopEntry(popEntry);
+      popEntry.canPopNotifier.dispose();
+      _menuPopEntry = null;
+      _menuRoute = null;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) dismissMenu();
+  }
+
+  /// 메뉴와 진행 중인 캡처를 즉시 취소해 같은 포인터로 드래그를 이어갈 수 있게 한다.
+  void dismissMenu() {
+    _menuGeneration++;
+    _isCapturingChild = false;
+    _isClosing = false;
+    _removeOverlay();
+    _menuAnimationController.reset();
+  }
+
   void _removeOverlay() {
+    _isClosing = false;
+    _isClosingForAction = false;
+    _removeMenuHistory();
     _overlayEntry?.remove();
     _overlayEntry = null;
     _capturedChildImage?.dispose();
     _capturedChildImage = null;
-    _menuRect = null;
     _hoveredMenuIndex = null;
     _isMenuPointerActive = false;
   }
 
-  void _startHideAnimation() {
-    if (_overlayEntry == null) {
+  void _startHideAnimation({bool releaseNavigation = false}) {
+    if (_isClosing) return;
+    if (_overlayEntry == null || _reduceMotion || _menuAnimationController.value == 0) {
+      dismissMenu();
       return;
     }
+    // Keep Back focused on this menu until it disappears; selected actions may open another route immediately.
+    if (releaseNavigation) _removeMenuHistory();
+    _closeStartScale = _computeMenuScale();
+    _closeStartProgress = _menuAnimationController.value;
     _isClosing = true;
-    _menuAnimationController.duration = const Duration(milliseconds: 150);
-    _menuAnimationController.forward(from: 0.0);
+    _isClosingForAction = releaseNavigation;
+    _isMenuPointerActive = false;
+    _overlayEntry?.markNeedsBuild();
+    _menuAnimationController.reverse();
   }
 
-  Future<void> _showMenu() async {
-    if (widget.isEditMode || _isCapturingChild) {
+  Future<void> showMenu() async {
+    if (!mounted || widget.isEditMode || _isCapturingChild || _isClosing) {
       return;
     }
+    final generation = ++_menuGeneration;
     _isCapturingChild = true;
+    if (_overlayEntry != null) _removeOverlay();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      if (!route.isCurrent) {
+        _isCapturingChild = false;
+        return;
+      }
+      _registerMenuHistory(route);
+    }
     vibrateExtraLight();
     widget.onMenuOpen?.call();
-    // 이미 떠 있으면 제거
-    if (_overlayEntry != null) {
-      _removeOverlay();
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || generation != _menuGeneration || widget.isEditMode) {
+      if (generation == _menuGeneration) _isCapturingChild = false;
+      return;
     }
-
     final RenderBox? childRenderBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
     final RenderRepaintBoundary? childRepaintBoundary =
         _childRepaintBoundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     final OverlayState overlay = Overlay.of(context);
 
     if (childRenderBox == null || childRepaintBoundary == null) {
-      _isCapturingChild = false;
+      dismissMenu();
       return;
     }
 
@@ -196,35 +340,35 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     final Offset childGlobalPosition = childRenderBox.localToGlobal(Offset.zero);
     final Size childSize = childRenderBox.size;
     final highlightedRect = Rect.fromLTWH(
-      childGlobalPosition.dx - childSize.width * 0.025,
-      childGlobalPosition.dy - childSize.height * 0.025,
-      childSize.width * 1.05,
-      childSize.height * 1.05,
+      childGlobalPosition.dx - _expandedGrowth,
+      childGlobalPosition.dy - _expandedGrowth,
+      childSize.width + _expandedGrowth * 2,
+      childSize.height + _expandedGrowth * 2,
     ).inflate(widget.useGlassOverlay ? 6 : 0);
 
+    ui.Image? capturedImage;
     if (widget.useGlassOverlay) {
       try {
-        _capturedChildImage = await childRepaintBoundary.toImage(pixelRatio: MediaQuery.devicePixelRatioOf(context));
+        capturedImage = await childRepaintBoundary.toImage(pixelRatio: MediaQuery.devicePixelRatioOf(context));
       } catch (_) {
-        _isCapturingChild = false;
+        if (generation == _menuGeneration) dismissMenu();
         return;
       }
-      if (!mounted) {
-        _capturedChildImage?.dispose();
-        _capturedChildImage = null;
-        _isCapturingChild = false;
+      if (!mounted || generation != _menuGeneration || widget.isEditMode) {
+        capturedImage.dispose();
+        if (generation == _menuGeneration) _isCapturingChild = false;
         return;
       }
     }
+    _capturedChildImage = capturedImage;
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
-        return Listener(
+        final content = Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: (event) {
-            if (_menuRect?.contains(event.position) != true) return;
-            _isMenuPointerActive = true;
-            _updateHoveredMenuItem(event.position);
+            if (_isClosing) return;
+            _isMenuPointerActive = _updateHoveredMenuItem(event.position);
           },
           onPointerMove: (event) {
             if (_isMenuPointerActive) _updateHoveredMenuItem(event.position);
@@ -247,9 +391,15 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     onTap: _startHideAnimation,
                     child:
                         widget.useGlassOverlay
-                            ? BackdropFilter(
-                              filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                              child: ColoredBox(color: Colors.black.withValues(alpha: 0.55)),
+                            ? AnimatedBuilder(
+                              animation: _menuAnimationController,
+                              builder: (_, _) {
+                                final progress = _menuAnimationController.value;
+                                return BackdropFilter(
+                                  filter: ui.ImageFilter.blur(sigmaX: 3 * progress, sigmaY: 3 * progress),
+                                  child: ColoredBox(color: Colors.black.withValues(alpha: 0.55 * progress)),
+                                );
+                              },
                             )
                             : CustomPaint(
                               painter: _DimExceptRectPainter(
@@ -269,8 +419,11 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     child: AnimatedBuilder(
                       animation: _menuAnimationController,
                       builder:
-                          (_, child) =>
-                              Transform.scale(scale: _computeChildScale(), alignment: Alignment.center, child: child),
+                          (_, child) => Transform(
+                            alignment: Alignment.center,
+                            transform: _childTransform(childSize),
+                            child: child,
+                          ),
                       child: RawImage(image: _capturedChildImage, fit: BoxFit.fill),
                     ),
                   ),
@@ -283,39 +436,64 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                 bottom: 0,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    _ensureMenuItemKeys();
                     // 메뉴의 예상 크기를 계산 (실제 RenderBox에 의존하지 않음)
+                    // 어느 언어에서든 라벨이 잘리지 않도록, 최대 폭은 화면 폭(좌우 16 여백)까지 늘린다.
                     const double minMenuWidth = 180;
-                    const double maxMenuWidth = 220;
+                    final double maxMenuWidth = math.max(minMenuWidth, constraints.maxWidth - 32);
                     double maxTitleHeight = 0;
+                    // Text는 기기의 굵은 글씨 설정을 따라 굵게 그리므로 폭도 같은 굵기로 잰다.
+                    final measureStyle =
+                        MediaQuery.boldTextOf(context)
+                            ? _titleStyle.merge(const TextStyle(fontWeight: FontWeight.bold))
+                            : _titleStyle;
                     final maxTitleWidth = widget.menuItems.fold<double>(0, (maxWidth, item) {
                       final textPainter = TextPainter(
-                        text: TextSpan(text: item.title, style: CoconutTypography.body2_14),
+                        text: TextSpan(text: item.title, style: measureStyle),
                         textDirection: Directionality.of(context),
                         textScaler: MediaQuery.textScalerOf(context),
+                        locale: Localizations.maybeLocaleOf(context),
                         maxLines: 1,
                       )..layout();
                       maxTitleHeight = math.max(maxTitleHeight, textPainter.height);
                       return math.max(maxWidth, textPainter.width);
                     });
-                    final itemHeight = math.max(16.0, maxTitleHeight) + 24;
-                    _menuItemHeight = itemHeight;
-                    // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 16 + 아이콘/텍스트 간격 8
-                    final double menuWidth = (maxTitleWidth + 64).clamp(minMenuWidth, maxMenuWidth).toDouble();
-                    final double menuHeight = widget.menuItems.length * itemHeight + 16;
+                    final itemHeight = math.max(widget.menuIconSize, maxTitleHeight) + 24;
+                    // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 + 아이콘/텍스트 간격 8
+                    final double menuWidth =
+                        (maxTitleWidth.ceilToDouble() + 8 + 48 + widget.menuIconSize)
+                            .clamp(minMenuWidth, maxMenuWidth)
+                            .toDouble();
+                    final double menuHeight = widget.menuItems.length * itemHeight + 16 + _headerHeight;
                     final Size menuSize = Size(menuWidth, menuHeight);
                     bool isAboveChild = false;
 
                     // 기본 위치: child의 위쪽에 메뉴를 표시
-                    double top = childGlobalPosition.dy - menuSize.height - widget.spacing;
+                    // 커진 child의 가장자리에 맞춘다. child는 사방으로 [_expandedGrowth]만큼 커진다.
+                    final grown = Rect.fromLTWH(
+                      childGlobalPosition.dx - _expandedGrowth,
+                      childGlobalPosition.dy - _expandedGrowth,
+                      childSize.width + _expandedGrowth * 2,
+                      childSize.height + _expandedGrowth * 2,
+                    );
+                    double top = grown.top - menuSize.height - widget.spacing;
                     double left =
-                        widget.alignMenuToChildRight
-                            ? childGlobalPosition.dx + childSize.width - menuSize.width
-                            : childGlobalPosition.dx + childSize.width / 2 - menuSize.width / 2;
+                        widget.alignMenuToChildLeft
+                            ? grown.left
+                            : widget.alignMenuToChildRight
+                            ? grown.right - menuSize.width
+                            : grown.center.dx - menuSize.width / 2;
 
                     // 세로 방향: 기본은 "위"로 띄우고, 위에 공간이 부족하면 "아래"로 표시
-                    if (top < 0) {
+                    final belowTop = grown.bottom + widget.spacing;
+                    final fitsBelow =
+                        belowTop + menuSize.height <= screenSize.height - MediaQuery.paddingOf(context).bottom;
+                    if (widget.preferMenuBelow && (fitsBelow || top < 0)) {
+                      top = fitsBelow ? belowTop : math.max(0, screenSize.height - 100 - menuSize.height);
+                      isAboveChild = false;
+                    } else if (top < 0) {
                       // 위에 충분한 공간이 없으므로 아래로 표시
-                      top = childGlobalPosition.dy + childSize.height + widget.spacing;
+                      top = grown.bottom + widget.spacing;
                       isAboveChild = false;
 
                       // 아래로 띄웠을 때 화면을 넘치면 화면 안으로 클램프
@@ -333,7 +511,6 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     } else if (left + menuSize.width > screenSize.width) {
                       left = screenSize.width - menuSize.width;
                     }
-                    _menuRect = Rect.fromLTWH(left, top, menuSize.width, menuSize.height);
 
                     return Stack(
                       children: [
@@ -345,11 +522,16 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                             builder: (context, child) {
                               final scale = _computeMenuScale();
                               final alignment = isAboveChild ? Alignment.bottomCenter : Alignment.topCenter;
-                              return Transform.scale(scale: scale, alignment: alignment, child: child);
+                              return Opacity(
+                                opacity: _menuAnimationController.value,
+                                child: Transform.scale(scale: scale, alignment: alignment, child: child),
+                              );
                             },
                             child: SizedBox(
+                              key: const Key('long-pressed-menu-box'),
                               width: menuWidth,
                               child: ClipRRect(
+                                key: _menuContentKey,
                                 borderRadius: BorderRadius.circular(12),
                                 child: Material(
                                   elevation: 4,
@@ -374,58 +556,67 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
                                           mainAxisSize: MainAxisSize.min,
-                                          children: List.generate(
-                                            widget.menuItems.length,
-                                            (index) => Semantics(
-                                              button: true,
-                                              label: widget.menuItems[index].title,
-                                              onTap: () {
-                                                _startHideAnimation();
-                                                widget.menuItems[index].onSelected();
-                                              },
-                                              child: AnimatedContainer(
-                                                duration: const Duration(milliseconds: 80),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      _hoveredMenuIndex == index
-                                                          ? context.coconutColors.primaryText.withValues(alpha: 0.12)
-                                                          : Colors.transparent,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.start,
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    SvgPicture.asset(
-                                                      widget.menuItems[index].iconPath,
-                                                      width: 16,
-                                                      height: 16,
-                                                      colorFilter: ColorFilter.mode(
-                                                        widget.menuItems[index].isDanger
-                                                            ? context.coconutColors.danger
-                                                            : context.coconutColors.iconPrimary,
-                                                        BlendMode.srcIn,
-                                                      ),
-                                                    ),
-                                                    CoconutLayout.spacing_200w,
-                                                    Flexible(
-                                                      child: Text(
-                                                        widget.menuItems[index].title,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: CoconutTypography.body2_14.setColor(
+                                          children: [
+                                            if (widget.menuHeaderBuilder != null)
+                                              SizedBox(
+                                                height: widget.menuHeaderHeight,
+                                                child: widget.menuHeaderBuilder!(_startHideAnimation),
+                                              ),
+                                            ...List.generate(
+                                              widget.menuItems.length,
+                                              (index) => Semantics(
+                                                key: _menuItemKeys[index],
+                                                button: true,
+                                                label: widget.menuItems[index].title,
+                                                onTap: () {
+                                                  if (_isClosing) return;
+                                                  _startHideAnimation(releaseNavigation: true);
+                                                  widget.menuItems[index].onSelected();
+                                                },
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 80),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        _hoveredMenuIndex == index
+                                                            ? context.coconutColors.primaryText.withValues(alpha: 0.12)
+                                                            : Colors.transparent,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      SvgPicture.asset(
+                                                        widget.menuItems[index].iconPath,
+                                                        width: widget.menuIconSize,
+                                                        height: widget.menuIconSize,
+                                                        colorFilter: ColorFilter.mode(
                                                           widget.menuItems[index].isDanger
                                                               ? context.coconutColors.danger
-                                                              : context.coconutColors.primaryText,
+                                                              : context.coconutColors.iconPrimary,
+                                                          BlendMode.srcIn,
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                      CoconutLayout.spacing_200w,
+                                                      Flexible(
+                                                        child: Text(
+                                                          widget.menuItems[index].title,
+                                                          softWrap: true,
+                                                          style: _titleStyle.copyWith(
+                                                            color:
+                                                                widget.menuItems[index].isDanger
+                                                                    ? context.coconutColors.danger
+                                                                    : context.coconutColors.primaryText,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -443,6 +634,10 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
             ],
           ),
         );
+        return IgnorePointer(
+          ignoring: _isClosingForAction,
+          child: AbsorbPointer(absorbing: _isClosing, child: content),
+        );
       },
     );
 
@@ -451,16 +646,18 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
     // 메뉴 등장 애니메이션: 30% -> 110% -> 100%
     _isClosing = false;
-    _menuAnimationController.duration = const Duration(milliseconds: 220);
-    _menuAnimationController.forward(from: 0.0);
+    if (_reduceMotion) {
+      _menuAnimationController.value = 1;
+    } else {
+      _menuAnimationController.forward(from: 0.0);
+    }
   }
 
   double _computeMenuScale() {
     final t = _menuAnimationController.value;
-
     if (_isClosing) {
-      // 닫힐 때: 100% -> 0%
-      return 1.0 * (1.0 - t);
+      final remaining = (t / _closeStartProgress).clamp(0.0, 1.0);
+      return 0.3 + (_closeStartScale - 0.3) * Curves.easeOutCubic.transform(remaining);
     }
 
     // 열릴 때: 30% -> 110% -> 100%
@@ -477,31 +674,47 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     }
   }
 
-  void _updateHoveredMenuItem(Offset globalPosition) {
-    final menuRect = _menuRect;
-    if (menuRect == null) return;
+  void _ensureMenuItemKeys() {
+    if (_menuItemKeys.length == widget.menuItems.length) return;
+    _menuItemKeys
+      ..clear()
+      ..addAll(List<GlobalKey>.generate(widget.menuItems.length, (_) => GlobalKey()));
+  }
+
+  bool _updateHoveredMenuItem(Offset globalPosition) {
+    final box = _menuContentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return false;
+    // Opening scale changes the painted row positions before the layout bounds change.
+    final localPosition = box.globalToLocal(globalPosition);
+    final inside = (Offset.zero & box.size).contains(localPosition);
 
     int? nextIndex;
-    if (menuRect.contains(globalPosition)) {
-      final localY = globalPosition.dy - menuRect.top - 8;
-      if (localY >= 0) {
-        final index = (localY / _menuItemHeight).floor();
-        if (index >= 0 && index < widget.menuItems.length) nextIndex = index;
+    if (inside) {
+      for (var index = 0; index < _menuItemKeys.length; index++) {
+        final row = _menuItemKeys[index].currentContext?.findRenderObject() as RenderBox?;
+        if (row == null || !row.hasSize) continue;
+        final rowRect = box.globalToLocal(row.localToGlobal(Offset.zero)) & row.size;
+        if (rowRect.contains(localPosition)) {
+          nextIndex = index;
+          break;
+        }
       }
     }
 
-    if (_hoveredMenuIndex == nextIndex) return;
+    if (_hoveredMenuIndex == nextIndex) return inside;
     _hoveredMenuIndex = nextIndex;
     if (nextIndex != null) vibrateExtraLight();
     _overlayEntry?.markNeedsBuild();
+    return inside;
   }
 
   void _selectHoveredMenuItem() {
+    if (_isClosing) return;
     final selectedIndex = _hoveredMenuIndex;
     if (selectedIndex == null) return;
 
     _hoveredMenuIndex = null;
-    _startHideAnimation();
+    _startHideAnimation(releaseNavigation: true);
     widget.menuItems[selectedIndex].onSelected();
   }
 
@@ -513,16 +726,17 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final child = GestureDetector(
       key: _childKey,
       behavior: HitTestBehavior.opaque,
-      onLongPress: _showMenu,
+      onLongPress: widget.enableLongPress ? showMenu : null,
       child: RepaintBoundary(
         key: _childRepaintBoundaryKey,
         child: AnimatedBuilder(
           animation: Listenable.merge([_menuAnimationController, _shakeController, _closeButtonController]),
           builder: (context, child) {
-            final scale = _computeChildScale();
+            final box = _childKey.currentContext?.findRenderObject() as RenderBox?;
+            final transform = _childTransform(box != null && box.hasSize ? box.size : Size.zero);
 
             // 전체 카드(메뉴+child)가 살짝 기울어지는 애니메이션
             double angle = 0;
@@ -534,8 +748,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
             return Transform.rotate(
               angle: angle,
-              child: Transform.scale(
-                scale: scale,
+              child: Transform(
+                alignment: Alignment.center,
+                transform: transform,
                 child: Stack(
                   children: [
                     child!,
@@ -582,26 +797,37 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
         ),
       ),
     );
+    return widget.enableLongPress ? child : Semantics(onLongPress: widget.isEditMode ? null : showMenu, child: child);
   }
 
-  double _computeChildScale() {
-    // 메뉴가 떠 있지 않으면 항상 1.0 유지
-    if (_overlayEntry == null) {
-      return 1.0;
-    }
+  /// 길게 눌렀을 때 child가 사방으로 커지는 거리. 크기와 상관없이 모든 위젯·바로가기가 같은 만큼 커진다.
+  static const double _expandedGrowth = 4;
 
-    final t = _menuAnimationController.value;
+  /// 0이면 원래 크기, 1이면 다 커진 상태
+  double _expansion() {
+    if (_overlayEntry == null) return 0;
+    return _menuAnimationController.value;
+  }
 
-    const double baseScale = 1.0;
-    const double expandedScale = 1.05; // 5% 확장
+  Matrix4 _childTransform(Size size) {
+    final grow = _expandedGrowth * 2 * _expansion();
+    if (grow == 0 || size.isEmpty) return Matrix4.identity();
+    return Matrix4.diagonal3Values((size.width + grow) / size.width, (size.height + grow) / size.height, 1);
+  }
+}
 
-    if (_isClosing) {
-      // 닫힐 때: 1.1 -> 1.0
-      return expandedScale + (baseScale - expandedScale) * t;
-    } else {
-      // 열릴 때: 1.0 -> 1.1
-      return baseScale + (expandedScale - baseScale) * t;
-    }
+class _MenuPopEntry extends PopEntry<Object?> {
+  _MenuPopEntry(this.onBack);
+
+  final VoidCallback onBack;
+
+  @override
+  final ValueNotifier<bool> canPopNotifier = ValueNotifier(false);
+
+  @override
+  void onPopInvokedWithResult(bool didPop, Object? result) {
+    // Wait until the route finishes iterating its pop entries before removing this one.
+    if (!didPop) scheduleMicrotask(onBack);
   }
 }
 
@@ -631,6 +857,9 @@ class _DimExceptRectPainter extends CustomPainter {
     return oldDelegate.highlightRect != highlightRect;
   }
 }
+
+/// 메뉴 라벨 스타일. 폭을 잴 때와 그릴 때 똑같이 쓰도록 주변 스타일을 물려받지 않는다.
+final TextStyle _titleStyle = CoconutTypography.body2_14.copyWith(inherit: false);
 
 class LongPressedMenuItem {
   final String title;

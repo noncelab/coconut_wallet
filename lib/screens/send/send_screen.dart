@@ -70,6 +70,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
@@ -78,6 +79,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -113,6 +115,9 @@ class SendScreen extends StatefulWidget {
 }
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  /// 수신자 카드의 `모두 보내기` 버튼 중앙과 맞춘 안내 말풍선의 y 좌표.
+  static const double _addRecipientHintCenterY = 95;
+
   final GlobalKey _viewMoreButtonKey = GlobalKey();
   final GlobalKey _addressInputFieldKey = GlobalKey();
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
@@ -238,7 +243,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? sats.toString()
                 : UnitUtil.convertSatoshiToBitcoin(sats).toString();
-        _amountController.text = amountText;
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
         _viewModel.setAmountText(sats, 0);
       });
     }
@@ -270,7 +275,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
     _feeRateFocusNode.addListener(
       () => setState(() {
-        _amountController.text = _removeTrailingDot(_amountController.text);
+        _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
       }),
     );
     _amountController.addListener(_amountTextListener);
@@ -453,7 +458,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void _setDropdownMenuVisiblility(bool isVisible) {
     if (isVisible) {
       _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-      _amountController.text = _removeTrailingDot(_amountController.text);
+      _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
       FocusManager.instance.primaryFocus?.unfocus();
 
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -798,7 +803,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             showCursor: false,
             enableInteractiveSelection: false,
             onEditingComplete: () {
-              _amountController.text = _removeTrailingDot(_amountController.text);
+              _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
               FocusScope.of(context).unfocus();
             },
             keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
@@ -860,7 +865,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _hotWalletSigningViewModel = signingViewModel;
     Uint8List? passphrase;
     try {
-      await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      context.loaderOverlay.show();
+      try {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      } finally {
+        if (mounted) context.loaderOverlay.hide();
+      }
       if (!mounted) return;
       final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
       if (signingViewModel.shouldEnterPassphraseWhenSigning) {
@@ -1152,7 +1164,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         /// isFeeRateLowerThanMin, unintendedDustFee중에서는 있는 것을 모두 표시
         if (_viewModel.finalErrorMessage.isNotEmpty) {
           finalButtonMessages.add(
-            FinalButtonMessage(textColor: context.coconutColors.danger, message: _viewModel.finalErrorMessage),
+            FinalButtonMessage(textColor: context.coconutColors.dangerText, message: _viewModel.finalErrorMessage),
           );
         } else {
           if (isFeeRateLowerThanMin) {
@@ -1222,33 +1234,28 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
     final feeRateText = sats != null ? _formatDecimalTextForDisplay(sats.toStringAsFixed(1)) : "-";
-    final child = MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(width: 1, color: context.coconutColors.border),
-          borderRadius: const BorderRadius.all(Radius.circular(8)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              imagePath,
-              height: 12,
-              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-            ),
-            CoconutLayout.spacing_100w,
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                "$feeRateText ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-              ),
-            ),
-          ],
-        ),
+    final child = Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(width: 1, color: context.coconutColors.border),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SvgPicture.asset(
+            imagePath,
+            height: 12,
+            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_100w,
+          Text(
+            "$feeRateText ${t.send_screen.fee_rate_suffix}",
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
 
@@ -1266,6 +1273,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             !isFetching
                 ? child
                 : Shimmer.fromColors(
+                  enabled: !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context),
                   baseColor: context.coconutColors.primaryText.withValues(alpha: 0.2),
                   highlightColor: context.coconutColors.primaryText.withValues(alpha: 0.6),
                   child: child,
@@ -1365,7 +1373,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                   Text(
                     t.send_screen.recommended_fee_unavailable_description,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   ),
                 ],
               ),
@@ -1501,7 +1509,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         richText: RichText(
           text: TextSpan(
             text: text,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
           ),
         ),
       ),
@@ -1544,7 +1552,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             "${_viewModel.estimatedFeeInSats?.toThousandsSeparatedString() ?? '-'} sats",
                             style: CoconutTypography.body2_14_NumberBold.setColor(
                               _viewModel.isEstimatedFeeGreaterThanBalance
-                                  ? context.coconutColors.danger
+                                  ? context.coconutColors.dangerText
                                   : context.coconutColors.primaryText,
                             ),
                           ),
@@ -1581,7 +1589,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       _viewModel.isFeeSubtractedFromSendAmount
                           ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
                           : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                       maxLines: 2, // en - right overflow 방지
                       softWrap: true,
                     ),
@@ -1626,7 +1634,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           taprootSpendType == TaprootSpendType.keyPath
                               ? t.send_screen.taproot.sign_by_parent
                               : t.send_screen.taproot.sign_by_child,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                           maxLines: 2, // en - right overflow 방지
                           softWrap: true,
                         ),
@@ -1643,66 +1651,65 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRateRow() {
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(child: _buildFeeRowLabel(t.send_screen.fee_rate)),
         Expanded(
+          flex: textScale > 1 ? 2 : 1,
           child: Align(
             alignment: Alignment.centerRight,
             child: SizedBox(
-              width: 100,
+              width: 100 * textScale,
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutTextField(
-                    placeholderColor: context.coconutColors.border,
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: const [RateInputFormatter()],
-                    enableInteractiveSelection: false,
-                    textAlign: TextAlign.end,
-                    controller: _feeRateController,
-                    focusNode: _feeRateFocusNode,
-                    backgroundColor: context.coconutColors.background,
-                    onEditingComplete: () {
-                      _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-                      FocusScope.of(context).unfocus();
-                    },
-                    height: 30,
-                    padding: const EdgeInsets.only(left: 0),
-                    onChanged: (text) {
-                      final normalizedText = normalizeNumTextForNumParsing(text);
-                      final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
-                        final displayText = _formatDecimalTextForDisplay(formattedText);
-                        _feeRateController.text = displayText;
-                        _viewModel.setFeeRateText(formattedText);
-                      });
-                      if (isTooLow) {
-                        CoconutToast.showToast(
-                          context: context,
-                          isVisibleIcon: true,
-                          text: t.send_screen.fee_rate_too_low,
-                          seconds: 1,
-                        );
-                      }
-                    },
-                    maxLines: 1,
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    borderRadius: 8,
-                    suffix: Align(
-                      alignment: Alignment.center,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Text(
-                          t.send_screen.fee_rate_suffix,
-                          style: CoconutTypography.body2_14_NumberBold.copyWith(
-                            color: context.coconutColors.primaryText,
-                            height: 1.0,
-                          ),
+                child: CoconutTextField(
+                  placeholderColor: context.coconutColors.inputPlaceholder,
+                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                  textInputFormatter: const [RateInputFormatter()],
+                  enableInteractiveSelection: false,
+                  textAlign: TextAlign.end,
+                  controller: _feeRateController,
+                  focusNode: _feeRateFocusNode,
+                  backgroundColor: context.coconutColors.inputSurface,
+                  onEditingComplete: () {
+                    _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+                    FocusScope.of(context).unfocus();
+                  },
+                  height: 30 * textScale,
+                  padding: const EdgeInsets.only(left: 0),
+                  onChanged: (text) {
+                    final normalizedText = normalizeNumTextForNumParsing(text);
+                    final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
+                      final displayText = _formatDecimalTextForDisplay(formattedText);
+                      _feeRateController.text = displayText;
+                      _viewModel.setFeeRateText(formattedText);
+                    });
+                    if (isTooLow) {
+                      CoconutToast.showToast(
+                        context: context,
+                        isVisibleIcon: true,
+                        text: t.send_screen.fee_rate_too_low,
+                        seconds: 1,
+                      );
+                    }
+                  },
+                  maxLines: 1,
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  borderRadius: 8,
+                  suffix: Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        t.send_screen.fee_rate_suffix,
+                        style: CoconutTypography.body2_14_NumberBold.copyWith(
+                          color: context.coconutColors.primaryText,
+                          height: 1.0,
                         ),
                       ),
                     ),
@@ -1717,7 +1724,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRowLabel(String label) {
-    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
+    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
   }
 
   Widget _buildVaultInfoLabel(BuildContext context) {
@@ -1758,20 +1765,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildPageView(BuildContext context) {
     return Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) {
-        if (_isLeftDragGuideViewVisible) {
-          setState(() {
-            _isLeftDragGuideViewVisible = false;
-          });
-        }
-      },
       onPointerMove: (_) {
         _hideVaultInfo();
-        if (_isLeftDragGuideViewVisible) {
-          setState(() {
-            _isLeftDragGuideViewVisible = false;
-          });
-        }
       },
       child: Stack(
         children: [
@@ -1787,10 +1782,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   controller: _recipientPageController,
                   onPageChanged: (index) {
                     // 수신자 추가 카드 확인 여부 업데이트
-                    if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
-                      hasSeenAddRecipientCard = true;
-                      context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
-                    }
+                    if (index == _viewModel.addRecipientCardIndex) _completeAddRecipientGuide();
 
                     _viewModel.setCurrentPage(index);
                   },
@@ -1810,35 +1802,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             opacity: _isLeftDragGuideViewVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 500),
             child: IgnorePointer(
-              ignoring: true,
-              child: Container(
-                height: kPageViewHeight,
-                width: MediaQuery.of(context).size.width,
-                color: context.coconutColors.background.withValues(alpha: 0.6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Lottie.asset(
-                      CommonLottiePath.swipeLeft,
-                      width: 60,
-                      height: 60,
-                      delegates: LottieDelegates(
-                        values: [
-                          ValueDelegate.colorFilter([
-                            '**',
-                          ], value: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcATop)),
-                        ],
+              ignoring: !_isLeftDragGuideViewVisible,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: _addRecipientHintCenterY,
+                    right: 8,
+                    child: FractionalTranslation(
+                      translation: const Offset(0, -0.5),
+                      child: AllFeaturesHint(
+                        title: t.add_recipient_hint.title,
+                        description: t.add_recipient_hint.description,
+                        onOpen: _openAddRecipientCard,
+                        onClose: _completeAddRecipientGuide,
                       ),
                     ),
-                    CoconutLayout.spacing_200h,
-                    Text(
-                      t.send_screen.swipe_to_add_address,
-                      textAlign: TextAlign.center,
-                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1887,6 +1867,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _hideLeftDragGuide() {
+    if (!_isLeftDragGuideViewVisible) return;
+    setState(() {
+      _isLeftDragGuideViewVisible = false;
+    });
+  }
+
+  void _completeAddRecipientGuide() {
+    if (!hasSeenAddRecipientCard) {
+      hasSeenAddRecipientCard = true;
+      unawaited(context.read<PreferenceProvider>().setHasSeenAddRecipientCard());
+    }
+    _hideLeftDragGuide();
+  }
+
+  void _openAddRecipientCard() {
+    _recipientPageController.animateToPage(
+      _viewModel.addRecipientCardIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   Widget _buildRecipientPage(BuildContext context, int index) {
     return Stack(
       children: [
@@ -1932,11 +1935,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   if (_viewModel.isTotalSendAmountExceedsBalance ||
                       isMinimumAmount ||
                       hasInsufficientBalanceErrorOfLastRecipient) {
-                    amountTextColor = context.coconutColors.danger;
+                    amountTextColor = context.coconutColors.dangerText;
                   } else if (_viewModel.isMaxModeLastIndex(index)) {
                     amountTextColor = context.coconutColors.secondaryText;
                   } else if (amountText.isEmpty) {
-                    amountTextColor = context.coconutColors.inputPlaceholder;
+                    amountTextColor = context.coconutColors.secondaryTextStrong;
                   } else {
                     amountTextColor = context.coconutColors.primaryText;
                   }
@@ -2099,7 +2102,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
-                    backgroundColor: context.coconutColors.background,
+                    backgroundColor: context.coconutColors.inputSurface,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
                     maxLines: 1,
@@ -2118,6 +2121,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _applyIncomingBitcoinUri(scannedData, index);
                       }
                     },
+                    suffixSemanticLabel: t.send_address_screen.text2,
                     suffixIconAsset: widget.isMoveToVault ? null : CommonActionIconPath.scan,
                     suffixIconColor: context.coconutColors.primaryText,
                     suffixIconSize: 18,
@@ -2150,7 +2154,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _viewModel.deleteRecipient();
                               _setDropdownMenuVisiblility(false);
                             },
-                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                             padding: EdgeInsets.zero,
                           ),
                         );
@@ -2194,7 +2198,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ),
                 Text(
                   "/ $recipientListLength",
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                 ),
               ],
             ),
@@ -2211,6 +2215,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String walletName,
     String derivationPath, {
     required bool isCurrentWallet,
+    bool isSelected = false,
   }) {
     return ShrinkAnimationButton(
       onPressed: () {
@@ -2252,22 +2257,36 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.only(left: 14, right: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              CoconutLayout.spacing_100h,
-              Text(
-                shortenAddress(address, head: 12, tail: 14),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CoconutLayout.spacing_100h,
+                    Text(
+                      shortenAddress(address, head: 12, tail: 14),
+                      style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+                    ),
+                    _buildAddressRowSubtitle(
+                      context,
+                      walletName,
+                      derivationPath,
+                      isCurrentWallet,
+                      addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
+                    ),
+                    CoconutLayout.spacing_100h,
+                  ],
+                ),
               ),
-              _buildAddressRowSubtitle(
-                context,
-                walletName,
-                derivationPath,
-                isCurrentWallet,
-                addressNumber: widget.isMoveToVault ? _vaultReceivingAddresses[index].index : null,
-              ),
-              CoconutLayout.spacing_100h,
+              if (isSelected)
+                SvgPicture.asset(
+                  CommonActionIconPath.check,
+                  key: ValueKey('vault-address-selected-$address'),
+                  width: 12,
+                  height: 12,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                ),
             ],
           ),
         ),
@@ -2303,7 +2322,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAddressBoard(BuildContext context) {
+  Widget buildAddressBoard(BuildContext context) {
     return SizedBox(
       height: addressBoardHeight + (widget.isMoveToVault || _viewModel.orderedRegisteredWallets.length <= 2 ? 0 : 30),
       child: Column(
@@ -2379,6 +2398,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   _receivingVaultName,
                                   address.derivationPath,
                                   isCurrentWallet: false,
+                                  isSelected:
+                                      selection.item1 < selection.item2.length &&
+                                      selection.item2[selection.item1] == address.address,
                                 );
                               },
                             );
@@ -2386,7 +2408,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         ),
                       )
                     else
-                      _buildWalletAddressList(),
+                      buildWalletAddressList(),
                     CoconutLayout.spacing_200h,
                     if (!widget.isMoveToVault)
                       Expanded(
@@ -2401,7 +2423,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               onTap: () {
                                 _clearFocus();
                                 if (_viewModel.orderedRegisteredWallets.length == 1) {
-                                  _showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
+                                  showAddressListBottomSheet(_viewModel.orderedRegisteredWallets[0].id);
                                   return;
                                 }
                                 CommonBottomSheets.showDraggableBottomSheet(
@@ -2415,7 +2437,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                         walletId: _viewModel.selectedWalletId,
                                         onWalletChanged: (id) {
                                           Navigator.pop(context);
-                                          _showAddressListBottomSheet(id);
+                                          showAddressListBottomSheet(id);
                                         },
                                       ),
                                 );
@@ -2455,7 +2477,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildWalletAddressList() {
+  Widget buildWalletAddressList() {
     if (_viewModel.orderedRegisteredWallets.length <= 2) {
       return Column(
         children: [
@@ -2575,7 +2597,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           left: 16,
           right: 16,
           top: !showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
-          child: !showAddressBoard ? Column(children: [_buildFeeBoard(context)]) : _buildAddressBoard(context),
+          child: !showAddressBoard ? Column(children: [_buildFeeBoard(context)]) : buildAddressBoard(context),
         );
       },
     );
@@ -2619,7 +2641,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return scrollbarHeight;
   }
 
-  void _showAddressListBottomSheet(int walletId) {
+  void showAddressListBottomSheet(int walletId) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       screenName: AnalyticsScreenNames.sendAddressListSheet,
@@ -2643,15 +2665,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
-        _amountController.text = amountText;
-        _viewModel.setAmountText(bip21Data.amount!, index);
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
+        _viewModel.setAmountText(bip21Data.amount!, index, validate: false);
       }
+      _viewModel.validateAllFieldsOnFocusLost();
       return;
     }
 
     final normalized = normalizeAddress(scannedData);
     _addressControllerList[index].text = normalized;
     _viewModel.setAddressText(normalized, index);
+    _viewModel.validateAllFieldsOnFocusLost();
   }
 
   void _recipientPageListener() {
@@ -2685,8 +2709,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _onAmountTextUpdate(String text) {
     // 단위변환시 문자열 길이가 달라지므로 viewModel text와 길이를 맞춘다.
-    _previousAmountText = text;
-    _amountController.text = text;
+    // viewModel의 amount는 canonical 포맷('.' 소수점)이므로 display 포맷으로 변환한다.
+    final displayText = _formatDecimalTextForDisplay(text);
+    _previousAmountText = displayText;
+    _amountController.text = displayText;
   }
 
   void _amountTextListener() {
@@ -2700,16 +2726,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     // 문자가 입력된 경우와 삭제된 경우를 인식한다. (문자열 중간에 입력/삭제 불가)
     // grouping separator(예: ',')가 포함되어 있으므로 제거 후 비교한다.
-    final groupingSep = NumberFormatConfig.instance.groupingSeparator;
-    String currentText = _amountController.text.replaceAll(groupingSep, '');
-    String previousText = _previousAmountText.replaceAll(groupingSep, '');
-    if (currentText.length > previousText.length) {
-      String lastInserted = currentText.substring(previousText.length);
-      _viewModel.onKeyTap(lastInserted);
-    } else if (currentText.length < previousText.length) {
-      _viewModel.onKeyTap('<');
+    final keyInput = resolveAmountKeyInput(_previousAmountText, _amountController.text);
+    if (keyInput != null) {
+      _viewModel.onKeyTap(keyInput);
       // 삭제 버튼을 꾹 누른 경우에 대한 처리
-      if (currentText.isEmpty) {
+      if (keyInput == '<' &&
+          _amountController.text.replaceAll(NumberFormatConfig.instance.groupingSeparator, '').isEmpty) {
         _viewModel.clearAmountText();
       }
     }
@@ -2741,16 +2763,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     focusNode.addListener(
       () => setState(() {
         _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-        _amountController.text = _removeTrailingDot(_amountController.text);
+        _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
 
         final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          if (_hasAddressTextChangedSinceFocus(index, controller.text)) {
-            if (controller.text.toLowerCase().startsWith('bitcoin:')) {
-              _applyIncomingBitcoinUri(controller.text, index);
-            }
+          if (_hasAddressTextChangedSinceFocus(index, controller.text) &&
+              controller.text.toLowerCase().startsWith('bitcoin:')) {
+            _applyIncomingBitcoinUri(controller.text, index);
+          } else {
+            // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
             _viewModel.validateAllFieldsOnFocusLost();
           }
         } else {
@@ -2794,10 +2817,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.removeAt(index);
     _addressTextListenerList.removeAt(index);
     _addressFocusInTextList.removeAt(index);
-    _rebindAddressTextListeners(index);
+    rebindAddressTextListeners(index);
   }
 
-  void _rebindAddressTextListeners(int index) {
+  void rebindAddressTextListeners(int index) {
     for (int i = index; i < _addressTextListenerList.length; ++i) {
       final controller = _addressControllerList[i];
       newAddressTextListener() => _viewModel.setAddressText(controller.text, i);
@@ -2809,30 +2832,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _clearFocus() {
     _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-    _amountController.text = _removeTrailingDot(_amountController.text);
+    _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
 
     // setState 변경은 빌드 완료 후 실행
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      if (_isLeftDragGuideViewVisible || _isDropdownMenuVisible) {
+      if (_isDropdownMenuVisible) {
         setState(() {
-          _isLeftDragGuideViewVisible = false;
           _isDropdownMenuVisible = false;
         });
       }
     });
   }
 
-  /// 텍스트 끝의 소수점을 제거하는 함수
-  String _removeTrailingDot(String text) {
-    if (text.endsWith('.')) {
-      return text.substring(0, text.length - 1);
-    }
-    return text;
-  }
-
+  /// 텍스트 끝의 소수점 구분자를 제거하는 함수
   String _removeTrailingDecimalSeparator(String text) {
     final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
     if (text.endsWith(decimalSeparator) || text.endsWith('.')) {
@@ -2846,7 +2861,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   /// recipientList와 _addressControllerList 동기화
-  void _syncAddressControllersWithRecipientList() {
+  void syncAddressControllersWithRecipientList() {
     final recipientListLength = _viewModel.recipientList.length;
     final currentControllerLength = _addressControllerList.length;
 
@@ -2887,7 +2902,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (recipientListLength > 0) {
       final currentIndex = _viewModel.currentIndex;
       if (currentIndex < recipientListLength) {
-        final amount = _viewModel.recipientList[currentIndex].amount;
+        final amount = _formatDecimalTextForDisplay(_viewModel.recipientList[currentIndex].amount);
         if (_amountController.text != amount) {
           _amountController.removeListener(_amountTextListener);
           _amountController.text = amount;
@@ -2939,17 +2954,7 @@ class _SendOptionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
-          children: [
-            if (iconPath != null) ...[
-              SvgPicture.asset(
-                iconPath!,
-                width: iconWidth,
-                colorFilter: ColorFilter.mode(colors.primaryText.withValues(alpha: iconAlpha), BlendMode.srcIn),
-              ),
-              CoconutLayout.spacing_100w,
-            ],
-            Text(label, style: CoconutTypography.body3_12_Number.setColor(resolvedTextColor)),
-          ],
+          children: [Text(label, style: CoconutTypography.body3_12_Number.setColor(resolvedTextColor))],
         ),
       ),
     );

@@ -4,6 +4,8 @@ class AnalyticsParameterNames {
   static const String addMethod = 'add_method'; // create / restore
   static const String walletAddImportSource = 'wallet_add_import_source'; // parameter: enum WalletImportSource
   static const String hasHistory = 'has_history';
+  static const String changed = 'changed'; // home_edit_completed: 홈 구성이 바뀌었나
+  static const String presetApplied = 'preset_applied'; // home_edit_completed: 프리셋을 적용했나
 
   // 공통
   static const String source = 'source'; // 어디서 눌렀나

@@ -24,6 +24,8 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../mock/utxo_mock.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
@@ -43,9 +45,16 @@ class _Analytics extends AnalyticsService {
 }
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
-  _Wallets(this.wallet, this.vault);
+  _Wallets(this.wallet, this.vault, {List<UtxoState>? utxos})
+    : utxos =
+          utxos ??
+          [
+            UtxoMock.createMockUtxoState(id: 'a', transactionHash: 'a' * 64),
+            UtxoMock.createMockUtxoState(id: 'b', transactionHash: 'b' * 64),
+          ];
   final WalletItemBase wallet;
   final SingleSignatureVault vault;
+  final List<UtxoState> utxos;
 
   WalletAddress _address(int index, bool change) => WalletAddress(
     vault.getAddress(index, isChange: change),
@@ -67,7 +76,7 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   @override
   WalletAddress getChangeAddress(int walletId) => _address(1, true);
   @override
-  List<UtxoState> getUtxoList(int walletId) => const [];
+  List<UtxoState> getUtxoList(int walletId) => utxos;
   @override
   List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) => const [];
 }
@@ -207,5 +216,65 @@ void main() {
     final names = analytics.screens.map((view) => view.$1);
     expect(names, isNot(contains(AppRouteNames.mergeUtxos)));
     expect(names, isNot(contains(AppRouteNames.splitUtxo)));
+  });
+
+  testWidgets('with fewer than two spendable UTXOs the organizer opens on split and merge stays off', (tester) async {
+    final analytics = _Analytics();
+    final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
+    final wallet = SinglesigWalletItem(id: 1, name: 'QA', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
+    final wallets = _Wallets(wallet, vault, utxos: [UtxoMock.createMockUtxoState(id: 'a')]);
+    final utxos = UtxoRepository(manager);
+    final tags = UtxoTagProvider(utxos);
+    addTearDown(tags.dispose);
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<AnalyticsService>.value(value: analytics),
+          Provider<SendInfoProvider>.value(value: SendInfoProvider()),
+          ChangeNotifierProvider<WalletProvider>.value(value: wallets),
+          ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences()),
+          ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
+          Provider<UtxoRepository>.value(value: utxos),
+          Provider<AddressRepository>.value(value: _Addresses(wallets)),
+        ],
+        child: MaterialApp(
+          navigatorKey: navigator,
+          theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          navigatorObservers: [
+            AnalyticsScreenObserver(
+              logScreenView: (name) => analytics.logScreenView(screenName: name),
+              nameExtractor: analyticsRouteScreenName,
+            ),
+          ],
+          onGenerateRoute:
+              (settings) => MaterialPageRoute<void>(
+                settings: settings,
+                builder:
+                    (_) => LoaderOverlay(
+                      child:
+                          settings.name == AppRouteNames.utxoOrganizer
+                              ? const UtxoOrganizerScreen(id: 1)
+                              : Scaffold(body: Text(settings.name ?? '')),
+                    ),
+              ),
+          initialRoute: AppRouteNames.walletDetail,
+        ),
+      ),
+    );
+    await settle(tester);
+    navigator.currentState!.pushNamed(AppRouteNames.utxoOrganizer);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(analytics.screens.last, (AppRouteNames.utxoOrganizer, 'split'));
+
+    await tester.tap(find.byKey(const Key('utxo-organizer-merge-tab')));
+    await tester.pump();
+    expect(analytics.screens, isNot(contains((AppRouteNames.utxoOrganizer, 'merge'))));
+
+    navigator.currentState!.pop();
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 5));
   });
 }

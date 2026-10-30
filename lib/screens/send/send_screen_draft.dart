@@ -74,7 +74,7 @@ extension _SendScreenDraft on _SendScreenState {
     // WidgetsBinding.instance.addPostFrameCallback을 사용하여 다음 프레임에 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _syncAddressControllersWithRecipientList();
+        syncAddressControllersWithRecipientList();
       }
     });
   }

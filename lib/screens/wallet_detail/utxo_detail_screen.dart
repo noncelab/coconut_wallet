@@ -49,6 +49,7 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -72,7 +73,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
   late Stream<WalletUpdateInfo> _walletSyncStateStream;
-  late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
+  StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
 
   @override
   void initState() {
@@ -80,14 +81,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     _utxoState = widget.utxo;
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final utxoTooltipIconRenderBox = _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-
-      if (utxoTooltipIconRenderBox != null) {
-        setState(() {
-          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
-        });
-      }
+      _updateUtxoTooltipPosition();
     });
   }
 
@@ -96,17 +90,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _walletSyncStateStream = Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateSubscription?.cancel();
     _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final utxoTooltipIconRenderBox = _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-
-      if (utxoTooltipIconRenderBox != null) {
-        setState(() {
-          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
-        });
-      }
+      _updateUtxoTooltipPosition();
     });
   }
 
@@ -117,6 +105,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {
+    if (!mounted) return;
     final updatedUtxo = _walletProvider.getUtxoState(widget.id, widget.utxo.utxoId);
     if (updatedUtxo != null) {
       setState(() {
@@ -242,7 +231,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         Navigator.pop(context);
       },
       actionButtonList: [
-        IconButton(
+        CoconutAppBarActionButton(
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset(
             CommonStateIconPath.questionMark,
@@ -255,9 +244,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildTooltip(BuildContext context) {
+    final anchor = _utxoTooltipIconPosition & _utxoTooltipIconSize;
     return Positioned(
       top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
-      right: 18,
+      right: RightTriangleBubbleClipper.rightOffsetForAnchor(
+        viewportWidth: MediaQuery.sizeOf(context).width,
+        anchor: anchor,
+      ),
       child: GestureDetector(
         onTap: _removeUtxoTooltip,
         child: ClipPath(
@@ -282,8 +275,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void _toggleUtxoTooltip() {
-    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
-    setState(() {});
+    final willShow = !_isUtxoTooltipVisible;
+    if (willShow && !_updateUtxoTooltipPosition()) {
+      return;
+    }
+
+    setState(() {
+      _isUtxoTooltipVisible = willShow;
+    });
+  }
+
+  bool _updateUtxoTooltipPosition() {
+    final renderBox = _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      return false;
+    }
+
+    _utxoTooltipIconPosition = renderBox.localToGlobal(Offset.zero);
+    _utxoTooltipIconSize = renderBox.size;
+    return true;
   }
 
   Widget _buildBalanceWidthCheck() {
@@ -467,8 +477,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               runSpacing: 4,
               children: List.generate(selectedTags.length, (index) {
                 final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
-                Color foregroundColor =
-                    tagColorPalette[colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                // colorIndex == 8(gray)은 화면에서 잘 보이지 않으므로
+                // gray400으로 설정한다.
+                Color foregroundColor = tagColorPalette[colorIndex];
                 return IntrinsicWidth(
                   child: CoconutChip(
                     minWidth: 40,

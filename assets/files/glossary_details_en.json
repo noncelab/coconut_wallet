@@ -1,0 +1,340 @@
+{
+  "Mnemonic Phrase": {
+    "en": "Mnemonic words/phrase",
+    "content": "A list of words, in a fixed order, that can create every private key in your wallet.\n\nIt has 12, 15, 18, 21 or 24 words. You need it to move your wallet to a new device. In practice, you can think of the mnemonic phrase as your private key.\n\nSo keep it somewhere safe. Never share it with anyone, and never upload it online.",
+    "synonym": [
+      "Seed Phrase",
+      "Recovery Phrase",
+      "Recovery Words",
+      "Secret Words"
+    ],
+    "related": [
+      "BIP-39"
+    ]
+  },
+  "Passphrase": {
+    "en": "Passphrase",
+    "content": "An extra password you choose yourself and add to your mnemonic phrase for more security.\n\nThe same mnemonic with a different passphrase opens a completely different wallet.\n\nStore the passphrase separately from the mnemonic. If you forget it, nobody can recover it for you, so back it up with extra care.",
+    "synonym": [
+      "25th Word"
+    ],
+    "related": [
+      "Mnemonic Phrase",
+      "BIP-39"
+    ]
+  },
+  "Extended Public Key": {
+    "en": "Extended Public Key",
+    "content": "Bitcoin addresses are made from public keys.\n\nAn extended public key is a \"parent\" public key that can create (extend into) many addresses.\n\nFor addresses that start with bc1, the extended public key usually starts with zpub.\n\nExtended public keys make watch-only wallets possible, which help your privacy and security. But anyone who sees your extended public key can link all of your addresses together, so don't share it publicly.",
+    "synonym": [
+      "xpub",
+      "zpub"
+    ],
+    "related": [
+      "HD Wallet",
+      "BIP-32",
+      "BIP-44",
+      "BIP-49",
+      "BIP-84"
+    ]
+  },
+  "SegWit": {
+    "en": "Native Segwit",
+    "content": "If your Bitcoin address starts with bc1, you are already using SegWit.\n\nThe name stands for Segregated Witness: the signature data (the \"witness\") is separated from the rest of the transaction.\n\nSignatures take up a lot of space in a transaction, so moving them out makes fees cheaper.",
+    "synonym": [
+      "Native SegWit",
+      "Segregated Witness"
+    ],
+    "related": [
+      "BIP-141",
+      "BIP-143",
+      "BIP-173",
+      "BIP-84",
+      "Signature"
+    ]
+  },
+  "Signature": {
+    "en": "Signature",
+    "content": "Proof that the person sending bitcoin really owns the private key.\n\nIf a door opens with your fingerprint, it must be you. In the same way, only the owner of a private key can sign a transaction and spend the bitcoin it controls.",
+    "synonym": [
+      "Digital Signature"
+    ],
+    "related": [
+      "ECDSA",
+      "Schnorr Signature",
+      "Signature Verification"
+    ]
+  },
+  "Wallet ID": {
+    "en": "Master Fingerprint",
+    "content": "A short value that identifies a wallet, also called the master fingerprint.\n\nA mnemonic phrase can create countless pairs of private and public keys. At the root of all of them sit the master private key and its matching master public key. The master fingerprint is made from that master public key.",
+    "synonym": [
+      "MFP",
+      "Master Fingerprint"
+    ],
+    "related": [
+      "HD Wallet",
+      "BIP-32"
+    ]
+  },
+  "UTXO": {
+    "en": "Unspent Transaction Outputs",
+    "content": "A piece of bitcoin you have received and not spent yet.\n\nUTXOs work a lot like cash. If your wallet holds one $50 bill and one $10 bill, you can think of each bill as a separate UTXO.\n\nTo buy a $20 pizza with bitcoin, you spend the $50 UTXO and get a new $30 UTXO back as change.\n\nThe balance you see in your wallet is all of your UTXOs added together.",
+    "synonym": [
+      "Unspent Output"
+    ],
+    "related": [
+      "Inputs",
+      "Outputs",
+      "Change Address"
+    ]
+  },
+  "Transaction Fee": {
+    "en": "Transaction Fee",
+    "content": "Just like a letter needs a stamp, a Bitcoin transaction needs a fee.\n\nA letter without a stamp never arrives. In the same way, a transaction with no fee, or a fee that is too low, may never be processed.\n\nFees go up when the transaction is larger and when the network is busy.",
+    "synonym": [
+      "Network Fee",
+      "Mining Fee"
+    ],
+    "related": [
+      "Fee Rate",
+      "sat/vB"
+    ]
+  },
+  "Confirmations": {
+    "en": "Confirmations",
+    "content": "When the network checks your transaction and puts it into a block, it is \"confirmed\". Every new block added after that one counts as one more confirmation.\n\nThe more confirmations, the more final and unchangeable the transaction becomes. Six or more confirmations are generally considered safe.",
+    "synonym": [
+      "Finality"
+    ],
+    "related": [
+      "Block",
+      "Mining"
+    ]
+  },
+  "HD Wallet": {
+    "en": "HD Wallet",
+    "content": "A wallet structure where a single mnemonic phrase can create countless addresses.\n\nNot reusing addresses is a good habit that keeps Bitcoin safer. Before HD wallets became the standard, every new address needed its own randomly generated private key, so people had to keep track of many private keys instead of just one.\n\nToday HD wallets are the standard, and one mnemonic phrase gives you an unlimited number of addresses.",
+    "synonym": [
+      "Hierarchical Deterministic Wallet"
+    ],
+    "related": [
+      "BIP-32",
+      "BIP-44",
+      "Mnemonic Phrase"
+    ]
+  },
+  "Derivation Path": {
+    "en": "Derivation Path",
+    "content": "An HD wallet creates countless addresses, and they are related to each other like a family tree: parents, children and siblings.\n\nFor example, the path m/0/0/1 means the second child (1) of the first child (0) of the first child (0) of the root (m). In theory you could pick any path you like.\n\nBut if you forget the path, you could lose track of your bitcoin. That's why standard paths were agreed on, and almost every wallet today follows them.",
+    "synonym": [
+      "Derived Path"
+    ],
+    "related": [
+      "BIP-32",
+      "BIP-44",
+      "BIP-49",
+      "BIP-84",
+      "HD Wallet"
+    ]
+  },
+  "Watch-Only Wallet": {
+    "en": "Watch-Only Wallet",
+    "content": "A wallet that shows your balance and transaction history without holding your mnemonic phrase. Coconut Wallet's watch-only wallets work this way.\n\nBecause it has no mnemonic phrase or private keys, it can be used safely on a device that is connected to the internet.\n\nTo send bitcoin, the transaction has to be signed on the device that holds the mnemonic phrase, such as a hardware wallet.",
+    "synonym": [
+      "Watch Wallet"
+    ],
+    "related": [
+      "Extended Public Key",
+      "Descriptor"
+    ]
+  },
+  "Virtual Byte": {
+    "en": "Virtual Byte",
+    "content": "Bitcoin fees depend on how large a transaction is, measured in bytes. More bytes means a higher fee.\n\nA transaction's size depends on a few things: how many UTXOs it spends, how many addresses it pays, and above all, its signatures.\n\nBefore SegWit, fees were based on raw bytes. Since SegWit, signature data gets a 75% discount, and the result is measured in virtual bytes.",
+    "synonym": [
+      "vbyte",
+      "vB"
+    ],
+    "related": [
+      "SegWit",
+      "UTXO",
+      "Signature"
+    ]
+  },
+  "BIP": {
+    "en": "Bitcoin Improvement Proposals",
+    "content": "Short for Bitcoin Improvement Proposal: an idea for improving Bitcoin. Some are adopted as standards, and some are rejected.\n\nThanks to these proposals, Bitcoin keeps evolving. Mnemonic phrases, HD wallets and SegWit all started as BIPs.",
+    "synonym": [
+      "Bitcoin Improvement Proposal"
+    ],
+    "related": [
+      "Open Source",
+      "Decentralization"
+    ]
+  },
+  "Transaction": {
+    "en": "Transaction",
+    "content": "Think of it as a record of bitcoin moving from one place to another.\n\nJust as online banking shows deposits and withdrawals, every bitcoin transfer happens through a transaction.\n\nA transaction includes the UTXOs being spent, the receiving addresses, and the signatures that prove the sender may spend them.",
+    "synonym": [
+      "Tx"
+    ],
+    "related": [
+      "Inputs",
+      "Outputs",
+      "UTXO"
+    ]
+  },
+  "Air Gap": {
+    "en": "Air Gap",
+    "content": "A computer or device that is never connected to the internet or any other network.\n\nBitcoin wallets use air-gapped devices to create private keys and sign transactions. This greatly reduces the risk of hacking and remote attacks.",
+    "synonym": [
+      "Offline Environment",
+      "Air-Gapped"
+    ],
+    "related": [
+      "Hardware Wallet",
+      "Cold Wallet",
+      "Security"
+    ]
+  },
+  "Multisig": {
+    "en": "Multi-Signature",
+    "content": "A setup where a single Bitcoin transaction needs signatures from more than one private key.\n\nFor example, in a 2-of-3 multisig wallet, any 2 of the 3 keys must sign before bitcoin can be sent. This adds security and lets several people or devices share control.",
+    "synonym": [
+      "Multi-Signature",
+      "Multisig Wallet"
+    ],
+    "related": [
+      "m-of-n",
+      "PSBT",
+      "BSMS"
+    ]
+  },
+  "Hardware / Cold Wallet": {
+    "en": "Hardware Wallet / Cold Wallet",
+    "content": "A physical device, kept off the internet, that stores the private keys for your bitcoin.\n\nIt is also called a cold wallet. Because it stays offline, it is much harder to attack over the internet.",
+    "synonym": [
+      "Cold Storage",
+      "Signing Device"
+    ],
+    "related": [
+      "Air Gap",
+      "Private Key",
+      "Security"
+    ]
+  },
+  "Software / Hot Wallet": {
+    "en": "Software Wallet / Hot Wallet",
+    "content": "A wallet app installed on a phone or computer. Because it is connected to the internet, you can send bitcoin at any time.\n\nIt is also called a hot wallet. It is very convenient, but it is more exposed to online threats than a cold wallet.",
+    "synonym": [
+      "Hot Wallet",
+      "Mobile Wallet"
+    ],
+    "related": [
+      "Cold Wallet",
+      "Private Key",
+      "Security"
+    ]
+  },
+  "Legacy Address": {
+    "en": "Legacy Address",
+    "content": "Bitcoin's original address format: addresses that start with 1. It is the oldest format and was used before SegWit.\n\nToday SegWit addresses are far more common, but legacy addresses are still supported for compatibility.",
+    "synonym": [
+      "P2PKH Address"
+    ],
+    "related": [
+      "SegWit",
+      "Bitcoin Address"
+    ]
+  },
+  "Testnet": {
+    "en": "Testnet",
+    "content": "A separate test network for Bitcoin developers and users. It runs apart from the real Bitcoin network (mainnet), and its coins have no real value. That makes it a safe place to try new features and fix problems before using mainnet.\n\nWhat you learn on testnet helps make mainnet use safer and more reliable. On testnet, SegWit addresses start with tb1.",
+    "synonym": [
+      "Bitcoin Test Network"
+    ],
+    "related": [
+      "Mainnet",
+      "Regtest",
+      "Faucet",
+      "tb1"
+    ]
+  },
+  "Regtest": {
+    "en": "Regtest",
+    "content": "A Bitcoin test mode where developers run their own private network. They can create blocks whenever they want, which makes testing fast and flexible.\n\nUnlike testnet, regtest doesn't connect to any outside network, so it can simulate Bitcoin entirely on its own. On regtest, SegWit addresses start with bcrt1.",
+    "synonym": [
+      "Regression Test Mode"
+    ],
+    "related": [
+      "Testnet",
+      "Developer Mode",
+      "bcrt1"
+    ]
+  },
+  "Faucet": {
+    "en": "Faucet",
+    "content": "A service that gives out testnet bitcoin for free. To test on testnet you need testnet coins, and a faucet lets you get a small amount easily.\n\nFaucets are usually websites or apps: enter your wallet address and you receive some test coins.",
+    "synonym": [
+      "Testnet Faucet"
+    ],
+    "related": [
+      "Testnet",
+      "tBTC",
+      "Developer Tools"
+    ]
+  },
+  "BSMS": {
+    "en": "Bitcoin Secure Multisig Setup",
+    "content": "A standard procedure for creating, sharing and restoring a multisig wallet setup.\n\nSetting up a multisig wallet means sharing several people's public keys and keeping other details in sync. BSMS helps do this in a safe, standard way.\n\nIt makes multisig setup more efficient and secure, and makes it easier for several people or devices to work together.",
+    "synonym": [
+      "Bitcoin Secure Multisig Setup"
+    ],
+    "related": [
+      "Multisig",
+      "BIP-129"
+    ]
+  },
+  "PSBT": {
+    "en": "Partially Signed Bitcoin Transaction",
+    "content": "A standard file format for passing around a Bitcoin transaction that isn't fully signed yet.\n\nIt is used when signing happens in several steps, which is especially useful for multisig and for signing with air-gapped devices. A PSBT contains everything needed to sign: inputs, outputs, UTXO details and more.\n\nYou send the PSBT to each device or person who needs to sign. Once all signatures are in, the finished transaction can be broadcast.",
+    "synonym": [
+      "Partially Signed Transaction"
+    ],
+    "related": [
+      "Multisig",
+      "Transaction",
+      "Air Gap",
+      "BIP-174"
+    ]
+  },
+  "RBF": {
+    "en": "Replace-By-Fee",
+    "content": "Short for Replace-By-Fee: a way to replace a transaction you already sent with a new one that pays a higher fee.\n\nAs long as the transaction isn't in a block yet, you can replace it with a new transaction that spends the same inputs, which gives it higher priority. This helps when a fee was too low and the transaction is stuck.",
+    "synonym": [
+      "Replace by Fee",
+      "Fee Bump"
+    ],
+    "related": [
+      "Transaction Fee",
+      "Mempool",
+      "BIP-125",
+      "CPFP"
+    ]
+  },
+  "CPFP": {
+    "en": "Child-Pays-For-Parent",
+    "content": "Short for Child-Pays-For-Parent: a way to speed up a transaction that is stuck because its fee is too low.\n\nThe \"parent\" is a transaction that sent bitcoin to you. If its fee is too low, it may wait a long time before getting into a block.\n\nYou can spend the coins it sent you (its UTXO) in a new \"child\" transaction with a high fee. Miners look at the parent and child together, and if the combined fee is high enough, they process both.\n\nThis is useful when you can't change the stuck transaction yourself, for example when someone else sent it to you.",
+    "synonym": [
+      "Child Pays For Parent",
+      "Fee Bump"
+    ],
+    "related": [
+      "Transaction Fee",
+      "UTXO",
+      "Mempool",
+      "RBF"
+    ]
+  }
+}

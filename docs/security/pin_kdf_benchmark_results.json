@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-13",
+  "mode": "Flutter profile",
+  "parameters": {
+    "algorithm": "argon2id",
+    "version": 19,
+    "memory_kib": 19456,
+    "iterations": 2,
+    "parallelism": 1,
+    "hash_length_bytes": 32
+  },
+  "fixture": "synthetic only; no wallet or authentication storage accessed",
+  "devices": [
+    {
+      "device": "SM-G996N",
+      "os": "Android 15",
+      "samples_ms": [
+        304,
+        197,
+        161,
+        163
+      ],
+      "rss_before_mb": 169,
+      "peak_rss_mb": 281,
+      "ui_timer_ticks": [
+        6,
+        19,
+        29,
+        39
+      ]
+    },
+    {
+      "device": "iPhone",
+      "os": "iOS 26.6.2",
+      "samples_ms": [
+        105,
+        90,
+        85,
+        84
+      ],
+      "rss_before_mb": 76,
+      "peak_rss_mb": 126,
+      "ui_timer_ticks": [
+        6,
+        12,
+        17,
+        23
+      ]
+    }
+  ]
+}

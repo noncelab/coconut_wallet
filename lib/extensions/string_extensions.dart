@@ -14,7 +14,8 @@ extension StringFormatting on String {
   /// - 소수점: 로케일 구분자로 교체
   String toBtcDisplayString({bool groupDecimalDigits = true}) {
     // String을 숫자로 변환할 수 없는 경우 원래 문자열 반환
-    final number = toDoubleSafe();
+    // 입력은 canonical 포맷('.' 소수점)이므로 double.tryParse로 검사한다.
+    final number = double.tryParse(this);
     if (number == null) return this;
 
     try {

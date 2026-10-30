@@ -52,14 +52,14 @@ enum DefaultElectrumServer {
     8,
     false,
   ),
-  // 인증서 만료: 2026-10-11. 만료/갱신 시 새 지문으로 교체 필요
+  // 인증서 만료: 2031-10-07. 만료/갱신 시 새 지문으로 교체 필요
   emzy(
     ElectrumServer(
       'electrum.emzy.de',
       50002,
       true,
       pinnedCertFingerprint:
-          'B2:5D:A2:92:9C:0F:65:E0:16:CF:EC:2A:24:66:1F:FC:58:7F:DD:D8:32:F5:0A:ED:26:E0:5A:2E:DE:4C:DF:34',
+          'AE:52:A2:30:7C:B9:87:80:24:B6:1D:BF:94:8D:3A:AC:8F:EA:70:5D:FE:FE:56:2C:C6:21:91:B6:99:5C:48:CC',
     ),
     'EMZY',
     10,

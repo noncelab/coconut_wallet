@@ -154,7 +154,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                 decoration: BoxDecoration(border: Border.all(width: 1, color: colors.borderStrong)),
                                 child: SingleChildScrollView(
                                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Text(license.license!, style: TextStyle(color: colors.secondaryText)),
+                                  child: Text(license.license!, style: TextStyle(color: colors.secondaryTextStrong)),
                                 ),
                               ),
                           ],

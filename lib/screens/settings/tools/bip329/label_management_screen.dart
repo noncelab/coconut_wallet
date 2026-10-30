@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class LabelManagementScreen extends StatefulWidget {
   final int? walletId;
@@ -35,19 +37,25 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     });
   }
 
-  void _updateTooltipPosition() {
+  bool _updateTooltipPosition() {
     final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      setState(() {
-        _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
-        _tooltipIconSize = renderBox.size;
-      });
+    if (renderBox == null) {
+      return false;
     }
+
+    _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
+    _tooltipIconSize = renderBox.size;
+    return true;
   }
 
   void _toggleTooltip() {
+    final willShow = !_isTooltipVisible;
+    if (willShow && !_updateTooltipPosition()) {
+      return;
+    }
+
     setState(() {
-      _isTooltipVisible = !_isTooltipVisible;
+      _isTooltipVisible = willShow;
     });
   }
 
@@ -70,8 +78,9 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
             appBar: CoconutAppBar.build(
               title: t.label_management_screen.title,
               context: context,
+              backgroundColor: context.coconutColors.background,
               actionButtonList: [
-                IconButton(
+                CoconutAppBarActionButton(
                   key: _tooltipIconKey,
                   icon: SvgPicture.asset(
                     CommonStateIconPath.questionMark,
@@ -161,9 +170,13 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   }
 
   Widget _buildTooltip(BuildContext context) {
+    final anchor = _tooltipIconPosition! & _tooltipIconSize!;
     return Positioned(
       top: _tooltipIconPosition!.dy + _tooltipIconSize!.height - 10,
-      right: 18,
+      right: RightTriangleBubbleClipper.rightOffsetForAnchor(
+        viewportWidth: MediaQuery.sizeOf(context).width,
+        anchor: anchor,
+      ),
       child: GestureDetector(
         onTap: _removeTooltip,
         child: ClipPath(
@@ -222,7 +235,11 @@ class _LabelManagementActionScreenState extends State<_LabelManagementActionScre
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(title: widget.title, context: context),
+      appBar: CoconutAppBar.build(
+        title: widget.title,
+        context: context,
+        backgroundColor: context.coconutColors.background,
+      ),
       body: Stack(
         children: [
           _buildContentView(context),

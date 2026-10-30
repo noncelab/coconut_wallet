@@ -94,7 +94,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isFeeBottomSheetOpen = false;
   bool _shouldRevalidateOnBuild = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.inputBorderUnfocused;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;
@@ -1072,7 +1072,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             height: 40,
                             fontHeight: 1,
                             borderRadius: 8,
-                            backgroundColor: hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                            backgroundColor: hasFocus ? context.coconutColors.background : Colors.transparent,
                             controller: viewModel.splitCountController,
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
@@ -1095,7 +1095,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                               child: Text(
                                 '1',
                                 style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                  color: context.coconutColors.inputPlaceholder,
+                                  color: context.coconutColors.secondaryTextStrong,
                                   fontSize: 24,
                                 ),
                                 textAlign: TextAlign.center,
@@ -2047,7 +2047,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         focusNode: widget.item.countFocusNode,
                                         textAlign: TextAlign.center,
                                         backgroundColor:
-                                            hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                                            hasFocus ? context.coconutColors.background : Colors.transparent,
                                         fontSize: 24,
                                         isVisibleBorder: false,
                                         onChanged: (_) {},
@@ -2065,7 +2065,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                           child: Text(
                                             '1',
                                             style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                              color: context.coconutColors.inputPlaceholder,
+                                              color: context.coconutColors.secondaryTextStrong,
                                               fontSize: 24,
                                             ),
                                             textAlign: TextAlign.center,

@@ -91,7 +91,7 @@ lib/
 - `lib/screens/wallet_detail/`
 - `lib/screens/ccos/`
 
-화면은 보통 `lib/providers/view_model/<도메인>/`의 view model과 짝을 이뤄요. 예를 들어 `lib/screens/home/wallet_home_screen.dart`는 `lib/providers/view_model/home/wallet_home_view_model.dart`와 함께 있어요.
+화면은 보통 `lib/providers/view_model/<도메인>/`의 view model과 짝을 이뤄요. 예를 들어 `lib/screens/home/home_screen.dart`는 `lib/providers/view_model/home/home_view_model.dart`와 함께 있어요.
 
 재사용 UI는 아래 세 곳에 나뉘어 있어요.
 

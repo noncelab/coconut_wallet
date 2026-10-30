@@ -2,7 +2,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/utils/hash_util.dart';
+import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/animated_dialog.dart';
@@ -41,6 +41,13 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
 
+  @override
+  void dispose() {
+    pin = '';
+    pinConfirm = '';
+    super.dispose();
+  }
+
   void _shufflePinNumbers() {
     setState(() {
       _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
@@ -77,11 +84,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     );
   }
 
-  Future<bool> _comparePin(String input) async {
-    bool isSamePin = await _authProvider.verifyPin(input);
-    return isSamePin;
-  }
-
   void _setLoading(bool value) {
     if (!mounted || _isLoading == value) return;
     setState(() => _isLoading = value);
@@ -106,6 +108,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   }
 
   void _onKeyTap(String value) async {
+    if (_isLoading) return;
     setState(() {
       errorMessage = '';
     });
@@ -118,23 +121,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       } else if (pin.length < _pinLength) {
         setState(() => pin += value);
         vibrateExtraLight();
-      }
-
-      if (_authProvider.isSetPin && pin.length == _pinLength) {
-        _setLoading(true);
-        try {
-          bool isSameAsOldPin = await _comparePin(pin);
-
-          if (isSameAsOldPin) {
-            returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
-            return;
-          }
-        } catch (error) {
-          returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
-          return;
-        } finally {
-          _setLoading(false);
-        }
       }
 
       setState(() {
@@ -162,14 +148,17 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
         _setLoading(true);
         try {
-          var hashedPin = generateHashString(pin);
-          await _authProvider.savePinSet(hashedPin, pin.length);
+          await _authProvider.savePin(pin);
+          if (!mounted) return;
+          pin = '';
+          pinConfirm = '';
 
           if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
             await _authProvider.authenticateWithBiometrics(isSave: true);
             await _authProvider.checkDeviceBiometrics();
           }
 
+          if (!mounted) return;
           vibrateLight();
           _setLoading(false);
           await _showPinSetSuccessLottie();
@@ -182,8 +171,15 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             }
           }
         } catch (e) {
+          if (!mounted) return;
           _setLoading(false);
-          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true, firstSequence: true);
+          final message = switch (e) {
+            PinAuthException(code: PinAuthError.alreadyInUse) => t.errors.pin_setting_error.already_in_use,
+            PinAuthException(code: PinAuthError.unauthorized) => t.errors.pin_setting_error.authentication_required,
+            PinAuthException(code: PinAuthError.stateUncertain) => t.errors.pin_setting_error.state_uncertain,
+            _ => t.errors.pin_setting_error.save_failed,
+          };
+          returnToBackSequence(message, isError: true, firstSequence: true);
         }
       }
     }

@@ -21,6 +21,7 @@ import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 class UtxoTagCrudScreen extends StatelessWidget {
   final int id;
@@ -41,7 +42,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                 Navigator.pop(context);
               },
               actionButtonList: [
-                IconButton(
+                CoconutAppBarActionButton(
                   onPressed: () {
                     _handleAddTagPressed(context, model);
                   },

@@ -1,9 +1,8 @@
-import 'package:coconut_wallet/constants/app_language.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 
 /// 앱 전역 숫자 포맷 설정 (싱글톤)
 ///
-/// PreferenceProvider에서 언어 설정 시 [update]를 호출하여 초기화합니다.
+/// PreferenceProvider에서 숫자 형식 설정 시 [applyPreset]을 호출하여 초기화합니다.
 /// 이후 앱 어디서든 [NumberFormatConfig.instance]로 접근합니다.
 class NumberFormatConfig {
   NumberFormatConfig._();
@@ -13,22 +12,10 @@ class NumberFormatConfig {
   String decimalSeparator = '.';
   String groupingSeparator = ',';
 
-  void update(String appLanguageCode) {
-    decimalSeparator = getDecimalSeparatorForAppLanguage(appLanguageCode);
-    groupingSeparator = getGroupingSeparatorForAppLanguage(appLanguageCode);
+  void applyPreset(NumberFormatPreset preset) {
+    decimalSeparator = preset.decimalSeparator;
+    groupingSeparator = preset.groupingSeparator;
   }
-}
-
-/// 앱 설정 언어 기반 소수점 구분자 반환 (기본값: '.')
-String getDecimalSeparatorForAppLanguage(String appLanguageCode) {
-  final intlLocale = AppLanguage.fromCode(appLanguageCode).code;
-  return getNumberDecimalSeparator(localeName: intlLocale);
-}
-
-/// 앱 설정 언어 기반 천 단위 구분자 반환 (기본값: ',')
-String getGroupingSeparatorForAppLanguage(String appLanguageCode) {
-  final intlLocale = AppLanguage.fromCode(appLanguageCode).code;
-  return getNumberGroupingSeparator(localeName: intlLocale);
 }
 
 String normalizeNumTextForNumParsing(String text) {

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/providers/view_model/common/pin_check_view_model.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -21,34 +22,23 @@ class PinCheckScreen extends StatefulWidget {
 }
 
 class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObserver {
-  static const kMaxNumberOfAttempts = 3;
-  late String pin;
-  late String errorMessage;
-  // when widget.appEntrance is true
-  int attempt = 0;
+  late PinCheckViewModel _viewModel;
   final GlobalKey<PinInputPadState> _pinInputScreenKey = GlobalKey<PinInputPadState>();
-  late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
   bool _isPause = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    pin = '';
-    errorMessage = '';
-    _authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
-
-    if (widget.appEntrance) {
-      WidgetsBinding.instance.addObserver(this);
-    }
+    _authProvider = context.read<AuthProvider>();
+    _viewModel = PinCheckViewModel(_authProvider);
+    _viewModel.initialize();
+    _viewModel.addListener(_onChanged);
+    WidgetsBinding.instance.addObserver(this);
   }
 
-  void _shufflePinNumbers() {
-    setState(() {
-      _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
-    });
+  void _onChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -57,104 +47,40 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       _isPause = true;
     } else if (AppLifecycleState.resumed == state && _isPause) {
       _isPause = false;
-      _authProvider.checkDeviceBiometrics();
+      _viewModel.onResumed();
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _viewModel.removeListener(_onChanged);
+    _viewModel.dispose();
     super.dispose();
-    if (widget.appEntrance) {
-      WidgetsBinding.instance.removeObserver(this);
+  }
+
+  void _complete() {
+    if (!widget.appEntrance) Navigator.pop(context, true);
+    widget.onComplete?.call();
+  }
+
+  Future<void> _onKeyTap(String value) async {
+    if (_viewModel.isLoading) return;
+    if (value == 'bio' && widget.allowBiometrics) {
+      if (await _viewModel.verifyBiometric() && mounted) _complete();
+      return;
     }
-  }
-
-  void _verifyBiometric() async {
-    _setLoading(true);
-    _authProvider
-        .authenticateWithBiometrics()
-        .then((value) {
-          if (value) {
-            if (!widget.appEntrance && mounted) {
-              Navigator.pop(context, true);
-            }
-            widget.onComplete?.call();
-          }
-        })
-        .whenComplete(() {
-          _setLoading(false);
-        });
-  }
-
-  void _verifyPin() async {
-    _setLoading(true);
-    final inputPin = pin;
-    var isClosing = false;
-    try {
-      final isValid = await _authProvider.verifyPin(inputPin);
+    if (!_viewModel.canEnterPin) return;
+    _viewModel.enterKey(value);
+    if (value != '<') vibrateExtraLight();
+    if (_viewModel.isPinComplete) {
+      final success = await _viewModel.verifyPin();
       if (!mounted) return;
-
-      if (isValid) {
-        _setLoading(false);
-        isClosing = true;
-        if (!widget.appEntrance) {
-          Navigator.pop(context, true);
-        }
-        widget.onComplete?.call();
-        return;
-      }
-
-      if (widget.appEntrance) {
-        attempt += 1;
-        if (attempt < 3) {
-          errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
-          _shufflePinNumbers();
-          vibrateLightDouble();
-        } else {
-          errorMessage = t.errors.pin_check_error.failed;
-        }
-      } else {
-        errorMessage = t.errors.pin_check_error.incorrect;
-        _shufflePinNumbers();
+      if (success == true) {
+        _complete();
+      } else if (success == false) {
         vibrateLightDouble();
       }
-      pin = '';
-      setState(() {});
-    } finally {
-      if (mounted && !isClosing) {
-        _setLoading(false);
-      }
-    }
-  }
-
-  void _setLoading(bool value) {
-    if (!mounted || _isLoading == value) return;
-    setState(() => _isLoading = value);
-  }
-
-  void _onKeyTap(String value) {
-    if (value == 'bio' && widget.allowBiometrics) {
-      _verifyBiometric();
-      return;
-    }
-
-    if (widget.appEntrance && attempt == 3) {
-      return;
-    }
-
-    setState(() {
-      if (value == '<') {
-        if (pin.isNotEmpty) {
-          pin = pin.substring(0, pin.length - 1);
-        }
-      } else if (pin.length < _authProvider.pinLength) {
-        pin += value;
-        vibrateExtraLight();
-      }
-    });
-
-    if (pin.length == _authProvider.pinLength) {
-      _verifyPin();
     }
   }
 
@@ -169,10 +95,8 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           title: t.alert.forgot_password.title,
           description: t.alert.forgot_password.description,
           onTapRight: () async {
-            await _authProvider.resetPassword();
+            await _authProvider.resetPassword(resetWallets: Provider.of<RealmManager>(context, listen: false).reset);
             if (!context.mounted) return;
-            // FIXME: 여기 await 안 넣어줘도 되는지??
-            Provider.of<RealmManager>(context, listen: false).reset();
             widget.onComplete?.call();
             if (mounted) {
               Navigator.of(context).pop();
@@ -198,13 +122,13 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           appBarVisible: !widget.appEntrance,
           title: widget.appEntrance ? '' : t.pin_check_screen.text,
           initOptionVisible: widget.appEntrance,
-          pin: pin,
-          errorMessage: errorMessage,
+          pin: _viewModel.pin,
+          errorMessage: _viewModel.errorMessage,
           onKeyTap: _onKeyTap,
           pinShuffleNumbers:
               widget.allowBiometrics
-                  ? _shuffledPinNumbers
-                  : _shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
+                  ? _viewModel.shuffledPinNumbers
+                  : _viewModel.shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
           onClosePressed: () {
             Navigator.pop(context);
           },
@@ -217,7 +141,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           step: 0,
           pinLength: _authProvider.pinLength,
         ),
-        if (_isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+        if (_viewModel.isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
       ],
     );
   }

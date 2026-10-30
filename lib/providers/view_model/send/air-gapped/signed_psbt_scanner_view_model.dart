@@ -149,7 +149,7 @@ class SignedPsbtScannerViewModel {
     }
   }
 
-  SignedScanProcessingResult processBbQrSigningResult(dynamic signingResult) {
+  SignedScanProcessingResult processBbQrSigningResult(Object signingResult) {
     try {
       final encodedSigningResult = switch (signingResult) {
         Map() => jsonEncode(signingResult),

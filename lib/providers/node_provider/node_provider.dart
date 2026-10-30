@@ -48,7 +48,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isFirstInitialization = true;
   bool _isWalletLoaded = false;
   bool _isNetworkInitialized = false;
-  Completer<void>? _initCompleter;
+  Completer<AsyncError?>? _initCompleter;
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _isPendingInitialization = false;
@@ -256,7 +256,7 @@ class NodeProvider extends ChangeNotifier {
 
   void _checkInitialNetworkState() {
     if (_connectivityProvider.isInternetOn) {
-      initialize();
+      unawaited(_initializeInBackground());
     } else {
       _isPendingInitialization = true;
       Logger.log('NodeProvider: 네트워크 연결 대기 중 - 초기화 보류');
@@ -268,15 +268,26 @@ class NodeProvider extends ChangeNotifier {
       if (_isPendingInitialization || !isInitialized) {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
         _isPendingInitialization = false;
-        initialize().then((_) {
-          reconnect();
-        });
+        unawaited(_initializeInBackground(reconnectOnSuccess: true));
       }
     } else {
       Logger.log('NodeProvider: 네트워크 연결 끊어짐 - 연결 종료');
       _isPendingInitialization = true;
       closeConnection();
     }
+  }
+
+  /// 아무도 기다리지 않는 초기화(생성자·네트워크 복구). 실패는 initialize()가 연결 오류·동기화 실패로 이미 반영했으므로
+  /// 기록만 하고, 직접 await하는 호출자에게는 initialize()가 그대로 오류를 전달한다.
+  Future<void> _initializeInBackground({bool reconnectOnSuccess = false}) async {
+    try {
+      await initialize();
+    } catch (e) {
+      Logger.log('NodeProvider: 백그라운드 초기화 실패: $e');
+      return;
+    }
+    if (_isDisposed) return;
+    if (reconnectOnSuccess) await reconnect();
   }
 
   /// WalletLoadState 변경 감지 및 처리
@@ -307,7 +318,10 @@ class NodeProvider extends ChangeNotifier {
         _analyticsService?.logWalletBulkSyncFailed();
       } else {
         _setConnectionError(false);
-        _analyticsService?.logWalletBulkSyncCompleted();
+        // 건너뛴 구독(지갑 로딩 전, 오프라인, 지갑 없음)은 완료로 세지 않는다.
+        if (result.value) {
+          _analyticsService?.logWalletBulkSyncCompleted();
+        }
 
         await Future.delayed(const Duration(seconds: 1));
         await _startBlockUpdates();
@@ -381,14 +395,15 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!.completeError(Exception('NodeProvider: Previous initialization was cancelled'));
+        _initCompleter!.complete(
+          AsyncError(Exception('NodeProvider: Previous initialization was cancelled'), StackTrace.current),
+        );
       } catch (e) {
         // 이미 완료된 경우 무시
       }
     }
-    _initCompleter = Completer<void>();
-    // 실제 initialize()의 Future는 오류를 전달하며, 이 내부 대기용 Future의 취소만 미수신 상태로 남지 않게 한다.
-    _initCompleter!.future.ignore();
+    // 오류도 값으로 전달하여 서로 다른 error zone의 대기자가 자신의 zone에서 처리하도록 한다.
+    _initCompleter = Completer<AsyncError?>();
   }
 
   Future<void> initialize() async {
@@ -406,7 +421,8 @@ class NodeProvider extends ChangeNotifier {
       Logger.log('NodeProvider: Already initializing, waiting for completion');
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
-          await _initCompleter!.future;
+          final failure = await _initCompleter!.future;
+          if (failure != null) Error.throwWithStackTrace(failure.error, failure.stackTrace);
           return;
         } catch (e) {
           // 기존 초기화가 실패한 경우 새로 시도
@@ -432,7 +448,7 @@ class NodeProvider extends ChangeNotifier {
       unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
-        _initCompleter!.complete();
+        _initCompleter!.complete(null);
       }
 
       _subscribeToStateChanges();
@@ -444,7 +460,7 @@ class NodeProvider extends ChangeNotifier {
         _subscribeInitialWallets();
         _startBlockUpdates();
       }
-    } catch (e) {
+    } catch (e, stack) {
       if (_isDisposed) return;
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
 
@@ -458,7 +474,7 @@ class NodeProvider extends ChangeNotifier {
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
-          _initCompleter!.completeError(e);
+          _initCompleter!.complete(AsyncError(e, stack));
         } catch (completerError) {
           // 이미 완료된 경우 무시
         }
@@ -492,6 +508,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// 지갑을 실제로 구독했으면 true, 건너뛰었으면(지갑 로딩 전, 오프라인, 구독할 지갑 없음) false.
   Future<Result<bool>> subscribeWallets() async {
     if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
@@ -501,7 +518,7 @@ class NodeProvider extends ChangeNotifier {
 
     if (walletItems.isEmpty) {
       Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
-      return Result.success(true);
+      return Result.success(false);
     }
 
     return _isolateManager.subscribeWallets(walletItems);
@@ -663,7 +680,9 @@ class NodeProvider extends ChangeNotifier {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
           _restartBlockUpdates();
-          _analyticsService?.logWalletBulkSyncCompleted();
+          if (result.value) {
+            _analyticsService?.logWalletBulkSyncCompleted();
+          }
           return Result.success(true);
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
@@ -723,7 +742,7 @@ class NodeProvider extends ChangeNotifier {
       // Completer 안전하게 정리
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
-          _initCompleter!.completeError(Exception('Connection was closed'));
+          _initCompleter!.complete(AsyncError(Exception('Connection was closed'), StackTrace.current));
         } catch (e) {
           // 이미 완료된 경우 무시
         }

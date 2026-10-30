@@ -1,0 +1,816 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:coconut_wallet/model/home/home_configuration.dart';
+import 'package:coconut_wallet/model/home/home_item.dart';
+import 'package:coconut_wallet/model/home/home_item_definition.dart';
+import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
+import 'package:coconut_wallet/services/home/home_grid_layout.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/services/home/home_item_registry.dart';
+import 'package:coconut_wallet/widgets/features/home/span_size_option.dart';
+import 'package:coconut_wallet/widgets/features/home/home_item_draggable.dart';
+import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class HomeItemsView extends StatefulWidget {
+  static const double cell = 80;
+  static const double gap = 12;
+
+  static const reorderHoverDelay = Duration(milliseconds: 180);
+  static const reorderDuration = Duration(milliseconds: 280);
+
+  final HomeConfiguration configuration;
+  final HomeItemRegistry registry;
+  final void Function(String id, HomeGridPosition position)? onMoveToCell;
+  final void Function(String id, String beforeId)? onInsertBefore;
+  final double minHeight;
+
+  /// 길게 누르면 메뉴를, 누른 채 움직이면 배치를 시작한다.
+  final List<LongPressedMenuItem> Function(HomeItem item)? menuItemsOf;
+  final bool isArranging;
+  final void Function(HomeItem item)? onRemove;
+  final VoidCallback? onArrangeDone;
+  final VoidCallback? onArrangeStart;
+
+  /// 있으면 크기를 여러 개 지원하는 위젯의 메뉴 맨 위에 크기 고르기를 띄운다.
+  final void Function(HomeItem item, HomeSpan span)? onResize;
+
+  /// 그리드 둘레의 여백. 편집 중 꼭짓점에 걸치는 제거 버튼이 이 안에서 눌리도록 둔다.
+  final double badgeInset;
+
+  /// 드래그 중 떠 있는 항목을 감싼다. Overlay에는 없는 화면 Provider를 다시 넣을 때 쓴다.
+  final Widget Function(Widget child)? wrapDragFeedback;
+
+  const HomeItemsView({
+    super.key,
+    required this.configuration,
+    required this.registry,
+    this.onMoveToCell,
+    this.onInsertBefore,
+    this.minHeight = 0,
+    this.menuItemsOf,
+    this.isArranging = false,
+    this.onRemove,
+    this.onArrangeDone,
+    this.onArrangeStart,
+    this.onResize,
+    this.badgeInset = 0,
+    this.wrapDragFeedback,
+  });
+
+  @override
+  HomeItemsViewState createState() => HomeItemsViewState();
+}
+
+class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserver {
+  static const int dropRowsBelowContent = 2;
+  static const double autoScrollEdge = 60;
+  static const double autoScrollMaxStep = 14;
+  static const Duration _autoScrollInterval = Duration(milliseconds: 16);
+
+  final GlobalKey _surfaceKey = GlobalKey();
+  Timer? _autoScrollTimer;
+  double _autoScrollStep = 0;
+  Timer? _previewTimer;
+  Timer? _dropSettleTimer;
+  String? _settlingDroppedId;
+  final _menuKeys = <String, GlobalKey<LongPressedMenuWidgetState>>{};
+  String? _draggedId;
+  int? _dragPointer;
+  Drag? _activeDrag;
+  bool _disposing = false;
+  bool _dragCanceled = false;
+  bool _dropInsideSurface = false;
+  Offset _dragAnchor = Offset.zero;
+  Offset _initialDragAnchor = Offset.zero;
+  final _feedbackGeometry = ValueNotifier<({Size size, Offset translation})?>(null);
+  HomeConfiguration? _previewConfiguration;
+  String? _previewDraggedId;
+  String? _previewTargetId;
+  HomeGridPosition? _previewCell;
+  Offset? _dragGlobalPosition;
+  double? _geometryCellExtent;
+  double? _anchorCellExtent;
+  double? _dragLayoutWidth;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeItemsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isArranging && !widget.isArranging) cancelActiveDrag();
+    if (oldWidget.configuration != widget.configuration) {
+      if (_draggedId != null) cancelActiveDrag();
+      _previewTimer?.cancel();
+      _previewConfiguration = null;
+      _previewDraggedId = null;
+      _previewTargetId = null;
+      _previewCell = null;
+      _dragGlobalPosition = null;
+      _menuKeys.removeWhere((id, _) => _itemById(id) == null);
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposing = true;
+    WidgetsBinding.instance.removeObserver(this);
+    final pointer = _dragPointer;
+    _activeDrag?.cancel();
+    if (pointer != null) GestureBinding.instance.cancelPointer(pointer);
+    _previewTimer?.cancel();
+    _dropSettleTimer?.cancel();
+    _stopAutoScroll();
+    _feedbackGeometry.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) cancelActiveDrag();
+  }
+
+  @override
+  void didChangeMetrics() {
+    // A fold or rotation moves the grid without moving the held finger.
+    _refreshActiveDragGeometry();
+  }
+
+  /// Back cancels only the held gesture. Previously committed placements remain saved.
+  bool cancelActiveDrag() {
+    final pointer = _dragPointer;
+    if (pointer == null) return false;
+    _dragCanceled = true;
+    // End the avatar now; queued pointer cancellation can be delayed or filtered.
+    _activeDrag?.cancel();
+    GestureBinding.instance.cancelPointer(pointer);
+    // A configuration swap can unmount the dragged child first, and Flutter skips onDragEnd for it.
+    _endDrag();
+    return true;
+  }
+
+  void _startDrag(String id, int pointer) {
+    _menuKeys[id]?.currentState?.dismissMenu();
+    setState(() => _draggedId = id);
+    _dragPointer = pointer;
+    _dragCanceled = false;
+    _anchorCellExtent = _geometryCellExtent;
+    if (!widget.isArranging) widget.onArrangeStart?.call();
+  }
+
+  void _endDrag() {
+    _activeDrag = null;
+    _dragPointer = null;
+    _stopAutoScroll();
+    if (_disposing) return;
+    _clearPreview();
+    if (mounted) setState(() => _draggedId = null);
+  }
+
+  void _onDragUpdate(String draggedId, DragUpdateDetails details) {
+    if (_dragCanceled) return;
+    // MultiDrag's first update contains the accumulated movement at the original down position.
+    final globalPosition =
+        _dragGlobalPosition == null ? details.globalPosition + details.delta : details.globalPosition;
+    _dragGlobalPosition = globalPosition;
+    _updatePreview(draggedId, globalPosition);
+    final scrollable = Scrollable.maybeOf(context);
+    final box = scrollable?.context.findRenderObject();
+    if (scrollable == null || box is! RenderBox) return;
+    final viewport = box.localToGlobal(Offset.zero) & box.size;
+    if (!viewport.contains(globalPosition)) {
+      _stopAutoScroll();
+      return;
+    }
+    final top = viewport.top;
+    final bottom = viewport.bottom;
+    final y = globalPosition.dy;
+    double closeness(double distance) => ((autoScrollEdge - distance) / autoScrollEdge).clamp(0.0, 1.0);
+    _autoScrollStep =
+        y < top + autoScrollEdge
+            ? -autoScrollMaxStep * closeness(y - top)
+            : y > bottom - autoScrollEdge
+            ? autoScrollMaxStep * closeness(bottom - y)
+            : 0;
+    if (_autoScrollStep == 0) {
+      _stopAutoScroll();
+      return;
+    }
+    _autoScrollTimer ??= Timer.periodic(_autoScrollInterval, (_) {
+      if (!scrollable.mounted ||
+          !box.attached ||
+          _dragGlobalPosition == null ||
+          !(box.localToGlobal(Offset.zero) & box.size).contains(_dragGlobalPosition!)) {
+        _stopAutoScroll();
+        return;
+      }
+      final position = scrollable.position;
+      final next = (position.pixels + _autoScrollStep).clamp(position.minScrollExtent, position.maxScrollExtent);
+      if (next != position.pixels) {
+        position.jumpTo(next);
+        if (_dragGlobalPosition != null) _updatePreview(draggedId, _dragGlobalPosition!);
+      }
+    });
+  }
+
+  /// The held finger stays still while the window width changes. Re-snap that point,
+  /// and scale the grabbed offset so a corner grab does not select a different cell.
+  void _refreshActiveDragGeometry() {
+    final draggedId = _draggedId;
+    if (draggedId == null || _dragGlobalPosition == null || _dragCanceled) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _dragCanceled || _draggedId != draggedId || _dragGlobalPosition == null) return;
+      _rescaleDragAnchor();
+      _updatePreview(draggedId, _dragGlobalPosition!);
+    });
+  }
+
+  void _rescaleDragAnchor() {
+    final next = _geometryCellExtent;
+    final previous = _anchorCellExtent;
+    if (next == null || previous == null || previous == 0 || next == previous) return;
+    final draggedId = _draggedId;
+    final dragged = draggedId == null ? null : _itemById(draggedId);
+    if (dragged == null) return;
+    final previousSize = HomeGridGeometry(cellExtent: previous, gap: _gap).sizeOf(dragged.span);
+    final nextSize = HomeGridGeometry(cellExtent: next, gap: _gap).sizeOf(dragged.span);
+    // Multi-cell spans include fixed gaps, so each axis needs its full-size ratio.
+    _dragAnchor = Offset(
+      _dragAnchor.dx * nextSize.width / previousSize.width,
+      _dragAnchor.dy * nextSize.height / previousSize.height,
+    );
+    _anchorCellExtent = next;
+    _feedbackGeometry.value = (size: nextSize, translation: _initialDragAnchor - _dragAnchor);
+  }
+
+  void _clearPreview() {
+    _previewTimer?.cancel();
+    _previewTimer = null;
+    _dragGlobalPosition = null;
+    _previewDraggedId = null;
+    _previewTargetId = null;
+    _previewCell = null;
+    _dropInsideSurface = false;
+    if (_previewConfiguration != null) setState(() => _previewConfiguration = null);
+  }
+
+  void _updatePreview(String draggedId, Offset globalPosition) {
+    _dropInsideSurface = false;
+    final dragged = _itemById(draggedId);
+    final surface = _surfaceKey.currentContext?.findRenderObject();
+    if (dragged == null || surface is! RenderBox || !surface.hasSize) return;
+    final local = _toSurface(globalPosition);
+    final cellExtent = (surface.size.width - widget.badgeInset * 2 - (_columns - 1) * _gap) / _columns;
+    final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
+    final dragOrigin = local - _dragAnchor;
+    // Use the content center so grabbing a corner does not select a different cell.
+    final center = dragOrigin + geometry.sizeOf(dragged.span).center(Offset.zero);
+    final gridWidth = HomeGridGeometry.extent(_columns, cellExtent, _gap);
+    if (local.dx < 0 ||
+        local.dx >= gridWidth ||
+        local.dy < 0 ||
+        local.dy >= surface.size.height - widget.badgeInset * 2 ||
+        center.dx < 0 ||
+        center.dx >= gridWidth ||
+        center.dy < 0 ||
+        center.dy >= surface.size.height - widget.badgeInset * 2) {
+      if (_previewConfiguration != null) setState(() => _previewConfiguration = null);
+      _previewTimer?.cancel();
+      _previewTargetId = null;
+      _previewCell = null;
+      return;
+    }
+    _dropInsideSurface = true;
+
+    final layout = HomeGridLayout(widget.configuration);
+    HomeItem? target;
+    for (final item in layout.itemsInVisualOrder.reversed) {
+      if (item.id == draggedId) continue;
+      final position = layout.positionOf(item.id)!;
+      final rect = geometry.rectOf(position, item.span).inflate(_gap / 2);
+      if (center.dx >= rect.left &&
+          center.dx <= rect.right &&
+          center.dy >= rect.top &&
+          center.dy <= rect.bottom &&
+          _accepts(item, draggedId)) {
+        target = item;
+        break;
+      }
+    }
+    // Keep the source interior stable, but resolve shared edges to another item or a new cell.
+    // Including the source's left edge would prevent an exact one-column move to the left.
+    final sourceRect = geometry.rectOf(layout.positionOf(draggedId)!, dragged.span).inflate(_gap / 2);
+    if (target == null &&
+        center.dx > sourceRect.left &&
+        center.dx < sourceRect.right &&
+        center.dy > sourceRect.top &&
+        center.dy < sourceRect.bottom) {
+      target = dragged;
+    }
+
+    String? targetId;
+    HomeGridPosition? cell;
+    if (widget.onMoveToCell != null) {
+      cell =
+          target != null && target.span == dragged.span
+              ? HomeGridLayout.anchorForSpan(layout.positionOf(target.id)!, dragged.span)
+              : geometry.dropPosition(layout, dragged, dragOrigin);
+    } else if (target != null && target.id != draggedId && widget.onInsertBefore != null) {
+      targetId = target.id;
+    }
+    if (_previewDraggedId == draggedId && _previewTargetId == targetId && _previewCell == cell) return;
+    _previewDraggedId = draggedId;
+    _previewTargetId = targetId;
+    _previewCell = cell;
+    _previewTimer?.cancel();
+    _previewTimer = Timer(HomeItemsView.reorderHoverDelay, () {
+      if (!mounted || _dragCanceled || _draggedId != draggedId) return;
+      setState(() {
+        _previewConfiguration =
+            targetId != null
+                ? layout.moveBefore(draggedId, targetId)
+                : widget.onMoveToCell != null && cell != null && layout.canMoveToCell(draggedId, cell)
+                ? layout.moveToCell(draggedId, cell)
+                : null;
+      });
+    });
+  }
+
+  void _commitDrop(String id, VoidCallback fallback) {
+    if (_dragCanceled || !_dropInsideSurface) return;
+    _previewTimer?.cancel();
+    // The feedback already reached this cell. Only its neighbors need to travel.
+    _dropSettleTimer?.cancel();
+    setState(() => _settlingDroppedId = id);
+    _dropSettleTimer = Timer(HomeItemsView.reorderDuration, () {
+      if (mounted) setState(() => _settlingDroppedId = null);
+    });
+    if (_previewDraggedId == id && _previewTargetId != null) {
+      widget.onInsertBefore?.call(id, _previewTargetId!);
+    } else if (_previewDraggedId == id && _previewCell != null) {
+      widget.onMoveToCell?.call(id, _previewCell!);
+    } else {
+      fallback();
+    }
+  }
+
+  void _stopAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+    _autoScrollStep = 0;
+  }
+
+  static const double _gap = HomeItemsView.gap;
+  static const int _columns = HomeGridLayout.columns;
+
+  bool get _draggable => widget.onMoveToCell != null || widget.onInsertBefore != null;
+
+  HomeItem? _itemById(String id) => widget.configuration.items.where((item) => item.id == id).firstOrNull;
+
+  Offset _toSurface(Offset globalOffset) {
+    final box = _surfaceKey.currentContext!.findRenderObject()! as RenderBox;
+    return box.globalToLocal(globalOffset) - Offset(widget.badgeInset, widget.badgeInset);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = widget.configuration.items;
+    final paintOrder = [
+      ...items.where((item) => item.id != _settlingDroppedId),
+      ...items.where((item) => item.id == _settlingDroppedId),
+    ];
+    final layout = HomeGridLayout(widget.configuration);
+    final previewLayout = _previewConfiguration == null ? layout : HomeGridLayout(_previewConfiguration!);
+    final inset = widget.badgeInset;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth - inset * 2;
+        final cellExtent =
+            maxWidth.isFinite ? math.max(1.0, (maxWidth - (_columns - 1) * _gap) / _columns) : HomeItemsView.cell;
+        final widthChanged = _dragLayoutWidth != null && _dragLayoutWidth != constraints.maxWidth;
+        _dragLayoutWidth = constraints.maxWidth;
+        _geometryCellExtent = cellExtent;
+        if (widthChanged) _refreshActiveDragGeometry();
+        // Keep the surface fixed while dragging so a centered grid does not move under the pointer.
+        final rowCount = math.max(1, layout.rows);
+        final geometry = HomeGridGeometry(cellExtent: cellExtent, gap: _gap);
+        final gridWidth = HomeGridGeometry.extent(_columns, cellExtent, _gap);
+        final sidePadding = maxWidth.isFinite ? math.max(0.0, (maxWidth - gridWidth) / 2) : 0.0;
+        final lead =
+            widget.isArranging && widget.onRemove != null && widget.menuItemsOf != null ? _RemoveBadge.lead : 0.0;
+        HomeGridPosition dropPositionFor(HomeItem dragged, Offset globalOffset) =>
+            geometry.dropPosition(layout, dragged, _toSurface(globalOffset + _initialDragAnchor - _dragAnchor));
+        final grid = Padding(
+          padding: EdgeInsets.symmetric(horizontal: sidePadding),
+          child: SizedBox(
+            key: const ValueKey('home-grid-surface'),
+            width: gridWidth + inset * 2,
+            height:
+                math.max(
+                  HomeGridGeometry.extent(rowCount + (_draggable ? dropRowsBelowContent : 0), cellExtent, _gap),
+                  widget.minHeight,
+                ) +
+                inset * 2,
+            child: SizedBox(
+              key: _surfaceKey,
+              child: DragTarget<String>(
+                onWillAcceptWithDetails: (details) {
+                  final item = _itemById(details.data);
+                  if (_dragCanceled || widget.onMoveToCell == null || item == null) return false;
+                  return layout.canMoveToCell(item.id, dropPositionFor(item, details.offset));
+                },
+                onAcceptWithDetails: (details) {
+                  final item = _itemById(details.data);
+                  if (item == null) return;
+                  _commitDrop(
+                    details.data,
+                    () => widget.onMoveToCell?.call(details.data, dropPositionFor(item, details.offset)),
+                  );
+                },
+                builder:
+                    (context, candidates, rejected) => Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Positioned.fill(child: ColoredBox(color: CupertinoColors.transparent)),
+                        for (final item in paintOrder)
+                          if (widget.registry.byId(item.definitionId) case final definition?)
+                            if (layout.positionOf(item.id) case final position?)
+                              Positioned(
+                                key: ValueKey('home-item-position-${item.id}'),
+                                left: inset - lead,
+                                top: inset - lead,
+                                child: TweenAnimationBuilder<Offset>(
+                                  tween: Tween(
+                                    begin: geometry.originOf(position),
+                                    end: geometry.originOf(previewLayout.positionOf(item.id) ?? position),
+                                  ),
+                                  duration:
+                                      item.id == _settlingDroppedId || MediaQuery.disableAnimationsOf(context)
+                                          ? Duration.zero
+                                          : HomeItemsView.reorderDuration,
+                                  curve: Curves.easeInOutCubic,
+                                  // Hold logical drop slots still during a drag. At rest, hit the painted item,
+                                  // including when a new gesture begins before its neighbors finish moving.
+                                  builder:
+                                      (context, offset, child) => Transform.translate(
+                                        offset: geometry.originOf(position),
+                                        child: Transform.translate(
+                                          offset: offset - geometry.originOf(position),
+                                          transformHitTests: _draggedId == null,
+                                          child: child,
+                                        ),
+                                      ),
+                                  child: _buildItem(context, item, position, definition, cellExtent, lead),
+                                ),
+                              ),
+                      ],
+                    ),
+              ),
+            ),
+          ),
+        );
+        return GestureDetector(
+          key: const ValueKey('home-grid-arranging'),
+          behavior: HitTestBehavior.translucent,
+          onTap: widget.isArranging ? widget.onArrangeDone : null,
+          child: grid,
+        );
+      },
+    );
+  }
+
+  bool _accepts(HomeItem target, String draggedId) {
+    if (_dragCanceled || !_draggable || draggedId == target.id) return false;
+    final dragged = _itemById(draggedId);
+    final tooLarge =
+        dragged != null && (dragged.span.width > target.span.width || dragged.span.height > target.span.height);
+    return !(widget.onMoveToCell != null && tooLarge);
+  }
+
+  void _drop(HomeItem target, HomeGridPosition position, String draggedId) {
+    _commitDrop(draggedId, () => _dropOnItem(target, position, draggedId));
+  }
+
+  void _dropOnItem(HomeItem target, HomeGridPosition position, String draggedId) {
+    final dragged = _itemById(draggedId);
+    final onMoveToCell = widget.onMoveToCell;
+    final onInsertBefore = widget.onInsertBefore;
+    if (onMoveToCell != null) {
+      onMoveToCell(draggedId, HomeGridLayout.anchorForSpan(position, dragged?.span));
+    } else if (onInsertBefore != null) {
+      onInsertBefore(draggedId, target.id);
+    }
+  }
+
+  Widget _dragFeedback(Size size, Widget content) {
+    // Flutter captures this widget and the initial anchor for the entire drag.
+    final feedback = ValueListenableBuilder<({Size size, Offset translation})?>(
+      valueListenable: _feedbackGeometry,
+      child: content,
+      builder: (context, geometry, child) {
+        final currentSize = geometry?.size ?? size;
+        return Transform.translate(
+          offset: geometry?.translation ?? Offset.zero,
+          child: Opacity(
+            opacity: 0.7,
+            child: SizedBox(width: currentSize.width, height: currentSize.height, child: child),
+          ),
+        );
+      },
+    );
+    return widget.wrapDragFeedback?.call(feedback) ?? feedback;
+  }
+
+  Widget _buildItem(
+    BuildContext context,
+    HomeItem item,
+    HomeGridPosition position,
+    HomeItemDefinition definition,
+    double cellExtent,
+    double lead,
+  ) {
+    final size = HomeGridGeometry(cellExtent: cellExtent, gap: _gap).sizeOf(item.span);
+    final content = definition.buildTile(item);
+    final box = SizedBox(width: size.width, height: size.height, child: content);
+    if (!_draggable) return SizedBox(key: ValueKey('home-item-${item.id}'), child: box);
+
+    if (widget.menuItemsOf != null) {
+      final menuKey = _menuKeys.putIfAbsent(item.id, () => GlobalKey<LongPressedMenuWidgetState>());
+      return DragTarget<String>(
+        key: ValueKey('home-item-${item.id}'),
+        onWillAcceptWithDetails: (details) => _accepts(item, details.data),
+        onAcceptWithDetails: (details) => _drop(item, position, details.data),
+        builder: (context, candidates, rejected) {
+          final arranging = widget.isArranging;
+          final inLeftHalf = position.column + item.span.width / 2 <= _columns / 2;
+          return HomeItemDraggable(
+            key: ValueKey('home-item-draggable-${item.id}'),
+            hitTestBehavior: HitTestBehavior.opaque,
+            data: item.id,
+            isArranging: () => widget.isArranging,
+            onLongPress: () => menuKey.currentState?.showMenu(),
+            onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
+            canStartDrag: () => _draggedId == null,
+            maxSimultaneousDrags: 1,
+            onDragUpdate: (details) => _onDragUpdate(item.id, details),
+            onDragEnd: (_) => _endDrag(),
+            dragAnchorStrategy: (_, dragContext, point) {
+              final box = dragContext.findRenderObject()! as RenderBox;
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point) - Offset(lead, lead);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
+            },
+            feedback: _dragFeedback(size, content),
+            childWhenDragging: SizedBox(width: size.width + lead, height: size.height + lead),
+            child: _Jiggle(
+              enabled: arranging && !MediaQuery.disableAnimationsOf(context),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(left: lead, top: lead),
+                    child: AbsorbPointer(
+                      absorbing: arranging,
+                      child: LongPressedMenuWidget(
+                        key: menuKey,
+                        enableLongPress: false,
+                        menuItems: widget.menuItemsOf!(item),
+                        useGlassOverlay: true,
+                        preferMenuBelow: true,
+                        alignMenuToChildLeft: inLeftHalf,
+                        alignMenuToChildRight: !inLeftHalf,
+                        menuBackgroundColor: context.coconutColors.homeSurface,
+                        menuIconSize: 20,
+                        menuHeaderHeight: _SizePicker.height,
+                        menuHeaderBuilder:
+                            widget.onResize != null && definition.supportedSpans.length > 1
+                                ? (close) => _SizePicker(
+                                  itemId: item.id,
+                                  spans: definition.supportedSpans,
+                                  selected: item.span,
+                                  onSelected: (span) {
+                                    close();
+                                    widget.onResize!(item, span);
+                                  },
+                                )
+                                : null,
+                        child: SizedBox(key: ValueKey('home-item-content-${item.id}'), child: box),
+                      ),
+                    ),
+                  ),
+                  if (lead > 0)
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      child: _RemoveBadge(
+                        key: ValueKey('home-item-remove-${item.id}'),
+                        onTap: () => widget.onRemove?.call(item),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return DragTarget<String>(
+      key: ValueKey('home-item-${item.id}'),
+      onWillAcceptWithDetails: (details) => _accepts(item, details.data),
+      onAcceptWithDetails: (details) => _drop(item, position, details.data),
+      builder:
+          (context, candidates, rejected) => HomeItemDraggable(
+            hitTestBehavior: HitTestBehavior.opaque,
+            data: item.id,
+            isArranging: () => widget.isArranging,
+            onLongPress: () {},
+            onPointerDragStart: (pointer) => _startDrag(item.id, pointer),
+            onDragSessionStarted: (drag) => _activeDrag = drag,
+            canStartDrag: () => _draggedId == null,
+            maxSimultaneousDrags: 1,
+            onDragUpdate: (details) => _onDragUpdate(item.id, details),
+            onDragEnd: (_) => _endDrag(),
+            dragAnchorStrategy: (_, dragContext, point) {
+              final box = dragContext.findRenderObject()! as RenderBox;
+              _initialDragAnchor = _dragAnchor = box.globalToLocal(point);
+              _feedbackGeometry.value = (size: size, translation: Offset.zero);
+              return _dragAnchor;
+            },
+            feedback: _dragFeedback(size, content),
+            childWhenDragging: SizedBox(width: size.width, height: size.height),
+            child: box,
+          ),
+    );
+  }
+}
+
+/// 편집 중 항목 왼쪽 위 꼭짓점에 걸치는 제거 버튼. 모양은 기존 홈 편집 모드와 같고 항목과 함께 흔들린다.
+class _RemoveBadge extends StatelessWidget {
+  static const double extent = 32;
+  static const double _visible = 24;
+
+  /// 꼭짓점에서 항목 안쪽으로 들이는 거리(가로·세로 같음)
+  static const double inward = 4;
+
+  /// 버튼을 항목 영역 안에 넣으려고 편집 중 항목 왼쪽·위로 넓히는 폭
+  static const double lead = extent / 2 - inward;
+
+  final VoidCallback onTap;
+
+  const _RemoveBadge({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox.square(
+        dimension: extent,
+        child: Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 200),
+            builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                child: Container(
+                  width: _visible,
+                  height: _visible,
+                  padding: const EdgeInsets.all(2),
+                  color: colors.iconSecondary.withValues(alpha: 0.35),
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.removeMinus,
+                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 기존 홈 편집 모드(LongPressedMenuWidget.isEditMode)와 같은 흔들림. 항목마다 시작을 조금씩 늦춰 엇갈리게 흔든다.
+class _Jiggle extends StatefulWidget {
+  final bool enabled;
+  final Widget child;
+
+  const _Jiggle({required this.enabled, required this.child});
+
+  @override
+  State<_Jiggle> createState() => _JiggleState();
+}
+
+class _JiggleState extends State<_Jiggle> with SingleTickerProviderStateMixin {
+  static const _maxAngle = 0.02;
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 350),
+  );
+  late final Animation<double> _angle = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: -_maxAngle), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: -_maxAngle, end: 0.0), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: _maxAngle), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: _maxAngle, end: 0.0), weight: 1),
+  ]).animate(_controller);
+  Timer? _startTimer;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled) _start();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    _updateMotion();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Jiggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled != widget.enabled) _updateMotion();
+  }
+
+  void _updateMotion() {
+    if (widget.enabled && !_reduceMotion) {
+      if (!_controller.isAnimating) _start();
+    } else {
+      _startTimer?.cancel();
+      _controller
+        ..stop()
+        ..reset();
+    }
+  }
+
+  void _start() {
+    _startTimer?.cancel();
+    _startTimer = Timer(Duration(milliseconds: math.Random().nextInt(100)), () {
+      if (mounted && widget.enabled && !_reduceMotion) _controller.repeat();
+    });
+  }
+
+  @override
+  void dispose() {
+    _startTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) => Transform.rotate(angle: widget.enabled ? _angle.value : 0, child: child),
+    );
+  }
+}
+
+/// 길게 누르기 메뉴 맨 위의 위젯 크기 고르기. 아이폰 홈 화면처럼 크기 모양 아이콘을 나란히 둔다.
+class _SizePicker extends StatelessWidget {
+  static const double height = 56;
+
+  final String itemId;
+  final List<HomeSpan> spans;
+  final HomeSpan selected;
+  final ValueChanged<HomeSpan> onSelected;
+
+  const _SizePicker({required this.itemId, required this.spans, required this.selected, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        for (final span in spans)
+          SpanSizeOption(
+            key: ValueKey('home-item-size-$itemId-${span.toJson()}'),
+            columns: span.width,
+            rows: span.height,
+            isSelected: span == selected,
+            onTap: () => onSelected(span),
+          ),
+      ],
+    );
+  }
+}

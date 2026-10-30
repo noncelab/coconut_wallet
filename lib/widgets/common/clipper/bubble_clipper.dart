@@ -29,20 +29,26 @@ class CenterTriangleBubbleClipper extends CustomClipper<Path> {
 }
 
 class RightTriangleBubbleClipper extends CustomClipper<Path> {
+  static const double arrowTipInset = 19;
+
   final double arrowOffset;
   final double? arrowPosition;
 
   RightTriangleBubbleClipper({this.arrowOffset = 0.0, this.arrowPosition});
 
+  static double rightOffsetForAnchor({required double viewportWidth, required Rect anchor}) {
+    return viewportWidth - anchor.center.dx - arrowTipInset;
+  }
+
   @override
   Path getClip(Size size) {
     var path = Path();
-    final offset = arrowPosition == null ? arrowOffset : size.width - 19 - arrowPosition!;
+    final offset = arrowPosition == null ? arrowOffset : size.width - arrowTipInset - arrowPosition!;
 
     // 삼각형 꼭지점 부분 (클릭 지점 기준 위치라서 이동하지 않음)
     // 모서리 접점을 삼각형 밑변점과 같은 좌표로 합쳐서 gap 없이 이어지도록 함
     path.moveTo(size.width - 10 - offset, 15);
-    path.lineTo(size.width - 19 - offset, 5);
+    path.lineTo(size.width - arrowTipInset - offset, 5);
     path.lineTo(size.width - 28 - offset, 15);
     path.lineTo(15, 15);
     path.quadraticBezierTo(0, 15, 0, 30);
@@ -60,13 +66,16 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
 }
 
 class LeftTriangleBubbleClipper extends CustomClipper<Path> {
+  /// 꼭지점 위치(말풍선 왼쪽 위 기준). 말풍선을 아이콘에 맞춰 놓을 때 쓴다.
+  static const Offset arrowTip = Offset(39, 5);
+
   @override
   Path getClip(Size size) {
     var path = Path();
     path.moveTo(15, 15);
-    path.lineTo(30, 15);
-    path.lineTo(39, 5);
-    path.lineTo(48, 15);
+    path.lineTo(arrowTip.dx - 9, 15);
+    path.lineTo(arrowTip.dx, arrowTip.dy);
+    path.lineTo(arrowTip.dx + 9, 15);
     path.lineTo(size.width - 15, 15);
     path.quadraticBezierTo(size.width, 15, size.width, 30);
     path.lineTo(size.width, size.height - 15);

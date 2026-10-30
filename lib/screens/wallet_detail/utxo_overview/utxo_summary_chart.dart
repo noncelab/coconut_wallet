@@ -52,24 +52,18 @@ class UtxoSummaryChart extends StatelessWidget {
     this.height,
   });
 
-  static const double estimatedHeight = 350;
+  static const double estimatedHeight = 240;
+  static const double amountViewMinHeight = estimatedHeight;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     return Container(
-      height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      constraints: buckets.isNotEmpty && height != null ? BoxConstraints(minHeight: height!) : null,
+      color: colors.background,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 20 : 8, 16, showBalanceHeader ? 24 : 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -106,14 +100,16 @@ class UtxoSummaryChart extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _BarChart(
-              buckets: buckets,
-              tierTheme: tierTheme,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onThemeSettingTap: onThemeSettingTap,
-            ),
+            if (buckets.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _BarChart(
+                buckets: buckets,
+                tierTheme: tierTheme,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onThemeSettingTap: onThemeSettingTap,
+              ),
+            ],
             if (hasReusedAddresses) ...[
               const SizedBox(height: 12),
               Tooltip(
@@ -141,20 +137,22 @@ class UtxoSummaryChart extends StatelessWidget {
                             ),
                           ),
                           CoconutLayout.spacing_150w,
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.utxo_list_screen.reused_address_legend,
-                                style: CoconutTypography.body3_12_Bold.setColor(colors.danger),
-                                textAlign: TextAlign.center,
-                              ),
-                              CoconutLayout.spacing_100h,
-                              Text(
-                                t.utxo_list_screen.reused_address,
-                                style: CoconutTypography.caption_10.setColor(colors.danger),
-                              ),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.utxo_list_screen.reused_address_legend,
+                                  style: CoconutTypography.body3_12_Bold.setColor(colors.danger),
+                                  textAlign: TextAlign.center,
+                                ),
+                                CoconutLayout.spacing_100h,
+                                Text(
+                                  t.utxo_list_screen.reused_address,
+                                  style: CoconutTypography.caption_10.setColor(colors.danger),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -183,11 +181,11 @@ class _AvailabilityChip extends StatelessWidget {
     final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: colors.utxoOverviewChartSurface, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: colors.utxoOverviewAvailabilitySurface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.mutedText)),
+          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.secondaryTextStrong)),
           const SizedBox(height: 4),
           Text(formatBalance(sats), style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
         ],
@@ -216,7 +214,7 @@ class _BarChart extends StatefulWidget {
 }
 
 class _BarChartState extends State<_BarChart> {
-  static const double _barMaxHeight = 80;
+  static const double _barMaxHeight = 72;
   int? _tappedBucketIndex;
   Timer? _bubbleDismissTimer;
 
@@ -246,76 +244,81 @@ class _BarChartState extends State<_BarChart> {
       backgroundColor: context.coconutColors.surfaceBottomSheet,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      t.utxo_overview_screen.interval_info_title,
-                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                    ),
-                  ),
-                  if (widget.onThemeSettingTap != null)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          widget.onThemeSettingTap?.call();
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
-                        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t.utxo_overview_screen.interval_info_title,
+                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ...getUtxoBucketRanges(dustThreshold: widget.dustThreshold).map((r) {
-                final isDustRange = r.max <= widget.dustThreshold;
-                final isWhale = r.label == 'whale';
-                final rangeStr =
-                    isWhale
-                        ? '≥ 10 ${t.btc}'
-                        : (isDustRange
-                            ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
-                            : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)}');
-                final color = tierTheme.colorForSats(r.max, dustThreshold: widget.dustThreshold);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                      ),
-                      SizedBox(
-                        width: 54,
-                        child: Text(
-                          r.label,
-                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                    if (widget.onThemeSettingTap != null)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            widget.onThemeSettingTap?.call();
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
+                          ),
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          rangeStr,
-                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...getUtxoBucketRanges(dustThreshold: widget.dustThreshold).map((r) {
+                  final isDustRange = r.max <= widget.dustThreshold;
+                  final isWhale = r.label == 'whale';
+                  final rangeStr =
+                      isWhale
+                          ? '≥ 10 ${t.btc}'
+                          : (isDustRange
+                              ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
+                              : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)}');
+                  final color = tierTheme.colorForSats(r.max, dustThreshold: widget.dustThreshold);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                r.label,
+                                maxLines: 1,
+                                style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                              ),
+                              Text(
+                                rangeStr,
+                                style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ),
@@ -335,7 +338,7 @@ class _BarChartState extends State<_BarChart> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: colors.utxoOverviewChartSurface,
             borderRadius: const BorderRadius.only(
@@ -395,7 +398,7 @@ class _BarChartState extends State<_BarChart> {
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: colors.utxoOverviewChartSurface,
+                                      color: colors.background,
                                       borderRadius: BorderRadius.circular(999),
                                       boxShadow: [
                                         BoxShadow(
@@ -414,7 +417,7 @@ class _BarChartState extends State<_BarChart> {
                                 ),
                                 Text(
                                   bucket.label,
-                                  style: CoconutTypography.caption_10.setColor(colors.mutedText),
+                                  style: CoconutTypography.caption_10.setColor(colors.secondaryTextStrong),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,

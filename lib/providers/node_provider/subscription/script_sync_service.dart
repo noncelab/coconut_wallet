@@ -27,6 +27,8 @@ class ScriptSyncService {
   late Future<void> Function(WalletItemBase walletItem, String address) _unsubscribeAddress;
   late Future<void> Function(WalletItemBase walletItem, int index, String address, bool isChange) _subscribeAddress;
   final Map<int, Future<void>> _walletSyncQueues = {};
+  final Set<int> _failedWalletSyncs = {};
+  final Map<(int, String), ScriptStatus> _failedScriptSyncs = {};
   final Map<int, DateTime> _lastDormantSyncAt = {};
   final Map<String, DateTime> _lastAddressCheckAt = {};
 
@@ -60,6 +62,9 @@ class ScriptSyncService {
   Future<void> restorePendingUtxoLocks(int walletId) {
     return _utxoSyncService.restorePendingUtxoLocks(walletId);
   }
+
+  Iterable<ScriptStatus> getFailedScripts(int walletId) =>
+      _failedScriptSyncs.entries.where((entry) => entry.key.$1 == walletId).map((entry) => entry.value);
 
   /// 주소가 dormant(사용됐지만 잔액/미확정 트랜잭션 없음) 상태가 됐으면 실시간 구독에서 제외한다.
   Future<void> _unsubscribeIfDormant(WalletItemBase walletItem, String address) async {
@@ -201,13 +206,17 @@ class ScriptSyncService {
   /// 이미 이 큐 안에서 실행 중인 작업(예: [_processScriptStatus])에서
   /// 재귀적으로 호출하면 자기 자신의 완료를 기다리게 되어 데드락이 나므로, 중첩 호출하지 않도록 주의합니다.
   Future<T> runQueued<T>(int walletId, Future<T> Function() task) {
+    final startsQueue = !_walletSyncQueues.containsKey(walletId);
     final previousSync = _walletSyncQueues[walletId] ?? Future<void>.value();
     final completer = Completer<T>();
 
     final queuedSync = previousSync.then((_) async {
       try {
-        completer.complete(await task());
+        final result = await task();
+        if (result is Result && result.isFailure) _failedWalletSyncs.add(walletId);
+        completer.complete(result);
       } catch (e, stackTrace) {
+        _failedWalletSyncs.add(walletId);
         completer.completeError(e, stackTrace);
       }
     });
@@ -216,11 +225,23 @@ class ScriptSyncService {
     queuedSyncWithCleanup = queuedSync.whenComplete(() {
       if (identical(_walletSyncQueues[walletId], queuedSyncWithCleanup)) {
         _walletSyncQueues.remove(walletId);
+        final failed =
+            _failedWalletSyncs.remove(walletId) ||
+            _failedScriptSyncs.keys.any((entry) => entry.$1 == walletId) ||
+            _balanceSyncService.hasBalanceFetchFailures(walletId);
+        _stateManager.setWalletSyncQueueState(
+          walletId,
+          false,
+          failed ? null : _balanceSyncService.getWalletBalance(walletId),
+        );
       }
     });
     _walletSyncQueues[walletId] = queuedSyncWithCleanup;
+    if (startsQueue) {
+      _stateManager.setWalletSyncQueueState(walletId, true, _balanceSyncService.getWalletBalance(walletId));
+    }
 
-    return completer.future;
+    return completer.future.whenComplete(() => queuedSyncWithCleanup);
   }
 
   /// 스크립트 상태 변경 이벤트 처리
@@ -272,12 +293,23 @@ class ScriptSyncService {
           dto.scriptStatus.isChange,
         );
       }
+      // 새 출력 주소를 모두 저장한 뒤 거래의 내 주소 여부를 판정한다.
+      if (dto.updateUsedIndex &&
+          ((dto.retrySubscription && dto.scriptStatus.index == oldUsedIndex) ||
+              _needSubscriptionUpdate(dto.walletItem, oldUsedIndex, dto.scriptStatus.isChange))) {
+        final subResult = await _subscribeWallet(dto.walletItem);
+
+        if (subResult.isSuccess) {
+          Logger.log('Successfully extended script subscription for ${dto.walletItem.name}');
+        } else {
+          throw StateError('Failed to extend script subscription: ${subResult.error}');
+        }
+      }
       // 구독 완료
       _stateManager.addWalletCompletedState(dto.walletItem.id, UpdateElement.subscription);
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
-      await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // Transaction 동기화
       _stateManager.addWalletFetchDispatched(dto.walletItem.id, 1);
@@ -292,6 +324,7 @@ class ScriptSyncService {
         dto.scriptStatus,
         fetchResult.txHashes,
       );
+      await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // 이번 이벤트가 트리거한 주소 외에 같은 트랜잭션으로 UTXO가 함께 소비된 주소가 있다면,
       // 그 주소들 자신의 구독 이벤트가 실패/누락되어도 잔액이 stale 상태로 남지 않도록 동기화한다.
@@ -299,17 +332,9 @@ class ScriptSyncService {
         await _syncCoSpentAddressBalances(dto.walletItem, fetchResult.coSpentAddresses);
       }
 
-      // 새 스크립트 구독 여부 확인 및 처리
-      if (dto.updateUsedIndex && _needSubscriptionUpdate(dto.walletItem, oldUsedIndex, dto.scriptStatus.isChange)) {
-        final subResult = await _subscribeWallet(dto.walletItem);
-
-        if (subResult.isSuccess) {
-          Logger.log('Successfully extended script subscription for ${dto.walletItem.name}');
-        } else {
-          Logger.error('Failed to extend script subscription: ${subResult.error}');
-        }
-      }
+      _failedScriptSyncs.remove((dto.walletItem.id, dto.scriptStatus.address));
     } catch (e, stackTrace) {
+      _failedScriptSyncs[(dto.walletItem.id, dto.scriptStatus.address)] = dto.scriptStatus;
       Logger.error('Failed to handle script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       // 오류 발생 시에도 상태 초기화
@@ -345,6 +370,7 @@ class ScriptSyncService {
         );
         await _unsubscribeIfDormant(walletItem, address);
       } catch (e, stackTrace) {
+        _failedWalletSyncs.add(walletId);
         Logger.error('Failed to sync balance for co-spent address $address: $e');
         Logger.error('Stack trace: $stackTrace');
       }
@@ -374,7 +400,9 @@ class ScriptSyncService {
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses, onBatchProgress: reportProgress);
-      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
+      if (_balanceSyncService.hasBalanceFetchFailures(walletItem.id)) {
+        throw StateError('Incomplete wallet balance synchronization');
+      }
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);
       Logger.performance('Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}');
@@ -401,6 +429,7 @@ class ScriptSyncService {
         }
       }
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
 
       final transactionEndTime = DateTime.now();
       final transactionDuration = transactionEndTime.difference(transactionStartTime);
@@ -426,6 +455,11 @@ class ScriptSyncService {
 
       await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);
 
+      for (final script in scriptStatuses) {
+        _failedScriptSyncs.remove((walletItem.id, script.address));
+      }
+      _failedWalletSyncs.remove(walletItem.id);
+
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       final utxoEndTime = DateTime.now();
@@ -444,10 +478,14 @@ class ScriptSyncService {
         'Sync breakdown - Balance: ${balanceDuration.inMilliseconds}ms, Transaction: ${transactionDuration.inMilliseconds}ms, UTXO: ${utxoDuration.inMilliseconds}ms',
       );
     } catch (e, stackTrace) {
+      for (final script in scriptStatuses) {
+        _failedScriptSyncs[(walletItem.id, script.address)] = script;
+      }
       Logger.error('Failed to handle batch script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       _stateManager.initWalletUpdateStatus(walletItem.id);
       _stateManager.setNodeSyncStateToCompleted();
+      rethrow;
     }
   }
 }

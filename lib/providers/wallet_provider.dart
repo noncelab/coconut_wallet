@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
 import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -63,9 +64,27 @@ class WalletProvider extends ChangeNotifier {
   late final ValueNotifier<List<WalletItemBase>> walletItemListNotifier;
   late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
+  final _lifecycleEventController = StreamController<WalletLifecycleEvent>.broadcast();
+  Stream<WalletLifecycleEvent> get lifecycleEvents => _lifecycleEventController.stream;
+  Map<int, WalletSnapshot> _walletSnapshots = {};
+
   void _setWalletItemList(List<WalletItemBase> value) {
     _walletItemList = value;
     walletItemListNotifier.value = value;
+    _publishLifecycleEvents(value);
+  }
+
+  void _publishLifecycleEvents(List<WalletItemBase> wallets) {
+    final snapshots = snapshotWallets(wallets);
+    final events =
+        _walletLoadState == WalletLoadState.loadCompleted
+            ? diffWalletSnapshots(_walletSnapshots, snapshots)
+            : const <WalletLifecycleEvent>[];
+    _walletSnapshots = snapshots;
+    if (_lifecycleEventController.isClosed) return;
+    for (final event in events) {
+      _lifecycleEventController.add(event);
+    }
   }
 
   WalletProvider(
@@ -959,19 +978,20 @@ class WalletProvider extends ChangeNotifier {
   /// [싱글시그니처] 외부지갑 이름변경
   Future<void> updateWalletName(int id, String name) async {
     final index = _walletItemList.indexWhere((element) => element.id == id);
-    if (walletItemList[index] is! SinglesigWalletItem) {
+    final item = walletItemList[index];
+    // 다른 계정 탭루트도 이름만 바꾼다. 시드 컬럼은 updateWalletUI가 건드리지 않는다.
+    if (item is! SinglesigWalletItem && item is! TaprootWalletItem) {
       throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 이름은 변경할 수 없습니다.');
     }
 
-    // 싱글시그니처 지갑만 허용하므로, _requiredSignatureCount과 _signers는 null로 할당
     WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(
       name,
-      walletItemList[index].colorIndex,
-      walletItemList[index].iconIndex,
-      walletItemList[index].descriptor,
+      item.colorIndex,
+      item.iconIndex,
+      item.descriptor,
       null,
       null,
-      walletItemList[index].walletImportSource.name,
+      item.walletImportSource.name,
     );
     _walletRepository.updateWalletUI(id, watchOnlyWallet);
     _setWalletItemList(await _fetchWalletListFromDB());
@@ -982,7 +1002,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> updateWalletPalette(int id, int iconIndex, int colorIndex) async {
     final wallet = getWalletById(id);
 
-    if (wallet is! SinglesigWalletItem) {
+    if (wallet is! SinglesigWalletItem && wallet is! TaprootWalletItem) {
       throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 색상/아이콘은 변경할 수 없습니다.');
     }
 
@@ -1305,6 +1325,7 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier.dispose();
     walletItemListNotifier.dispose();
     currentBlockHeightNotifier.dispose();
+    _lifecycleEventController.close();
     super.dispose();
   }
 }

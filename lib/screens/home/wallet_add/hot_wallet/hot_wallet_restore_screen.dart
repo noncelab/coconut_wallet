@@ -54,6 +54,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart' as permission;
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 enum _RestoreInputMode { mnemonic, seedQr }
 
@@ -364,6 +365,14 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     final viewModel = context.watch<HotWalletRestoreViewModel>();
     return PopScope(
       canPop: _canPop && !_isSubmitting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _isSubmitting || _isLeavingScreen) return;
+        if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+          FocusScope.of(context).unfocus();
+          return;
+        }
+        _handleAppBarBackPressed();
+      },
       child: Stack(
         children: [
           Listener(
@@ -380,7 +389,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                 context: context,
                 onBackPressed: _handleAppBarBackPressed,
                 actionButtonList: [
-                  IconButton(
+                  CoconutAppBarActionButton(
                     tooltip:
                         _inputMode == _RestoreInputMode.mnemonic
                             ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr
@@ -495,9 +504,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
   }
 
   void _popScreen() {
+    if (_canPop) return;
     setState(() => _canPop = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) Navigator.of(context).pop();
     });
   }
 
@@ -1064,7 +1074,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                                     }
                                   },
                                   defaultColor: context.coconutColors.surface,
-                                  pressedColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+                                  pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
                                   border: Border.all(color: context.coconutColors.border),
                                   borderRadius: 100,
                                   child: Padding(
@@ -1378,7 +1389,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                   ),
                   backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
                   checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_watch_only,
-                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
                   isCheckboxSelected: removeWatchOnly,
                   onCheckboxChanged: (value) => setDialogState(() => removeWatchOnly = value),
                   rightButtonText: t.wallet_home_screen.hot_wallet_restore.restore_wallet,

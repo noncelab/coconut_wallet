@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -12,6 +14,13 @@ import 'package:provider/provider.dart';
 
 class _RecordingAnalytics extends Fake implements FirebaseAnalytics {
   final List<String> screens = [];
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    Map<String, Object>? parameters,
+    AnalyticsCallOptions? callOptions,
+  }) async {}
 
   @override
   Future<void> logScreenView({
@@ -267,6 +276,92 @@ void main() {
     harness.observer.refreshScreenName();
     await tester.pump();
     expect(harness.analytics.screens, ['/splash', '/pin-check', '/wallet-home']);
+  });
+
+  testWidgets('All Features remains the visible screen after a destination or configure sheet closes', (tester) async {
+    final harness = _Harness()..rootScreenName = 'wallet-home';
+    await harness.mount(tester);
+
+    harness.rootScreenName = 'all-features';
+    harness.observer.refreshScreenName();
+    await tester.pump();
+    await harness.push(tester, '/destination');
+    harness.navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(harness.analytics.screens, ['wallet-home', 'all-features', '/destination', 'all-features']);
+
+    for (final sheetName in ['/widget-configure-sheet', '/shortcut-configure-sheet']) {
+      unawaited(
+        CommonBottomSheets.showBottomSheet_100<void>(
+          context: harness.context,
+          screenName: sheetName,
+          child: const SizedBox(height: 100),
+        ),
+      );
+      await tester.pumpAndSettle();
+      harness.navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(harness.analytics.screens.sublist(harness.analytics.screens.length - 2), [sheetName, 'all-features']);
+    }
+
+    harness.rootScreenName = 'wallet-home';
+    harness.observer.refreshScreenName();
+    await tester.pump();
+    unawaited(
+      CommonBottomSheets.showBottomSheet_100<void>(
+        context: harness.context,
+        screenName: '/widget-configure-sheet',
+        child: const SizedBox(height: 100),
+      ),
+    );
+    await tester.pumpAndSettle();
+    harness.navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(harness.analytics.screens.sublist(harness.analytics.screens.length - 2), [
+      '/widget-configure-sheet',
+      'wallet-home',
+    ]);
+
+    await harness.push(tester, '/home-edit');
+    unawaited(
+      CommonBottomSheets.showBottomSheet_100<void>(
+        context: harness.context,
+        screenName: '/shortcut-configure-sheet',
+        child: const SizedBox(height: 100),
+      ),
+    );
+    await tester.pumpAndSettle();
+    harness.navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(harness.analytics.screens.sublist(harness.analytics.screens.length - 2), [
+      '/shortcut-configure-sheet',
+      '/home-edit',
+    ]);
+    harness.navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(harness.analytics.screens.sublist(harness.analytics.screens.length - 3), [
+      '/shortcut-configure-sheet',
+      '/home-edit',
+      'wallet-home',
+    ]);
+  });
+
+  testWidgets('wallet add top sheet modes have screen names and restore All Features', (tester) async {
+    final harness = _Harness()..rootScreenName = AnalyticsScreenNames.allFeatures;
+    await harness.mount(tester);
+
+    for (final (mode, screenName) in [
+      (WalletAddDialogMode.walletType, AnalyticsScreenNames.walletHomeAddWalletTypeSheet),
+      (WalletAddDialogMode.watchOnlySource, AnalyticsScreenNames.walletHomeAddWatchOnlySourceSheet),
+      (WalletAddDialogMode.hotWalletAction, AnalyticsScreenNames.walletHomeAddHotWalletActionSheet),
+    ]) {
+      unawaited(WalletAddDialog.showTopSheet(harness.context, mode));
+      await tester.pumpAndSettle();
+      expect(harness.analytics.screens.last, screenName);
+      harness.navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(harness.analytics.screens.last, AnalyticsScreenNames.allFeatures);
+    }
   });
 
   testWidgets('a route pushed then removed before it is painted does not create a screen view', (tester) async {

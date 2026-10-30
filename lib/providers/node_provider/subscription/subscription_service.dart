@@ -177,6 +177,13 @@ class SubscriptionService {
       fetchedScriptStatuses,
       walletItem.id,
     );
+    final failedAddresses = _scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address).toSet();
+    final updatedKeys = updatedScriptStatuses.map((s) => s.scriptPubKey).toSet();
+    for (final script in fetchedScriptStatuses) {
+      if (failedAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
+        updatedScriptStatuses.add(script);
+      }
+    }
 
     if (updatedScriptStatuses.isEmpty) {
       await _scriptSyncService.restorePendingUtxoLocks(walletItem.id);
@@ -194,7 +201,8 @@ class SubscriptionService {
     );
 
     // 변경된 ScriptStatus DB에 저장
-    _subscriptionRepository.updateScriptStatusList(walletItem.id, updatedScriptStatuses);
+    final saved = await _subscriptionRepository.updateScriptStatusList(walletItem.id, updatedScriptStatuses);
+    if (saved.isFailure) return Result.failure(saved.error);
     return Result.success(true);
   }
 
@@ -245,17 +253,18 @@ class SubscriptionService {
     }
 
     final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
-    final activeResults = await Future.wait(
-      activeAddresses.map(
-        (activeAddress) =>
-            _subscribeAddress(walletItem, activeAddress.index, activeAddress.address, isChange, scriptStatusController),
+    final activeAddressSet = activeAddresses.map((address) => address.address).toSet();
+    final activeResults = await Future.wait([
+      ...activeAddresses.map(
+        (address) => _subscribeAddress(walletItem, address.index, address.address, isChange, scriptStatusController),
       ),
-    );
+      // 잔액이 먼저 0으로 갱신된 뒤 실패한 주소도 거래내역까지 다시 처리한다.
+      for (final script in _scriptSyncService.getFailedScripts(walletItem.id))
+        if (script.isChange == isChange && !activeAddressSet.contains(script.address))
+          _subscribeAddress(walletItem, script.index, script.address, isChange, scriptStatusController),
+    ]);
 
-    List<ScriptStatus> scriptStatuses = [
-      for (final result in activeResults)
-        if (!result.isSubscribed) result.scriptStatus,
-    ];
+    List<ScriptStatus> scriptStatuses = [for (final result in activeResults) result.scriptStatus];
 
     final scanResult = await _scanAndSubscribeRange(
       walletItem,
@@ -342,7 +351,7 @@ class SubscriptionService {
     );
 
     for (var result in results) {
-      final (:scriptStatus, :isSubscribed) = result;
+      final scriptStatus = result.scriptStatus;
 
       if (scriptStatus.status != null) {
         maxUsedIndex = max(maxUsedIndex, scriptStatus.index);
@@ -355,10 +364,8 @@ class SubscriptionService {
         }
       }
 
-      // 이미 구독 중인 스크립트는 반환하지 않음
-      if (!isSubscribed) {
-        newScriptStatuses.add(scriptStatus);
-      }
+      // 구독 중이어도 이전 동기화가 실패했을 수 있어 저장된 상태와 다시 비교한다.
+      newScriptStatuses.add(scriptStatus);
     }
 
     return (newScriptStatuses: newScriptStatuses, maxUsedIndex: maxUsedIndex, nextIndex: startIndex + addresses.length);
@@ -417,12 +424,7 @@ class SubscriptionService {
     return (scriptStatus: scriptStatus, isSubscribed: false);
   }
 
-  /// 스크립트 변경사항이 있는 경우 처리
-  ///
-  /// 1. 사용한 인덱스 갱신
-  /// 2. 인덱스가 확장된 경우 스캔 범위 확장
-  /// 3. 지갑별 스크립트 상태 업데이트
-  /// 4. 스크립트 상태
+  /// 인덱스 갱신과 구독 확장은 잔액 동기화와 같은 지갑별 큐에서 처리한다.
   void _handleScriptUpdate(
     String reversedScriptHash,
     ScriptStatus scriptStatus,
@@ -434,46 +436,11 @@ class SubscriptionService {
       return;
     }
 
-    // 현재 상태와 기존 상태를 비교하여 변경 여부 확인
-    final currentStatus = walletItem.subscribedScriptMap[scriptStatus.scriptPubKey]?.status;
-    final bool statusChanged = currentStatus != scriptStatus.status;
-
-    // 중요: 상태가 변경되었거나 인덱스가 현재 최대값인 경우 확장 수행
-    bool needsExtension = false;
-    int currentIndex;
-
-    if (scriptStatus.isChange) {
-      currentIndex = walletItem.changeUsedIndex;
-    } else {
-      currentIndex = walletItem.receiveUsedIndex;
-    }
+    final currentIndex = scriptStatus.isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
+    final statusChanged = walletItem.subscribedScriptMap[scriptStatus.scriptPubKey]?.status != scriptStatus.status;
 
     // gap window 밖에서 발견한 이벤트는 usedIndex에 영향을 주면 안됨
     final withinGapReach = scriptStatus.index <= currentIndex + kSubscriptionGapLimit;
-
-    // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
-    if (withinGapReach &&
-        (scriptStatus.index > currentIndex || (statusChanged && scriptStatus.index >= currentIndex))) {
-      currentIndex = max(currentIndex, scriptStatus.index);
-
-      if (scriptStatus.isChange) {
-        walletItem.changeUsedIndex = currentIndex;
-      } else {
-        walletItem.receiveUsedIndex = currentIndex;
-      }
-
-      needsExtension = true;
-      // Logger.log(
-      //     'Status changed for address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
-    }
-
-    // 확장 조건이 충족되면 스캔 범위 확장
-    if (needsExtension) {
-      // Logger.log(
-      //     'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
-      // 추가 주소 구독이 필요한 경우 비동기로 처리
-      _extendSubscription(walletItem, scriptStatus.isChange, scriptStatusController);
-    }
 
     // 상태 업데이트 반영
     walletItem.subscribedScriptMap[scriptStatus.scriptPubKey] = UnaddressedScriptStatus(
@@ -483,31 +450,13 @@ class SubscriptionService {
     );
 
     scriptStatusController.add(
-      SubscribeScriptStreamDto(scriptStatus: scriptStatus, walletItem: walletItem, updateUsedIndex: withinGapReach),
+      SubscribeScriptStreamDto(
+        scriptStatus: scriptStatus,
+        walletItem: walletItem,
+        updateUsedIndex: withinGapReach,
+        retrySubscription: statusChanged && scriptStatus.index >= currentIndex,
+      ),
     );
-  }
-
-  /// 스캔 범위 확장을 위한 메서드
-  /// 스캔한 범위 안에서 이미 사용된 주소를 발견하면 그 주소를 새 기준으로 다시 gapLimit만큼 계속 확장한다
-  Future<void> _extendSubscription(
-    WalletItemBase walletItem,
-    bool isChange,
-    StreamController<SubscribeScriptStreamDto> scriptStatusController,
-  ) async {
-    final usedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
-
-    if (usedIndex < 0) {
-      Logger.log('Invalid extension range: skipping (usedIndex=$usedIndex)');
-      return;
-    }
-
-    Logger.log('Extending subscription: isChange=$isChange, usedIndex=$usedIndex');
-
-    final result = await _scanAndSubscribeRange(walletItem, isChange, usedIndex + 1, usedIndex, scriptStatusController);
-
-    if (result.lastUsedIndex > usedIndex) {
-      await _addressRepository.updateWalletUsedIndex(walletItem, result.lastUsedIndex, isChange: isChange);
-    }
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제

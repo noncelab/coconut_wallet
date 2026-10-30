@@ -53,8 +53,8 @@ class _KeyButtonState extends State<KeyButton> {
           });
         }
       }
-    } catch (e) {
-      Logger.log('생체 인식 유형을 확인하는 중 오류 발생: $e');
+    } catch (_) {
+      Logger.warning('AUTH_BIOMETRIC_TYPE_UNAVAILABLE');
     }
   }
 
@@ -86,7 +86,7 @@ class _KeyButtonState extends State<KeyButton> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: _isPressed ? context.coconutColors.buttonPrimaryPressOverlay : Colors.transparent,
+          color: _isPressed ? context.coconutColors.surfaceMuted : Colors.transparent,
         ),
         child: Center(
           child:

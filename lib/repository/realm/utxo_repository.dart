@@ -397,13 +397,13 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 특정 UTXO 조회
-  UtxoState? getUtxoState(int walletId, String utxoId) {
+  UtxoState? getUtxoState(int walletId, String utxoId, {bool includeDeleted = false}) {
     realm.refresh();
     final realmUtxo =
-        realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [
-          walletId,
-          '$walletId:$utxoId',
-        ]).firstOrNull;
+        realm.query<RealmUtxo>(
+          includeDeleted ? r'walletId == $0 AND id == $1' : r'walletId == $0 AND id == $1 AND isDeleted == false',
+          [walletId, '$walletId:$utxoId'],
+        ).firstOrNull;
 
     if (realmUtxo == null) {
       return null;
