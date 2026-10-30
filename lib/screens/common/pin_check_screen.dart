@@ -1,5 +1,4 @@
-import 'dart:async';
-import 'package:coconut_wallet/services/security/pin_auth_service.dart';
+import 'package:coconut_wallet/providers/view_model/common/pin_check_view_model.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -23,86 +22,23 @@ class PinCheckScreen extends StatefulWidget {
 }
 
 class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObserver {
-  late String pin;
-  late String errorMessage;
-  DateTime? _unlockAvailableAt;
-  bool _authUnavailable = false;
-  Timer? _cooldownTimer;
-  int get _remainingSeconds => ((_unlockAvailableAt?.difference(DateTime.now()).inMilliseconds ?? 0) / 1000).ceil();
+  late PinCheckViewModel _viewModel;
   final GlobalKey<PinInputPadState> _pinInputScreenKey = GlobalKey<PinInputPadState>();
-  late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
   bool _isPause = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    pin = '';
-    errorMessage = '';
-    _authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
-
+    _authProvider = context.read<AuthProvider>();
+    _viewModel = PinCheckViewModel(_authProvider);
+    _viewModel.initialize();
+    _viewModel.addListener(_onChanged);
     WidgetsBinding.instance.addObserver(this);
-    _isLoading = true;
-    unawaited(_refreshStatus());
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || _isLoading || _unlockAvailableAt == null) return;
-      if (_remainingSeconds <= 0) {
-        _unlockAvailableAt = null;
-        unawaited(_refreshStatus());
-      } else {
-        setState(() => errorMessage = t.pin_check_screen.retry_after(time: _formatRemainingTime(_remainingSeconds)));
-      }
-    });
   }
 
-  Future<void> _refreshStatus() async {
-    _setLoading(true);
-    try {
-      final status = await _authProvider.getPinAuthStatus();
-      if (!mounted) return;
-      _authUnavailable = false;
-      _applyStatus(status);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _authUnavailable = true;
-        errorMessage = t.pin_check_screen.authentication_unavailable;
-      });
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  void _applyStatus(PinAuthStatus status) {
-    _unlockAvailableAt = status.isBlocked ? status.unlockAvailableAt ?? DateTime.now().add(status.remaining) : null;
-    setState(
-      () =>
-          errorMessage =
-              status.isBlocked
-                  ? t.pin_check_screen.retry_after(time: _formatRemainingTime(status.remainingSeconds))
-                  : status.failures > 0
-                  ? t.errors.pin_check_error.trial_count(count: status.remainingAttempts)
-                  : '',
-    );
-  }
-
-  String _formatRemainingTime(int totalSeconds) {
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
-    return [
-      if (hours > 0) '$hours${t.pin_check_screen.time_hour}',
-      if (minutes > 0) '$minutes${t.pin_check_screen.time_minute}',
-      if (seconds > 0 || totalSeconds == 0) '$seconds${t.pin_check_screen.time_second}',
-    ].join(' ');
-  }
-
-  void _shufflePinNumbers() {
-    setState(() {
-      _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
-    });
+  void _onChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -111,96 +47,40 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       _isPause = true;
     } else if (AppLifecycleState.resumed == state && _isPause) {
       _isPause = false;
-      _authProvider.checkDeviceBiometrics();
-      if (!_isLoading) unawaited(_refreshStatus());
+      _viewModel.onResumed();
     }
   }
 
   @override
   void dispose() {
-    _cooldownTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    pin = '';
+    _viewModel.removeListener(_onChanged);
+    _viewModel.dispose();
     super.dispose();
   }
 
-  void _verifyBiometric() async {
-    _setLoading(true);
-    _authProvider
-        .authenticateWithBiometrics()
-        .then((value) {
-          if (!mounted) return;
-          if (value) {
-            if (!widget.appEntrance && mounted) {
-              Navigator.pop(context, true);
-            }
-            widget.onComplete?.call();
-          }
-        })
-        .whenComplete(() {
-          _setLoading(false);
-        });
+  void _complete() {
+    if (!widget.appEntrance) Navigator.pop(context, true);
+    widget.onComplete?.call();
   }
 
-  void _verifyPin() async {
-    if (_isLoading || _authUnavailable || _remainingSeconds > 0) return;
-    _setLoading(true);
-    var isClosing = false;
-    try {
-      final result = await _authProvider.verifyPinResult(pin);
-      if (!mounted) return;
-      pin = '';
-      if (result.outcome == PinVerificationOutcome.success) {
-        _setLoading(false);
-        isClosing = true;
-        if (!widget.appEntrance) Navigator.pop(context, true);
-        widget.onComplete?.call();
-        return;
-      }
-      _applyStatus(result.status);
-      if (result.outcome == PinVerificationOutcome.unavailable) {
-        _authUnavailable = true;
-        errorMessage = t.pin_check_screen.authentication_unavailable;
-      } else if (result.outcome == PinVerificationOutcome.busy) {
-        errorMessage = t.pin_check_screen.authentication_busy;
-      } else if (!result.status.isBlocked) {
-        errorMessage = t.errors.pin_check_error.trial_count(count: result.status.remainingAttempts);
-      }
-      _shufflePinNumbers();
-      vibrateLightDouble();
-      setState(() {});
-    } finally {
-      if (mounted && !isClosing) _setLoading(false);
-    }
-  }
-
-  void _setLoading(bool value) {
-    if (!mounted || _isLoading == value) return;
-    setState(() => _isLoading = value);
-  }
-
-  void _onKeyTap(String value) {
-    if (_isLoading) return;
+  Future<void> _onKeyTap(String value) async {
+    if (_viewModel.isLoading) return;
     if (value == 'bio' && widget.allowBiometrics) {
-      _verifyBiometric();
+      if (await _viewModel.verifyBiometric() && mounted) _complete();
       return;
     }
-
-    if (_authUnavailable || _remainingSeconds > 0) return;
-
-    setState(() {
-      if (value == '<') {
-        if (pin.isNotEmpty) {
-          pin = pin.substring(0, pin.length - 1);
-        }
-      } else if (pin.length < _authProvider.pinLength) {
-        pin += value;
-        vibrateExtraLight();
+    if (!_viewModel.canEnterPin) return;
+    _viewModel.enterKey(value);
+    if (value != '<') vibrateExtraLight();
+    if (_viewModel.isPinComplete) {
+      final success = await _viewModel.verifyPin();
+      if (!mounted) return;
+      if (success == true) {
+        _complete();
+      } else if (success == false) {
+        vibrateLightDouble();
       }
-    });
-
-    if (pin.length == _authProvider.pinLength) {
-      _verifyPin();
     }
   }
 
@@ -242,13 +122,13 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           appBarVisible: !widget.appEntrance,
           title: widget.appEntrance ? '' : t.pin_check_screen.text,
           initOptionVisible: widget.appEntrance,
-          pin: pin,
-          errorMessage: errorMessage,
+          pin: _viewModel.pin,
+          errorMessage: _viewModel.errorMessage,
           onKeyTap: _onKeyTap,
           pinShuffleNumbers:
               widget.allowBiometrics
-                  ? _shuffledPinNumbers
-                  : _shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
+                  ? _viewModel.shuffledPinNumbers
+                  : _viewModel.shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
           onClosePressed: () {
             Navigator.pop(context);
           },
@@ -261,7 +141,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           step: 0,
           pinLength: _authProvider.pinLength,
         ),
-        if (_isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+        if (_viewModel.isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
       ],
     );
   }
