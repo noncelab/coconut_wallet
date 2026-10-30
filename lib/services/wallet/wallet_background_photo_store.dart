@@ -70,7 +70,13 @@ class WalletBackgroundPhotoStore {
     }
   }
 
-  Future<void> deleteAll() => deleteAllExcept(const {});
+  /// 전체 초기화에서는 삭제 실패를 호출자에게 전달해 다음 실행에서 재시도합니다.
+  Future<void> deleteAll() async {
+    final directory = await init();
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is File) await entity.delete();
+    }
+  }
 
   static Future<double> _aspectRatioOf(Uint8List bytes) async {
     final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);

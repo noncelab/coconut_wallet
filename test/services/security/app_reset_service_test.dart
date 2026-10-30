@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/security/app_reset_service.dart';
 import 'package:coconut_wallet/services/security/pin_auth_service.dart';
 import 'package:coconut_wallet/app/bootstrap/app_bootstrap.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pin_auth_service_test.dart' show MemoryStorage, TestKdf;
 
@@ -14,7 +17,12 @@ class _RejectedResetIntent extends Fake implements SharedPreferences {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory documents;
+  late WalletBackgroundPhotoStore photos;
+  AppResetService resetService() => AppResetService(photoStore: photos);
   setUp(() async {
+    documents = await Directory.systemTemp.createTemp('wallet-reset-test-');
+    photos = WalletBackgroundPhotoStore(baseDirectory: () async => documents);
     SharedPreferences.setMockInitialValues({
       SharedPrefKeys.kHasLaunchedBefore: true,
       SharedPrefKeys.kIsSetPin: true,
@@ -25,11 +33,13 @@ void main() {
     await SharedPrefsRepository().init();
   });
 
+  tearDown(() async => documents.delete(recursive: true));
+
   test('interrupted reset after secure deletion finishes wallets and metadata before unlocking', () async {
     final storage = MemoryStorage();
     final pinAuth = PinAuthService(storage: storage, kdf: TestKdf());
     await pinAuth.setPin('1234');
-    final reset = AppResetService();
+    final reset = resetService();
     var wallets = 2;
     await expectLater(
       reset.perform(
@@ -43,7 +53,7 @@ void main() {
     expect(storage.values, isEmpty);
 
     final restarted = PinAuthService(storage: storage, kdf: TestKdf());
-    await AppResetService().recoverIfPending(
+    await resetService().recoverIfPending(
       resetSecureStorage: () => restarted.resetStorage(() async => storage.values.clear()),
       resetWallets: () => wallets = 0,
     );
@@ -60,13 +70,13 @@ void main() {
   test('secure reset failure preserves the recovery flag and prevents wallet and metadata clearing', () async {
     var walletsCleared = false;
     await expectLater(
-      AppResetService().perform(
+      resetService().perform(
         resetSecureStorage: () async => throw StateError('unavailable'),
         resetWallets: () => walletsCleared = true,
       ),
       throwsA(isA<PinAuthException>()),
     );
-    expect(AppResetService().isPending, isTrue);
+    expect(resetService().isPending, isTrue);
     expect(walletsCleared, isFalse);
     expect(SharedPrefsRepository().getBool(SharedPrefKeys.kIsSetPin), isTrue);
   });
@@ -74,13 +84,13 @@ void main() {
   test('recovery failure retains the pending reset for the next launch', () async {
     await SharedPrefsRepository().setBool(SharedPrefKeys.kAppResetPending, true);
     await expectLater(
-      AppResetService().recoverIfPending(
+      resetService().recoverIfPending(
         resetSecureStorage: () async {},
         resetWallets: () => throw StateError('unavailable'),
       ),
       throwsA(isA<PinAuthException>()),
     );
-    expect(AppResetService().isPending, isTrue);
+    expect(resetService().isPending, isTrue);
     expect(SharedPrefsRepository().getBool(SharedPrefKeys.kIsSetPin), isTrue);
   });
 
@@ -90,7 +100,7 @@ void main() {
     var secureCleared = false;
     var walletsCleared = false;
     await expectLater(
-      AppResetService().perform(
+      resetService().perform(
         resetSecureStorage: () async => secureCleared = true,
         resetWallets: () => walletsCleared = true,
       ),
@@ -100,8 +110,32 @@ void main() {
     expect(walletsCleared, isFalse);
   });
 
+  test('full reset deletes wallet background photos before marking completion', () async {
+    final directory = await photos.init();
+    final photo = await File('${directory.path}/wallet_1.jpg').writeAsString('photo');
+    await resetService().perform(resetSecureStorage: () async {}, resetWallets: () {});
+    expect(await photo.exists(), isFalse);
+    expect(resetService().isPending, isFalse);
+  });
+
+  test('photo deletion failure stays pending and recovery retries deletion', () async {
+    final blockedPath = await File('${documents.path}/blocked').writeAsString('not a directory');
+    final unavailablePhotos = WalletBackgroundPhotoStore(baseDirectory: () async => Directory(blockedPath.path));
+    await expectLater(
+      AppResetService(photoStore: unavailablePhotos).perform(resetSecureStorage: () async {}, resetWallets: () {}),
+      throwsA(isA<PinAuthException>()),
+    );
+    expect(resetService().isPending, isTrue);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kIsSetPin), isTrue);
+    final directory = await photos.init();
+    final photo = await File('${directory.path}/wallet_1.jpg').writeAsString('photo');
+    await resetService().recoverIfPending(resetSecureStorage: () async {}, resetWallets: () {});
+    expect(await photo.exists(), isFalse);
+    expect(resetService().isPending, isFalse);
+  });
+
   test('normal startup without pending reset does not delete any data', () async {
-    await AppResetService().recoverIfPending(
+    await resetService().recoverIfPending(
       resetSecureStorage: () async => fail('unexpected secure reset'),
       resetWallets: () => fail('unexpected wallet reset'),
     );
