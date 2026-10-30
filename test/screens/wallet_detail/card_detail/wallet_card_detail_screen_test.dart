@@ -204,7 +204,6 @@ void main() {
               ),
           home: WalletCardDetailScreen(
             id: id,
-            entryPoint: '/wallet-list',
             focusRecentTransactions: focusRecentTransactions,
             focusedTransactionHash: focusedTransactionHash,
           ),
@@ -341,7 +340,7 @@ void main() {
     final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
     expect(find.byKey(const ValueKey('balance-history-wallet-all')), findsNothing);
     expect(find.byKey(const ValueKey('balance-history-wallet-1')), findsNothing);
-    expect(find.text(t.wallet_list.balance_history_detail.period_summary), findsOneWidget);
+    expect(find.text(t.wallet_balance_history_screen.period_summary), findsOneWidget);
     expect(history.viewModel.walletIds, [2]);
     expect(history.viewModel.balancePeriod, HomeWidgetPeriod.week);
     expect(find.byKey(const Key('balance-history-wallet-chips')), findsNothing);

@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/locale_sort_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
@@ -57,7 +59,8 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.log(result.error);
       return [];
     }
-    return result.value;
+    final locale = LocaleSettings.currentLocale;
+    return result.value..sort((a, b) => compareByLocaleDictionaryOrder(a.name, b.name, locale));
   }
 
   List<UtxoTag> getUtxoTagsByUtxoId(int walletId, String utxoId) {

@@ -58,9 +58,8 @@ import 'package:provider/provider.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
-  final String entryPoint;
 
-  const WalletDetailScreen({super.key, required this.id, required this.entryPoint});
+  const WalletDetailScreen({super.key, required this.id});
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -814,11 +813,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
   }
 
   void _openTransactionList() {
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.transactionList,
-      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: widget.entryPoint),
-    );
+    Navigator.pushNamed(context, AppRouteNames.transactionList, arguments: WalletDetailRouteArgs(id: widget.id));
   }
 
   Future<void> _openWalletInfo({bool showTargetSetting = false}) async {
@@ -828,7 +823,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
       arguments: WalletInfoRouteArgs(
         id: widget.id,
         walletType: _viewModel.wallet.walletType,
-        entryPoint: widget.entryPoint,
         showTargetSetting: showTargetSetting,
       ),
     );
@@ -842,7 +836,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
       arguments: WalletInfoRouteArgs(
         id: widget.id,
         walletType: _viewModel.wallet.walletType,
-        entryPoint: widget.entryPoint,
         highlightMnemonicBackup: true,
       ),
     );

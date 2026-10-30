@@ -12,7 +12,6 @@ import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_mode
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
@@ -317,7 +316,6 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
                   name: AppRouteNames.walletDetail,
                   arguments: WalletDetailRouteArgs(
                     id: tx.walletId,
-                    entryPoint: kEntryPointWalletHome,
                     focusRecentTransactions: true,
                     focusedTransactionHash: tx.txHash,
                   ),
@@ -327,7 +325,6 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
                 pageBuilder:
                     (_, __, ___) => WalletCardDetailScreen(
                       id: tx.walletId,
-                      entryPoint: kEntryPointWalletHome,
                       focusRecentTransactions: true,
                       focusedTransactionHash: tx.txHash,
                     ),

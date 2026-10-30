@@ -15,7 +15,6 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -32,6 +31,8 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 /// 지갑 목록. 카드가 화면 오른쪽 밖을 중심으로 한 원호를 따라 위아래로 돌고, 가운데 카드의 정보를 왼쪽 아래에 보여 준다.
 /// 홈 스택에서 열면 스택 카드가 가운데 카드로 커지며 날아오고, 나머지 카드는 원호를 따라 펼쳐진다.
 class WalletStackListScreen extends StatefulWidget {
+  static const routeNameSuffix = '-wallet-list';
+  static String routeNameOf(WalletStackKind kind) => '/${kind.name}$routeNameSuffix';
   static const transitionDuration = Duration(milliseconds: 480);
 
   /// 휠 카드는 이 크기로 그린 뒤 화면에 맞게 키운다.
@@ -54,7 +55,7 @@ class WalletStackListScreen extends StatefulWidget {
     final preferenceProvider = context.read<PreferenceProvider>();
     return Navigator.of(context).push(
       PageRouteBuilder(
-        settings: RouteSettings(name: '/${kind.name}-wallet-list'),
+        settings: RouteSettings(name: routeNameOf(kind)),
         transitionDuration: transitionDuration,
         reverseTransitionDuration: transitionDuration,
         pageBuilder:
@@ -253,7 +254,6 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final openedWalletId = ValueNotifier(wallet.id);
     final args = WalletDetailRouteArgs(
       id: wallet.id,
-      entryPoint: kEntryPointWalletHome,
       walletIds: [for (final item in _viewModel.wallets) item.id],
       onFocusChanged: (walletId) {
         openedWalletId.value = walletId;
@@ -269,12 +269,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         pageBuilder:
             (routeContext, _, __) =>
                 routeBuilder?.call(routeContext) ??
-                WalletCardDetailScreen(
-                  id: args.id,
-                  entryPoint: args.entryPoint,
-                  walletIds: args.walletIds,
-                  onFocusChanged: args.onFocusChanged,
-                ),
+                WalletCardDetailScreen(id: args.id, walletIds: args.walletIds, onFocusChanged: args.onFocusChanged),
         transitionsBuilder:
             (_, animation, __, child) => WalletDetailExpandTransition(
               animation: animation,

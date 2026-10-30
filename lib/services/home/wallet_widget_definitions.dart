@@ -48,8 +48,8 @@ String walletStackName(WalletStackKind kind) => switch (kind) {
 };
 
 String walletStackEmptyText(WalletStackKind kind) => switch (kind) {
-  WalletStackKind.hot => t.wallet_list.empty_hot_wallet,
-  WalletStackKind.watchOnly => t.wallet_list.empty_watch_only,
+  WalletStackKind.hot => t.home_widgets.empty_hot_wallets,
+  WalletStackKind.watchOnly => t.home_widgets.empty_watch_only_wallets,
   WalletStackKind.all => t.home_widgets.empty_all_wallets,
 };
 

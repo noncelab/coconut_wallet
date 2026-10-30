@@ -14,7 +14,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
@@ -226,10 +225,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();
-      WalletAddActions.finishWithWalletDetail(
-        context,
-        WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
-      );
+      WalletAddActions.finishWithWalletDetail(context, WalletDetailRouteArgs(id: result.walletId!));
       return;
     }
 

@@ -22,7 +22,6 @@ import 'package:coconut_wallet/screens/safety/incident_sheets.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/screens/safety/watch_only_verification_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
@@ -65,7 +64,6 @@ Future<void> openSafetyCheckAction(BuildContext context, SafetyCheckResult item)
         arguments: WalletInfoRouteArgs(
           id: walletId,
           walletType: wallet.walletType,
-          entryPoint: kEntryPointWalletHome,
           highlightMnemonicBackup: item.id == SafetyCheckId.mnemonicBackup,
           initialTarget: item.id == SafetyCheckId.passphraseVerify ? WalletInfoTarget.passphrase : null,
         ),
@@ -903,7 +901,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         if (walletId != null) {
           primary = r.address_reuse.view_utxos;
           onPrimary = _go(
-            (c) => Navigator.pushNamed(c, AppRouteNames.utxoList, arguments: UtxoListRouteArgs(id: walletId)),
+            (c) => Navigator.pushNamed(c, AppRouteNames.utxoOverview, arguments: UtxoOverviewRouteArgs(id: walletId)),
           );
           secondary = r.address_reuse.use_new_address;
           onSecondary = _go(

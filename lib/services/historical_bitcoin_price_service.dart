@@ -1,25 +1,13 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/model/price/historical_bitcoin_prices.dart';
 import 'package:dio/dio.dart';
 
 class HistoricalBitcoinPriceService {
-  static const int _requiredClosedCandleCount = 30;
-
   final Dio _dio;
 
   HistoricalBitcoinPriceService({Dio? dio})
     : _dio =
           dio ??
           Dio(BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)));
-
-  Future<HistoricalBitcoinPrices?> fetch(FiatCode fiatCode) {
-    return switch (fiatCode) {
-      FiatCode.KRW => _fetchUpbitPrices(),
-      FiatCode.USD => _fetchBinancePrices('BTCUSDT'),
-      FiatCode.EUR => _fetchBinancePrices('BTCEUR'),
-      FiatCode.JPY => _fetchBitflyerDailyCloses().then(_toHistoricalPrices),
-    };
-  }
 
   /// 마감된 일봉 종가 목록. 오래된 날부터 어제까지.
   Future<List<double>?> fetchDailyCloses(FiatCode fiatCode) {
@@ -63,8 +51,6 @@ class HistoricalBitcoinPriceService {
     return [for (final candle in closed.skip(closed.length > 32 ? closed.length - 32 : 0)) candle.close];
   }
 
-  Future<HistoricalBitcoinPrices> _fetchUpbitPrices() async => _toHistoricalPrices(await _fetchUpbitDailyCloses());
-
   Future<List<double>> _fetchUpbitDailyCloses() async {
     final response = await _dio.get<List<dynamic>>(
       'https://api.upbit.com/v1/candles/days',
@@ -88,9 +74,6 @@ class HistoricalBitcoinPriceService {
     return closedPrices.map((candle) => candle.close).toList();
   }
 
-  Future<HistoricalBitcoinPrices> _fetchBinancePrices(String symbol) async =>
-      _toHistoricalPrices(await _fetchBinanceDailyCloses(symbol));
-
   Future<List<double>> _fetchBinanceDailyCloses(String symbol) async {
     final response = await _dio.get<List<dynamic>>(
       'https://api.binance.com/api/v3/klines',
@@ -110,20 +93,5 @@ class HistoricalBitcoinPriceService {
     }
 
     return closedPrices;
-  }
-
-  HistoricalBitcoinPrices _toHistoricalPrices(List<double> closedPrices) {
-    if (closedPrices.length < _requiredClosedCandleCount) {
-      throw StateError(
-        'Not enough closed daily candles: '
-        '${closedPrices.length}/$_requiredClosedCandleCount',
-      );
-    }
-
-    return HistoricalBitcoinPrices(
-      previousDayClose: closedPrices.last,
-      sevenDaysAgoClose: closedPrices[closedPrices.length - 7],
-      thirtyDaysAgoClose: closedPrices[closedPrices.length - 30],
-    );
   }
 }

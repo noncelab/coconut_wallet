@@ -213,9 +213,6 @@ void main() {
       (AppRouteNames.utxoOrganizer, 'merge'), // on top again after the page; nothing after the unnamed dialog
       (AppRouteNames.walletDetail, null),
     ]);
-    final names = analytics.screens.map((view) => view.$1);
-    expect(names, isNot(contains(AppRouteNames.mergeUtxos)));
-    expect(names, isNot(contains(AppRouteNames.splitUtxo)));
   });
 
   testWidgets('with fewer than two spendable UTXOs the organizer opens on split and merge stays off', (tester) async {

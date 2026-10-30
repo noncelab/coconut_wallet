@@ -43,6 +43,8 @@ import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:provider/provider.dart';
 
 class AppSettingsScreen extends StatefulWidget {
+  static const routeName = '/app-settings';
+
   final AppSettingsTarget? initialTarget;
 
   const AppSettingsScreen({super.key, this.initialTarget});
@@ -199,7 +201,7 @@ class AppSettingsScreen extends StatefulWidget {
       case AppSettingsTarget.utxoSelection:
         await Navigator.of(context).push(
           CupertinoPageRoute<void>(
-            settings: const RouteSettings(name: '/app-settings'),
+            settings: const RouteSettings(name: routeName),
             builder: (_) => AppSettingsScreen(initialTarget: target),
           ),
         );

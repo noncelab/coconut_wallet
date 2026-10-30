@@ -167,15 +167,17 @@ class WalletCard extends StatelessWidget {
     );
   }
 
-  /// 카드에 찍힌 각인처럼 보이는 유형 표시. 글자 면은 칠하지 않고 안쪽 그림자 두 개로 표현한다(Figma 기준).
-  Widget _buildGlyph(BuildContext context) => typeLabelOf(wallet);
+  /// 카드에 찍힌 각인처럼 보이는 유형 표시.
+  Widget _buildGlyph(BuildContext context) => typeLabelOf(wallet, background: appearance.background);
 
   /// 지갑 유형 각인(WATCH-ONLY / HOT). 지갑 상세 카드도 같은 각인을 쓴다.
-  static Widget typeLabelOf(WalletItemBase wallet) {
+  /// [background]가 단색·스킨이면 그 색에 맞춰 파고, 아니면 테마 바탕색에 맞춘다.
+  static Widget typeLabelOf(WalletItemBase wallet, {WalletBackground? background}) {
     final isHot = wallet.hasLocalKey;
     return _EmbossedText(
       key: Key(isHot ? 'wallet-card-glyph-hot' : 'wallet-card-glyph-watch-only'),
       text: isHot ? 'HOT' : 'WATCH-ONLY',
+      surface: WalletCardBackground.representativeColorOf(background),
       style: CoconutTypography.caption_10_NumberBold.copyWith(fontSize: 12, height: 1, letterSpacing: 1.2),
     );
   }
@@ -316,21 +318,14 @@ class WalletCard extends StatelessWidget {
   }
 }
 
-/// 글자 모양 안쪽에만 그림자를 그리는 양각 글자. 글자 면은 투명해 배경이 그대로 보인다.
+/// 카드 위로 튀어나온 양각 글자. 글자 안쪽 위 가장자리에 번진 빛을 두고 아래 바깥으로 그림자를 떨어뜨린다.
+/// 명암 두께는 글자 크기에 비례한다.
 class _EmbossedText extends StatelessWidget {
   final String text;
   final TextStyle style;
+  final Color? surface;
 
-  const _EmbossedText({super.key, required this.text, required this.style});
-
-  /// 글자 안쪽 바탕과 (색, 그림자 방향). 카드 바탕색에서 밝기만 바꿔 써서 어느 테마에서도 같은 색 계열로 파여 보인다.
-  static (Color, List<(Color, Offset)>) _toneOf(Color surface) => (
-    Color.lerp(surface, const Color(0xFF000000), 0.07)!,
-    [
-      (Color.lerp(surface, const Color(0xFFFFFFFF), 0.7)!, const Offset(1, 1)),
-      (Color.lerp(surface, const Color(0xFF000000), 0.42)!, const Offset(-1, -1)),
-    ],
-  );
+  const _EmbossedText({super.key, required this.text, required this.style, this.surface});
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +341,12 @@ class _EmbossedText extends StatelessWidget {
       label: text,
       child: CustomPaint(
         size: size,
-        painter: _EmbossedTextPainter(text, style, Directionality.of(context), context.coconutColors.homeSurface),
+        painter: _EmbossedTextPainter(
+          text,
+          style,
+          Directionality.of(context),
+          surface ?? context.coconutColors.homeSurface,
+        ),
       ),
     );
   }
@@ -360,6 +360,21 @@ class _EmbossedTextPainter extends CustomPainter {
 
   _EmbossedTextPainter(this.text, this.style, this.textDirection, this.surface);
 
+  /// (아래쪽 그림자, 위쪽 빛 깊이, 위쪽 빛). 글자 면은 칠하지 않아 어떤 배경이든 바탕이 그대로 비친다.
+  /// 어두운 바탕은 빛이 획을 다 덮지 않도록 얕게 둔다. 검정에 가까울수록 명암을 더 세게 넣는다.
+  (Color, double, Color) _tone() {
+    final isDark = ThemeData.estimateBrightnessForColor(surface) == Brightness.dark;
+    if (!isDark) {
+      return (const Color(0xFF000000).withValues(alpha: 0.5), 0.12, const Color(0xFFFFFFFF).withValues(alpha: 0.9));
+    }
+    final nearBlack = ((0.04 - surface.computeLuminance()) / 0.025).clamp(0.0, 1.0);
+    return (
+      const Color(0xFF000000).withValues(alpha: 0.6 + 0.3 * nearBlack),
+      0.07,
+      const Color(0xFFFFFFFF).withValues(alpha: 0.24 + 0.18 * nearBlack),
+    );
+  }
+
   TextPainter _layout(Paint paint) => TextPainter(
     text: TextSpan(text: text, style: style.copyWith(foreground: paint)),
     textDirection: textDirection,
@@ -367,28 +382,30 @@ class _EmbossedTextPainter extends CustomPainter {
     maxLines: 1,
   )..layout();
 
+  /// [color]로 칠한 글자를 [offset]만큼 옮긴 글자 모양으로 덜어낸다.
+  void _paintEdge(Canvas canvas, Rect bounds, Color color, Offset colorOffset, Offset cutOffset, double blur) {
+    canvas.saveLayer(bounds, Paint());
+    final glyph = _layout(Paint()..color = color);
+    glyph.paint(canvas, colorOffset);
+    final cutout = _layout(
+      Paint()
+        ..color = const Color(0xFF000000)
+        ..blendMode = BlendMode.dstOut
+        ..maskFilter = blur > 0 ? MaskFilter.blur(BlurStyle.normal, blur) : null,
+    );
+    cutout.paint(canvas, cutOffset);
+    canvas.restore();
+    glyph.dispose();
+    cutout.dispose();
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    final bounds = (Offset.zero & size).inflate(4);
-    final (fill, shadows) = _EmbossedText._toneOf(surface);
-    final base = _layout(Paint()..color = fill);
-    base.paint(canvas, Offset.zero);
-    base.dispose();
-    for (final (color, offset) in shadows) {
-      canvas.saveLayer(bounds, Paint());
-      final glyph = _layout(Paint()..color = color);
-      glyph.paint(canvas, Offset.zero);
-      final cutout = _layout(
-        Paint()
-          ..color = const Color(0xFF000000)
-          ..blendMode = BlendMode.dstOut
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5),
-      );
-      cutout.paint(canvas, offset);
-      canvas.restore();
-      glyph.dispose();
-      cutout.dispose();
-    }
+    final (shadow, depth, highlight) = _tone();
+    final em = style.fontSize ?? 12;
+    final bounds = (Offset.zero & size).inflate(em * 0.5);
+    _paintEdge(canvas, bounds, highlight, Offset.zero, Offset(em * 0.025, em * depth), em * depth * 0.6);
+    _paintEdge(canvas, bounds, shadow, Offset(0, em * 0.08), Offset.zero, em * 0.03);
   }
 
   @override

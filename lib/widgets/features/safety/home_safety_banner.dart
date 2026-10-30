@@ -20,7 +20,6 @@ import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_sheets.dart' show openSafetyCheckAction;
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
@@ -205,12 +204,7 @@ class _HomeSafetyBannerState extends State<HomeSafetyBanner> {
     Navigator.pushNamed(
       context,
       AppRouteNames.walletInfo,
-      arguments: WalletInfoRouteArgs(
-        id: wallet.id,
-        walletType: wallet.walletType,
-        entryPoint: kEntryPointWalletHome,
-        highlightMnemonicBackup: true,
-      ),
+      arguments: WalletInfoRouteArgs(id: wallet.id, walletType: wallet.walletType, highlightMnemonicBackup: true),
     );
   }
 

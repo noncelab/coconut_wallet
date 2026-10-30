@@ -39,7 +39,6 @@ import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wal
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_presets.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
@@ -433,7 +432,6 @@ void main() {
     expect(routeObserver.lastPushed, isA<PageRouteBuilder<void>>());
     final route = routeObserver.lastPushed! as PageRouteBuilder<void>;
     expect(route.settings.name, AppRouteNames.walletDetail);
-    expect((route.settings.arguments! as WalletDetailRouteArgs).entryPoint, kEntryPointWalletHome);
     expect((route.settings.arguments! as WalletDetailRouteArgs).focusRecentTransactions, isTrue);
     expect((route.settings.arguments! as WalletDetailRouteArgs).focusedTransactionHash, 'a');
     expect(route.transitionDuration, HodlInsightsScreen.transitionDuration);
@@ -1608,8 +1606,8 @@ void main() {
       final graphSurface = find.byKey(const Key('balance-history-graph-surface'));
       expect(find.descendant(of: graphSurface, matching: guide), findsNothing);
       expect(tester.getRect(guide).bottom, greaterThan(tester.getRect(graphSurface).bottom));
-      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_pan), findsOneWidget);
-      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_zoom), findsOneWidget);
+      expect(find.text(t.wallet_balance_history_screen.gesture_guide_pan), findsOneWidget);
+      expect(find.text(t.wallet_balance_history_screen.gesture_guide_zoom), findsOneWidget);
       final before =
           tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
       await tester.drag(guide, const Offset(-100, 0));

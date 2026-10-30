@@ -13,7 +13,6 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
@@ -531,7 +530,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: WalletDetailRouteArgs(id: widget.walletId, entryPoint: kEntryPointWalletHome),
+      arguments: WalletDetailRouteArgs(id: widget.walletId),
     );
   }
 }
