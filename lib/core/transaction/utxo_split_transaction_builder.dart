@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:flutter/foundation.dart';
 
 class UtxoSplitResult {
   final Transaction? transaction;
@@ -62,6 +63,7 @@ class UtxoSplitTransactionBuilder {
   double? _outputVBytes;
   double? _oneOutputTxVBytes;
   double? _inputVBytes;
+  double? _signedInputOverheadVBytes;
   List<int>? _cachedNiceSplitCounts;
   late final Policy? _scriptPathPolicy;
 
@@ -161,8 +163,17 @@ class UtxoSplitTransactionBuilder {
       _outputVBytes! * (outputCount - 1) +
       (outputCount >= _varIntCountThreshold ? _varIntExpansionVBytes : 0);
 
+  double _signedTxVBytesUpperBound(int inputCount, int outputCount) =>
+      _txVBytes(inputCount, outputCount) + _signedInputOverheadVBytes! * inputCount;
+
+  @visibleForTesting
+  Future<double> signedTxVBytesUpperBound(int inputCount, int outputCount) async {
+    await _initOutputVBytes();
+    return _signedTxVBytesUpperBound(inputCount, outputCount);
+  }
+
   void _throwIfTxTooLarge(int inputCount, int outputCount, double estimatedFee) {
-    if (_txVBytes(inputCount, outputCount) > maxStandardTxVBytes) {
+    if (_signedTxVBytesUpperBound(inputCount, outputCount) > maxStandardTxVBytes) {
       throw SplitTxTooLargeException(estimatedFee: estimatedFee);
     }
   }
@@ -216,6 +227,14 @@ class UtxoSplitTransactionBuilder {
     _oneOutputTxVBytes = estimateVBytes(1, 1);
     _inputVBytes = estimateVBytes(2, 1) - _oneOutputTxVBytes!;
     _outputVBytes = estimateVBytes(1, 2) - _oneOutputTxVBytes!;
+
+    var overheadWitnessBytes = 0;
+    final multisigConfig = walletListItemBase.multisigConfig;
+    if (addressType == AddressType.p2wsh && multisigConfig != null) {
+      final witnessScriptSize = 3 + multisigConfig.totalSigner * 34;
+      overheadWitnessBytes = witnessScriptSize < _varIntCountThreshold ? 1 : 3;
+    }
+    _signedInputOverheadVBytes = overheadWitnessBytes / 4;
   }
 
   /// 최대 균등 분할 수를 계산하고 실제 빌드로 검증하여 조정
@@ -241,7 +260,12 @@ class UtxoSplitTransactionBuilder {
     }
 
     final maxCountBySize =
-        (maxStandardTxVBytes - _oneOutputTxVBytesWithAllInputs - _varIntExpansionVBytes) ~/ _outputVBytes! + 1;
+        (maxStandardTxVBytes -
+                _oneOutputTxVBytesWithAllInputs -
+                _signedInputOverheadVBytes! * _utxos.length -
+                _varIntExpansionVBytes) ~/
+            _outputVBytes! +
+        1;
     return result < maxCountBySize ? result : maxCountBySize;
   }
 

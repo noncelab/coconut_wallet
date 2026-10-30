@@ -716,4 +716,48 @@ void main() {
       expect(() => createBuilder(utxos), throwsA(isA<ArgumentError>()));
     });
   });
+
+  group('서명 완료 후 표준 크기(400,000 WU) 상한', () {
+    double signedVBytesWithMaxSignatures(int inputCount, int outputCount) {
+      final config = wallet.multisigConfig!;
+      final dummyAddress = wallet.walletBase.getAddress(0);
+      final tx = Transaction.withInputsAndOutputs(
+        List.generate(inputCount, (index) => TransactionInput.forPayment('00' * 32, index)),
+        List.generate(outputCount, (_) => TransactionOutput.forPayment(100000, dummyAddress)),
+        AddressType.p2wsh,
+      );
+      for (final input in tx.inputs) {
+        input.witnessList = [
+          '00',
+          ...List.filled(config.requiredSignature, '30' * 72),
+          '52' * (3 + config.totalSigner * 34),
+        ];
+      }
+      return tx.getVirtualByte();
+    }
+
+    test('최대 길이 서명으로 채운 tx 크기가 상한 추정치를 넘지 않는다', () async {
+      final builder = createBuilder([createUtxo(100000)]);
+
+      for (final (inputCount, outputCount) in [(1, 2), (3, 5), (300, 300), (929, 73)]) {
+        final upperBound = await builder.signedTxVBytesUpperBound(inputCount, outputCount);
+        expect(
+          signedVBytesWithMaxSignatures(inputCount, outputCount),
+          lessThanOrEqualTo(upperBound),
+          reason: 'inputs: $inputCount, outputs: $outputCount',
+        );
+      }
+    });
+
+    test('서명 후 400,000 WU를 넘는 929 input / 73 output 균등 나누기는 SplitTxTooLargeException', () async {
+      final utxos = List.generate(
+        929,
+        (i) => createUtxo(100001, index: i, txHash: i.toRadixString(16).padLeft(64, '0')),
+      );
+      final builder = createBuilder(utxos);
+
+      expect(signedVBytesWithMaxSignatures(929, 73), greaterThan(UtxoSplitTransactionBuilder.maxStandardTxVBytes));
+      expect(() => builder.getEqualAmountSplitPreview(splitCount: 73), throwsA(isA<SplitTxTooLargeException>()));
+    });
+  });
 }
