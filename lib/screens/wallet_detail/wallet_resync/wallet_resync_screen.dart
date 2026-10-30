@@ -1,9 +1,12 @@
+import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
+import 'package:coconut_wallet/analytics/wallet_resync_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -17,13 +20,13 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const double _kStatusIconSlotHeight = 64;
@@ -227,10 +230,18 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
 
     final nodeProvider = context.read<NodeProvider>();
     final walletProvider = context.read<WalletProvider>();
+    final analyticsService = context.read<AnalyticsService>();
     final walletItem = walletProvider.getWalletById(widget.id);
 
+    final analyticsWalletType = AnalyticsWalletType.of(walletItem);
+    analyticsService.logWalletResyncStarted(analyticsWalletType);
     final result = await nodeProvider.resyncWallet(walletItem);
     _isRunning = false;
+    if (result.isSuccess) {
+      analyticsService.logWalletResyncCompleted(analyticsWalletType);
+    } else {
+      analyticsService.logWalletResyncFailed(analyticsWalletType);
+    }
 
     _isStarting = false;
     if (!mounted) return;
@@ -259,7 +270,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: kEntryPointWalletHome),
+      arguments: WalletDetailRouteArgs(id: widget.id),
     );
   }
 

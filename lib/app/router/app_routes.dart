@@ -2,19 +2,19 @@ import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_create_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_restore_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mnemonic_backup_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
-import 'package:coconut_wallet/screens/settings/app_settings/tools/log_viewer_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -33,32 +33,34 @@ import 'package:coconut_wallet/screens/settings/tools/transaction_draft_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_organizer_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_appearance_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_resync/wallet_resync_screen.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
   return {
-    AppRouteNames.walletList: (context) => const WalletListScreen(),
     AppRouteNames.appInfo: (context) => const AppInfoScreen(),
     AppRouteNames.signedPsbtScanner: (context) => const SignedPsbtScannerScreen(),
     AppRouteNames.positiveFeedback: (context) => const PositiveFeedbackScreen(),
     AppRouteNames.negativeFeedback: (context) => const NegativeFeedbackScreen(),
     AppRouteNames.mnemonicWordList: (context) => const Bip39ListScreen(),
     AppRouteNames.coconutCrew: (context) => const CoconutCrewScreen(),
-    AppRouteNames.logViewer: (context) => const LogViewerScreen(),
     AppRouteNames.electrumServer: (context) => const ElectrumServerScreen(),
     AppRouteNames.blockExplorer: (context) => const BlockExplorerScreen(),
     AppRouteNames.broadcasting:
@@ -75,12 +77,21 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => AddressListScreen(
             id: args.id,
             initialShowOnlyWatchedAddresses: args.initialShowOnlyWatchedAddresses ?? false,
+            initialShowOnlyUnusedAddresses: args.initialShowOnlyUnusedAddresses,
           ),
         ),
+    AppRouteNames.transactionList:
+        (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(context, (args) => TransactionListScreen(id: args.id)),
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
-          (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
+          (args) => WalletCardDetailScreen(
+            id: args.id,
+            walletIds: args.walletIds,
+            onFocusChanged: args.onFocusChanged,
+            focusRecentTransactions: args.focusRecentTransactions,
+            focusedTransactionHash: args.focusedTransactionHash,
+          ),
         ),
     AppRouteNames.walletBackupData:
         (context) => _buildScreenWithArgs<WalletBackupDataRouteArgs>(
@@ -115,10 +126,12 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => UnsignedTransactionQrScreen(walletName: args.walletName),
         ),
     AppRouteNames.send:
-        (context) => _buildScreenWithArgs<SendRouteArgs>(
+        (context) => _buildLoadingScreenWithArgs<SendRouteArgs>(
           context,
           (args) => SendScreen(
             walletId: args.id,
+            isMoveToVault: args.isMoveToVault,
+            receivingVaultWalletId: args.receivingVaultWalletId,
             sendEntryPoint: args.sendEntryPoint,
             transactionDraftId: args.transactionDraftId,
             initialSatsFromP2P: args.initialSatsFromP2P,
@@ -126,10 +139,9 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             initialBitcoinUri: args.initialBitcoinUri,
           ),
         ),
-    AppRouteNames.mergeUtxos:
-        (context) => _buildLoadingScreenWithArgs<UtxoMergeRouteArgs>(context, (args) => UtxoMergeScreen(id: args.id)),
-    AppRouteNames.splitUtxo:
-        (context) => _buildScreenWithArgs<UtxoSplitRouteArgs>(context, (args) => UtxoSplitScreen(id: args.id)),
+    AppRouteNames.utxoOrganizer:
+        (context) =>
+            _buildLoadingScreenWithArgs<UtxoOrganizerRouteArgs>(context, (args) => UtxoOrganizerScreen(id: args.id)),
     AppRouteNames.utxoTag:
         (context) => _buildScreenWithArgs<UtxoTagCrudRouteArgs>(context, (args) => UtxoTagCrudScreen(id: args.id)),
     AppRouteNames.walletResync:
@@ -139,14 +151,19 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => WalletAddScannerScreen(importSource: args.walletImportSource),
         ),
+    AppRouteNames.walletAppearance:
+        (context) =>
+            _buildScreenWithArgs<WalletAppearanceRouteArgs>(context, (args) => WalletAppearanceScreen(id: args.id)),
     AppRouteNames.walletInfo:
         (context) => _buildLoadingScreenWithArgs<WalletInfoRouteArgs>(
           context,
           (args) => WalletInfoScreen(
             id: args.id,
             walletType: args.walletType,
-            entryPoint: args.entryPoint,
             showMfpInput: args.showMfpInput ?? false,
+            highlightMnemonicBackup: args.highlightMnemonicBackup ?? false,
+            showTargetSetting: args.showTargetSetting ?? false,
+            initialTarget: args.initialTarget,
           ),
         ),
     AppRouteNames.broadcastingComplete:
@@ -168,8 +185,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => SendConfirmScreen(currentUnit: args.currentUnit),
         ),
-    AppRouteNames.utxoList:
-        (context) => _buildLoadingScreenWithArgs<UtxoListRouteArgs>(context, (args) => UtxoListScreen(id: args.id)),
     AppRouteNames.utxoOverview:
         (context) =>
             _buildLoadingScreenWithArgs<UtxoOverviewRouteArgs>(context, (args) => UtxoOverviewScreen(id: args.id)),
@@ -184,7 +199,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => TransactionDraftScreen(isSignedTabActive: args.isSignedTabActive),
         ),
-    AppRouteNames.walletHomeEdit: (context) => const WalletHomeEditScreen(),
     AppRouteNames.trezorTransportSelect:
         (context) => _buildScreenWithArgs<TrezorTransportSelectRouteArgs>(
           context,
@@ -247,6 +261,55 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             isFromSendFlow: args.isFromSendFlow ?? false,
             transport: args.transport == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
+        ),
+    AppRouteNames.hotWalletCreate: (context) => const HotWalletCreateScreen(),
+    AppRouteNames.hotWalletRestore: (context) => const HotWalletRestoreScreen(),
+    AppRouteNames.hotWalletMnemonicBackupGuide:
+        (context) => _buildScreenWithArgs<HotWalletMnemonicBackupGuideRouteArgs>(
+          context,
+          (args) => HotWalletMnemonicBackupGuideScreen(
+            walletId: args.walletId,
+            mnemonic: args.mnemonic,
+            passphrase: args.passphrase,
+            secureStorageKey: args.secureStorageKey,
+            enterPassphraseWhenSigning: args.enterPassphraseWhenSigning,
+            showWalletCreatedIntro: args.showWalletCreatedIntro,
+            continueToAppLockGuide: args.continueToAppLockGuide,
+            returnToPreviousOnExit: args.returnToPreviousOnExit,
+          ),
+        ),
+    AppRouteNames.hotWalletMnemonicBackup:
+        (context) => _buildScreenWithArgs<HotWalletMnemonicBackupRouteArgs>(
+          context,
+          (args) => HotWalletMnemonicBackupScreen(
+            mnemonic: args.mnemonic,
+            passphrase: args.passphrase,
+            enterPassphraseWhenSigning: args.enterPassphraseWhenSigning,
+            walletId: args.walletId,
+            continueToAppLockGuide: args.continueToAppLockGuide,
+          ),
+        ),
+    AppRouteNames.mnemonicBackupConfirm:
+        (context) => _buildScreenWithArgs<MnemonicBackupConfirmRouteArgs>(
+          context,
+          (args) => MnemonicBackupConfirmScreen(
+            mnemonic: args.mnemonic,
+            walletId: args.walletId,
+            continueToAppLockGuide: args.continueToAppLockGuide,
+          ),
+        ),
+    AppRouteNames.mnemonicBackupComplete:
+        (context) => _buildScreenWithArgs<MnemonicBackupCompleteRouteArgs>(
+          context,
+          (args) => MnemonicBackupCompleteScreen(
+            walletId: args.walletId,
+            continueToAppLockGuide: args.continueToAppLockGuide,
+          ),
+        ),
+    AppRouteNames.hotWalletPassphraseCheck:
+        (context) => _buildScreenWithArgs<HotWalletPassphraseCheckRouteArgs>(
+          context,
+          (args) => HotWalletPassphraseCheckScreen(mnemonic: args.mnemonic, descriptor: args.descriptor),
         ),
     AppRouteNames.labelManagement:
         (context) => _buildScreenWithArgs<LabelManagementRouteArgs>(

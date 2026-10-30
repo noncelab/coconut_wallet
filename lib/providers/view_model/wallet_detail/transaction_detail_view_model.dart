@@ -54,8 +54,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) =>
       _blockExplorerProvider.explorerUrlFor(pathType, value);
-  String sanitizedExplorerAnalyticsDestination(BlockExplorerPathType pathType) =>
-      _blockExplorerProvider.sanitizedExplorerAnalyticsDestination(pathType);
 
   bool get isSuspiciousDustTransaction =>
       _walletProvider.isTransactionSuspicious(_transactionList![_selectedTransactionIndex]);

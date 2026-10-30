@@ -94,6 +94,7 @@ void main() {
         UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _inputHash),
       );
     });
+    expect(repository.getUtxoState(1, getUtxoId(_inputHash, 0)), isNotNull);
   });
 
   tearDown(() {
@@ -166,6 +167,44 @@ void main() {
 
   String targetId() => getUtxoId(viewModel.signedTx!.transactionHash, 0);
   final inputId = getUtxoId(_inputHash, 0);
+  final realmInputId = getRealmUtxoId(1, _inputHash, 0);
+
+  test('output details preserve transaction indices with change at any position', () async {
+    for (final changeIndex in [0, 1, 2]) {
+      final outputs = [
+        TransactionOutput.forPayment(200000, vault.getAddress(10)),
+        TransactionOutput.forPayment(200000, vault.getAddress(11)),
+      ]..insert(
+        changeIndex,
+        TransactionOutput.forPayment(
+          599000,
+          vault.getAddress(1, isChange: true),
+          derivationPath: '${vault.derivationPath}/1/1',
+          isChangeOutput: true,
+        ),
+      );
+      final transaction = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment(_inputHash, 0, sequence: 0xfffffffd)],
+        outputs,
+        AddressType.p2wpkh,
+      );
+      transaction.utxoList.add(Utxo(_inputHash, 0, 1000000, '${vault.derivationPath}/0/0'));
+      await initializeTransaction(transaction);
+
+      expect(viewModel.outputDetailItems.map((item) => item.outputIndex), [0, 1, 2]);
+      expect(
+        viewModel.outputDetailItems.where((item) => !item.isChange).map((item) => item.outputIndex),
+        [0, 1, 2].where((index) => index != changeIndex),
+      );
+      expect(viewModel.externalOutputAmounts, [200000, 200000]);
+      expect(viewModel.changeOutputAmounts, [599000]);
+      expect(viewModel.fee, 1000);
+      for (final item in viewModel.outputDetailItems) {
+        expect(item.address, viewModel.signedTx!.outputs[item.outputIndex].getAddress());
+        expect(item.amount, viewModel.signedTx!.outputs[item.outputIndex].amount);
+      }
+    }
+  });
 
   test('normal broadcast persists input tags on a PSBT-owned output and clears only consumed links', () async {
     addTag('savings', inputId);
@@ -226,7 +265,7 @@ void main() {
     final previousOutput = getUtxoId(_previousHash, 1);
     addTag('savings', previousOutput);
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = _previousHash;
     });
@@ -237,12 +276,13 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     expect(tagIds(targetId()), ['savings']);
     expect(tagIds(previousOutput), isEmpty);
+    expect(node.broadcasts, 1);
   });
 
   test('confirmed predecessor output tags are not candidates for another transaction', () async {
     addTag('savings', getUtxoId(_previousHash, 1));
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = _previousHash;
     });
@@ -257,7 +297,7 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     final originalHash = viewModel.signedTx!.transactionHash;
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = originalHash;
     });
@@ -273,7 +313,7 @@ void main() {
     final extraInputId = getUtxoId(extraHash, 3);
     addTag('salary', extraInputId);
     manager.realm.write(() {
-      manager.realm.find<RealmUtxo>(inputId)!.spentByTransactionHash = firstBumpHash;
+      manager.realm.find<RealmUtxo>(realmInputId)!.spentByTransactionHash = firstBumpHash;
       manager.realm.add(
         UtxoMock.createUnspentRealmUtxo(
           walletId: 1,
@@ -328,7 +368,7 @@ void main() {
     final siblingId = getUtxoId(_inputHash, 1);
     addTag('sibling', siblingId);
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'incoming';
       input.blockHeight = 0;
     });
@@ -338,6 +378,7 @@ void main() {
     expect(tagIds(targetId()), ['incoming']);
     expect(tagIds(inputId), isEmpty);
     expect(tagIds(siblingId), ['sibling']);
+    expect(node.broadcasts, 1);
   });
 
   test('full send has no consent candidates and removes source links only after success', () async {

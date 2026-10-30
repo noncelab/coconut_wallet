@@ -1,10 +1,72 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 
 void main() {
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('$variant horizontal tags retain readable active unselected labels and selection', (tester) async {
+      final colors = resolveCoconutThemeExtension(variant: variant).colors;
+      var selected = UtxoFilter.all;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(variant: variant),
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder:
+                  (context, setState) => CustomTagHorizontalSelector(
+                    tags: const [UtxoTag(id: 'savings', walletId: 1, name: 'Savings', colorIndex: 0)],
+                    selectedFilter: selected,
+                    onSelectedFilter: (value) => setState(() => selected = value),
+                  ),
+            ),
+          ),
+        ),
+      );
+      final label = find.text('#Savings');
+      expect(tester.widget<Text>(label).style!.color, colors.chipUnselectedText);
+      await tester.tap(label);
+      await tester.pump();
+      expect(selected, const UtxoFilter.tag('savings'));
+      expect(tester.widget<Text>(label).style!.color, colors.chipSelectedText);
+    });
+  }
+
+  testWidgets('a tag named like the All chip is not selected with it', (tester) async {
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.values.first).colors;
+    var selected = UtxoFilter.all;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder:
+                (context, setState) => CustomTagHorizontalSelector(
+                  tags: [UtxoTag(id: 'tag-all', walletId: 1, name: t.all, colorIndex: 0)],
+                  showDefaultTags: false,
+                  selectedFilter: selected,
+                  onSelectedFilter: (value) => setState(() => selected = value),
+                ),
+          ),
+        ),
+      ),
+    );
+    final allChip = find.text(t.all);
+    final allTagChip = find.text('#${t.all}');
+    expect(tester.widget<Text>(allChip).style!.color, colors.chipSelectedText);
+    expect(tester.widget<Text>(allTagChip).style!.color, colors.chipUnselectedText);
+
+    await tester.tap(allTagChip);
+    await tester.pump();
+    expect(selected, const UtxoFilter.tag('tag-all'));
+    expect(tester.widget<Text>(allChip).style!.color, colors.chipUnselectedText);
+    expect(tester.widget<Text>(allTagChip).style!.color, colors.chipSelectedText);
+  });
+
   group('CustomTagSelector', () {
     final tags = [
       const UtxoTag(id: 'uuid1', walletId: 1, name: 'Tag1', colorIndex: 0, utxoIdList: ['a', 'b', 'c', 'd', 'e']),

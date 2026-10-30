@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/utxo_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -110,8 +111,8 @@ void main() {
     test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO만 뺀다', () {
       final viewModel = createViewModel();
 
-      viewModel.setSelectedUtxoTagName(_tagName);
-      viewModel.selectTaggedUtxo(_tagName);
+      viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
+      viewModel.selectTaggedUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge, taggedSmall]));
       expectConsistent(viewModel);
@@ -137,8 +138,8 @@ void main() {
     test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO와 1000 sats 미만 UTXO를 뺀다', () {
       final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
 
-      viewModel.setSelectedUtxoTagName(_tagName);
-      viewModel.selectTaggedUtxo(_tagName);
+      viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
+      viewModel.selectTaggedUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge]));
       expectConsistent(viewModel);

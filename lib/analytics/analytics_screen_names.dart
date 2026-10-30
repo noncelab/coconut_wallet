@@ -3,12 +3,15 @@ class AnalyticsScreenNames {
   static const String splash = 'splash';
   static const String pinCheck = 'pin-check';
   static const String walletHome = 'wallet-home';
+  static const String allFeatures = 'all-features';
 
   // CCOS 오픈 스토어 인트로 내부 화면
   static const String ccosOpenStoreIntro = 'ccos-open-store-intro';
   static const String ccosOpenStoreFirstPowCreatorDetail = 'ccos-open-store-first-pow-creator-detail';
   static const String ccosOpenStoreFirstPowFeatureDetail = 'ccos-open-store-first-pow-feature-detail';
   static const String ccosOpenStoreFirstPowDeliveryDetail = 'ccos-open-store-first-pow-delivery-detail';
+
+  static const String glossary = 'glossary';
 
   // 바텀시트 (PopupRoute라 FirebaseAnalyticsObserver의 기본 route is PageRoute 필터에 걸러짐)
   static const String walletHomeGlossarySheet = 'wallet-home-glossary-sheet';
@@ -17,15 +20,18 @@ class AnalyticsScreenNames {
   static const String walletHomeSelectUtxoSheet = 'wallet-home-select-utxo-sheet';
   static const String walletHomeAnalysisFilterSheet = 'wallet-home-analysis-filter-sheet';
   static const String walletHomeGlossaryTermDetailSheet = 'wallet-home-glossary-term-detail-sheet';
-  static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
-  static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
-  static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
+  static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
+  // 홈 지갑 추가 탑시트 (wallet_add_dialog.dart, WalletAddDialogMode별)
+  static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
+  static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
+  static const String walletHomeAddHotWalletActionSheet = 'wallet-home-add-hot-wallet-action-sheet';
   static const String bitbox02SignReconnectDeviceSheet = 'bitbox02-sign-reconnect-device-sheet';
   static const String sendConfirmConnectBitbox02Sheet = 'send-confirm-connect-bitbox02-sheet';
   static const String sendSelectUtxoSheet = 'send-select-utxo-sheet';
   static const String sendSelectWalletSheet = 'send-select-wallet-sheet';
   static const String sendAddressListSheet = 'send-address-list-sheet';
   static const String sendLoadDraftSheet = 'send-load-draft-sheet';
+  static const String sendHotWalletPassphraseSheet = 'send-hot-wallet-passphrase-sheet';
   static const String broadcastingCompleteReviewSurveySheet = 'broadcasting-complete-review-survey-sheet';
   static const String appInfoLicenseSheet = 'app-info-license-sheet';
   static const String appSettingsUnitSheet = 'app-settings-unit-sheet';
@@ -49,16 +55,31 @@ class AnalyticsScreenNames {
   static const String splitUtxoSelectUtxosSheet = 'split-utxo-select-utxos-sheet';
   static const String splitUtxoSelectMethodSheet = 'split-utxo-select-method-sheet';
   static const String receiveAddressSelectWalletSheet = 'receive-address-select-wallet-sheet';
+  static const String homeShortcutSelectWalletSheet = 'home-shortcut-select-wallet-sheet';
+  static const String walletAddMenuSheet = 'wallet-add-menu-sheet';
+  static const String walletAddWatchOnlySourcesSheet = 'wallet-add-watch-only-sources-sheet';
+  static const String walletAddHotWalletActionsSheet = 'wallet-add-hot-wallet-actions-sheet';
   static const String receiveAddressSetAmountSheet = 'receive-address-set-amount-sheet';
   static const String qrDetailSetAmountSheet = 'qr-detail-set-amount-sheet';
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';
   static const String walletDetailFaucetSheet = 'wallet-detail-faucet-sheet';
+  static const String walletDetailAppSettingsSheet = 'wallet-detail-app-settings-sheet';
+  static const String walletDetailMoveToVaultNoBalanceSheet = 'wallet-detail-move-to-vault-noBalance-sheet';
+  static const String walletDetailMoveToVaultNoWatchOnlyWalletSheet =
+      'wallet-detail-move-to-vault-noWatchOnlyWallet-sheet';
+  static const String walletDetailMoveToVaultSelectWalletSheet =
+      'wallet-detail-move-to-vault-selectWatchOnlyWallet-sheet';
   static const String walletInfoAuthSheet = 'wallet-info-auth-sheet';
   static const String walletInfoXpubSheet = 'wallet-info-xpub-sheet';
   static const String walletInfoMfpSheet = 'wallet-info-mfp-sheet';
   static const String walletInfoEditTargetAmountSheet = 'wallet-info-edit-target-amount-sheet';
   static const String walletInfoEditSheet = 'wallet-info-edit-sheet';
+  static const String walletInfoDescriptorSheet = 'wallet-info-descriptor-sheet';
+  static const String walletInfoTaprootSpendTypeSheet = 'wallet-info-taproot-spend-type-sheet';
   static const String walletResyncAuthSheet = 'wallet-resync-auth-sheet';
+  static const String hotWalletAuthSheet = 'hot-wallet-auth-sheet';
+  static const String hotWalletAppLockGuideSheet = 'hot-wallet-app-lock-guide-sheet';
+  static const String hotWalletAppearanceSettingsSheet = 'hot-wallet-appearance-settings-sheet';
   static const String trezorBleConnectResumeSheet = 'trezor-ble-connect-resume-sheet';
   static const String trezorUsbConnectResumeSheet = 'trezor-usb-connect-resume-sheet';
   static const String trezorBleConnectSheet = 'trezor-ble-connect-sheet';
@@ -69,7 +90,6 @@ class AnalyticsScreenNames {
   static const String utxoTagEditTagSheet = 'utxo-tag-edit-tag-sheet';
   static const String utxoTagAddTagSheet = 'utxo-tag-add-tag-sheet';
   static const String utxoDetailTagApplySheet = 'utxo-detail-tag-apply-sheet';
-  static const String utxoListTagApplySheet = 'utxo-list-tag-apply-sheet';
   static const String walletAddAirgapMfpSheet = 'wallet-add-airgap-mfp-sheet';
   static const String tagApplyEditTagSheet = 'tag-apply-edit-tag-sheet';
   static const String tagApplyAddTagSheet = 'tag-apply-add-tag-sheet';

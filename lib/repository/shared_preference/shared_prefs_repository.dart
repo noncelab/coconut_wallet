@@ -149,7 +149,7 @@ class SharedPrefsRepository {
             )
             : {};
     map[walletId.toString()] = targetSats;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
   Future<void> removeWalletTargetSats(int walletId) async {
@@ -159,7 +159,37 @@ class SharedPrefsRepository {
       (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
     );
     map.remove(walletId.toString());
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
+  }
+
+  /// 지갑 목표 수량을 바꾼다. null이면 목표를 지우고 꺼 둔다(지갑 정보 화면과 같은 규칙).
+  Future<void> updateWalletTarget(int walletId, int? targetSats) async {
+    if (targetSats == null) {
+      await removeWalletTargetSats(walletId);
+    } else {
+      await setWalletTargetSats(walletId, targetSats);
+    }
+    await setWalletTargetDisabled(walletId, targetSats == null);
+  }
+
+  bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
+
+  Future<void> setWalletTargetDisabled(int walletId, bool disabled) async {
+    await _persistTargetPreference(() => _sharedPrefs.setBool(SharedPrefKeys.walletTargetDisabled(walletId), disabled));
+  }
+
+  Future<void> _persistTargetPreference(Future<bool> Function() write) async {
+    try {
+      if (!await write()) throw StateError('Failed to save wallet target');
+    } catch (_) {
+      // SharedPreferences updates its cache before the platform confirms persistence.
+      await _sharedPrefs.reload();
+      rethrow;
+    }
+  }
+
+  Future<void> removeWalletTargetDisabled(int walletId) async {
+    await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
   }
 
   /// 지갑별 마지막 재동기화 완료 시각------------------------------------------------

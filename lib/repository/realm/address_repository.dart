@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -506,7 +507,11 @@ class AddressRepository extends BaseRepository {
     required int index,
     required bool isChange,
     required Balance balance,
+    RealmWalletBalance? walletBalance,
   }) {
+    if (walletBalance != null && walletBalance.walletId != walletId) {
+      throw ArgumentError('Wallet balance belongs to another wallet');
+    }
     final realmWalletAddress =
         realm.query<RealmWalletAddress>(r'walletId == $0 AND index == $1 AND isChange == $2', [
           walletId,
@@ -520,78 +525,62 @@ class AddressRepository extends BaseRepository {
       );
     }
 
-    final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;
-    final unconfirmedDiff = balance.unconfirmed - realmWalletAddress.unconfirmed;
-
-    realm.write(() {
-      // 지갑 주소 잔액 업데이트
+    return realm.write(() {
+      final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;
+      final unconfirmedDiff = balance.unconfirmed - realmWalletAddress.unconfirmed;
       realmWalletAddress.confirmed = balance.confirmed;
       realmWalletAddress.unconfirmed = balance.unconfirmed;
       realmWalletAddress.total = balance.total;
+      if (walletBalance != null) {
+        walletBalance.confirmed += confirmedDiff;
+        walletBalance.unconfirmed += unconfirmedDiff;
+        walletBalance.total = walletBalance.confirmed + walletBalance.unconfirmed;
+      }
+      return Balance(confirmedDiff, unconfirmedDiff);
     });
-
-    return Balance(confirmedDiff, unconfirmedDiff);
   }
 
-  /// DTO 객체를 사용하여 다수의 주소 잔액을 일괄 업데이트하고 총 변화량을 반환합니다.
-  /// @param walletId 지갑 ID
-  /// @param updateDataList 업데이트할 DTO 객체 목록
-  /// @return 전체 잔액 변화량
-  Future<Balance> updateAddressBalanceBatch(int walletId, List<UpdateAddressBalanceDto> updateDataList) async {
-    if (updateDataList.isEmpty) {
-      return Balance(0, 0);
+  /// 주소와 지갑 총액을 함께 저장해 중간 실패 시 차액이 유실되지 않게 한다.
+  Future<Balance> updateAddressBalanceBatch(
+    int walletId,
+    List<UpdateAddressBalanceDto> updateDataList, {
+    RealmWalletBalance? walletBalance,
+  }) async {
+    if (walletBalance != null && walletBalance.walletId != walletId) {
+      throw ArgumentError('Wallet balance belongs to another wallet');
     }
+    if (updateDataList.isEmpty) return Balance(0, 0);
 
-    // 모든 주소 정보를 한 번에 쿼리
-    final realmAddresses = realm.query<RealmWalletAddress>('walletId == $walletId');
+    final updatesByAddress = <(int, bool), UpdateAddressBalanceDto>{
+      for (final dto in updateDataList) (dto.scriptStatus.index, dto.scriptStatus.isChange): dto,
+    };
+    final realmAddresses = realm.query<RealmWalletAddress>(r'walletId == $0', [walletId]);
 
-    // 트랜잭션 외부에서 모든 계산 수행
-    List<AddressBalanceCalculationResult> calculationResults = [];
-    int totalConfirmedDiff = 0;
-    int totalUnconfirmedDiff = 0;
-
-    for (var dto in updateDataList) {
-      // 해당 주소 찾기
-      final realmAddress = realmAddresses.firstWhere(
-        (a) => a.index == dto.scriptStatus.index && a.isChange == dto.scriptStatus.isChange,
-        orElse:
-            () =>
-                throw StateError(
-                  '[updateAddressBalanceBatchWithDTO] Wallet address not found, walletId: $walletId, index: ${dto.scriptStatus.index}, isChange: ${dto.scriptStatus.isChange}',
-                ),
-      );
-
-      // 차이 계산
-      final confirmedDiff = dto.confirmed - realmAddress.confirmed;
-      final unconfirmedDiff = dto.unconfirmed - realmAddress.unconfirmed;
-
-      // 결과 저장
-      calculationResults.add(
-        AddressBalanceCalculationResult(
-          realmAddress: realmAddress,
-          confirmedDiff: confirmedDiff,
-          unconfirmedDiff: unconfirmedDiff,
-          newConfirmed: dto.confirmed,
-          newUnconfirmed: dto.unconfirmed,
-        ),
-      );
-
-      // 총 차이 누적
-      totalConfirmedDiff += confirmedDiff;
-      totalUnconfirmedDiff += unconfirmedDiff;
-    }
-
-    // 계산이 완료된 후 Realm 트랜잭션에서 실제 DB 업데이트만 수행
-    await realm.writeAsync(() {
-      for (var result in calculationResults) {
-        final realmAddress = result.realmAddress;
-        realmAddress.confirmed = result.newConfirmed;
-        realmAddress.unconfirmed = result.newUnconfirmed;
-        realmAddress.total = result.newTotal;
+    return realm.writeAsync(() {
+      int confirmedDiff = 0;
+      int unconfirmedDiff = 0;
+      for (final dto in updatesByAddress.values) {
+        final address = realmAddresses.firstWhere(
+          (address) => address.index == dto.scriptStatus.index && address.isChange == dto.scriptStatus.isChange,
+          orElse:
+              () =>
+                  throw StateError(
+                    'Wallet address not found, walletId: $walletId, index: ${dto.scriptStatus.index}, isChange: ${dto.scriptStatus.isChange}',
+                  ),
+        );
+        confirmedDiff += dto.confirmed - address.confirmed;
+        unconfirmedDiff += dto.unconfirmed - address.unconfirmed;
+        address.confirmed = dto.confirmed;
+        address.unconfirmed = dto.unconfirmed;
+        address.total = dto.total;
       }
+      if (walletBalance != null) {
+        walletBalance.confirmed += confirmedDiff;
+        walletBalance.unconfirmed += unconfirmedDiff;
+        walletBalance.total = walletBalance.confirmed + walletBalance.unconfirmed;
+      }
+      return Balance(confirmedDiff, unconfirmedDiff);
     });
-
-    return Balance(totalConfirmedDiff, totalUnconfirmedDiff);
   }
 
   String getDerivationPath(int walletId, String address) {
@@ -623,7 +612,7 @@ class AddressRepository extends BaseRepository {
     if (existingAddress == null) {
       return false;
     }
-    return existingAddress.total != 0 || existingAddress.unconfirmed != 0;
+    return existingAddress.total != 0 || existingAddress.unconfirmed != 0 || _hasPendingTransaction(walletId, address);
   }
 
   /// 주소가 사용된 적 있지만 지금은 잔액도 미확정 트랜잭션도 없는지 확인합니다.
@@ -634,10 +623,13 @@ class AddressRepository extends BaseRepository {
     if (existingAddress == null) {
       return false;
     }
-    return existingAddress.isUsed && existingAddress.total == 0 && existingAddress.unconfirmed == 0;
+    return existingAddress.isUsed &&
+        existingAddress.total == 0 &&
+        existingAddress.unconfirmed == 0 &&
+        !_hasPendingTransaction(walletId, address);
   }
 
-  /// 과거에 사용됐지만 지금은 잔액도 미확정 트랜잭션도 없는 주소 목록을 조회합니다.
+  /// 잔액이 0인 사용 주소 후보를 조회한다. 미확정 이력이 남은 주소도 재확인 대상이다.
   List<WalletAddress> getDormantUsedAddresses(int walletId) {
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isUsed == true AND total == 0 AND unconfirmed == 0 SORT(index ASC)',
@@ -648,12 +640,28 @@ class AddressRepository extends BaseRepository {
 
   /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
   List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    final pendingAddresses = <String>{};
+    for (final tx in _pendingTransactions(walletId)) {
+      for (final encoded in [...tx.inputAddressList, ...tx.outputAddressList]) {
+        pendingAddresses.add(jsonDecode(encoded)['address'] as String);
+      }
+    }
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
-      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0) SORT(index ASC)',
-      [walletId, isChange],
+      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0 OR address IN $2) SORT(index ASC)',
+      [walletId, isChange, pendingAddresses.toList()],
     );
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
+
+  RealmResults<RealmTransaction> _pendingTransactions(int walletId) => realm.query<RealmTransaction>(
+    r'walletId == $0 AND blockHeight <= 0 AND replaceByTransactionHash == null',
+    [walletId],
+  );
+
+  bool _hasPendingTransaction(int walletId, String address) =>
+      _pendingTransactions(walletId).query(r'ANY inputAddressList CONTAINS $0 OR ANY outputAddressList CONTAINS $0', [
+        jsonEncode(address),
+      ]).isNotEmpty;
 
   /// isUsed로 표시된 주소 중 최대 인덱스 / 없으면 -1
   /// (getUsedIndexes와 달리 updateUsedIndex:false로 갱신된 인덱스도 포함)

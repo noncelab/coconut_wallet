@@ -39,6 +39,8 @@ class UtxoTagChart extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int dustThreshold;
   final VoidCallback? onBalanceTap;
+  final bool showBalanceHeader;
+  final double? height;
 
   const UtxoTagChart({
     super.key,
@@ -47,6 +49,8 @@ class UtxoTagChart extends StatelessWidget {
     required this.currentUnit,
     required this.dustThreshold,
     this.onBalanceTap,
+    this.showBalanceHeader = true,
+    this.height,
   });
 
   static ({List<_TagSegment> segments, int coinCount, int uniqueTaggedCount, int actualTotalSats})
@@ -147,27 +151,25 @@ class UtxoTagChart extends StatelessWidget {
     }
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      constraints: height != null ? BoxConstraints(minHeight: height!) : null,
+      color: colors.background,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, showBalanceHeader ? 12 : 8, 16, showBalanceHeader ? 24 : 8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UtxoTotalBalanceHeader(
-              coinCount: coinCount,
-              totalSats: totalSats,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onBalanceTap: onBalanceTap,
-            ),
-            const SizedBox(height: 12),
+            if (showBalanceHeader) ...[
+              UtxoTotalBalanceHeader(
+                coinCount: coinCount,
+                totalSats: totalSats,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onBalanceTap: onBalanceTap,
+              ),
+              const SizedBox(height: 12),
+            ],
             Center(
               child: _DonutChart(
                 segments: segments,
@@ -186,14 +188,9 @@ class UtxoTagChart extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.background, colors.divider],
-        ),
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
-      ),
+      constraints: height != null ? BoxConstraints(minHeight: height!) : null,
+      color: colors.background,
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -418,7 +415,7 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
-                        untaggedColor: colors.utxoOverviewChartSurface,
+                        untaggedColor: colors.surfaceMuted,
                         overlayBlendColor: colors.divider,
                         multiTagFallbackColor: colors.iconSecondary,
                         tagBlendColor: colors.secondaryText,

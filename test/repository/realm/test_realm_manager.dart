@@ -40,11 +40,13 @@ class TestRealmManager implements RealmManager {
       realm.deleteAll<RealmMultisigWallet>();
       realm.deleteAll<RealmExternalWallet>();
       realm.deleteAll<RealmTaprootWallet>();
+      realm.deleteAll<RealmHotWalletMetadata>();
       realm.deleteAll<RealmTransaction>();
       realm.deleteAll<RealmUtxoTag>();
       realm.deleteAll<RealmWalletBalance>();
       realm.deleteAll<RealmWalletAddress>();
       realm.deleteAll<RealmUtxo>();
+      realm.deleteAll<RealmPendingUtxoLock>();
       realm.deleteAll<RealmScriptStatus>();
       realm.deleteAll<RealmBlockTimestamp>();
       realm.deleteAll<RealmIntegerId>();

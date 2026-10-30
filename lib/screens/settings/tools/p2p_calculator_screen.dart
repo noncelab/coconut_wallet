@@ -32,7 +32,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
@@ -44,6 +44,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoTextField;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -69,6 +70,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   late final TextEditingController _premiumController;
   late final TextEditingController _inputController;
+  final TextEditingController _resultController = TextEditingController();
+  final FocusNode _resultFocusNode = FocusNode();
 
   late final FocusNode _premiumFocusNode;
   late final FocusNode _premiumMirrorFocusNode;
@@ -105,6 +108,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _resetCalculator() {
     _isUpdatingController = true;
     _inputController.clear();
+    _resultController.clear();
     _premiumController.text = _formatLocaleDecimalText('1.0');
     _isUpdatingController = false;
     _viewModel.resetInput();
@@ -117,6 +121,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _flipController.dispose();
     _premiumController.dispose();
     _inputController.dispose();
+    _resultController.dispose();
+    _resultFocusNode.dispose();
     _premiumFocusNode.removeListener(_onPremiumFocusChanged);
     _inputFocusNode.removeListener(_onInputFocusChanged);
     _premiumFocusNode.dispose();
@@ -272,6 +278,50 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
 
     setState(() {});
+  }
+
+  bool get _resultIsFiat => _viewModel.inputAssetType == InputAssetType.btc;
+
+  void _handleResultInputChanged(String value) {
+    final decimal = _resultIsFiat ? _viewModel.fiatCode.decimalDigits > 0 : !_viewModel.currentUnit.isBasedOnSatoshi;
+    final sanitized = _sanitizeInput(value, decimal);
+    if (sanitized.isEmpty) {
+      _viewModel.setResultAmount(null);
+      _isUpdatingController = true;
+      _inputController.clear();
+      _isUpdatingController = false;
+    } else {
+      var amount =
+          _resultIsFiat
+              ? _parseFiatTextToMinorUnits(sanitized)
+              : _viewModel.currentUnit.isBasedOnSatoshi
+              ? int.tryParse(sanitized) ?? 0
+              : BalanceFormatUtil.parseAmountTextToSats(
+                    currentUnit: _viewModel.currentUnit,
+                    inputText: _formatLocaleDecimalText(sanitized),
+                  ) ??
+                  0;
+      if (!_resultIsFiat) amount = amount.clamp(0, _maxSats).toInt();
+      final inverse = _viewModel.calculateInputFromResult(amount);
+      if (inverse == null) return;
+      if (_resultIsFiat && inverse > _maxSats) {
+        amount = _viewModel.calculateFiatFromSats(_maxSats);
+      }
+      _viewModel.setResultAmount(amount);
+      _updateControllerWithResult(_viewModel.inputAmount!);
+    }
+    setState(() {});
+  }
+
+  double _amountFieldWidth(BuildContext context, String text, String placeholder, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text.isEmpty ? placeholder : text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = math.max(48.0, painter.width.ceilToDouble() + 4);
+    painter.dispose();
+    return width;
   }
 
   void _processFiatInput(String sanitized, {required bool shouldUpdateController}) {
@@ -457,15 +507,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 languageCode: context.read<PreferenceProvider>().language,
                 title: t.utility.p2p_calculator.no_wallet,
                 description: t.utility.p2p_calculator.no_wallet_description,
-                onTapRight: () {
-                  // popup 닫고 홈으로 이동
-                  Navigator.of(context).pop();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    WalletHomeScreen.openAddWalletIfActive(); // 홈에서 지갑 추가 바텀시트 열기
-                  });
-                },
+                onTapRight: _returnToHomeAndAddWallet,
                 onTapLeft: () {
                   Navigator.of(context).pop();
                 },
@@ -522,6 +564,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           break;
         }
     }
+  }
+
+  Future<void> _returnToHomeAndAddWallet() async {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.popUntil((route) => route.isFirst);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!navigator.mounted) return;
+    await WalletAddScreen.openByWalletCount(navigator.context);
   }
 
   void _changeInputAsset() {
@@ -690,7 +741,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       return;
     }
 
-    final int result = _viewModel.calculate(input);
+    final int result = _viewModel.resultAmount ?? _viewModel.calculate(input);
     final referenceDateTime = DateTime.now();
     final referenceDateTimeString =
         '${referenceDateTime.year.toString().substring(2)}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
@@ -1211,7 +1262,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   Widget _buildCalculatorCards(P2PCalculatorViewModel viewModel, double usableHeight) {
     final hasInput = viewModel.inputAmount != null && viewModel.inputAmount! > 0;
-    final result = hasInput ? viewModel.calculate(viewModel.inputAmount!) : 0;
+    final result = viewModel.resultAmount ?? 0;
+    if (viewModel.isEditingResult && viewModel.inputAmount != null) {
+      _updateControllerWithResult(viewModel.inputAmount!);
+    }
+    if (!_resultFocusNode.hasFocus || !viewModel.isEditingResult) {
+      final text = viewModel.resultAmount == null ? '' : formatResultAmount(result);
+      if (_resultController.text != text) {
+        _resultController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+      }
+    }
     final placeholder = viewModel.getPlaceholder(isInputCard: true);
     final isOffline = viewModel.isOfflineMode;
     // 가격 조회가 불가능하면(오프라인 등) '-'로 표시
@@ -1321,6 +1381,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         postfix: viewModel.resultCardPostfix,
                       )
                       : _buildResultCardWidget(
+                        editable: true,
                         isActive: isResultActive,
                         resultText: resultText,
                         prefix: viewModel.resultCardPrefix,
@@ -1413,33 +1474,47 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     children: [
                       if (prefix != null)
                         Text('$prefix ', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
-                      Flexible(
-                        child: IntrinsicWidth(
-                          child: CoconutTextField(
-                            key: ValueKey('input_textfield_$placeholderText'),
-                            activeColor: textColor,
-                            cursorColor: textColor,
-                            placeholderColor: context.coconutColors.mutedText,
-                            enabled: _viewModel.isNetworkOn,
-                            maxLines: 1,
-                            controller: controller,
-                            focusNode: focusNode,
-                            placeholderText: effectivePlaceholder,
-                            textInputFormatter: _amountInputFormatters(),
-                            onChanged: _handleAmountInputChanged,
-                            textInputType:
-                                _amountInputAllowsDecimal
-                                    ? const TextInputType.numberWithOptions(signed: false, decimal: true)
-                                    : TextInputType.number,
-                            textInputAction: TextInputAction.done,
-                            enableInteractiveSelection: false,
-                            isVisibleBorder: false,
-                            textAlign: TextAlign.center,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            padding: EdgeInsets.zero,
-                          ),
-                        ),
+                      Builder(
+                        builder:
+                            (context) => SizedBox(
+                              width: _amountFieldWidth(
+                                context,
+                                controller.text,
+                                effectivePlaceholder,
+                                CoconutTypography.body2_14.copyWith(
+                                  fontSize: 28,
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
+                                ),
+                              ),
+                              child: CoconutTextField(
+                                key: ValueKey('input_textfield_$placeholderText'),
+                                activeColor: textColor,
+                                cursorColor: textColor,
+                                enabled: _viewModel.isNetworkOn,
+                                maxLines: 1,
+                                controller: controller,
+                                focusNode: focusNode,
+                                placeholderText: effectivePlaceholder,
+                                textInputFormatter: _amountInputFormatters(),
+                                onChanged: _handleAmountInputChanged,
+                                textInputType:
+                                    _amountInputAllowsDecimal
+                                        ? const TextInputType.numberWithOptions(signed: false, decimal: true)
+                                        : TextInputType.number,
+                                textInputAction: TextInputAction.done,
+                                enableInteractiveSelection: false,
+                                isVisibleBorder: false,
+                                textAlign:
+                                    (controller.text.isEmpty && focusNode.hasFocus) || controller.text == '0'
+                                        ? TextAlign.start
+                                        : TextAlign.center,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
                       ),
                       if (postfix != null)
                         Text(' $postfix', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
@@ -1495,29 +1570,46 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               '${t.utility.p2p_calculator.premium} ',
               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
-            IntrinsicWidth(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 10),
-                child: Transform.translate(
-                  offset: const Offset(0, -1.5),
-                  child: CoconutTextField(
-                    activeColor: context.coconutColors.primaryText,
-                    cursorColor: context.coconutColors.primaryText,
-                    enabled: _viewModel.isNetworkOn,
-                    controller: premiumController,
-                    focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
-                    padding: EdgeInsets.zero,
-                    maxLines: 1,
-                    height: 24,
-                    textInputAction: TextInputAction.done,
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
-                    onChanged: _handlePremiumInputChanged,
-                    textAlign: TextAlign.end,
-                    isVisibleBorder: false,
+            Builder(
+              builder: (context) {
+                final textPainter = TextPainter(
+                  text: TextSpan(
+                    text: '99${NumberFormatConfig.instance.decimalSeparator}9',
+                    style: CoconutTypography.body2_14.copyWith(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.normal,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ),
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                // Reserve the full allowed rate and caret even when the field is empty.
+                final inputWidth = textPainter.width.ceilToDouble() + 4;
+                textPainter.dispose();
+                return SizedBox(
+                  width: inputWidth,
+                  child: Transform.translate(
+                    offset: const Offset(0, -1.5),
+                    child: CoconutTextField(
+                      activeColor: context.coconutColors.primaryText,
+                      cursorColor: context.coconutColors.primaryText,
+                      enabled: _viewModel.isNetworkOn,
+                      controller: premiumController,
+                      focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
+                      padding: EdgeInsets.zero,
+                      maxLines: 1,
+                      height: 24,
+                      textInputAction: TextInputAction.done,
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
+                      onChanged: _handlePremiumInputChanged,
+                      textAlign: TextAlign.end,
+                      isVisibleBorder: false,
+                    ),
+                  ),
+                );
+              },
             ),
             Text('%', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
           ],
@@ -1552,6 +1644,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     String? prefix,
     String? postfix,
     VoidCallback? onTap,
+    bool editable = false,
   }) {
     final textColor = isActive ? context.coconutColors.primaryText : context.coconutColors.mutedText;
 
@@ -1565,7 +1658,48 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           mainAxisSize: MainAxisSize.min,
           children: [
             if (prefix != null) Text('$prefix ', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
-            Text(resultText, style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+            if (editable)
+              Builder(
+                builder:
+                    (context) => SizedBox(
+                      width: _amountFieldWidth(
+                        context,
+                        _resultController.text,
+                        resultText,
+                        CoconutTypography.heading2_28_Bold,
+                      ),
+                      child: CupertinoTextField(
+                        key: const Key('p2p-result-amount'),
+                        controller: _resultController,
+                        focusNode: _resultFocusNode,
+                        enabled: _viewModel.isBtcPriceAvailable && _viewModel.calculateInputFromResult(0) != null,
+                        padding: EdgeInsets.zero,
+                        decoration: null,
+                        textAlign: TextAlign.center,
+                        style: CoconutTypography.heading2_28_Bold.setColor(textColor),
+                        cursorColor: textColor,
+                        placeholder: resultText,
+                        placeholderStyle: CoconutTypography.heading2_28_Bold.setColor(textColor),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal:
+                              _resultIsFiat
+                                  ? _viewModel.fiatCode.decimalDigits > 0
+                                  : !_viewModel.currentUnit.isBasedOnSatoshi,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        enableInteractiveSelection: false,
+                        inputFormatters:
+                            _resultIsFiat
+                                ? [FiatAmountInputFormatter(decimalPlaces: _viewModel.fiatCode.decimalDigits)]
+                                : _viewModel.currentUnit.isBasedOnSatoshi
+                                ? [FilteringTextInputFormatter.digitsOnly]
+                                : [const BtcAmountInputFormatter()],
+                        onChanged: _handleResultInputChanged,
+                      ),
+                    ),
+              )
+            else
+              Text(resultText, style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
             if (postfix != null) Text(' $postfix', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
           ],
         ),
@@ -1634,6 +1768,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                     child: _buildResultCardWidget(
+                      editable: enableInput,
                       isActive: isActive,
                       resultText: resultText,
                       prefix: prefix,

@@ -6,7 +6,6 @@ import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
-        CoconutAppBar,
         CoconutOptionPicker,
         CoconutToolTip,
         CoconutTooltipType,
@@ -19,7 +18,6 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/ui/coconut/coconut_option_picker.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -35,6 +33,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_split/utxo_split_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
@@ -59,8 +58,9 @@ enum SplitStep { selectUtxo, selectMethod, enterDetails }
 
 class UtxoSplitScreen extends StatefulWidget {
   final int id;
+  final bool isActive;
 
-  const UtxoSplitScreen({super.key, required this.id});
+  const UtxoSplitScreen({super.key, required this.id, required this.isActive});
 
   @override
   State<UtxoSplitScreen> createState() => _UtxoSplitScreenState();
@@ -93,11 +93,23 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isUtxoSelectionBottomSheetOpen = false;
   bool _isMethodBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
+  bool _shouldRevalidateOnBuild = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.inputBorderUnfocused;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;
+
+  @override
+  void didUpdateWidget(covariant UtxoSplitScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive && !widget.isActive) {
+      _autoOpenUtxoPickerTimer?.cancel();
+      _autoOpenMethodPickerTimer?.cancel();
+    } else if (!oldWidget.isActive && widget.isActive) {
+      _shouldRevalidateOnBuild = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -138,12 +150,21 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             context.read<PreferenceProvider>(),
             context.read<WalletProvider>(),
             context.read<AddressRepository>(),
+            context.read<UtxoRepository>(),
             context.read<SendInfoProvider>(),
             context.read<UtxoTagProvider>(),
             () => _showUsePreviewConfirmDialog(context),
           ),
       child: Builder(
         builder: (context) {
+          if (_shouldRevalidateOnBuild) {
+            _shouldRevalidateOnBuild = false;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && widget.isActive) {
+                context.read<UtxoSplitViewModel>().revalidateSelectedUtxo();
+              }
+            });
+          }
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -151,11 +172,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 context.read<UtxoSplitViewModel>().clearSendInfo();
               }
             },
-            child: Scaffold(
-              backgroundColor: context.coconutColors.background,
-              appBar: _buildAppBar(context),
-              body: _buildBody(context),
-            ),
+            child: Scaffold(backgroundColor: context.coconutColors.background, body: _buildBody(context)),
           );
         },
       ),
@@ -187,16 +204,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     /// 결과 박스(isFocused 체크)가 숨겨져 빌드/프리뷰 진행이 보이지 않는다
     FocusManager.instance.primaryFocus?.unfocus();
     return result ?? false;
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return CoconutAppBar.build(
-      context: context,
-      backgroundColor: context.coconutColors.background,
-      title: t.split_utxo_screen.title,
-      isBottom: true,
-      isBackButton: true,
-    );
   }
 
   void _scheduleHeaderAnimation(String nextTitle, SplitMethod? nextMethod) {
@@ -611,11 +618,14 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
                 final isSuccess = await viewModel.buildTxAndSaveForNext();
                 if (isSuccess && context.mounted) {
-                  Navigator.pushNamed(
+                  await Navigator.pushNamed(
                     context,
                     AppRouteNames.sendConfirm,
                     arguments: SendConfirmRouteArgs(currentUnit: viewModel.currentUnit),
                   );
+                  if (context.mounted && widget.isActive) {
+                    viewModel.revalidateSelectedUtxo();
+                  }
                 }
                 if (!isSuccess) {
                   vibrateLightDouble();
@@ -729,7 +739,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   }
 
   void _scheduleAutoOpenUtxoSelectionBottomSheet(UtxoSplitViewModel viewModel) {
-    if (viewModel.isUtxoSelected ||
+    if (!widget.isActive ||
+        viewModel.isUtxoSelected ||
         _displayedPickerStep != SplitStep.selectUtxo ||
         _hasAutoOpenedUtxoPicker ||
         _isUtxoSelectionBottomSheetOpen) {
@@ -745,6 +756,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
       () {
         if (!mounted ||
+            !widget.isActive ||
             ModalRoute.of(context)?.isCurrent != true ||
             _displayedPickerStep != SplitStep.selectUtxo ||
             _hasAutoOpenedUtxoPicker ||
@@ -760,7 +772,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   }
 
   void _scheduleAutoOpenMethodBottomSheet(UtxoSplitViewModel viewModel) {
-    if (!viewModel.isUtxoSelected ||
+    if (!widget.isActive ||
+        !viewModel.isUtxoSelected ||
         viewModel.selectedMethod != null ||
         _displayedPickerStep != SplitStep.selectMethod ||
         _hasAutoOpenedMethodPicker ||
@@ -777,6 +790,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
       () {
         if (!mounted ||
+            !widget.isActive ||
             ModalRoute.of(context)?.isCurrent != true ||
             !viewModel.isUtxoSelected ||
             viewModel.selectedMethod != null ||
@@ -1060,7 +1074,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             height: 40,
                             fontHeight: 1,
                             borderRadius: 8,
-                            backgroundColor: hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                            backgroundColor: hasFocus ? context.coconutColors.background : Colors.transparent,
                             controller: viewModel.splitCountController,
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
@@ -1083,7 +1097,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                               child: Text(
                                 '1',
                                 style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                  color: context.coconutColors.inputPlaceholder,
+                                  color: context.coconutColors.secondaryTextStrong,
                                   fontSize: 24,
                                 ),
                                 textAlign: TextAlign.center,
@@ -2042,7 +2056,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         focusNode: widget.item.countFocusNode,
                                         textAlign: TextAlign.center,
                                         backgroundColor:
-                                            hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                                            hasFocus ? context.coconutColors.background : Colors.transparent,
                                         fontSize: 24,
                                         isVisibleBorder: false,
                                         onChanged: (_) {},
@@ -2060,7 +2074,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                           child: Text(
                                             '1',
                                             style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                              color: context.coconutColors.inputPlaceholder,
+                                              color: context.coconutColors.secondaryTextStrong,
                                               fontSize: 24,
                                             ),
                                             textAlign: TextAlign.center,

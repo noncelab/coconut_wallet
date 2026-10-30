@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/wallet_mock.dart';
@@ -40,6 +41,15 @@ class _UtxoTagProvider extends Fake implements UtxoTagProvider {
 
   @override
   List<UtxoTag> getUtxoTagsByUtxoId(int walletId, String utxoId) => tagsByUtxoId[utxoId] ?? [];
+}
+
+class _UtxoRepository extends UtxoRepository {
+  _UtxoRepository(super.realmManager);
+
+  List<UtxoState> utxos = [];
+
+  @override
+  List<UtxoState> getUtxoStateList(int walletId) => utxos;
 }
 
 /// 주소 생성 단계에서 빌드를 멈춰 "빌드 진행 중" 상태를 재현한다.
@@ -104,14 +114,22 @@ void main() {
   late TestRealmManager realmManager;
   late _GatedAddressRepository addressRepository;
   late _UtxoTagProvider tagProvider;
+  late _UtxoRepository utxoRepository;
   final SinglesigWalletItem wallet = WalletMock.createSingleSigWalletItem();
   final List<UtxoSplitViewModel> createdViewModels = [];
 
-  UtxoState createUtxo(int amount, {int index = 0, String? txHash}) => UtxoState(
+  UtxoState createUtxo(
+    int amount, {
+    int index = 0,
+    String? txHash,
+    int blockHeight = 100,
+    UtxoStatus status = UtxoStatus.unspent,
+  }) => UtxoState(
     transactionHash: txHash ?? 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
     index: index,
     amount: amount,
-    blockHeight: 100,
+    blockHeight: blockHeight,
+    status: status,
     to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
     derivationPath: "m/84'/1'/0'/0/0",
     timestamp: DateTime.now(),
@@ -125,6 +143,7 @@ void main() {
       _PreferenceProvider(),
       _WalletProvider(wallet),
       addressRepository,
+      utxoRepository,
       SendInfoProvider(),
       tagProvider,
       prompt ?? () async => false,
@@ -138,6 +157,7 @@ void main() {
     realmManager = await setupTestRealmManager();
     addressRepository = _GatedAddressRepository(realmManager);
     tagProvider = _UtxoTagProvider();
+    utxoRepository = _UtxoRepository(realmManager);
 
     realmManager.realm.write(() {
       realmManager.realm.add(
@@ -301,6 +321,78 @@ void main() {
       expect(viewModel.isSplitInputValid, isFalse);
       expect(viewModel.splitResult, isNull);
       expect(addressRepository.callCount, 0);
+    });
+  });
+
+  group('다른 화면에서 돌아왔을 때 선택한 UTXO 다시 확인', () {
+    test('두 번째 UTXO가 소비되면 그 UTXO만 빠지고 나머지 선택은 유지된다', () {
+      final utxoA = createUtxo(100000, index: 0);
+      final utxoB = createUtxo(100000, index: 1);
+      final utxoC = createUtxo(100000, index: 2);
+      final viewModel = createViewModel();
+      viewModel.setSelectedUtxoList([utxoA, utxoB, utxoC]);
+      utxoRepository.utxos = [utxoA, createUtxo(100000, index: 1, status: UtxoStatus.outgoing), utxoC];
+
+      viewModel.revalidateSelectedUtxo();
+
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId, utxoC.utxoId]);
+    });
+
+    test('지갑에서 사라진 UTXO는 빠진다', () {
+      final utxoA = createUtxo(100000, index: 0);
+      final utxoB = createUtxo(100000, index: 1);
+      final viewModel = createViewModel();
+      viewModel.setSelectedUtxoList([utxoA, utxoB]);
+      utxoRepository.utxos = [utxoA];
+
+      viewModel.revalidateSelectedUtxo();
+
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId]);
+    });
+
+    test('블록 높이가 바뀐 UTXO는 최신 상태로 바뀌고 다중 선택은 유지된다', () {
+      final utxoA = createUtxo(100000, index: 0);
+      final utxoB = createUtxo(100000, index: 1);
+      final viewModel = createViewModel();
+      viewModel.setSelectedUtxoList([utxoA, utxoB]);
+      utxoRepository.utxos = [utxoA, createUtxo(100000, index: 1, blockHeight: 101)];
+
+      viewModel.revalidateSelectedUtxo();
+
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId, utxoB.utxoId]);
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.blockHeight), [100, 101]);
+    });
+
+    test('바뀐 UTXO가 없으면 선택과 입력을 그대로 둔다', () {
+      final utxoA = createUtxo(100000, index: 0);
+      final utxoB = createUtxo(100000, index: 1);
+      final viewModel = createViewModel();
+      viewModel.setSelectedUtxoList([utxoA, utxoB]);
+      viewModel.setSplitMethod(SplitMethod.evenly);
+      viewModel.splitCountController.text = '3';
+      final selectedBefore = viewModel.selectedUtxoList;
+      utxoRepository.utxos = [createUtxo(100000, index: 0), createUtxo(100000, index: 1)];
+
+      viewModel.revalidateSelectedUtxo();
+
+      expect(viewModel.selectedUtxoList, same(selectedBefore));
+      expect(viewModel.selectedMethod, SplitMethod.evenly);
+      expect(viewModel.splitCountController.text, '3');
+    });
+
+    test('남은 UTXO 합계가 20000 sats 미만이면 나누기 방법이 해제된다', () {
+      final utxoA = createUtxo(10000, index: 0);
+      final utxoB = createUtxo(100000, index: 1);
+      final viewModel = createViewModel();
+      viewModel.setSelectedUtxoList([utxoA, utxoB]);
+      viewModel.setSplitMethod(SplitMethod.evenly);
+      utxoRepository.utxos = [utxoA, createUtxo(100000, index: 1, status: UtxoStatus.outgoing)];
+
+      viewModel.revalidateSelectedUtxo();
+
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId]);
+      expect(viewModel.hasSelectedUtxoAmountError, isTrue);
+      expect(viewModel.selectedMethod, isNull);
     });
   });
 

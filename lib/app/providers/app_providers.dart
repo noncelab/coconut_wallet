@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
@@ -20,8 +22,11 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -86,19 +91,54 @@ List<SingleChildWidget> buildAppProviders({
           );
         },
       ),
+      ChangeNotifierProvider<WalletAppearanceProvider>(
+        lazy: false,
+        create:
+            (context) => WalletAppearanceProvider(
+              repository: WalletAppearanceRepository(),
+              photoStore: WalletBackgroundPhotoStore(),
+              lifecycleEvents: context.read<WalletProvider>().lifecycleEvents,
+            )..init(),
+      ),
       ChangeNotifierProvider<NodeProvider>(
         create: (context) {
           final walletProvider = context.read<WalletProvider>();
-          return NodeProvider(
+          final nodeProvider = NodeProvider(
             context.read<ElectrumServerProvider>().getElectrumServer(),
             networkType,
             context.read<ConnectivityProvider>(),
             walletProvider.walletLoadStateNotifier,
             walletProvider.walletItemListNotifier,
             isFirebaseAnalyticsUsed ? context.read<AnalyticsService>() : null,
+            hasTransactionHistory: isFirebaseAnalyticsUsed ? _hasTransactionHistory(context) : null,
           );
+          walletProvider.setWalletUnsubscriber((wallet) async {
+            await nodeProvider.unsubscribeWallet(wallet);
+          });
+          return nodeProvider;
         },
       ),
+      if (isFirebaseAnalyticsUsed)
+        Provider<HotWalletUsageTracker>(
+          lazy: false,
+          create:
+              (context) => HotWalletUsageTracker(
+                syncStateStream: context.read<NodeProvider>().syncStateStream,
+                walletItemList: context.read<WalletProvider>().walletItemListNotifier,
+                hasTransactionHistory: _hasTransactionHistory(context),
+                analyticsService: context.read<AnalyticsService>(),
+              ),
+          dispose: (_, tracker) => tracker.dispose(),
+        ),
     ],
   ];
+}
+
+bool Function(int walletId) _hasTransactionHistory(BuildContext context) {
+  final realmManager = context.read<RealmManager>();
+  final transactionRepository = context.read<TransactionRepository>();
+  return (walletId) {
+    realmManager.realm.refresh();
+    return transactionRepository.getTransactionRecordList(walletId).isNotEmpty;
+  };
 }

@@ -15,7 +15,6 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -23,7 +22,7 @@ class IsolateManager {
   Isolate? _isolate;
   SendPort? _mainToIsolateSendPort;
   ReceivePort? _mainFromIsolateReceivePort;
-  Completer<void>? _isolateReady;
+  Completer<AsyncError?>? _isolateReady;
   StreamController<IsolateStateMessage>? _stateController;
   Stream<IsolateStateMessage>? _stateStream;
   bool _receivePortListening = false;
@@ -41,8 +40,11 @@ class IsolateManager {
   }
 
   final Set<ReceivePort> _activeReceivePorts = {};
+  final Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto) _spawnIsolate;
 
-  IsolateManager();
+  /// [spawnIsolate]는 테스트가 isolate 준비 시점을 정할 때만 넘긴다(기본값 [Isolate.spawn]).
+  IsolateManager({Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto)? spawnIsolate})
+    : _spawnIsolate = spawnIsolate ?? Isolate.spawn<SpawnIsolateDto>;
 
   void _createReceivePort() {
     if (_mainFromIsolateReceivePort != null) {
@@ -55,12 +57,15 @@ class IsolateManager {
   void _createIsolateCompleter() {
     if (_isolateReady != null && !_isolateReady!.isCompleted && _isInitializing) {
       try {
-        _isolateReady!.completeError(Exception('IsolateManager: Previous initialization was cancelled'));
+        _isolateReady!.complete(
+          AsyncError(Exception('IsolateManager: Previous initialization was cancelled'), StackTrace.current),
+        );
       } catch (e) {
         // 이미 완료된 경우 무시
       }
     }
-    _isolateReady = Completer<void>();
+    // 오류도 값으로 전달하여 서로 다른 error zone의 대기자가 자신의 zone에서 처리하도록 한다.
+    _isolateReady = Completer<AsyncError?>();
   }
 
   Future<void> initialize(
@@ -74,7 +79,8 @@ class IsolateManager {
     if (_isInitializing) {
       Logger.log('IsolateManager: Already initializing, waiting for completion');
       if (_isolateReady != null && !_isolateReady!.isCompleted) {
-        await _isolateReady!.future;
+        final failure = await _isolateReady!.future;
+        if (failure != null) Error.throwWithStackTrace(failure.error, failure.stackTrace);
         return;
       }
       return; // 이미 성공적으로 완료된 경우
@@ -88,22 +94,26 @@ class IsolateManager {
       _createReceivePort();
       _closeStateController();
       _createIsolateCompleter();
+      // spawn 중 closeIsolate()가 필드를 비워도 이번 초기화의 결과(종료 오류)를 받는다.
+      final isolateReady = _isolateReady!;
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
       final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType, pinnedCertFingerprint);
 
-      _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
+      _isolate = await _spawnIsolate(_isolateEntry, data);
       _setUpReceivePortListener();
 
       final timeout = _getTimeout();
       // 초기화 완료 대기
-      await _isolateReady!.future.timeout(
+      final failure = await isolateReady.future.timeout(
         timeout,
         onTimeout: () {
           Logger.error('IsolateManager: Initialize timeout after ${timeout.inSeconds} seconds');
           throw TimeoutException('Isolate initialization timeout', timeout);
         },
       );
+
+      if (failure != null) Error.throwWithStackTrace(failure.error, failure.stackTrace);
 
       Logger.log('IsolateManager: Initialization completed successfully');
     } catch (e) {
@@ -177,11 +187,11 @@ class IsolateManager {
             _handleIsolateManagerMessage(message);
           }
         },
-        onError: (error) {
+        onError: (Object error, StackTrace stack) {
           Logger.error('IsolateManager: ReceivePort error: $error');
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
             try {
-              _isolateReady!.completeError(Exception('Receive port error: $error'));
+              _isolateReady!.complete(AsyncError(Exception('Receive port error: $error'), stack));
             } catch (e) {
               // 이미 완료된 경우 무시
             }
@@ -189,12 +199,12 @@ class IsolateManager {
         },
         cancelOnError: false,
       );
-    } catch (e) {
+    } catch (e, stack) {
       _receivePortListening = false;
       Logger.error('IsolateManager: Failed to set up ReceivePort listener: $e');
       if (_isolateReady != null && !_isolateReady!.isCompleted) {
         try {
-          _isolateReady!.completeError(Exception('Failed to set up ReceivePort listener: $e'));
+          _isolateReady!.complete(AsyncError(Exception('Failed to set up ReceivePort listener: $e'), stack));
         } catch (e) {
           // 이미 완료된 경우 무시
         }
@@ -219,7 +229,7 @@ class IsolateManager {
           // scheduleMicrotask를 사용하여 메시지 처리 완료 후 초기화 완료 신호 전송
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
             try {
-              _isolateReady!.complete();
+              _isolateReady!.complete(null);
             } catch (e) {
               Logger.error('IsolateManager: Error completing initialization: $e');
             }
@@ -238,7 +248,7 @@ class IsolateManager {
 
         if (_isolateReady != null && !_isolateReady!.isCompleted) {
           try {
-            _isolateReady!.completeError(Exception('IsolateManager: Initialization failed'));
+            _isolateReady!.complete(AsyncError(Exception('IsolateManager: Initialization failed'), StackTrace.current));
           } catch (_) {}
         }
         break;
@@ -379,22 +389,6 @@ class IsolateManager {
     } else {
       Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage');
     }
-    // [FileLogger]에 브로드캐스트 실패 로그 추가
-    if (command == IsolateControllerCommand.broadcast) {
-      _logBroadcastFailureToFile(failureStage, detail);
-    }
-  }
-
-  void _logBroadcastFailureToFile(String failureStage, Object? detail) {
-    if (detail == null) {
-      FileLogger.logBroadcast('isolate failureStage=$failureStage');
-      return;
-    }
-    if (detail is AppError) {
-      FileLogger.logBroadcast('isolate failureStage=$failureStage code=${detail.code}');
-      return;
-    }
-    FileLogger.logBroadcast('isolate failureStage=$failureStage type=${detail.runtimeType}');
   }
 
   /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.
@@ -434,10 +428,11 @@ class IsolateManager {
       final initTimeout = _getTimeout();
       if (!isInitialized) {
         if (_isolateReady != null && !_isolateReady!.isCompleted) {
-          await _isolateReady!.future.timeout(
+          final failure = await _isolateReady!.future.timeout(
             initTimeout,
             onTimeout: () => throw TimeoutException('Isolate not ready', initTimeout),
           );
+          if (failure != null) Error.throwWithStackTrace(failure.error, failure.stackTrace);
         } else if (!isInitialized) {
           _logCommandFailure(messageType, 'isolate_not_initialized_no_pending_init');
           throw ErrorCodes.nodeIsolateError;
@@ -620,7 +615,9 @@ class IsolateManager {
       // isolateReady가 완료되지 않았다면 에러로 완료 처리
       if (_isolateReady != null && !_isolateReady!.isCompleted) {
         try {
-          _isolateReady!.completeError(Exception('Isolate was closed before initialization completed'));
+          _isolateReady!.complete(
+            AsyncError(Exception('Isolate was closed before initialization completed'), StackTrace.current),
+          );
         } catch (e) {
           // 이미 완료된 경우 무시
         }

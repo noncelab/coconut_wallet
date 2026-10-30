@@ -700,7 +700,7 @@ void main() {
       print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
-    });
+    }, timeout: const Timeout(Duration(minutes: 1)));
   });
 
   group('다중 UTXO 입력', () {

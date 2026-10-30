@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -15,29 +16,48 @@ class WalletConnectInfoRow extends StatelessWidget {
   final String label;
   final String value;
   final Axis direction;
+  final bool isMfp;
 
-  const WalletConnectInfoRow({super.key, required this.label, required this.value, this.direction = Axis.horizontal});
+  const WalletConnectInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.direction = Axis.horizontal,
+    this.isMfp = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
+    final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong);
     final valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
 
+    final valueWidget =
+        isMfp
+            ? MfpText(mfp: value, style: valueStyle, textAlign: direction == Axis.horizontal ? TextAlign.end : null)
+            : Text(value, style: valueStyle, textAlign: direction == Axis.horizontal ? TextAlign.end : null);
+
     if (direction == Axis.horizontal) {
-      return Row(children: [Text(label, style: labelStyle), const Spacer(), Text(value, style: valueStyle)]);
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Text(label, style: labelStyle)),
+          const SizedBox(width: 16),
+          Flexible(child: Align(alignment: AlignmentDirectional.topEnd, child: valueWidget)),
+        ],
+      );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, Text(value, style: valueStyle)],
+      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, valueWidget],
     );
   }
 }
 
 /// Unified error card used by wallet connect screens.
 ///
-/// Shows a warning icon, title, description, error message, and optional
-/// numbered troubleshooting steps.
+/// Shows a warning icon, title, description, and optional user guidance.
+/// [errorMessage] must contain user-facing text, never raw exceptions.
 class WalletConnectErrorCard extends StatelessWidget {
   final String title;
   final String description;
@@ -65,7 +85,7 @@ class WalletConnectErrorCard extends StatelessWidget {
             width: 48,
           ),
           CoconutLayout.spacing_200h,
-          Text(title, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger)),
+          Text(title, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.dangerText)),
           CoconutLayout.spacing_400h,
           Container(
             width: double.infinity,
@@ -81,12 +101,14 @@ class WalletConnectErrorCard extends StatelessWidget {
                   style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                   textAlign: TextAlign.center,
                 ),
-                CoconutLayout.spacing_200h,
-                Text(
-                  errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
+                if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                  CoconutLayout.spacing_200h,
+                  Text(
+                    errorMessage!,
+                    style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 if (steps != null && steps!.isNotEmpty) ...[
                   CoconutLayout.spacing_300h,
                   Column(
@@ -101,11 +123,15 @@ class WalletConnectErrorCard extends StatelessWidget {
                                 children: [
                                   TextSpan(
                                     text: '${e.key + 1}. ',
-                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                    style: CoconutTypography.body2_14.setColor(
+                                      context.coconutColors.secondaryTextStrong,
+                                    ),
                                   ),
                                   TextSpan(
                                     text: e.value,
-                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                    style: CoconutTypography.body2_14.setColor(
+                                      context.coconutColors.secondaryTextStrong,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -146,6 +172,7 @@ class WalletConnectInstructionToolTip extends StatelessWidget {
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(
+        textScaler: MediaQuery.textScalerOf(context),
         text: TextSpan(
           style: CoconutTypography.body2_14,
           children: [
@@ -257,6 +284,7 @@ class WalletConnectWalletInfoSkeleton extends StatelessWidget {
 
   Widget _buildSkeletonBox(BuildContext context, {required double width, double height = 12}) {
     return Shimmer.fromColors(
+      enabled: !MediaQuery.disableAnimationsOf(context) && !MediaQuery.accessibleNavigationOf(context),
       baseColor: context.coconutColors.surfaceSkeletonBase,
       highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
@@ -328,14 +356,14 @@ class WalletConnectMismatchCard extends StatelessWidget {
           CoconutLayout.spacing_200h,
           Text(
             title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.dangerText),
             textAlign: TextAlign.center,
           ),
           if (description != null && description!.isNotEmpty) ...[
             CoconutLayout.spacing_200h,
             Text(
               description!,
-              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
               textAlign: TextAlign.center,
             ),
           ],
@@ -346,7 +374,7 @@ class WalletConnectMismatchCard extends StatelessWidget {
             CoconutLayout.spacing_300h,
             Text(
               footerText!,
-              style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.dangerText),
               textAlign: TextAlign.center,
             ),
           ],
@@ -368,7 +396,7 @@ class WalletConnectSectionLabel extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 4),
-        child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+        child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong)),
       ),
     );
   }
@@ -410,11 +438,13 @@ class FingerprintCompareCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.expected,
           value: expectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(
           label: t.trezor_sign_screen.fingerprint_compare.connected,
           value: connectedFingerprint.toUpperCase(),
+          isMfp: true,
         ),
       ],
     );
@@ -458,7 +488,7 @@ class BitBox02PairingCodeCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             description,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -527,6 +557,7 @@ class HardwareWalletInfoCard extends StatelessWidget {
         WalletConnectInfoRow(
           label: fingerprintLabel ?? t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
           value: fingerprint.toUpperCase(),
+          isMfp: true,
         ),
         CoconutLayout.spacing_300h,
         WalletConnectInfoRow(

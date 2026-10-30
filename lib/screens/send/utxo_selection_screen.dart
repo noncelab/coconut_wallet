@@ -11,6 +11,9 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup,
         CoconutUnderlinedButton;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
@@ -19,6 +22,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -33,6 +37,7 @@ import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.da
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 
@@ -119,6 +124,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       actionButtonList: [
                         if (widget.showSkipButton)
                           CoconutUnderlinedButton(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
                             text: t.utxo_selection_screen.skip,
                             textStyle: CoconutTypography.body2_14,
                             onTap: () {
@@ -167,7 +173,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               _buildUtxoTagList(viewModel),
                               Expanded(
                                 child:
-                                    viewModel.isInitialized
+                                    viewModel.hasLoadError
+                                        ? _buildEmptyState(viewModel)
+                                        : viewModel.isInitialized
                                         ? Stack(
                                           children: [
                                             Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
@@ -310,7 +318,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   void _selectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.selectTaggedUtxo(_viewModel.selectedUtxoTagName);
+    _viewModel.selectTaggedUtxo();
   }
 
   void _deselectAll() {
@@ -373,12 +381,87 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       child: Container(
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
-          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+          tags: viewModel.utxoTagList,
           showDefaultTags: false,
-          selectedName: viewModel.selectedUtxoTagName,
-          onSelectedTag: (tagName) {
-            viewModel.setSelectedUtxoTagName(tagName);
-          },
+          selectedFilter: viewModel.selectedUtxoFilter,
+          onSelectedFilter: viewModel.setSelectedUtxoFilter,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(UtxoSelectionViewModel viewModel) {
+    final copy = t.utxo_selection_screen;
+    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoFilter != UtxoFilter.all;
+    final hasError = viewModel.hasLoadError;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              hasError ? CommonStateIconPath.circleWarning : FeatureShortcutIconPath.utxos,
+              width: 48,
+              height: 48,
+              colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+            ),
+            CoconutLayout.spacing_400h,
+            Text(
+              hasError
+                  ? copy.load_error_title
+                  : hasFilter
+                  ? copy.empty_filtered_title
+                  : copy.empty_title,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            CoconutLayout.spacing_200h,
+            Text(
+              hasError
+                  ? copy.load_error_description
+                  : hasFilter
+                  ? copy.empty_filtered_description
+                  : copy.empty_description,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
+              textAlign: TextAlign.center,
+            ),
+            CoconutLayout.spacing_500h,
+            CoconutButton(
+              text:
+                  hasError
+                      ? t.retry
+                      : hasFilter
+                      ? copy.reset_filter
+                      : t.receive,
+              height: 48,
+              buttonType: CoconutButtonType.outlined,
+              pressedBackgroundColor: Color.alphaBlend(
+                context.coconutColors.surfacePressOverlay.withValues(
+                  alpha: context.coconutColors.surfacePressOverlayOpacity,
+                ),
+                context.coconutColors.surface,
+              ),
+              pressedTextColor: context.coconutColors.primaryText,
+              borderColor: context.coconutColors.borderStrong,
+              backgroundColor: widget.backgroundColor ?? context.coconutColors.background,
+              foregroundColor: context.coconutColors.primaryText,
+              onPressed: () async {
+                _removeUtxoOrderDropdown();
+                if (hasError) {
+                  viewModel.initialize(widget.selectedUtxoList);
+                } else if (hasFilter) {
+                  viewModel.setSelectedUtxoFilter(UtxoFilter.all);
+                } else {
+                  await Navigator.of(
+                    context,
+                  ).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.walletId));
+                  // A deposit may have confirmed while receiving.
+                  if (mounted) viewModel.reload(widget.selectedUtxoList);
+                }
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -386,9 +469,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildUtxoList(UtxoSelectionViewModel viewModel) {
     final filteredUtxoList = viewModel.filteredUtxoList;
+    if (filteredUtxoList.isEmpty) return _buildEmptyState(viewModel);
 
     return ListView.separated(
-      key: ValueKey(viewModel.selectedUtxoTagName),
+      key: ValueKey(viewModel.selectedUtxoFilter),
       controller: _scrollController,
       padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,

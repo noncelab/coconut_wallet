@@ -23,7 +23,7 @@ class SubscriptionRepository extends BaseRepository {
     return handleAsyncRealm(() async {
       await deleteScriptStatusIfWalletDeleted(walletId);
       final now = DateTime.now();
-      final existingStatusMap = getExistingScriptStatusMap(fetchedStatuses);
+      final existingStatusMap = getExistingScriptStatusMap(fetchedStatuses, walletId);
       final (:toAddStatuses, :toUpdateStatuses) = _prepareScriptStatusList(
         fetchedStatuses: fetchedStatuses,
         existingStatusMap: existingStatusMap,
@@ -74,7 +74,15 @@ class SubscriptionRepository extends BaseRepository {
 
       // 기존 상태가 없고 업데이트된 상태가 있는 경우 새로 생성
       if (existingStatus == null && fetchedStatus.status != null) {
-        toAddStatuses.add(RealmScriptStatus(fetchedStatus.scriptPubKey, fetchedStatus.status!, walletId, now));
+        toAddStatuses.add(
+          RealmScriptStatus(
+            '$walletId:${fetchedStatus.scriptPubKey}',
+            fetchedStatus.scriptPubKey,
+            fetchedStatus.status!,
+            walletId,
+            now,
+          ),
+        );
       }
 
       if (existingStatus != null && fetchedStatus.status != null && existingStatus.status != fetchedStatus.status) {
@@ -87,7 +95,7 @@ class SubscriptionRepository extends BaseRepository {
 
   List<ScriptStatus> getUpdatedScriptStatuses(List<ScriptStatus> fetchedScriptStatuses, int walletId) {
     final updatedScriptStatuses = <ScriptStatus>[];
-    final existingScriptStatusMap = getExistingScriptStatusMap(fetchedScriptStatuses);
+    final existingScriptStatusMap = getExistingScriptStatusMap(fetchedScriptStatuses, walletId);
 
     for (final status in fetchedScriptStatuses) {
       final existingStatus = existingScriptStatusMap[status.scriptPubKey];
@@ -100,10 +108,11 @@ class SubscriptionRepository extends BaseRepository {
     return updatedScriptStatuses;
   }
 
-  Map<String, RealmScriptStatus> getExistingScriptStatusMap(List<ScriptStatus> scriptStatuses) {
+  Map<String, RealmScriptStatus> getExistingScriptStatusMap(List<ScriptStatus> scriptStatuses, int walletId) {
     final scriptPubKeyList = scriptStatuses.map((e) => e.scriptPubKey).toList();
     // scriptPubKey 목록에 해당하는 기존 스크립트 상태 조회
-    final existingScriptStatuses = realm.query<RealmScriptStatus>(r'scriptPubKey IN $0', [scriptPubKeyList]).toList();
+    final existingScriptStatuses =
+        realm.query<RealmScriptStatus>(r'walletId == $0 AND scriptPubKey IN $1', [walletId, scriptPubKeyList]).toList();
 
     return {for (final status in existingScriptStatuses) status.scriptPubKey: status};
   }

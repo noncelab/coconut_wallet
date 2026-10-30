@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -8,7 +10,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_usb_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -47,6 +48,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   late final Future<String?> Function() _pinHandler;
   late final Future<TrezorPassphraseResponse> Function(bool) _passphraseHandler;
   bool _isAddingWallet = false;
+  bool _isClosing = false;
   bool _isVerifyingPairingCode = false;
   TrezorUsbConnectStep? _lastStep;
   final ScrollController _scrollController = ScrollController();
@@ -149,15 +151,13 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     if (_isAddingWallet) return;
     setState(() => _isAddingWallet = true);
     try {
-      final result = await _viewModel.addToWalletList();
+      final initialResult = await _viewModel.addToWalletList();
       if (!mounted) return;
+      final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+      if (!mounted || result == null) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
-        Navigator.pushReplacementNamed(
-          context,
-          AppRouteNames.walletDetail,
-          arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
-        );
+        WalletAddActions.finishWithWalletDetail(context, WalletDetailRouteArgs(id: result.walletId!));
         return;
       }
       showWalletSyncResultErrorDialog(context, result, context.read<WalletProvider>());
@@ -180,6 +180,17 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isClosing || !mounted) return;
+    _isClosing = true;
+    final route = ModalRoute.of(context);
+    try {
+      await _close();
+    } finally {
+      if (mounted && route?.isCurrent == true) _isClosing = false;
+    }
+  }
+
+  Future<void> _close() async {
     if (_viewModel.step == TrezorUsbConnectStep.pinEntry) {
       _viewModel.cancelPin();
       Navigator.pop(context);
@@ -376,7 +387,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
             WalletConnectErrorCard(
               title: t.wallet_connect_screen.guide_trezor.error.title,
               description: t.wallet_connect_screen.guide_trezor.error.usb_description,
-              errorMessage: vm.errorMessage,
             ),
             CoconutLayout.spacing_400h,
             _buildInfoCardForTrezorSuite(),

@@ -3,7 +3,7 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:realm/realm.dart';
 import 'integration_test_utils.dart';
 
@@ -115,7 +115,7 @@ Future<void> walletListFlow(WidgetTester tester) async {
   app.main();
   await tester.pumpAndSettle();
 
-  final Finder walletListScreen = find.byType(WalletListScreen);
+  final Finder walletListScreen = find.byType(HomeScreen);
   await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 }

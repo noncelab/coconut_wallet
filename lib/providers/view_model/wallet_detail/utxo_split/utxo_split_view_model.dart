@@ -17,6 +17,7 @@ import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final PreferenceProvider _preferenceProvider;
   final WalletProvider _walletProvider;
   final AddressRepository _addressRepository;
+  final UtxoRepository _utxoRepository;
   final SendInfoProvider _sendInfoProvider;
   final UtxoTagProvider _utxoTagProvider;
   final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
@@ -162,6 +164,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._preferenceProvider,
     this._walletProvider,
     this._addressRepository,
+    this._utxoRepository,
     this._sendInfoProvider,
     this._utxoTagProvider,
     this._showUsePreviewConfirmPrompt,
@@ -568,6 +571,31 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     _updateRecommendedSplitCountsIfNeeded();
     _onInputChanged();
+  }
+
+  void revalidateSelectedUtxo() {
+    if (_selectedUtxoList.isEmpty) return;
+
+    final latestById = {for (final utxo in _utxoRepository.getUtxoStateList(walletId)) utxo.utxoId: utxo};
+    final revalidated = <UtxoState>[];
+    var hasChanged = false;
+    for (final selected in _selectedUtxoList) {
+      final latest = latestById[selected.utxoId];
+      if (latest == null || latest.status != UtxoStatus.unspent) {
+        hasChanged = true;
+        continue;
+      }
+      if (latest.amount != selected.amount || latest.to != selected.to || latest.blockHeight != selected.blockHeight) {
+        hasChanged = true;
+      }
+      revalidated.add(latest);
+    }
+    if (!hasChanged) return;
+
+    ++_buildRequestId;
+    _cancelActiveBuild();
+    _clearResult();
+    setSelectedUtxoList(revalidated);
   }
 
   void setSplitMethod(SplitMethod method) {

@@ -1,0 +1,346 @@
+{
+  "Frase mnemotécnica": {
+    "en": "Mnemonic words/phrase",
+    "content": "Una lista de palabras, en un orden fijo, que puede generar todas las claves privadas de tu billetera.\n\nTiene 12, 15, 18, 21 o 24 palabras. La necesitas para pasar tu billetera a un dispositivo nuevo. En la práctica, puedes pensar en la frase mnemotécnica como tu clave privada.\n\nPor eso debes guardarla en un lugar seguro. Nunca la compartas con nadie y nunca la subas a internet.",
+    "synonym": [
+      "Frase semilla",
+      "Frase de recuperación",
+      "Palabras de recuperación",
+      "Seed Phrase"
+    ],
+    "related": [
+      "BIP-39"
+    ]
+  },
+  "Frase de contraseña": {
+    "en": "Passphrase",
+    "content": "Una contraseña extra que eliges tú y que se suma a tu frase mnemotécnica para darle más seguridad.\n\nLa misma frase mnemotécnica con una frase de contraseña distinta abre una billetera completamente diferente.\n\nGuárdala por separado de la frase mnemotécnica. Si la olvidas, nadie podrá recuperarla por ti, así que haz una copia de seguridad con mucho cuidado.",
+    "synonym": [
+      "Passphrase",
+      "Palabra 25"
+    ],
+    "related": [
+      "Frase mnemotécnica",
+      "BIP-39"
+    ]
+  },
+  "Clave pública extendida": {
+    "en": "Extended Public Key",
+    "content": "Las direcciones de Bitcoin se crean a partir de claves públicas.\n\nUna clave pública extendida es una clave pública \"madre\" que puede generar (extenderse a) muchas direcciones.\n\nPara las direcciones que empiezan por bc1, la clave pública extendida suele empezar por zpub.\n\nGracias a ella existen las billeteras de solo lectura, que mejoran tu privacidad y seguridad. Pero quien vea tu clave pública extendida puede relacionar todas tus direcciones, así que no la compartas públicamente.",
+    "synonym": [
+      "xpub",
+      "zpub"
+    ],
+    "related": [
+      "Billetera HD",
+      "BIP-32",
+      "BIP-44",
+      "BIP-49",
+      "BIP-84"
+    ]
+  },
+  "SegWit": {
+    "en": "Native Segwit",
+    "content": "Si tu dirección de Bitcoin empieza por bc1, ya estás usando SegWit.\n\nEl nombre viene de Segregated Witness (testigo segregado): los datos de la firma (el \"testigo\") se separan del resto de la transacción.\n\nLas firmas ocupan mucho espacio en una transacción, así que separarlas abarata las comisiones.",
+    "synonym": [
+      "SegWit nativo",
+      "Segregated Witness"
+    ],
+    "related": [
+      "BIP-141",
+      "BIP-143",
+      "BIP-173",
+      "BIP-84",
+      "Firma"
+    ]
+  },
+  "Firma": {
+    "en": "Signature",
+    "content": "La prueba de que quien envía bitcoin es realmente el dueño de la clave privada.\n\nSi una puerta se abre con tu huella dactilar, tienes que ser tú. Del mismo modo, solo el dueño de una clave privada puede firmar una transacción y gastar los bitcoin que esa clave controla.",
+    "synonym": [
+      "Firma digital",
+      "Digital Signature"
+    ],
+    "related": [
+      "ECDSA",
+      "Firma Schnorr",
+      "Verificación de firma"
+    ]
+  },
+  "ID de billetera": {
+    "en": "Master Fingerprint",
+    "content": "Un valor corto que identifica una billetera. También se llama huella digital maestra.\n\nUna frase mnemotécnica puede generar innumerables pares de claves privadas y públicas. En la raíz de todos ellos están la clave privada maestra y su clave pública maestra. La huella digital maestra se obtiene de esa clave pública maestra.",
+    "synonym": [
+      "MFP",
+      "Huella digital maestra",
+      "Master Fingerprint"
+    ],
+    "related": [
+      "Billetera HD",
+      "BIP-32"
+    ]
+  },
+  "UTXO": {
+    "en": "Unspent Transaction Outputs",
+    "content": "Una porción de bitcoin que has recibido y que aún no has gastado.\n\nLos UTXO funcionan como el dinero en efectivo. Si en tu cartera tienes un billete de 50 € y otro de 10 €, cada billete sería un UTXO distinto.\n\nPara comprar una pizza de 20 € con bitcoin, gastas el UTXO de 50 € y recibes un nuevo UTXO de 30 € como cambio.\n\nEl saldo que ves en tu billetera es la suma de todos tus UTXO.",
+    "synonym": [
+      "Salida no gastada"
+    ],
+    "related": [
+      "Entradas",
+      "Salidas",
+      "Dirección de cambio"
+    ]
+  },
+  "Comisión de transacción": {
+    "en": "Transaction Fee",
+    "content": "Igual que una carta necesita un sello, una transacción de Bitcoin necesita una comisión.\n\nUna carta sin sello nunca llega. De la misma forma, una transacción sin comisión, o con una comisión demasiado baja, puede no procesarse nunca.\n\nLas comisiones suben cuanto más grande es la transacción y cuanto más congestionada está la red.",
+    "synonym": [
+      "Comisión de red",
+      "Comisión de minería"
+    ],
+    "related": [
+      "Tasa de comisión",
+      "sat/vB"
+    ]
+  },
+  "Confirmaciones": {
+    "en": "Confirmations",
+    "content": "Cuando la red verifica tu transacción y la incluye en un bloque, queda \"confirmada\". Cada bloque nuevo que se añade después cuenta como una confirmación más.\n\nCuantas más confirmaciones, más definitiva e inalterable es la transacción. En general, seis o más confirmaciones se consideran seguras.",
+    "synonym": [
+      "Finalidad",
+      "Finality"
+    ],
+    "related": [
+      "Bloque",
+      "Minería"
+    ]
+  },
+  "Billetera HD": {
+    "en": "HD Wallet",
+    "content": "Una estructura de billetera en la que una sola frase mnemotécnica puede generar innumerables direcciones.\n\nNo reutilizar direcciones es un buen hábito que hace Bitcoin más seguro. Antes de que las billeteras HD fueran el estándar, cada dirección nueva necesitaba su propia clave privada aleatoria, así que había que guardar muchas claves privadas en lugar de una sola.\n\nHoy las billeteras HD son el estándar, y una sola frase mnemotécnica te da un número ilimitado de direcciones.",
+    "synonym": [
+      "Billetera jerárquica determinista",
+      "Hierarchical Deterministic Wallet"
+    ],
+    "related": [
+      "BIP-32",
+      "BIP-44",
+      "Frase mnemotécnica"
+    ]
+  },
+  "Ruta de derivación": {
+    "en": "Derivation Path",
+    "content": "Una billetera HD genera innumerables direcciones, y estas se relacionan entre sí como un árbol genealógico: padres, hijos y hermanos.\n\nPor ejemplo, la ruta m/0/0/1 significa el segundo hijo (1) del primer hijo (0) del primer hijo (0) de la raíz (m). En teoría, cualquiera podría elegir la ruta que quisiera.\n\nPero si olvidas la ruta, podrías perder el rastro de tus bitcoin. Por eso se acordaron rutas estándar, y hoy casi todas las billeteras las siguen.",
+    "synonym": [
+      "Derivation Path"
+    ],
+    "related": [
+      "BIP-32",
+      "BIP-44",
+      "BIP-49",
+      "BIP-84",
+      "Billetera HD"
+    ]
+  },
+  "Billetera de solo lectura": {
+    "en": "Watch-Only Wallet",
+    "content": "Una billetera que muestra tu saldo y tu historial de transacciones sin guardar tu frase mnemotécnica. Las billeteras de solo lectura de Coconut Wallet funcionan así.\n\nComo no tiene frase mnemotécnica ni claves privadas, se puede usar con seguridad en un dispositivo conectado a internet.\n\nPara enviar bitcoin, la transacción tiene que firmarse en el dispositivo que guarda la frase mnemotécnica, como una billetera de hardware.",
+    "synonym": [
+      "Watch-Only"
+    ],
+    "related": [
+      "Clave pública extendida",
+      "Descriptor"
+    ]
+  },
+  "Byte virtual": {
+    "en": "Virtual Byte",
+    "content": "Las comisiones de Bitcoin dependen del tamaño de la transacción, medido en bytes. Más bytes significa una comisión más alta.\n\nEl tamaño de una transacción depende de varias cosas: cuántos UTXO gasta, a cuántas direcciones paga y, sobre todo, sus firmas.\n\nAntes de SegWit, las comisiones se calculaban sobre los bytes reales. Desde SegWit, los datos de firma tienen un 75 % de descuento, y el resultado se mide en bytes virtuales.",
+    "synonym": [
+      "vbyte",
+      "vB"
+    ],
+    "related": [
+      "SegWit",
+      "UTXO",
+      "Firma"
+    ]
+  },
+  "BIP": {
+    "en": "Bitcoin Improvement Proposals",
+    "content": "Abreviatura de Bitcoin Improvement Proposal (propuesta de mejora de Bitcoin): una idea para mejorar Bitcoin. Algunas se adoptan como estándar y otras se rechazan.\n\nGracias a estas propuestas, Bitcoin sigue evolucionando. Las frases mnemotécnicas, las billeteras HD y SegWit empezaron como BIP.",
+    "synonym": [
+      "Propuesta de mejora de Bitcoin"
+    ],
+    "related": [
+      "Código abierto",
+      "Descentralización"
+    ]
+  },
+  "Transacción": {
+    "en": "Transaction",
+    "content": "Piensa en ella como el registro de bitcoin que pasa de un lugar a otro.\n\nIgual que la banca en línea muestra ingresos y retiros, cada envío de bitcoin se hace mediante una transacción.\n\nUna transacción incluye los UTXO que se gastan, las direcciones que reciben y las firmas que demuestran que el remitente puede gastarlos.",
+    "synonym": [
+      "Tx"
+    ],
+    "related": [
+      "Entradas",
+      "Salidas",
+      "UTXO"
+    ]
+  },
+  "Air gap": {
+    "en": "Air Gap",
+    "content": "Un ordenador o dispositivo que nunca se conecta a internet ni a ninguna otra red.\n\nLas billeteras de Bitcoin usan dispositivos air gap para crear claves privadas y firmar transacciones. Así se reduce mucho el riesgo de hackeos y ataques remotos.",
+    "synonym": [
+      "Entorno sin conexión",
+      "Aislamiento de red"
+    ],
+    "related": [
+      "Billetera de hardware",
+      "Billetera fría",
+      "Seguridad"
+    ]
+  },
+  "Multifirma": {
+    "en": "Multi-Signature",
+    "content": "Una configuración en la que una sola transacción de Bitcoin necesita firmas de más de una clave privada.\n\nPor ejemplo, en una billetera multifirma 2 de 3, deben firmar 2 de las 3 claves para poder enviar bitcoin. Esto aumenta la seguridad y permite que varias personas o dispositivos compartan el control.",
+    "synonym": [
+      "Multisig",
+      "Multi-Signature"
+    ],
+    "related": [
+      "m de n",
+      "PSBT",
+      "BSMS"
+    ]
+  },
+  "Billetera de hardware / fría": {
+    "en": "Hardware Wallet / Cold Wallet",
+    "content": "Un dispositivo físico, sin conexión a internet, que guarda las claves privadas de tus bitcoin.\n\nTambién se llama billetera fría. Como permanece desconectada, es mucho más difícil atacarla a través de internet.",
+    "synonym": [
+      "Almacenamiento en frío",
+      "Cold Storage"
+    ],
+    "related": [
+      "Air gap",
+      "Clave privada",
+      "Seguridad"
+    ]
+  },
+  "Billetera de software / caliente": {
+    "en": "Software Wallet / Hot Wallet",
+    "content": "Una aplicación de billetera instalada en un teléfono o un ordenador. Como está conectada a internet, puedes enviar bitcoin en cualquier momento.\n\nTambién se llama billetera caliente. Es muy cómoda, pero está más expuesta a amenazas en línea que una billetera fría.",
+    "synonym": [
+      "Billetera caliente",
+      "Hot Wallet"
+    ],
+    "related": [
+      "Billetera fría",
+      "Clave privada",
+      "Seguridad"
+    ]
+  },
+  "Dirección legacy": {
+    "en": "Legacy Address",
+    "content": "El formato de dirección original de Bitcoin: direcciones que empiezan por 1. Es el formato más antiguo y se usaba antes de SegWit.\n\nHoy las direcciones SegWit son mucho más comunes, pero las direcciones legacy siguen siendo compatibles.",
+    "synonym": [
+      "Dirección P2PKH"
+    ],
+    "related": [
+      "SegWit",
+      "Dirección de Bitcoin"
+    ]
+  },
+  "Testnet": {
+    "en": "Testnet",
+    "content": "Una red de pruebas separada para desarrolladores y usuarios de Bitcoin. Funciona aparte de la red real de Bitcoin (mainnet), y sus monedas no tienen valor real. Por eso es un lugar seguro para probar funciones nuevas y corregir errores antes de usar la mainnet.\n\nLo que aprendes en testnet ayuda a usar la mainnet de forma más segura y fiable. En testnet, las direcciones SegWit empiezan por tb1.",
+    "synonym": [
+      "Red de pruebas de Bitcoin"
+    ],
+    "related": [
+      "Mainnet",
+      "Regtest",
+      "Faucet",
+      "tb1"
+    ]
+  },
+  "Regtest": {
+    "en": "Regtest",
+    "content": "Un modo de prueba de Bitcoin en el que los desarrolladores ejecutan su propia red privada. Pueden crear bloques cuando quieran, lo que hace que las pruebas sean rápidas y flexibles.\n\nA diferencia de testnet, regtest no se conecta a ninguna red externa, así que puede simular Bitcoin por completo por sí solo. En regtest, las direcciones SegWit empiezan por bcrt1.",
+    "synonym": [
+      "Modo de prueba de regresión"
+    ],
+    "related": [
+      "Testnet",
+      "Modo desarrollador",
+      "bcrt1"
+    ]
+  },
+  "Faucet": {
+    "en": "Faucet",
+    "content": "Un servicio que regala bitcoin de testnet. Para hacer pruebas en testnet necesitas monedas de testnet, y un faucet te permite conseguir una pequeña cantidad fácilmente.\n\nSuelen ser sitios web o aplicaciones: introduces la dirección de tu billetera y recibes algunas monedas de prueba.",
+    "synonym": [
+      "Grifo",
+      "Faucet de testnet"
+    ],
+    "related": [
+      "Testnet",
+      "tBTC",
+      "Herramientas para desarrolladores"
+    ]
+  },
+  "BSMS": {
+    "en": "Bitcoin Secure Multisig Setup",
+    "content": "Un procedimiento estándar para crear, compartir y restaurar la configuración de una billetera multifirma.\n\nConfigurar una billetera multifirma implica compartir las claves públicas de varias personas y mantener otros datos sincronizados. BSMS ayuda a hacerlo de una forma segura y estándar.\n\nHace que la configuración multifirma sea más eficiente y segura, y facilita que varias personas o dispositivos trabajen juntos.",
+    "synonym": [
+      "Bitcoin Secure Multisig Setup"
+    ],
+    "related": [
+      "Multifirma",
+      "BIP-129"
+    ]
+  },
+  "PSBT": {
+    "en": "Partially Signed Bitcoin Transaction",
+    "content": "Un formato de archivo estándar para compartir una transacción de Bitcoin que todavía no está firmada del todo.\n\nSe usa cuando la firma se hace en varios pasos, algo especialmente útil en multifirma y al firmar con dispositivos air gap. Una PSBT contiene todo lo necesario para firmar: entradas, salidas, datos de los UTXO y más.\n\nEnvías la PSBT a cada dispositivo o persona que debe firmar. Cuando están todas las firmas, la transacción completa se puede transmitir.",
+    "synonym": [
+      "Transacción parcialmente firmada"
+    ],
+    "related": [
+      "Multifirma",
+      "Transacción",
+      "Air gap",
+      "BIP-174"
+    ]
+  },
+  "RBF": {
+    "en": "Replace-By-Fee",
+    "content": "Abreviatura de Replace-By-Fee (reemplazo por comisión): una forma de reemplazar una transacción que ya enviaste por otra nueva que paga una comisión más alta.\n\nMientras la transacción no esté en un bloque, puedes sustituirla por otra que gaste las mismas entradas, lo que le da más prioridad. Es útil cuando la comisión era demasiado baja y la transacción se ha quedado atascada.",
+    "synonym": [
+      "Replace by Fee",
+      "Aumento de comisión"
+    ],
+    "related": [
+      "Comisión de transacción",
+      "Mempool",
+      "BIP-125",
+      "CPFP"
+    ]
+  },
+  "CPFP": {
+    "en": "Child-Pays-For-Parent",
+    "content": "Abreviatura de Child-Pays-For-Parent (el hijo paga por el padre): una forma de acelerar una transacción atascada porque su comisión es demasiado baja.\n\nEl \"padre\" es una transacción que te envió bitcoin. Si su comisión es muy baja, puede tardar mucho en entrar en un bloque.\n\nPuedes gastar las monedas que te envió (su UTXO) en una nueva transacción \"hija\" con una comisión alta. Los mineros evalúan al padre y al hijo juntos y, si la comisión conjunta es suficiente, procesan ambas.\n\nEs útil cuando no puedes cambiar tú mismo la transacción atascada, por ejemplo cuando otra persona te la envió.",
+    "synonym": [
+      "Child Pays For Parent",
+      "Aumento de comisión"
+    ],
+    "related": [
+      "Comisión de transacción",
+      "UTXO",
+      "Mempool",
+      "RBF"
+    ]
+  }
+}

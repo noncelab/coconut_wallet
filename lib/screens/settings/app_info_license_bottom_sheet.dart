@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
@@ -49,7 +50,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       recognizer:
           TapGestureRecognizer()
             ..onTap = () async {
-              launchURL(context, url);
+              launchURL(context, url, destination: ExternalLinkDestination.openSourceLicense);
             },
     );
   }
@@ -153,7 +154,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                 decoration: BoxDecoration(border: Border.all(width: 1, color: colors.borderStrong)),
                                 child: SingleChildScrollView(
                                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Text(license.license!, style: TextStyle(color: colors.secondaryText)),
+                                  child: Text(license.license!, style: TextStyle(color: colors.secondaryTextStrong)),
                                 ),
                               ),
                           ],

@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/legible_color_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/foundation.dart';
@@ -462,22 +463,6 @@ class UtxoCoinCard extends StatefulWidget {
   State<UtxoCoinCard> createState() => _UtxoCoinCardState();
 }
 
-/// tier 색상의 명도가 카드 표면과 비슷하면 워터마크(비트코인 아이콘/스트로크)가 안 보이므로,
-/// 표면과의 명도 차이를 최소한도 이상으로 밀어내 어떤 tier 색이든 고르게 보이도록 한다.
-Color _legibleTierColor(Color tierColor, Color surface) {
-  const minLightnessGap = 0.28;
-  final hsl = HSLColor.fromColor(tierColor);
-  final surfaceLightness = HSLColor.fromColor(surface).lightness;
-  final gap = hsl.lightness - surfaceLightness;
-  if (gap.abs() >= minLightnessGap) return tierColor;
-  final pushDown = surfaceLightness >= 0.5;
-  final targetLightness =
-      pushDown
-          ? (surfaceLightness - minLightnessGap).clamp(0.0, 1.0)
-          : (surfaceLightness + minLightnessGap).clamp(0.0, 1.0);
-  return hsl.withLightness(targetLightness).toColor();
-}
-
 class _UtxoCoinCardState extends State<UtxoCoinCard> {
   bool _isPressed = false;
 
@@ -492,7 +477,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final cardHeight = isBill ? widget.size * 0.85 : widget.size;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     final rawBucketCol = tierTheme.colorForSats(widget.utxo.amount, dustThreshold: widget.dustThreshold);
-    final bucketCol = _legibleTierColor(rawBucketCol, colors.utxoOverviewCoinSurface);
+    final bucketCol = legibleOn(rawBucketCol, colors.utxoOverviewCoinSurface);
     final bgColor =
         widget.isFocused ? bucketCol : Color.lerp(colors.background, bucketCol, colors.utxoOverviewCoinTintStrength)!;
     final iconColor = bgColor;

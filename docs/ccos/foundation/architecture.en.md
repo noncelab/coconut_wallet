@@ -16,7 +16,7 @@ This document has two parts:
 
 ## 1. Purpose
 
-Coconut Wallet is a watch-only Bitcoin wallet. New features should improve the user experience, but they must not weaken core wallet behavior or safety.
+Coconut Wallet is a Bitcoin wallet focused on the watch-only experience. New features should improve the user experience, but they must not weaken core wallet behavior or safety.
 
 This document answers:
 
@@ -91,7 +91,7 @@ Examples:
 - `lib/screens/wallet_detail/`
 - `lib/screens/ccos/`
 
-Screens are usually paired with a view model under `lib/providers/view_model/<domain>/`. For example, `lib/screens/home/wallet_home_screen.dart` pairs with `lib/providers/view_model/home/wallet_home_view_model.dart`.
+Screens are usually paired with a view model under `lib/providers/view_model/<domain>/`. For example, `lib/screens/home/home_screen.dart` pairs with `lib/providers/view_model/home/home_view_model.dart`.
 
 Reusable UI is split between:
 

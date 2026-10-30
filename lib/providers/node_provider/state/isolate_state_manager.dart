@@ -27,6 +27,13 @@ class IsolateStateManager implements StateManagerInterface {
   /// 현재 SendPort가 설정되어 있는지 확인
   bool get isInitialized => _isolateToMainSendPort != null;
 
+  @override
+  void setWalletSyncQueueState(int walletId, bool isSyncQueued, int? balanceSnapshot) {
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.setWalletSyncQueueState, [walletId, isSyncQueued, balanceSnapshot]),
+    );
+  }
+
   /// 메인 스레드로 상태 메시지 전송
   void _sendStateUpdateToMain(IsolateStateMessage message) {
     if (!isInitialized) {

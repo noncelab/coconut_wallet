@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
@@ -18,13 +21,36 @@ class ReceiveAddressRouteArgs {
 class AddressListRouteArgs {
   final int id;
   final bool? initialShowOnlyWatchedAddresses;
-  const AddressListRouteArgs({required this.id, this.initialShowOnlyWatchedAddresses});
+  final bool? initialShowOnlyUnusedAddresses;
+  const AddressListRouteArgs({
+    required this.id,
+    this.initialShowOnlyWatchedAddresses,
+    this.initialShowOnlyUnusedAddresses,
+  });
 }
 
 class WalletDetailRouteArgs {
   final int id;
-  final String entryPoint;
-  const WalletDetailRouteArgs({required this.id, required this.entryPoint});
+  final bool focusRecentTransactions;
+  final String? focusedTransactionHash;
+
+  /// 지갑 상세의 카드 휠에 놓을 지갑과 순서. 없으면 전체 지갑.
+  final List<int>? walletIds;
+
+  /// 상세 화면에서 카드를 넘기면 알린다. 돌아갈 때 지갑 목록 휠이 같은 카드를 보여 준다.
+  final void Function(int walletId)? onFocusChanged;
+  const WalletDetailRouteArgs({
+    required this.id,
+    this.walletIds,
+    this.onFocusChanged,
+    this.focusRecentTransactions = false,
+    this.focusedTransactionHash,
+  });
+}
+
+class UtxoOrganizerRouteArgs {
+  final int id;
+  const UtxoOrganizerRouteArgs({required this.id});
 }
 
 class WalletBackupDataRouteArgs {
@@ -70,6 +96,8 @@ class UnsignedTransactionQrRouteArgs {
 
 class SendRouteArgs {
   final int? id;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -77,6 +105,8 @@ class SendRouteArgs {
   final String? initialBitcoinUri;
   const SendRouteArgs({
     this.id,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,
@@ -85,19 +115,14 @@ class SendRouteArgs {
   });
 }
 
-class UtxoMergeRouteArgs {
-  final int id;
-  const UtxoMergeRouteArgs({required this.id});
-}
-
-class UtxoSplitRouteArgs {
-  final int id;
-  const UtxoSplitRouteArgs({required this.id});
-}
-
 class UtxoTagCrudRouteArgs {
   final int id;
   const UtxoTagCrudRouteArgs({required this.id});
+}
+
+class WalletAppearanceRouteArgs {
+  final int id;
+  const WalletAppearanceRouteArgs({required this.id});
 }
 
 class WalletResyncRouteArgs {
@@ -113,9 +138,76 @@ class WalletAddScannerRouteArgs {
 class WalletInfoRouteArgs {
   final int id;
   final WalletType walletType;
-  final String entryPoint;
   final bool? showMfpInput;
-  const WalletInfoRouteArgs({required this.id, required this.walletType, required this.entryPoint, this.showMfpInput});
+  final bool? highlightMnemonicBackup;
+  final bool? showTargetSetting;
+  final WalletInfoTarget? initialTarget;
+  const WalletInfoRouteArgs({
+    required this.id,
+    required this.walletType,
+    this.showMfpInput,
+    this.highlightMnemonicBackup,
+    this.showTargetSetting,
+    this.initialTarget,
+  });
+}
+
+class HotWalletMnemonicBackupGuideRouteArgs {
+  final int walletId;
+  final Uint8List? mnemonic;
+  final Uint8List? passphrase;
+  final String? secureStorageKey;
+  final bool enterPassphraseWhenSigning;
+  final bool showWalletCreatedIntro;
+  final bool continueToAppLockGuide;
+  final bool returnToPreviousOnExit;
+
+  const HotWalletMnemonicBackupGuideRouteArgs({
+    required this.walletId,
+    this.mnemonic,
+    this.passphrase,
+    this.secureStorageKey,
+    required this.enterPassphraseWhenSigning,
+    this.showWalletCreatedIntro = true,
+    this.continueToAppLockGuide = true,
+    this.returnToPreviousOnExit = false,
+  });
+}
+
+class HotWalletMnemonicBackupRouteArgs {
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
+  final bool enterPassphraseWhenSigning;
+  final int? walletId;
+  final bool continueToAppLockGuide;
+
+  const HotWalletMnemonicBackupRouteArgs({
+    required this.mnemonic,
+    required this.passphrase,
+    this.enterPassphraseWhenSigning = false,
+    this.walletId,
+    this.continueToAppLockGuide = false,
+  });
+}
+
+class MnemonicBackupConfirmRouteArgs {
+  final Uint8List mnemonic;
+  final int? walletId;
+  final bool continueToAppLockGuide;
+
+  const MnemonicBackupConfirmRouteArgs({required this.mnemonic, this.walletId, this.continueToAppLockGuide = false});
+}
+
+class MnemonicBackupCompleteRouteArgs {
+  final int? walletId;
+  final bool continueToAppLockGuide;
+  const MnemonicBackupCompleteRouteArgs({this.walletId, this.continueToAppLockGuide = false});
+}
+
+class HotWalletPassphraseCheckRouteArgs {
+  final Uint8List mnemonic;
+  final String descriptor;
+  const HotWalletPassphraseCheckRouteArgs({required this.mnemonic, required this.descriptor});
 }
 
 class BroadcastingCompleteRouteArgs {
@@ -134,11 +226,6 @@ class UtxoSelectionRouteArgs {
 class SendConfirmRouteArgs {
   final BitcoinUnit? currentUnit;
   const SendConfirmRouteArgs({this.currentUnit});
-}
-
-class UtxoListRouteArgs {
-  final int id;
-  const UtxoListRouteArgs({required this.id});
 }
 
 class UtxoOverviewRouteArgs {

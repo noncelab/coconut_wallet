@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,17 @@ import 'package:flutter/foundation.dart';
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
 
 mixin FeeRateMixin on ChangeNotifier {
+  bool _feeRateDisposed = false;
+
+  @override
+  void dispose() {
+    _feeRateDisposed = true;
+    super.dispose();
+  }
+
+  @protected
+  Future<RecommendedFee?> loadRecommendedFees() => FeeService().getRecommendedFees();
+
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
 
@@ -20,25 +32,19 @@ mixin FeeRateMixin on ChangeNotifier {
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
 
-  bool _isFeeRateMixinDisposed = false;
-
-  @override
-  void dispose() {
-    _isFeeRateMixinDisposed = true;
-    super.dispose();
-  }
-
   Future<bool> fetchRecommendedFees({
     required String currentFeeRateText,
     required void Function(String) onDefaultFeeRateSet,
   }) async {
+    if (_feeRateDisposed) return false;
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching && feeInfos[0].satsPerVb != null) return true;
 
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
     notifyListeners();
 
-    final recommendedFees = await FeeService().getRecommendedFees();
-    if (_isFeeRateMixinDisposed) return false;
+    final recommendedFees = await loadRecommendedFees();
+    // 화면이 닫힌 뒤 도착한 응답은 컨트롤러와 상태에 반영하지 않습니다.
+    if (_feeRateDisposed) return false;
 
     if (recommendedFees == null) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
@@ -55,6 +61,7 @@ mixin FeeRateMixin on ChangeNotifier {
       onDefaultFeeRateSet(recommendedFees.halfHourFee.toString());
     }
 
+    if (_feeRateDisposed) return false;
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
     notifyListeners();
     return true;
