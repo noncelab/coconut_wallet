@@ -33,10 +33,34 @@ class WalletAddScreen extends StatelessWidget {
     ).push(CupertinoPageRoute(settings: const RouteSettings(name: routeName), builder: (_) => const WalletAddScreen()));
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return Scaffold(
+      backgroundColor: colors.homeBackground,
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.homeBackground),
+      body: SafeArea(
+        child: ListView(
+          key: const Key('wallet-add-screen'),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          children: const [WalletAddOptions()],
+        ),
+      ),
+    );
+  }
+}
+
+/// 지갑 추가 방법의 제목, 설명, 선택지 묶음. 지갑 추가 화면과 지갑이 없을 때의 내 지갑 화면이 함께 쓴다.
+class WalletAddOptions extends StatelessWidget {
+  final bool showsWatchOnly;
+  final bool showsHot;
+
+  const WalletAddOptions({super.key, this.showsWatchOnly = true, this.showsHot = true});
+
   void _openSources(BuildContext context, String title, List<WalletAddSourceSection> sections) {
     Navigator.of(context).push(
       CupertinoPageRoute(
-        settings: const RouteSettings(name: sourcesRouteName),
+        settings: const RouteSettings(name: WalletAddScreen.sourcesRouteName),
         builder: (_) => WalletAddSourcesScreen(title: title, sections: sections),
       ),
     );
@@ -59,79 +83,74 @@ class WalletAddScreen extends StatelessWidget {
     final colors = context.coconutColors;
     final copy = t.wallet_add_screen;
     final watchOnlyTitle = t.feature_registry.wallet_add_watch_only;
-    return Scaffold(
-      backgroundColor: colors.homeBackground,
-      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.homeBackground),
-      body: SafeArea(
-        child: ListView(
-          key: const Key('wallet-add-screen'),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          children: [
-            Text(
-              TextUtils.preventLineBreakInsideWords(copy.title),
-              style: CoconutTypography.heading3_21_Bold.copyWith(color: colors.primaryText),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              TextUtils.preventLineBreakInsideWords(copy.subtitle),
-              style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
-            ),
-            CoconutLayout.spacing_600h,
-            _OptionGroup(
-              iconPath: FeatureWalletIconPath.walletAddWatchOnly,
-              title: watchOnlyTitle,
-              description: copy.watch_only_description,
-              onHeaderPressed:
-                  () => _openSources(context, watchOnlyTitle, [
-                    (title: copy.air_gapped, sources: WalletAddActions.airGappedSources),
-                    (title: copy.connected, sources: WalletAddActions.connectedSources),
-                  ]),
-              options: [
-                _Option(
-                  key: const Key('wallet-add-air-gapped'),
-                  icon: _icon(context, FeatureWalletIconPath.walletAddAirGapped),
-                  title: copy.air_gapped,
-                  onPressed:
-                      () => _openSources(context, copy.air_gapped, [
-                        (title: null, sources: WalletAddActions.airGappedSources),
-                      ]),
-                ),
-                _Option(
-                  key: const Key('wallet-add-connected'),
-                  icon: _icon(context, FeatureWalletIconPath.walletAddConnected),
-                  title: copy.connected,
-                  onPressed:
-                      () => _openSources(context, copy.connected, [
-                        (title: null, sources: WalletAddActions.connectedSources),
-                      ]),
-                ),
-              ],
-            ),
-            CoconutLayout.spacing_400h,
-            _OptionGroup(
-              iconPath: FeatureWalletIconPath.walletAddHot,
-              title: t.feature_registry.wallet_add_hot,
-              description: copy.hot_description,
-              options: [
-                _Option(
-                  key: const Key('wallet-add-hot-create'),
-                  icon: _icon(context, FeatureWalletIconPath.walletAddCreate),
-                  title: t.wallet_home_screen.hot_wallet_add.create.title,
-                  showChevron: true,
-                  onPressed: () => _openHotWallet(context, restore: false),
-                ),
-                _Option(
-                  key: const Key('wallet-add-hot-restore'),
-                  icon: _icon(context, FeatureWalletIconPath.walletAddImport),
-                  title: t.wallet_home_screen.hot_wallet_add.restore.title,
-                  showChevron: true,
-                  onPressed: () => _openHotWallet(context, restore: true),
-                ),
-              ],
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          TextUtils.preventLineBreakInsideWords(copy.title),
+          style: CoconutTypography.heading3_21_Bold.copyWith(color: colors.primaryText),
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          TextUtils.preventLineBreakInsideWords(copy.subtitle),
+          style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+        ),
+        CoconutLayout.spacing_600h,
+        if (showsWatchOnly)
+          _OptionGroup(
+            iconPath: FeatureWalletIconPath.walletAddWatchOnly,
+            title: watchOnlyTitle,
+            description: copy.watch_only_description,
+            onHeaderPressed:
+                () => _openSources(context, watchOnlyTitle, [
+                  (title: copy.air_gapped, sources: WalletAddActions.airGappedSources),
+                  (title: copy.connected, sources: WalletAddActions.connectedSources),
+                ]),
+            options: [
+              _Option(
+                key: const Key('wallet-add-air-gapped'),
+                icon: _icon(context, FeatureWalletIconPath.walletAddAirGapped),
+                title: copy.air_gapped,
+                onPressed:
+                    () => _openSources(context, copy.air_gapped, [
+                      (title: null, sources: WalletAddActions.airGappedSources),
+                    ]),
+              ),
+              _Option(
+                key: const Key('wallet-add-connected'),
+                icon: _icon(context, FeatureWalletIconPath.walletAddConnected),
+                title: copy.connected,
+                onPressed:
+                    () => _openSources(context, copy.connected, [
+                      (title: null, sources: WalletAddActions.connectedSources),
+                    ]),
+              ),
+            ],
+          ),
+        if (showsWatchOnly && showsHot) CoconutLayout.spacing_400h,
+        if (showsHot)
+          _OptionGroup(
+            iconPath: FeatureWalletIconPath.walletAddHot,
+            title: t.feature_registry.wallet_add_hot,
+            description: copy.hot_description,
+            options: [
+              _Option(
+                key: const Key('wallet-add-hot-create'),
+                icon: _icon(context, FeatureWalletIconPath.walletAddCreate),
+                title: t.wallet_home_screen.hot_wallet_add.create.title,
+                showChevron: true,
+                onPressed: () => _openHotWallet(context, restore: false),
+              ),
+              _Option(
+                key: const Key('wallet-add-hot-restore'),
+                icon: _icon(context, FeatureWalletIconPath.walletAddImport),
+                title: t.wallet_home_screen.hot_wallet_add.restore.title,
+                showChevron: true,
+                onPressed: () => _openHotWallet(context, restore: true),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }

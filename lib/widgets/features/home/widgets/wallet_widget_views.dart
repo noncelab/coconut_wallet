@@ -396,43 +396,13 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   Widget _emptyCard(BuildContext context, {bool addPage = false}) {
-    final colors = context.coconutColors;
     final actionText = widget.emptyActionText;
-    return HomeWidgetCard(
+    return WalletEmptyCard(
       key: Key('${widget.keyPrefix}-${addPage ? 'add' : 'empty'}'),
+      emptyText: widget.emptyText,
+      actionText: actionText,
+      actionKey: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
       onPressed: addPage ? null : widget.onEmptyPressed ?? widget.onPressed,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (actionText != null) ...[
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-                child: Center(
-                  child: SvgPicture.asset(
-                    CommonActionIconPath.plus,
-                    width: 12,
-                    height: 12,
-                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            Text(
-              actionText ?? widget.emptyText,
-              key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
-              textAlign: TextAlign.center,
-              style:
-                  actionText == null
-                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
-                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -552,6 +522,67 @@ class _WalletStackViewState extends State<WalletStackView> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// 지갑이 없을 때의 카드. [actionText]가 있으면 [emptyText] 대신 + 아이콘과 추가 문구를 보여 준다.
+class WalletEmptyCard extends StatelessWidget {
+  final String emptyText;
+  final String? actionText;
+  final Key? actionKey;
+  final VoidCallback? onPressed;
+
+  const WalletEmptyCard({super.key, required this.emptyText, this.actionText, this.actionKey, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final actionText = this.actionText;
+    return HomeWidgetCard(
+      onPressed: onPressed,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (actionText != null) ...[const WalletAddIcon(), const SizedBox(height: 8)],
+            Text(
+              actionText ?? emptyText,
+              key: actionKey,
+              textAlign: TextAlign.center,
+              style:
+                  actionText == null
+                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
+                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 지갑 추가를 나타내는 원 안의 + 아이콘
+class WalletAddIcon extends StatelessWidget {
+  final double size;
+
+  const WalletAddIcon({super.key, this.size = 28});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
+      child: Center(
+        child: SvgPicture.asset(
+          CommonActionIconPath.plus,
+          width: size * 3 / 7,
+          height: size * 3 / 7,
+          colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+        ),
       ),
     );
   }

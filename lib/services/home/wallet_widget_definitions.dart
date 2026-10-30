@@ -53,6 +53,12 @@ String walletStackEmptyText(WalletStackKind kind) => switch (kind) {
   WalletStackKind.all => t.home_widgets.empty_all_wallets,
 };
 
+String walletStackEmptyActionText(WalletStackKind kind) => switch (kind) {
+  WalletStackKind.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
+  WalletStackKind.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.title,
+  WalletStackKind.all => t.home_widgets.add_wallet,
+};
+
 /// 지갑 스택. 각 종류는 홈에 하나만 두고, 크기는 2×2와 4×2 중에서 바꿀 수 있다.
 class WalletStackDefinition extends HomeItemDefinition {
   final WalletStackKind stackKind;
@@ -103,11 +109,7 @@ class WalletStackDefinition extends HomeItemDefinition {
               },
       onPressed: () => WalletStackListScreen.open(context, kind: stackKind),
       onOpen: (request) => WalletStackListScreen.open(context, kind: stackKind, request: request),
-      emptyActionText: switch (stackKind) {
-        WalletStackKind.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
-        WalletStackKind.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.title,
-        WalletStackKind.all => t.home_widgets.add_wallet,
-      },
+      emptyActionText: walletStackEmptyActionText(stackKind),
       onEmptyPressed: () => openWalletAddFor(context, stackKind),
       onAddPressed: stackKind == WalletStackKind.all ? () => openWalletAddFor(context, stackKind) : null,
     );

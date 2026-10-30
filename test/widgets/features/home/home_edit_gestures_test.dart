@@ -102,6 +102,31 @@ void main() {
     return gesture;
   }
 
+  testWidgets('long-pressing empty space starts arranging without opening an item menu', (tester) async {
+    await pumpGrid(tester);
+    final third = tester.getRect(find.byKey(const ValueKey('home-item-3')));
+    final empty = Offset(third.right + HomeItemsView.gap + third.width / 2, third.center.dy);
+
+    await tester.longPressAt(empty);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(model.isArranging, isTrue);
+    expect(find.text('Edit 3'), findsNothing);
+    model.finishArranging();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('long-pressing an item still opens its menu instead of arranging', (tester) async {
+    await pumpGrid(tester);
+
+    await tester.longPress(find.byKey(const ValueKey('home-item-1')));
+    await tester.pumpAndSettle();
+
+    expect(model.isArranging, isFalse);
+    expect(find.text('Edit 1'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('occupied drop has no rendered overlap on the first release frame', (tester) async {
     model.startArranging();
     await pumpGrid(tester);
