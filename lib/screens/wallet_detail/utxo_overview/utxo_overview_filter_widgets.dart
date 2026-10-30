@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ class UtxoListFilterHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeTagName = viewModel.activeUtxoTagName;
+    final activeFilter = viewModel.activeUtxoFilter;
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
       child: Row(
@@ -33,8 +34,8 @@ class UtxoListFilterHeader extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 16, right: 24),
                   child: Stack(
                     children: [
-                      _buildChipRow(activeTagName, foreground: false),
-                      IgnorePointer(child: _buildChipRow(activeTagName, foreground: true)),
+                      _buildChipRow(activeFilter, foreground: false),
+                      IgnorePointer(child: _buildChipRow(activeFilter, foreground: true)),
                     ],
                   ),
                 ),
@@ -81,35 +82,35 @@ class UtxoListFilterHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildChipRow(String activeTagName, {required bool foreground}) {
-    final filters = <({String label, String text, int count})>[
-      (label: t.all, text: t.all, count: viewModel.utxoList.length),
+  Widget _buildChipRow(UtxoFilter activeFilter, {required bool foreground}) {
+    final filters = <({UtxoFilter filter, String text, int count})>[
+      (filter: UtxoFilter.all, text: t.all, count: viewModel.utxoList.length),
       (
-        label: t.utxo_detail_screen.utxo_locked,
+        filter: UtxoFilter.locked,
         text: t.utxo_detail_screen.utxo_locked,
         count: viewModel.utxoList.where((utxo) => utxo.isLocked).length,
       ),
-      (label: t.change, text: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
+      (filter: UtxoFilter.change, text: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
       for (final tag in viewModel.utxoTagList)
         (
-          label: tag.name,
+          filter: UtxoFilter.tag(tag.id),
           text: '#${tag.name}',
-          count: viewModel.utxoList.where((utxo) => utxo.tags?.any((e) => e.name == tag.name) ?? false).length,
+          count: viewModel.utxoList.where((utxo) => utxo.tags?.any((e) => e.id == tag.id) ?? false).length,
         ),
     ];
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final (index, filter) in filters.indexed) ...[
+        for (final (index, item) in filters.indexed) ...[
           if (index > 0) CoconutLayout.spacing_100w,
           Opacity(
-            opacity: (filter.label == activeTagName) == foreground ? 1 : 0,
+            opacity: (item.filter == activeFilter) == foreground ? 1 : 0,
             child: AnimatedUtxoFilterChip(
-              label: filter.text,
-              count: filter.count,
-              isSelected: filter.label == activeTagName,
-              onTap: () => viewModel.setActiveUtxoTagName(filter.label),
+              label: item.text,
+              count: item.count,
+              isSelected: item.filter == activeFilter,
+              onTap: () => viewModel.setActiveUtxoFilter(item.filter),
             ),
           ),
         ],
