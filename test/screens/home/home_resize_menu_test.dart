@@ -197,7 +197,7 @@ void main() {
                             model,
                             _LabelDefinition(definition),
                             model.configuration.items.first,
-                            columns: 4,
+                            columns: () => 4,
                           ),
                       child: const Text('configure'),
                     ),

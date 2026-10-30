@@ -66,12 +66,19 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
 
   Future<void> _configure(HomeItemDefinition definition) async {
     final item = _viewModel.itemOf(definition);
-    // Match the home's SafeArea and 16 px grid margins, using the current route
-    // width so a viewport change while Edit Home is open cannot leave stale columns.
-    final columns = HomeGridGeometry.columnsForWidth(
-      MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal - 32,
+    if (item == null) return;
+    // Match the home's SafeArea and 16 px grid margins at Save time, using the current route
+    // width so folding or unfolding while the sheet is open cannot leave stale columns.
+    await HomeItemConfigureSheets.configure(
+      context,
+      _viewModel,
+      definition,
+      item,
+      columns:
+          () => HomeGridGeometry.columnsForWidth(
+            MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal - 32,
+          ),
     );
-    if (item != null) await HomeItemConfigureSheets.configure(context, _viewModel, definition, item, columns: columns);
   }
 
   /// 위젯 목록의 미리보기 크기. 여러 크기를 고를 수 있으면 가장 큰 크기로 보여 준다.

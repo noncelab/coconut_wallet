@@ -61,12 +61,13 @@ class HomeItemConfigureSheets {
   }
 
   /// 홈에 있는 항목의 설정을 바꾼다. 설정이 없는 항목은 아무것도 하지 않는다.
+  /// [columns]는 저장할 때 읽어서, 시트를 연 채 접거나 펼쳐도 지금 보이는 홈 격자 기준으로 배치한다.
   static Future<void> configure(
     BuildContext context,
     HomeViewModel viewModel,
     HomeItemDefinition definition,
     HomeItem item, {
-    required int columns,
+    required int Function() columns,
   }) async {
     if (!viewModel.canConfigure(definition)) return;
     if (definition is ShortcutDefinition) {
@@ -82,9 +83,9 @@ class HomeItemConfigureSheets {
       initialSpan: item.span,
       previewBuilder: previewFor(context, definition, item: item),
     );
-    if (settings == null) return;
+    if (settings == null || !context.mounted) return;
     final span = settings.span;
-    if (span != null && span != item.span) viewModel.resizeItem(item.id, span, columns: columns);
+    if (span != null && span != item.span) viewModel.resizeItem(item.id, span, columns: columns());
     final configuration = settings.toConfiguration();
     if (!const DeepCollectionEquality().equals(configuration, item.configuration)) {
       viewModel.updateItemConfiguration(item.id, configuration);
