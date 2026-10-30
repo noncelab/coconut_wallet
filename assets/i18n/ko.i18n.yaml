@@ -1933,6 +1933,8 @@ third_party:
   cold_card: "콜드카드"
   krux: "크럭스"
   passport: "패스포트"
+  passport_core: "패스포트 코어"
+  passport_prime: "패스포트 프라임"
   trezor: "트레저"
   bitbox02: "비트박스"
   extended_public_keys:

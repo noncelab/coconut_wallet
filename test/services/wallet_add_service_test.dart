@@ -60,6 +60,32 @@ void main() {
       expect(wallet.descriptor.toUpperCase(), isNot(contains('0A391F1B')));
     });
 
+    test('model 필드가 있으면 추출하고, 없으면 null을 반환', () {
+      final withModel = buildUrBytes({
+        'chain': 'TBTC',
+        'xfp': fingerprint,
+        'account': 0,
+        'model': 'passport-core',
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': fingerprint, 'name': 'p2wpkh'},
+      });
+      expect(walletAddService.extractModelFromUrBytes(withModel), 'passport-core');
+
+      final withoutModel = buildUrBytes({
+        'chain': 'TBTC',
+        'xfp': fingerprint,
+        'account': 0,
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': fingerprint, 'name': 'p2wpkh'},
+      });
+      expect(walletAddService.extractModelFromUrBytes(withoutModel), isNull);
+    });
+
+    test('JSON이 아닌 UR bytes에서는 model로 null을 반환', () {
+      final payload = cbor.encode(CborBytes(utf8.encode('not json')));
+      final ur = UR('bytes', Uint8List.fromList(payload));
+
+      expect(walletAddService.extractModelFromUrBytes(ur), isNull);
+    });
+
     test('bip84 정보가 없으면 예외 발생', () {
       final ur = buildUrBytes({'chain': 'TBTC', 'xfp': fingerprint, 'account': 0});
 
