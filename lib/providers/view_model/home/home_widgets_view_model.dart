@@ -34,8 +34,8 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final Map<FiatCode, List<double>> _dailyCloses = {};
   final Set<FiatCode> _loadingCloses = {};
 
-  /// 과거 시세를 못 받은 CoinGecko 통화와 그때의 시세. 같은 서버의 시세가 새로 들어오면 다시 받는다.
-  final Map<FiatCode, int?> _failedClosesAtPrice = {};
+  /// 과거 시세를 못 받은 CoinGecko 통화와 그때의 시세 수신 시각. 같은 서버의 시세가 새로 들어오면 다시 받는다.
+  final Map<FiatCode, DateTime?> _failedClosesAtReceivedAt = {};
 
   /// 과거 시세를 못 받은 거래소 통화의 재시도 대기. 실패할 때마다 간격을 늘린다.
   final Map<FiatCode, Timer> _closesRetryTimers = {};
@@ -105,9 +105,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   }
 
   void _onPriceChanged() {
-    _failedClosesAtPrice.removeWhere((fiat, failedAt) {
-      final price = priceOf(fiat);
-      return price != null && price != failedAt;
+    _failedClosesAtReceivedAt.removeWhere((fiat, failedAt) {
+      final receivedAt = _priceProvider.priceReceivedAt(fiat);
+      return receivedAt != null && receivedAt != failedAt;
     });
     notifyListeners();
   }
@@ -177,7 +177,8 @@ class HomeWidgetsViewModel extends ChangeNotifier {
 
   List<double>? _closesOf(FiatCode fiatCode) {
     final closes = _dailyCloses[fiatCode];
-    final isWaitingToRetry = _failedClosesAtPrice.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
+    final isWaitingToRetry =
+        _failedClosesAtReceivedAt.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
     if (closes == null && !isWaitingToRetry && _loadingCloses.add(fiatCode)) {
       unawaited(_loadCloses(fiatCode));
     }
@@ -199,7 +200,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     } else if (fiatCode.hasExchangeSource) {
       _scheduleClosesRetry(fiatCode);
     } else {
-      _failedClosesAtPrice[fiatCode] = priceOf(fiatCode);
+      _failedClosesAtReceivedAt[fiatCode] = _priceProvider.priceReceivedAt(fiatCode);
     }
     notifyListeners();
   }

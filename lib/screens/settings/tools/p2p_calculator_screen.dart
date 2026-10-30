@@ -1196,7 +1196,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildCurrentPriceWidget(isVisible),
+        Expanded(child: _buildCurrentPriceWidget(isVisible)),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
@@ -1242,17 +1242,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         children: [
           MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-            child: Row(
-              children: [
-                Text(
-                  '${t.utility.p2p_calculator.one_btc} = ',
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-                Text(
-                  _viewModel.formattedOneBtcPrice,
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Text(
+                    '${t.utility.p2p_calculator.one_btc} = ',
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                  Text(
+                    _viewModel.formattedOneBtcPrice,
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                ],
+              ),
             ),
           ),
           _buildExchangePriceLabel(),

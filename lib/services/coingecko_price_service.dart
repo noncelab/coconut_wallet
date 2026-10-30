@@ -5,7 +5,8 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:dio/dio.dart';
 
 /// CoinGecko 무료 REST API로 거래소 웹소켓이 없는 통화들의 BTC 가격을 폴링한다.
-/// 어떤 통화를 쓰는지 드러나지 않도록 대상 통화 전체를 한 요청으로 조회하고 [interval] 간격으로 갱신한다.
+/// 현재가는 어떤 통화를 쓰는지 드러나지 않도록 대상 통화 전체를 한 요청으로 조회하고 [interval] 간격으로 갱신한다.
+/// 과거 종가는 `HistoricalBitcoinPriceService`가 통화별로 요청하므로 이 보장에 포함되지 않는다.
 class CoinGeckoPriceService {
   static const Duration _interval = Duration(seconds: 60);
   static const Duration _maxBackoff = Duration(minutes: 10);
