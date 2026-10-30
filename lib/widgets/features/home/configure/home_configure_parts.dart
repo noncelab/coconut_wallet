@@ -1,5 +1,7 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography, Sizes;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    show CoconutChip, CoconutLayout, CoconutTypography, Sizes;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/cupertino.dart';
@@ -155,6 +157,98 @@ class HomeConfigureCheckRow extends StatelessWidget {
               CoconutLayout.spacing_200w,
               Text(note!, style: CoconutTypography.body2_14.copyWith(color: colors.tertiaryText)),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HomeConfigureChipOption {
+  final Key key;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const HomeConfigureChipOption({
+    required this.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.enabled = true,
+  });
+}
+
+/// 짧은 선택지를 칩 격자로 보여준다. 고른 칩, 고르지 않은 칩, 고를 수 없는 칩을 테두리·글자·투명도로 나눈다.
+class HomeConfigureChipGrid extends StatelessWidget {
+  static const _columns = 4;
+  static const _gap = 8.0;
+
+  final List<HomeConfigureChipOption> options;
+
+  const HomeConfigureChipGrid({super.key, required this.options});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
+          return Wrap(
+            spacing: _gap,
+            runSpacing: _gap,
+            children: [
+              for (final option in options)
+                SizedBox(
+                  key: option.key,
+                  width: width,
+                  child: Opacity(
+                    opacity: option.enabled ? 1 : 0.3,
+                    child: CoconutChip(
+                      color: option.selected ? colors.primaryText.withValues(alpha: 0.12) : Colors.transparent,
+                      borderColor: colors.primaryText,
+                      labelColor: colors.primaryText,
+                      label: option.label,
+                      labelSize: 14,
+                      isRectangle: true,
+                      isSelected: option.selected,
+                      minWidth: width,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      onTap: option.enabled ? option.onTap : null,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class HomeConfigureExpandButton extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const HomeConfigureExpandButton({super.key, required this.expanded, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.coconutColors.secondaryText;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(expanded ? t.view_less : t.view_more, style: CoconutTypography.body3_12.copyWith(color: color)),
+            CoconutLayout.spacing_100w,
+            Icon(expanded ? CupertinoIcons.chevron_up : CupertinoIcons.chevron_down, size: 12, color: color),
           ],
         ),
       ),

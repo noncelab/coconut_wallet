@@ -37,7 +37,7 @@ void main() {
 
     final factoryUris = <FiatCode, Uri>{};
     final factorySent = <FiatCode, List<Object?>>{};
-    for (final fiat in FiatCode.values) {
+    for (final fiat in FiatCode.values.where((fiat) => fiat.hasExchangeSource)) {
       final sent = <Object?>[];
       factorySent[fiat] = sent;
       services.add(
@@ -72,6 +72,12 @@ void main() {
     expect(factorySent[FiatCode.USD], isEmpty);
     expect(factorySent[FiatCode.EUR], isEmpty);
     expect(_texts(sentByExchange[ExchangeType.upbit]!).where((line) => line == 'PING'), isEmpty);
+  });
+
+  test('the factory rejects currencies without an exchange websocket', () {
+    for (final fiat in FiatCode.values.where((fiat) => !fiat.hasExchangeSource)) {
+      expect(() => WebSocketServiceFactory.create(fiat), throwsArgumentError, reason: fiat.code);
+    }
   });
 
   test('text, binary, and malformed frames recover once per exchange', () async {

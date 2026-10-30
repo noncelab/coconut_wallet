@@ -186,6 +186,21 @@ void main() {
     });
   });
 
+  for (final source in [WalletImportSource.krux, WalletImportSource.seedSigner]) {
+    test('${source.name} 메뉴에서 descriptor는 출처가 ${source.name}로 저장된다', () async {
+      final viewModel = createViewModel(source);
+      final handler = viewModel.qrDataHandler;
+      expect(handler.validateFormat(descriptor), isTrue);
+      expect(handler.joinData(descriptor), isTrue);
+
+      final result = await viewModel.addWallet(handler.result!);
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(wallets.addedWallet!.descriptor, contains('9b1441e4'));
+      expect(wallets.addedWallet!.walletImportSource, source);
+    });
+  }
+
   test('다른 handler를 사용하는 메뉴에서도 타입 변환 오류 없이 false를 반환한다', () {
     for (final source in [
       WalletImportSource.coconutVault,

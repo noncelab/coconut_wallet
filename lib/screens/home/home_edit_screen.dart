@@ -21,6 +21,8 @@ import 'package:provider/provider.dart';
 enum HomeEditTab { presets, widgets, shortcuts }
 
 class HomeEditScreen extends StatefulWidget {
+  static const routeName = '/home-edit';
+
   final HomeEditTab initialTab;
 
   const HomeEditScreen({super.key, this.initialTab = HomeEditTab.presets});

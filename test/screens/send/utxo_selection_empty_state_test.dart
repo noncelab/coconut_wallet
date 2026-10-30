@@ -52,7 +52,7 @@ class _Tags extends Fake with ChangeNotifier implements UtxoTagProvider {
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
-  int? get bitcoinPriceKrw => null;
+  int? getBitcoinPriceForFiat(FiatCode fiatCode) => null;
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {

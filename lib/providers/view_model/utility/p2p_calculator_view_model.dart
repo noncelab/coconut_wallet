@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -21,6 +23,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   final PriceProvider _priceProvider;
   final WalletProvider _walletProvider;
+  final Future<int?> Function(FiatCode fiatCode) _fetchRestPrice;
+  int _priceRequestGeneration = 0;
+  bool _isDisposed = false;
 
   /// 현재 법정 화폐
   late FiatCode _fiatCode;
@@ -56,6 +61,18 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   int? _btcPrice;
   int? get btcPrice => _btcPrice;
 
+  /// 기준 BTC 가격을 받은 시각. 계산서의 기준 시세 아래에 출처와 함께 표시한다.
+  DateTime? _btcPriceAt;
+  DateTime? get btcPriceAt => _btcPriceAt;
+
+  /// 기준 시세 출처 이름
+  String get priceSourceName => switch (_fiatCode) {
+    FiatCode.KRW => t.utility.p2p_calculator.source_upbit,
+    FiatCode.USD || FiatCode.EUR => t.utility.p2p_calculator.source_binance,
+    FiatCode.JPY => t.utility.p2p_calculator.source_bitflyer,
+    _ => t.utility.p2p_calculator.source_coingecko,
+  };
+
   /// BTC 가격이 사용 가능한지 여부
   bool get isBtcPriceAvailable => _btcPrice != null && _btcPrice! > 0 && _isNetworkOn;
 
@@ -84,21 +101,24 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._connectivityProvider,
     this._priceProvider,
-    this._walletProvider,
-  ) {
+    this._walletProvider, {
+    @visibleForTesting Future<int?> Function(FiatCode fiatCode)? restPriceFetcher,
+  }) : _fetchRestPrice = restPriceFetcher ?? _fetchPriceForFiat {
     _connectivityProvider.addListener(_onConnectivityChanged);
     _priceProvider.addListener(_onPriceChanged);
 
     _fiatCode = _preferenceProvider.selectedFiat;
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
     _isNetworkOn = _connectivityProvider.isInternetOn;
     _currentUnit = _preferenceProvider.currentUnit;
+    unawaited(setFiatCode(_fiatCode));
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _priceProvider.removeListener(_onPriceChanged);
+    _priceProvider.setCalculatorFiat(this, null);
     super.dispose();
   }
 
@@ -115,9 +135,19 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   void _onPriceChanged() {
-    // 현재 선택된 fiatCode에 맞는 가격만 업데이트
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    _takeSharedPriceIfNewer();
     notifyListeners();
+  }
+
+  /// 공유 시세가 지금 쓰는 시세(REST로 직접 받은 값 포함)보다 오래되지 않았으면 바꾼다.
+  void _takeSharedPriceIfNewer() {
+    final price = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    final receivedAt = _priceProvider.priceReceivedAt(_fiatCode);
+    if (price == null) return;
+    final current = _btcPriceAt;
+    if (current != null && receivedAt != null && receivedAt.isBefore(current)) return;
+    _btcPrice = price;
+    _btcPriceAt = receivedAt;
   }
 
   void setInputAssetType(InputAssetType type) {
@@ -225,16 +255,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String _getInputPlaceholder() {
     if (_inputAssetType == InputAssetType.fiat) {
-      switch (_fiatCode) {
-        case FiatCode.KRW:
-          return 50000.toThousandsSeparatedString();
-        case FiatCode.USD:
-          return '50';
-        case FiatCode.JPY:
-          return 5000.toThousandsSeparatedString();
-        case FiatCode.EUR:
-          return '50';
-      }
+      // 각 통화 Quick Add의 두 번째 금액을 placeholder로 사용
+      final placeholderAmount = kFiatQuickAddAmounts[_fiatCode]?[1] ?? 50;
+      return placeholderAmount.toThousandsSeparatedString();
     } else {
       if (_currentUnit.isBasedOnSatoshi) {
         return 50000.toThousandsSeparatedString();
@@ -248,17 +271,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     int inputValue;
 
     if (_inputAssetType == InputAssetType.fiat) {
-      // Fiat 입력 모드: inputValue는 법정화폐 금액
-      switch (_fiatCode) {
-        case FiatCode.KRW:
-          inputValue = 50000;
-        case FiatCode.USD:
-          inputValue = 50;
-        case FiatCode.JPY:
-          inputValue = 5000;
-        case FiatCode.EUR:
-          inputValue = 50;
-      }
+      // Fiat 입력 모드: inputValue는 법정화폐 금액 (Quick Add 두 번째 금액과 동일하게)
+      inputValue = kFiatQuickAddAmounts[_fiatCode]?[1] ?? 50;
       // Fiat → Sats (inputValue는 whole unit 기준이므로 minor unit으로 변환)
       final sats = calculateSatsFromFiat(inputValue * _fiatCode.minorUnitsPerWhole);
       return formatSatsResult(sats);
@@ -315,32 +329,38 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     return FiatUtil.formatMinorUnits(fiatMinorUnits, _fiatCode);
   }
 
-  Future<void> onFiatUnitChange() async {
-    vibrateExtraLight();
+  /// 통화 변경 (fiat bottom sheet 선택 시 호출)
+  /// 다른 통화를 고르면 입력과 프리미엄을 초기화하고 true를 돌려준다.
+  bool selectFiat(FiatCode fiatCode) {
+    if (fiatCode == _fiatCode) return false;
+    resetInput();
+    unawaited(setFiatCode(fiatCode));
+    return true;
+  }
 
-    switch (_fiatCode) {
-      case FiatCode.KRW:
-        _fiatCode = FiatCode.USD;
-        break;
-      case FiatCode.USD:
-        _fiatCode = FiatCode.JPY;
-        break;
-      case FiatCode.JPY:
-        _fiatCode = FiatCode.EUR;
-        break;
-      case FiatCode.EUR:
-        _fiatCode = FiatCode.KRW;
-        break;
-    }
+  Future<void> setFiatCode(FiatCode fiatCode) async {
+    if (_isDisposed) return;
+    final generation = ++_priceRequestGeneration;
+    _fiatCode = fiatCode;
+    _priceProvider.setCalculatorFiat(this, fiatCode);
 
-    // PriceProvider가 웹소켓으로 실시간 제공하는 가격 사용
-    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    // 거래소 웹소켓과 CoinGecko 폴링의 공유 시세를 사용한다.
+    _btcPrice = null;
+    _btcPriceAt = null;
+    _takeSharedPriceIfNewer();
 
-    // 웹소켓 가격이 없으면 fallback으로 HTTP API 호출
-    if (_btcPrice == null) {
-      final fetchedPrice = await _fetchPriceForFiat(_fiatCode);
-      if (fetchedPrice != null) {
-        _btcPrice = fetchedPrice;
+    // 공유 시세가 없거나 정상 주기를 넘겨 오래됐으면 새로 받는다. 못 받으면 마지막 시세를 계속 쓴다.
+    if (_priceProvider.isPriceStale(fiatCode)) {
+      if (!fiatCode.hasExchangeSource) {
+        _priceProvider.refreshCoinGeckoNow();
+      } else {
+        final requestedAt = DateTime.now();
+        final fetchedPrice = await _fetchRestPrice(fiatCode);
+        if (_isDisposed || generation != _priceRequestGeneration) return;
+        if (fetchedPrice != null && (_btcPriceAt == null || _btcPriceAt!.isBefore(requestedAt))) {
+          _btcPrice = fetchedPrice;
+          _btcPriceAt = DateTime.now();
+        }
       }
     }
 
@@ -348,7 +368,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// 특정 Fiat에 대한 BTC 가격을 REST API로 가져옴
-  Future<int?> _fetchPriceForFiat(FiatCode fiatCode) async {
+  static Future<int?> _fetchPriceForFiat(FiatCode fiatCode) async {
     try {
       final dio = Dio(
         BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
@@ -388,6 +408,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
             return price?.toInt();
           }
           return null;
+
+        default:
+          return null;
       }
     } catch (e) {
       Logger.error('Failed to fetch price for $fiatCode: $e');
@@ -397,9 +420,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String generateTransactionBill(
     String btcPriceStr,
+    String priceSourceStr,
     String fiatAmountStr,
     String btcAmountStr,
-    String referenceDateTime,
+    String billCreatedAt,
     String feeRateStr,
     String feeAmountStr,
     String feeSatsStr,
@@ -412,7 +436,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         btcAmount: btcAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
-        referenceTime: referenceDateTime,
+        referencePriceSource: priceSourceStr,
+        billCreatedAt: billCreatedAt,
         transactionPremiumRate: feeRateStr,
         transactionPremium: feeAmountStr,
         premiumToSats: feeSatsStr,
@@ -425,7 +450,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         btcAmount: fiatAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
-        referenceTime: referenceDateTime,
+        referencePriceSource: priceSourceStr,
+        billCreatedAt: billCreatedAt,
         transactionPremiumRate: feeRateStr,
         transactionPremium: feeAmountStr,
         premiumToSats: feeSatsStr,

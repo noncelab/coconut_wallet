@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/coingecko_price_service.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -40,10 +41,10 @@ void main() {
       harness.emit(FiatCode.EUR, 55000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 100000000);
-      expect(harness.prices.bitcoinPriceUsd, 60000);
-      expect(harness.prices.bitcoinPriceJpy, 9000000);
-      expect(harness.prices.bitcoinPriceEur, 55000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.USD), 60000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.JPY), 9000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.EUR), 55000);
       expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
       expect(harness.prices.getFiatPrice(100000000), '₩ 100,000,000');
       expect(harness.notes, hasLength(4));
@@ -52,7 +53,7 @@ void main() {
     });
   });
 
-  testWidgets('selected currency change reconnects once and keeps one live set', (tester) async {
+  testWidgets('selected currency change keeps one live set without reconnecting', (tester) async {
     await withHarness(tester, (harness) async {
       harness.emit(FiatCode.KRW, 100000000);
       harness.emit(FiatCode.USD, 60000);
@@ -62,13 +63,13 @@ void main() {
       harness.preference.select(FiatCode.USD);
 
       expect(OwnedSocket.live, 4);
-      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.created, 4);
       expect(harness.prices.getFiatPrice(100000000), r'$ 60,000');
 
       harness.emit(FiatCode.USD, 61000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceUsd, 61000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.USD), 61000);
       expect(harness.prices.getFiatPrice(100000000), r'$ 61,000');
       expect(harness.notes, hasLength(1));
       expect(OwnedSocket.live, 4);
@@ -85,10 +86,76 @@ void main() {
     });
   });
 
+  testWidgets('CoinGecko stays off while only exchange currencies are needed', (tester) async {
+    await withHarness(tester, (harness) async {
+      expect(harness.coinGecko, isNull);
+    });
+  });
+
+  testWidgets('one CoinGecko service follows the selected currency and stops when it is not needed', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.preference.select(FiatCode.CHF);
+      final polling = harness.coinGecko!;
+      expect(polling.running, isTrue);
+
+      harness.preference.select(FiatCode.KRW);
+      expect(polling.running, isFalse);
+      expect(polling.disposed, isFalse);
+
+      harness.preference.select(FiatCode.AED);
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
+      expect(OwnedSocket.live, 4);
+    });
+  });
+
+  testWidgets('a home widget CoinGecko currency keeps polling after the selected currency changes', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.prices.setHomeWidgetFiats([FiatCode.AED, FiatCode.USD]);
+      final polling = harness.coinGecko!;
+      expect(polling.running, isTrue);
+
+      harness.preference.select(FiatCode.CHF);
+      harness.preference.select(FiatCode.KRW);
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
+
+      harness.prices.setHomeWidgetFiats([FiatCode.USD]);
+      expect(polling.running, isFalse);
+    });
+  });
+
+  testWidgets('going offline stops CoinGecko and coming back reuses the same service', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.preference.select(FiatCode.CHF);
+      final polling = harness.coinGecko!;
+
+      harness.connectivity.setOnline(false);
+      await tester.pump();
+      expect(polling.running, isFalse);
+
+      harness.connectivity.setOnline(true);
+      await tester.pump();
+      expect(harness.coinGeckoCreated, 1);
+      expect(polling.running, isTrue);
+    });
+  });
+
+  testWidgets('stopping CoinGecko drops its last prices', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.prices.setHomeWidgetFiats([FiatCode.CHF]);
+      harness.coinGecko!.emit({FiatCode.CHF: 70000});
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.CHF), 70000);
+
+      harness.prices.setHomeWidgetFiats(const []);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.CHF), isNull);
+    });
+  });
+
   testWidgets('offline startup waits, then one online notification opens four sockets', (tester) async {
     await withHarness(tester, (harness) async {
       expect(OwnedSocket.created, 0);
-      expect(harness.prices.bitcoinPriceKrw, isNull);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), isNull);
       expect(harness.prices.getFiatPrice(100000000), isEmpty);
 
       harness.connectivity.setOnline(true);
@@ -128,15 +195,15 @@ void main() {
       harness.emit(FiatCode.KRW, 42000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 42000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 42000);
       expect(harness.notes, hasLength(1));
     });
   });
 
   testWidgets('repeated force init replaces sockets instead of stacking them', (tester) async {
     await withHarness(tester, (harness) async {
-      harness.prices.initWebSocketService(force: true);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
+      harness.prices.initPriceSources(force: true);
       await tester.pump();
 
       expect(OwnedSocket.live, 4);
@@ -146,15 +213,15 @@ void main() {
       harness.emit(FiatCode.EUR, 55000);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceEur, 55000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.EUR), 55000);
       expect(harness.notes, hasLength(1));
     });
   });
 
   testWidgets('force init while offline does not connect until the network returns', (tester) async {
     await withHarness(tester, (harness) async {
-      harness.prices.initWebSocketService(force: true);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
+      harness.prices.initPriceSources(force: true);
       expect(OwnedSocket.created, 0);
 
       harness.connectivity.setOnline(true);
@@ -172,13 +239,60 @@ void main() {
       harness.notes.clear();
 
       harness.emit(FiatCode.KRW, 1);
-      harness.prices.initWebSocketService(force: true);
+      harness.prices.initPriceSources(force: true);
       harness.emit(FiatCode.KRW, 222);
       await tester.pump();
 
-      expect(harness.prices.bitcoinPriceKrw, 222);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 222);
       expect(harness.notes.map((note) => note.krw).toList(), [222]);
       expect(OwnedSocket.live, 4);
+    });
+  });
+
+  testWidgets('a failed init waits for the next online notification and retries', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.book.failOn = FiatCode.KRW;
+      harness.prices.initPriceSources(force: true);
+
+      expect(OwnedSocket.live, 0);
+      expect(OwnedSocket.created, 4);
+
+      harness.connectivity.pulse();
+      expect(OwnedSocket.created, 4);
+
+      harness.book.failOn = null;
+      harness.connectivity.pulse();
+      await tester.pump();
+
+      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.live, 4);
+
+      harness.emit(FiatCode.KRW, 100000000);
+      await tester.pump();
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
+    });
+  });
+
+  testWidgets('a partially failed init reconnects only the missing channels', (tester) async {
+    await withHarness(tester, (harness) async {
+      harness.book.failOn = FiatCode.JPY;
+      harness.prices.initPriceSources(force: true);
+
+      // KRW/USD만 열리고 JPY에서 실패 — EUR, CoinGecko는 미생성
+      expect(OwnedSocket.live, 2);
+      expect(OwnedSocket.created, 6);
+
+      harness.book.failOn = null;
+      harness.connectivity.pulse();
+      await tester.pump();
+
+      // 이미 열린 KRW/USD는 스킵하고 JPY/EUR만 새로 연다
+      expect(OwnedSocket.created, 8);
+      expect(OwnedSocket.live, 4);
+
+      harness.emit(FiatCode.JPY, 9000000);
+      await tester.pump();
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.JPY), 9000000);
     });
   });
 
@@ -218,7 +332,7 @@ void main() {
       second.emit(FiatCode.KRW, 333);
       await tester.pump();
 
-      expect(second.prices.bitcoinPriceKrw, 333);
+      expect(second.prices.getBitcoinPriceForFiat(FiatCode.KRW), 333);
       expect(second.notes, hasLength(1));
       expect(tester.takeException(), isNull);
     } finally {
@@ -240,7 +354,7 @@ void main() {
       harness.emit(FiatCode.KRW, 99000000);
       await tester.idle();
       await tester.pump();
-      expect(harness.prices.bitcoinPriceKrw, 99000000);
+      expect(harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 99000000);
       expect(harness.prices.getFiatPrice(100000000), '₩ 99,000,000');
       expect(find.text('₩ 99,000,000'), findsOneWidget);
       expect(find.text('₩ 100,000,000'), findsNothing);
@@ -286,7 +400,7 @@ void main() {
       session.harness.emit(FiatCode.KRW, 100000000);
       await tester.pump();
       expect(session.harness.notes, hasLength(1));
-      expect(session.harness.prices.bitcoinPriceKrw, 100000000);
+      expect(session.harness.prices.getBitcoinPriceForFiat(FiatCode.KRW), 100000000);
     } finally {
       await releaseGuard(tester, session);
     }
@@ -461,6 +575,7 @@ void main() {
           },
         );
       },
+      coinGeckoFactory: _CoinGecko.new,
     );
     addTearDown(prices.dispose);
     addTearDown(connectivity.dispose);
@@ -468,10 +583,10 @@ void main() {
 
     await _waitUntil(
       () =>
-          prices.bitcoinPriceKrw == 100000000 &&
-          prices.bitcoinPriceUsd == 60000 &&
-          prices.bitcoinPriceJpy == 9000000 &&
-          prices.bitcoinPriceEur == 55000,
+          prices.getBitcoinPriceForFiat(FiatCode.KRW) == 100000000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.USD) == 60000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.JPY) == 9000000 &&
+          prices.getBitcoinPriceForFiat(FiatCode.EUR) == 55000,
     );
 
     expect(accepted, 4);
@@ -572,10 +687,23 @@ class Harness {
   Harness({bool online = true, FiatCode fiat = FiatCode.KRW})
     : connectivity = ScriptedConnectivity(online: online),
       preference = ScriptedPreference(fiat) {
-    prices = PriceProvider(connectivity, preference, webSocketFactory: book.create);
+    prices = PriceProvider(
+      connectivity,
+      preference,
+      webSocketFactory: book.create,
+      coinGeckoFactory: () {
+        coinGeckoCreated++;
+        return coinGecko = _CoinGecko();
+      },
+    );
     prices.addListener(() {
       notes.add(
-        PriceNote(prices.bitcoinPriceKrw, prices.bitcoinPriceUsd, prices.bitcoinPriceJpy, prices.bitcoinPriceEur),
+        PriceNote(
+          prices.getBitcoinPriceForFiat(FiatCode.KRW),
+          prices.getBitcoinPriceForFiat(FiatCode.USD),
+          prices.getBitcoinPriceForFiat(FiatCode.JPY),
+          prices.getBitcoinPriceForFiat(FiatCode.EUR),
+        ),
       );
     });
   }
@@ -583,6 +711,8 @@ class Harness {
   final ScriptedConnectivity connectivity;
   final ScriptedPreference preference;
   final SocketBook book = SocketBook();
+  var coinGeckoCreated = 0;
+  _CoinGecko? coinGecko;
   late final PriceProvider prices;
   final notes = <PriceNote>[];
   var _pricesDisposed = false;
@@ -628,10 +758,43 @@ class PriceNote {
   final int? eur;
 }
 
+class _CoinGecko extends Fake implements CoinGeckoPriceService {
+  final _controller = StreamController<Map<FiatCode, int>>.broadcast(sync: true);
+  bool disposed = false;
+  bool running = false;
+
+  @override
+  bool get isRunning => running;
+
+  @override
+  Stream<Map<FiatCode, int>> get priceStream => _controller.stream;
+
+  void emit(Map<FiatCode, int> prices) {
+    if (!_controller.isClosed) _controller.add(prices);
+  }
+
+  @override
+  void start() => running = true;
+
+  @override
+  void stop() => running = false;
+
+  @override
+  void dispose() {
+    disposed = true;
+    running = false;
+    _controller.close();
+  }
+}
+
 class SocketBook {
   final _channels = <FiatCode, List<ScriptedChannel>>{};
 
+  /// 설정하면 해당 통화의 소켓 생성이 실패한다. init 실패/재시도 경로 검증용.
+  FiatCode? failOn;
+
   WebSocketService create(FiatCode fiat) {
+    if (fiat == failOn) throw StateError('socket creation failed for ${fiat.code}');
     final channel = ScriptedChannel();
     _channels.putIfAbsent(fiat, () => []).add(channel);
     return OwnedSocket(exchangeType: _exchangeFor(fiat), symbol: _symbolFor(fiat), openChannel: (_) => channel);
@@ -819,6 +982,8 @@ ExchangeType _exchangeFor(FiatCode fiat) {
       return ExchangeType.binance;
     case FiatCode.JPY:
       return ExchangeType.bitflyer;
+    default:
+      throw UnsupportedError('no exchange source for $fiat');
   }
 }
 
@@ -830,6 +995,8 @@ String? _symbolFor(FiatCode fiat) {
       return 'btceur';
     case FiatCode.KRW:
     case FiatCode.JPY:
+      return null;
+    default:
       return null;
   }
 }
@@ -843,6 +1010,8 @@ String _payload(FiatCode fiat, int price) {
       return '{"c":"$price"}';
     case FiatCode.JPY:
       return '{"method":"channelMessage","params":{"message":{"ltp":$price}}}';
+    default:
+      return '{}';
   }
 }
 

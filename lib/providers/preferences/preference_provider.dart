@@ -131,21 +131,6 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 구간별 색상 테마
   late UtxoTierTheme _utxoTierTheme;
   UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
-  // 지갑 목록 화면 - 법정화폐 표시 여부
-  late bool _isWalletListFiatHidden;
-  bool get isWalletListFiatVisible => !_isWalletListFiatHidden;
-
-  // 지갑 목록 화면 - 1 BTC 가격 정보 표시 여부
-  late bool _isWalletListBitcoinPriceHidden;
-  bool get isWalletListBitcoinPriceVisible => !_isWalletListBitcoinPriceHidden;
-
-  // 지갑 목록 화면 - 총 보유 수량 변화 그래프 표시 여부
-  late bool _isWalletListBalanceChartHidden;
-  bool get isWalletListBalanceChartVisible => !_isWalletListBalanceChartHidden;
-
-  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
-  late List<FiatCode> _walletListVisibleFiats;
-  List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
   /// 테마 variant
   late CoconutThemeVariant _themeVariant;
@@ -213,10 +198,6 @@ class PreferenceProvider extends ChangeNotifier {
     _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
-    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
-    _isWalletListBitcoinPriceHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBitcoinPriceHidden);
-    _isWalletListBalanceChartHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBalanceChartHidden);
-    _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
     _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
 
@@ -491,11 +472,6 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
-    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
-    await _sharedPrefs.setString(
-      SharedPrefKeys.kWalletListVisibleFiats,
-      _walletListVisibleFiats.map((f) => f.code).join(','),
-    );
     notifyListeners();
   }
 
@@ -616,13 +592,6 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 총 잔액에서 제외할 지갑 설정
-  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
-    _excludedFromTotalBalanceWalletIds = ids;
-    await _walletPreferencesRepository.setExcludedWalletIds(ids);
-    notifyListeners();
-  }
-
   /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
@@ -735,37 +704,6 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 지갑 목록 화면 법정화폐 표시 설정
-  Future<void> setWalletListFiatVisible(bool isVisible) async {
-    _isWalletListFiatHidden = !isVisible;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, !isVisible);
-    notifyListeners();
-  }
-
-  // 지갑 목록 화면 1 BTC 가격 정보 표시 설정
-  Future<void> setWalletListBitcoinPriceVisible(bool isVisible) async {
-    _isWalletListBitcoinPriceHidden = !isVisible;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBitcoinPriceHidden, !isVisible);
-    notifyListeners();
-  }
-
-  // 지갑 목록 화면 총 보유 수량 변화 그래프 표시 설정
-  Future<void> setWalletListBalanceChartVisible(bool isVisible) async {
-    _isWalletListBalanceChartHidden = !isVisible;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBalanceChartHidden, !isVisible);
-    notifyListeners();
-  }
-
-  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
-  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
-
-  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
-    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
-    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
-    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
-  };
-
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
     return CoconutThemeVariant.values.firstWhere((e) => e.name == stored, orElse: () => CoconutThemeVariant.dark);
@@ -865,40 +803,6 @@ class PreferenceProvider extends ChangeNotifier {
   }) async {
     await markCcosFeaturePurchased(featureId, source: source);
     await activateCcosFeature(featureId);
-  }
-
-  List<FiatCode> _loadWalletListVisibleFiats() {
-    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
-    if (stored == null) {
-      return [_selectedFiat];
-    }
-
-    final visibleFiats =
-        stored
-            .split(',')
-            .where((code) => code.isNotEmpty)
-            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
-            .whereType<FiatCode>()
-            .toList();
-
-    if (visibleFiats.isEmpty && stored.isNotEmpty) {
-      return [_selectedFiat];
-    }
-
-    return _sortWalletListVisibleFiats(visibleFiats);
-  }
-
-  List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
-    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
-    return order.where((f) => fiats.contains(f)).toList();
-  }
-
-  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
-  Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
-    final sorted = _sortWalletListVisibleFiats(fiats);
-    _walletListVisibleFiats = sorted;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
-    notifyListeners();
   }
 
   @override

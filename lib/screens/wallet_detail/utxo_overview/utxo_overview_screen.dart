@@ -42,7 +42,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_filter_widgets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_header.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_list.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';

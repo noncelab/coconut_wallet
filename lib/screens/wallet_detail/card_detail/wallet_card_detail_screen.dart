@@ -62,7 +62,6 @@ import 'package:provider/provider.dart';
 /// 지갑 상세 화면. 위쪽 카드 휠로 지갑을 넘기고, 가운데 카드의 배경이 화면 전체에 펼쳐진다.
 class WalletCardDetailScreen extends StatefulWidget {
   final int id;
-  final String entryPoint;
   final bool focusRecentTransactions;
   final String? focusedTransactionHash;
 
@@ -78,7 +77,6 @@ class WalletCardDetailScreen extends StatefulWidget {
   const WalletCardDetailScreen({
     super.key,
     required this.id,
-    required this.entryPoint,
     this.walletIds,
     this.onFocusChanged,
     this.focusRecentTransactions = false,
@@ -830,11 +828,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   void _openTransactionList() {
     _logAction(WalletDetailAction.txMore);
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.transactionList,
-      arguments: WalletDetailRouteArgs(id: _walletId, entryPoint: widget.entryPoint),
-    );
+    Navigator.pushNamed(context, AppRouteNames.transactionList, arguments: WalletDetailRouteArgs(id: _walletId));
   }
 
   Future<void> _openWalletInfo({bool showTargetSetting = false, bool highlightMnemonicBackup = false}) async {
@@ -844,7 +838,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       WalletInfoRouteArgs(
         id: _walletId,
         walletType: _viewModel.focusedWallet.walletType,
-        entryPoint: widget.entryPoint,
         showTargetSetting: showTargetSetting,
         highlightMnemonicBackup: highlightMnemonicBackup,
       ),

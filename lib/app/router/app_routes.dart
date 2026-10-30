@@ -8,7 +8,6 @@ import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mne
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
@@ -37,11 +36,8 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/transaction_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_organizer_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
@@ -59,7 +55,6 @@ import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
   return {
-    AppRouteNames.walletList: (context) => const WalletListScreen(),
     AppRouteNames.appInfo: (context) => const AppInfoScreen(),
     AppRouteNames.signedPsbtScanner: (context) => const SignedPsbtScannerScreen(),
     AppRouteNames.positiveFeedback: (context) => const PositiveFeedbackScreen(),
@@ -86,16 +81,12 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           ),
         ),
     AppRouteNames.transactionList:
-        (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
-          context,
-          (args) => TransactionListScreen(id: args.id, entryPoint: args.entryPoint),
-        ),
+        (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(context, (args) => TransactionListScreen(id: args.id)),
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
           (args) => WalletCardDetailScreen(
             id: args.id,
-            entryPoint: args.entryPoint,
             walletIds: args.walletIds,
             onFocusChanged: args.onFocusChanged,
             focusRecentTransactions: args.focusRecentTransactions,
@@ -151,16 +142,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.utxoOrganizer:
         (context) =>
             _buildLoadingScreenWithArgs<UtxoOrganizerRouteArgs>(context, (args) => UtxoOrganizerScreen(id: args.id)),
-    AppRouteNames.mergeUtxos:
-        (context) => _buildLoadingScreenWithArgs<UtxoMergeRouteArgs>(
-          context,
-          (args) => UtxoMergeScreen(id: args.id, isActive: args.isActive),
-        ),
-    AppRouteNames.splitUtxo:
-        (context) => _buildScreenWithArgs<UtxoSplitRouteArgs>(
-          context,
-          (args) => UtxoSplitScreen(id: args.id, isActive: args.isActive),
-        ),
     AppRouteNames.utxoTag:
         (context) => _buildScreenWithArgs<UtxoTagCrudRouteArgs>(context, (args) => UtxoTagCrudScreen(id: args.id)),
     AppRouteNames.walletResync:
@@ -179,7 +160,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => WalletInfoScreen(
             id: args.id,
             walletType: args.walletType,
-            entryPoint: args.entryPoint,
             showMfpInput: args.showMfpInput ?? false,
             highlightMnemonicBackup: args.highlightMnemonicBackup ?? false,
             showTargetSetting: args.showTargetSetting ?? false,
@@ -205,8 +185,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => SendConfirmScreen(currentUnit: args.currentUnit),
         ),
-    AppRouteNames.utxoList:
-        (context) => _buildLoadingScreenWithArgs<UtxoListRouteArgs>(context, (args) => UtxoListScreen(id: args.id)),
     AppRouteNames.utxoOverview:
         (context) =>
             _buildLoadingScreenWithArgs<UtxoOverviewRouteArgs>(context, (args) => UtxoOverviewScreen(id: args.id)),

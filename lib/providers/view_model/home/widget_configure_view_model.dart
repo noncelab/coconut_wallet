@@ -21,6 +21,8 @@ class WidgetConfigureViewModel extends ChangeNotifier {
   final Set<int> _walletIds = {};
   bool _allWallets = true;
   List<FiatCode> _fiats = [];
+  bool _showsAllFiats = false;
+  List<FiatCode> _collapsedFiats = [];
   HomeWidgetPeriod _period = HomeWidgetPeriod.week;
   HomeSpan? _span;
 
@@ -58,6 +60,7 @@ class WidgetConfigureViewModel extends ChangeNotifier {
       HomeWidgetCurrencyMode.single => [defaultFiat],
       HomeWidgetCurrencyMode.multiple => fiatOptions.take(spec.maxCurrencies).toList(),
     };
+    _collapsedFiats = List.of(_fiats);
     _span = spec.sizes.isEmpty ? null : (spec.sizes.contains(initialSpan) ? initialSpan : spec.sizes.first);
     final savedPeriod = initial?.period;
     _period = savedPeriod != null && spec.periods.contains(savedPeriod) ? savedPeriod : spec.periods.first;
@@ -105,6 +108,22 @@ class WidgetConfigureViewModel extends ChangeNotifier {
       if (_fiats.length >= spec.maxCurrencies) return;
       _fiats = fiatOptions.where((option) => option == fiat || _fiats.contains(option)).toList();
     }
+    notifyListeners();
+  }
+
+  bool get showsAllFiats => _showsAllFiats;
+
+  /// 접힌 상태에서는 접을 때 골라져 있던 통화와 지금 고른 통화만 보여준다. 고른 걸 풀어도 바로 사라지지 않는다.
+  List<FiatCode> get visibleFiatOptions =>
+      _showsAllFiats
+          ? fiatOptions
+          : fiatOptions.where((fiat) => _collapsedFiats.contains(fiat) || _fiats.contains(fiat)).toList();
+
+  bool get canToggleAllFiats => _showsAllFiats || visibleFiatOptions.length < fiatOptions.length;
+
+  void toggleShowAllFiats() {
+    _showsAllFiats = !_showsAllFiats;
+    if (!_showsAllFiats) _collapsedFiats = List.of(_fiats);
     notifyListeners();
   }
 

@@ -26,7 +26,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -279,7 +278,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       _viewModel = UtxoSelectionViewModel(
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<UtxoTagProvider>(context, listen: false),
-        Provider.of<PriceProvider>(context, listen: false),
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,

@@ -66,6 +66,9 @@ class _Connectivity extends SafetyConnectivityFake {
 }
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {}
+
   final bool available;
   _Prices({this.available = true});
   @override

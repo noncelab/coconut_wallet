@@ -39,7 +39,6 @@ import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wal
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_presets.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
@@ -146,6 +145,9 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
 }
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {}
+
   bool available;
 
   _Prices({this.available = true});
@@ -433,7 +435,6 @@ void main() {
     expect(routeObserver.lastPushed, isA<PageRouteBuilder<void>>());
     final route = routeObserver.lastPushed! as PageRouteBuilder<void>;
     expect(route.settings.name, AppRouteNames.walletDetail);
-    expect((route.settings.arguments! as WalletDetailRouteArgs).entryPoint, kEntryPointWalletHome);
     expect((route.settings.arguments! as WalletDetailRouteArgs).focusRecentTransactions, isTrue);
     expect((route.settings.arguments! as WalletDetailRouteArgs).focusedTransactionHash, 'a');
     expect(route.transitionDuration, HodlInsightsScreen.transitionDuration);
@@ -728,7 +729,8 @@ void main() {
       expect(sheet.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
       expect(sheet.clipBehavior, Clip.antiAlias);
       expect(find.text(t.home_edit.configure_widget_description_add), findsOneWidget);
-      expect(find.text(t.home_edit.currency_default), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-KRW')), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-AED')), findsNothing);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsOneWidget);
       expect(homeViewModelOf(tester).configuration.items, isEmpty);
 
@@ -872,13 +874,15 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('fiat values allows and displays all four currencies', (tester) async {
+    testWidgets('fiat values offers every currency and displays the first four', (tester) async {
       await _openWidgetsTab(tester, fake: false);
       await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
 
       expect(find.byKey(const Key('widget-configure-all-wallets')), findsNothing);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsNothing);
       expect(find.text(t.home_edit.currencies_limit(count: 3)), findsNothing);
+      expect(find.byKey(const ValueKey('widget-configure-fiat-AED')), findsNothing);
+      await tapKey(tester, const Key('widget-configure-fiat-toggle'));
       for (final fiat in FiatCode.values) {
         expect(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')), findsOneWidget);
       }
@@ -886,10 +890,12 @@ void main() {
       expect(homeViewModelOf(tester).configuration.items.single.configuration, {
         'fiats': ['KRW', 'USD', 'JPY', 'EUR'],
       });
-      expect(
-        tester.widget<FiatValuesView>(find.byType(FiatValuesView).first).rows.map((row) => row.fiat),
-        FiatCode.values,
-      );
+      expect(tester.widget<FiatValuesView>(find.byType(FiatValuesView).first).rows.map((row) => row.fiat), [
+        FiatCode.KRW,
+        FiatCode.USD,
+        FiatCode.JPY,
+        FiatCode.EUR,
+      ]);
       await _close(tester);
     });
 
@@ -1608,8 +1614,8 @@ void main() {
       final graphSurface = find.byKey(const Key('balance-history-graph-surface'));
       expect(find.descendant(of: graphSurface, matching: guide), findsNothing);
       expect(tester.getRect(guide).bottom, greaterThan(tester.getRect(graphSurface).bottom));
-      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_pan), findsOneWidget);
-      expect(find.text(t.wallet_list.balance_history_detail.gesture_guide_zoom), findsOneWidget);
+      expect(find.text(t.wallet_balance_history_screen.gesture_guide_pan), findsOneWidget);
+      expect(find.text(t.wallet_balance_history_screen.gesture_guide_zoom), findsOneWidget);
       final before =
           tester.widget<BalanceHistoryWalletBreakdown>(find.byType(BalanceHistoryWalletBreakdown)).periodLabel;
       await tester.drag(guide, const Offset(-100, 0));

@@ -22,7 +22,7 @@ import 'package:screen_capture_event/screen_capture_event.dart';
 /// 백그라운드 체류가 이보다 길었을 때만 resume 시 소켓 생존 여부 확인
 const Duration _kBackgroundSocketHealthCheckThreshold = Duration(seconds: 30);
 
-// 앱 root 화면(WalletListScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
+// 앱 root 화면(HomeScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
   static bool _isPrivacyEnabled = true;
 
@@ -118,10 +118,10 @@ class _AppGuardState extends State<AppGuard> {
             _isPaused = false;
           });
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.resumeWebSocketService(force: true);
+          _priceProvider.resumePriceSources(force: true);
         } else {
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.resumeWebSocketService();
+          _priceProvider.resumePriceSources();
         }
         _handleNodeProviderReconnect();
         for (final wallet in _walletProvider.walletItemList) {
@@ -138,7 +138,7 @@ class _AppGuardState extends State<AppGuard> {
             _isPaused = true;
           });
         }
-        _priceProvider.pauseWebSocketService();
+        _priceProvider.pausePriceSources();
         _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:

@@ -1,25 +1,13 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/model/price/historical_bitcoin_prices.dart';
 import 'package:dio/dio.dart';
 
 class HistoricalBitcoinPriceService {
-  static const int _requiredClosedCandleCount = 30;
-
   final Dio _dio;
 
   HistoricalBitcoinPriceService({Dio? dio})
     : _dio =
           dio ??
           Dio(BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)));
-
-  Future<HistoricalBitcoinPrices?> fetch(FiatCode fiatCode) {
-    return switch (fiatCode) {
-      FiatCode.KRW => _fetchUpbitPrices(),
-      FiatCode.USD => _fetchBinancePrices('BTCUSDT'),
-      FiatCode.EUR => _fetchBinancePrices('BTCEUR'),
-      FiatCode.JPY => _fetchBitflyerDailyCloses().then(_toHistoricalPrices),
-    };
-  }
 
   /// 마감된 일봉 종가 목록. 오래된 날부터 어제까지.
   Future<List<double>?> fetchDailyCloses(FiatCode fiatCode) {
@@ -28,7 +16,34 @@ class HistoricalBitcoinPriceService {
       FiatCode.USD => _fetchBinanceDailyCloses('BTCUSDT'),
       FiatCode.EUR => _fetchBinanceDailyCloses('BTCEUR'),
       FiatCode.JPY => _fetchBitflyerDailyCloses(),
+      _ => _fetchCoinGeckoDailyCloses(fiatCode),
     };
+  }
+
+  // CoinGecko 무료 API는 days>90 요청만 일별 데이터를 주므로 100일을 받아 날짜별 종가로 정리한다.
+  Future<List<double>> _fetchCoinGeckoDailyCloses(FiatCode fiatCode) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart',
+      queryParameters: {'vs_currency': fiatCode.vsCurrency, 'days': 100},
+    );
+    final prices = response.data?['prices'];
+    return closedDailyClosesFromCoinGecko(prices is List ? prices : const []);
+  }
+
+  /// CoinGecko market_chart 응답([ms, 가격], …)에서 마감된 날의 종가만 오래된 날부터
+  /// UTC 00:00 지점이 직전 날의 종가이며, 자정이 아닌 마지막 지점(현재 시세)은 제외한다.
+  static List<double> closedDailyClosesFromCoinGecko(List<dynamic> prices) {
+    const dayMilliseconds = 86400000;
+    final closes = <({int dayStart, double close})>[];
+    for (final point in prices) {
+      if (point is! List || point.length < 2) continue;
+      final millis = (point[0] as num?)?.toInt();
+      final price = (point[1] as num?)?.toDouble();
+      if (millis == null || price == null || millis % dayMilliseconds != 0) continue;
+      closes.add((dayStart: millis - dayMilliseconds, close: price));
+    }
+    closes.sort((a, b) => a.dayStart.compareTo(b.dayStart));
+    return [for (final day in closes.skip(closes.length > 32 ? closes.length - 32 : 0)) day.close];
   }
 
   // bitFlyer 공개 API에는 일봉이 없어, bitFlyer 웹 차트가 쓰는 비공식 주소를 쓴다. 바뀌면 실패하고 값 없음으로 처리된다.
@@ -63,8 +78,6 @@ class HistoricalBitcoinPriceService {
     return [for (final candle in closed.skip(closed.length > 32 ? closed.length - 32 : 0)) candle.close];
   }
 
-  Future<HistoricalBitcoinPrices> _fetchUpbitPrices() async => _toHistoricalPrices(await _fetchUpbitDailyCloses());
-
   Future<List<double>> _fetchUpbitDailyCloses() async {
     final response = await _dio.get<List<dynamic>>(
       'https://api.upbit.com/v1/candles/days',
@@ -88,9 +101,6 @@ class HistoricalBitcoinPriceService {
     return closedPrices.map((candle) => candle.close).toList();
   }
 
-  Future<HistoricalBitcoinPrices> _fetchBinancePrices(String symbol) async =>
-      _toHistoricalPrices(await _fetchBinanceDailyCloses(symbol));
-
   Future<List<double>> _fetchBinanceDailyCloses(String symbol) async {
     final response = await _dio.get<List<dynamic>>(
       'https://api.binance.com/api/v3/klines',
@@ -110,20 +120,5 @@ class HistoricalBitcoinPriceService {
     }
 
     return closedPrices;
-  }
-
-  HistoricalBitcoinPrices _toHistoricalPrices(List<double> closedPrices) {
-    if (closedPrices.length < _requiredClosedCandleCount) {
-      throw StateError(
-        'Not enough closed daily candles: '
-        '${closedPrices.length}/$_requiredClosedCandleCount',
-      );
-    }
-
-    return HistoricalBitcoinPrices(
-      previousDayClose: closedPrices.last,
-      sevenDaysAgoClose: closedPrices[closedPrices.length - 7],
-      thirtyDaysAgoClose: closedPrices[closedPrices.length - 30],
-    );
   }
 }

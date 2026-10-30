@@ -34,6 +34,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
@@ -106,12 +107,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _resetCalculator() {
+    _clearInputFields();
+    _viewModel.resetInput();
+  }
+
+  void _clearInputFields() {
     _isUpdatingController = true;
     _inputController.clear();
     _resultController.clear();
     _premiumController.text = _formatLocaleDecimalText('1.0');
     _isUpdatingController = false;
-    _viewModel.resetInput();
   }
 
   @override
@@ -762,9 +767,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
 
     final int result = _viewModel.resultAmount ?? _viewModel.calculate(input);
-    final referenceDateTime = DateTime.now();
-    final referenceDateTimeString =
-        '${referenceDateTime.year.toString().substring(2)}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
+    final billCreatedAtString = _formatBillDateTime(DateTime.now());
+    final priceAt = _viewModel.btcPriceAt;
+    final priceSourceStr =
+        priceAt == null
+            ? _viewModel.priceSourceName
+            : '${_viewModel.priceSourceName} · ${_formatBillDateTime(priceAt)}';
 
     final btcPriceStr = _viewModel.btcPrice?.toThousandsSeparatedString() ?? '-';
     final fiatAmountStr =
@@ -857,15 +865,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                               ),
                               const SizedBox(height: 24),
                               _buildBillRow(
-                                t.utility.p2p_calculator.reference_price,
-                                '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
+                                t.utility.p2p_calculator.bill_created_at,
+                                billCreatedAtString,
+                                valueLineHeight: 1.0,
                               ),
                               const SizedBox(height: 20),
                               _buildBillRow(
-                                t.utility.p2p_calculator.reference_datetime,
-                                referenceDateTimeString,
-                                valueLineHeight: 1.0,
+                                t.utility.p2p_calculator.reference_price,
+                                '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
                               ),
+                              const SizedBox(height: 2),
+                              _buildBillSubLine(priceSourceStr),
                               const SizedBox(height: 20),
                               _buildBillRow(
                                 t.utility.p2p_calculator.transaction_premium,
@@ -873,19 +883,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                 valueLineHeight: 1.0,
                               ),
                               const SizedBox(height: 2),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
-                                      style: CoconutTypography.body3_12_Number.copyWith(
-                                        color: context.coconutColors.mutedText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _buildBillSubLine(
+                                '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
                               ),
                               CoconutLayout.spacing_800h,
                             ],
@@ -894,9 +893,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       ),
                       _buildBillActions(
                         btcPriceStr,
+                        priceSourceStr,
                         fiatAmountStr,
                         btcAmountStr,
-                        referenceDateTimeString,
+                        billCreatedAtString,
                         premiumRateStr,
                         premiumAmountStr,
                         premiumSatsStr,
@@ -923,6 +923,24 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           ),
         );
       },
+    );
+  }
+
+  String _formatBillDateTime(DateTime dateTime) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${dateTime.year.toString().substring(2)}-${twoDigits(dateTime.month)}-${twoDigits(dateTime.day)} '
+        '${twoDigits(dateTime.hour)}:${twoDigits(dateTime.minute)}:${twoDigits(dateTime.second)}';
+  }
+
+  Widget _buildBillSubLine(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(text, style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.mutedText)),
+        ],
+      ),
     );
   }
 
@@ -966,9 +984,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   Widget _buildBillActions(
     String btcPriceStr,
+    String priceSourceStr,
     String fiatAmountStr,
     String btcAmountStr,
-    String referenceDateTime,
+    String billCreatedAt,
     String premiumRateStr,
     String premiumAmountStr,
     String premiumSatsStr,
@@ -984,9 +1003,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             onTap: () async {
               final textToCopy = _viewModel.generateTransactionBill(
                 btcPriceStr,
+                priceSourceStr,
                 fiatAmountStr,
                 btcAmountStr,
-                referenceDateTime,
+                billCreatedAt,
                 premiumRateStr,
                 premiumAmountStr,
                 premiumSatsStr,
@@ -1176,13 +1196,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildCurrentPriceWidget(isVisible),
+        Expanded(child: _buildCurrentPriceWidget(isVisible)),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
-              await _viewModel.onFiatUnitChange();
-              _resetCalculator();
+              await FiatBottomSheet.show(
+                context,
+                screenName: AnalyticsScreenNames.p2pCalculatorFiatSheet,
+                title: t.fiat_bottom_sheet.select_title,
+                closeOnSelect: true,
+                selectedValue: _viewModel.fiatCode,
+                onSelected: (fiat) {
+                  if (_viewModel.selectFiat(fiat)) _clearInputFields();
+                },
+              );
               _inputFocusNode.unfocus();
             },
             defaultColor: context.coconutColors.surface,
@@ -1214,17 +1242,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         children: [
           MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-            child: Row(
-              children: [
-                Text(
-                  '${t.utility.p2p_calculator.one_btc} = ',
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-                Text(
-                  _viewModel.formattedOneBtcPrice,
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Text(
+                    '${t.utility.p2p_calculator.one_btc} = ',
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                  Text(
+                    _viewModel.formattedOneBtcPrice,
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                ],
+              ),
             ),
           ),
           _buildExchangePriceLabel(),
@@ -1277,6 +1309,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         return t.utility.p2p_calculator.bitflyer_price;
       case FiatCode.EUR:
         return t.utility.p2p_calculator.binance_price;
+      default:
+        return t.utility.p2p_calculator.coingecko_price;
     }
   }
 
@@ -1913,36 +1947,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (!isInputFocused) return [];
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      switch (_viewModel.fiatCode) {
-        case FiatCode.KRW:
-          return [
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-            {'label': '+${100000.toThousandsSeparatedString()}', 'value': '100000'},
-            {'label': '+${500000.toThousandsSeparatedString()}', 'value': '500000'},
-          ];
-        case FiatCode.USD:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-        case FiatCode.JPY:
-          return [
-            {'label': '+${1000.toThousandsSeparatedString()}', 'value': '1000'},
-            {'label': '+${5000.toThousandsSeparatedString()}', 'value': '5000'},
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-          ];
-        case FiatCode.EUR:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-      }
+      final amounts = kFiatQuickAddAmounts[_viewModel.fiatCode] ?? const [10, 50, 100, 500];
+      return [
+        for (final amount in amounts) {'label': '+${amount.toThousandsSeparatedString()}', 'value': '$amount'},
+      ];
     } else {
       // BTC/Sats 입력
       if (_viewModel.currentUnit.isBasedOnSatoshi) {

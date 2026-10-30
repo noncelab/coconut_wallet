@@ -21,7 +21,6 @@ import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/settings/tools/glossary_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -118,7 +117,6 @@ Future<void> _openWalletInfo(
   WalletInfoRouteArgs(
     id: wallet!.id,
     walletType: wallet.walletType,
-    entryPoint: kEntryPointWalletHome,
     initialTarget: target,
     showMfpInput: showMfpInput,
     highlightMnemonicBackup: highlightMnemonicBackup,
@@ -153,7 +151,7 @@ List<FeatureItem> builtinFeatures() {
       launch:
           (context, _) => Navigator.of(context).push(
             CupertinoPageRoute(
-              settings: const RouteSettings(name: '/app-settings'),
+              settings: const RouteSettings(name: AppSettingsScreen.routeName),
               builder: (_) => const AppSettingsScreen(),
             ),
           ),
@@ -473,12 +471,7 @@ List<FeatureItem> builtinFeatures() {
       iconPath: FeatureShortcutIconPath.walletDetail,
       localizedKeywords: () => _keywords(_search.wallet_detail),
       context: FeatureContext.wallet,
-      launch:
-          (context, wallet) => _push(
-            context,
-            AppRouteNames.walletDetail,
-            WalletDetailRouteArgs(id: wallet!.id, entryPoint: kEntryPointWalletHome),
-          ),
+      launch: (context, wallet) => _push(context, AppRouteNames.walletDetail, WalletDetailRouteArgs(id: wallet!.id)),
     ),
     FeatureItem(
       id: FeatureIds.receive,
@@ -512,12 +505,7 @@ List<FeatureItem> builtinFeatures() {
       keywords: const ['txid', 'RBF', 'CPFP'],
       localizedKeywords: () => _keywords(_search.transactions),
       context: FeatureContext.wallet,
-      launch:
-          (context, wallet) => _push(
-            context,
-            AppRouteNames.transactionList,
-            WalletDetailRouteArgs(id: wallet!.id, entryPoint: kEntryPointWalletHome),
-          ),
+      launch: (context, wallet) => _push(context, AppRouteNames.transactionList, WalletDetailRouteArgs(id: wallet!.id)),
     ),
     FeatureItem(
       id: FeatureIds.utxoOverview,

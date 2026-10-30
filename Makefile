@@ -20,7 +20,7 @@ ios-mainnet:
 	fvm flutter build ios --flavor mainnet --release --dart-define=USE_FIREBASE=true
 
 ios-mainnet-appstore:
-    fvm flutter build ipa --flavor mainnet --release --dart-define=USE_FIREBASE=true --export-method app-store
+	fvm flutter build ipa --flavor mainnet --release --dart-define=USE_FIREBASE=true --export-method app-store
 
 aos-mainnet:
 	fvm flutter build appbundle --flavor mainnet --release --dart-define=USE_FIREBASE=true

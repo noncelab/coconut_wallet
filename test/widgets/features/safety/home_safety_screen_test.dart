@@ -79,6 +79,9 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {}
+
+  @override
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => null;
 }
 

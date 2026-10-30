@@ -581,11 +581,7 @@ void main() {
               InheritedProvider<PreferenceProvider>.value(value: _Preferences()),
               InheritedProvider<UtxoTagProvider>.value(value: _Tags()),
             ],
-            child: WalletInfoScreen(
-              id: type == WalletType.singleSignature ? 1 : 2,
-              walletType: type,
-              entryPoint: '/wallet-home',
-            ),
+            child: WalletInfoScreen(id: type == WalletType.singleSignature ? 1 : 2, walletType: type),
           ),
           provider: provider,
           // 기존 signer 카드의 320 dp 오버플로는 별도 추적한다.
@@ -631,7 +627,7 @@ void main() {
           Provider<EntitlementService>.value(value: entitlement),
           ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
         ],
-        child: const WalletInfoScreen(id: 1, walletType: WalletType.singleSignature, entryPoint: '/wallet-home'),
+        child: const WalletInfoScreen(id: 1, walletType: WalletType.singleSignature),
       ),
     );
     final row = find.byKey(const Key('wallet-rescue-destination-row'));

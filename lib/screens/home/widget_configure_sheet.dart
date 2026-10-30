@@ -342,15 +342,23 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
           style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.secondaryText),
         ),
       ),
-    for (final (index, fiat) in viewModel.fiatOptions.indexed)
-      HomeConfigureCheckRow(
-        key: ValueKey('widget-configure-fiat-${fiat.code}'),
-        label: fiat.code,
-        note: fiat == viewModel.defaultFiat ? t.home_edit.currency_default : null,
-        checked: viewModel.isFiatSelected(fiat),
-        enabled: viewModel.canSelectFiat(fiat),
-        showDivider: index < viewModel.fiatOptions.length - 1,
-        onTap: () => viewModel.toggleFiat(fiat),
+    HomeConfigureChipGrid(
+      options: [
+        for (final fiat in viewModel.visibleFiatOptions)
+          HomeConfigureChipOption(
+            key: ValueKey('widget-configure-fiat-${fiat.code}'),
+            label: fiat.code,
+            selected: viewModel.isFiatSelected(fiat),
+            enabled: viewModel.canSelectFiat(fiat),
+            onTap: () => viewModel.toggleFiat(fiat),
+          ),
+      ],
+    ),
+    if (viewModel.canToggleAllFiats)
+      HomeConfigureExpandButton(
+        key: const Key('widget-configure-fiat-toggle'),
+        expanded: viewModel.showsAllFiats,
+        onTap: viewModel.toggleShowAllFiats,
       ),
   ];
 

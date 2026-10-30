@@ -306,7 +306,7 @@ class WalletDetailCardAction {
       ),
     WalletDetailCardAction(
       key: const Key('wallet-detail-action-chart'),
-      label: t.wallet_list.header.balance_history,
+      label: t.wallet_balance_history_screen.title,
       iconPath: FeatureWidgetIconPath.chart,
       onPressed: onChart,
     ),
