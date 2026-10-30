@@ -65,8 +65,9 @@ class HomeItemConfigureSheets {
     BuildContext context,
     HomeViewModel viewModel,
     HomeItemDefinition definition,
-    HomeItem item,
-  ) async {
+    HomeItem item, {
+    required int columns,
+  }) async {
     if (!viewModel.canConfigure(definition)) return;
     if (definition is ShortcutDefinition) {
       final walletContext = await openShortcut(context, viewModel, definition, isNew: false);
@@ -83,7 +84,7 @@ class HomeItemConfigureSheets {
     );
     if (settings == null) return;
     final span = settings.span;
-    if (span != null && span != item.span) viewModel.resizeItem(item.id, span);
+    if (span != null && span != item.span) viewModel.resizeItem(item.id, span, columns: columns);
     final configuration = settings.toConfiguration();
     if (!const DeepCollectionEquality().equals(configuration, item.configuration)) {
       viewModel.updateItemConfiguration(item.id, configuration);

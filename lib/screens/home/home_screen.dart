@@ -214,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<LongPressedMenuItem> _menuItemsOf(BuildContext context, HomeItem item) {
+  List<LongPressedMenuItem> _menuItemsOf(BuildContext context, HomeItem item, {required int columns}) {
     final definition = _viewModel.registry.byId(item.definitionId);
     final isShortcut = item.kind == HomeItemKind.shortcut;
     return [
@@ -222,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
         LongPressedMenuItem(
           title: isShortcut ? t.home_menu.configure_shortcut : t.home_menu.configure_widget,
           iconPath: CommonActionIconPath.command,
-          onSelected: () => HomeItemConfigureSheets.configure(context, _viewModel, definition, item),
+          onSelected: () => HomeItemConfigureSheets.configure(context, _viewModel, definition, item, columns: columns),
         ),
       LongPressedMenuItem(
         title: t.home_menu.edit_home_screen,
@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           registry: viewModel.registry,
                           onMoveToCell: (id, position) => viewModel.moveToCell(id, position, columns: columns),
                           onInsertBefore: (id, beforeId) => viewModel.insertBefore(id, beforeId, columns: columns),
-                          menuItemsOf: (item) => _menuItemsOf(context, item),
+                          menuItemsOf: (item) => _menuItemsOf(context, item, columns: columns),
                           isArranging: viewModel.isArranging,
                           onRemove: _remove,
                           onArrangeStart: viewModel.startArranging,
