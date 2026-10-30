@@ -687,12 +687,12 @@ void main() {
       expect(result.estimatedFee, equals(preview.estimatedFee));
     });
 
-    test('EqualAmountSplit 99990000 / 5000개로 나누기', () async {
+    test('EqualAmountSplit 99990000 / 3000개로 나누기', () async {
       final utxo = createUtxo(99990000);
       final builder = createBuilder([utxo], 1.0);
 
-      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 5000);
-      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 5000).future;
+      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 3000);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 3000).future;
 
       print('--- preview.amountCountMap ---');
       print(formatAmountCountMap(preview.amountCountMap));
@@ -902,6 +902,52 @@ void main() {
 
       final totalAmountFromMap = result.splitAmountMap.entries.fold<int>(0, (sum, e) => sum + e.key * e.value);
       expect(totalAmountFromMap + result.estimatedFee, totalA); // 교체된 UTXO(1000000)가 아닌 A 총액
+    });
+  });
+
+  group('표준 크기(100,000 vB) 상한', () {
+    List<UtxoState> createUtxos(int count, int amount) =>
+        List.generate(count, (i) => createUtxo(amount, index: i, txHash: i.toRadixString(16).padLeft(64, '0')));
+
+    test('input이 많아 100,000 vB를 넘으면 균등 나누기 미리보기가 SplitTxTooLargeException', () async {
+      // P2WPKH input 약 68 vB × 1,500개 ≈ 102,000 vB
+      final builder = createBuilder(createUtxos(1500, 100000));
+
+      expect(() => builder.getEqualAmountSplitPreview(splitCount: 2), throwsA(isA<SplitTxTooLargeException>()));
+    });
+
+    test('input이 상한 이내면 균등 나누기 미리보기가 성공한다', () async {
+      final builder = createBuilder(createUtxos(1400, 100000));
+
+      final preview = await builder.getEqualAmountSplitPreview(splitCount: 2);
+      expect(preview.amountCountMap.values.fold<int>(0, (sum, c) => sum + c), 2);
+    });
+
+    test('output이 많아 100,000 vB를 넘으면 직접 나누기 미리보기가 SplitTxTooLargeException', () async {
+      // P2WPKH output 31 vB × 3,300개 ≈ 102,300 vB
+      final builder = createBuilder([createUtxo(1000000000)]);
+
+      expect(
+        () => builder.getCustomAmountSplitPreview(amountCountMap: {1000: 3300}),
+        throwsA(isA<SplitTxTooLargeException>()),
+      );
+      await builder.getCustomAmountSplitPreview(amountCountMap: {1000: 3000});
+    });
+
+    test('output이 많아 100,000 vB를 넘으면 일정 금액 나누기 미리보기가 SplitTxTooLargeException', () async {
+      final builder = createBuilder([createUtxo(1000000000)]);
+
+      expect(
+        () => builder.getFixedAmountSplitPreview(amountPerOutput: 300000),
+        throwsA(isA<SplitTxTooLargeException>()),
+      );
+      await builder.getFixedAmountSplitPreview(amountPerOutput: 400000);
+    });
+
+    test('상한을 넘는 count는 추천 분할 수에서 빠진다', () async {
+      final builder = createBuilder(createUtxos(1500, 100000));
+
+      expect(await builder.getNiceSplitCounts(), isEmpty);
     });
   });
 }

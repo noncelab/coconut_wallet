@@ -1161,6 +1161,7 @@ split_utxo_screen:
     manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting will create a small amount (dust)"
+  tx_too_large_error: "The transaction is too large. Select fewer UTXOs or split into fewer outputs"
   method_bottom_sheet:
     title: "Select Split Method"
     split_by_amount: "Split by fixed amount"

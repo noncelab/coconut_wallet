@@ -90,6 +90,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   bool _isDustError = false;
   bool _isAmountInsufficientAfterFee = false; // byAmount or manual: 수수료를 제외하면 나눌 수 없는 금액이에요
   bool _isFeeExceedsUtxoAmount = false;
+  bool _isTxTooLarge = false;
   double? _errorEstimatedFee;
   String _unexpectedErrorMessage = "";
   bool _isPreparingNextStep = false;
@@ -281,6 +282,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       return t.split_utxo_screen.dust_error;
     }
 
+    if (_isTxTooLarge) {
+      return t.split_utxo_screen.tx_too_large_error;
+    }
+
     if (_isAmountInsufficientAfterFee && _selectedMethod == SplitMethod.manually) {
       return t.split_utxo_screen.amount_error.insufficient_after_fee;
     }
@@ -304,6 +309,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _isDustError = false;
       _isAmountInsufficientAfterFee = false;
       _isFeeExceedsUtxoAmount = false;
+      _isTxTooLarge = false;
       _errorEstimatedFee = null;
       _unexpectedErrorMessage = "";
       notifyIfNotDisposed();
@@ -316,6 +322,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
+    _isTxTooLarge = false;
     _errorEstimatedFee = null;
     _unexpectedErrorMessage = "";
     notifyIfNotDisposed();
@@ -447,6 +454,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
+    _isTxTooLarge = false;
     _errorEstimatedFee = null;
     _unexpectedErrorMessage = "";
     _splitPreview = null;
@@ -473,6 +481,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     } on SplitInsufficientAmountException catch (e) {
       _isAmountInsufficientAfterFee = true;
       _errorEstimatedFee = e.estimatedFee;
+    } on SplitTxTooLargeException {
+      _isTxTooLarge = true;
     } catch (e) {
       Logger.error(e);
       _unexpectedErrorMessage = e.toString();
@@ -497,7 +507,11 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     if (_selectedMethod == null || _selectedUtxoList.isEmpty) return false;
     if (hasSelectedUtxoAmountError) return false;
 
-    if (_isDustError || _isAmountInsufficientAfterFee || _isFeeExceedsUtxoAmount || isOutputSumOverInput) {
+    if (_isDustError ||
+        _isAmountInsufficientAfterFee ||
+        _isFeeExceedsUtxoAmount ||
+        _isTxTooLarge ||
+        isOutputSumOverInput) {
       return false;
     }
     if (_splitPreview == null) return false;
@@ -573,6 +587,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
+    _isTxTooLarge = false;
     _errorEstimatedFee = null;
     _usePreview = null;
     _unexpectedErrorMessage = "";

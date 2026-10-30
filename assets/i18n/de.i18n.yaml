@@ -1100,6 +1100,7 @@ split_utxo_screen:
     manual_sum_over_input: "Unzureichender Betrag"
   fee_error: "Die Gebühr ist größer als der UTXO-Betrag"
   dust_error: "Das Teilen erzeugt einen kleinen Betrag (Staub)"
+  tx_too_large_error: "Die Transaktion ist zu groß. Wähle weniger UTXOs oder teile in weniger Beträge"
   method_bottom_sheet:
     title: "Teilungsmethode auswählen"
     split_by_amount: "Nach festem Betrag teilen"

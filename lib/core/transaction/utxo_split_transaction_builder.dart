@@ -67,6 +67,9 @@ class UtxoSplitTransactionBuilder {
 
   static const int _varIntCountThreshold = 253;
   static const double _varIntExpansionVBytes = 2;
+
+  /// Bitcoin Core 표준 정책 MAX_STANDARD_TX_WEIGHT(400,000 WU) / 4
+  static const double maxStandardTxVBytes = 100000;
   static const List<int> niceAmounts = [
     10000,
     20000,
@@ -152,6 +155,18 @@ class UtxoSplitTransactionBuilder {
   /// 현재 설정된 모든 input + output 1개인 tx의 vBytes
   double get _oneOutputTxVBytesWithAllInputs => _oneOutputTxVBytesWithInputCount(_utxos.length);
 
+  /// [inputCount]개의 input + [outputCount]개의 output인 tx의 vBytes
+  double _txVBytes(int inputCount, int outputCount) =>
+      _oneOutputTxVBytesWithInputCount(inputCount) +
+      _outputVBytes! * (outputCount - 1) +
+      (outputCount >= _varIntCountThreshold ? _varIntExpansionVBytes : 0);
+
+  void _throwIfTxTooLarge(int inputCount, int outputCount, double estimatedFee) {
+    if (_txVBytes(inputCount, outputCount) > maxStandardTxVBytes) {
+      throw SplitTxTooLargeException(estimatedFee: estimatedFee);
+    }
+  }
+
   List<UtxoState> get _requiredUtxos {
     if (_utxos.isEmpty) {
       throw StateError('utxos must be set before calling this operation');
@@ -220,13 +235,14 @@ class UtxoSplitTransactionBuilder {
         left + feePerOutput >= n * (547 + feePerOutput)
         n <= (left + feePerOutput) / (547 + feePerOutput) */
     var result = (left + feePerOutput) ~/ (dustThreshold + 1 + feePerOutput);
-    if (result < _varIntCountThreshold) {
-      return result;
+    if (result >= _varIntCountThreshold) {
+      left = totalAmount - (_oneOutputTxVBytesWithAllInputs * feeRate) - _outputCountVarIntFeeMargin;
+      result = (left + feePerOutput) ~/ (dustThreshold + 1 + feePerOutput);
     }
 
-    left = totalAmount - (_oneOutputTxVBytesWithAllInputs * feeRate) - _outputCountVarIntFeeMargin;
-    result = (left + feePerOutput) ~/ (dustThreshold + 1 + feePerOutput);
-    return result;
+    final maxCountBySize =
+        (maxStandardTxVBytes - _oneOutputTxVBytesWithAllInputs - _varIntExpansionVBytes) ~/ _outputVBytes! + 1;
+    return result < maxCountBySize ? result : maxCountBySize;
   }
 
   /// 균등하게 나누기
@@ -415,6 +431,7 @@ class UtxoSplitTransactionBuilder {
     if (estimatedFee >= totalAmount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: estimatedFee);
     }
+    _throwIfTxTooLarge(effectiveUtxos.length, totalOutputCount + 1, estimatedFee);
 
     final left = totalAmount - totalRequested - estimatedFee;
     if (left < 0) {
@@ -439,6 +456,7 @@ class UtxoSplitTransactionBuilder {
 
     final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput, effectiveUtxos);
     final estimatedFee = _fixedSplitFee(effectiveUtxos.length, exactAmounts.length).toDouble();
+    _throwIfTxTooLarge(effectiveUtxos.length, exactAmounts.length + 1, estimatedFee);
     return _buildSplitPreview(exactAmounts, estimatedFee, effectiveUtxos);
   }
 
@@ -455,6 +473,7 @@ class UtxoSplitTransactionBuilder {
     if (fee >= totalAmount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: fee.toDouble());
     }
+    _throwIfTxTooLarge(effectiveUtxos.length, splitCount, fee.toDouble());
 
     final availableAmount = totalAmount - fee;
     final baseAmount = availableAmount ~/ splitCount;

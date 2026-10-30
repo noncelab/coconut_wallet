@@ -1149,6 +1149,7 @@ split_utxo_screen:
     manual_sum_over_input: "金額が足りません"
   fee_error: "手数料がUTXOの金額より大きいです"
   dust_error: "分割すると少額（ダスト）が生じます"
+  tx_too_large_error: "トランザクションが大きすぎます。UTXOか分割数を減らしてください"
   method_bottom_sheet:
     title: "分割基準を選択"
     split_by_amount: "一定額で分割します"

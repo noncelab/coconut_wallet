@@ -1152,6 +1152,7 @@ split_utxo_screen:
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
+  tx_too_large_error: "La transacción es demasiado grande. Selecciona menos UTXO o divide en menos partes"
   method_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
