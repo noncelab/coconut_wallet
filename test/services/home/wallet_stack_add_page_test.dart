@@ -285,24 +285,55 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('many wallets keep the trailing indicator within the small stack', (tester) async {
-    await _pump(tester, count: 30);
-    final pager = _pager(tester);
-    expect(pager.childrenDelegate.estimatedChildCount, 31);
-    pager.controller!.jumpToPage(30);
-    await tester.pumpAndSettle();
-    expect(find.byType(WalletCard), findsNothing);
-    final indicator = find.byKey(const Key('all_wallet_stack-indicator'));
-    final dots = find.descendant(of: indicator, matching: find.byType(AnimatedContainer));
-    expect(dots, findsNWidgets(31));
-    final bounds = tester.getRect(find.byType(PageView));
-    for (final dot in dots.evaluate()) {
-      final rect = tester.getRect(find.byWidget(dot.widget));
-      expect(rect.left, greaterThanOrEqualTo(bounds.left));
-      expect(rect.right, lessThanOrEqualTo(bounds.right));
-    }
-    expect(tester.takeException(), isNull);
-  });
+  for (final span in [HomeSpan.small, HomeSpan.wide]) {
+    testWidgets('many wallets keep the selected indicator within the ${span.toJson()} stack', (tester) async {
+      await _pump(tester, count: 30, span: span);
+      final pager = _pager(tester);
+      expect(pager.childrenDelegate.estimatedChildCount, 31);
+      final indicator = find.byKey(const Key('all_wallet_stack-indicator'));
+      final window = find.byKey(const Key('all_wallet_stack-indicator-window'));
+      final bounds = tester.getRect(find.byType(PageView));
+      for (final page in [0, 15, 30]) {
+        pager.controller!.jumpToPage(page);
+        await tester.tap(find.byKey(const Key('all_wallet_stack-indicator-scrubber')));
+        await tester.pumpAndSettle();
+        expect(tester.widget<AnimatedOpacity>(indicator).opacity, 1);
+        final windowBounds = tester.getRect(window);
+        expect(windowBounds.left, greaterThanOrEqualTo(bounds.left));
+        expect(windowBounds.right, lessThanOrEqualTo(bounds.right));
+        // Extra slots are animation guards; only painted markers must fit the window.
+        final visible = find
+            .descendant(of: window, matching: find.byType(Opacity))
+            .evaluate()
+            .where((element) => (element.widget as Opacity).opacity > 0);
+        expect(visible, hasLength(5));
+        final selected = find.byKey(ValueKey('all_wallet_stack-indicator-dot-$page'));
+        expect(selected, findsOneWidget, reason: 'the indicator window must follow the selected page');
+        expect(tester.getSize(selected).width, 12);
+        for (final marker in visible) {
+          final dot = find.descendant(of: find.byWidget(marker.widget), matching: find.byType(AnimatedContainer));
+          final rect = tester.getRect(dot);
+          expect(rect.left, greaterThanOrEqualTo(windowBounds.left));
+          expect(rect.right, lessThanOrEqualTo(windowBounds.right));
+        }
+        final selectedBounds = tester.getRect(selected);
+        expect(selectedBounds.width, greaterThan(0));
+        expect(selectedBounds.left, greaterThanOrEqualTo(windowBounds.left));
+        expect(selectedBounds.right, lessThanOrEqualTo(windowBounds.right));
+        expect(
+          find.descendant(
+            of: indicator,
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Semantics && widget.properties.value == '${page + 1}/31',
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(find.byType(WalletCard), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final kind in WalletStackKind.values) {
     for (final span in [HomeSpan.small, HomeSpan.wide]) {

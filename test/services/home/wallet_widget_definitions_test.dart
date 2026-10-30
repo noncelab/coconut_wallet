@@ -148,37 +148,45 @@ void main() {
     expect(find.byKey(const ValueKey('stack-card-8')), findsOneWidget);
   });
 
-  testWidgets('while swiping left, the front card shrinks away and the next card grows in from the right', (
-    tester,
-  ) async {
-    await _pump(tester, [WalletMock.createSingleSigWalletItem(id: 7), WalletMock.createSingleSigWalletItem(id: 8)]);
-    final fullWidth = tester.getRect(find.byKey(const ValueKey('stack-card-7'))).width;
-    final restingBackRect = tester.getRect(find.byKey(const ValueKey('stack-card-8')));
-    final restingBack = restingBackRect.width;
-    expect(restingBack, closeTo(fullWidth * WalletStackView.backStartScale, 0.5));
-    final restingFront = tester.getRect(find.byKey(const ValueKey('stack-card-7')));
-    expect(restingBackRect.center.dx, greaterThan(restingFront.center.dx));
+  for (final size in [WalletCardSize.small, WalletCardSize.wide]) {
+    testWidgets(
+      '${size.name}: while swiping left, the front card shrinks away and the next card grows in from the right',
+      (tester) async {
+        await _pump(tester, [
+          WalletMock.createSingleSigWalletItem(id: 7),
+          WalletMock.createSingleSigWalletItem(id: 8),
+        ], size: size);
+        final fullWidth = tester.getRect(find.byKey(const ValueKey('stack-card-7'))).width;
+        final restingBackRect = tester.getRect(find.byKey(const ValueKey('stack-card-8')));
+        final restingBack = restingBackRect.width;
+        expect(restingBack, closeTo(fullWidth * WalletStackView.backStartScale, 0.5));
+        final restingFront = tester.getRect(find.byKey(const ValueKey('stack-card-7')));
+        expect(restingBackRect.center.dx, greaterThan(restingFront.center.dx));
 
-    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-pager'))));
-    await gesture.moveBy(const Offset(-30, 0));
-    await gesture.moveBy(const Offset(-40, 0));
-    await tester.pump();
+        final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('stack-pager'))));
+        await gesture.moveBy(const Offset(-30, 0));
+        await gesture.moveBy(const Offset(-40, 0));
+        await tester.pump();
+        // Card swipes animate a whole page; the first frame still has zero elapsed time.
+        await tester.pump(const Duration(milliseconds: 80));
 
-    final front = tester.getRect(find.byKey(const ValueKey('stack-card-7'))).width;
-    final back = tester.getRect(find.byKey(const ValueKey('stack-card-8'))).width;
-    expect(front, lessThan(fullWidth));
-    expect(back, greaterThan(restingBack));
-    expect(back, lessThan(fullWidth));
-    final backCenter = tester.getRect(find.byKey(const ValueKey('stack-card-8'))).center.dx;
-    expect(backCenter, lessThan(restingBackRect.center.dx));
-    expect(backCenter, greaterThan(restingFront.center.dx));
+        final front = tester.getRect(find.byKey(const ValueKey('stack-card-7'))).width;
+        final back = tester.getRect(find.byKey(const ValueKey('stack-card-8'))).width;
+        expect(front, lessThan(fullWidth));
+        expect(back, greaterThan(restingBack));
+        expect(back, lessThan(fullWidth));
+        final backCenter = tester.getRect(find.byKey(const ValueKey('stack-card-8'))).center.dx;
+        expect(backCenter, lessThan(restingBackRect.center.dx));
+        expect(backCenter, greaterThan(restingFront.center.dx));
 
-    await gesture.moveBy(const Offset(-40, 0));
-    await gesture.up();
-    await tester.pumpAndSettle();
-    expect(tester.getRect(find.byKey(const ValueKey('stack-card-8'))).width, closeTo(fullWidth, 0.5));
-    expect(find.byKey(const ValueKey('stack-card-7')), findsNothing);
-  });
+        await gesture.moveBy(const Offset(-40, 0));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.getRect(find.byKey(const ValueKey('stack-card-8'))).width, closeTo(fullWidth, 0.5));
+        expect(find.byKey(const ValueKey('stack-card-7')), findsNothing);
+      },
+    );
+  }
 
   testWidgets('the page indicator fades in only while swiping', (tester) async {
     await _pump(tester, [

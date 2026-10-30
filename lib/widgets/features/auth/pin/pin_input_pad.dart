@@ -143,7 +143,7 @@ class PinInputPadState extends State<PinInputPad> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _buildKeypad(context),
+                Flexible(child: _buildKeypad(context)),
                 if (widget.initOptionVisible)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 50, top: 8),
@@ -167,21 +167,36 @@ class PinInputPadState extends State<PinInputPad> {
   }
 
   Widget _buildKeypad(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 3,
-      childAspectRatio:
-          MediaQuery.of(context).size.width > 600
-              ? 2.5 // 폴드 펼친화면에서는 버튼 사이즈 줄여서 공간 확보
-              : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children:
-          _pinShuffleNumbers.map((key) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: KeyButton(keyValue: key, onKeyTap: widget.onKeyTap),
-            );
-          }).toList(),
+    final double aspectRatio =
+        MediaQuery.of(context).size.width > 600
+            ? 2.5 // 폴드 펼친화면에서는 버튼 사이즈 줄여서 공간 확보
+            : 2;
+    // GridView adds the top/bottom safe area as its own padding, so that height is not available to the rows.
+    final safeArea = MediaQuery.paddingOf(context).vertical;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cellWidth = constraints.maxWidth / 3;
+        final nominalRow = cellWidth / aspectRatio;
+        final fitRow = (constraints.maxHeight - safeArea) / (_pinShuffleNumbers.length / 3).ceil();
+        // Rows only get shorter when they cannot all fit the given height (e.g. a sheet on a short, wide canvas),
+        // never below a usable key height: below that the keypad scrolls instead.
+        final shrink = cellWidth.isFinite && cellWidth > 0 && nominalRow > fitRow;
+        final minRow = nominalRow < kMinInteractiveDimension ? nominalRow : kMinInteractiveDimension;
+        final row = fitRow > minRow ? fitRow : minRow;
+        return GridView.count(
+          crossAxisCount: 3,
+          childAspectRatio: shrink ? cellWidth / row : aspectRatio,
+          shrinkWrap: true,
+          physics: shrink && row > fitRow ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
+          children:
+              _pinShuffleNumbers.map((key) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: KeyButton(keyValue: key, onKeyTap: widget.onKeyTap),
+                );
+              }).toList(),
+        );
+      },
     );
   }
 
