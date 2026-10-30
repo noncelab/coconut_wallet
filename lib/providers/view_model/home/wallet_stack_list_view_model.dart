@@ -21,6 +21,27 @@ class WalletStackListViewModel extends ChangeNotifier {
   List<WalletItemBase> get wallets =>
       orderStackWallets(_walletProvider.walletItemList, _preferenceProvider.walletOrder, kind: kind);
 
+  /// 이 목록의 [oldIndex] 지갑을 [newIndex] 자리로 옮긴다. 한 종류만 보는 목록이면 그 지갑들끼리만 자리를 바꾸고
+  /// 전체 순서에서 다른 지갑의 자리는 그대로 둔다. 바꾼 순서는 휠, 홈 지갑 스택, 지갑 목록 위젯이 함께 쓴다.
+  void reorder(int oldIndex, int newIndex) {
+    final shown = [for (final wallet in wallets) wallet.id];
+    if (oldIndex < 0 || oldIndex >= shown.length || oldIndex == newIndex) return;
+    final moved = shown.removeAt(oldIndex);
+    shown.insert(newIndex.clamp(0, shown.length), moved);
+    final shownIds = shown.toSet();
+    final remaining = shown.iterator;
+    final order = [
+      for (final wallet in orderStackWallets(
+        _walletProvider.walletItemList,
+        _preferenceProvider.walletOrder,
+        kind: WalletStackKind.all,
+      ))
+        if (shownIds.contains(wallet.id) && remaining.moveNext()) remaining.current else wallet.id,
+    ];
+    _preferenceProvider.setWalletOrder(order);
+    notifyListeners();
+  }
+
   /// 보기 전용·핫월렛 목록은 이미 한 종류만 있으므로 종류를 보여 주지 않는다.
   int indexOf(int? walletId) {
     final index = wallets.indexWhere((wallet) => wallet.id == walletId);

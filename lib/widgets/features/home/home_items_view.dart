@@ -16,6 +16,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 
 class HomeItemsView extends StatefulWidget {
   static const double cell = 80;
@@ -165,6 +166,11 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
     _dragCanceled = false;
     _anchorCellExtent = _geometryCellExtent;
     if (!widget.isArranging) widget.onArrangeStart?.call();
+  }
+
+  void _startArrangingFromEmptySpace() {
+    vibrateExtraLight();
+    widget.onArrangeStart?.call();
   }
 
   void _endDrag() {
@@ -482,6 +488,7 @@ class HomeItemsViewState extends State<HomeItemsView> with WidgetsBindingObserve
           key: const ValueKey('home-grid-arranging'),
           behavior: HitTestBehavior.translucent,
           onTap: widget.isArranging ? widget.onArrangeDone : null,
+          onLongPress: widget.isArranging || widget.onArrangeStart == null ? null : _startArrangingFromEmptySpace,
           child: grid,
         );
       },

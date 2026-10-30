@@ -16,14 +16,18 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -56,10 +60,16 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   BitcoinUnit get currentUnit => BitcoinUnit.btc;
 
   @override
-  List<int> get walletOrder => const [];
+  List<int> walletOrder = const [];
 
   @override
   bool get isFakeBalanceActive => true;
+
+  @override
+  Future<void> setWalletOrder(List<int> walletOrder) async {
+    this.walletOrder = walletOrder;
+    notifyListeners();
+  }
 }
 
 SinglesigWalletItem _hot(int id) {
@@ -1005,6 +1015,152 @@ void main() {
     expect(find.text('My Wallets'), findsOneWidget);
     expect(find.byKey(const ValueKey('wallet-stack-list-card-1')), findsOneWidget);
   });
+
+  Future<void> openMyWallets(
+    WidgetTester tester, {
+    WalletStackListMode mode = WalletStackListMode.wheel,
+    List<WalletItemBase>? wallets,
+    _Preferences? preferences,
+  }) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(wallets ?? _wallets)),
+          ChangeNotifierProvider<PreferenceProvider>.value(value: preferences ?? _Preferences()),
+        ],
+        child: MaterialApp(
+          theme: buildCoconutThemeData(),
+          routes: {AppRouteNames.walletDetail: (_) => const Scaffold(key: _detailKey)},
+          home: Builder(
+            builder:
+                (context) => TextButton(
+                  onPressed: () => WalletStackListScreen.open(context, kind: WalletStackKind.all, mode: mode),
+                  child: const Text('open'),
+                ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('list mode shows every wallet as its own wide card and switches back to the wheel', (tester) async {
+    await openMyWallets(tester, mode: WalletStackListMode.list);
+
+    final rows = find.byKey(const Key('wallet-stack-list-rows'));
+    final cards = find.descendant(of: rows, matching: find.byType(WalletCard));
+    expect(cards.hitTestable(), findsNWidgets(_wallets.length));
+    for (final card in tester.widgetList<WalletCard>(cards)) {
+      expect(card.size, WalletCardSize.wide);
+    }
+    for (final (index, wallet) in _wallets.indexed) {
+      final rect = tester.getRect(find.byKey(ValueKey('wallet-stack-list-wide-card-${wallet.id}')));
+      expect(rect.height, WalletCard.wideHeightOf(tester.element(rows)));
+      final balance = tester.getRect(
+        find.descendant(
+          of: find.byKey(ValueKey('wallet-stack-list-wide-card-${wallet.id}')),
+          matching: find.byKey(const Key('wallet-card-balance')),
+        ),
+      );
+      expect(balance.right, moreOrLessEquals(rect.right - 16, epsilon: 1));
+      if (index > 0) {
+        final previous = tester.getRect(find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[index - 1].id}')));
+        expect(rect.top - previous.bottom, greaterThan(0));
+      }
+    }
+    expect(find.byKey(const Key('wallet-stack-list-rows-add')), findsNothing);
+    expect(find.byKey(const Key('wallet-stack-list-wheel')).hitTestable(), findsNothing);
+
+    await tester.tap(find.byKey(const Key('wallet-stack-list-mode')));
+    await tester.pumpAndSettle();
+
+    expect(rows, findsNothing);
+    expect(find.byKey(const Key('wallet-stack-list-wheel')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('long-pressing a list card and dragging it saves the new wallet order', (tester) async {
+    final preferences = _Preferences();
+    await openMyWallets(tester, mode: WalletStackListMode.list, preferences: preferences);
+
+    final first = find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[0].id}'));
+    final third = find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[2].id}'));
+    final gesture = await tester.startGesture(tester.getCenter(first));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    final distance = tester.getBottomLeft(third).dy - tester.getCenter(first).dy + 20;
+    for (var i = 0; i < 10; i++) {
+      await gesture.moveBy(Offset(0, distance / 10));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(preferences.walletOrder, [_wallets[1].id, _wallets[2].id, _wallets[0].id]);
+    expect(
+      tester.getTopLeft(find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[0].id}'))).dy,
+      greaterThan(tester.getTopLeft(find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[2].id}'))).dy),
+    );
+  });
+
+  testWidgets('a quick tap on a list card still opens the wallet instead of reordering', (tester) async {
+    final preferences = _Preferences();
+    await openMyWallets(tester, mode: WalletStackListMode.list, preferences: preferences);
+
+    await tester.tap(find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets[1].id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(_detailKey), findsOneWidget);
+    expect(preferences.walletOrder, isEmpty);
+  });
+
+  for (final scale in [1.0, 1.3, 1.6, 2.0]) {
+    testWidgets('list mode cards fit their content at text scale $scale', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openMyWallets(tester, mode: WalletStackListMode.list);
+
+      expect(tester.takeException(), isNull);
+      final card = tester.getRect(find.byKey(ValueKey('wallet-stack-list-wide-card-${_wallets.first.id}')));
+      expect(card.height, WalletCard.wideHeightOf(tester.element(find.byKey(const Key('wallet-stack-list-rows')))));
+    });
+  }
+
+  testWidgets('app bar actions use the home action width and trailing gap, with a 24px mode icon', (tester) async {
+    await openMyWallets(tester);
+
+    final mode = tester.getRect(find.byKey(const Key('wallet-stack-list-mode')));
+    final add = tester.getRect(find.byKey(const Key('wallet-stack-list-add')));
+    expect(mode.width, CoconutAppBarActionButton.actionWidth);
+    expect(add.width, CoconutAppBarActionButton.actionWidth);
+    expect(add.left, mode.right);
+    expect(add.right, 390 - 8);
+    final icon = find.descendant(
+      of: find.byKey(const Key('wallet-stack-list-mode')),
+      matching: find.byType(SvgPicture),
+    );
+    expect(tester.getSize(icon), const Size(24, 24));
+  });
+
+  for (final mode in WalletStackListMode.values) {
+    testWidgets('without wallets, $mode shows the wallet add options and no app bar actions', (tester) async {
+      await openMyWallets(tester, mode: mode, wallets: const []);
+
+      expect(
+        find.descendant(of: find.byKey(const Key('wallet-stack-list-empty')), matching: find.byType(WalletAddOptions)),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('wallet-add-air-gapped')), findsOneWidget);
+      expect(find.byKey(const Key('wallet-add-hot-create')), findsOneWidget);
+      expect(find.byKey(const Key('wallet-stack-list-mode')), findsNothing);
+      expect(find.byKey(const Key('wallet-stack-list-add')), findsNothing);
+      expect(find.byKey(const Key('wallet-stack-list-wheel')), findsNothing);
+      expect(find.byKey(const Key('wallet-stack-list-rows')), findsNothing);
+    });
+  }
 
   testWidgets('opening a wallet expands its card background from the card to the whole screen', (tester) async {
     await _pumpCupertinoHome(tester);

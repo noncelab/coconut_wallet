@@ -111,6 +111,57 @@ class _HomeWidgetPressableState extends State<HomeWidgetPressable> {
 /// 모든 위젯의 첫 줄 높이. 제목·보조 텍스트를 이 줄의 세로 가운데에 두어, 위젯을 나란히 놓아도 첫 줄이 맞는다.
 const kHomeWidgetHeaderHeight = 20.0;
 
+/// 누르는 동안 홈 위젯과 같은 눌림 색을 깔고 살짝 줄어든다. 크기는 바꾸지 않는다.
+class HomePressableRow extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget child;
+
+  const HomePressableRow({super.key, required this.onTap, required this.child});
+
+  @override
+  State<HomePressableRow> createState() => _HomePressableRowState();
+}
+
+class _HomePressableRowState extends State<HomePressableRow> {
+  bool _pressed = false;
+  bool _snapBack = false;
+
+  void _setPressed(bool pressed, {bool snap = false}) {
+    if (_pressed == pressed) return;
+    setState(() {
+      _pressed = pressed;
+      _snapBack = snap;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false, snap: true),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
+        child: AnimatedContainer(
+          duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color:
+                _pressed
+                    ? colors.homeSurfacePressOverlay.withValues(alpha: colors.homeSurfacePressOverlayOpacity)
+                    : colors.homeSurfacePressOverlay.withValues(alpha: 0),
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
 class HomeWidgetHeader extends StatelessWidget {
   final String iconPath;
   final Key? iconKey;

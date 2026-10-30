@@ -16,10 +16,10 @@ void main() {
   }
   registry.registerShortcuts(FeatureRegistry.builtin());
 
-  test('there are four presets with unique ids', () {
+  test('there are five presets with unique ids', () {
     final ids = builtinHomePresets().map((preset) => preset.id).toList();
 
-    expect(ids, ['default', 'simple', 'hide_balances', 'statistics']);
+    expect(ids, ['default', 'classic', 'simple', 'hide_balances', 'statistics']);
   });
 
   test('every preset item is registered', () {
@@ -45,6 +45,21 @@ void main() {
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
       HomeItemIds.shortcut(FeatureIds.hodlInsights),
+      HomeItemIds.recentTransactions,
+    ]);
+  });
+
+  test('Coconut Classic shows the total balance above and every wallet balance below', () {
+    final preset = builtinHomePresets().firstWhere((preset) => preset.id == 'classic');
+
+    expect(preset.spans[HomeItemIds.bitcoinBalanceTrend], HomeSpan.wide);
+    expect(preset.definitionIds, [
+      HomeItemIds.bitcoinBalanceTrend,
+      HomeItemIds.shortcut(FeatureIds.receive),
+      HomeItemIds.shortcut(FeatureIds.send),
+      HomeItemIds.shortcut(FeatureIds.utxoOverview),
+      HomeItemIds.shortcut(FeatureIds.myWallets),
+      HomeItemIds.walletList,
       HomeItemIds.recentTransactions,
     ]);
   });
@@ -83,8 +98,8 @@ void main() {
     expect(preset.definitionIds, isNot(contains(HomeItemIds.utxoStatus)));
   });
 
-  test('non-default presets fit within one phone screen', () {
-    for (final preset in builtinHomePresets().where((preset) => preset.id != 'default')) {
+  test('presets other than default and Coconut Classic fit within one phone screen', () {
+    for (final preset in builtinHomePresets().where((preset) => !{'default', 'classic'}.contains(preset.id))) {
       final items = [
         for (final (index, id) in preset.definitionIds.indexed)
           if (registry.byId(id) case final definition?)

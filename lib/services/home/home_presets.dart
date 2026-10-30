@@ -29,6 +29,21 @@ List<HomePreset> builtinHomePresets() => [
     ],
   ),
   HomePreset(
+    id: 'classic',
+    name: () => t.home_presets.classic_name,
+    description: () => t.home_presets.classic_description,
+    spans: const {HomeItemIds.bitcoinBalanceTrend: HomeSpan.wide},
+    definitionIds: [
+      HomeItemIds.bitcoinBalanceTrend,
+      HomeItemIds.shortcut(FeatureIds.receive),
+      HomeItemIds.shortcut(FeatureIds.send),
+      HomeItemIds.shortcut(FeatureIds.utxoOverview),
+      HomeItemIds.shortcut(FeatureIds.myWallets),
+      HomeItemIds.walletList,
+      HomeItemIds.recentTransactions,
+    ],
+  ),
+  HomePreset(
     id: 'simple',
     name: () => t.home_presets.simple_name,
     description: () => t.home_presets.simple_description,
