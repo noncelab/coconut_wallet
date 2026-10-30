@@ -9,6 +9,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -266,7 +267,7 @@ void main() {
     expect(tester.widget<UtxoSelectionCard>(find.byType(UtxoSelectionCard)).isSelected, isTrue);
     final model = tester.element(find.byType(UtxoSelectionCard)).read<UtxoSelectionViewModel>();
     expect(model.selectedUtxoAmountSum, coin.amount);
-    expect(model.selectedUtxoTagName, t.all);
+    expect(model.selectedUtxoFilter, UtxoFilter.all);
     expect(model.hasSelectionChanged, isFalse);
     expect(tester.takeException(), isNull);
   });
