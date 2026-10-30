@@ -269,8 +269,9 @@ class PinAuthService {
         if (status.isBlocked) return PinVerificationResult(PinVerificationOutcome.blocked, status);
         // 카운터 상한에서도 마지막 회차의 3회 기회와 최대 지연을 유지합니다.
         record['failures'] = status.failures >= 999999 ? 999997 : status.failures + 1;
-        record['lastObservedAt'] = _now;
-        record['nextAllowedAt'] = _now + delayForFailures(record['failures'] as int).inMilliseconds;
+        final now = _now;
+        record['lastObservedAt'] = now;
+        record['nextAllowedAt'] = now + delayForFailures(record['failures'] as int).inMilliseconds;
         await _save(record);
         final verifier = record['verifier'] as Map<String, dynamic>;
         final valid = _validPin(pin) && await _matches(pin, verifier);

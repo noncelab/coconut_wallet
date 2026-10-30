@@ -174,6 +174,41 @@ void main() {
     expect(PinAuthService.delayForFailures(999999), const Duration(minutes: 15));
   });
 
+  for (final failures in [17, 20]) {
+    test('maximum cooldown stays readable with a ticking clock after $failures failures', () async {
+      await service.setPin('1234');
+      final record = storage.record;
+      record['failures'] = failures;
+      storage.values[PinAuthService.recordKey] = jsonEncode(record);
+      PinAuthService tickingService() => PinAuthService(
+        storage: storage,
+        kdf: kdf,
+        now: () {
+          final now = clock.wall;
+          clock.advance(const Duration(milliseconds: 1));
+          return now;
+        },
+        monotonicMilliseconds: () => clock.elapsed,
+        random: Random(10),
+      );
+
+      final ticking = tickingService();
+      expect((await ticking.verify('4321')).outcome, PinVerificationOutcome.incorrect);
+      expect(storage.record['failures'], failures + 1);
+      expect(
+        storage.record['nextAllowedAt'] - storage.record['lastObservedAt'],
+        const Duration(minutes: 15).inMilliseconds,
+      );
+      final restarted = tickingService();
+      expect((await restarted.configuration()).configured, isTrue);
+      expect((await restarted.verify('1234')).outcome, PinVerificationOutcome.blocked);
+      clock.advance(const Duration(minutes: 16));
+      expect((await restarted.configuration()).configured, isTrue);
+      expect((await restarted.verify('1234')).outcome, PinVerificationOutcome.success);
+      expect(storage.record['failures'], 0);
+    });
+  }
+
   test('each completed cooldown restores three attempts even across screen or app restarts', () async {
     await service.setPin('1234');
     for (var i = 0; i < 3; i++) {
