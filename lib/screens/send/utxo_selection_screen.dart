@@ -22,6 +22,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -354,7 +355,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   void _selectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.selectTaggedUtxo(_viewModel.selectedUtxoTagName);
+    _viewModel.selectTaggedUtxo();
   }
 
   void _deselectAll() {
@@ -417,12 +418,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       child: Container(
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
-          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+          tags: viewModel.utxoTagList,
           showDefaultTags: false,
-          selectedName: viewModel.selectedUtxoTagName,
-          onSelectedTag: (tagName) {
-            viewModel.setSelectedUtxoTagName(tagName);
-          },
+          selectedFilter: viewModel.selectedUtxoFilter,
+          onSelectedFilter: viewModel.setSelectedUtxoFilter,
         ),
       ),
     );
@@ -430,7 +429,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildEmptyState(UtxoSelectionViewModel viewModel) {
     final copy = t.utxo_selection_screen;
-    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoTagName != t.all;
+    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoFilter != UtxoFilter.all;
     final hasError = viewModel.hasLoadError;
     return Center(
       child: SingleChildScrollView(
@@ -489,7 +488,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 if (hasError) {
                   viewModel.initialize(widget.selectedUtxoList);
                 } else if (hasFilter) {
-                  viewModel.setSelectedUtxoTagName(t.all);
+                  viewModel.setSelectedUtxoFilter(UtxoFilter.all);
                 } else {
                   await Navigator.of(
                     context,
@@ -510,7 +509,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     if (filteredUtxoList.isEmpty) return _buildEmptyState(viewModel);
 
     return ListView.separated(
-      key: ValueKey(viewModel.selectedUtxoTagName),
+      key: ValueKey(viewModel.selectedUtxoFilter),
       controller: _scrollController,
       padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
