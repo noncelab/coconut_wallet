@@ -2101,3 +2101,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet-Karte"
   show_balance_trend: "Saldoverlauf anzeigen"
   chart_date_format: "d.M."
+
+wallet_selection_carousel: "Einzeln anzeigen"
+wallet_selection_grid: "Zusammen anzeigen"

@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -240,23 +239,22 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   void _onAppBarTitlePressed() {
     if (_walletCount <= 1) return;
     AppGuard.enablePrivacyScreen();
-    CommonBottomSheets.showDraggableBottomSheet(
+    SelectWalletBottomSheet.show(
       context: context,
       screenName: AnalyticsScreenNames.receiveAddressSelectWalletSheet,
-      childBuilder:
-          (scrollController) => SelectWalletBottomSheet(
-            showOnlyMfpWallets: false,
-            scrollController: scrollController,
-            currentUnit: context.read<PreferenceProvider>().currentUnit,
-            walletId: selectedWalletId,
-            onWalletChanged: (id) {
-              final walletProvider = context.read<WalletProvider>();
-              _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
-              _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
-              setState(() {});
-              Navigator.pop(context);
-            },
-          ),
+      child: SelectWalletBottomSheet(
+        showOnlyMfpWallets: false,
+
+        currentUnit: context.read<PreferenceProvider>().currentUnit,
+        walletId: selectedWalletId,
+        onWalletChanged: (id) {
+          final walletProvider = context.read<WalletProvider>();
+          _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
+          _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+          setState(() {});
+          Navigator.pop(context);
+        },
+      ),
     ).whenComplete(() => AppGuard.disablePrivacyScreen());
   }
 }

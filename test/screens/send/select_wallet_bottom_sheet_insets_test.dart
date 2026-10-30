@@ -15,8 +15,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -54,6 +57,9 @@ class _Wallets extends ChangeNotifier implements WalletProvider {
   ];
 
   @override
+  List<TransactionRecord> getTransactionRecordList(int walletId) => [];
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -66,11 +72,10 @@ class _Preferences extends ChangeNotifier implements PreferenceProvider {
 }
 
 class _Fixture {
-  const _Fixture(this.id, this.size, this.inset, this.extent);
+  const _Fixture(this.id, this.size, this.inset);
   final String id;
   final Size size;
   final double inset;
-  final double extent;
 }
 
 class _Host {
@@ -82,6 +87,7 @@ class _Host {
   DraggableScrollableController? draggable;
   int? selected;
   bool closed = false;
+  int callerWalletId = -1;
 
   Future<void> open(
     WidgetTester tester,
@@ -89,10 +95,13 @@ class _Host {
     CoconutThemeVariant variant,
     double scale, {
     int initialWallet = -1,
+    bool grid = false,
     List<int>? candidates,
     bool onlyMfp = false,
     BalanceMode balanceMode = BalanceMode.includingPending,
   }) async {
+    callerWalletId = initialWallet;
+    await SharedPrefsRepository().setSelectWalletGridView(grid);
     tester.view.physicalSize = fixture.size;
     tester.view.devicePixelRatio = 1;
     tester.view.viewPadding = const FakeViewPadding(top: 44, bottom: 34);
@@ -124,25 +133,20 @@ class _Host {
                     child: TextButton(
                       onPressed:
                           () => unawaited(
-                            CommonBottomSheets.showDraggableBottomSheet<int>(
+                            SelectWalletBottomSheet.show<int>(
                               context: context,
                               screenName: 'home-shortcut-select-wallet-sheet',
-                              initialChildSize: fixture.extent,
-                              onControllerReady: (controller) => draggable = controller,
-                              childBuilder: (controller) {
-                                scroll = controller;
-                                return SelectWalletBottomSheet(
-                                  walletId: initialWallet,
-                                  onWalletChanged: (id) => Navigator.pop(context, id),
-                                  currentUnit: BitcoinUnit.btc,
-                                  showOnlyMfpWallets: onlyMfp,
-                                  scrollController: controller,
-                                  candidateWalletIds: candidates,
-                                  balanceMode: balanceMode,
-                                );
-                              },
+                              child: SelectWalletBottomSheet(
+                                walletId: initialWallet,
+                                onWalletChanged: (id) => Navigator.pop(context, id),
+                                currentUnit: BitcoinUnit.btc,
+                                showOnlyMfpWallets: onlyMfp,
+                                candidateWalletIds: candidates,
+                                balanceMode: balanceMode,
+                              ),
                             ).then((value) {
                               selected = value;
+                              if (value != null) callerWalletId = value;
                               closed = true;
                             }),
                           ),
@@ -157,6 +161,12 @@ class _Host {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open picker'));
     await tester.pumpAndSettle();
+    draggable = tester.widget<DraggableScrollableSheet>(find.byType(DraggableScrollableSheet)).controller!;
+    final content = find.descendant(
+      of: find.byType(SelectWalletBottomSheet),
+      matching: find.byType(SingleChildScrollView),
+    );
+    scroll = tester.widget<SingleChildScrollView>(content).controller!;
   }
 
   void setInset(WidgetTester tester, double inset) {
@@ -165,12 +175,10 @@ class _Host {
   }
 }
 
-Finder _card(int id) => find.byWidgetPredicate((widget) => widget is WalletItemCard && widget.walletItem.id == id);
-
-Finder _cardTap(int id) => find.descendant(
-  of: _card(id),
-  matching: find.byWidgetPredicate((widget) => widget is GestureDetector && widget.onTap != null),
-);
+Finder _card(int id) => find.byKey(ValueKey('select-wallet-card-$id'));
+Finder _cardTap(int id) => _card(id);
+Finder get _button => find.descendant(of: find.byType(FixedBottomButton), matching: find.byType(ShrinkAnimationButton));
+bool _buttonActive(WidgetTester tester) => tester.widget<FixedBottomButton>(find.byType(FixedBottomButton)).isActive;
 
 List<Map<String, Object>> _overflows() {
   final found = <Map<String, Object>>[];
@@ -191,8 +199,9 @@ List<Map<String, Object>> _overflows() {
 }
 
 Future<void> _record(WidgetTester tester, _Host host, String name, Map<String, Object?> values) async {
+  if (!const bool.fromEnvironment('PICKER_CAPTURE_EVIDENCE')) return;
   await tester.runAsync(() async {
-    final directory = Directory('.omo/evidence/address-search-overflow-triage/picker-fix/$_phase');
+    final directory = Directory('.omo/evidence/select-wallet-insets/$_phase');
     await directory.create(recursive: true);
     await File('${directory.path}/$name.json').writeAsString(jsonEncode(values));
     final image = await (host.capture.currentContext!.findRenderObject()! as RenderRepaintBoundary).toImage();
@@ -220,7 +229,7 @@ void _insidePicker(WidgetTester tester, Finder target) {
   expect(rect.right, lessThanOrEqualTo(available.right + .1));
   expect(rect.bottom, lessThanOrEqualTo(available.bottom + .1));
   final widget = tester.widget(target);
-  final tapTarget = widget is WalletItemCard ? _cardTap(widget.walletItem.id) : target;
+  final tapTarget = widget is WalletCard ? _cardTap(widget.wallet.id) : target;
   expect(tapTarget, findsOneWidget);
   expect(
     tapTarget.hitTestable(),
@@ -230,25 +239,23 @@ void _insidePicker(WidgetTester tester, Finder target) {
 }
 
 Future<void> _revealCard(WidgetTester tester, _Host host, int id, String captureName) async {
-  final card = _card(id);
-  final scrollView = find.ancestor(of: card, matching: find.byType(SingleChildScrollView));
-  List<double> bounds(Rect rect) => [rect.left, rect.top, rect.right, rect.bottom];
-  Map<String, Object?> geometry() => {
+  final pages = find.byKey(const Key('select-wallet-carousel'));
+  if (pages.evaluate().isNotEmpty) {
+    final candidates = host.wallets.walletItemList.map((wallet) => wallet.id).toSet();
+    final ids = host.preferences.walletOrder.where(candidates.contains).toList();
+    tester.widget<PageView>(pages).controller!.jumpToPage(ids.indexOf(id));
+    await tester.pumpAndSettle();
+  }
+  final maximum = tester.widget<DraggableScrollableSheet>(find.byType(DraggableScrollableSheet)).maxChildSize;
+  await tester.ensureVisible(_card(id));
+  await tester.pumpAndSettle();
+  expect(host.draggable!.size, lessThanOrEqualTo(maximum + .001));
+  await _record(tester, host, captureName, {
     'extent': host.draggable!.size,
-    'viewport': bounds(tester.getRect(scrollView)),
-    'card': bounds(tester.getRect(card)),
     'scrollOffset': host.scroll!.offset,
-    'gestureOwnerHitTestable': _cardTap(id).hitTestable().evaluate().length == 1,
-  };
-  await tester.ensureVisible(card);
-  await tester.pumpAndSettle();
-  final snappedExtent = host.draggable!.size;
-  await _record(tester, host, '$captureName-before-post-snap-reveal', geometry());
-  await tester.ensureVisible(card);
-  await tester.pumpAndSettle();
-  await _record(tester, host, '$captureName-after-post-snap-reveal', geometry());
-  expect(host.draggable!.size, closeTo(snappedExtent, .001));
-  _insidePicker(tester, card);
+    'cardHitTestable': _card(id).hitTestable().evaluate().isNotEmpty,
+  });
+  _insidePicker(tester, _card(id));
 }
 
 void main() {
@@ -261,225 +268,223 @@ void main() {
       await loader.load();
     }
   });
-  setUp(() => LocaleSettings.setLocaleSync(AppLocale.de));
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SharedPrefsRepository().init();
+    LocaleSettings.setLocaleSync(AppLocale.de);
+  });
   tearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
 
   const fixtures = [
-    _Fixture('normal', Size(414, 896), 0, .55),
-    _Fixture('initial-ime', Size(414, 896), 320, .55),
-    _Fixture('minimum-ime', Size(414, 896), 320, .5),
-    _Fixture('short-ime', Size(320, 568), 160, .5),
+    _Fixture('normal', Size(414, 896), 0),
+    _Fixture('initial-ime', Size(414, 896), 320),
+    _Fixture('shorter-ime', Size(414, 740), 320),
+    _Fixture('short-ime', Size(320, 568), 160),
   ];
   for (final variant in CoconutThemeVariant.values) {
     for (final scale in [.85, 1.0, 2.0]) {
       for (final fixture in fixtures) {
-        final id = '${variant.name}-$scale-${fixture.id}';
-        testWidgets('picker cards and confirm remain reachable $id', (tester) async {
-          final host = _Host();
-          await host.open(tester, fixture, variant, scale);
-          final error = tester.takeException();
-          final overflow = _overflows();
-          await _record(tester, host, '$id-open', {
-            'fixture': fixture.id,
-            'scale': scale,
-            'theme': variant.name,
-            'inset': fixture.inset,
-            'extent': host.draggable!.size,
-            'frameworkError': error?.runtimeType.toString(),
-            'verticalOverflows': overflow,
-          });
-          expect(error, isNull);
-          expect(overflow, isEmpty);
-          expect(host.draggable!.size, closeTo(fixture.extent, .001));
-          expect(host.scroll!.hasClients, isTrue);
-          expect(host.scroll!.positions.length, 1);
-          final button = find.byType(InlineActionButton);
-          expect(tester.widget<InlineActionButton>(button).isActive, isFalse);
-          double? stickyInset;
-          if (fixture.id == 'normal') {
+        for (final grid in [false, true]) {
+          final id = '${variant.name}-$scale-${fixture.id}-grid=$grid';
+          testWidgets('picker cards and confirm remain reachable $id', (tester) async {
+            final host = _Host();
+            await host.open(tester, fixture, variant, scale, initialWallet: 8, grid: grid);
+            final error = tester.takeException();
+            final overflow = _overflows();
+            await _record(tester, host, '$id-open', {
+              'fixture': fixture.id,
+              'scale': scale,
+              'theme': variant.name,
+              'inset': fixture.inset,
+              'extent': host.draggable!.size,
+              'frameworkError': error?.runtimeType.toString(),
+              'verticalOverflows': overflow,
+            });
+            expect(error, isNull);
+            expect(overflow, isEmpty);
+            final sheet = tester.widget<DraggableScrollableSheet>(find.byType(DraggableScrollableSheet));
+            expect(host.draggable!.size, closeTo(sheet.maxChildSize, .001));
+            expect(host.scroll!.hasClients, isTrue);
+            expect(host.scroll!.positions.length, 1);
+            final button = _button;
+            expect(_buttonActive(tester), isFalse);
+            double? stickyInset;
+            if (fixture.id == 'normal') {
+              _insidePicker(tester, button);
+              stickyInset = tester.getRect(find.byType(SelectWalletBottomSheet)).bottom - tester.getRect(button).bottom;
+            }
+            await _revealCard(tester, host, 1, id);
+            _insidePicker(tester, _card(1));
+            await tester.tap(_cardTap(1).hitTestable());
+            await tester.pumpAndSettle();
+            expect(_buttonActive(tester), isTrue);
+            if (stickyInset != null) {
+              final after = tester.getRect(find.byType(SelectWalletBottomSheet)).bottom - tester.getRect(button).bottom;
+              expect(after, closeTo(stickyInset, .1));
+            }
+            await tester.ensureVisible(button);
+            await tester.pumpAndSettle();
             _insidePicker(tester, button);
-            stickyInset = tester.getRect(find.byType(SelectWalletBottomSheet)).bottom - tester.getRect(button).bottom;
-          }
-          await _revealCard(tester, host, 1, id);
-          _insidePicker(tester, _card(1));
-          await tester.tap(_cardTap(1).hitTestable());
-          await tester.pumpAndSettle();
-          expect(tester.widget<InlineActionButton>(button).isActive, isTrue);
-          if (stickyInset != null) {
-            final after = tester.getRect(find.byType(SelectWalletBottomSheet)).bottom - tester.getRect(button).bottom;
-            expect(after, closeTo(stickyInset, .1));
-          }
-          await tester.ensureVisible(button);
-          await tester.pumpAndSettle();
-          _insidePicker(tester, button);
-          expect(_overflows(), isEmpty);
-          await _record(tester, host, '$id-confirm', {
-            'selectedPublicFixture': 1,
-            'buttonVisibleAndHitTestable': true,
-            'controllerAttached': host.scroll!.hasClients,
+            expect(_overflows(), isEmpty);
+            await _record(tester, host, '$id-confirm', {
+              'selectedPublicFixture': 1,
+              'buttonVisibleAndHitTestable': true,
+              'controllerAttached': host.scroll!.hasClients,
+            });
+            await tester.tap(button.hitTestable());
+            await tester.pumpAndSettle();
+            expect(host.closed, isTrue);
+            expect(host.selected, 1);
+            expect(find.byType(SelectWalletBottomSheet), findsNothing);
+            expect(tester.takeException(), isNull);
+            await tester.pumpWidget(const SizedBox.shrink());
           });
-          await tester.tap(button.hitTestable());
-          await tester.pumpAndSettle();
-          expect(host.closed, isTrue);
-          expect(host.selected, 1);
-          expect(find.byType(SelectWalletBottomSheet), findsNothing);
-          expect(tester.takeException(), isNull);
-          await tester.pumpWidget(const SizedBox.shrink());
-        });
+        }
       }
     }
   }
 
   for (final mode in BalanceMode.values) {
-    testWidgets('picker preserves current selection, candidate order, MFP filter and $mode balances', (tester) async {
-      final host = _Host();
-      final existing = host.wallets.walletItemList[2];
-      final descriptorBody = existing.descriptor.split('#').first.replaceFirst('D45AA182', '00000000');
-      host.wallets.walletItemList[2] = SinglesigWalletItem(
-        id: 3,
-        name: 'Wallet 3',
-        colorIndex: 0,
-        iconIndex: 0,
-        descriptor: '$descriptorBody#${Checksum.getChecksum(descriptorBody)}',
-      );
-      await host.open(
+    for (final grid in [false, true]) {
+      testWidgets('picker preserves current selection, candidate order, MFP filter and $mode balances: grid=$grid', (
         tester,
-        fixtures.first,
-        CoconutThemeVariant.values.first,
-        1,
-        initialWallet: 4,
-        candidates: [2, 3, 4],
-        onlyMfp: true,
-        balanceMode: mode,
+      ) async {
+        final host = _Host();
+        final existing = host.wallets.walletItemList[2];
+        final descriptorBody = existing.descriptor.split('#').first.replaceFirst('D45AA182', '00000000');
+        host.wallets.walletItemList[2] = SinglesigWalletItem(
+          id: 3,
+          name: 'Wallet 3',
+          colorIndex: 0,
+          iconIndex: 0,
+          descriptor: '$descriptorBody#${Checksum.getChecksum(descriptorBody)}',
+        );
+        await host.open(
+          tester,
+          fixtures.first,
+          CoconutThemeVariant.values.first,
+          1,
+          initialWallet: 4,
+          candidates: [2, 3, 4],
+          onlyMfp: true,
+          balanceMode: mode,
+          grid: grid,
+        );
+        final cards = tester.widgetList<WalletCard>(find.byType(WalletCard)).toList();
+        expect(cards.map((card) => card.wallet.id), [4, 2]);
+        expect(cards.map((card) => card.balanceDisplay), [
+          for (final amount in mode == BalanceMode.includingPending ? [4100, 2100] : [2000, 2000])
+            BitcoinUnit.btc.displayBitcoinAmount(amount, withUnit: true),
+        ]);
+        final button = _button;
+        expect(_buttonActive(tester), isFalse);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        expect(host.closed, isFalse);
+        if (!grid) {
+          tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(_cardTap(2));
+        await tester.pumpAndSettle();
+        expect(_buttonActive(tester), isTrue);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        expect(host.selected, 2);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  }
+
+  for (final grid in [false, true]) {
+    testWidgets('picker selection and primary controller survive keyboard dismissal: grid=$grid', (tester) async {
+      final host = _Host();
+      await host.open(tester, fixtures[2], CoconutThemeVariant.values.first, 2, grid: grid);
+      expect(tester.takeException(), isNull);
+      expect(_overflows(), isEmpty);
+      final suppliedController = host.scroll;
+      await _revealCard(tester, host, 1, 'keyboard-dismissal');
+      _insidePicker(tester, _card(1));
+      await tester.tap(_cardTap(1));
+      await tester.pumpAndSettle();
+      host.setInset(tester, 0);
+      await tester.pumpAndSettle();
+      final content = find.descendant(
+        of: find.byType(SelectWalletBottomSheet),
+        matching: find.byType(SingleChildScrollView),
       );
-      final cards = tester.widgetList<WalletItemCard>(find.byType(WalletItemCard)).toList();
-      expect(cards.map((card) => card.walletItem.id), [4, 2]);
-      expect(
-        cards.map((card) => card.animatedBalanceData.current),
-        mode == BalanceMode.includingPending ? [4100, 2100] : [2000, 2000],
-      );
-      final button = find.byType(InlineActionButton);
-      expect(tester.widget<InlineActionButton>(button).isActive, isFalse);
+      expect(tester.widget<SingleChildScrollView>(content).controller, same(suppliedController));
+      expect(host.scroll!.positions.length, 1);
+      final button = _button;
+      expect(_buttonActive(tester), isTrue);
+      _insidePicker(tester, button);
+      expect(_overflows(), isEmpty);
       await tester.tap(button);
       await tester.pumpAndSettle();
-      expect(host.closed, isFalse);
-      await tester.tap(_cardTap(2));
+      expect(host.selected, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('picker cancellation preserves the caller selection: grid=$grid', (tester) async {
+      final host = _Host();
+      await host.open(tester, fixtures.first, CoconutThemeVariant.values.first, 1, initialWallet: 4, grid: grid);
+      if (grid) {
+        await tester.tap(_card(8));
+      } else {
+        tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(0);
+      }
       await tester.pumpAndSettle();
-      expect(tester.widget<InlineActionButton>(button).isActive, isTrue);
-      await tester.tap(button);
+      expect(_buttonActive(tester), isTrue);
+      host.navigator.currentState!.pop();
       await tester.pumpAndSettle();
-      expect(host.selected, 2);
+      expect(host.closed, isTrue);
+      expect(host.selected, isNull);
+      expect(host.callerWalletId, 4);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
 
-  testWidgets('picker selection and supplied controller survive keyboard dismissal', (tester) async {
+  testWidgets('picker continuous grid drag preserves controller and respects opening maximum height', (tester) async {
     final host = _Host();
-    await host.open(tester, fixtures[2], CoconutThemeVariant.values.first, 2);
-    expect(tester.takeException(), isNull);
-    expect(_overflows(), isEmpty);
-    final suppliedController = host.scroll;
-    await _revealCard(tester, host, 1, 'keyboard-dismissal');
-    _insidePicker(tester, _card(1));
-    await tester.tap(_cardTap(1));
-    await tester.pumpAndSettle();
-    host.setInset(tester, 0);
-    await tester.pumpAndSettle();
-    expect(host.scroll, same(suppliedController));
-    expect(host.scroll!.positions.length, 1);
-    final button = find.byType(InlineActionButton);
-    expect(tester.widget<InlineActionButton>(button).isActive, isTrue);
-    _insidePicker(tester, button);
-    expect(_overflows(), isEmpty);
-    await tester.tap(button);
-    await tester.pumpAndSettle();
-    expect(host.selected, 1);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('picker cancellation preserves the caller selection', (tester) async {
-    final host = _Host();
-    await host.open(tester, fixtures.first, CoconutThemeVariant.values.first, 1, initialWallet: 4);
-    host.navigator.currentState!.pop();
-    await tester.pumpAndSettle();
-    expect(host.closed, isTrue);
-    expect(host.selected, isNull);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('picker continuous pointer survives compact and sticky layout boundaries', (tester) async {
-    final host = _Host();
-    await host.open(tester, fixtures[2], CoconutThemeVariant.values.first, 2, initialWallet: 8);
-    expect(tester.takeException(), isNull);
-    expect(_overflows(), isEmpty);
+    await host.open(tester, fixtures[2], CoconutThemeVariant.values.first, 2, initialWallet: 8, grid: true);
     final supplied = host.scroll!;
     final position = supplied.position;
-    final scrollable = find.descendant(of: find.byType(SelectWalletBottomSheet), matching: find.byType(Scrollable));
+    final content = find.descendant(
+      of: find.byType(SelectWalletBottomSheet),
+      matching: find.byType(SingleChildScrollView),
+    );
+    final scrollable = find.descendant(of: content, matching: find.byType(Scrollable)).first;
     final state = tester.state<ScrollableState>(scrollable);
-    final button = find.byType(InlineActionButton);
-    expect(tester.widget<InlineActionButton>(button).isActive, isFalse);
-    expect(tester.widget<WalletItemCard>(_card(8)).rightWidget, isNot(isA<Container>()));
-    final viewport = tester.getRect(scrollable);
-    final pointer = await tester.startGesture(Offset(viewport.center.dx, viewport.bottom - 12));
-    final samples = <Map<String, Object?>>[];
-    void sample(String direction) {
-      samples.add({
-        'direction': direction,
-        'extent': host.draggable!.size,
-        'controllerIdentical': identical(host.scroll, supplied),
-        'attachedPositions': supplied.positions.length,
-        'positionIdentical': identical(supplied.position, position),
-        'scrollableStateIdentical': identical(tester.state<ScrollableState>(scrollable), state),
-        'pixels': supplied.position.pixels,
-      });
+    final maximum = host.draggable!.size;
+    final viewport = tester.getRect(content);
+    final pointer = await tester.startGesture(Offset(viewport.center.dx, viewport.bottom - 130));
+    var largestOffset = 0.0;
+    for (final direction in [-1, 1]) {
+      for (var i = 0; i < (direction == -1 ? 20 : 10); i++) {
+        await pointer.moveBy(Offset(0, direction * 16.0));
+        await tester.pump(const Duration(milliseconds: 16));
+        if (supplied.offset > largestOffset) largestOffset = supplied.offset;
+        expect(tester.widget<SingleChildScrollView>(content).controller, same(supplied));
+        expect(supplied.positions.length, 1);
+        expect(supplied.position, same(position));
+        expect(tester.state<ScrollableState>(scrollable), same(state));
+        expect(host.draggable!.size, lessThanOrEqualTo(maximum + .001));
+      }
     }
-
-    sample('start');
-    for (var i = 0; i < 20; i++) {
-      await pointer.moveBy(const Offset(0, -16));
-      await tester.pump(const Duration(milliseconds: 16));
-      sample('expand');
-    }
-    final expanded = host.draggable!.size;
-    for (var i = 0; i < 17; i++) {
-      await pointer.moveBy(const Offset(0, 16));
-      await tester.pump(const Duration(milliseconds: 16));
-      sample('collapse');
-    }
-    final collapsed = host.draggable!.size;
-    await _record(tester, host, 'continuous-boundary-drag', {
-      'onePointerWithoutRegrab': true,
-      'expandedExtentBeforeRelease': expanded,
-      'collapsedExtentBeforeRelease': collapsed,
-      'samples': samples,
-      'verticalOverflows': _overflows(),
-    });
     await pointer.up();
     await tester.pumpAndSettle();
-    expect(expanded, greaterThan(.8));
-    expect(collapsed, lessThan(.57));
-    for (final value in samples) {
-      expect(value['controllerIdentical'], isTrue);
-      expect(value['attachedPositions'], 1);
-      expect(value['positionIdentical'], isTrue);
-      expect(value['scrollableStateIdentical'], isTrue);
-      expect(value['pixels'] as double, closeTo(0, .1));
-    }
-    expect(tester.widget<InlineActionButton>(button).isActive, isFalse);
-    expect(tester.widget<WalletItemCard>(_card(8)).rightWidget, isNot(isA<Container>()));
+    expect(largestOffset, greaterThan(0));
+    expect(_buttonActive(tester), isFalse);
     expect(_overflows(), isEmpty);
-    expect(tester.takeException(), isNull);
-    await _revealCard(tester, host, 1, 'continuous-boundary');
-    _insidePicker(tester, _card(1));
+    await _revealCard(tester, host, 1, 'continuous-grid-drag');
     await tester.tap(_cardTap(1));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(button);
-    await tester.pumpAndSettle();
-    _insidePicker(tester, button);
-    await tester.tap(button);
+    expect(_buttonActive(tester), isTrue);
+    _insidePicker(tester, _button);
+    await tester.tap(_button);
     await tester.pumpAndSettle();
     expect(host.selected, 1);
     expect(tester.takeException(), isNull);

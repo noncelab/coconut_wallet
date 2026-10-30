@@ -35,7 +35,6 @@ import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -166,18 +165,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<int?> _pickWallet(BuildContext context, List<int> candidateWalletIds) {
-    return CommonBottomSheets.showDraggableBottomSheet<int>(
+    return SelectWalletBottomSheet.show<int>(
       context: context,
       screenName: AnalyticsScreenNames.homeShortcutSelectWalletSheet,
-      childBuilder:
-          (scrollController) => SelectWalletBottomSheet(
-            showOnlyMfpWallets: false,
-            scrollController: scrollController,
-            currentUnit: context.read<PreferenceProvider>().currentUnit,
-            walletId: -1,
-            candidateWalletIds: candidateWalletIds,
-            onWalletChanged: (id) => Navigator.pop(context, id),
-          ),
+      child: SelectWalletBottomSheet(
+        showOnlyMfpWallets: false,
+
+        currentUnit: context.read<PreferenceProvider>().currentUnit,
+        walletId: -1,
+        candidateWalletIds: candidateWalletIds,
+        onWalletChanged: (id) => Navigator.pop(context, id),
+      ),
     );
   }
 
