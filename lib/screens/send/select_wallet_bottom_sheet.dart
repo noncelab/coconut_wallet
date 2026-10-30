@@ -377,14 +377,14 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                                                                           color: context.coconutColors.primaryText
                                                                               .withValues(
                                                                                 alpha:
-                                                                                    (isDark ? 0.26 : 0.04) * emphasis,
+                                                                                    (isDark ? 0.16 : 0.04) * emphasis,
                                                                               ),
-                                                                          blurRadius: isDark ? 14 : 22,
+                                                                          blurRadius: 22,
                                                                           spreadRadius: 1,
                                                                         ),
                                                                         BoxShadow(
                                                                           color: Colors.black.withValues(
-                                                                            alpha: (isDark ? 0.3 : 0.12) * emphasis,
+                                                                            alpha: (isDark ? 0.04 : 0.12) * emphasis,
                                                                           ),
                                                                           blurRadius: 20,
                                                                           offset: const Offset(0, 8),
