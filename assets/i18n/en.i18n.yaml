@@ -1572,6 +1572,8 @@ split_utxo_screen:
   question_split_evenly: "Into how many parts?"
   label_split_method: "Split Method"
   label_selected_utxo: "Selected UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Estimated Fee"
   add_new_amount: "Add amount"
   and_more_tags: "and ${count} more"
@@ -1583,6 +1585,7 @@ split_utxo_screen:
     manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting will create a small amount (dust)"
+  tx_too_large_error: "The transaction is too large. Select fewer UTXOs or split into fewer outputs"
   method_bottom_sheet:
     title: "Select Split Method"
     split_by_amount: "Split by fixed amount"
@@ -1596,9 +1599,10 @@ split_utxo_screen:
     fee: "Fee"
     above_is_expected: "The result above is an estimate"
   big_tx_confirm:
-    create: "Create"
-    preview: "Preview"
-    description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
+    title: "Large Transaction"
+    create: "Create Now"
+    preview: "Preview Result"
+    description: "Creating it may take some time. Preview the result first."
 
 label_management_screen:
   title: "Notes"

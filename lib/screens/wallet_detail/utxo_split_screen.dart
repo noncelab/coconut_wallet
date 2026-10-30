@@ -26,6 +26,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -151,7 +152,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             context.read<AddressRepository>(),
             context.read<UtxoRepository>(),
             context.read<SendInfoProvider>(),
-            (outputCount) => _showUsePreviewConfirmDialog(context, outputCount),
+            context.read<UtxoTagProvider>(),
+            () => _showUsePreviewConfirmDialog(context),
           ),
       child: Builder(
         builder: (context) {
@@ -177,14 +179,14 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     );
   }
 
-  Future<bool> _showUsePreviewConfirmDialog(BuildContext context, int outputCount) async {
+  Future<bool> _showUsePreviewConfirmDialog(BuildContext context) async {
     final result = await showDialog<bool>(
       barrierDismissible: false,
       context: context,
       builder: (dialogContext) {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
-          title: t.confirm,
+          title: t.split_utxo_screen.big_tx_confirm.title,
           leftButtonText: t.split_utxo_screen.big_tx_confirm.create,
           rightButtonText: t.split_utxo_screen.big_tx_confirm.preview,
           description: t.split_utxo_screen.big_tx_confirm.description,
@@ -198,6 +200,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       },
     );
 
+    /// 다이얼로그가 닫히면 포커스가 입력 필드로 복귀하는데, 포커스 상태에선
+    /// 결과 박스(isFocused 체크)가 숨겨져 빌드/프리뷰 진행이 보이지 않는다
+    FocusManager.instance.primaryFocus?.unfocus();
     return result ?? false;
   }
 
@@ -664,26 +669,23 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   Widget _buildUtxoPicker(BuildContext context) {
     return Selector<
       UtxoSplitViewModel,
-      ({bool isSelected, String? guideText, CoconutOptionStateEnum optionState, List<UtxoState> selectedUtxoList})
+      ({bool isSelected, String? guideText, CoconutOptionStateEnum optionState, List<UtxoTag> tags})
     >(
       selector:
           (_, vm) => (
             isSelected: vm.isUtxoSelected,
             guideText: vm.getUtxoGuideText(t),
             optionState: vm.utxoOptionState,
-            selectedUtxoList: vm.selectedUtxoList,
+            tags: vm.selectedUtxoTags,
           ),
       builder: (context, data, _) {
         List<Widget> inlineWidgets = [];
         final isSelected = data.isSelected;
         final guideText = data.guideText;
         final optionState = data.optionState;
-        final selectedUtxoList = data.selectedUtxoList;
+        final tags = data.tags;
 
         if (isSelected) {
-          final utxoTagProvider = context.read<UtxoTagProvider>();
-          final tags = utxoTagProvider.getUtxoTagsByUtxoId(widget.id, selectedUtxoList.first.utxoId);
-
           if (tags.isNotEmpty) {
             final firstTag = tags.first;
             final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(firstTag.colorIndex);
@@ -1245,7 +1247,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 walletId: widget.id,
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
-                isSplitMode: true,
+                minimumSelectableUtxoAmount: 1000,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),
@@ -1564,7 +1566,9 @@ class _SplitResultReadyContent extends StatelessWidget {
                 Expanded(
                   child: Text(
                     splitOutputText ?? '-',
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    style: CoconutTypography.body1_16
+                        .setColor(context.coconutColors.primaryText)
+                        .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -1578,7 +1582,12 @@ class _SplitResultReadyContent extends StatelessWidget {
                   t.split_utxo_screen.expected_result.fee,
                   style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                 ),
-                Text(previewFeeText, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+                Text(
+                  previewFeeText,
+                  style: CoconutTypography.body1_16
+                      .setColor(context.coconutColors.primaryText)
+                      .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                ),
               ],
             ),
           ],

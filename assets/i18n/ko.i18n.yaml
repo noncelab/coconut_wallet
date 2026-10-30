@@ -1578,6 +1578,8 @@ split_utxo_screen:
   question_split_evenly: "몇 개로 나눌까요?"
   label_split_method: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}개"
   label_estimated_fee: "예상 수수료"
   add_new_amount: "금액 추가하기"
   and_more_tags: "외 ${count}개"
@@ -1589,6 +1591,7 @@ split_utxo_screen:
     manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
   dust_error: "나누면 작은 금액(dust)이 생겨요"
+  tx_too_large_error: "트랜잭션이 너무 커서 만들 수 없어요. UTXO나 나눌 개수를 줄여주세요"
   method_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
@@ -1602,9 +1605,10 @@ split_utxo_screen:
     fee: "수수료"
     above_is_expected: "위 결과는 예상값이에요."
   big_tx_confirm:
-    create: "생성하기"
-    preview: "예상 보기"
-    description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
+    title: "대용량 트랜잭션"
+    create: "바로 생성"
+    preview: "예상 결과 보기"
+    description: "생성하는 데 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인해 보세요."
 
 label_management_screen:
   title: "메모 관리"

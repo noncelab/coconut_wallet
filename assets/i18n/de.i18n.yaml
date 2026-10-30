@@ -1511,6 +1511,8 @@ split_utxo_screen:
   question_split_evenly: "In wie viele Teile?"
   label_split_method: "Teilungsmethode"
   label_selected_utxo: "Ausgewähltes UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Geschätzte Gebühr"
   add_new_amount: "Betrag hinzufügen"
   and_more_tags: "und ${count} weitere"
@@ -1522,6 +1524,7 @@ split_utxo_screen:
     manual_sum_over_input: "Unzureichender Betrag"
   fee_error: "Die Gebühr ist größer als der UTXO-Betrag"
   dust_error: "Das Teilen erzeugt einen kleinen Betrag (Staub)"
+  tx_too_large_error: "Die Transaktion ist zu groß. Wähle weniger UTXOs oder teile in weniger Beträge"
   method_bottom_sheet:
     title: "Teilungsmethode auswählen"
     split_by_amount: "Nach festem Betrag teilen"
@@ -1535,9 +1538,10 @@ split_utxo_screen:
     fee: "Gebühr"
     above_is_expected: "Das obige Ergebnis ist eine Schätzung"
   big_tx_confirm:
-    create: "Erstellen"
-    preview: "Vorschau"
-    description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+    title: "Große Transaktion"
+    create: "Jetzt erstellen"
+    preview: "Ergebnis ansehen"
+    description: "Die Erstellung kann einige Zeit dauern. Sehen Sie sich zuerst das voraussichtliche Ergebnis an."
 
 label_management_screen:
   title: "Notizen"

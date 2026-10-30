@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -619,6 +620,44 @@ void main() {
       expect(changeAddressZero, isNotNull);
       expect(changeAddressZero!.index, 0);
       expect(changeAddressZero.isChange, isTrue);
+    });
+  });
+
+  group('getWalletAddressList shouldStopGenerating', () {
+    test('shouldStopGenerating가 false면 부족한 주소를 끝까지 생성한다', () async {
+      var checkCount = 0;
+
+      final addresses = await addressRepository.getWalletAddressList(
+        testWalletItem,
+        19,
+        10,
+        false,
+        false,
+        shouldStopGenerating: () {
+          checkCount++;
+          return false;
+        },
+      );
+
+      expect(addresses.map((address) => address.index), List.generate(10, (i) => 20 + i));
+      expect(checkCount, 10);
+    });
+
+    test('생성 도중 shouldStopGenerating가 true가 되면 남은 주소를 생성하지 않고 TaskCancelledException을 던진다', () async {
+      var checkCount = 0;
+
+      await expectLater(
+        addressRepository.getWalletAddressList(
+          testWalletItem,
+          19,
+          10,
+          false,
+          false,
+          shouldStopGenerating: () => ++checkCount > 3,
+        ),
+        throwsA(isA<TaskCancelledException>()),
+      );
+      expect(checkCount, 4);
     });
   });
 }

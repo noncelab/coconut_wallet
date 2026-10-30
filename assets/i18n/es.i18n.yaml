@@ -1563,6 +1563,8 @@ split_utxo_screen:
   question_split_evenly: "¿En cuántas partes?"
   label_split_method: "Criterio de división"
   label_selected_utxo: "UTXO seleccionado"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Comisión estimada"
   add_new_amount: "Añadir monto"
   and_more_tags: "y ${count} más"
@@ -1574,6 +1576,7 @@ split_utxo_screen:
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
+  tx_too_large_error: "La transacción es demasiado grande. Selecciona menos UTXO o divide en menos partes"
   method_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
@@ -1587,9 +1590,10 @@ split_utxo_screen:
     fee: "Comisión"
     above_is_expected: "El resultado anterior es una estimación."
   big_tx_confirm:
-    create: "Crear"
-    preview: "Vista previa"
-    description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
+    title: "Transacción grande"
+    create: "Crear ahora"
+    preview: "Ver estimación"
+    description: "Crearla puede tardar un poco. Revisa primero el resultado estimado."
 
 label_management_screen:
   title: "Notas"

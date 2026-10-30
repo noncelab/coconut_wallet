@@ -22,7 +22,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late final int _walletId;
   bool _isInitialized = false;
   bool _hasLoadError = false;
-  bool isSplitMode = false;
+
+  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
+  int? minimumSelectableUtxoAmount;
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -142,15 +144,20 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void selectAllUtxo() {
     // locked 상태가 아닌 UTXO만 선택
-    setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
+    setSelectedUtxoList(confirmedUtxoList.where(_isSelectable).toList());
   }
+
+  bool isBelowMinimumSelectableAmount(UtxoState utxo) =>
+      minimumSelectableUtxoAmount != null && utxo.amount < minimumSelectableUtxoAmount!;
+
+  bool _isSelectable(UtxoState utxo) => utxo.status != UtxoStatus.locked && !isBelowMinimumSelectableAmount(utxo);
 
   void deselectAllUtxo() {
     _clearUtxoList();
   }
 
   void selectTaggedUtxo() {
-    setSelectedUtxoList(filteredUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
+    setSelectedUtxoList(filteredUtxoList.where(_isSelectable).toList());
   }
 
   void deselectTaggedUtxo() {
@@ -183,23 +190,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
 
-    if (isSplitMode) {
-      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
-        _selectedUtxoList.removeWhere((e) => e.utxoId == utxo.utxoId);
-        _selectedUtxoIdSet.remove(utxo.utxoId);
-      } else {
-        _clearUtxoList();
-        _selectedUtxoList.add(utxo);
-        _selectedUtxoIdSet.add(utxo.utxoId);
-      }
+    if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
+      _selectedUtxoList.remove(utxo);
+      _selectedUtxoIdSet.remove(utxo.utxoId);
     } else {
-      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
-        _selectedUtxoList.remove(utxo);
-        _selectedUtxoIdSet.remove(utxo.utxoId);
-      } else {
-        _selectedUtxoList.add(utxo);
-        _selectedUtxoIdSet.add(utxo.utxoId);
-      }
+      _selectedUtxoList.add(utxo);
+      _selectedUtxoIdSet.add(utxo.utxoId);
     }
     notifyListeners();
   }

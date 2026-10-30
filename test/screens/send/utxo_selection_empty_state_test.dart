@@ -141,7 +141,7 @@ void main() {
               walletId: 7,
               currentUnit: BitcoinUnit.btc,
               selectedUtxoList: selected,
-              isSplitMode: split,
+              minimumSelectableUtxoAmount: split ? 1000 : null,
             ),
           ),
         ),
