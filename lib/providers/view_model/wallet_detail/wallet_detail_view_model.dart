@@ -38,7 +38,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isRefreshing = false;
   BitcoinUnit _currentUnit;
   final Set<WalletDetailSecurityWarningType> _dismissedWarningsThisSession = {};
-  WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
   bool _isDisposed = false;
 
   WalletDetailViewModel(
@@ -220,13 +219,10 @@ class WalletDetailViewModel extends ChangeNotifier {
         DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
   }
 
-  bool shouldUseShortWarningDelay(WalletDetailSecurityWarningType type) => _nextWarningAfterDismissal == type;
-
-  Future<void> dismissSecurityWarning(WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
+  Future<void> dismissSecurityWarning(WalletDetailSecurityWarningType type) async {
     _dismissedWarningsThisSession.add(type);
     await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
     if (_isDisposed) return;
-    _nextWarningAfterDismissal = showNextWarning ? WalletDetailSecurityWarningType.appLock : null;
     notifyListeners();
   }
 

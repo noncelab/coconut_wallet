@@ -288,13 +288,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
           warning == WalletDetailSecurityWarningType.unbackedHotWallet ? _onBackupBannerTapped : _openAppLockSettings,
       onClosed: () {
         if (warning == null) return;
-        detail.dismissSecurityWarning(
-          warning,
-          showNextWarning:
-              warning == WalletDetailSecurityWarningType.unbackedHotWallet &&
-              !isAppLockEnabled &&
-              detail.canShowSecurityWarning(WalletDetailSecurityWarningType.appLock),
-        );
+        detail.dismissSecurityWarning(warning);
       },
     );
   }

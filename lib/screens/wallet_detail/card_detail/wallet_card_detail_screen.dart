@@ -809,13 +809,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                     : _openAppLockSettings,
             onClosed: () {
               if (warning == null) return;
-              detail.dismissSecurityWarning(
-                warning,
-                showNextWarning:
-                    warning == WalletDetailSecurityWarningType.unbackedHotWallet &&
-                    !isAppLockEnabled &&
-                    detail.canShowSecurityWarning(WalletDetailSecurityWarningType.appLock),
-              );
+              detail.dismissSecurityWarning(warning);
             },
           ),
     );
