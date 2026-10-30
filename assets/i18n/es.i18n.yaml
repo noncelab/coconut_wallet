@@ -520,6 +520,7 @@ pin_check_screen:
   time_minute: " min"
   time_second: " s"
   authentication_unavailable: "No se puede acceder a los datos de autenticación. Vuelve a abrir esta pantalla e inténtalo de nuevo."
+  startup_authentication_unavailable: "No se puede iniciar la aplicación porque no se ha podido acceder a los datos de autenticación. Inténtalo de nuevo en unos instantes."
   authentication_busy: "La autenticación está en curso. Vuelve a intentarlo en unos instantes."
   text: "Introduce tu contraseña"
 

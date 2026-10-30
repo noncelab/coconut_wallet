@@ -519,6 +519,7 @@ pin_check_screen:
   time_minute: "분"
   time_second: "초"
   authentication_unavailable: "인증 정보를 확인할 수 없어요. 잠시 후 다시 화면을 열어 주세요."
+  startup_authentication_unavailable: "인증 정보를 확인할 수 없어 앱을 시작하지 못했어요. 잠시 후 다시 시도해 주세요."
   authentication_busy: "인증이 진행 중이에요. 잠시 후 다시 시도해 주세요."
   text: "비밀번호를 눌러주세요"
 

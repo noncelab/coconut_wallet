@@ -518,6 +518,7 @@ pin_check_screen:
   time_minute: "分"
   time_second: "秒"
   authentication_unavailable: "認証情報を確認できません。しばらくしてから画面を開き直してください。"
+  startup_authentication_unavailable: "認証情報を確認できないため、アプリを起動できません。しばらくしてからもう一度お試しください。"
   authentication_busy: "認証中です。しばらくしてから再試行してください。"
   text: "パスワードを入力してください"
 

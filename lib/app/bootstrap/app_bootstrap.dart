@@ -28,8 +28,10 @@ class AppBootstrap {
     Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
     await recoverPendingReset();
-    await restorePinMetadata();
     _applyPersistedTheme();
+    applyPersistedLocale();
+    setupPluralResolvers();
+    await restorePinMetadata();
 
     await configureSystemUi();
 
@@ -38,8 +40,6 @@ class AppBootstrap {
     await ElectrumServerProvider().migrateLegacyCustomServerStorage();
     await _initializeFirebase();
     await deleteLegacyDebugLog();
-    applyPersistedLocale();
-    setupPluralResolvers();
   }
 
   /// 앱 화면과 인증 메타데이터를 복구하기 전에 승인된 초기화를 마무리합니다.
@@ -69,7 +69,8 @@ class AppBootstrap {
   }
 
   /// PIN 저장 후 SharedPreferences 메타데이터 갱신 전에 작업이 중단되어도
-  /// Secure Storage를 기준으로 설정을 복구합니다. 오류 발생 시 앱 잠금을 유지합니다.
+  /// Secure Storage를 기준으로 설정을 복구합니다.
+  /// 읽기 실패 시 기존 설정을 보존하고, 앱 시작을 중단해 재시도하도록 오류를 전달합니다.
   static Future<void> restorePinMetadata({PinAuthService? pinAuth}) async {
     final prefs = SharedPrefsRepository();
     // 신규 설치에서는 남아 있는 iOS Keychain 데이터를 정리하는 기존 온보딩을 유지합니다.
@@ -86,8 +87,8 @@ class AppBootstrap {
         if (configuration.length != null) await prefs.setInt(SharedPrefKeys.kPinLength, configuration.length!);
       }
     } on PinAuthException {
-      await prefs.setBool(SharedPrefKeys.kIsSetPin, true);
       Logger.warning('AUTH_STORAGE_UNAVAILABLE');
+      rethrow;
     }
   }
 

@@ -519,6 +519,7 @@ pin_check_screen:
   time_minute: "min"
   time_second: "sec"
   authentication_unavailable: "Unable to access authentication data. Reopen this screen and try again."
+  startup_authentication_unavailable: "Unable to start the app because authentication data could not be accessed. Please try again shortly."
   authentication_busy: "Authentication is in progress. Please try again shortly."
   text: "Enter your password"
 
