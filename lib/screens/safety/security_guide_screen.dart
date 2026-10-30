@@ -221,8 +221,8 @@ class _Step2 extends StatelessWidget {
               strings.task_utxo_body,
               () => Navigator.pushNamed(
                 context,
-                AppRouteNames.utxoList,
-                arguments: UtxoListRouteArgs(id: guide.walletId),
+                AppRouteNames.utxoOverview,
+                arguments: UtxoOverviewRouteArgs(id: guide.walletId),
               ),
             ),
             _task(

@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final before = _viewModel.configuration;
     final presetApplied = await Navigator.of(context).push<HomePresetApplied>(
       CupertinoPageRoute(
-        settings: const RouteSettings(name: '/home-edit'),
+        settings: const RouteSettings(name: HomeEditScreen.routeName),
         builder:
             (_) => MultiProvider(
               providers: [

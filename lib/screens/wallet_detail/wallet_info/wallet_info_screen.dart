@@ -59,6 +59,7 @@ import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
+import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/multisig_setup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_setup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_spend_type_bottom_sheet.dart';
@@ -69,13 +70,9 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
-const String kEntryPointWalletList = AppRouteNames.walletList;
-const String kEntryPointWalletHome = '/wallet-home';
-
 class WalletInfoScreen extends StatefulWidget {
   final int id;
   final WalletType walletType;
-  final String entryPoint;
   final bool showMfpInput;
   final bool highlightMnemonicBackup;
   final bool showTargetSetting;
@@ -84,7 +81,6 @@ class WalletInfoScreen extends StatefulWidget {
     super.key,
     required this.id,
     required this.walletType,
-    required this.entryPoint,
     this.showMfpInput = false,
     this.highlightMnemonicBackup = false,
     this.showTargetSetting = false,
@@ -904,11 +900,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       _setOverlayLoading(false);
 
       if (mounted) {
-        if (widget.entryPoint == kEntryPointWalletHome) {
-          navigator.pushNamedAndRemoveUntil('/', (route) => false);
-        } else {
-          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
-        }
+        navigator.popUntil(
+          (route) => route.isFirst || (route.settings.name?.endsWith(WalletStackListScreen.routeNameSuffix) ?? false),
+        );
       }
     } catch (e) {
       debugPrint('Delete wallet failed: $e');

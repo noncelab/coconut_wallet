@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 
 /// 프리셋을 적용했을 때의 홈을 실제 홈 그리드로 보여 준다. [홈에 적용]을 누르면 true로 닫힌다.
 class HomePresetPreviewScreen extends StatelessWidget {
+  static String routeNameOf(HomePreset preset) => '/home-preset-preview/${preset.id}';
+
   /// 마지막 위젯이 [홈에 적용] 버튼과 그 뒤 그라데이션에 가리지 않도록 남기는 아래 여백
   static const bottomSpace = 120.0;
 
@@ -24,7 +26,7 @@ class HomePresetPreviewScreen extends StatelessWidget {
     final widgetsViewModel = context.read<HomeWidgetsViewModel?>();
     final applied = await Navigator.of(context).push<bool>(
       CupertinoPageRoute(
-        settings: RouteSettings(name: '/home-preset-preview/${preset.id}'),
+        settings: RouteSettings(name: routeNameOf(preset)),
         builder:
             (_) => MultiProvider(
               providers: [
