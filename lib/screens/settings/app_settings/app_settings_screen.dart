@@ -10,6 +10,8 @@ import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAp
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/analytics_collection_setting.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/settings_switch.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -250,7 +252,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         AppSettingsTarget.pin,
                         SingleButton(
                           title: t.settings_screen.set_password,
-                          rightElement: _buildSwitch(
+                          rightElement: SettingsSwitch(
                             isOn: viewModel.isSetPin,
                             onChanged: (isOn) async {
                               if (isOn) {
@@ -268,7 +270,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           AppSettingsTarget.biometrics,
                           SingleButton(
                             title: t.settings_screen.use_biometric,
-                            rightElement: _buildSwitch(
+                            rightElement: SettingsSwitch(
                               isOn: viewModel.isSetBiometrics,
                               onChanged: (isOn) async {
                                 if (isOn) {
@@ -441,7 +443,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           title: t.settings_screen.utxo_manual_selection,
                           subtitle: t.settings_screen.utxo_manual_selection_description,
                           isVerticalSubtitle: true,
-                          rightElement: _buildSwitch(
+                          rightElement: SettingsSwitch(
                             isOn: viewModel.isManualUtxoSelectionMode,
                             onChanged: (isOn) async {
                               viewModel.setManualUtxoSelectionMode(isOn);
@@ -478,9 +480,14 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
                   // 앱 정보 보기
                   _category(t.app_info),
-                  _buildAnimatedButton(
-                    title: t.view_app_info,
-                    onPressed: () => Navigator.pushNamed(context, AppRouteNames.appInfo),
+                  ButtonGroup(
+                    buttons: [
+                      _buildAnimatedButton(
+                        title: t.view_app_info,
+                        onPressed: () => Navigator.pushNamed(context, AppRouteNames.appInfo),
+                      ),
+                      const AnalyticsCollectionSetting(),
+                    ],
                   ),
 
                   const SizedBox(height: 100),
@@ -489,21 +496,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildSwitch({required bool isOn, required Function(bool) onChanged}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: CoconutSwitch(
-        isOn: isOn,
-        activeTrackColor: context.coconutColors.switchActiveTrack,
-        activeThumbColor: context.coconutColors.switchActiveThumb,
-        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-        onChanged: onChanged,
-        scale: 0.75,
       ),
     );
   }

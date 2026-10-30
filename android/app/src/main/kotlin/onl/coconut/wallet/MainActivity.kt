@@ -6,13 +6,23 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterShellArgs
+import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister
+import io.flutter.plugins.firebase.analytics.FlutterFirebaseAnalyticsPlugin
+import com.google.firebase.FirebaseApp
+import com.google.firebase.analytics.FirebaseAnalytics
 import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import java.lang.ref.WeakReference
 
 class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "onl.coconut.wallet/os"
@@ -21,6 +31,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL_BITBOX02 = "bitbox02"
     private val CHANNEL_DEVICE_DEK = "onl.coconut.wallet/device-dek"
     private var osChannel: MethodChannel? = null
+    private var analyticsChannelGeneration = 0
     private var pendingBitcoinUri: String? = null
     private var bitbox02Handler: Bitbox02MethodHandler? = null
     private var trezorHandler: TrezorMethodHandler? = null
@@ -29,13 +40,86 @@ class MainActivity : FlutterFragmentActivity() {
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
     private val MAIN_ACTIVITY = "onl.coconut.wallet.MainActivity"
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // super.onCreate가 수명주기를 SDK에 넘기기 전이다. SDK 22.5.0은 수집 설정과 수명주기를 한 FIFO 큐로 처리한다.
+        AnalyticsProcessState.applySavedRefusal(
+            AnalyticsComponentGate.savedCollectionEnabled(this),
+            ::defaultFirebaseAppExists,
+            ::disableNativeCollection,
+        )?.let { Log.e("AnalyticsConsentGate", "Saved refusal not reapplied: ${it.javaClass.simpleName}") }
+        super.onCreate(savedInstanceState)
+    }
+
+    private fun defaultFirebaseAppExists(): Boolean =
+        FirebaseApp.getApps(applicationContext).any { it.name == FirebaseApp.DEFAULT_APP_NAME }
+
+    private fun disableNativeCollection() {
+        FirebaseAnalytics.getInstance(applicationContext).setAnalyticsCollectionEnabled(false)
+    }
+
+    override fun provideFlutterEngine(context: Context): FlutterEngine? {
+        return if (!AnalyticsComponentGate.savedCollectionEnabled(context)) {
+            AnalyticsGatedFlutterEngine(context, FlutterShellArgs.fromIntent(intent).toArray())
+        } else {
+            null
+        }
+    }
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        if (flutterEngine is AnalyticsGatedFlutterEngine) {
+            // 제공한 엔진에는 기본 Activity가 자동 등록하지 않는다. 생성된 목록을 필터를 통해 등록한다.
+            GeneratedPluginRegister.registerGeneratedPlugins(flutterEngine)
+            if (flutterEngine.plugins.has(FlutterFirebaseAnalyticsPlugin::class.java)) {
+                // 사후 감지는 이미 일어난 SDK 초기화를 되돌리지 않는다. Flutter 변경 시 실제 no-init 검증이 필요하다.
+                Log.e("AnalyticsConsentGate", "Analytics plugin attached before saved consent; recheck Flutter registration")
+            }
+        } else if (flutterEngine.plugins.has(FlutterFirebaseAnalyticsPlugin::class.java)) {
+            AnalyticsProcessState.measurementTouched = true
+        }
         osChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        analyticsChannelGeneration++
         pendingBitcoinUri = extractBitcoinUri(intent)
 
         osChannel?.setMethodCallHandler { call, result ->
-            if (call.method == "getPlatformVersion") {
+            if (call.method == "setAnalyticsComponentsEnabled") {
+                val enabled = call.arguments as? Boolean
+                if (enabled == null) {
+                    result.error("INVALID_ARGUMENT", "Expected a boolean", null)
+                } else {
+                    val hostReference = WeakReference(this)
+                    val channel = osChannel
+                    val generation = analyticsChannelGeneration
+                    AnalyticsComponentGate.applyAsync(applicationContext, enabled) { error ->
+                        Handler(Looper.getMainLooper()).post {
+                            val host = hostReference.get()
+                            if (host != null && !host.isDestroyed && host.osChannel === channel &&
+                                host.analyticsChannelGeneration == generation) {
+                                if (error == null) result.success(null)
+                                else result.error("ANALYTICS_COMPONENTS_FAILED", error.javaClass.simpleName, null)
+                            }
+                        }
+                    }
+                }
+            } else if (call.method == "attachAnalytics") {
+                try {
+                    if (flutterEngine is AnalyticsGatedFlutterEngine) flutterEngine.attachAnalytics()
+                    result.success(null)
+                } catch (e: Exception) {
+                    result.error("ANALYTICS_ATTACH_FAILED", e.javaClass.simpleName, null)
+                }
+            } else if (call.method == "disableAnalyticsIfActive") {
+                try {
+                    AnalyticsProcessState.disableIfActive(
+                        flutterEngine.plugins.has(FlutterFirebaseAnalyticsPlugin::class.java),
+                        ::defaultFirebaseAppExists,
+                        ::disableNativeCollection,
+                    )
+                    result.success(null)
+                } catch (e: Exception) {
+                    result.error("ANALYTICS_DISABLE_FAILED", e.javaClass.simpleName, null)
+                }
+            } else if (call.method == "getPlatformVersion") {
                 val version = Build.VERSION.RELEASE
                 result.success(version)
             } else if(call.method == "getSdkVersion"){
@@ -185,6 +269,9 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     override fun onDestroy() {
+        analyticsChannelGeneration++
+        osChannel?.setMethodCallHandler(null)
+        osChannel = null
         trezorHandler?.dispose()
         trezorHandler = null
         super.onDestroy()

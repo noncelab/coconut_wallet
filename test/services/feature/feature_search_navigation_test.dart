@@ -127,36 +127,39 @@ void main() {
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
           Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
         ],
-        child: MaterialApp(
-          navigatorKey: navigator,
-          theme: buildCoconutThemeData(variant: variant),
-          builder: capture ? (_, child) => RepaintBoundary(key: captureKey, child: child!) : null,
-          onGenerateRoute: (settings) {
-            routes.add(settings);
-            return MaterialPageRoute<void>(
-              settings: settings,
-              builder: (_) => const Scaffold(body: Text('Destination')),
-            );
-          },
-          home: Builder(
-            builder:
-                (context) => Scaffold(
-                  body: AllFeaturesScreen(
-                    registry: FeatureRegistry.builtin(),
-                    isAvailable: (item) => item.isAvailable?.call(context) ?? true,
-                    saveRecentIds: (ids) => recents = ids,
-                    onLaunch:
-                        (context, item) => unawaited(
-                          FeatureLauncher(
-                            wallets: () => wallets,
-                            pickWallet: (_, candidates) async {
-                              choices.add(candidates);
-                              return selectedWallet;
-                            },
-                          ).launch(context, item),
-                        ),
+        // 앱 루트(app.dart)처럼 감싼다. 설정 화면의 익명 통계 행은 언어 변경을 context.t로 따른다.
+        child: TranslationProvider(
+          child: MaterialApp(
+            navigatorKey: navigator,
+            theme: buildCoconutThemeData(variant: variant),
+            builder: capture ? (_, child) => RepaintBoundary(key: captureKey, child: child!) : null,
+            onGenerateRoute: (settings) {
+              routes.add(settings);
+              return MaterialPageRoute<void>(
+                settings: settings,
+                builder: (_) => const Scaffold(body: Text('Destination')),
+              );
+            },
+            home: Builder(
+              builder:
+                  (context) => Scaffold(
+                    body: AllFeaturesScreen(
+                      registry: FeatureRegistry.builtin(),
+                      isAvailable: (item) => item.isAvailable?.call(context) ?? true,
+                      saveRecentIds: (ids) => recents = ids,
+                      onLaunch:
+                          (context, item) => unawaited(
+                            FeatureLauncher(
+                              wallets: () => wallets,
+                              pickWallet: (_, candidates) async {
+                                choices.add(candidates);
+                                return selectedWallet;
+                              },
+                            ).launch(context, item),
+                          ),
+                    ),
                   ),
-                ),
+            ),
           ),
         ),
       ),

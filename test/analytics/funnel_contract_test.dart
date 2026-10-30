@@ -10,10 +10,12 @@ import 'package:coconut_wallet/analytics/external_link_analytics.dart';
 import 'package:coconut_wallet/analytics/analytics_value_formatter.dart';
 import 'package:coconut_wallet/analytics/user_cohort_analytics.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Sink extends Fake implements FirebaseAnalytics {
   final calls = <Invocation>[];
@@ -37,9 +39,11 @@ void main() {
       buildSignature: '',
     );
     NetworkType.setNetworkType(NetworkType.regtest);
+    SharedPreferences.setMockInitialValues({});
+    await SharedPrefsRepository().init();
     sink = Sink();
     service = AnalyticsService(sink, false);
-    await Future<void>.delayed(Duration.zero);
+    await service.initialize();
     sink.calls.clear();
   });
   Future<void> check(void Function() emit, String event, Map<String, Object> expected) async {
