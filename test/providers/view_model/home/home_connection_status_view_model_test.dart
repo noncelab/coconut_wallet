@@ -135,6 +135,7 @@ void main() {
   late _Node node;
   late _Connectivity connectivity;
   late StreamController<NodeSyncState> sync;
+  late ValueNotifier<List<WalletItemBase>> walletItems;
 
   void notifyNode() {
     for (final listener in List<VoidCallback>.of(node.listeners)) {
@@ -143,7 +144,7 @@ void main() {
   }
 
   HomeConnectionStatusViewModel createViewModel() {
-    final viewModel = HomeConnectionStatusViewModel(connectivity, node);
+    final viewModel = HomeConnectionStatusViewModel(connectivity, node, walletItems);
     addTearDown(viewModel.dispose);
     return viewModel;
   }
@@ -155,6 +156,7 @@ void main() {
     connectivity = _Connectivity();
     sync = StreamController<NodeSyncState>.broadcast(sync: true);
     node.syncStream = sync.stream;
+    walletItems = ValueNotifier([_WalletItem()]);
   });
 
   tearDown(() {
@@ -162,6 +164,7 @@ void main() {
     node.block.dispose();
     wallet.loadState.dispose();
     wallet.blockHeight.dispose();
+    walletItems.dispose();
   });
 
   test('처음부터 연결되면 성공 문구를 켜지 않는다', () {
@@ -188,7 +191,7 @@ void main() {
     );
     connectivity.internetOn = true;
     await realNode.initialize();
-    final viewModel = HomeConnectionStatusViewModel(connectivity, realNode);
+    final viewModel = HomeConnectionStatusViewModel(connectivity, realNode, wallets);
     try {
       await tester.pump();
       isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
@@ -456,5 +459,32 @@ void main() {
     sync.add(NodeSyncState.syncing);
 
     expect(viewModel.isSyncing, isFalse);
+  });
+
+  test('지갑이 없으면 동기화 중이거나 첫 연결 실패를 기다리는 동안에도 동기화 표시를 켜지 않는다', () {
+    walletItems.value = [];
+    final viewModel = createViewModel();
+    sync.add(NodeSyncState.syncing);
+    expect(viewModel.isSyncing, isFalse);
+
+    sync.add(NodeSyncState.failed);
+    expect(viewModel.networkStatus, NetworkStatus.online);
+    expect(viewModel.isSyncing, isFalse);
+  });
+
+  testWidgets('첫 화면 진입 전에 생긴 연결 오류도 5초 뒤 알림을 보내 오류로 바꾼다', (tester) async {
+    node.connectionError = true;
+    node.currentSyncState = NodeSyncState.failed;
+    sync.add(NodeSyncState.failed);
+    final viewModel = createViewModel();
+    var notified = false;
+    viewModel.addListener(() => notified = true);
+    sync.add(NodeSyncState.failed);
+    expect(viewModel.isSyncing, isTrue);
+
+    await tester.pump(kHomeErrorDisplayDelayDuration);
+    expect(notified, isTrue);
+    expect(viewModel.isSyncing, isFalse);
+    expect(viewModel.networkStatus, NetworkStatus.connectionFailed);
   });
 }

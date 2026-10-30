@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -12,27 +13,35 @@ const kHomeReconnectedNoticeDuration = Duration(seconds: 2);
 class HomeConnectionStatusViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;
+  final ValueListenable<List<WalletItemBase>> _walletItemListNotifier;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   bool _isFirstLoaded = false;
-  DateTime? _failedFromSyncingOrInitAt;
   Timer? _errorDisplayDelayTimer;
-  final DateTime _createdAt = DateTime.now();
+  Timer? _initialErrorDisplayDelayTimer;
   bool _sawDisconnect = false;
   bool _showReconnected = false;
   bool _recoveryInterrupted = false;
   Timer? _reconnectedTimer;
 
-  HomeConnectionStatusViewModel(this._connectivityProvider, this._nodeProvider) {
+  HomeConnectionStatusViewModel(this._connectivityProvider, this._nodeProvider, this._walletItemListNotifier) {
+    _initialErrorDisplayDelayTimer = Timer(kHomeErrorDisplayDelayDuration, () {
+      _initialErrorDisplayDelayTimer = null;
+      _refreshElectrumRecoveryNotice();
+      notifyListeners();
+    });
     _syncNodeStateSubscription = _nodeProvider.syncStateStream.listen(_handleNodeSyncState);
     _nodeProvider.addListener(_onNodeProviderChanged);
     _connectivityProvider.addListener(_onConnectivityChanged);
+    _walletItemListNotifier.addListener(notifyListeners);
   }
 
   bool get showElectrumReconnected => _showReconnected;
 
-  bool get isSyncing => (!_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing) || _isInErrorDisplayDelay;
+  bool get isSyncing =>
+      _walletItemListNotifier.value.isNotEmpty &&
+      ((!_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing) || _isInErrorDisplayDelay);
 
   NetworkStatus get networkStatus {
     if (_connectivityProvider.isInternetOff && _connectivityProvider.isVpnInactive) {
@@ -63,25 +72,16 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     return NetworkStatus.online;
   }
 
-  bool get _isInErrorDisplayDelay {
-    if (!_isFirstLoaded && (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError)) {
-      final now = DateTime.now();
-      if (_failedFromSyncingOrInitAt != null &&
-          now.difference(_failedFromSyncingOrInitAt!) < kHomeErrorDisplayDelayDuration) {
-        return true;
-      }
-      if (now.difference(_createdAt) < kHomeErrorDisplayDelayDuration) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool get _isInErrorDisplayDelay =>
+      !_isFirstLoaded &&
+      (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) &&
+      (_errorDisplayDelayTimer != null || _initialErrorDisplayDelayTimer != null);
 
   void _onNodeProviderChanged() {
     if (_nodeProvider.hasConnectionError &&
         (_nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.init) &&
         !_isFirstLoaded &&
-        _failedFromSyncingOrInitAt == null) {
+        _errorDisplayDelayTimer == null) {
       _startErrorDisplayDelay();
     }
     _refreshElectrumRecoveryNotice();
@@ -94,7 +94,6 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   }
 
   void _startErrorDisplayDelay() {
-    _failedFromSyncingOrInitAt = DateTime.now();
     _errorDisplayDelayTimer?.cancel();
     _errorDisplayDelayTimer = Timer(kHomeErrorDisplayDelayDuration, () {
       _clearErrorDisplayDelay();
@@ -106,7 +105,6 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   void _clearErrorDisplayDelay() {
     _errorDisplayDelayTimer?.cancel();
     _errorDisplayDelayTimer = null;
-    _failedFromSyncingOrInitAt = null;
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
@@ -117,6 +115,8 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     if (syncState == NodeSyncState.completed) {
       _isFirstLoaded = true;
       _clearErrorDisplayDelay();
+      _initialErrorDisplayDelayTimer?.cancel();
+      _initialErrorDisplayDelayTimer = null;
     } else if (syncState == NodeSyncState.failed) {
       final wasSyncingOrInit = _nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.init;
       if (wasSyncingOrInit) {
@@ -169,8 +169,10 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _errorDisplayDelayTimer?.cancel();
+    _initialErrorDisplayDelayTimer?.cancel();
     _reconnectedTimer?.cancel();
     _syncNodeStateSubscription?.cancel();
+    _walletItemListNotifier.removeListener(notifyListeners);
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _nodeProvider.removeListener(_onNodeProviderChanged);
     super.dispose();

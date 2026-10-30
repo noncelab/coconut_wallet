@@ -272,8 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ChangeNotifierProvider.value(value: _widgetsViewModel),
         ChangeNotifierProvider(
           create:
-              (context) =>
-                  HomeConnectionStatusViewModel(context.read<ConnectivityProvider>(), context.read<NodeProvider>()),
+              (context) => HomeConnectionStatusViewModel(
+                context.read<ConnectivityProvider>(),
+                context.read<NodeProvider>(),
+                context.read<WalletProvider>().walletItemListNotifier,
+              ),
         ),
       ],
       child: CupertinoPageScaffold(
