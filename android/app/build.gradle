@@ -79,6 +79,7 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+        test.java.srcDirs += 'src/test/kotlin'
     }
 
     defaultConfig {
@@ -142,13 +143,35 @@ configurations {
     }
 }
 
+// FlutterFire의 implementation 뒤에 숨은 기존 SDK를 네이티브 수집 거부 bridge의 컴파일에만 노출한다.
+// 런타임은 기존 FlutterFire 의존성을 그대로 사용한다. SDK 변경 시 이 버전과 no-init 동작을 함께 검증한다.
+def analyticsCompileOnlyPins = [
+    'com.google.firebase:firebase-common': '21.0.0',
+    'com.google.android.gms:play-services-measurement-api': '22.5.0',
+]
+
 dependencies {
-    // FlutterFire의 implementation 뒤에 숨은 기존 SDK를 네이티브 수집 거부 bridge의 컴파일에만 노출한다.
-    // 런타임은 기존 FlutterFire 의존성을 그대로 사용한다. SDK 변경 시 이 버전과 no-init 동작을 함께 검증한다.
-    compileOnly("com.google.firebase:firebase-common:21.0.0") { transitive = false }
-    compileOnly("com.google.android.gms:play-services-measurement-api:22.5.0") { transitive = false }
+    analyticsCompileOnlyPins.each { module, version -> compileOnly("$module:$version") { transitive = false } }
     implementation "androidx.core:core-splashscreen:1.0.0"
     implementation "androidx.biometric:biometric:1.1.0"
     implementation(name: 'bitboxbridge', ext: 'aar')
     implementation "net.java.dev.jna:jna:5.17.0@aar"
+    testImplementation "junit:junit:4.13.2"
+}
+
+// FlutterFire·BoM 업그레이드로 런타임 SDK가 고정 버전과 어긋나면 빌드를 멈춘다. docs/analytics-android-upgrade.md 참고.
+android.applicationVariants.configureEach { variant ->
+    def runtime = variant.runtimeConfiguration
+    variant.preBuildProvider.configure {
+        doFirst {
+            def resolved = runtime.incoming.resolutionResult.allComponents.findAll { it.moduleVersion }.collectEntries {
+                [("${it.moduleVersion.group}:${it.moduleVersion.name}".toString()): it.moduleVersion.version]
+            }
+            analyticsCompileOnlyPins.each { module, version ->
+                if (resolved[module] != version) {
+                    throw new GradleException("${variant.name}: runtime $module ${resolved[module]} != compileOnly $version")
+                }
+            }
+        }
+    }
 }

@@ -6,6 +6,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -38,6 +39,23 @@ class MainActivity : FlutterFragmentActivity() {
     // Activity Alias 이름 (AndroidManifest.xml과 일치해야 함)
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
     private val MAIN_ACTIVITY = "onl.coconut.wallet.MainActivity"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // super.onCreate가 수명주기를 SDK에 넘기기 전이다. SDK 22.5.0은 수집 설정과 수명주기를 한 FIFO 큐로 처리한다.
+        AnalyticsProcessState.applySavedRefusal(
+            AnalyticsComponentGate.savedCollectionEnabled(this),
+            ::defaultFirebaseAppExists,
+            ::disableNativeCollection,
+        )?.let { Log.e("AnalyticsConsentGate", "Saved refusal not reapplied: ${it.javaClass.simpleName}") }
+        super.onCreate(savedInstanceState)
+    }
+
+    private fun defaultFirebaseAppExists(): Boolean =
+        FirebaseApp.getApps(applicationContext).any { it.name == FirebaseApp.DEFAULT_APP_NAME }
+
+    private fun disableNativeCollection() {
+        FirebaseAnalytics.getInstance(applicationContext).setAnalyticsCollectionEnabled(false)
+    }
 
     override fun provideFlutterEngine(context: Context): FlutterEngine? {
         return if (!AnalyticsComponentGate.savedCollectionEnabled(context)) {
@@ -92,13 +110,11 @@ class MainActivity : FlutterFragmentActivity() {
                 }
             } else if (call.method == "disableAnalyticsIfActive") {
                 try {
-                    val active = AnalyticsProcessState.measurementTouched ||
-                        flutterEngine.plugins.has(FlutterFirebaseAnalyticsPlugin::class.java) ||
-                        FirebaseApp.getApps(applicationContext).any { it.name == FirebaseApp.DEFAULT_APP_NAME }
-                    if (active) {
-                        AnalyticsProcessState.measurementTouched = true
-                        FirebaseAnalytics.getInstance(applicationContext).setAnalyticsCollectionEnabled(false)
-                    }
+                    AnalyticsProcessState.disableIfActive(
+                        flutterEngine.plugins.has(FlutterFirebaseAnalyticsPlugin::class.java),
+                        ::defaultFirebaseAppExists,
+                        ::disableNativeCollection,
+                    )
                     result.success(null)
                 } catch (e: Exception) {
                     result.error("ANALYTICS_DISABLE_FAILED", e.javaClass.simpleName, null)

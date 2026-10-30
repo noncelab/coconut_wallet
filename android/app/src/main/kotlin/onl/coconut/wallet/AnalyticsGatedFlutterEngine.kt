@@ -12,6 +12,24 @@ internal object AnalyticsProcessState {
 
     @Volatile
     var componentGateResult: AnalyticsComponentGateResult? = null
+
+    /** 이 프로세스에서 이미 시작된 SDK에만 수집 OFF를 적용한다. 감지 자체는 SDK를 시작하지 않는다. */
+    fun disableIfActive(attached: Boolean, defaultAppExists: () -> Boolean, disable: () -> Unit) {
+        if (!measurementTouched && !attached && !defaultAppExists()) return
+        measurementTouched = true
+        disable()
+    }
+
+    /** 새 Activity의 수명주기가 기존 SDK에 전달되기 전에 저장된 OFF를 다시 적용한다. 일반 오류는 Dart 재시도에 맡긴다. */
+    fun applySavedRefusal(savedEnabled: Boolean, defaultAppExists: () -> Boolean, disable: () -> Unit): Exception? {
+        if (savedEnabled) return null
+        return try {
+            disableIfActive(false, defaultAppExists, disable)
+            null
+        } catch (error: Exception) {
+            error
+        }
+    }
 }
 
 internal class AnalyticsGatedFlutterEngine(context: Context, shellArgs: Array<String>) :
