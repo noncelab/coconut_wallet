@@ -489,6 +489,44 @@ void main() {
     expect(nativeStartup, contains('"flutter.${SharedPrefKeys.kAnalyticsCollectionEnabled}"'));
   });
 
+  for (final malformed in <Object>['false', 0]) {
+    test('malformed analytics preference $malformed keeps the existing neutral initialization error', () async {
+      SharedPreferences.setMockInitialValues({SharedPrefKeys.kAnalyticsCollectionEnabled: malformed});
+      await repository.init();
+      final subject = service();
+
+      await subject.initialize();
+
+      expect(subject.canCollect, isFalse);
+      expect(subject.collectionStatusListenable.value.hasError, isTrue);
+      expect(subject.collectionStatusListenable.value.disablePending, isFalse);
+      verifyNever(analytics.setAnalyticsCollectionEnabled(true));
+    });
+  }
+
+  test('Android native analytics gate shares the app preference and deferred methods', () {
+    final nativeStartup = File('android/app/src/main/kotlin/onl/coconut/wallet/MainActivity.kt').readAsStringSync();
+    final componentGate =
+        File('android/app/src/main/kotlin/onl/coconut/wallet/AnalyticsComponentGate.kt').readAsStringSync();
+    final application = File('android/app/src/main/kotlin/onl/coconut/wallet/CoconutApplication.kt').readAsStringSync();
+    expect(componentGate, contains('"flutter.${SharedPrefKeys.kAnalyticsCollectionEnabled}"'));
+    expect(componentGate, contains('"FlutterSharedPreferences"'));
+    expect(nativeStartup, contains('AnalyticsComponentGate.savedCollectionEnabled(context)'));
+    expect(application, contains('AnalyticsComponentGate.savedCollectionEnabled(this)'));
+    expect(application, contains('AnalyticsComponentGate.applyBeforeStartup'));
+    expect(nativeStartup, contains('"attachAnalytics"'));
+    expect(nativeStartup, contains('"disableAnalyticsIfActive"'));
+    expect(nativeStartup, contains('"setAnalyticsComponentsEnabled"'));
+    for (final name in ['AppMeasurementReceiver', 'AppMeasurementService', 'AppMeasurementJobService']) {
+      expect(componentGate, contains('"com.google.android.gms.measurement.$name"'));
+    }
+    for (final variant in ['main', 'regtest']) {
+      final manifest = File('android/app/src/$variant/AndroidManifest.xml').readAsStringSync();
+      expect(manifest, contains('android:name="onl.coconut.wallet.CoconutApplication"'));
+      expect(manifest, isNot(contains(r'${applicationName}')));
+    }
+  });
+
   test('concurrent toggles are rejected while an update is in progress', () async {
     final subject = service();
     await subject.initialize();

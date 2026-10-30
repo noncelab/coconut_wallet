@@ -12,9 +12,21 @@ part 'model/request/analytics_request_types.dart';
 
 typedef AnalyticsCollectionStatus = ({bool isUpdating, bool disablePending, bool hasError});
 
+/// Android의 백엔드 연결은 서비스 초기화가 소유한다. 저장된 OFF는 명시적 ON까지 연결을 미룬다.
+/// 연결 도중 실패해 Dart 객체가 없어도 이미 시작된 네이티브 SDK는 안전하게 끌 수 있어야 한다.
+class DeferredAnalyticsBackend {
+  const DeferredAnalyticsBackend({required this.activate, required this.disableIfActive});
+
+  final Future<FirebaseAnalytics> Function() activate;
+  final Future<void> Function() disableIfActive;
+}
+
 /// Firebase Analytics
 class AnalyticsService {
-  final FirebaseAnalytics? _analytics;
+  FirebaseAnalytics? _analytics;
+  final DeferredAnalyticsBackend? _deferredBackend;
+  final Future<void> Function(bool)? _setComponentsEnabled;
+  bool _deferredMayNeedDisable = false;
   final SharedPrefsRepository _sharedPrefs;
   final Future<Map<String, Object>> Function()? _commonParametersLoader;
 
@@ -33,7 +45,11 @@ class AnalyticsService {
     bool isAnalyticsDisabled, {
     SharedPrefsRepository? sharedPrefs,
     Future<Map<String, Object>> Function()? commonParametersLoader,
+    DeferredAnalyticsBackend? deferredBackend,
+    Future<void> Function(bool)? setComponentsEnabled,
   }) : _analytics = isAnalyticsDisabled ? null : analytics,
+       _deferredBackend = isAnalyticsDisabled ? null : deferredBackend,
+       _setComponentsEnabled = isAnalyticsDisabled ? null : setComponentsEnabled,
        _sharedPrefs = sharedPrefs ?? SharedPrefsRepository(),
        _commonParametersLoader = commonParametersLoader;
 
@@ -62,17 +78,23 @@ class AnalyticsService {
     _isReadyToCollect = false;
     _updateCollectionStatus(isUpdating: true);
     try {
+      // 보통 엔진은 Dart Core보다 먼저 SDK를 붙였을 수도 있다. 초기화 실패에도 끄기 경로를 보존한다.
+      if (_deferredBackend != null) _deferredMayNeedDisable = true;
       _isCollectionEnabled.value =
           !_sharedPrefs.isContainsKey(SharedPrefKeys.kAnalyticsCollectionEnabled) ||
           _sharedPrefs.getBool(SharedPrefKeys.kAnalyticsCollectionEnabled);
-      final analytics = _analytics;
-      if (analytics != null) {
-        await analytics.setAnalyticsCollectionEnabled(false);
-        if (_isCollectionEnabled.value) {
+      if (isCollectionEnabled) {
+        await _setComponentsEnabled?.call(true);
+        await _activateBackendIfNeeded();
+        final analytics = _analytics;
+        if (analytics != null) {
+          await analytics.setAnalyticsCollectionEnabled(false);
           await _initializeDefaultParameters();
           await analytics.setAnalyticsCollectionEnabled(true);
           _isReadyToCollect = true;
         }
+      } else {
+        await _setCollectionDisabled();
       }
       _updateCollectionStatus(disablePending: false, hasError: false);
     } catch (e) {
@@ -91,20 +113,26 @@ class AnalyticsService {
   /// 적용 실패 시 Dart 수집을 닫고, 확인되지 않은 끄기는 화면 수명과 무관하게 명시적으로 재시도한다.
   Future<void> setCollectionEnabled(bool enabled) async {
     if (_isUpdating) throw StateError('Analytics update already in progress');
-    final analytics = _analytics;
+    var analytics = _analytics;
     final status = _collectionStatus.value;
     if (!status.disablePending &&
         !status.hasError &&
         isCollectionEnabled == enabled &&
-        (analytics == null || (enabled && _isReadyToCollect))) {
+        ((analytics == null && _deferredBackend == null) ||
+            (!enabled && analytics == null && !_deferredMayNeedDisable) ||
+            (enabled && _isReadyToCollect))) {
       return;
     }
 
     _isReadyToCollect = false;
     _updateCollectionStatus(isUpdating: true);
+    if (_analytics == null && _deferredBackend != null) _deferredMayNeedDisable = true;
     var choiceSaved = false;
     try {
       if (enabled) {
+        await _setComponentsEnabled?.call(true);
+        await _activateBackendIfNeeded();
+        analytics = _analytics;
         if (analytics != null) {
           await _initializeDefaultParameters();
           await analytics.setAnalyticsCollectionEnabled(true);
@@ -112,17 +140,30 @@ class AnalyticsService {
         await _sharedPrefs.setAnalyticsCollectionEnabled(true);
         _isReadyToCollect = analytics != null;
       } else {
+        Object? componentError;
+        StackTrace? componentStack;
+        try {
+          await _setComponentsEnabled?.call(false);
+        } catch (error, stack) {
+          componentError = error;
+          componentStack = stack;
+        }
+        // 구성요소 적용 실패여도 사용자의 거부를 저장하고 SDK 끄기를 독립적으로 시도한다.
         await _sharedPrefs.setAnalyticsCollectionEnabled(false);
         choiceSaved = true;
         _isCollectionEnabled.value = false;
-        await analytics?.setAnalyticsCollectionEnabled(false);
+        await _setNativeCollectionDisabled();
+        if (componentError != null) Error.throwWithStackTrace(componentError, componentStack!);
       }
       _isCollectionEnabled.value = enabled;
       _updateCollectionStatus(disablePending: false, hasError: false);
     } catch (e) {
       final disabled = await _disableCollectionAfterFailure();
       final disablePending = (!enabled && !choiceSaved) || (!isCollectionEnabled && !disabled);
-      _updateCollectionStatus(disablePending: disablePending, hasError: disablePending || !disabled);
+      _updateCollectionStatus(
+        disablePending: disablePending,
+        hasError: disablePending || !disabled || (enabled && isCollectionEnabled),
+      );
       if (!enabled && choiceSaved && disabled) {
         Logger.error('Analytics disable recovered after error: ${e.runtimeType}');
         return;
@@ -133,15 +174,53 @@ class AnalyticsService {
     }
   }
 
+  Future<void> _activateBackendIfNeeded() async {
+    final deferred = _deferredBackend;
+    if (_analytics != null || deferred == null) return;
+    _deferredMayNeedDisable = true;
+    // 실패한 Future는 저장하지 않는다. 부분 연결 뒤 실패해도 끄기 재시도가 가능해야 한다.
+    _analytics = await deferred.activate();
+  }
+
+  Future<void> _setNativeCollectionDisabled() async {
+    final analytics = _analytics;
+    if (analytics != null) {
+      await analytics.setAnalyticsCollectionEnabled(false);
+    } else if (_deferredMayNeedDisable) {
+      await _deferredBackend?.disableIfActive();
+    }
+    _deferredMayNeedDisable = false;
+  }
+
   Future<bool> _disableCollectionAfterFailure() async {
     _isReadyToCollect = false;
     try {
-      await _analytics?.setAnalyticsCollectionEnabled(false);
+      await _setCollectionDisabled();
       return true;
     } catch (e) {
       Logger.error('Analytics fail-safe disable error: $e');
       return false;
     }
+  }
+
+  /// 두 경로 중 하나가 실패해도 나머지는 실행한다. 둘 다 확인되어야 OFF 적용 완료다.
+  Future<void> _setCollectionDisabled() async {
+    Object? firstError;
+    StackTrace? firstStack;
+    if (_analytics == null && _deferredBackend != null) _deferredMayNeedDisable = true;
+    try {
+      await _setComponentsEnabled?.call(false);
+    } catch (error, stack) {
+      firstError = error;
+      firstStack = stack;
+    }
+    try {
+      await _setNativeCollectionDisabled();
+    } catch (error, stack) {
+      firstError ??= error;
+      firstStack ??= stack;
+    }
+    if (firstError != null) Error.throwWithStackTrace(firstError, firstStack!);
   }
 
   /// 기본 이벤트 파라미터는 선택 사항이라 실패해도 수집 선택 적용과 이벤트 전송을 막지 않는다.

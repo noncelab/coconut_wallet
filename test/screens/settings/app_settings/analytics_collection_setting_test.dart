@@ -122,6 +122,91 @@ void main() {
     );
   }
 
+  testWidgets('deferred native failure stays OFF across reentry and retries false without activation', (tester) async {
+    await SharedPrefsRepository().setAnalyticsCollectionEnabled(false);
+    var failDisable = true;
+    var activations = 0;
+    var disables = 0;
+    final service = AnalyticsService(
+      null,
+      false,
+      deferredBackend: DeferredAnalyticsBackend(
+        activate: () async {
+          activations++;
+          return _FlakySdk();
+        },
+        disableIfActive: () async {
+          disables++;
+          if (failDisable) throw StateError('native process is still active');
+        },
+      ),
+    );
+    await service.initialize();
+    await mount(tester, service);
+    await tester.pumpAndSettle();
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await mount(tester, service);
+    await tester.pumpAndSettle();
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    failDisable = false;
+    await tester.tap(find.text('끄기 재시도'));
+    await tester.pumpAndSettle();
+    expect(activations, 0);
+    expect(disables, 3);
+    expect(service.canCollect, isFalse);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('component failure before OFF storage survives disposal and exposes only a safe false retry', (
+    tester,
+  ) async {
+    final sdk = _FlakySdk();
+    final gateWait = Completer<void>();
+    var failComponents = false;
+    var offAttempts = 0;
+    final service = AnalyticsService(
+      sdk,
+      false,
+      commonParametersLoader: () async => const <String, Object>{},
+      setComponentsEnabled: (enabled) async {
+        if (enabled) return;
+        offAttempts++;
+        if (offAttempts == 1) await gateWait.future;
+        if (failComponents) throw StateError('PM refused component update');
+      },
+    );
+    await service.initialize();
+    sdk.calls.clear();
+    failComponents = true;
+    await mount(tester, service);
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    await mount(tester, service);
+    final pointer = find.ancestor(of: find.byType(CoconutSwitch), matching: find.byType(IgnorePointer)).first;
+    expect(tester.widget<IgnorePointer>(pointer).ignoring, isTrue);
+    gateWait.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(sdk.calls, [false, false]);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAnalyticsCollectionEnabled), isFalse);
+    expect(tester.widget<CoconutSwitch>(find.byType(CoconutSwitch)).isOn, isFalse);
+    expect(find.text('끄기 재시도'), findsOneWidget);
+    failComponents = false;
+    sdk.calls.clear();
+    await tester.tap(find.text('끄기 재시도'));
+    await tester.pumpAndSettle();
+    expect(sdk.calls, [false]);
+    expect(offAttempts, 3);
+    expect(find.text('끄기 재시도'), findsNothing);
+    expect(service.canCollect, isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('defaults on, toggles both ways without a dialog and restores the saved choice', (tester) async {
     final service = AnalyticsService(null, false);
     await service.initialize();

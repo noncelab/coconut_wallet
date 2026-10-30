@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTo
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/settings/analytics_collection_setting_view_model.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/settings_switch.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
@@ -45,17 +46,9 @@ class AnalyticsCollectionSetting extends StatelessWidget {
                   child: ExcludeSemantics(
                     child: IgnorePointer(
                       ignoring: !canToggle,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: CoconutSwitch(
-                          isOn: isCollectionEnabled,
-                          activeTrackColor: colors.switchActiveTrack,
-                          activeThumbColor: colors.switchActiveThumb,
-                          inactiveTrackColor: colors.switchInactiveTrack,
-                          inactiveThumbColor: colors.switchInactiveThumb,
-                          onChanged: (enabled) => _update(context, viewModel, enabled),
-                          scale: 0.75,
-                        ),
+                      child: SettingsSwitch(
+                        isOn: isCollectionEnabled,
+                        onChanged: (enabled) => _update(context, viewModel, enabled),
                       ),
                     ),
                   ),

@@ -221,4 +221,41 @@ void main() {
     expect(sdk.propertyCalls, 1);
     expect(sdk.properties, isEmpty);
   });
+
+  test('deferred OFF does not latch usage; explicit ON and a new sync send exactly once', () async {
+    tracker.dispose();
+    await SharedPrefsRepository().setAnalyticsCollectionEnabled(false);
+    var activations = 0;
+    analytics = AnalyticsService(
+      null,
+      false,
+      commonParametersLoader: () async => const {},
+      deferredBackend: DeferredAnalyticsBackend(
+        activate: () async {
+          activations++;
+          return sdk;
+        },
+        disableIfActive: () async {},
+      ),
+    );
+    await analytics.initialize();
+    tracker = HotWalletUsageTracker(
+      syncStateStream: syncState.stream,
+      walletItemList: walletList,
+      hasTransactionHistory: walletsWithHistory.contains,
+      analyticsService: analytics,
+    );
+    walletList.value = [_FakeWallet(1)];
+    walletsWithHistory.add(1);
+    await completeSync();
+    expect(sdk.propertyCalls, 0);
+    expect(activations, 0);
+    await analytics.setCollectionEnabled(true);
+    expect(sdk.propertyCalls, 0);
+    expect(activations, 1);
+    await completeSync();
+    await completeSync();
+    expect(sdk.properties, [('hot_wallet_in_use', 'true')]);
+    expect(sdk.propertyCalls, 1);
+  });
 }
