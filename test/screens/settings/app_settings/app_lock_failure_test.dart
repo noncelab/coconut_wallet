@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -31,6 +32,8 @@ class _Auth extends Fake with ChangeNotifier implements AuthProvider {
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
+  @override
+  NumberFormatPreset get numberFormatPreset => NumberFormatPreset.dotDecimal;
   @override
   BitcoinUnit get currentUnit => BitcoinUnit.btc;
   @override
