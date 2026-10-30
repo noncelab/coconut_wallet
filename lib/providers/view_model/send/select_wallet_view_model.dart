@@ -56,7 +56,9 @@ class SelectWalletViewModel extends ChangeNotifier {
             (candidateWalletIds == null || candidateWalletIds.contains(wallet.id)),
       ),
     );
-    _isGrid = _preferences.getBool(SharedPrefKeys.kSelectWalletGridView);
+    _isGrid =
+        !_preferences.isContainsKey(SharedPrefKeys.kSelectWalletGridView) ||
+        _preferences.getBool(SharedPrefKeys.kSelectWalletGridView);
     _lastCarouselWalletId =
         wallets.isEmpty ? -1 : (wallets.any((wallet) => wallet.id == walletId) ? walletId : wallets.first.id);
     _selectedWalletId = _isGrid ? -1 : _lastCarouselWalletId;

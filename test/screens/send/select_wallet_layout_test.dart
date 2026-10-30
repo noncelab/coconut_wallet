@@ -169,11 +169,31 @@ FixedBottomButton _button(WidgetTester tester) => tester.widget(find.byType(Fixe
 
 void main() {
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({SharedPrefKeys.kSelectWalletGridView: false});
     await SharedPrefsRepository().init();
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
   tearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+  testWidgets('first opening uses grid and later openings restore the last layout', (tester) async {
+    await SharedPrefsRepository().deleteSharedPrefsWithKey(SharedPrefKeys.kSelectWalletGridView);
+    await _open(tester);
+    expect(find.byType(GridView), findsOneWidget);
+    await tester.tap(_toggle);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('select-wallet-carousel')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await SharedPrefsRepository().init();
+    await _open(tester);
+    expect(find.byKey(const Key('select-wallet-carousel')), findsOneWidget);
+    await tester.tap(_toggle);
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await SharedPrefsRepository().init();
+    await _open(tester);
+    expect(find.byType(GridView), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   for (final throwsOnWrite in [false, true]) {
     test('layout persistence rejects failed writes and restores the preference cache: $throwsOnWrite', () async {
@@ -825,6 +845,9 @@ class _LayoutPreferences extends Fake implements SharedPrefsRepository {
 
   @override
   bool getBool(String key) => grid;
+
+  @override
+  bool isContainsKey(String key) => true;
 
   @override
   Future<void> setSelectWalletGridView(bool value) async {
