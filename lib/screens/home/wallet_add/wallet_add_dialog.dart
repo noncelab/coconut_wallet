@@ -112,15 +112,20 @@ class WalletAddDialog extends StatelessWidget {
           top: kToolbarHeight + MediaQuery.paddingOf(context).top - 15,
           left: 0,
           right: 0,
-          child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(slideDownAnimation),
-            child: Material(
-              elevation: 4,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-              color: context.coconutColors.homeBackground,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                child: _buildContent(context),
+          bottom: MediaQuery.paddingOf(context).bottom,
+          // 내용 높이만큼만 그리고, 화면보다 길 때(펼친 폴드 등)만 시트 안에서 스크롤한다.
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(slideDownAnimation),
+              child: Material(
+                elevation: 4,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                color: context.coconutColors.homeBackground,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                  child: SingleChildScrollView(child: _buildContent(context)),
+                ),
               ),
             ),
           ),
@@ -196,12 +201,22 @@ class WalletAddDialog extends StatelessWidget {
                           colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                         ),
                         CoconutLayout.spacing_100h,
-                        Text(
-                          scanType.displayName,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        Flexible(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              const style = CoconutTypography.body2_14;
+                              final lineHeight =
+                                  MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
+                              return Text(
+                                scanType.displayName,
+                                style: style.setColor(context.coconutColors.primaryText),
+                                textAlign: TextAlign.center,
+                                // 큰 글씨에서 두 줄이 다 들어가지 않으면 반쯤 잘린 줄 대신 한 줄 말줄임
+                                maxLines: constraints.maxHeight < 2 * lineHeight ? 1 : 2,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -373,17 +388,20 @@ class WalletAddDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                switch (mode) {
-                  WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
-                  WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
-                  WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
-                },
-                key: const Key('wallet-add-dialog-title'),
-                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+              Expanded(
+                child: Text(
+                  switch (mode) {
+                    WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
+                    WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
+                    WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
+                  },
+                  key: const Key('wallet-add-dialog-title'),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                ),
               ),
-              const Spacer(),
               const SizedBox(width: 40),
             ],
           ),
