@@ -19,9 +19,9 @@ void main() {
         final sheetRect = tester.getRect(find.byKey(const ValueKey('sheet')));
         final actionRect = tester.getRect(action);
         final iconRect = tester.getRect(icon);
-        expect(actionRect.size, const Size(40, 40));
+        expect(actionRect.size, const Size(48, 48));
         expect(iconRect.size, const Size(24, 24));
-        expect(actionRect.center - sheetRect.topLeft, const Offset(32, 50));
+        expect(actionRect.center - sheetRect.topLeft, const Offset(24, 50));
         expect(iconRect.center, actionRect.center);
         expect(tester.widget<AppBar>(find.byType(AppBar)).toolbarHeight, 60);
         expect(
@@ -52,7 +52,7 @@ void main() {
         final action = find.byType(CoconutAppBarActionButton).hitTestable().first;
         final actionRect = tester.getRect(action);
         final toolbarRect = tester.getRect(find.byType(AppBar));
-        expect(actionRect.size, const Size(40, 40));
+        expect(actionRect.size, const Size(48, 48));
         expect(actionRect.center.dx - toolbarRect.left, 24);
         expect(tester.widget<AppBar>(find.byType(AppBar)).toolbarHeight, isBottom ? 60 : 56);
         await tester.tap(action);
