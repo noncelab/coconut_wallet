@@ -57,6 +57,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isServerChanging = false;
   bool _isDisposed = false;
   Future<bool>? _walletsRefresh;
+  Future<Result<bool>>? _reconnecting;
   Set<int> _knownWalletIds = {};
   final Map<int, Object> _newWalletSubscriptions = {};
 
@@ -648,7 +649,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 서버 재연결 후 모든 지갑 재동기화, 이미 동기화 중이면 완료까지 대기
-  /// 동기화를 실제로 마쳤을 때만 true 반환
+  /// 모니터링 중인 주소 동기화를 마쳤을 때만 true 반환 (휴면 주소 확인은 백그라운드)
   Future<bool> refreshWallets() {
     if (_isDisposed || _connectivityProvider.isInternetOff) return Future.value(false);
     final refresh = _walletsRefresh;
@@ -659,15 +660,23 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<bool> _refreshWallets() async {
-    if (_isInitializing || _isClosing || state.nodeSyncState == NodeSyncState.syncing) {
-      return await _waitUntilSyncSettled() == NodeSyncState.completed;
+    final reconnecting = _reconnecting;
+    if (reconnecting != null) {
+      if ((await reconnecting).isFailure) return false;
+    } else if (_isClosing) {
+      return false;
+    } else if (!_isInitializing && state.nodeSyncState != NodeSyncState.syncing) {
+      if ((await reconnect()).isFailure) return false;
     }
-    final result = await reconnect();
-    if (_isDisposed || result.isFailure) return false;
-    await Future.wait(
-      _walletItemListNotifier.value.map(syncDormantAddresses),
-    ).timeout(kNodeRefreshDormantWaitTimeout, onTimeout: () => const []);
-    return !_isDisposed;
+    if (_isDisposed) return false;
+    final settled =
+        state.nodeSyncState == NodeSyncState.completed ? NodeSyncState.completed : await _waitUntilSyncSettled();
+    if (_isDisposed) return false;
+    // 휴면 주소 확인은 기다리지 않음 (모니터링 중인 주소 동기화 완료를 성공으로 간주, 찾은 거래는 지갑 갱신으로 반영)
+    for (final wallet in _walletItemListNotifier.value) {
+      unawaited(syncDormantAddresses(wallet));
+    }
+    return settled == NodeSyncState.completed;
   }
 
   Future<NodeSyncState?> _waitUntilSyncSettled() async {
@@ -680,7 +689,15 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<bool>> reconnect() async {
+  /// 진행 중인 재연결이 있으면 그 결과를 공유
+  Future<Result<bool>> reconnect() {
+    final reconnecting = _reconnecting;
+    if (reconnecting != null) return reconnecting;
+    final started = _reconnecting = _reconnect().whenComplete(() => _reconnecting = null);
+    return started;
+  }
+
+  Future<Result<bool>> _reconnect() async {
     if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {

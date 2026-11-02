@@ -91,6 +91,10 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
           } else {
             _setPhase(_StatusPhase.none);
           }
+        } else if (!refreshed &&
+            _nodeSyncState == NodeSyncState.completed &&
+            (_phase == _StatusPhase.connected || _phase == _StatusPhase.updating)) {
+          _setPhase(_StatusPhase.none);
         }
         _sawDisconnect = false;
         _refreshElectrumRecoveryNotice();

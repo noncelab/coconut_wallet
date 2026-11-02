@@ -126,6 +126,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   int subscribeCount = 0;
   final dormantSyncedWalletIds = <int>[];
   Completer<void>? dormantSync;
+  Result<bool> dormantResult = Result.success(true);
 
   @override
   Stream<IsolateStateMessage> get stateStream => states.stream;
@@ -144,6 +145,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   @override
   Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async {
     subscribeCount++;
+    states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
     return Result.success(true);
   }
 
@@ -151,7 +153,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
     dormantSyncedWalletIds.add(walletItem.id);
     await dormantSync?.future;
-    return Result.success(true);
+    return dormantResult;
   }
 
   @override
@@ -704,6 +706,29 @@ void main() {
     await tester.pump(kHomeUpdateCompletedNoticeDuration);
   });
 
+  testWidgets('다시 연결한 뒤 새로고침이 실패로 끝나면 업데이트 완료를 보여 주지 않는다', (tester) async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+    node.refreshSucceeds = false;
+
+    final refresh = viewModel.refresh();
+    node.connectionEstablished = false;
+    sync.add(NodeSyncState.init);
+    notifyNode();
+    node.connectionEstablished = true;
+    sync.add(NodeSyncState.syncing);
+    sync.add(NodeSyncState.completed);
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.isSyncing, isTrue);
+
+    node.refreshing!.complete();
+    await refresh;
+    expect(viewModel.showUpdateCompleted, isFalse);
+    expect(viewModel.isSyncing, isFalse);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+    expect(viewModel.showUpdateCompleted, isFalse);
+  });
+
   testWidgets('기다리던 동기화가 대기 시간을 넘겨도 끝나지 않았으면 업데이트 중을 유지하고, 끝난 뒤에 업데이트 완료를 보여 준다', (tester) async {
     final viewModel = createSettledViewModel();
     node.currentSyncState = NodeSyncState.syncing;
@@ -793,48 +818,47 @@ void main() {
       }
     });
 
-    testWidgets('휴면 주소 확인이 끝난 뒤에 끝난다', (tester) async {
+    testWidgets('휴면 주소 확인은 기다리지 않고, 느리거나 실패해도 성공으로 끝난다', (tester) async {
       await startConnected(tester);
       try {
         isolate.dormantSync = Completer<void>();
-        var done = false;
-        unawaited(realNode.refreshWallets().then((_) => done = true));
-        for (var i = 0; i < 10 && isolate.dormantSyncedWalletIds.isEmpty; i++) {
+        isolate.dormantResult = Result.failure(ErrorCodes.networkError);
+        bool? result;
+        unawaited(realNode.refreshWallets().then((value) => result = value));
+        for (var i = 0; i < 10 && result == null; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        expect(isolate.dormantSyncedWalletIds, [1]);
-        await tester.pump(const Duration(seconds: 1));
-        expect(done, isFalse);
-        expect(realNode.walletsRefresh, isNotNull);
-
-        isolate.dormantSync!.complete();
-        for (var i = 0; i < 10 && !done; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-        expect(done, isTrue);
+        expect(result, isTrue);
+        expect(isolate.dormantSyncedWalletIds, [1], reason: '휴면 주소 확인은 백그라운드에서 시작한다');
         expect(realNode.walletsRefresh, isNull);
+        isolate.dormantSync!.complete();
       } finally {
         await stop(tester);
       }
     });
 
-    testWidgets('휴면 주소 확인이 오래 걸리면 기다림 상한이 지난 뒤 끝난다', (tester) async {
+    testWidgets('다른 재연결이 연결을 닫는 중이면 그 재연결과 재구독이 끝난 뒤에 끝난다', (tester) async {
       await startConnected(tester);
       try {
-        isolate.dormantSync = Completer<void>();
+        final initialized = isolate.initializeCount;
+        final subscribed = isolate.subscribeCount;
+        isolate.closing = Completer<void>();
+        unawaited(realNode.reconnect());
+        await tester.pump();
+
         bool? result;
         unawaited(realNode.refreshWallets().then((value) => result = value));
-        for (var i = 0; i < 10 && isolate.dormantSyncedWalletIds.isEmpty; i++) {
+        await tester.pump(const Duration(seconds: 1));
+        expect(result, isNull, reason: '닫히기 전 연결의 completed로 끝내지 않는다');
+
+        isolate.closing!.complete();
+        isolate.closing = null;
+        for (var i = 0; i < 20 && result == null; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        await tester.pump(kNodeRefreshDormantWaitTimeout + const Duration(seconds: 1));
-        for (var i = 0; i < 10 && result == null; i++) {
-          await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-          await tester.pump();
-        }
         expect(result, isTrue);
-        expect(realNode.walletsRefresh, isNull);
-        isolate.dormantSync!.complete();
+        expect(isolate.initializeCount, initialized + 1, reason: '진행 중인 재연결을 공유한다');
+        expect(isolate.subscribeCount, subscribed + 1);
       } finally {
         await stop(tester);
       }
