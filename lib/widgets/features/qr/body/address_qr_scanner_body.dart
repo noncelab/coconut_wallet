@@ -34,6 +34,12 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
     widget.setMobileScannerController?.call(_controller);
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Widget _buildQrView(BuildContext context) {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)
     final statusBarHeight = MediaQuery.of(context).padding.top;
