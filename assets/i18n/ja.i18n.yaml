@@ -1406,7 +1406,6 @@ wallet_info_screen:
     no_memos: "ウォレットに記録されたメモがありません。"
     invalid_file_type: "無効なファイル形式です。jsonlファイルを選択してください。"
   connected_hardware_wallet:
-    reconnect_button: "再接続"
     title: "デバイス情報"
     connection_status: "接続状態"
     connected: "接続中"

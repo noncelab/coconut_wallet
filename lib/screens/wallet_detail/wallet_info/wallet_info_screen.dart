@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'dart:io';
@@ -595,18 +596,21 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       screen = BitBox02ConnectScreen(
         importSource: WalletImportSource.bitbox02,
         walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
       );
     } else if (usb) {
       screen = TrezorUsbConnectScreen(
         walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
       );
     } else {
       screen = TrezorBleConnectScreen(
         walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
       );

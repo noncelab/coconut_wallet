@@ -1409,7 +1409,6 @@ wallet_info_screen:
     no_memos: "No hay notas registradas en la billetera."
     invalid_file_type: "Tipo de archivo no válido. Por favor, seleccione un archivo JSONL."
   connected_hardware_wallet:
-    reconnect_button: "Volver a conectar"
     title: "Información del dispositivo"
     connection_status: "Estado de conexión"
     connected: "Conectado"

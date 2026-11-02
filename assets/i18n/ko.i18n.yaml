@@ -1422,7 +1422,6 @@ wallet_info_screen:
     no_memos: "지갑에 기록한 메모가 없어요"
     invalid_file_type: "잘 못된 파일 형식입니다. jsonl 파일을 선택해주세요."
   connected_hardware_wallet:
-    reconnect_button: "다시 연결"
     title: "기기 정보"
     connection_status: "연결 상태"
     connected: "연결됨"
