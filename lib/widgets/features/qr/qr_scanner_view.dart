@@ -7,6 +7,18 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 class QrScannerView extends StatefulWidget {
   static const alreadyRunningRetryDelay = Duration(milliseconds: 300);
   static const alreadyRunningRetryLimit = 3;
+  static Future<void>? _pendingRelease;
+
+  /// 닫히는 스캐너의 컨트롤러 해제, 다음 스캐너는 해제가 끝난 뒤 카메라 재시작
+  static void releaseController(MobileScannerController controller) {
+    final previous = _pendingRelease;
+    final release = controller.dispose().catchError((_) {});
+    late final Future<void> pending;
+    pending = (previous == null ? release : Future.wait([previous, release])).whenComplete(() {
+      if (identical(_pendingRelease, pending)) _pendingRelease = null;
+    });
+    _pendingRelease = pending;
+  }
 
   final Key? scannerKey;
   final MobileScannerController controller;
@@ -76,6 +88,8 @@ class _QrScannerViewState extends State<QrScannerView> {
   }
 
   Future<void> _restart() async {
+    final pendingRelease = QrScannerView._pendingRelease;
+    if (pendingRelease != null) await pendingRelease;
     if (!mounted) return;
     if (_retryCount >= QrScannerView.alreadyRunningRetryLimit) {
       _forcedRestart = true;

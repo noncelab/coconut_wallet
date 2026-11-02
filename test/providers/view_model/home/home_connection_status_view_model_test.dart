@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -41,17 +42,19 @@ class _Node extends Mock implements NodeProvider {
   late Stream<NodeSyncState> syncStream;
   Completer<void>? refreshing;
   int refreshCount = 0;
+  bool refreshSucceeds = true;
 
   @override
-  Future<void> refreshWallets() async {
+  Future<bool> refreshWallets() async {
     refreshCount++;
     await refreshing?.future;
+    return refreshSucceeds;
   }
 
-  Future<void>? startedRefresh;
+  Future<bool>? startedRefresh;
 
   @override
-  Future<void>? get walletsRefresh => startedRefresh;
+  Future<bool>? get walletsRefresh => startedRefresh;
 
   @override
   void addListener(VoidCallback listener) => listeners.add(listener);
@@ -122,6 +125,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   int initializeCount = 0;
   int subscribeCount = 0;
   final dormantSyncedWalletIds = <int>[];
+  Completer<void>? dormantSync;
 
   @override
   Stream<IsolateStateMessage> get stateStream => states.stream;
@@ -146,6 +150,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   @override
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
     dormantSyncedWalletIds.add(walletItem.id);
+    await dormantSync?.future;
     return Result.success(true);
   }
 
@@ -647,7 +652,7 @@ void main() {
 
   testWidgets('앱 복귀처럼 다른 곳에서 시작한 재동기화도 연결됨 → 업데이트 중 → 업데이트 완료로 보여 준다', (tester) async {
     final viewModel = createSettledViewModel();
-    final started = Completer<void>();
+    final started = Completer<bool>();
     node.startedRefresh = started.future;
     notifyNode();
     expect(node.refreshCount, 0);
@@ -665,7 +670,7 @@ void main() {
 
     sync.add(NodeSyncState.completed);
     node.startedRefresh = null;
-    started.complete();
+    started.complete(true);
     await tester.pump();
     expect(viewModel.showUpdateCompleted, isTrue);
 
@@ -673,6 +678,64 @@ void main() {
     expect(node.refreshCount, 1, reason: '끝난 재동기화는 다시 따라가지 않는다');
     await refresh;
     await tester.pump(kHomeUpdateCompletedNoticeDuration);
+  });
+
+  testWidgets('노드 동기화가 끝나도 휴면 주소 확인까지 새로고침이 끝나야 업데이트 완료를 보여 준다', (tester) async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+
+    final refresh = viewModel.refresh();
+    node.connectionEstablished = false;
+    sync.add(NodeSyncState.init);
+    notifyNode();
+    node.connectionEstablished = true;
+    sync.add(NodeSyncState.syncing);
+    sync.add(NodeSyncState.completed);
+    expect(viewModel.showElectrumReconnected, isTrue);
+
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.isSyncing, isTrue);
+    expect(viewModel.showUpdateCompleted, isFalse);
+
+    node.refreshing!.complete();
+    await refresh;
+    expect(viewModel.isSyncing, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+  });
+
+  testWidgets('기다리던 동기화가 대기 시간을 넘겨도 끝나지 않았으면 업데이트 중을 유지하고, 끝난 뒤에 업데이트 완료를 보여 준다', (tester) async {
+    final viewModel = createSettledViewModel();
+    node.currentSyncState = NodeSyncState.syncing;
+    sync.add(NodeSyncState.syncing);
+    node.refreshing = Completer<void>();
+    node.refreshSucceeds = false;
+
+    final refresh = viewModel.refresh();
+    expect(viewModel.isSyncing, isTrue, reason: '기다리는 동안에도 업데이트 중을 보여 준다');
+    expect(viewModel.showElectrumReconnected, isFalse);
+    node.refreshing!.complete();
+    await refresh;
+    expect(viewModel.showUpdateCompleted, isFalse);
+    expect(viewModel.isSyncing, isTrue);
+
+    node.currentSyncState = NodeSyncState.completed;
+    sync.add(NodeSyncState.completed);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+  });
+
+  test('VPN만 켜져 있어 새로고침이 아무것도 하지 못하면 업데이트 완료를 보여 주지 않는다', () async {
+    final viewModel = createSettledViewModel();
+    connectivity.vpnActive = true;
+    connectivity.setInternet(false);
+    expect(viewModel.networkStatus, NetworkStatus.online);
+    node.refreshSucceeds = false;
+
+    await viewModel.refresh();
+
+    expect(viewModel.showUpdateCompleted, isFalse);
+    expect(viewModel.isSyncing, isFalse);
   });
 
   group('NodeProvider.refreshWallets', () {
@@ -724,9 +787,100 @@ void main() {
         expect(isolate.initializeCount, initialized + 1);
         expect(isolate.subscribeCount, subscribed + 1);
         expect(isolate.dormantSyncedWalletIds, [1]);
+        expect(await realNode.refreshWallets(), isTrue);
       } finally {
         await stop(tester);
       }
+    });
+
+    testWidgets('휴면 주소 확인이 끝난 뒤에 끝난다', (tester) async {
+      await startConnected(tester);
+      try {
+        isolate.dormantSync = Completer<void>();
+        var done = false;
+        unawaited(realNode.refreshWallets().then((_) => done = true));
+        for (var i = 0; i < 10 && isolate.dormantSyncedWalletIds.isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(isolate.dormantSyncedWalletIds, [1]);
+        await tester.pump(const Duration(seconds: 1));
+        expect(done, isFalse);
+        expect(realNode.walletsRefresh, isNotNull);
+
+        isolate.dormantSync!.complete();
+        for (var i = 0; i < 10 && !done; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(done, isTrue);
+        expect(realNode.walletsRefresh, isNull);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('휴면 주소 확인이 오래 걸리면 기다림 상한이 지난 뒤 끝난다', (tester) async {
+      await startConnected(tester);
+      try {
+        isolate.dormantSync = Completer<void>();
+        bool? result;
+        unawaited(realNode.refreshWallets().then((value) => result = value));
+        for (var i = 0; i < 10 && isolate.dormantSyncedWalletIds.isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.pump(kNodeRefreshDormantWaitTimeout + const Duration(seconds: 1));
+        for (var i = 0; i < 10 && result == null; i++) {
+          await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+          await tester.pump();
+        }
+        expect(result, isTrue);
+        expect(realNode.walletsRefresh, isNull);
+        isolate.dormantSync!.complete();
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('기다리던 동기화가 대기 시간 안에 끝나지 않으면 실패로 끝난다', (tester) async {
+      await startConnected(tester);
+      try {
+        isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToSyncing, []));
+        await tester.pump();
+
+        bool? result;
+        unawaited(realNode.refreshWallets().then((value) => result = value));
+        await tester.pump(kNodeRefreshWaitTimeout + const Duration(seconds: 1));
+        for (var i = 0; i < 10 && result == null; i++) {
+          await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+          await tester.pump();
+        }
+        expect(result, isFalse);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    test('인터넷이 꺼져 있으면 아무것도 하지 않고 실패로 끝난다', () async {
+      final isolate = _ControlledIsolate();
+      final wallets = ValueNotifier<List<WalletItemBase>>([_WalletItem()]);
+      connectivity.internetOn = false;
+      final offlineNode = NodeProvider(
+        ElectrumServer.custom('localhost', 50001, false),
+        NetworkType.mainnet,
+        connectivity,
+        wallet.loadState,
+        wallets,
+        null,
+        isolateManager: isolate,
+      );
+      addTearDown(() async {
+        offlineNode.dispose();
+        await isolate.states.close();
+        wallets.dispose();
+      });
+
+      expect(await offlineNode.refreshWallets(), isFalse);
+      expect(offlineNode.walletsRefresh, isNull);
+      expect(isolate.initializeCount, 0);
     });
 
     testWidgets('동시에 여러 곳에서 요청해도 한 번만 다시 연결하고, 진행 중인 재동기화를 알린다', (tester) async {

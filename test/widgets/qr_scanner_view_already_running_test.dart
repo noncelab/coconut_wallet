@@ -13,6 +13,7 @@ class _OccupiedCameraPlatform extends MobileScannerPlatform {
   final bool releasesOnStop;
   int startCalls = 0;
   int stopCalls = 0;
+  Completer<void>? stopGate;
 
   @override
   Stream<BarcodeCapture?> get barcodesStream => const Stream.empty();
@@ -45,6 +46,7 @@ class _OccupiedCameraPlatform extends MobileScannerPlatform {
   @override
   Future<void> stop() async {
     stopCalls++;
+    await stopGate?.future;
     if (releasesOnStop) occupied = false;
   }
 
@@ -122,5 +124,32 @@ void main() {
     expect(controller.value.isRunning, isFalse);
     expect(platform.startCalls, QrScannerView.alreadyRunningRetryLimit + 2);
     expect(find.text(alreadyRunningMessage), findsOneWidget);
+  });
+
+  testWidgets('waits for a slow release of the previous scanner instead of stopping the camera itself', (tester) async {
+    final platform = _OccupiedCameraPlatform(occupied: true);
+    final original = MobileScannerPlatform.instance;
+    MobileScannerPlatform.instance = platform;
+    addTearDown(() => MobileScannerPlatform.instance = original);
+    platform.stopGate = Completer<void>();
+    QrScannerView.releaseController(MobileScannerController());
+
+    final controller = await _pumpScanner(tester, platform);
+    for (var i = 0; i <= QrScannerView.alreadyRunningRetryLimit + 2; i++) {
+      await tester.pump(QrScannerView.alreadyRunningRetryDelay);
+    }
+    expect(platform.stopCalls, 1, reason: 'only the previous scanner stops the camera');
+    expect(controller.value.isRunning, isFalse);
+    expect(find.text(alreadyRunningMessage), findsNothing);
+
+    platform.stopGate!.complete();
+    platform.stopGate = null;
+    for (var i = 0; i < 5 && !controller.value.isRunning; i++) {
+      await tester.pump();
+    }
+
+    expect(controller.value.isRunning, isTrue);
+    expect(platform.stopCalls, 1);
+    expect(find.text(alreadyRunningMessage), findsNothing);
   });
 }

@@ -36,7 +36,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    QrScannerView.releaseController(_controller);
     super.dispose();
   }
 

@@ -56,7 +56,7 @@ class NodeProvider extends ChangeNotifier {
   bool _hasConnectionError = false;
   bool _isServerChanging = false;
   bool _isDisposed = false;
-  Future<void>? _walletsRefresh;
+  Future<bool>? _walletsRefresh;
   Set<int> _knownWalletIds = {};
   final Map<int, Object> _newWalletSubscriptions = {};
 
@@ -220,8 +220,8 @@ class NodeProvider extends ChangeNotifier {
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
   bool get isInitializing => _isInitializing;
 
-  /// 진행 중인 [refreshWallets]. 당겨서 새로고침 외에 앱 복귀 등에서 시작된 것도 포함한다.
-  Future<void>? get walletsRefresh => _walletsRefresh;
+  /// 진행 중인 [refreshWallets] (앱 복귀 등에서 시작된 것 포함)
+  Future<bool>? get walletsRefresh => _walletsRefresh;
   bool get isConnected =>
       isInitialized &&
       !_isInitializing &&
@@ -647,9 +647,10 @@ class NodeProvider extends ChangeNotifier {
     return reconnect();
   }
 
-  /// 서버에 다시 연결해 모든 지갑을 다시 동기화한다. 이미 동기화 중이면 끝날 때까지 기다린다.
-  Future<void> refreshWallets() {
-    if (_isDisposed || _connectivityProvider.isInternetOff) return Future.value();
+  /// 서버 재연결 후 모든 지갑 재동기화, 이미 동기화 중이면 완료까지 대기
+  /// 동기화를 실제로 마쳤을 때만 true 반환
+  Future<bool> refreshWallets() {
+    if (_isDisposed || _connectivityProvider.isInternetOff) return Future.value(false);
     final refresh = _walletsRefresh;
     if (refresh != null) return refresh;
     final started = _walletsRefresh = _refreshWallets().whenComplete(() => _walletsRefresh = null);
@@ -657,24 +658,26 @@ class NodeProvider extends ChangeNotifier {
     return started;
   }
 
-  Future<void> _refreshWallets() async {
+  Future<bool> _refreshWallets() async {
     if (_isInitializing || _isClosing || state.nodeSyncState == NodeSyncState.syncing) {
-      await _waitUntilSyncSettled();
-      return;
+      return await _waitUntilSyncSettled() == NodeSyncState.completed;
     }
-    await reconnect();
-    if (_isDisposed) return;
-    for (final wallet in _walletItemListNotifier.value) {
-      unawaited(syncDormantAddresses(wallet));
-    }
+    final result = await reconnect();
+    if (_isDisposed || result.isFailure) return false;
+    await Future.wait(
+      _walletItemListNotifier.value.map(syncDormantAddresses),
+    ).timeout(kNodeRefreshDormantWaitTimeout, onTimeout: () => const []);
+    return !_isDisposed;
   }
 
-  Future<void> _waitUntilSyncSettled() async {
+  Future<NodeSyncState?> _waitUntilSyncSettled() async {
     try {
-      await syncStateStream
+      return await syncStateStream
           .firstWhere((syncState) => syncState == NodeSyncState.completed || syncState == NodeSyncState.failed)
           .timeout(kNodeRefreshWaitTimeout);
-    } catch (_) {}
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<Result<bool>> reconnect() async {

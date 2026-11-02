@@ -107,7 +107,7 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   @override
   final ValueNotifier<BlockTimestamp?> currentBlockNotifier = ValueNotifier(null);
   @override
-  Future<void> refreshWallets() async {}
+  Future<bool> refreshWallets() async => true;
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {

@@ -32,9 +32,10 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => walletEvents.stream;
 
   @override
-  Future<void> refreshWallets() async {
+  Future<bool> refreshWallets() async {
     refreshCount++;
     await refreshing?.future;
+    return true;
   }
 }
 

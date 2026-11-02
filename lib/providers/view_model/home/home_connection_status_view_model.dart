@@ -13,7 +13,7 @@ const kHomeUpdateCompletedNoticeDuration = Duration(seconds: 2);
 enum _StatusPhase { none, waitingForConnection, connected, updating, completed }
 
 /// 새 홈 App Bar 왼쪽에 표시할 네트워크·동기화 상태.
-/// 첫 진입·당겨서 새로고침·연결 복구 때 연결됨 → 업데이트 중 → 업데이트 완료 순서로 보여 준다.
+/// 첫 진입·당겨서 새로고침·연결 복구 때 연결됨 → 업데이트 중 → 업데이트 완료 순서로 표시
 class HomeConnectionStatusViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;
@@ -63,24 +63,33 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     return _refreshing ??= _followRefresh(walletsRefresh);
   }
 
-  Future<void> _followRefresh(Future<void> walletsRefresh) async {
+  Future<void> _followRefresh(Future<bool> walletsRefresh) async {
     _isRefreshing = true;
     if (_phase == _StatusPhase.none || _phase == _StatusPhase.completed) {
-      _setPhase(_StatusPhase.waitingForConnection);
-      _waitForDisconnect = true;
+      if (_hasWallets && _nodeSyncState == NodeSyncState.syncing && _nodeProvider.isConnected) {
+        _setPhase(_StatusPhase.updating);
+      } else {
+        _setPhase(_StatusPhase.waitingForConnection);
+        _waitForDisconnect = true;
+      }
     }
     notifyListeners();
+    var refreshed = false;
     try {
-      await walletsRefresh;
+      refreshed = await walletsRefresh;
     } finally {
       _isRefreshing = false;
       _refreshing = null;
       if (!_isDisposed) {
         if (_waitForDisconnect) {
           _waitForDisconnect = false;
-          _setPhase(_StatusPhase.none);
-          if (networkStatus == NetworkStatus.online && _nodeSyncState != NodeSyncState.failed) {
+          final online = networkStatus == NetworkStatus.online;
+          if (online && refreshed && _nodeSyncState == NodeSyncState.completed) {
             _enterCompleted();
+          } else if (online && _hasWallets && _nodeSyncState == NodeSyncState.syncing) {
+            _setPhase(_StatusPhase.updating);
+          } else {
+            _setPhase(_StatusPhase.none);
           }
         }
         _sawDisconnect = false;
@@ -201,8 +210,6 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
       }
       if (_phase == _StatusPhase.waitingForConnection && connected && _hasWallets) {
         _enterConnected();
-      } else if (_phase == _StatusPhase.updating && _nodeSyncState == NodeSyncState.completed) {
-        _enterCompleted();
       }
       return;
     }
@@ -246,7 +253,7 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
 
   void _enterConnected() {
     _setPhase(_StatusPhase.connected, kHomeConnectedNoticeDuration, () {
-      if (_nodeSyncState == NodeSyncState.completed) {
+      if (!_isRefreshing && _nodeSyncState == NodeSyncState.completed) {
         _enterCompleted();
       } else {
         _setPhase(_StatusPhase.updating);
