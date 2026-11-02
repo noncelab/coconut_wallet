@@ -1358,7 +1358,7 @@ wallet_info_screen:
     invalid_file_type: "Ungültiger Dateityp. Bitte wählen Sie eine jsonl-Datei."
   connected_hardware_wallet:
     reconnect_button: "Erneut verbinden"
-    title: "Über dieses Gerät"
+    title: "Geräteinformationen"
     connection_status: "Verbindungsstatus"
     connected: "Verbunden"
     disconnected: "Nicht verbunden"
