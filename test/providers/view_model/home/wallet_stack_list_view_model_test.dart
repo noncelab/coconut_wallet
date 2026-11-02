@@ -95,4 +95,22 @@ void main() {
 
     expect(preferences.walletOrder, [1, 2, 3, 4]);
   });
+
+  test('the display mode starts from the requested mode and toggles between wheel and list', () {
+    final viewModel = WalletStackListViewModel(
+      WalletStackKind.all,
+      _Wallets(wallets),
+      _Preferences([1, 2, 3, 4]),
+      mode: WalletStackListMode.list,
+    );
+    var notified = 0;
+    viewModel.addListener(() => notified++);
+
+    expect(viewModel.mode, WalletStackListMode.list);
+    viewModel.toggleMode();
+    expect(viewModel.mode, WalletStackListMode.wheel);
+    viewModel.toggleMode();
+    expect(viewModel.mode, WalletStackListMode.list);
+    expect(notified, 2);
+  });
 }

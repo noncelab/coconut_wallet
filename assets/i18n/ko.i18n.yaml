@@ -1043,7 +1043,7 @@ bitbox02_sign_screen:
   device_mismatch: "연결된 BitBox02가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1075,7 +1075,7 @@ trezor_sign_screen:
   device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:

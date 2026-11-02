@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';

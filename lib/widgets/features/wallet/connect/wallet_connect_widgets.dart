@@ -81,7 +81,7 @@ class WalletConnectErrorCard extends StatelessWidget {
         children: [
           SvgPicture.asset(
             CommonStateIconPath.circleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),
@@ -346,7 +346,7 @@ class WalletConnectMismatchCard extends StatelessWidget {
         children: [
           SvgPicture.asset(
             CommonStateIconPath.triangleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),

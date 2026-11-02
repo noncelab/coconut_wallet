@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
+import 'package:coconut_wallet/widgets/features/wallet/add/wallet_add_options.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
@@ -27,13 +28,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 
 /// 지갑 목록. 카드가 화면 오른쪽 밖을 중심으로 한 원호를 따라 위아래로 돌고, 가운데 카드의 정보를 왼쪽 아래에 보여 준다.
 /// 홈 스택에서 열면 스택 카드가 가운데 카드로 커지며 날아오고, 나머지 카드는 원호를 따라 펼쳐진다.
 /// 지갑 목록을 보는 방식. 휠은 한 장씩, 목록은 모든 지갑의 잔액을 한 화면에서 본다.
-enum WalletStackListMode { wheel, list }
-
 class WalletStackListScreen extends StatefulWidget {
   static const routeNameSuffix = '-wallet-list';
   static String routeNameOf(WalletStackKind kind) => '/${kind.name}$routeNameSuffix';
@@ -46,16 +44,8 @@ class WalletStackListScreen extends StatefulWidget {
   final Object Function(int walletId)? heroTagOf;
   final void Function(int walletId)? onFocusWallet;
   final String title;
-  final WalletStackListMode initialMode;
 
-  const WalletStackListScreen({
-    super.key,
-    this.initialWalletId,
-    this.heroTagOf,
-    this.onFocusWallet,
-    this.title = '',
-    this.initialMode = WalletStackListMode.wheel,
-  });
+  const WalletStackListScreen({super.key, this.initialWalletId, this.heroTagOf, this.onFocusWallet, this.title = ''});
 
   static Future<void> open(
     BuildContext context, {
@@ -73,13 +63,12 @@ class WalletStackListScreen extends StatefulWidget {
         reverseTransitionDuration: transitionDuration,
         pageBuilder:
             (_, __, ___) => ChangeNotifierProvider(
-              create: (_) => WalletStackListViewModel(kind, walletProvider, preferenceProvider),
+              create: (_) => WalletStackListViewModel(kind, walletProvider, preferenceProvider, mode: mode),
               child: WalletStackListScreen(
                 initialWalletId: request?.front.id,
                 heroTagOf: request?.heroTagOf,
                 onFocusWallet: request?.showWallet,
                 title: title,
-                initialMode: mode,
               ),
             ),
         transitionsBuilder:
@@ -103,7 +92,6 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
   static const _pageFraction = 0.4;
 
   late final PageController _controller;
-  late WalletStackListMode _mode = widget.initialMode;
   final Map<int, GlobalKey> _cardKeys = {};
   final Map<int, GlobalKey> _rowKeys = {};
   int _focused = 0;
@@ -261,7 +249,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   /// 휠에 놓인 지갑 카드의 화면 좌표. 지갑 상세로 펼치고 접을 때 쓴다.
   Rect? _cardRectOf(int walletId) {
-    final keys = _mode == WalletStackListMode.list ? _rowKeys : _cardKeys;
+    final keys = _viewModel.mode == WalletStackListMode.list ? _rowKeys : _cardKeys;
     final box = keys[walletId]?.currentContext?.findRenderObject();
     if (box is! RenderBox || !box.hasSize || !box.attached) return null;
     return box.localToGlobal(Offset.zero) & box.size;
@@ -299,9 +287,6 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
   }
 
   void _addWallet() => openWalletAddFor(context, _viewModel.kind);
-
-  void _toggleMode() =>
-      setState(() => _mode = _mode == WalletStackListMode.wheel ? WalletStackListMode.list : WalletStackListMode.wheel);
 
   Widget _buildList(BuildContext context, WalletStackListViewModel viewModel, double topInset) {
     final appearances = context.watchWalletAppearance();
@@ -366,9 +351,9 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
             CoconutAppBarActionButton(
               key: const Key('wallet-stack-list-mode'),
               width: CoconutAppBarActionButton.actionWidth,
-              onPressed: _toggleMode,
+              onPressed: viewModel.toggleMode,
               icon: SvgPicture.asset(
-                _mode == WalletStackListMode.wheel ? CommonMenuIconPath.list : CommonMenuIconPath.stackWheel,
+                viewModel.mode == WalletStackListMode.wheel ? CommonMenuIconPath.list : CommonMenuIconPath.stackWheel,
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
             ),
@@ -405,9 +390,9 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
                 : Stack(
                   children: [
                     Offstage(
-                      offstage: _mode == WalletStackListMode.list,
+                      offstage: viewModel.mode == WalletStackListMode.list,
                       child: TickerMode(
-                        enabled: _mode == WalletStackListMode.wheel,
+                        enabled: viewModel.mode == WalletStackListMode.wheel,
                         child: LayoutBuilder(
                           builder: (context, constraints) {
                             final width = constraints.maxWidth;
@@ -506,7 +491,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
                         ),
                       ),
                     ),
-                    if (_mode == WalletStackListMode.list) _buildList(context, viewModel, topInset),
+                    if (viewModel.mode == WalletStackListMode.list) _buildList(context, viewModel, topInset),
                   ],
                 ),
       ),

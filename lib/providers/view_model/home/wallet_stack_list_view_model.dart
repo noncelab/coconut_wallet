@@ -6,16 +6,31 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:flutter/foundation.dart';
 
+enum WalletStackListMode { wheel, list }
+
 /// 지갑 목록 휠 화면
 /// 가짜 잔액은 홈에만 쓰므로 여기서는 실제 잔액을 보여 준다
 class WalletStackListViewModel extends ChangeNotifier {
   final WalletStackKind kind;
   final WalletProvider _walletProvider;
   final PreferenceProvider _preferenceProvider;
+  WalletStackListMode _mode;
 
-  WalletStackListViewModel(this.kind, this._walletProvider, this._preferenceProvider) {
+  WalletStackListViewModel(
+    this.kind,
+    this._walletProvider,
+    this._preferenceProvider, {
+    WalletStackListMode mode = WalletStackListMode.wheel,
+  }) : _mode = mode {
     _walletProvider.addListener(notifyListeners);
     _preferenceProvider.addListener(notifyListeners);
+  }
+
+  WalletStackListMode get mode => _mode;
+
+  void toggleMode() {
+    _mode = _mode == WalletStackListMode.wheel ? WalletStackListMode.list : WalletStackListMode.wheel;
+    notifyListeners();
   }
 
   List<WalletItemBase> get wallets =>
