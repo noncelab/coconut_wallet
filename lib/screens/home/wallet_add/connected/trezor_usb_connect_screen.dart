@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -409,7 +410,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
 
   Widget _buildSuccessCard(TrezorUsbConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
-    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+    final isMismatch = (widget.psbtBase64 != null || widget.walletId != null) && hasXpub && _isWalletMismatch(vm);
 
     if (isMismatch) {
       final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
@@ -445,11 +446,15 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   }
 
   bool _isWalletMismatch(TrezorUsbConnectViewModel vm) {
-    final isSignFlow = widget.psbtBase64 != null;
+    final isSignFlow = (widget.psbtBase64 != null || widget.walletId != null);
     final isPaired = vm.step == TrezorUsbConnectStep.connected;
     final hasXpub = vm.xpub.isNotEmpty;
     if (!isSignFlow || !isPaired || !hasXpub) return false;
 
+    if (widget.walletId != null && widget.psbtBase64 == null) {
+      final target = context.read<WalletProvider>().getWalletById(widget.walletId!);
+      return target is! SinglesigWalletItem || target.extendedPublicKey != vm.xpub;
+    }
     final wp = context.read<WalletProvider>();
     final matchedName = wp.findWalletNameByXpub(vm.xpub);
     return matchedName == null || matchedName != (widget.walletName ?? '');
@@ -461,7 +466,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     final bool isRetry = vm.step == TrezorUsbConnectStep.error;
     final bool isPaired = vm.step == TrezorUsbConnectStep.connected;
     final bool hasXpub = vm.xpub.isNotEmpty;
-    final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isSignFlow = (widget.psbtBase64 != null || widget.walletId != null);
     final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
@@ -485,6 +490,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
             vm.step != TrezorUsbConnectStep.pairing &&
             !_isAddingWallet,
       );
+    } else if (widget.walletId != null && widget.psbtBase64 == null && isPaired) {
+      buttonText = t.complete;
+      onPressed = () => Navigator.pop(context, true);
     } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
       onPressed = _startSigning;
@@ -509,6 +517,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       onButtonClicked: onPressed,
       text: buttonText,
       isActive:
+          !(widget.walletId != null && widget.psbtBase64 == null && isPaired && !hasXpub) &&
           vm.step != TrezorUsbConnectStep.connecting &&
           vm.step != TrezorUsbConnectStep.pinEntry &&
           vm.step != TrezorUsbConnectStep.passphraseUseQuestion &&

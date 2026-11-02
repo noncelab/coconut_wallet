@@ -1422,13 +1422,14 @@ wallet_info_screen:
     no_memos: "지갑에 기록한 메모가 없어요"
     invalid_file_type: "잘 못된 파일 형식입니다. jsonl 파일을 선택해주세요."
   connected_hardware_wallet:
-    title: "기기 정보"
+    reconnect_button: "다시 연결"
+    title: "이 기기 정보"
     connection_status: "연결 상태"
     connected: "연결됨"
     disconnected: "연결 안 됨"
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
-    disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
+    disconnect_confirm_description: "현재 연결된 기기를 해제할게요.\n다음 서명 시 다시 연결이 필요해요."
 wallet_resync_screen:
   title: "지갑 재동기화"
   exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"
