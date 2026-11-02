@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/features/wallet/connect/wallet_connect_loading_indicator.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -84,11 +85,7 @@ class TrezorLoadingCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
-          ),
+          const WalletConnectLoadingIndicator(),
           CoconutLayout.spacing_400h,
           Text(
             title,
