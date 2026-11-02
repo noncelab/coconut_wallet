@@ -1044,6 +1044,10 @@ bitbox02_sign_screen:
   wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El BitBox02 conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con BitBox02"
     connect_other_bitbox02: "Conectar otro BitBox02"
@@ -1071,6 +1075,10 @@ trezor_sign_screen:
   error_title: "Error al firmar"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada pertenece a '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con Trezor"
     connect_other_trezor: "Conectar otro Trezor"

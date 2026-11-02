@@ -1937,6 +1937,10 @@ bitbox02_sign_screen:
   wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   status:
     connecting_device: "Connecting to BitBox02 via USB..."
     connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
@@ -1965,6 +1969,10 @@ trezor_sign_screen:
   error_title: "Signatur fehlgeschlagen"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   btn:
     sign: "Mit Trezor signieren"
     connect_other_trezor: "Anderes Trezor verbinden"

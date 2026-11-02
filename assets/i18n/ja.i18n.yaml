@@ -1041,6 +1041,10 @@ bitbox02_sign_screen:
   wrong_wallet_title: "接続されたウォレットが正しくありません"
   device_mismatch: "接続されたBitBox02がこのウォレットと一致しません。"
   device_mismatch_other_wallet: "接続されたウォレットは '${wallet_name}' です。正しいウォレットを接続してください。"
+  fingerprint_compare:
+    expected: "このウォレット"
+    connected: "接続されたウォレット"
+  connected_wallet_label: "接続されたウォレット"
   btn:
     sign: "BitBox02で署名"
     connect_other_bitbox02: "別のBitBox02を接続"
@@ -1068,6 +1072,10 @@ trezor_sign_screen:
   error_title: "署名に失敗"
   device_mismatch: "接続されたデバイスがこのウォレットと一致しません。"
   device_mismatch_other_wallet: "接続されたウォレットは'${wallet_name}'に属しています。正しいウォレットを接続してください。"
+  fingerprint_compare:
+    expected: "このウォレット"
+    connected: "接続されたウォレット"
+  connected_wallet_label: "接続されたウォレット"
   btn:
     sign: "Trezorで署名"
     connect_other_trezor: "別のTrezorを接続"
