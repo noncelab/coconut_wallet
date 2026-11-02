@@ -128,6 +128,8 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Completer<void>? dormantSync;
   Result<bool> dormantResult = Result.success(true);
   final subscribeGates = <Completer<void>>[];
+  bool holdNextSubscribe = false;
+  Completer<Result<bool>>? _heldSubscribe;
 
   @override
   Stream<IsolateStateMessage> get stateStream => states.stream;
@@ -140,6 +142,9 @@ class _ControlledIsolate extends Mock implements IsolateManager {
 
   @override
   Future<void> closeIsolate() async {
+    final held = _heldSubscribe;
+    _heldSubscribe = null;
+    if (held != null && !held.isCompleted) held.complete(Result.failure(ErrorCodes.nodeConnectionError));
     await closing?.future;
   }
 
@@ -147,6 +152,11 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async {
     subscribeCount++;
     if (subscribeGates.isNotEmpty) await subscribeGates.removeAt(0).future;
+    if (holdNextSubscribe) {
+      holdNextSubscribe = false;
+      final result = await (_heldSubscribe = Completer<Result<bool>>()).future;
+      if (result.isFailure) return result;
+    }
     states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
     return Result.success(true);
   }
@@ -868,6 +878,87 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
         expect(result, isTrue);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('진행 중인 재연결이 초기화 중일 때 서버를 바꾸면 초기화가 끝난 뒤 다시 연결한다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        isolate.initialization = Completer<void>();
+        unawaited(realNode.reconnect());
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(isolate.initializeCount, initialized + 1);
+
+        Result<bool>? applied;
+        unawaited(realNode.applyServerChange().then((value) => applied = value));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(applied, isNull, reason: '초기화 중이라고 건너뛰지 않고 기다린다');
+
+        isolate.initialization!.complete();
+        for (var i = 0; i < 10 && applied == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(applied?.isSuccess, isTrue);
+        expect(isolate.initializeCount, initialized + 2, reason: '바뀐 엔드포인트로 다시 초기화한다');
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('진행 중인 재연결이 오래 걸려도 새로고침은 대기 상한이 지나면 실패로 끝난다', (tester) async {
+      await startConnected(tester);
+      try {
+        final gate = Completer<void>();
+        isolate.subscribeGates.add(gate);
+        unawaited(realNode.reconnect());
+        await tester.pump(const Duration(milliseconds: 100));
+
+        bool? result;
+        unawaited(realNode.refreshWallets().then((value) => result = value));
+        await tester.pump(kNodeRefreshWaitTimeout - const Duration(seconds: 1));
+        expect(result, isNull);
+        await tester.pump(const Duration(seconds: 2));
+        expect(result, isFalse);
+        expect(realNode.walletsRefresh, isNull);
+
+        gate.complete();
+        await tester.pump(kNodeRefreshWaitTimeout);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('새 재연결에 밀려난 재연결은 실패 상태와 연결 오류를 남기지 않는다', (tester) async {
+      await startConnected(tester);
+      try {
+        final syncStates = <NodeSyncState>[];
+        final connectionErrors = <bool>[];
+        void record() {
+          syncStates.add(realNode.state.nodeSyncState);
+          connectionErrors.add(realNode.hasConnectionError);
+        }
+
+        realNode.addListener(record);
+        isolate.holdNextSubscribe = true;
+        Result<bool>? superseded;
+        unawaited(realNode.reconnect().then((value) => superseded = value));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(superseded, isNull, reason: '첫 재연결은 재구독 단계에서 대기 중');
+
+        Result<bool>? applied;
+        unawaited(realNode.applyServerChange().then((value) => applied = value));
+        for (var i = 0; i < 10 && applied == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        realNode.removeListener(record);
+
+        expect(superseded?.isFailure, isTrue, reason: '닫힌 isolate의 재구독은 실패로 돌아온다');
+        expect(applied?.isSuccess, isTrue);
+        expect(syncStates, isNot(contains(NodeSyncState.failed)));
+        expect(connectionErrors, isNot(contains(true)));
       } finally {
         await stop(tester);
       }

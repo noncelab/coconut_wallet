@@ -58,6 +58,8 @@ class NodeProvider extends ChangeNotifier {
   bool _isDisposed = false;
   Future<bool>? _walletsRefresh;
   Future<Result<bool>>? _reconnecting;
+  int _latestReconnectId = 0;
+  Completer<void>? _connectionIdle;
   Set<int> _knownWalletIds = {};
   final Map<int, Object> _newWalletSubscriptions = {};
 
@@ -488,8 +490,23 @@ class NodeProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isInitializing = false;
+      _completeConnectionIdle();
       if (!_isDisposed) notifyListeners();
     }
+  }
+
+  /// 진행 중인 초기화·종료가 모두 끝날 때까지 대기
+  Future<void> _waitUntilConnectionIdle() async {
+    while (!_isDisposed && (_isInitializing || _isClosing)) {
+      await (_connectionIdle ??= Completer<void>()).future;
+    }
+  }
+
+  void _completeConnectionIdle() {
+    if (_isInitializing || _isClosing) return;
+    final idle = _connectionIdle;
+    _connectionIdle = null;
+    idle?.complete();
   }
 
   void _subscribeToStateChanges() {
@@ -660,6 +677,15 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<bool> _refreshWallets() async {
+    try {
+      return await _refreshUntilSettled().timeout(kNodeRefreshWaitTimeout);
+    } on TimeoutException {
+      return false;
+    }
+  }
+
+  /// 시간 초과로 새로고침 대기를 끝내도 진행 중인 재연결·동기화는 계속 진행
+  Future<bool> _refreshUntilSettled() async {
     var reconnecting = _reconnecting;
     if (reconnecting == null) {
       if (_isClosing) return false;
@@ -696,7 +722,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  /// 진행 중인 재연결이 있으면 그 결과를 공유
+  /// 호출마다 새로 연결하고 시작한 재연결만 [_reconnecting]에 기록 (새로고침이 대기)
   Future<Result<bool>> reconnect() {
     if (_isDisposed) return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     // 네트워크 연결 상태 확인
@@ -712,7 +738,7 @@ class NodeProvider extends ChangeNotifier {
       return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     }
 
-    final started = _reconnect();
+    final started = _reconnect(++_latestReconnectId);
     _reconnecting = started;
     started.whenComplete(() {
       if (identical(_reconnecting, started)) _reconnecting = null;
@@ -720,15 +746,17 @@ class NodeProvider extends ChangeNotifier {
     return started;
   }
 
-  Future<Result<bool>> _reconnect() async {
+  Future<Result<bool>> _reconnect(int reconnectId) async {
+    // 더 새로운 재연결에 밀려났으면 상태·연결 오류·분석 이벤트를 건드리지 않고 종료
+    bool superseded() => _isDisposed || reconnectId != _latestReconnectId;
     try {
       Logger.log('NodeProvider: Starting reconnect');
       if (isInitialized) {
         await closeConnection();
-        if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
+        if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
       }
       await initialize();
-      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
+      if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
       _setConnectionError(false);
 
       final walletLoadState = _walletLoadStateNotifier.value;
@@ -737,7 +765,7 @@ class NodeProvider extends ChangeNotifier {
       if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isNotEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing');
         final result = await subscribeWallets();
-        if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
+        if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
         notifyListeners();
 
         if (result.isSuccess) {
@@ -768,7 +796,7 @@ class NodeProvider extends ChangeNotifier {
         return Result.success(true);
       }
     } catch (e) {
-      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
+      if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
@@ -820,6 +848,7 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
     } finally {
       _isClosing = false;
+      _completeConnectionIdle();
     }
   }
 
@@ -1004,6 +1033,8 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       Logger.log('NodeProvider: 서버 변경 반영: $host:$port, ssl=$ssl');
+      // 초기화·종료 중이면 이전 엔드포인트로 진행 중이므로 끝난 뒤 새 엔드포인트로 재연결
+      await _waitUntilConnectionIdle();
       final result = await reconnect();
 
       if (result.isFailure) {
@@ -1021,6 +1052,9 @@ class NodeProvider extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    final idle = _connectionIdle;
+    _connectionIdle = null;
+    idle?.complete();
     _newWalletSubscriptions.clear();
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);

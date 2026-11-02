@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+// ignore: implementation_imports
+import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
 
 class QrScannerView extends StatefulWidget {
   static const alreadyRunningRetryDelay = Duration(milliseconds: 300);
@@ -93,13 +95,23 @@ class _QrScannerViewState extends State<QrScannerView> {
     if (!mounted) return;
     if (_retryCount >= QrScannerView.alreadyRunningRetryLimit) {
       _forcedRestart = true;
-      await MobileScannerPlatform.instance.stop();
+      await _forceStopCamera();
     } else {
       _retryCount++;
     }
     if (!mounted) return;
     _retryTimer = null;
     await widget.controller.start();
+  }
+
+  /// 네이티브만 카메라를 점유한 경우에도 정지 명령이 가도록 강제 정지
+  Future<void> _forceStopCamera() async {
+    final platform = MobileScannerPlatform.instance;
+    if (platform is MethodChannelMobileScanner) {
+      await platform.stop(force: true);
+    } else {
+      await platform.stop();
+    }
   }
 
   Widget _buildError(BuildContext context, MobileScannerException error) {

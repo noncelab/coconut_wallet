@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+// ignore: implementation_imports
+import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
 
 class _OccupiedCameraPlatform extends MobileScannerPlatform {
   _OccupiedCameraPlatform({required this.occupied, this.releasesOnStop = true});
@@ -151,5 +154,73 @@ void main() {
     expect(controller.value.isRunning, isTrue);
     expect(platform.stopCalls, 1);
     expect(find.text(alreadyRunningMessage), findsNothing);
+  });
+
+  testWidgets('sends a native force stop when only the native side still holds the camera', (tester) async {
+    final original = MobileScannerPlatform.instance;
+    final platform = MethodChannelMobileScanner();
+    MobileScannerPlatform.instance = platform;
+    final messenger = tester.binding.defaultBinaryMessenger;
+    var nativeOccupied = true;
+    var startFailed = false;
+    var stopsAfterFailure = 0;
+    messenger.setMockMethodCallHandler(platform.methodChannel, (call) async {
+      switch (call.method) {
+        case 'state':
+          return 1;
+        case 'start':
+          if (nativeOccupied) {
+            startFailed = true;
+            throw PlatformException(code: 'MOBILE_SCANNER_ALREADY_STARTED_ERROR');
+          }
+          return <String, Object?>{
+            'textureId': 1,
+            'cameraDirection': 1,
+            'handlesCropAndRotation': true,
+            'naturalDeviceOrientation': 'PORTRAIT_UP',
+            'sensorOrientation': 90,
+            'numberOfCameras': 1,
+            'currentTorchState': 0,
+            'size': <String, double>{'width': 640, 'height': 480},
+          };
+        case 'stop':
+          if (startFailed) {
+            stopsAfterFailure++;
+            nativeOccupied = false;
+          }
+          return null;
+      }
+      return null;
+    });
+    for (final channel in [platform.eventChannel.name, platform.deviceOrientationEventChannel.name]) {
+      messenger.setMockMethodCallHandler(MethodChannel(channel), (_) async => null);
+    }
+    final controller = MobileScannerController();
+    addTearDown(() async {
+      await controller.dispose();
+      messenger.setMockMethodCallHandler(platform.methodChannel, null);
+      for (final channel in [platform.eventChannel.name, platform.deviceOrientationEventChannel.name]) {
+        messenger.setMockMethodCallHandler(MethodChannel(channel), null);
+      }
+      MobileScannerPlatform.instance = original;
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: QrScannerView(
+          controller: controller,
+          onDetect: (_) {},
+          errorBuilder: (_, error) => Text(error.errorCode.message),
+        ),
+      ),
+    );
+    for (var i = 0; i <= QrScannerView.alreadyRunningRetryLimit + 2 && !controller.value.isRunning; i++) {
+      await tester.pump(QrScannerView.alreadyRunningRetryDelay);
+      await tester.pump();
+    }
+
+    expect(stopsAfterFailure, 1);
+    expect(controller.value.isRunning, isTrue);
   });
 }
