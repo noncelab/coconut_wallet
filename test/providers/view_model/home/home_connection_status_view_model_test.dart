@@ -39,6 +39,14 @@ class _Node extends Mock implements NodeProvider {
   bool connectionEstablished = true;
   NodeSyncState currentSyncState = NodeSyncState.completed;
   late Stream<NodeSyncState> syncStream;
+  Completer<void>? refreshing;
+  int refreshCount = 0;
+
+  @override
+  Future<void> refreshWallets() async {
+    refreshCount++;
+    await refreshing?.future;
+  }
 
   @override
   void addListener(VoidCallback listener) => listeners.add(listener);
@@ -106,12 +114,16 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Completer<void>? initialization;
   Completer<void>? closing;
   Completer<Result<BlockTimestamp>>? blockRequest;
+  int initializeCount = 0;
+  int subscribeCount = 0;
+  final dormantSyncedWalletIds = <int>[];
 
   @override
   Stream<IsolateStateMessage> get stateStream => states.stream;
 
   @override
   Future<void> initialize(String host, int port, bool ssl, NetworkType networkType, [String? fingerprint]) async {
+    initializeCount++;
     await initialization?.future;
   }
 
@@ -121,7 +133,16 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   }
 
   @override
-  Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async => Result.success(true);
+  Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async {
+    subscribeCount++;
+    return Result.success(true);
+  }
+
+  @override
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
+    dormantSyncedWalletIds.add(walletItem.id);
+    return Result.success(true);
+  }
 
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async =>
@@ -149,6 +170,14 @@ void main() {
     return viewModel;
   }
 
+  /// 첫 진입 표시가 끝나 아무것도 보이지 않는 홈
+  HomeConnectionStatusViewModel createSettledViewModel() {
+    final viewModel = HomeConnectionStatusViewModel(connectivity, node, walletItems, showsInitialStatus: false);
+    addTearDown(viewModel.dispose);
+    sync.add(NodeSyncState.completed);
+    return viewModel;
+  }
+
   setUp(() {
     NetworkType.setNetworkType(NetworkType.mainnet);
     wallet = _Wallet();
@@ -167,13 +196,17 @@ void main() {
     walletItems.dispose();
   });
 
-  test('처음부터 연결되면 성공 문구를 켜지 않는다', () {
+  testWidgets('처음 진입해 바로 연결되면 연결됨을 보여 준 뒤 업데이트 완료로 넘어간다', (tester) async {
     final viewModel = createViewModel();
-
     sync.add(NodeSyncState.completed);
 
     expect(viewModel.networkStatus, NetworkStatus.online);
+    expect(viewModel.showElectrumReconnected, isTrue);
+    await tester.pump(kHomeConnectedNoticeDuration);
     expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+    expect(viewModel.showUpdateCompleted, isFalse);
   });
 
   testWidgets('실제 재연결 순서에서도 소켓 연결 성공 전에는 복구 문구를 켜지 않는다', (tester) async {
@@ -196,6 +229,8 @@ void main() {
       await tester.pump();
       isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
       await tester.pump();
+      expect(viewModel.showElectrumReconnected, isTrue, reason: '첫 진입 연결');
+      await tester.pump(kHomeConnectedNoticeDuration + kHomeUpdateCompletedNoticeDuration);
       expect(viewModel.showElectrumReconnected, isFalse);
       final blockRequest = Completer<Result<BlockTimestamp>>();
       isolate.blockRequest = blockRequest;
@@ -227,7 +262,7 @@ void main() {
       isolate.initialization!.complete();
       await tester.pump();
       expect(viewModel.showElectrumReconnected, isTrue);
-      await tester.pump(const Duration(milliseconds: 1900));
+      await tester.pump(kHomeConnectedNoticeDuration - const Duration(milliseconds: 100));
       expect(viewModel.showElectrumReconnected, isTrue);
       await tester.pump(const Duration(milliseconds: 100));
       expect(viewModel.showElectrumReconnected, isFalse);
@@ -244,8 +279,7 @@ void main() {
   });
 
   test('서버 연결 실패를 보여 준 뒤 다시 동기화되면 성공 문구를 켠다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
 
     sync.add(NodeSyncState.failed);
     expect(viewModel.networkStatus, NetworkStatus.connectionFailed);
@@ -257,8 +291,7 @@ void main() {
   });
 
   test('인터넷이 끊겼다가 돌아오면 성공 문구를 켠다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
 
     connectivity.setInternet(false);
     expect(viewModel.networkStatus, NetworkStatus.offline);
@@ -270,8 +303,7 @@ void main() {
   });
 
   test('VPN 때문에 막혔다가 풀리면 성공 문구를 켠다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
     sync.add(NodeSyncState.failed);
     connectivity.setVpn(true);
     notifyNode();
@@ -285,8 +317,7 @@ void main() {
   });
 
   test('재연결을 시작만 한 상태에서는 성공 문구를 켜지 않는다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
     sync.add(NodeSyncState.failed);
     node.initializing = true;
     notifyNode();
@@ -300,8 +331,7 @@ void main() {
   });
 
   test('오류가 없어도 실제 연결이 없으면 성공 문구를 켜지 않고, 연결 종료 시 안내를 취소한다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
     connectivity.setInternet(false);
     node.connectionEstablished = false;
     connectivity.setInternet(true);
@@ -330,8 +360,7 @@ void main() {
   });
 
   test('동기화 중에도 연결 오류가 남아 있으면 성공 문구를 켜지 않는다', () {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
     sync.add(NodeSyncState.failed);
     node.connectionError = true;
     sync.add(NodeSyncState.syncing);
@@ -343,23 +372,23 @@ void main() {
     expect(viewModel.showElectrumReconnected, isTrue);
   });
 
-  testWidgets('성공 문구는 2초 뒤에 사라지고 같은 연결로는 다시 켜지지 않는다', (tester) async {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+  testWidgets('연결됨은 잠깐 뒤 업데이트 완료로 바뀌고 같은 연결로는 다시 켜지지 않는다', (tester) async {
+    final viewModel = createSettledViewModel();
     sync.add(NodeSyncState.failed);
     sync.add(NodeSyncState.completed);
     expect(viewModel.showElectrumReconnected, isTrue);
 
-    await tester.pump(kHomeReconnectedNoticeDuration);
+    await tester.pump(kHomeConnectedNoticeDuration);
     expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
 
     notifyNode();
     expect(viewModel.showElectrumReconnected, isFalse);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
   });
 
   testWidgets('성공 문구가 떠 있는 동안 다시 끊기면 끄고, 다음 복구 때 다시 켠다', (tester) async {
-    final viewModel = createViewModel();
-    sync.add(NodeSyncState.completed);
+    final viewModel = createSettledViewModel();
     connectivity.setInternet(false);
     connectivity.setInternet(true);
     expect(viewModel.showElectrumReconnected, isTrue);
@@ -370,10 +399,11 @@ void main() {
 
     connectivity.setInternet(true);
     expect(viewModel.showElectrumReconnected, isTrue);
-    await tester.pump(kHomeReconnectedNoticeDuration);
+    await tester.pump(kHomeConnectedNoticeDuration);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
   });
 
-  test('첫 실행 지연으로 실패 문구가 안 보이면 바로 복구돼도 성공 문구를 켜지 않는다', () {
+  test('첫 실행에서 실패가 지연으로 가려진 채 연결되면 첫 연결로 연결됨을 보여 준다', () {
     final viewModel = createViewModel();
     sync.add(NodeSyncState.failed);
 
@@ -382,7 +412,7 @@ void main() {
 
     sync.add(NodeSyncState.syncing);
     expect(viewModel.networkStatus, NetworkStatus.online);
-    expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.showElectrumReconnected, isTrue);
   });
 
   for (final useConnectionError in [false, true]) {
@@ -420,7 +450,7 @@ void main() {
       expect(viewModel.networkStatus, NetworkStatus.online);
       expect(viewModel.showElectrumReconnected, isTrue);
 
-      await tester.pump(const Duration(milliseconds: 1900));
+      await tester.pump(kHomeConnectedNoticeDuration - const Duration(milliseconds: 100));
       expect(viewModel.showElectrumReconnected, isTrue);
       await tester.pump(const Duration(milliseconds: 100));
       expect(viewModel.showElectrumReconnected, isFalse);
@@ -443,13 +473,39 @@ void main() {
     expect(viewModel.showElectrumReconnected, isFalse);
   });
 
-  test('처음 동기화 중에는 동기화 표시를 켜고, 완료되면 끈다', () {
+  testWidgets('처음 진입하면 연결됨 → 업데이트 중 → 업데이트 완료 순서로 보여 준다', (tester) async {
     final viewModel = createViewModel();
     sync.add(NodeSyncState.syncing);
+    expect(viewModel.showElectrumReconnected, isTrue);
+    expect(viewModel.isSyncing, isFalse);
+
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.showElectrumReconnected, isFalse);
     expect(viewModel.isSyncing, isTrue);
 
     sync.add(NodeSyncState.completed);
     expect(viewModel.isSyncing, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+    expect(viewModel.showUpdateCompleted, isFalse);
+  });
+
+  testWidgets('홈이 지갑 로딩보다 먼저 만들어져도 지갑이 채워지면 첫 진입 순서를 보여 준다', (tester) async {
+    final wallets = walletItems.value;
+    walletItems.value = [];
+    final viewModel = createViewModel();
+    sync.add(NodeSyncState.completed);
+    expect(viewModel.showElectrumReconnected, isFalse);
+
+    walletItems.value = wallets;
+    sync.add(NodeSyncState.syncing);
+    expect(viewModel.showElectrumReconnected, isTrue);
+
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.isSyncing, isTrue);
+    sync.add(NodeSyncState.completed);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
   });
 
   test('첫 동기화가 끝난 뒤 다시 동기화할 때는 동기화 표시를 켜지 않는다', () {
@@ -486,5 +542,180 @@ void main() {
     expect(notified, isTrue);
     expect(viewModel.isSyncing, isFalse);
     expect(viewModel.networkStatus, NetworkStatus.connectionFailed);
+  });
+
+  testWidgets('당겨서 새로고침하면 다시 연결된 뒤 연결됨 → 업데이트 중 → 업데이트 완료를 한 번씩 보여 준다', (tester) async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+
+    final refresh = viewModel.refresh();
+    expect(node.refreshCount, 1);
+    expect(viewModel.showElectrumReconnected, isFalse, reason: '닫기 전의 기존 연결로는 켜지 않는다');
+
+    node.connectionEstablished = false;
+    sync.add(NodeSyncState.init);
+    notifyNode();
+    expect(viewModel.networkStatus, NetworkStatus.online);
+    expect(viewModel.showElectrumReconnected, isFalse);
+
+    node.connectionEstablished = true;
+    sync.add(NodeSyncState.syncing);
+    expect(viewModel.showElectrumReconnected, isTrue);
+
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.isSyncing, isTrue);
+
+    sync.add(NodeSyncState.completed);
+    node.refreshing!.complete();
+    await refresh;
+    expect(viewModel.isSyncing, isFalse);
+    expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
+
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+    expect(viewModel.showUpdateCompleted, isFalse);
+  });
+
+  testWidgets('연결 실패를 보여 주던 중 새로고침으로 복구되면 업데이트 완료를 보여 준다', (tester) async {
+    final viewModel = createSettledViewModel();
+    sync.add(NodeSyncState.failed);
+    expect(viewModel.networkStatus, NetworkStatus.connectionFailed);
+    node.refreshing = Completer<void>();
+
+    final refresh = viewModel.refresh();
+    sync.add(NodeSyncState.syncing);
+    sync.add(NodeSyncState.completed);
+    node.refreshing!.complete();
+    await refresh;
+
+    expect(viewModel.networkStatus, NetworkStatus.online);
+    expect(viewModel.showElectrumReconnected, isFalse);
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+  });
+
+  testWidgets('새로고침이 끝나면 업데이트 완료를 잠깐 보여 준 뒤 감춘다', (tester) async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+
+    final refresh = viewModel.refresh();
+    expect(viewModel.showUpdateCompleted, isFalse);
+    node.refreshing!.complete();
+    await refresh;
+    expect(viewModel.showUpdateCompleted, isTrue);
+    expect(viewModel.isSyncing, isFalse);
+
+    await tester.pump(kHomeUpdateCompletedNoticeDuration - const Duration(milliseconds: 100));
+    expect(viewModel.showUpdateCompleted, isTrue);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(viewModel.showUpdateCompleted, isFalse);
+  });
+
+  test('새로고침이 연결 실패로 끝나면 업데이트 완료를 보여 주지 않는다', () async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+
+    final refresh = viewModel.refresh();
+    node.connectionError = true;
+    node.currentSyncState = NodeSyncState.failed;
+    sync.add(NodeSyncState.failed);
+    node.refreshing!.complete();
+    await refresh;
+
+    expect(viewModel.showUpdateCompleted, isFalse);
+    expect(viewModel.networkStatus, NetworkStatus.connectionFailed);
+  });
+
+  test('새로고침 중에 다시 당겨도 서버 동기화는 한 번만 시작한다', () async {
+    final viewModel = createSettledViewModel();
+    node.refreshing = Completer<void>();
+
+    final first = viewModel.refresh();
+    final second = viewModel.refresh();
+    expect(node.refreshCount, 1);
+
+    node.refreshing!.complete();
+    await Future.wait([first, second]);
+    expect(viewModel.isSyncing, isFalse);
+  });
+
+  group('NodeProvider.refreshWallets', () {
+    late _ControlledIsolate isolate;
+    late ValueNotifier<List<WalletItemBase>> wallets;
+    late NodeProvider realNode;
+
+    Future<void> startConnected(WidgetTester tester) async {
+      isolate = _ControlledIsolate();
+      wallets = ValueNotifier<List<WalletItemBase>>([_WalletItem()]);
+      connectivity.internetOn = false;
+      realNode = NodeProvider(
+        ElectrumServer.custom('localhost', 50001, false),
+        NetworkType.mainnet,
+        connectivity,
+        wallet.loadState,
+        wallets,
+        null,
+        isolateManager: isolate,
+      );
+      connectivity.internetOn = true;
+      await realNode.initialize();
+      wallet.loadState.value = WalletLoadState.loadCompleted;
+      await tester.pump(const Duration(seconds: 1));
+      isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
+      await tester.pump();
+    }
+
+    Future<void> stop(WidgetTester tester) async {
+      realNode.dispose();
+      await tester.pump();
+      await isolate.states.close();
+      wallets.dispose();
+    }
+
+    testWidgets('연결을 다시 맺어 지갑을 다시 구독하고 휴면 주소도 확인한다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        final subscribed = isolate.subscribeCount;
+
+        var done = false;
+        unawaited(realNode.refreshWallets().then((_) => done = true));
+        for (var i = 0; i < 10 && !done; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(done, isTrue);
+
+        expect(isolate.initializeCount, initialized + 1);
+        expect(isolate.subscribeCount, subscribed + 1);
+        expect(isolate.dormantSyncedWalletIds, [1]);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('이미 동기화 중이면 새로 연결하지 않고 끝날 때까지 기다린다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToSyncing, []));
+        await tester.pump();
+
+        var done = false;
+        unawaited(realNode.refreshWallets().then((_) => done = true));
+        await tester.pump(const Duration(seconds: 1));
+        expect(done, isFalse);
+
+        isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
+        for (var i = 0; i < 10 && !done; i++) {
+          await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+          await tester.pump();
+        }
+        expect(done, isTrue);
+        expect(isolate.initializeCount, initialized);
+      } finally {
+        await stop(tester);
+      }
+    });
   });
 }

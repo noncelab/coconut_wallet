@@ -6,6 +6,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -640,6 +641,28 @@ class NodeProvider extends ChangeNotifier {
     if (!isInitialized) return reconnect();
     if (state.nodeSyncState != NodeSyncState.failed && !hasConnectionError) return Result.success(true);
     return reconnect();
+  }
+
+  /// 당겨서 새로고침: 서버에 다시 연결해 모든 지갑을 다시 동기화한다. 이미 동기화 중이면 끝날 때까지 기다린다.
+  Future<void> refreshWallets() async {
+    if (_isDisposed || _connectivityProvider.isInternetOff) return;
+    if (_isInitializing || _isClosing || state.nodeSyncState == NodeSyncState.syncing) {
+      await _waitUntilSyncSettled();
+      return;
+    }
+    await reconnect();
+    if (_isDisposed) return;
+    for (final wallet in _walletItemListNotifier.value) {
+      unawaited(syncDormantAddresses(wallet));
+    }
+  }
+
+  Future<void> _waitUntilSyncSettled() async {
+    try {
+      await syncStateStream
+          .firstWhere((syncState) => syncState == NodeSyncState.completed || syncState == NodeSyncState.failed)
+          .timeout(kNodeRefreshWaitTimeout);
+    } catch (_) {}
   }
 
   Future<Result<bool>> reconnect() async {

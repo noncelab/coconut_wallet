@@ -60,6 +60,7 @@ home_screen_settings: "Startseiten-Einstellungen"
 home_connection_status:
   electrum_connection_failed: "Electrum nicht erreichbar"
   electrum_connection_restored: "Mit Electrum verbunden"
+  update_completed: "Aktualisiert"
 tx_list: "Transaktionen"
 utxo_list: "UTXO-Liste"
 wallet_id: "Wallet-ID"

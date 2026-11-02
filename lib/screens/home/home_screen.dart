@@ -388,8 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeScroll(BuildContext context) {
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       slivers: [
         Builder(builder: _buildAppBar),
+        Builder(builder: _buildRefreshControl),
         SliverSafeArea(
           top: false,
           bottom: false,
@@ -441,6 +443,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildRefreshControl(BuildContext context) {
+    if (context.select<HomeViewModel, bool>((viewModel) => viewModel.isArranging)) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return CupertinoSliverRefreshControl(
+      onRefresh: context.read<HomeConnectionStatusViewModel>().refresh,
+      refreshTriggerPullDistance: 80,
+      refreshIndicatorExtent: 0,
+      builder: (_, _, _, _, _) => const SizedBox.shrink(),
+    );
+  }
+
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();
     final arranging = context.watch<HomeViewModel>().isArranging;
@@ -448,6 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
       networkStatus: status.networkStatus,
       showReconnected: status.showElectrumReconnected,
       isSyncing: status.isSyncing,
+      showUpdateCompleted: status.showUpdateCompleted,
       isArranging: arranging,
       addWalletButtonLink: _addWalletButtonLink,
       onArrangeDone: _finishArranging,
