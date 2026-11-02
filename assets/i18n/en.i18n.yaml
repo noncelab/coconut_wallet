@@ -1043,7 +1043,7 @@ bitbox02_sign_screen:
     description: "Transaction has been signed by BitBox02."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
-  device_mismatch: "The connected BitBox doesn't match the wallet you're trying to sign with."
+  device_mismatch: "The connected BitBox02 doesn't match this wallet."
   device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
   fingerprint_compare:
     expected: "Expected"
@@ -1075,7 +1075,7 @@ trezor_sign_screen:
     description: "Transaction has been signed by Trezor."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
-  device_mismatch: "The connected Trezor doesn't match the wallet you're trying to sign with."
+  device_mismatch: "The connected Trezor doesn't match this wallet."
   device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
   fingerprint_compare:
     expected: "Expected"

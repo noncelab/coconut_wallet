@@ -1936,7 +1936,7 @@ taproot:
 
 bitbox02_sign_screen:
   wrong_wallet_title: "Falsche Wallet verbunden"
-  device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
+  device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
   status:
     connecting_device: "Connecting to BitBox02 via USB..."

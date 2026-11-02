@@ -1042,7 +1042,7 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
   error_title: "Error al firmar"
   wrong_wallet_title: "Billetera incorrecta conectada"
-  device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."
+  device_mismatch: "El BitBox02 conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
   btn:
     sign: "Firmar con BitBox02"
