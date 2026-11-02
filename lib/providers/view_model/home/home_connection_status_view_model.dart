@@ -56,9 +56,14 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
 
   bool get isSyncing => _hasWallets && (_phase == _StatusPhase.updating || _isInErrorDisplayDelay);
 
-  Future<void> refresh() => _refreshing ??= _refresh();
+  Future<void> refresh() {
+    final refreshing = _refreshing;
+    if (refreshing != null) return refreshing;
+    final walletsRefresh = _nodeProvider.refreshWallets();
+    return _refreshing ??= _followRefresh(walletsRefresh);
+  }
 
-  Future<void> _refresh() async {
+  Future<void> _followRefresh(Future<void> walletsRefresh) async {
     _isRefreshing = true;
     if (_phase == _StatusPhase.none || _phase == _StatusPhase.completed) {
       _setPhase(_StatusPhase.waitingForConnection);
@@ -66,7 +71,7 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     }
     notifyListeners();
     try {
-      await _nodeProvider.refreshWallets();
+      await walletsRefresh;
     } finally {
       _isRefreshing = false;
       _refreshing = null;
@@ -120,6 +125,10 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
       (_errorDisplayDelayTimer != null || _initialErrorDisplayDelayTimer != null);
 
   void _onNodeProviderChanged() {
+    final walletsRefresh = _nodeProvider.walletsRefresh;
+    if (walletsRefresh != null && _refreshing == null) {
+      _refreshing = _followRefresh(walletsRefresh);
+    }
     if (_nodeProvider.hasConnectionError &&
         (_nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.init) &&
         !_isFirstLoaded &&

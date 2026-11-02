@@ -56,6 +56,7 @@ class NodeProvider extends ChangeNotifier {
   bool _hasConnectionError = false;
   bool _isServerChanging = false;
   bool _isDisposed = false;
+  Future<void>? _walletsRefresh;
   Set<int> _knownWalletIds = {};
   final Map<int, Object> _newWalletSubscriptions = {};
 
@@ -218,6 +219,9 @@ class NodeProvider extends ChangeNotifier {
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
   bool get isInitializing => _isInitializing;
+
+  /// 진행 중인 [refreshWallets]. 당겨서 새로고침 외에 앱 복귀 등에서 시작된 것도 포함한다.
+  Future<void>? get walletsRefresh => _walletsRefresh;
   bool get isConnected =>
       isInitialized &&
       !_isInitializing &&
@@ -643,9 +647,17 @@ class NodeProvider extends ChangeNotifier {
     return reconnect();
   }
 
-  /// 당겨서 새로고침: 서버에 다시 연결해 모든 지갑을 다시 동기화한다. 이미 동기화 중이면 끝날 때까지 기다린다.
-  Future<void> refreshWallets() async {
-    if (_isDisposed || _connectivityProvider.isInternetOff) return;
+  /// 서버에 다시 연결해 모든 지갑을 다시 동기화한다. 이미 동기화 중이면 끝날 때까지 기다린다.
+  Future<void> refreshWallets() {
+    if (_isDisposed || _connectivityProvider.isInternetOff) return Future.value();
+    final refresh = _walletsRefresh;
+    if (refresh != null) return refresh;
+    final started = _walletsRefresh = _refreshWallets().whenComplete(() => _walletsRefresh = null);
+    notifyListeners();
+    return started;
+  }
+
+  Future<void> _refreshWallets() async {
     if (_isInitializing || _isClosing || state.nodeSyncState == NodeSyncState.syncing) {
       await _waitUntilSyncSettled();
       return;

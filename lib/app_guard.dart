@@ -22,6 +22,9 @@ import 'package:screen_capture_event/screen_capture_event.dart';
 /// 백그라운드 체류가 이보다 길었을 때만 resume 시 소켓 생존 여부 확인
 const Duration _kBackgroundSocketHealthCheckThreshold = Duration(seconds: 30);
 
+/// 백그라운드 체류가 이보다 길었으면 resume 시 모든 지갑을 다시 동기화
+const Duration _kBackgroundResyncThreshold = Duration(minutes: 5);
+
 // 앱 root 화면(HomeScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
   static bool _isPrivacyEnabled = true;
@@ -182,7 +185,13 @@ class _AppGuardState extends State<AppGuard> {
     // (hasConnectionError/failed로 안 잡히는 상태) 짧은 전환에서 매번 확인하면 낭비이므로,
     // [_kBackgroundSocketHealthCheckThreshold] 이상 백그라운드에 있었을 때만 소켓 상태를 확인한다.
     final pausedAt = _pausedAt;
-    if (pausedAt == null || DateTime.now().difference(pausedAt) < _kBackgroundSocketHealthCheckThreshold) {
+    final backgroundDuration = pausedAt == null ? Duration.zero : DateTime.now().difference(pausedAt);
+    if (backgroundDuration >= _kBackgroundResyncThreshold) {
+      Logger.log('AppGuard: Long background, resyncing all wallets');
+      unawaited(_nodeProvider.refreshWallets());
+      return;
+    }
+    if (backgroundDuration < _kBackgroundSocketHealthCheckThreshold) {
       Logger.log('AppGuard: Connection is healthy, skipping reconnect');
       return;
     }

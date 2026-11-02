@@ -48,6 +48,11 @@ class _Node extends Mock implements NodeProvider {
     await refreshing?.future;
   }
 
+  Future<void>? startedRefresh;
+
+  @override
+  Future<void>? get walletsRefresh => startedRefresh;
+
   @override
   void addListener(VoidCallback listener) => listeners.add(listener);
 
@@ -640,6 +645,36 @@ void main() {
     expect(viewModel.isSyncing, isFalse);
   });
 
+  testWidgets('앱 복귀처럼 다른 곳에서 시작한 재동기화도 연결됨 → 업데이트 중 → 업데이트 완료로 보여 준다', (tester) async {
+    final viewModel = createSettledViewModel();
+    final started = Completer<void>();
+    node.startedRefresh = started.future;
+    notifyNode();
+    expect(node.refreshCount, 0);
+
+    node.connectionEstablished = false;
+    sync.add(NodeSyncState.init);
+    notifyNode();
+    expect(viewModel.showElectrumReconnected, isFalse);
+
+    node.connectionEstablished = true;
+    sync.add(NodeSyncState.syncing);
+    expect(viewModel.showElectrumReconnected, isTrue);
+    await tester.pump(kHomeConnectedNoticeDuration);
+    expect(viewModel.isSyncing, isTrue);
+
+    sync.add(NodeSyncState.completed);
+    node.startedRefresh = null;
+    started.complete();
+    await tester.pump();
+    expect(viewModel.showUpdateCompleted, isTrue);
+
+    final refresh = viewModel.refresh();
+    expect(node.refreshCount, 1, reason: '끝난 재동기화는 다시 따라가지 않는다');
+    await refresh;
+    await tester.pump(kHomeUpdateCompletedNoticeDuration);
+  });
+
   group('NodeProvider.refreshWallets', () {
     late _ControlledIsolate isolate;
     late ValueNotifier<List<WalletItemBase>> wallets;
@@ -689,6 +724,32 @@ void main() {
         expect(isolate.initializeCount, initialized + 1);
         expect(isolate.subscribeCount, subscribed + 1);
         expect(isolate.dormantSyncedWalletIds, [1]);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('동시에 여러 곳에서 요청해도 한 번만 다시 연결하고, 진행 중인 재동기화를 알린다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        var notified = 0;
+        realNode.addListener(() => notified++);
+
+        final first = realNode.refreshWallets();
+        final second = realNode.refreshWallets();
+        expect(identical(first, second), isTrue);
+        expect(realNode.walletsRefresh, same(first));
+        expect(notified, greaterThan(0));
+
+        var done = false;
+        unawaited(first.then((_) => done = true));
+        for (var i = 0; i < 10 && !done; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(done, isTrue);
+        expect(isolate.initializeCount, initialized + 1);
+        expect(realNode.walletsRefresh, isNull);
       } finally {
         await stop(tester);
       }
