@@ -660,13 +660,20 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<bool> _refreshWallets() async {
-    final reconnecting = _reconnecting;
-    if (reconnecting != null) {
-      if ((await reconnecting).isFailure) return false;
-    } else if (_isClosing) {
-      return false;
-    } else if (!_isInitializing && state.nodeSyncState != NodeSyncState.syncing) {
-      if ((await reconnect()).isFailure) return false;
+    var reconnecting = _reconnecting;
+    if (reconnecting == null) {
+      if (_isClosing) return false;
+      if (!_isInitializing && state.nodeSyncState != NodeSyncState.syncing) reconnecting = reconnect();
+    }
+    // 기다리는 사이 서버 변경 등으로 새 재연결이 시작되면 그것까지 대기
+    while (reconnecting != null) {
+      final result = await reconnecting;
+      final latest = _reconnecting;
+      if (latest == null || identical(latest, reconnecting)) {
+        if (result.isFailure) return false;
+        break;
+      }
+      reconnecting = latest;
     }
     if (_isDisposed) return false;
     final settled =
@@ -691,27 +698,29 @@ class NodeProvider extends ChangeNotifier {
 
   /// 진행 중인 재연결이 있으면 그 결과를 공유
   Future<Result<bool>> reconnect() {
-    final reconnecting = _reconnecting;
-    if (reconnecting != null) return reconnecting;
-    final started = _reconnecting = _reconnect().whenComplete(() => _reconnecting = null);
-    return started;
-  }
-
-  Future<Result<bool>> _reconnect() async {
-    if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
+    if (_isDisposed) return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
       _isPendingInitialization = true;
-      return Result.failure(ErrorCodes.networkError);
+      return Future.value(Result.failure(ErrorCodes.networkError));
     }
 
     // 이미 초기화 중이거나 종료 중인 경우 대기
     if (_isInitializing || _isClosing) {
       Logger.log('NodeProvider: Reconnect skipped - operation in progress');
-      return Result.failure(ErrorCodes.nodeConnectionError);
+      return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     }
 
+    final started = _reconnect();
+    _reconnecting = started;
+    started.whenComplete(() {
+      if (identical(_reconnecting, started)) _reconnecting = null;
+    }).ignore();
+    return started;
+  }
+
+  Future<Result<bool>> _reconnect() async {
     try {
       Logger.log('NodeProvider: Starting reconnect');
       if (isInitialized) {

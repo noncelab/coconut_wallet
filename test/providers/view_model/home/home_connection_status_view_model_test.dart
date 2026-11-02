@@ -127,6 +127,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   final dormantSyncedWalletIds = <int>[];
   Completer<void>? dormantSync;
   Result<bool> dormantResult = Result.success(true);
+  final subscribeGates = <Completer<void>>[];
 
   @override
   Stream<IsolateStateMessage> get stateStream => states.stream;
@@ -145,6 +146,7 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   @override
   Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async {
     subscribeCount++;
+    if (subscribeGates.isNotEmpty) await subscribeGates.removeAt(0).future;
     states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
     return Result.success(true);
   }
@@ -832,6 +834,40 @@ void main() {
         expect(isolate.dormantSyncedWalletIds, [1], reason: '휴면 주소 확인은 백그라운드에서 시작한다');
         expect(realNode.walletsRefresh, isNull);
         isolate.dormantSync!.complete();
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('진행 중인 재연결의 재구독 중에 서버를 바꾸면 합치지 않고 다시 연결하고, 새로고침은 그 재연결까지 기다린다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        final firstSubscribe = Completer<void>();
+        final secondSubscribe = Completer<void>();
+        isolate.subscribeGates.addAll([firstSubscribe, secondSubscribe]);
+
+        unawaited(realNode.reconnect());
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(isolate.initializeCount, initialized + 1);
+
+        bool? result;
+        unawaited(realNode.refreshWallets().then((value) => result = value));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        unawaited(realNode.applyServerChange());
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(isolate.initializeCount, initialized + 2, reason: '서버 변경은 진행 중인 재연결에 합치지 않는다');
+
+        firstSubscribe.complete();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(result, isNull, reason: '새로고침은 더 새로운 재연결까지 기다린다');
+
+        secondSubscribe.complete();
+        for (var i = 0; i < 10 && result == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(result, isTrue);
       } finally {
         await stop(tester);
       }
