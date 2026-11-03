@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +16,124 @@ void main() {
   NetworkType.setNetworkType(NetworkType.regtest);
 
   late TaprootWalletItem taprootWallet;
+
+  for (final parentCount in [1, 2]) {
+    for (final scriptPath in [false, true]) {
+      test('1.1.5 PSBT: $parentCount parents, ${scriptPath ? 'script' : 'key'} path signs and finalizes', () {
+        final parentKeys = List.generate(
+          parentCount,
+          (index) => KeyStore.fromSeed(Seed.fromEntropy(Uint8List.fromList(List.filled(16, index))), AddressType.p2tr),
+        );
+        final beneficiary = KeyStore.fromSeed(
+          Seed.fromEntropy(Uint8List.fromList(List.filled(16, 2))),
+          AddressType.p2tr,
+        );
+        KeyStore publicKey(KeyStore key) =>
+            KeyStore.fromExtendedPublicKey(key.extendedPublicKey.serialize(), key.masterFingerprint);
+        addTearDown(() {
+          for (final key in [...parentKeys, beneficiary]) {
+            key.wipeSeed();
+          }
+        });
+        final publicPolicy = InheritancePolicy(publicKey(beneficiary), 1792646340);
+        final publicKeys = parentKeys.map(publicKey).toList();
+        final wallet = TaprootWallet.fromKeyStoreList(publicKeys, [publicPolicy]);
+        final item = TaprootWalletItem(
+          id: 1,
+          name: 'New inheritance',
+          colorIndex: 0,
+          iconIndex: 0,
+          descriptor: wallet.descriptor,
+          keyPathSeedInfos: scriptPath ? [] : [publicKeys.first.extendedPublicKey.serialize()],
+          scriptPathSeedInfos:
+              scriptPath
+                  ? [
+                    TaprootScriptPathSeedInfo(
+                      miniscript: publicPolicy.toMiniscript(),
+                      extendedPublicKeys: [beneficiary.extendedPublicKey.serialize()],
+                    ),
+                  ]
+                  : [],
+        );
+        expect(Descriptor.parse(item.descriptor).miniscriptList.single, startsWith('and_v(v:after('));
+        final utxos = List.generate(
+          2,
+          (index) => UtxoState(
+            transactionHash: List.filled(32, index == 0 ? '11' : '22').join(),
+            index: index,
+            amount: 100000,
+            blockHeight: 100,
+            to: wallet.getAddress(index, isChange: index == 1),
+            derivationPath: "m/86'/1'/0'/${index == 1 ? 1 : 0}/$index",
+            timestamp: DateTime.utc(2026, 10, 22),
+          ),
+        );
+        final result =
+            TransactionBuilder(
+              availableUtxos: utxos,
+              recipients: {wallet.getAddress(5): 10000},
+              feeRate: 2,
+              changeDerivationPath: "m/86'/1'/0'/1/3",
+              walletItemBase: item,
+              isFeeSubtractedFromAmount: false,
+              isUtxoFixed: true,
+              scriptPathPolicy: scriptPath ? item.defaultPolicy : null,
+            ).build();
+        expect(result.isSuccess, isTrue);
+        final transaction = result.transaction!;
+        final unsigned = Psbt.fromTransaction(transaction, item.walletBase);
+        String signed;
+        if (scriptPath) {
+          final vault = TaprootVault.fromKeyStoreList(publicKeys, [InheritancePolicy(beneficiary, 1792646340)]);
+          expect(unsigned.matchesVault(vault), isTrue);
+          expect(unsigned.inputs.every((input) => input.tapLeafScript != null), isTrue);
+          signed = vault.addSignatureToPsbt(unsigned.serialize());
+        } else {
+          final vaults = List.generate(
+            parentCount,
+            (signer) => TaprootVault.fromKeyStoreList(
+              List.generate(parentCount, (index) => index == signer ? parentKeys[index] : publicKey(parentKeys[index])),
+              [publicPolicy],
+            ),
+          );
+          signed = unsigned.serialize();
+          for (final vault in vaults) {
+            expect(unsigned.matchesVault(vault), isTrue);
+            if (parentCount > 1) signed = vault.addPublicNonce(signed);
+          }
+          for (final vault in vaults) {
+            signed = vault.addSignatureToPsbt(signed);
+          }
+        }
+        final finalized = Psbt.parse(signed).getSignedTransaction(AddressType.p2tr);
+        expect(finalized.inputs, hasLength(2));
+        expect(
+          finalized.inputs.map((input) => input.transactionHash),
+          transaction.inputs.map((input) => input.transactionHash),
+        );
+        expect(finalized.inputs.map((input) => input.index), transaction.inputs.map((input) => input.index));
+        expect(finalized.inputs.map((input) => input.sequence), transaction.inputs.map((input) => input.sequence));
+        expect(
+          finalized.outputs.map((output) => output.serialize()),
+          transaction.outputs.map((output) => output.serialize()),
+        );
+        expect(finalized.lockTime, transaction.lockTime);
+        if (scriptPath) expect(finalized.lockTime, 'c49cd96a');
+        expect(finalized.version, transaction.version);
+        for (var index = 0; index < finalized.inputs.length; index++) {
+          final input = finalized.inputs[index];
+          expect(input.witnessList, hasLength(scriptPath ? 3 : 1));
+          if (scriptPath) {
+            expect(input.sequence, isNot('ffffffff'));
+            final script = publicPolicy.toScript(index, isChange: index == 1).rawSerialize();
+            expect(script, startsWith('04c49cd96ab16920'));
+            expect(input.witnessList[1], script);
+            expect(input.witnessList[2], wallet.getControlBlock(0, index, isChange: index == 1));
+          }
+        }
+      });
+    }
+  }
 
   // BIP-86 taproot testnet/regtest paths
   const changeDerivationPath = "m/86'/1'/0'/1/0";

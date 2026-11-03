@@ -60,6 +60,7 @@ home_screen_settings: "Startseiten-Einstellungen"
 home_connection_status:
   electrum_connection_failed: "Electrum nicht erreichbar"
   electrum_connection_restored: "Mit Electrum verbunden"
+  update_completed: "Aktualisiert"
 tx_list: "Transaktionen"
 utxo_list: "UTXO-Liste"
 wallet_id: "Wallet-ID"
@@ -2132,3 +2133,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet-Karte"
   show_balance_trend: "Saldoverlauf anzeigen"
   chart_date_format: "d.M."
+
+wallet_selection_carousel: "Einzeln anzeigen"
+wallet_selection_grid: "Zusammen anzeigen"

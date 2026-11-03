@@ -211,11 +211,22 @@ class HomeViewModel extends ChangeNotifier {
     return _configuration;
   }
 
-  void moveToCell(String id, HomeGridPosition position) =>
-      _apply(HomeGridLayout(_configuration).moveToCell(id, position), rememberArrangement: true);
+  HomeGridLayout _layoutFor(int? columns) =>
+      HomeGridLayout(HomeGridLayout(_configuration).reflow(columns ?? _configuration.columns));
 
-  void insertBefore(String id, String beforeId) =>
-      _apply(HomeGridLayout(_configuration).moveBefore(id, beforeId), rememberArrangement: true);
+  void moveToCell(String id, HomeGridPosition position, {int? columns}) {
+    final layout = _layoutFor(columns);
+    final moved = layout.moveToCell(id, position);
+    if (moved == layout.positionedConfiguration) return;
+    _apply(moved, rememberArrangement: true);
+  }
+
+  void insertBefore(String id, String beforeId, {int? columns}) {
+    final layout = _layoutFor(columns);
+    final moved = layout.moveBefore(id, beforeId);
+    if (moved == layout.positionedConfiguration) return;
+    _apply(moved, rememberArrangement: true);
+  }
 
   void removeItem(String id) => _apply(_configuration.removeItem(id));
 
@@ -272,6 +283,7 @@ class HomeViewModel extends ChangeNotifier {
             ? _configuration
             : HomeConfiguration(
               version: _configuration.version,
+              columns: _configuration.columns,
               items: _configuration.items,
               shortcutWalletContext: walletContext,
             );
@@ -318,6 +330,7 @@ class HomeViewModel extends ChangeNotifier {
     _apply(
       HomeConfiguration(
         version: _configuration.version,
+        columns: _configuration.columns,
         items: [
           for (final item in _configuration.items) item.id == id ? item.copyWith(configuration: configuration) : item,
         ],
@@ -330,6 +343,7 @@ class HomeViewModel extends ChangeNotifier {
     _apply(
       HomeConfiguration(
         version: _configuration.version,
+        columns: _configuration.columns,
         items: _configuration.items,
         shortcutWalletContext: walletContext,
       ),
@@ -350,6 +364,8 @@ class HomeViewModel extends ChangeNotifier {
     return HomeGridLayout(
       HomeConfiguration(
         version: base.version,
+        // Presets start from their canonical design so every viewport can project its shortcut groups.
+        columns: HomeGridLayout.columns,
         items: [
           for (final (index, definition) in definitions.indexed)
             HomeItem(
@@ -380,12 +396,12 @@ class HomeViewModel extends ChangeNotifier {
 
   /// 위젯 크기를 바꾼다. 키우든 줄이든 앞 항목은 그대로 두고, 그 항목부터 뒤 항목을 순서대로 다시 채운다.
   /// 그래서 키우면 뒤 항목이 밀려나고, 줄이면 생긴 빈칸을 뒤 항목이 당겨 와 채운다.
-  void resizeItem(String id, HomeSpan span) {
+  void resizeItem(String id, HomeSpan span, {int? columns}) {
     final item = _configuration.items.where((item) => item.id == id).firstOrNull;
     if (item == null) return;
     final definition = registry.byId(item.definitionId);
     if (item.span == span || definition == null || !definition.supportedSpans.contains(span)) return;
-    _apply(HomeGridLayout(_configuration).resizeItem(id, span));
+    _apply(_layoutFor(columns).resizeItem(id, span));
   }
 
   void removeDefinition(HomeItemDefinition definition) {

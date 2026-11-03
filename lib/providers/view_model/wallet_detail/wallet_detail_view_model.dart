@@ -26,6 +26,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final WalletProvider _walletProvider;
   final TransactionProvider _transactionProvider;
+  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs;
   late WalletItemBase _wallet;
   final Faucet _faucetService = Faucet();
@@ -38,27 +39,26 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isRefreshing = false;
   BitcoinUnit _currentUnit;
   final Set<WalletDetailSecurityWarningType> _dismissedWarningsThisSession = {};
-  WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
   bool _isDisposed = false;
 
   WalletDetailViewModel(
     this._walletId,
     this._walletProvider,
     this._transactionProvider,
-    NodeProvider nodeProvider, {
+    this._nodeProvider, {
     required BitcoinUnit initialUnit,
     SharedPrefsRepository? sharedPrefs,
   }) : _currentUnit = initialUnit,
        _sharedPrefs = sharedPrefs ?? SharedPrefsRepository() {
     _wallet = _walletProvider.getWalletById(_walletId);
-    _walletUpdateInfo = nodeProvider.state.registeredWallets[_walletId];
-    _nodeSyncState = nodeProvider.state.nodeSyncState;
+    _walletUpdateInfo = _nodeProvider.state.registeredWallets[_walletId];
+    _nodeSyncState = _nodeProvider.state.nodeSyncState;
     _isWalletSyncing = _calculateIsWalletSyncing();
     _transactionProvider.initTxList(_walletId);
     _walletProvider.addListener(_handleWalletChanged);
     _transactionProvider.addListener(_handleTransactionChanged);
-    _walletUpdateSubscription = nodeProvider.getWalletStateStream(_walletId).listen(_handleWalletUpdate);
-    _nodeSyncStateSubscription = nodeProvider.syncStateStream.listen(_handleNodeSyncState);
+    _walletUpdateSubscription = _nodeProvider.getWalletStateStream(_walletId).listen(_handleWalletUpdate);
+    _nodeSyncStateSubscription = _nodeProvider.syncStateStream.listen(_handleNodeSyncState);
   }
 
   int get walletId => _walletId;
@@ -187,6 +187,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
     final stopwatch = Stopwatch()..start();
     try {
+      await _nodeProvider.refreshWallets();
+      if (_isDisposed) return;
       _transactionProvider.initTxList(_walletId);
       notifyListeners();
     } finally {
@@ -220,13 +222,10 @@ class WalletDetailViewModel extends ChangeNotifier {
         DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
   }
 
-  bool shouldUseShortWarningDelay(WalletDetailSecurityWarningType type) => _nextWarningAfterDismissal == type;
-
-  Future<void> dismissSecurityWarning(WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
+  Future<void> dismissSecurityWarning(WalletDetailSecurityWarningType type) async {
     _dismissedWarningsThisSession.add(type);
     await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
     if (_isDisposed) return;
-    _nextWarningAfterDismissal = showNextWarning ? WalletDetailSecurityWarningType.appLock : null;
     notifyListeners();
   }
 

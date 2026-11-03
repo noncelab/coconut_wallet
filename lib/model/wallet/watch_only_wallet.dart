@@ -70,17 +70,15 @@ class WatchOnlyWallet {
       if (!_hasPurpose86(_descriptor.getDerivationPath(i))) return false;
     }
     // inheritance miniscript 구조와 beneficiary purpose가 86'인지 검증
-    final miniscriptRegex = RegExp(r'and_v\(v:pk\(\[(.+?)\].+?\),after\(\d+\)\)');
+    final keyOriginRegex = RegExp(r'\[([^\[\]]+)\]');
     try {
       final miniScript = _descriptor.miniscriptList.first;
+      if (!RegExp(r'^and_v\(v:after\(\d+\),pk\(.+\)\)$').hasMatch(miniScript)) return false;
       InheritancePolicy.fromMiniscript(miniScript);
-      final match = miniscriptRegex.firstMatch(miniScript);
-      if (match == null) return false;
-      final keyOriginPath = match.group(1)!; // e.g. "70C4E9DE/86'/1'/0'"
-      final pathSegments = keyOriginPath.split('/');
-      if (pathSegments.length < 2 || (pathSegments[1] != "86'" && pathSegments[1] != "86h")) {
-        return false;
-      }
+      final origins = keyOriginRegex.allMatches(miniScript).toList();
+      if (origins.length != 1) return false;
+      final keyOriginPath = origins.single.group(1)!; // e.g. "70C4E9DE/86'/1'/0'"
+      if (!_hasPurpose86(keyOriginPath)) return false;
     } catch (e) {
       return false;
     }

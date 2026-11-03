@@ -41,7 +41,6 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
@@ -536,30 +535,29 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
       default:
         {
-          CommonBottomSheets.showDraggableBottomSheet(
+          SelectWalletBottomSheet.show(
             context: context,
             screenName: AnalyticsScreenNames.p2pCalculatorSelectWalletSheet,
-            childBuilder:
-                (scrollController) => P2PSelectWalletBottomSheet(
-                  showOnlyMfpWallets: false,
-                  scrollController: scrollController,
-                  currentUnit: _viewModel.currentUnit,
-                  onWalletSelected: (walletId) {
-                    debugPrint('satsAmount: $satsAmount');
+            child: P2PSelectWalletBottomSheet(
+              showOnlyMfpWallets: false,
 
-                    Navigator.pop(context);
-                    Navigator.pushNamed(
-                      context,
-                      AppRouteNames.send,
-                      arguments: SendRouteArgs(
-                        id: walletId,
-                        sendEntryPoint: SendEntryPoint.home,
-                        transactionDraftId: null,
-                        initialSatsFromP2P: satsAmount,
-                      ),
-                    );
-                  },
-                ),
+              currentUnit: _viewModel.currentUnit,
+              onWalletSelected: (walletId) {
+                debugPrint('satsAmount: $satsAmount');
+
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  AppRouteNames.send,
+                  arguments: SendRouteArgs(
+                    id: walletId,
+                    sendEntryPoint: SendEntryPoint.home,
+                    transactionDraftId: null,
+                    initialSatsFromP2P: satsAmount,
+                  ),
+                );
+              },
+            ),
           );
           break;
         }

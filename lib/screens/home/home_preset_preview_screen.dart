@@ -52,8 +52,12 @@ class HomePresetPreviewScreen extends StatelessWidget {
           SingleChildScrollView(
             key: const Key('home-preset-preview-scroll'),
             padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.paddingOf(context).bottom + bottomSpace),
-            child: IgnorePointer(
-              child: HomeItemsView(configuration: viewModel.previewOf(preset), registry: viewModel.registry),
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: IgnorePointer(
+                child: HomeItemsView(configuration: viewModel.previewOf(preset), registry: viewModel.registry),
+              ),
             ),
           ),
           FixedBottomButton(

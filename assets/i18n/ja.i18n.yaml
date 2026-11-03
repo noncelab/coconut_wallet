@@ -60,6 +60,7 @@ home_screen_settings: "ホーム画面設定"
 home_connection_status:
   electrum_connection_failed: "Electrumに接続できません"
   electrum_connection_restored: "Electrumに接続しました"
+  update_completed: "更新しました"
 tx_list: "トランザクション履歴"
 utxo_list: "UTXO一覧"
 wallet_id: "ウォレットID"
@@ -2124,3 +2125,6 @@ wallet_card_detail_screen:
   wallet_card: "ウォレットカード"
   show_balance_trend: "残高推移を見る"
   chart_date_format: "M月d日"
+
+wallet_selection_carousel: "1枚ずつ表示"
+wallet_selection_grid: "まとめて表示"

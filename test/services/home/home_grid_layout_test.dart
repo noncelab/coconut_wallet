@@ -82,7 +82,7 @@ void expectValidLayout(HomeConfiguration configuration) {
     final position = item.position!;
     expect(position.column, greaterThanOrEqualTo(0), reason: item.id);
     expect(position.row, greaterThanOrEqualTo(0), reason: item.id);
-    expect(position.column + item.span.width, lessThanOrEqualTo(HomeGridLayout.columns), reason: item.id);
+    expect(position.column + item.span.width, lessThanOrEqualTo(configuration.columns), reason: item.id);
     for (var row = position.row; row < position.row + item.span.height; row++) {
       for (var column = position.column; column < position.column + item.span.width; column++) {
         expect(occupied.add((column, row)), isTrue, reason: '${item.id} overlaps at ($column, $row)');
@@ -105,6 +105,270 @@ void expectPositions(HomeConfiguration actual, HomeConfiguration before, Map<Str
 }
 
 void main() {
+  test('projection preserves separate shortcut rectangles around interleaved cards', () {
+    final canonical = HomeConfiguration(
+      columns: 8,
+      shortcutWalletContext: const ShortcutWalletContext.wallet(7),
+      items: [
+        for (final (index, (id, span, column, row))
+            in [
+              ('a0', HomeSpan.shortcut, 0, 0),
+              ('a1', HomeSpan.shortcut, 1, 0),
+              ('card', HomeSpan.small, 2, 0),
+              ('b0', HomeSpan.shortcut, 4, 0),
+              ('b1', HomeSpan.shortcut, 5, 0),
+              ('a2', HomeSpan.shortcut, 0, 1),
+              ('a3', HomeSpan.shortcut, 1, 1),
+              ('b2', HomeSpan.shortcut, 4, 1),
+              ('b3', HomeSpan.shortcut, 5, 1),
+              ('manual', HomeSpan.shortcut, 7, 3),
+              ('footer', HomeSpan.wide, 0, 4),
+            ].indexed)
+          item(
+            id,
+            index,
+            span,
+            span == HomeSpan.shortcut ? HomeItemKind.shortcut : HomeItemKind.widget,
+          ).copyWith(position: HomeGridPosition(column, row), configuration: {'label': id}),
+      ],
+    );
+    final layout = HomeGridLayout(canonical);
+    final projected = layout.reflow(6);
+    const expected = {
+      'a0': HomeGridPosition(0, 0),
+      'a1': HomeGridPosition(1, 0),
+      'a2': HomeGridPosition(0, 1),
+      'a3': HomeGridPosition(1, 1),
+      'card': HomeGridPosition(2, 0),
+      'b0': HomeGridPosition(4, 0),
+      'b1': HomeGridPosition(5, 0),
+      'b2': HomeGridPosition(4, 1),
+      'b3': HomeGridPosition(5, 1),
+      'manual': HomeGridPosition(0, 2),
+      'footer': HomeGridPosition(1, 2),
+    };
+    for (final original in canonical.items) {
+      expect(
+        projected.items.singleWhere((item) => item.id == original.id),
+        original.copyWith(position: expected[original.id]),
+        reason: original.id,
+      );
+    }
+    expect(projected.shortcutWalletContext, canonical.shortcutWalletContext);
+    expectValidLayout(projected);
+    for (final columns in [4, 10, 8, 6, 6]) {
+      expectValidLayout(layout.reflow(columns));
+      expect(layout.reflow(6), projected);
+      expect(layout.reflow(8), canonical);
+    }
+  });
+
+  test('a shortcut rectangle with an attached manual edit keeps ordinary flow', () {
+    final canonical = HomeConfiguration(
+      columns: 8,
+      items: [
+        for (final (index, (column, row)) in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1)].indexed)
+          item(
+            's$index',
+            index,
+            HomeSpan.shortcut,
+            HomeItemKind.shortcut,
+          ).copyWith(position: HomeGridPosition(column, row)),
+      ],
+    );
+    final projected = HomeGridLayout(canonical).reflow(6);
+    expect(projected.items.map((item) => item.position), [for (var i = 0; i < 5; i++) HomeGridPosition(i, 0)]);
+    expectValidLayout(projected);
+    expect(HomeGridLayout(canonical).reflow(8), canonical);
+  });
+
+  test('projection keeps generic rectangular shortcut offsets and saved edits intact', () {
+    final canonical = HomeConfiguration(
+      items: [
+        item('widget', 0, HomeSpan.small, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 0)),
+        for (final (index, position)
+            in [
+              const HomeGridPosition(2, 0),
+              const HomeGridPosition(3, 0),
+              const HomeGridPosition(2, 1),
+              const HomeGridPosition(3, 1),
+            ].indexed)
+          item(
+            'shortcut-$index',
+            index + 1,
+            HomeSpan.shortcut,
+            HomeItemKind.shortcut,
+          ).copyWith(position: position, configuration: {'label': 'shortcut-$index'}),
+        item('wide', 5, HomeSpan.wide, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 4)),
+      ],
+    );
+    final expanded = HomeGridLayout(HomeGridLayout(canonical).reflow(8));
+    expect(expanded.positionOf('shortcut-2'), const HomeGridPosition(2, 1));
+    expect(expanded.positionOf('wide'), const HomeGridPosition(4, 0));
+    expect(expanded.rows, 2);
+    expectValidLayout(expanded.positionedConfiguration);
+    for (final item in canonical.items) {
+      final projected = expanded.configuration.items.singleWhere((other) => other.id == item.id);
+      expect(projected.configuration, item.configuration);
+      expect(projected.span, item.span);
+    }
+    final edited = expanded.moveToCell('shortcut-2', const HomeGridPosition(7, 5));
+    expect(HomeGridLayout(edited).reflow(8), edited);
+    HomeGridLayout(edited).reflow(6);
+    expect(HomeGridLayout(edited).reflow(8), edited);
+    expect(HomeGridLayout(canonical).reflow(4), canonical);
+  });
+
+  test('shortcut blocks wider than the projected grid fall back to ordinary flow', () {
+    final canonical = HomeConfiguration(
+      columns: 8,
+      items: [
+        for (var i = 0; i < 16; i++)
+          item('s$i', i, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: HomeGridPosition(i % 8, i ~/ 8)),
+      ],
+    );
+    final projected = HomeGridLayout(HomeGridLayout(canonical).reflow(6));
+    expect(projected.positionOf('s7'), const HomeGridPosition(1, 1));
+    expect(projected.positionOf('s15'), const HomeGridPosition(3, 2));
+    expect(projected.rows, 3);
+    expectValidLayout(projected.positionedConfiguration);
+  });
+
+  test('a single shortcut row still wraps individually into available expanded cells', () {
+    final canonical = HomeConfiguration(
+      items: [
+        item('wide', 0, HomeSpan.wide, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 0)),
+        for (var i = 0; i < 4; i++)
+          item('s$i', i + 1, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: HomeGridPosition(i, 2)),
+      ],
+    );
+    final projected = HomeGridLayout(HomeGridLayout(canonical).reflow(6));
+    expect(projected.positionOf('s0'), const HomeGridPosition(4, 0));
+    expect(projected.positionOf('s2'), const HomeGridPosition(0, 2));
+    expectValidLayout(projected.positionedConfiguration);
+  });
+
+  test('incomplete shortcut rectangles retain ordinary projection flow', () {
+    final canonical = HomeConfiguration(
+      items: [
+        for (final (index, position)
+            in [const HomeGridPosition(0, 0), const HomeGridPosition(1, 0), const HomeGridPosition(0, 1)].indexed)
+          item('s$index', index, HomeSpan.shortcut, HomeItemKind.shortcut).copyWith(position: position),
+        item('wide', 3, HomeSpan.wide, HomeItemKind.widget).copyWith(position: const HomeGridPosition(0, 3)),
+      ],
+    );
+    final projected = HomeGridLayout(HomeGridLayout(canonical).reflow(8));
+    expect(projected.positionOf('s2'), const HomeGridPosition(2, 0));
+    expect(projected.positionOf('wide'), const HomeGridPosition(3, 0));
+    expectValidLayout(projected.positionedConfiguration);
+  });
+
+  test('expanded mixed edits preserve items, bounds and nonoverlap across folds', () {
+    final random = Random(2806);
+    var current = mixedHome();
+    final originalIds = current.items.map((item) => item.id).toSet();
+    for (var step = 0; step < 180; step++) {
+      final columns = [4, 6, 8, 10][step % 4];
+      current = HomeGridLayout(current).reflow(columns);
+      final layout = HomeGridLayout(current);
+      final moving = current.items[random.nextInt(current.items.length)];
+      if (step % 3 == 0) {
+        current = layout.moveToCell(
+          moving.id,
+          HomeGridLayout.anchorForSpan(
+            HomeGridPosition(random.nextInt(columns), random.nextInt(10)),
+            moving.span,
+            columns: columns,
+          ),
+        );
+      } else if (step % 3 == 1 && moving.kind == HomeItemKind.widget) {
+        current = layout.resizeItem(moving.id, moving.span == HomeSpan.wide ? HomeSpan.small : HomeSpan.wide);
+      } else {
+        current = layout.moveBefore(moving.id, current.items[random.nextInt(current.items.length)].id);
+      }
+      expect(current.columns, columns);
+      expect(current.items.map((item) => item.id).toSet(), originalIds);
+      expectValidLayout(current);
+      expect(HomeGridLayout(current).positionedConfiguration, current);
+    }
+  });
+
+  test('reflow is pure and repeated viewport changes recover canonical positions', () {
+    final canonical = mixedHome();
+    final layout = HomeGridLayout(canonical);
+    final originalJson = canonical.toJson();
+    for (final columns in [6, 8, 12, 4, 8, 6, 4]) {
+      final flowed = layout.reflow(columns);
+      expect(flowed.columns, columns);
+      expectValidLayout(flowed);
+      expect(flowed.items.map((item) => item.id).toSet(), canonical.items.map((item) => item.id).toSet());
+      expect(flowed.shortcutWalletContext, canonical.shortcutWalletContext);
+      for (final item in flowed.items) {
+        final original = canonical.items.firstWhere((other) => other.id == item.id);
+        expect(item.span, original.span);
+        expect(item.configuration, original.configuration);
+      }
+      if (columns == 4) expect(flowed, canonical);
+      expect(canonical.toJson(), originalJson);
+    }
+  });
+
+  test('wide tiles share expanded rows and can move to nonzero columns', () {
+    final layout = HomeGridLayout(
+      HomeConfiguration(
+        columns: 8,
+        items: [
+          item('a', 0, HomeSpan.wide, HomeItemKind.widget),
+          item('b', 1, HomeSpan.wide, HomeItemKind.widget),
+          item('s', 2, HomeSpan.small, HomeItemKind.widget),
+        ],
+      ),
+    );
+    expect(layout.positionOf('b'), const HomeGridPosition(4, 0));
+    expect(
+      HomeGridLayout.anchorForSpan(const HomeGridPosition(4, 0), HomeSpan.wide, columns: 8),
+      const HomeGridPosition(4, 0),
+    );
+    final moved = layout.moveToCell('a', const HomeGridPosition(3, 4));
+    expect(moved.columns, 8);
+    expectValidLayout(moved);
+    expect(HomeGridLayout(moved).positionOf('a'), const HomeGridPosition(3, 4));
+    final resized = HomeGridLayout(moved).resizeItem('s', HomeSpan.wide);
+    expect(resized.columns, 8);
+    expectValidLayout(resized);
+    final inserted = HomeGridLayout(resized).moveBefore('s', 'b');
+    expect(inserted.columns, 8);
+    expectValidLayout(inserted);
+  });
+
+  test('column persistence remains backward compatible and rejects malformed counts', () {
+    final compact = mixedHome();
+    expect(compact.toJson().containsKey('columns'), isFalse);
+    for (final invalid in [null, '6', 3, 5, 0, -2, 6.0]) {
+      expect(HomeConfiguration.fromJson({...compact.toJson(), 'columns': invalid})!.columns, 4);
+    }
+    final wide = HomeGridLayout(compact).reflow(6);
+    expect(HomeConfiguration.fromJson(wide.toJson()), wide);
+    expect(wide.normalize((_) => null).columns, 6);
+    expect(wide.removeItem('receive').columns, 6);
+    expect(wide.moveItem('receive', 0).columns, 6);
+    expect(wide.addItem(item('extra', 99, HomeSpan.shortcut, HomeItemKind.shortcut)).columns, 6);
+    expect(HomeConfiguration(columns: 6, items: compact.items), isNot(compact));
+  });
+
+  test('expanded stored grid places six shortcuts in the first row', () {
+    final compact = HomeConfiguration(
+      items: [for (var i = 0; i < 7; i++) item('s$i', i, HomeSpan.shortcut, HomeItemKind.shortcut)],
+    );
+    final expanded = HomeConfiguration.fromJson({...compact.toJson(), 'columns': 6})!;
+    final layout = HomeGridLayout(expanded);
+    expect(layout.positionOf('s5'), const HomeGridPosition(5, 0));
+    expect(layout.positionOf('s6'), const HomeGridPosition(0, 1));
+    expect(layout.canMoveToCell('s0', const HomeGridPosition(5, 3)), isTrue);
+    expect(layout.canMoveToCell('s0', const HomeGridPosition(6, 3)), isFalse);
+    expect(layout.positionedConfiguration.toJson()['columns'], 6);
+  });
+
   group('center column', () {
     test('2×2 anchors preserve all valid columns and clamp at both edges', () {
       for (final (column, expected) in [(-2, 0), (-1, 0), (0, 0), (1, 1), (2, 2), (3, 2), (5, 2)]) {
