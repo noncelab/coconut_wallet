@@ -60,6 +60,10 @@ class SharedPrefKeys {
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
 
+  /// 예전 기본 통화 KRW를 지역 기본값으로 바로잡는 확인(설치당 1회)을 마쳤는지. 새 설치에서도 남긴다.
+  /// 초기화 금지: 지우면 사용자가 직접 고른 KRW가 다시 바뀔 수 있다. (keysToReset에도 넣지 않는다)
+  static const String kHasCheckedRegionDefaultFiat = 'HAS_CHECKED_REGION_DEFAULT_FIAT';
+
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
 

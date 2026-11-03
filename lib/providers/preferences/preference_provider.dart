@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -206,11 +207,23 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 통화 설정 초기화. [appLanguage]는 언어 초기화를 마친 앱 언어 설정값이다.
-  /// 저장된 통화가 있으면 그대로 쓰고, 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
+  /// - 저장된 통화가 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
+  /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
+  ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
   @visibleForTesting
   static FiatCode initializeFiat(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) {
     final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
-    if (savedCode.isNotEmpty) {
+    final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
+    if (isRegionCheckPending) {
+      prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+    }
+
+    final isLegacyKrwDefault =
+        isRegionCheckPending &&
+        savedCode == FiatCode.KRW.code &&
+        systemLocale.countryCode?.toUpperCase() != 'KR' &&
+        appLanguage != AppLanguage.ko.code;
+    if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
       return FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
     }
 
