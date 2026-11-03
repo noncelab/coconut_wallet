@@ -285,7 +285,8 @@ class ScriptSyncService {
     final generation = _retryGenerations[walletId] ?? 0;
     _retryTimers[walletId] = _createTimer(_retryDelays[attempt], () {
       _retryTimers.remove(walletId);
-      _retryAttempts[walletId] = attempt + 1;
+      // 기다리는 동안 깨끗한 큐가 횟수를 초기화했을 수 있어, 예약 시점 값이 아니라 지금 값에 더한다.
+      _retryAttempts.update(walletId, (count) => count + 1, ifAbsent: () => 1);
       runQueued(walletId, () => _retryWalletSync(walletId, generation)).ignore();
     });
   }

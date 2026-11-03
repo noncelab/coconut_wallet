@@ -151,6 +151,20 @@ void main() {
     expect(clock.pendingDelays, [const Duration(seconds: 10)], reason: 'the count starts over');
   });
 
+  test('a clean queue while a retry is pending resets the count the late retry starts from', () async {
+    final sync = createSync();
+    resubscribe = () async => _failure;
+    await failQueue(sync);
+    await elapse(sync);
+    await elapse(sync);
+    expect(clock.pendingDelays, [const Duration(seconds: 90)], reason: 'precondition: the third attempt is pending');
+
+    await sync.runQueued(_walletId, () async => Result.success(true)); // a push syncs cleanly; the timer stays
+    await elapse(sync); // the late retry fails again
+
+    expect(clock.pendingDelays, [const Duration(seconds: 30)], reason: 'one attempt used since the reset, not three');
+  });
+
   test('a retry is skipped while the socket is disconnected and the next delay is armed', () async {
     final sync = createSync();
     connected = false;
