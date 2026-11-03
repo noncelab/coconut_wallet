@@ -37,6 +37,8 @@ class _SlowPrefs extends Fake implements SharedPrefsRepository {
   @override
   bool getBool(String key) => values[key] as bool? ?? false;
   @override
+  bool isContainsKey(String key) => values.containsKey(key);
+  @override
   Future setString(String key, String value) async {
     await fiatWrite.future;
     values[key] = value;
@@ -232,6 +234,29 @@ void main() {
 
         expect(await resolve(prefs, locale, appLanguage, timeZoneName: timeZoneName), expected);
       }
+    });
+  });
+
+  group('통화 선택 이전 버전 설치(지갑 수 기록은 있고 통화는 없음)는 저장된 KRW로 본다', () {
+    final cases = [
+      (const Locale('en', 'US'), 'ko', FiatCode.KRW), // 앱 언어 ko → 유지(새 설치라면 USD)
+      (const Locale('en', 'KR'), 'en', FiatCode.KRW), // 지역 KR → 유지
+      (const Locale('en', 'IN'), 'en', FiatCode.USD), // 바로잡는다
+    ];
+    for (final (locale, appLanguage, expected) in cases) {
+      test('$locale, 앱 언어 $appLanguage → ${expected.code}', () async {
+        final prefs = await prefsWith({SharedPrefKeys.kWalletCount: 2});
+
+        expect(await resolve(prefs, locale, appLanguage), expected);
+        expect(savedFiat(prefs), expected.code);
+        expect(isChecked(prefs), isTrue);
+      });
+    }
+
+    test('지갑 수 기록이 없으면 새 설치로 본다', () async {
+      final prefs = await prefsWith({});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'ko'), FiatCode.USD);
     });
   });
 

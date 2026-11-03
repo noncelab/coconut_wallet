@@ -224,6 +224,9 @@ class PreferenceProvider extends ChangeNotifier {
   ///   DateTime.timeZoneName은 Android·iOS 모두 localtime_r()의 tm_zone, 곧 기기 tz 데이터베이스의 약어다
   ///   (dart-lang/sdk 3.9.2 runtime/vm/os_android.cc·os_macos.cc의 OS::GetTimeZoneName).
   ///   IANA tzdata에서 KST는 Asia/Seoul·Asia/Pyongyang만 쓰고, 같은 UTC+9인 Asia/Tokyo는 JST, 나머지는 WIT나 +09다.
+  /// - 통화 선택이 생기기 전 버전(mainnet 0.0.12·regtest 3.1.6 이하)에서 지갑을 추가·삭제한 설치는 통화가 저장돼 있지 않지만
+  ///   그때 쓰던 KRW가 저장된 것으로 보고 위 보정 규칙을 적용한다. 그 버전들은 지갑을 추가·삭제할 때만 WALLET_COUNT를 남겼고,
+  ///   지금은 PreferenceProvider 뒤에 만들어지는 WalletProvider만 남기므로 새 설치에서는 이 시점에 없다.
   @visibleForTesting
   static FiatCode resolveInitialFiat(
     SharedPrefsRepository prefs, {
@@ -234,7 +237,9 @@ class PreferenceProvider extends ChangeNotifier {
   }) {
     final isKoreaTimeZone = timeZoneName == 'KST';
     final region = iosRegionCode == null || iosRegionCode.isEmpty ? systemLocale.countryCode : iosRegionCode;
-    final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
+    final storedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
+    final isPreFiatInstall = storedCode.isEmpty && prefs.isContainsKey(SharedPrefKeys.kWalletCount);
+    final savedCode = isPreFiatInstall ? FiatCode.KRW.code : storedCode;
     final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
     final isLegacyKrwDefault =
@@ -244,10 +249,13 @@ class PreferenceProvider extends ChangeNotifier {
         region?.toUpperCase() != 'KR' &&
         appLanguage != AppLanguage.ko.code;
     if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
-      if (isRegionCheckPending) {
+      final saved = FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
+      if (isPreFiatInstall) {
+        unawaited(_saveResolvedFiat(prefs, saved));
+      } else if (isRegionCheckPending) {
         prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
       }
-      return FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
+      return saved;
     }
 
     // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
