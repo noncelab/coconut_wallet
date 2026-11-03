@@ -46,7 +46,8 @@ class AppBootstrap {
       return await const MethodChannel(
         methodChannelOS,
       ).invokeMethod<String>('getRegionCode').timeout(const Duration(milliseconds: 300));
-    } catch (_) {
+    } catch (e) {
+      Logger.error('AppBootstrap: iOS region read failed: ${e.runtimeType}');
       return null;
     }
   }
