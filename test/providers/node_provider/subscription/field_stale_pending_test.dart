@@ -1171,11 +1171,12 @@ void main() {
     // a payment lands on another, older used address. The payment is saved, so the open screen must show it. A failed
     // step used to leave its progress counter open, so the later successful steps never reported "completed" and the
     // screens (which reload on "completed") never re-read the saved payment.
-    for (final retryFails in [false, true]) {
+    // retryFault: what the retry itself fails on (none, the same history request again, or its own listunspent).
+    for (final retryFault in ['none', 'getHistory', 'listunspent']) {
       for (final listScreen in [false, true]) {
         final screenName = listScreen ? 'transaction list' : 'wallet detail';
         test(
-          '[r3-payment-visible] a payment saved next to a retry is shown on the $screenName (retry fails=$retryFails)',
+          '[r3-payment-visible] a payment saved next to a retry is shown on the $screenName (retry fails on: $retryFault)',
           () async {
             CoconutWalletApp.kFaucetHost = 'http://localhost';
             final (c, s, _) = await twoCoins();
@@ -1206,7 +1207,7 @@ void main() {
             b.notify(c.input);
             await _drain(s);
             expect(s.main.state.nodeSyncState, NodeSyncState.failed, reason: 'precondition');
-            b.fault = retryFails ? (m, k) => m == 'listunspent' && k == c.input : (_, __) => false;
+            b.fault = (m, k) => m == retryFault && k == c.input;
             b.faultDelay = const Duration(milliseconds: 300);
             b.latency = const Duration(milliseconds: 20);
             s.retryClock.elapse(); // the retry runs
