@@ -366,6 +366,41 @@ void main() {
       expect(detail.isWalletSyncing, isFalse);
       expect(node.state.nodeSyncState, NodeSyncState.completed);
     });
+
+    // A deleted wallet must not come back into the screen state as failed and keep the global state failed.
+    for (final silentRetry in [false, true]) {
+      final what = silentRetry ? 'its silent retry' : 'a sync';
+      test('$what that ends after the wallet was deleted does not keep the global state failed', () async {
+        final node = _Node();
+        final other = WalletMock.createSingleSigWalletItem(id: _walletId + 1);
+        for (final id in [_walletId, other.id]) {
+          node.manager.initWalletUpdateStatus(id);
+        }
+        final sync = createSync(state: node.manager);
+        addTearDown(node.close);
+        await sync.runQueued(other.id, () async => Result.success(true)); // the other wallet is fine
+        final response = Completer<Result<bool>>();
+        Future<void> running;
+        if (silentRetry) {
+          await failQueue(sync);
+          resubscribe = () => response.future;
+          clock.elapse();
+          running = sync.runQueued(_walletId, () async {}); // joins the retry's queue to await its end
+        } else {
+          running = sync.runQueued(_walletId, () => response.future, retryWallet: _wallet); // e.g. a subscribe
+        }
+        await pumpEventQueue();
+        sync.removeWallet(_walletId); // the user deletes the wallet (SubscriptionService.unsubscribeWallet)
+        node.manager.unregisterWalletUpdateState(_walletId); // NodeProvider drops the deleted wallet's state
+        response.complete(_failure); // e.g. the late subscribe response refused for the deleted wallet
+        await running;
+        await sync.runQueued(other.id, () async => Result.success(true)); // the next sync recomputes the state
+
+        expect(node.state.registeredWallets.keys, [other.id], reason: 'the deleted wallet is not registered again');
+        expect(node.state.nodeSyncState, NodeSyncState.completed);
+        expect(clock.pendingDelays, isEmpty, reason: 'a deleted wallet is not retried');
+      });
+    }
   });
 }
 
