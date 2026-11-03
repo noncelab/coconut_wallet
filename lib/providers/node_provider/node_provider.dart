@@ -722,9 +722,11 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  /// 호출마다 새로 연결하고 시작한 재연결만 [_reconnecting]에 기록 (새로고침이 대기)
-  Future<Result<bool>> reconnect() {
+  /// 기본적으로 새로 연결하며, 보내기 재시도는 [reuseInFlight]로 기존 작업을 공유한다.
+  Future<Result<bool>> reconnect({bool reuseInFlight = false}) {
     if (_isDisposed) return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
+    // A send retry must join the original operation even after its caller timed out.
+    if (reuseInFlight && _reconnecting != null) return _reconnecting!;
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');

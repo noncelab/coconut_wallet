@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -42,11 +43,23 @@ class _WalletProvider extends Fake implements WalletProvider {
 
 class _NodeProvider extends Fake implements NodeProvider {
   int broadcasts = 0;
+  bool connected = true;
+  @override
+  String host = 'node.example';
+  Future<Result<bool>> Function()? onReconnect;
+
+  @override
+  Future<Result<bool>> reconnect({bool reuseInFlight = false}) {
+    expectSync(reuseInFlight, isTrue);
+    return onReconnect!();
+  }
+
   bool fails = false;
   void Function()? duringBroadcast;
 
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
@@ -205,6 +218,38 @@ void main() {
       }
     }
   });
+
+  test('reconnection failure prevents broadcasting', () async {
+    await initialize();
+    node.connected = false;
+    node.onReconnect = () async => Result.failure(ErrorCodes.networkError);
+    final result = await viewModel.broadcast(inheritedTagIds: []);
+    expect(result.isFailure, isTrue);
+    expect(result.error, ErrorCodes.networkError);
+    expect(node.broadcasts, 0);
+  });
+
+  for (final onion in [false, true]) {
+    testWidgets('recovery timeout bounds send and late recovery cannot broadcast (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.connected = false;
+      node.host = onion ? 'test.onion' : 'node.example';
+      final recovery = Completer<Result<bool>>();
+      node.onReconnect = () => recovery.future;
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      final limit = onion ? 120 : 15;
+      await tester.pump(Duration(seconds: limit - 1));
+      expect(outcome, isNull);
+      await tester.pump(const Duration(seconds: 1));
+      expect(outcome?.isFailure, isTrue);
+      expect(node.broadcasts, 0);
+      recovery.complete(Result.success(true));
+      await tester.pump();
+      expect(node.broadcasts, 0);
+    });
+  }
 
   test('normal broadcast persists input tags on a PSBT-owned output and clears only consumed links', () async {
     addTag('savings', inputId);

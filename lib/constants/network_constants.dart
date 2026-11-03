@@ -11,3 +11,7 @@ const Duration kElectrumResponseTimeout = Duration(seconds: 60);
 const Duration kElectrumPingInterval = Duration(seconds: 20);
 
 const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);
+
+/// Sending waits for recovery for a bounded time; the shared recovery continues.
+const Duration kSendReconnectTimeout = Duration(seconds: 15);
+const Duration kSendReconnectTimeoutForOnion = Duration(seconds: 120);

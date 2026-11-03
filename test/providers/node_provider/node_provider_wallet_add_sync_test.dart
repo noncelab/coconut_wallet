@@ -449,6 +449,34 @@ void main() {
     expect(isolate.blockRequestCount, blockRequests);
   });
 
+  testWidgets('send retry shares recovery after its previous wait timed out', (tester) async {
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    final completion = Completer<Result<bool>>();
+    isolate.onBulkSubscribe = (_) => completion.future;
+    final recovery = provider!.reconnect(reuseInFlight: true);
+    await tester.pump();
+    final count = isolate.initializationCount;
+    final wait = recovery.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => Result.failure(ErrorCodes.nodeConnectionError),
+    );
+    await tester.pump(const Duration(seconds: 15));
+    expect((await wait).isFailure, isTrue);
+    final retry = provider!.reconnect(reuseInFlight: true);
+    expect(identical(retry, recovery), isTrue);
+    expect(isolate.initializationCount, count);
+    completion.complete(Result.success(true));
+    await tester.pump();
+    expect((await retry).isSuccess, isTrue);
+    await tester.pump(const Duration(seconds: 1));
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
   testWidgets('reconnect bulk result after disposal cannot record success or reopen the connection', (tester) async {
     createProvider();
     wallets.value = [_Wallet(1)];

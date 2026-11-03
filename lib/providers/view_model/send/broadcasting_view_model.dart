@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -21,7 +24,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class InvalidTransactionException implements Exception {
   final String message;
@@ -169,10 +172,28 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _tagInheritanceFailed = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
+    Logger.log('[Send] 연결 확인 시작');
     final isConnected = await isElectrumServerConnected();
+    Logger.log('[Send] 연결 확인 완료: $isConnected');
+
     if (!isConnected) {
-      await _nodeProvider.reconnect();
+      Logger.log('[Send] 재연결 시작');
+      final isOnion = _nodeProvider.host.trim().toLowerCase().endsWith('.onion');
+      final timeout = isOnion ? kSendReconnectTimeoutForOnion : kSendReconnectTimeout;
+      try {
+        // Timeout stops only this send attempt. A retry joins the same recovery;
+        // completing recovery later must never broadcast this transaction automatically.
+        final recovery = await _nodeProvider.reconnect(reuseInFlight: true).timeout(timeout);
+        if (recovery.isFailure) return Result.failure(recovery.error);
+        if (!recovery.value) return Result.failure(ErrorCodes.nodeConnectionError);
+      } on TimeoutException {
+        Logger.log('[Send] 재연결 대기 시간 초과: ${timeout.inSeconds}s (onion=$isOnion)');
+        return Result.failure(ErrorCodes.nodeConnectionError);
+      }
+      Logger.log('[Send] 재연결 완료');
     }
+
+    Logger.log('[Send] 브로드캐스팅 시작');
     final result = await _nodeProvider.broadcast(_signedTx!);
     if (result.isFailure) return result;
 
