@@ -59,12 +59,14 @@ void main() {
     Locale systemLocale,
     String appLanguage, {
     String? iosRegionCode,
+    String timeZoneName = 'UTC',
   }) async {
     final fiat = PreferenceProvider.resolveInitialFiat(
       prefs,
       iosRegionCode: iosRegionCode,
       systemLocale: systemLocale,
       appLanguage: appLanguage,
+      timeZoneName: timeZoneName,
     );
     await Future<void>.delayed(Duration.zero);
     return fiat;
@@ -185,6 +187,51 @@ void main() {
       final prefs = await prefsWith({});
 
       expect(await resolve(prefs, const Locale('ja'), 'ja', iosRegionCode: null), FiatCode.JPY);
+    });
+  });
+
+  group('기기 시간대가 한국(KST)이면 KRW', () {
+    test('KST, 지역 US, 언어 en → 새 설치는 KRW', () async {
+      final prefs = await prefsWith({});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', timeZoneName: 'KST'), FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+    });
+
+    test('KST, 지역 US, 언어 en → 저장된 KRW를 바로잡지 않는다', () async {
+      final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', timeZoneName: 'KST'), FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+      expect(isChecked(prefs), isTrue);
+    });
+
+    test('iOS 지역 설정 DE보다도 KST가 먼저다', () async {
+      final prefs = await prefsWith({});
+
+      expect(
+        await resolve(prefs, const Locale('en', 'US'), 'en', iosRegionCode: 'DE', timeZoneName: 'KST'),
+        FiatCode.KRW,
+      );
+    });
+
+    test('KST여도 KRW가 아닌 저장값은 그대로 둔다', () async {
+      final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.USD.code});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', timeZoneName: 'KST'), FiatCode.USD);
+    });
+
+    test('같은 UTC+9여도 KST가 아니면 지역대로 정한다', () async {
+      final cases = [
+        (const Locale('ja', 'JP'), 'ja', 'JST', FiatCode.JPY),
+        (const Locale('en', 'PW'), 'en', '+09', FiatCode.USD), // Pacific/Palau
+        (const Locale('id', 'ID'), 'en', 'WIT', FiatCode.USD), // Asia/Jayapura
+      ];
+      for (final (locale, appLanguage, timeZoneName, expected) in cases) {
+        final prefs = await prefsWith({});
+
+        expect(await resolve(prefs, locale, appLanguage, timeZoneName: timeZoneName), expected);
+      }
     });
   });
 

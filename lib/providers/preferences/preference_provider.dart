@@ -172,6 +172,7 @@ class PreferenceProvider extends ChangeNotifier {
       iosRegionCode: iosRegionCode,
       systemLocale: PlatformDispatcher.instance.locale,
       appLanguage: _language,
+      timeZoneName: DateTime.now().timeZoneName,
     );
     _initializeNumberFormatFromLocale();
 
@@ -219,13 +220,19 @@ class PreferenceProvider extends ChangeNotifier {
   /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
   ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
   ///   통화를 새로 저장할 때는 저장이 끝난 뒤에 플래그를 남긴다([_saveResolvedFiat]).
+  /// - [timeZoneName]이 KST(대한민국·북한)면 지역·언어와 관계없이 새 설치는 KRW로 정하고, 저장된 KRW도 바로잡지 않는다.
+  ///   DateTime.timeZoneName은 Android·iOS 모두 localtime_r()의 tm_zone, 곧 기기 tz 데이터베이스의 약어다
+  ///   (dart-lang/sdk 3.9.2 runtime/vm/os_android.cc·os_macos.cc의 OS::GetTimeZoneName).
+  ///   IANA tzdata에서 KST는 Asia/Seoul·Asia/Pyongyang만 쓰고, 같은 UTC+9인 Asia/Tokyo는 JST, 나머지는 WIT나 +09다.
   @visibleForTesting
   static FiatCode resolveInitialFiat(
     SharedPrefsRepository prefs, {
     String? iosRegionCode,
     required Locale systemLocale,
     required String appLanguage,
+    required String timeZoneName,
   }) {
+    final isKoreaTimeZone = timeZoneName == 'KST';
     final region = iosRegionCode == null || iosRegionCode.isEmpty ? systemLocale.countryCode : iosRegionCode;
     final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
     final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
@@ -233,6 +240,7 @@ class PreferenceProvider extends ChangeNotifier {
     final isLegacyKrwDefault =
         isRegionCheckPending &&
         savedCode == FiatCode.KRW.code &&
+        !isKoreaTimeZone &&
         region?.toUpperCase() != 'KR' &&
         appLanguage != AppLanguage.ko.code;
     if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
@@ -243,7 +251,7 @@ class PreferenceProvider extends ChangeNotifier {
     }
 
     // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
-    final fiat = defaultFiatForLocale(Locale(appLanguage, region));
+    final fiat = isKoreaTimeZone ? FiatCode.KRW : defaultFiatForLocale(Locale(appLanguage, region));
     unawaited(_saveResolvedFiat(prefs, fiat));
     return fiat;
   }
