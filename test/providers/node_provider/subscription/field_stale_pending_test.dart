@@ -1226,6 +1226,28 @@ void main() {
       }
     }
 
+    // Device stress runs of develop 2d3157f2 (Fold, India and S6): after a reconnect a wallet's subscription failed
+    // with no failed request on the wire, and its newest address was synced twice in parallel. The main isolate keeps
+    // the used index it loaded at startup, so a reconnect subscribes with a stale index: an address first used later
+    // (a payment) is both an active used address and inside the scan range. Its status was listed twice, synced twice,
+    // and saving the statuses added the same key twice, which failed the whole subscription.
+    test('[stress-stale-used-index] a reconnect with the used index loaded at startup subscribes cleanly', () async {
+      final c = _Case();
+      await c.init();
+      final s = _Session.start(c.electrum);
+      expect(await s.subscribe(c.wallet), isTrue);
+      final stale = c.walletCopy(); // what the main isolate keeps from startup
+      await c.nextIncomingPush(s); // someone pays the next fresh address; only the isolate and the DB advance
+      final (receive, _) = ScriptSyncServiceMock.addressRepository.getUsedIndexes(_walletId);
+      expect(receive, greaterThan(stale.receiveUsedIndex), reason: 'precondition: the main copy is now stale');
+      c.backend.listeners.clear();
+      final reconnected = _Session.start(c.electrum); // NodeProvider.reconnect() with the main isolate's objects
+      final before = c.backend.calls.length;
+      expect(await reconnected.subscribe(stale), isTrue);
+      final histories = c.backend.calls.sublist(before).where((call) => call.startsWith('getHistory:')).toList();
+      expect(histories, hasLength(histories.toSet().length), reason: 'no script is synced twice');
+    });
+
     // Review round 1 (Claude probe): AppGuard runs a dormant check for every wallet on resume, with a main-isolate
     // wallet copy whose subscription cache is empty. A retry after that must reuse the isolate's own wallet object.
     for (final viaDormantCheck in [false, true]) {

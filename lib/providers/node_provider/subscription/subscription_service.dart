@@ -294,7 +294,11 @@ class SubscriptionService {
       lastUsedIndex,
       scriptStatusController,
     );
-    scriptStatuses.addAll(scanResult.scriptStatuses);
+    // 재연결 때 메인 isolate가 보내는 지갑의 사용 인덱스는 앱을 켤 때 읽은 값이라, 그 뒤 새로 쓴 주소가 위의 사용 주소에도
+    // 아래 범위에도 들어간다. 같은 스크립트가 두 번 들어가면 두 번 동기화되고, 스크립트 상태 저장이 같은 키를 두 번 넣다가
+    // 실패해 구독 전체가 실패한다(통신 오류 없이).
+    final listed = scriptStatuses.map((status) => status.address).toSet();
+    scriptStatuses.addAll(scanResult.scriptStatuses.where((status) => listed.add(status.address)));
 
     return (scriptStatuses: scriptStatuses, lastUsedIndex: scanResult.lastUsedIndex);
   }
