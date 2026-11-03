@@ -223,7 +223,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// - 저장된 통화가 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
   /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
   ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
-  ///   통화를 새로 저장할 때는 저장이 끝난 뒤에 플래그를 남긴다([_saveResolvedFiat]).
+  ///   통화를 새로 저장할 때는 저장이 확인된 뒤에 플래그를 남긴다([_saveFiatThenMarkChecked]).
   /// - [timeZoneName]이 KST(대한민국·북한)면 지역·언어와 관계없이 새 설치는 KRW로 정하고, 저장된 KRW도 바로잡지 않는다.
   ///   DateTime.timeZoneName은 Android·iOS 모두 localtime_r()의 tm_zone, 곧 기기 tz 데이터베이스의 약어다
   ///   (dart-lang/sdk 3.9.2 runtime/vm/os_android.cc·os_macos.cc의 OS::GetTimeZoneName).
@@ -255,27 +255,40 @@ class PreferenceProvider extends ChangeNotifier {
     if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
       final saved = FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
       if (isPreFiatInstall) {
-        unawaited(_saveResolvedFiat(prefs, saved));
+        unawaited(_saveFiatThenMarkChecked(prefs, saved));
       } else if (isRegionCheckPending) {
-        prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+        unawaited(_markRegionChecked(prefs));
       }
       return saved;
     }
 
     // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
     final fiat = isKoreaTimeZone ? FiatCode.KRW : defaultFiatForLocale(Locale(appLanguage, region));
-    unawaited(_saveResolvedFiat(prefs, fiat));
+    unawaited(_saveFiatThenMarkChecked(prefs, fiat));
     return fiat;
   }
 
-  /// 통화를 먼저 저장하고, 저장이 끝난 뒤에만 확인 플래그를 남긴다.
-  /// 그 사이에 앱이 꺼지거나 저장이 실패하면 다음 실행에서 같은 확인을 다시 하고, 결과는 같다.
-  static Future<void> _saveResolvedFiat(SharedPrefsRepository prefs, FiatCode fiat) async {
+  /// 통화를 먼저 저장하고, 기기 저장소가 저장을 확인했을 때(true)만 확인 플래그를 남긴다.
+  /// 저장이 거절(false)되거나 실패하거나 그 사이에 앱이 꺼지면 플래그가 없으므로, 다음 실행에서 같은 확인을 다시 하고 결과는 같다.
+  static Future<void> _saveFiatThenMarkChecked(SharedPrefsRepository prefs, FiatCode fiat) async {
     try {
-      await prefs.setString(SharedPrefKeys.kSelectedFiat, fiat.code);
-      await prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+      if (await prefs.setStringAndConfirm(SharedPrefKeys.kSelectedFiat, fiat.code)) {
+        await _markRegionChecked(prefs);
+      } else {
+        Logger.error('PreferenceProvider: 기기 저장소가 통화 저장을 거절해 확인 플래그를 남기지 않음');
+      }
     } catch (e) {
-      Logger.error('PreferenceProvider: 기본 통화 저장 실패: $e');
+      Logger.error('PreferenceProvider: 통화 저장 실패: $e');
+    }
+  }
+
+  static Future<void> _markRegionChecked(SharedPrefsRepository prefs) async {
+    try {
+      if (!await prefs.setBoolAndConfirm(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true)) {
+        Logger.error('PreferenceProvider: 기기 저장소가 확인 플래그 저장을 거절함');
+      }
+    } catch (e) {
+      Logger.error('PreferenceProvider: 확인 플래그 저장 실패: $e');
     }
   }
 
@@ -514,9 +527,9 @@ class PreferenceProvider extends ChangeNotifier {
   /// 통화 변경
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
-    await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
-    // 직접 고른 통화는 지역 보정이 다시 바꾸지 않는다. 앞서 플래그 저장이 실패했어도 여기서 남긴다.
-    await _sharedPrefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+    // 직접 고른 통화는 지역 보정이 다시 바꾸지 않도록, 저장이 확인되면 확인 플래그도 남긴다.
+    // 앞서 플래그 저장이 실패했어도 여기서 남긴다.
+    await _saveFiatThenMarkChecked(_sharedPrefs, fiatCode);
     notifyListeners();
   }
 

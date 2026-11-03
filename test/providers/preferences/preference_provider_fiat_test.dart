@@ -39,13 +39,39 @@ class _SlowPrefs extends Fake implements SharedPrefsRepository {
   @override
   bool isContainsKey(String key) => values.containsKey(key);
   @override
-  Future setString(String key, String value) async {
+  Future<bool> setStringAndConfirm(String key, String value) async {
     await fiatWrite.future;
     values[key] = value;
+    return true;
   }
 
   @override
-  Future setBool(String key, bool value) async => values[key] = value;
+  Future<bool> setBoolAndConfirm(String key, bool value) async {
+    values[key] = value;
+    return true;
+  }
+}
+
+/// 통화 쓰기만 기기 저장소가 거절(false)하는 SharedPreferences. 나머지는 실제 mock 저장소로 넘긴다.
+class _RefusingFiatWrites extends Fake implements SharedPreferences {
+  _RefusingFiatWrites(this._inner);
+
+  final SharedPreferences _inner;
+
+  @override
+  Future<bool> setString(String key, String value) {
+    if (key == SharedPrefKeys.kSelectedFiat) return Future.value(false);
+    return _inner.setString(key, value);
+  }
+
+  @override
+  Future<bool> setBool(String key, bool value) => _inner.setBool(key, value);
+  @override
+  String? getString(String key) => _inner.getString(key);
+  @override
+  bool? getBool(String key) => _inner.getBool(key);
+  @override
+  bool containsKey(String key) => _inner.containsKey(key);
 }
 
 void main() {
@@ -325,6 +351,33 @@ void main() {
         expect(await resolve(prefs, locale, 'en', timeZoneName: timeZoneName), FiatCode.KRW);
         expect(prefs.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isTrue);
       }
+    });
+
+    test('기기 저장소가 통화 저장을 거절(false)하면 플래그를 남기지 않는다: 시작할 때', () async {
+      final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+      // ignore: deprecated_member_use_from_same_package
+      prefs.setSharedPreferencesForTest(_RefusingFiatWrites(prefs.sharedPrefs));
+
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+      expect(isChecked(prefs), isFalse);
+    });
+
+    test('기기 저장소가 통화 저장을 거절(false)하면 플래그를 남기지 않는다: 설정에서 고를 때', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.USD.code,
+        SharedPrefKeys.kLanguage: 'en',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
+      });
+      final provider = await createProvider();
+      await prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
+      // ignore: deprecated_member_use_from_same_package
+      prefs.setSharedPreferencesForTest(_RefusingFiatWrites(prefs.sharedPrefs));
+
+      await provider.changeFiat(FiatCode.KRW);
+
+      expect(isChecked(prefs), isFalse);
+      expect(savedFiat(prefs), FiatCode.USD.code);
     });
 
     test('설정에서 고른 통화는 플래그를 남겨, 앞서 플래그 저장이 실패했어도 보정이 바꾸지 않는다', () async {
