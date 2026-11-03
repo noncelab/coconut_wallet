@@ -477,6 +477,35 @@ void main() {
     expect(isolate.blockRequestCount, blockRequests);
   });
 
+  for (final initializationFails in [false, true]) {
+    final failure = initializationFails ? 'initialization' : 'wallet subscription';
+    testWidgets('a reconnect whose $failure fails keeps the 10 s probe, which reconnects again', (tester) async {
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2)); // the initial sync starts the block timer after 1 s
+      isolate.onBlock = () async => Result.failure(ErrorCodes.nodeConnectionError); // the server stays unreachable
+      if (initializationFails) {
+        isolate.onInitialize = () async => throw StateError('server unreachable');
+      } else {
+        isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError);
+      }
+
+      final result = await provider!.reconnect();
+      final initializations = isolate.initializationCount;
+      await tester.pump(const Duration(seconds: 11));
+
+      expect(result.isFailure, isTrue);
+      expect(isolate.initializationCount, greaterThan(initializations), reason: 'nothing else would ever retry');
+      expect(tester.takeException(), isNull);
+      await provider!.closeConnection();
+      provider!.dispose();
+      provider = null;
+      await tester.pump();
+    });
+  }
+
   for (final crossErrorZone in [false, true]) {
     test('overlapping initialization retries StateError across error zones=$crossErrorZone', () async {
       connectivity.online = false;

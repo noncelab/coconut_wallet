@@ -163,7 +163,13 @@ class NodeProvider extends ChangeNotifier {
     }
 
     await _updateCurrentBlock();
-    if (!isInitialized) return;
+    _armBlockUpdates();
+  }
+
+  /// 10초마다 블록 높이를 확인하는 타이머를 건다. 확인이 실패하면 [_updateCurrentBlock]이 재연결한다.
+  /// 연결·구독이 실패한 뒤에도 불러서, 실패가 다음 재연결 시도 없이 남지 않게 한다.
+  void _armBlockUpdates() {
+    if (!isInitialized || (_blockUpdateTimer?.isActive ?? false)) return;
     _blockUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!isInitialized) return;
       _updateCurrentBlock();
@@ -324,6 +330,7 @@ class NodeProvider extends ChangeNotifier {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
         _analyticsService?.logWalletBulkSyncFailed();
+        _armBlockUpdates();
       } else {
         _setConnectionError(false);
         // 건너뛴 구독(지갑 로딩 전, 오프라인, 지갑 없음)은 완료로 세지 않는다.
@@ -487,6 +494,7 @@ class NodeProvider extends ChangeNotifier {
           // 이미 완료된 경우 무시
         }
       }
+      _armBlockUpdates();
       rethrow;
     } finally {
       _isInitializing = false;
@@ -781,6 +789,7 @@ class NodeProvider extends ChangeNotifier {
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
           _analyticsService?.logWalletBulkSyncFailed();
+          _armBlockUpdates();
           return Result.failure(result.error);
         }
       } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
