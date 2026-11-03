@@ -311,14 +311,18 @@ class ScriptSyncService {
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
-      // Transaction 동기화
+      // Transaction 동기화 (실패해도 완료로 세야 거래 목록의 "업데이트 중"이 끝난다)
       _stateManager.addWalletFetchDispatched(dto.walletItem.id, 1);
-      final fetchResult = await _transactionSyncService.fetchScriptTransaction(
-        dto.walletItem,
-        dto.scriptStatus,
-        now: receivedAt,
-      );
-      _stateManager.addWalletFetchCompleted(dto.walletItem.id, 1);
+      final FetchScriptTransactionResult fetchResult;
+      try {
+        fetchResult = await _transactionSyncService.fetchScriptTransaction(
+          dto.walletItem,
+          dto.scriptStatus,
+          now: receivedAt,
+        );
+      } finally {
+        _stateManager.addWalletFetchCompleted(dto.walletItem.id, 1);
+      }
       await _scriptCallbackService.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
