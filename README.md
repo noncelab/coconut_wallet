@@ -204,6 +204,21 @@ make ready
 
 > If Realm generation fails, run `dart run build_runner clean` first.
 
+### Validation
+
+Use the project SDK configured in `.fvmrc`. Generated Mockito files (`*.mocks.dart`)
+are ignored by Git, so regenerate them after changing mocked method signatures or
+checking out a different branch. Do not edit or commit generated mocks manually.
+
+```bash
+make generate-mocks
+fvm flutter analyze
+fvm flutter test
+```
+
+Or run the same steps in order with `make verify`. CI and other validation runners
+should also generate mocks before analysis and tests.
+
 ### Environment Variables
 
 This project requires environment variables configured via `flutter_dotenv`. Create the file for the flavor you're building (`regtest.env` for local development, `mainnet.env` for mainnet builds) in the project root.
