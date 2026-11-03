@@ -214,8 +214,12 @@ class SubscriptionService {
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     _scriptSyncService.cancelRetry(walletItem.id);
-    await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
-    walletItem.subscribedScriptMap.clear();
+    try {
+      await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
+    } finally {
+      // 지갑 콜백은 해제 요청 전에 지워지므로, 요청이 실패해도 캐시를 남기지 않는다.
+      walletItem.subscribedScriptMap.clear();
+    }
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
     return Result.success(true);
   }
@@ -228,13 +232,15 @@ class SubscriptionService {
       return;
     }
 
+    // 지갑 콜백은 해제 요청 전에 지워지므로 캐시도 먼저 지운다. 요청이 실패해도 "구독 중" 캐시만
+    // 남아 다음 구독이 실제 구독(요청과 콜백)을 건너뛰는 일이 없게 한다.
+    walletItem.subscribedScriptMap.remove(script);
     // 같은 주소를 가진 다른 지갑(예: 같은 지갑의 보기 전용 사본)의 구독은 남긴다.
     await _electrumService.unsubscribeScriptForWallet(
       walletItem.walletBase.addressType,
       address,
       walletId: walletItem.id,
     );
-    walletItem.subscribedScriptMap.remove(script);
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
 
