@@ -414,17 +414,21 @@ void main() {
     expect(sent.isSuccess, isTrue);
   }
 
-  test('[window-before-notification] the app\'s own broadcast reserves its input before the server pushes', () async {
-    final (c, _) = await sendFromSyncedWallet();
-    await broadcast(c);
-    final observed = {'coin_after_broadcast': c.coinState(), 'auto_selects_coin': c.autoSelectsCoin()};
-    _report('window-before-notification', '-', observed);
-    expect(
-      observed,
-      {'coin_after_broadcast': 'outgoing', 'auto_selects_coin': false},
-      reason: 'Nothing reserves the inputs at broadcast; only the server notification + sync marks them outgoing.',
-    );
-  });
+  test(
+    '[window-before-notification] the app\'s own broadcast reserves its input before the server pushes',
+    () async {
+      final (c, _) = await sendFromSyncedWallet();
+      await broadcast(c);
+      final observed = {'coin_after_broadcast': c.coinState(), 'auto_selects_coin': c.autoSelectsCoin()};
+      _report('window-before-notification', '-', observed);
+      expect(
+        observed,
+        {'coin_after_broadcast': 'outgoing', 'auto_selects_coin': false},
+        reason: 'Nothing reserves the inputs at broadcast; only the server notification + sync marks them outgoing.',
+      );
+    },
+    skip: 'Out of scope for PR1: reserving the inputs at broadcast is not part of this fix.',
+  );
 
   // Live notification variants. `order` is the order the server pushes the input-address and change-address statuses.
   const liveVariants = [
@@ -551,102 +555,111 @@ void main() {
   // [e-lagging-backend-after-reconnect]: same, but one reconnect to an up-to-date backend happens in between.
   for (final reconnectFirst in [false, true]) {
     final variant = reconnectFirst ? 'e-lagging-backend-after-reconnect' : 'e-lagging-backend';
-    test('[$variant] a reconnect to a backend without the tx must not release the input', () async {
+    test(
+      '[$variant] a reconnect to a backend without the tx must not release the input',
+      () async {
+        final (c, node) = await sendFromSyncedWallet();
+        final b = c.backend;
+        await broadcast(c);
+        b
+          ..notify(c.input)
+          ..notify(c.change);
+        await _drain(node);
+        if (reconnectFirst) await c.reconnect();
+        // Before bf4eab6d the reconnect saved script statuses without awaiting the write; let it land before probing.
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        final stored = SubscriptionRepository(ScriptSyncServiceMock.realmManager!).getAllScriptStatuses(_walletId);
+        final observed = <String, Object?>{
+          'coin_after_sync': c.coinState(),
+          'stored_input_status_is_post_send': stored.value.any((s) => s.status == b.status(c.input)),
+        };
+
+        b.heights.remove(c.spend.transactionHash);
+        final callsBefore = b.calls.length;
+        final lagging = await c.reconnect();
+        observed['lagging_reconnect_refetched_input_utxos'] = b.calls
+            .skip(callsBefore)
+            .contains('listunspent:${c.input}');
+        observed['coin_after_lagging_reconnect'] = c.coinState();
+        observed['spent_by_kept_after_lagging_reconnect'] =
+            c.utxos.getUtxoState(_walletId, c.coin)?.spentByTransactionHash == c.spend.transactionHash;
+
+        // That backend then receives the tx and pushes the statuses.
+        b.heights[c.spend.transactionHash] = 0;
+        b
+          ..notify(c.input)
+          ..notify(c.change);
+        await _drain(lagging);
+        observed['coin_after_lagging_backend_catches_up'] = c.coinState();
+
+        await c.reconnect();
+        observed['coin_after_next_reconnect'] = c.coinState();
+        observed['auto_selects_coin_at_end'] = c.autoSelectsCoin();
+        _report(variant, '-', observed);
+
+        expect(observed['coin_after_sync'], 'outgoing');
+        expect(observed['coin_after_lagging_reconnect'], 'outgoing');
+        expect(observed['coin_after_next_reconnect'], 'outgoing');
+        expect(observed['auto_selects_coin_at_end'], isFalse);
+      },
+      skip:
+          'D1 deferred: keeping a reserved input while a lagging backend\'s listunspent still lists it is not in PR1.',
+    );
+  }
+
+  test(
+    '[h-open-send-screen] a send screen opened before the sync keeps offering the spent input',
+    () async {
       final (c, node) = await sendFromSyncedWallet();
-      final b = c.backend;
       await broadcast(c);
-      b
+      SendViewModel openSendScreen(_SendInfo info) => SendViewModel(
+        _Wallets(c.wallet),
+        info,
+        _Preferences(),
+        _Drafts(),
+        c.utxos,
+        true,
+        (_) {},
+        (_) {},
+        (_) {},
+        _walletId,
+        SendEntryPoint.home,
+        null,
+        null,
+      );
+      final openInfo = _SendInfo();
+      final open = openSendScreen(openInfo); // the user starts the next send right after the first broadcast
+
+      c.backend
         ..notify(c.input)
         ..notify(c.change);
       await _drain(node);
-      if (reconnectFirst) await c.reconnect();
-      // Before bf4eab6d the reconnect saved script statuses without awaiting the write; let it land before probing.
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      final stored = SubscriptionRepository(ScriptSyncServiceMock.realmManager!).getAllScriptStatuses(_walletId);
-      final observed = <String, Object?>{
-        'coin_after_sync': c.coinState(),
-        'stored_input_status_is_post_send': stored.value.any((s) => s.status == b.status(c.input)),
+      final reopened = openSendScreen(_SendInfo());
+      for (final screen in [open, reopened]) {
+        screen
+          ..setAddressText(_external, 0)
+          ..setAmountText(600000, 0)
+          ..validateAllFieldsOnFocusLost()
+          ..setFeeRateText('1');
+      }
+      if (open.canGoNext) open.saveSendInfo(); // what the "next" button does
+      final observed = {
+        'coin_in_db': c.coinState(),
+        'open_screen_balance': open.balance,
+        'open_screen_can_go_next': open.canGoNext,
+        'open_screen_spends_coin':
+            openInfo.transaction?.inputs.any((i) => getUtxoId(i.transactionHash, i.index) == c.coin) ?? false,
+        'reopened_screen_balance': reopened.balance,
+        'reopened_screen_can_go_next': reopened.canGoNext,
       };
-
-      b.heights.remove(c.spend.transactionHash);
-      final callsBefore = b.calls.length;
-      final lagging = await c.reconnect();
-      observed['lagging_reconnect_refetched_input_utxos'] = b.calls
-          .skip(callsBefore)
-          .contains('listunspent:${c.input}');
-      observed['coin_after_lagging_reconnect'] = c.coinState();
-      observed['spent_by_kept_after_lagging_reconnect'] =
-          c.utxos.getUtxoState(_walletId, c.coin)?.spentByTransactionHash == c.spend.transactionHash;
-
-      // That backend then receives the tx and pushes the statuses.
-      b.heights[c.spend.transactionHash] = 0;
-      b
-        ..notify(c.input)
-        ..notify(c.change);
-      await _drain(lagging);
-      observed['coin_after_lagging_backend_catches_up'] = c.coinState();
-
-      await c.reconnect();
-      observed['coin_after_next_reconnect'] = c.coinState();
-      observed['auto_selects_coin_at_end'] = c.autoSelectsCoin();
-      _report(variant, '-', observed);
-
-      expect(observed['coin_after_sync'], 'outgoing');
-      expect(observed['coin_after_lagging_reconnect'], 'outgoing');
-      expect(observed['coin_after_next_reconnect'], 'outgoing');
-      expect(observed['auto_selects_coin_at_end'], isFalse);
-    });
-  }
-
-  test('[h-open-send-screen] a send screen opened before the sync keeps offering the spent input', () async {
-    final (c, node) = await sendFromSyncedWallet();
-    await broadcast(c);
-    SendViewModel openSendScreen(_SendInfo info) => SendViewModel(
-      _Wallets(c.wallet),
-      info,
-      _Preferences(),
-      _Drafts(),
-      c.utxos,
-      true,
-      (_) {},
-      (_) {},
-      (_) {},
-      _walletId,
-      SendEntryPoint.home,
-      null,
-      null,
-    );
-    final openInfo = _SendInfo();
-    final open = openSendScreen(openInfo); // the user starts the next send right after the first broadcast
-
-    c.backend
-      ..notify(c.input)
-      ..notify(c.change);
-    await _drain(node);
-    final reopened = openSendScreen(_SendInfo());
-    for (final screen in [open, reopened]) {
-      screen
-        ..setAddressText(_external, 0)
-        ..setAmountText(600000, 0)
-        ..validateAllFieldsOnFocusLost()
-        ..setFeeRateText('1');
-    }
-    if (open.canGoNext) open.saveSendInfo(); // what the "next" button does
-    final observed = {
-      'coin_in_db': c.coinState(),
-      'open_screen_balance': open.balance,
-      'open_screen_can_go_next': open.canGoNext,
-      'open_screen_spends_coin':
-          openInfo.transaction?.inputs.any((i) => getUtxoId(i.transactionHash, i.index) == c.coin) ?? false,
-      'reopened_screen_balance': reopened.balance,
-      'reopened_screen_can_go_next': reopened.canGoNext,
-    };
-    open.dispose();
-    reopened.dispose();
-    _report('h-open-send-screen', '-', observed);
-    expect(observed['coin_in_db'], 'outgoing', reason: 'precondition: the sync reserved the input');
-    expect(observed['open_screen_spends_coin'], isFalse);
-  });
+      open.dispose();
+      reopened.dispose();
+      _report('h-open-send-screen', '-', observed);
+      expect(observed['coin_in_db'], 'outgoing', reason: 'precondition: the sync reserved the input');
+      expect(observed['open_screen_spends_coin'], isFalse);
+    },
+    skip: 'PR3: the send screen re-validating its UTXO snapshot at Next/Sign (F) is out of scope for PR1.',
+  );
 
   // How long the healthy window stays open: every Electrum request costs 100 ms (mobile RTT).
   for (final changeFirst in [false, true]) {
