@@ -10,16 +10,6 @@ format:
 ready:
 	fvm dart run build_runner clean && fvm dart run build_runner build --delete-conflicting-outputs && fvm dart run realm generate && fvm flutter pub run slang
 
-.PHONY: generate-mocks verify
-
-generate-mocks:
-	fvm dart run build_runner build --delete-conflicting-outputs
-
-# Regenerate ignored mocks before analysis and tests to avoid stale overrides.
-verify: generate-mocks
-	fvm flutter analyze
-	fvm flutter test
-
 slang:
 	fvm dart pub run slang
 
