@@ -588,7 +588,7 @@ void main() {
     });
   }
 
-  // --- re-review: connectivity-restored initialization is followed by a reconnect ---
+  // Network recovery initializes and then reconnects; senders must wait for the final connection.
   testWidgets('send waits for final restored-network connection before becoming ready', (tester) async {
     connectivity.online = false;
     createProvider();
@@ -604,7 +604,7 @@ void main() {
     Result<bool>? outcome;
     provider!.ensureConnectedForBroadcast().then((value) => outcome = value);
     await tester.pump();
-    expect(outcome, isNull, reason: 'L1: joins the background initialization instead of failing at once');
+    expect(outcome, isNull, reason: 'joins the background initialization instead of failing at once');
     final finalInitialization = Completer<void>();
     final subscription = Completer<Result<bool>>();
     isolate.onInitialize = () => finalInitialization.future;
@@ -628,10 +628,7 @@ void main() {
     provider = null;
   });
 
-  // --- review: shared send recovery characterization ---
-  testWidgets('[review] shared send recovery still waits for wallet subscription after the socket is usable', (
-    tester,
-  ) async {
+  testWidgets('in-flight reconnect future resolves only after wallet subscription', (tester) async {
     createProvider();
     wallets.value = [_Wallet(1)];
     load.value = WalletLoadState.loadCompleted;
@@ -641,13 +638,17 @@ void main() {
     final recovery = provider!.reconnect(reuseInFlight: true);
     await tester.pump();
     expect(isolate.initialized, isTrue);
-    expect((await provider!.getLatestBlock()).isSuccess, isTrue, reason: 'broadcast could already proceed');
+    expect(
+      (await provider!.getLatestBlock()).isSuccess,
+      isTrue,
+      reason: 'the connection is usable before the bulk sync ends',
+    );
     Result<bool>? outcome;
     recovery
         .timeout(const Duration(seconds: 15), onTimeout: () => Result.failure(ErrorCodes.nodeConnectionError))
         .then((value) => outcome = value);
     await tester.pump(const Duration(seconds: 15));
-    expect(outcome?.isFailure, isTrue, reason: 'send gives up only because subscription is slow');
+    expect(outcome?.isFailure, isTrue, reason: 'the reconnect future still waits for the slow subscription');
     completion.complete(Result.success(true));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -656,9 +657,7 @@ void main() {
     provider = null;
   });
 
-  testWidgets('[review] a newer reconnect fails the shared one and later send retries join the newer one', (
-    tester,
-  ) async {
+  testWidgets('a newer reconnect supersedes the shared one and later shared callers join it', (tester) async {
     createProvider();
     wallets.value = [_Wallet(1)];
     load.value = WalletLoadState.loadCompleted;
@@ -681,7 +680,7 @@ void main() {
     provider = null;
   });
 
-  testWidgets('[review] default reconnect still starts a new attempt while one is in flight', (tester) async {
+  testWidgets('default reconnect still starts a new attempt while one is in flight', (tester) async {
     createProvider();
     wallets.value = [_Wallet(1)];
     load.value = WalletLoadState.loadCompleted;

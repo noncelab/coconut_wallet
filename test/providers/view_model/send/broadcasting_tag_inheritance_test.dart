@@ -292,11 +292,8 @@ void main() {
     });
   }
 
-  // --- review: additional timeout scenarios ---
   for (final onion in [false, true]) {
-    testWidgets('[review] connection check gives up at its limit then asks for recovery (onion=$onion)', (
-      tester,
-    ) async {
+    testWidgets('connection check gives up at its limit then asks for recovery (onion=$onion)', (tester) async {
       await tester.runAsync(() => initialize());
       node.host = onion ? 'abc.ONION ' : 'node.example';
       final hung = Completer<Result<BlockTimestamp>>();
@@ -321,7 +318,7 @@ void main() {
     });
   }
 
-  testWidgets('[review] retry after recovery timeout joins it and broadcasts exactly once', (tester) async {
+  testWidgets('retry after recovery timeout joins it and broadcasts exactly once', (tester) async {
     await tester.runAsync(() => initialize());
     node.connected = false;
     final recovery = Completer<Result<bool>>();
@@ -346,7 +343,7 @@ void main() {
     expect(node.broadcasts, 1);
   });
 
-  test('[review] recovery reporting false prevents broadcasting', () async {
+  test('recovery reporting false prevents broadcasting', () async {
     await initialize();
     node.connected = false;
     node.onReconnect = () async => Result.success(false);
@@ -355,7 +352,7 @@ void main() {
     expect(node.broadcasts, 0);
   });
 
-  testWidgets('[review] late tag success after the tag provider is disposed is ignored', (tester) async {
+  testWidgets('late tag success after the tag provider is disposed is ignored', (tester) async {
     final original = tags;
     final disposable = UtxoTagProvider(repository);
     tags = disposable;
@@ -376,7 +373,7 @@ void main() {
     expect(node.broadcasts, 1);
   });
 
-  testWidgets('[review] tag failure returned before the limit is reported without delay', (tester) async {
+  testWidgets('tag failure returned before the limit is reported without delay', (tester) async {
     await tester.runAsync(() => initialize());
     repository.onApply = () async => Result<void>.failure(ErrorCodes.realmException);
     Result<String>? outcome;
