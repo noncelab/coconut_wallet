@@ -588,6 +588,43 @@ void main() {
     });
   }
 
+  // --- re-review: connectivity-restored initialization is followed by a reconnect ---
+  testWidgets('[re-review] send waiting on restored-network init fails once the follow-up reconnect supersedes it', (
+    tester,
+  ) async {
+    connectivity.online = false;
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    final initialization = Completer<void>();
+    isolate.onInitialize = () => initialization.future;
+    connectivity.setOnline(true); // _initializeInBackground(reconnectOnSuccess: true)
+    await tester.pump();
+    expect(isolate.initializationCount, 1);
+
+    Result<bool>? outcome;
+    provider!.ensureConnectedForBroadcast().then((value) => outcome = value);
+    await tester.pump();
+    expect(outcome, isNull, reason: 'L1: joins the background initialization instead of failing at once');
+    isolate.onInitialize = null;
+    initialization.complete();
+    await tester.pump();
+
+    // The initialization succeeded, but reconnectOnSuccess immediately replaced the connection,
+    // so the waiting send is rejected (safe, but the user must retry).
+    expect(isolate.initializationCount, 2);
+    expect(outcome?.error, ErrorCodes.nodeConnectionError);
+
+    // A user retry first probes the connection (as BroadcastingViewModel does) and can proceed.
+    expect((await provider!.getLatestBlock()).isSuccess, isTrue);
+
+    await tester.pump(const Duration(seconds: 1));
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
   // --- review: shared send recovery characterization ---
   testWidgets('[review] shared send recovery still waits for wallet subscription after the socket is usable', (
     tester,
