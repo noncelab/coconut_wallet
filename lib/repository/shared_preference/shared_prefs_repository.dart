@@ -99,6 +99,9 @@ class SharedPrefsRepository {
     await _sharedPrefs.setBool(key, value);
   }
 
+  /// [setBool]과 같지만, 기기 저장소가 저장을 확인했는지(true) 거절했는지(false)를 돌려준다.
+  Future<bool> setBoolAndConfirm(String key, bool value) => _sharedPrefs.setBool(key, value);
+
   int getInt(String key) {
     return _sharedPrefs.getInt(key) ?? 0;
   }
@@ -118,6 +121,9 @@ class SharedPrefsRepository {
   Future setString(String key, String value) async {
     await _sharedPrefs.setString(key, value);
   }
+
+  /// [setString]과 같지만, 기기 저장소가 저장을 확인했는지(true) 거절했는지(false)를 돌려준다.
+  Future<bool> setStringAndConfirm(String key, String value) => _sharedPrefs.setString(key, value);
 
   String? getStringOrNull(String key) {
     return _sharedPrefs.getString(key);
