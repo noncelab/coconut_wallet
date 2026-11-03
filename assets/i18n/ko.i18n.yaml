@@ -60,6 +60,7 @@ home_screen_settings: "홈 화면 설정"
 home_connection_status:
   electrum_connection_failed: "일렉트럼 연결 실패"
   electrum_connection_restored: "일렉트럼 연결됨"
+  update_completed: "업데이트 완료"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
 wallet_id: "지갑 ID"

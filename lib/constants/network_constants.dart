@@ -9,3 +9,5 @@ const int kSocketMaxConnectionAttempts = 30;
 const Duration kElectrumResponseTimeout = Duration(seconds: 60);
 
 const Duration kElectrumPingInterval = Duration(seconds: 20);
+
+const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);

@@ -106,6 +106,8 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   Stream<NodeSyncState> get syncStateStream => const Stream.empty();
   @override
   final ValueNotifier<BlockTimestamp?> currentBlockNotifier = ValueNotifier(null);
+  @override
+  Future<bool> refreshWallets() async => true;
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {

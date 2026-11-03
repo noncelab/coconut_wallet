@@ -22,6 +22,32 @@ import 'package:screen_capture_event/screen_capture_event.dart';
 /// 백그라운드 체류가 이보다 길었을 때만 resume 시 소켓 생존 여부 확인
 const Duration _kBackgroundSocketHealthCheckThreshold = Duration(seconds: 30);
 
+/// 백그라운드 체류가 이보다 길었으면 resume 시 모든 지갑을 다시 동기화
+const Duration _kBackgroundResyncThreshold = Duration(minutes: 5);
+
+enum ResumeConnectionCheck { none, probeSocket, resyncWallets }
+
+/// 백그라운드 체류 시간에 따른 resume 시 연결 확인 방법
+/// paused 시각은 resume 때 한 번만 쓰고 지움 (제어 센터 등 inactive → resumed에서 재사용 방지)
+class BackgroundResumePolicy {
+  final DateTime Function() _now;
+  DateTime? _pausedAt;
+
+  BackgroundResumePolicy({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
+  void onPaused() => _pausedAt = _now();
+
+  ResumeConnectionCheck onResumed() {
+    final pausedAt = _pausedAt;
+    _pausedAt = null;
+    if (pausedAt == null) return ResumeConnectionCheck.none;
+    final backgroundDuration = _now().difference(pausedAt);
+    if (backgroundDuration >= _kBackgroundResyncThreshold) return ResumeConnectionCheck.resyncWallets;
+    if (backgroundDuration >= _kBackgroundSocketHealthCheckThreshold) return ResumeConnectionCheck.probeSocket;
+    return ResumeConnectionCheck.none;
+  }
+}
+
 // 앱 root 화면(HomeScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
   static bool _isPrivacyEnabled = true;
@@ -68,7 +94,7 @@ class _AppGuardState extends State<AppGuard> {
   late ConnectivityProvider _connectivityProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
-  DateTime? _pausedAt;
+  final BackgroundResumePolicy _resumePolicy = BackgroundResumePolicy();
   late final AppLifecycleListener _lifecycleListener;
 
   /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
@@ -108,6 +134,7 @@ class _AppGuardState extends State<AppGuard> {
     Logger.log('AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
+        final resumeCheck = _resumePolicy.onResumed();
         await _connectivityProvider.refreshConnectivity();
         if (_isPaused) {
           setState(() {
@@ -119,7 +146,7 @@ class _AppGuardState extends State<AppGuard> {
           _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
         }
-        _handleNodeProviderReconnect();
+        _handleNodeProviderReconnect(resumeCheck);
         for (final wallet in _walletProvider.walletItemList) {
           unawaited(_nodeProvider.syncDormantAddresses(wallet));
         }
@@ -128,7 +155,7 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.detached:
         break;
       case AppLifecycleState.paused:
-        _pausedAt = DateTime.now();
+        _resumePolicy.onPaused();
         if (_isPaused) break;
         setState(() {
           _isPaused = true;
@@ -145,7 +172,7 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   /// NodeProvider 재연결
-  Future<void> _handleNodeProviderReconnect() async {
+  Future<void> _handleNodeProviderReconnect(ResumeConnectionCheck resumeCheck) async {
     // 1. 초기화가 진행 중이면 reconnect 무시
     if (_nodeProvider.isInitializing) {
       Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');
@@ -178,11 +205,14 @@ class _AppGuardState extends State<AppGuard> {
       return;
     }
 
-    // 5. 위 플래그들은 정상이라고 해도, 백그라운드 체류가 길었으면 오래 들고 있던 소켓이 OS에 의해 끊길 수 있음.
-    // (hasConnectionError/failed로 안 잡히는 상태) 짧은 전환에서 매번 확인하면 낭비이므로,
-    // [_kBackgroundSocketHealthCheckThreshold] 이상 백그라운드에 있었을 때만 소켓 상태를 확인한다.
-    final pausedAt = _pausedAt;
-    if (pausedAt == null || DateTime.now().difference(pausedAt) < _kBackgroundSocketHealthCheckThreshold) {
+    // 5. 플래그가 정상이어도 백그라운드 체류가 길면 소켓이 끊겼거나 알림을 놓쳤을 수 있음
+    // 5분 이상이면 전체 재동기화, 30초 이상이면 소켓 확인
+    if (resumeCheck == ResumeConnectionCheck.resyncWallets) {
+      Logger.log('AppGuard: Long background, resyncing all wallets');
+      unawaited(_nodeProvider.refreshWallets());
+      return;
+    }
+    if (resumeCheck == ResumeConnectionCheck.none) {
       Logger.log('AppGuard: Connection is healthy, skipping reconnect');
       return;
     }
