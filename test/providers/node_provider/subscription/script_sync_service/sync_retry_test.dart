@@ -212,6 +212,38 @@ void main() {
     expect(clock.pendingDelays, [const Duration(seconds: 10)], reason: 'the failed drain schedules it again');
   });
 
+  // Review round 2 (Codex): a subscription failure leaves no record a later clean queue could cover, so a retry that
+  // came due during such a queue (e.g. a viewed-address check) must run after it, not be dropped.
+  test('a retry that comes due during a clean viewed-address check runs after it', () async {
+    final sync = createSync();
+    await failQueue(sync); // a failed subscription
+    final hold = Completer<void>();
+    final check = sync.runQueued(_walletId, () async {
+      await hold.future;
+      return Result.success(<String>[]); // a clean syncViewedAddresses
+    }, retryWallet: _wallet);
+    clock.elapse();
+    expect(calls, isEmpty, reason: 'it does not run inside the check');
+    hold.complete();
+    await check;
+    await pumpEventQueue();
+    expect(calls, ['resubscribe']);
+  });
+
+  test('a retry deferred behind a busy queue is dropped when the wallet is resynced or deleted meanwhile', () async {
+    final sync = createSync();
+    await failQueue(sync);
+    final hold = Completer<void>();
+    final check = sync.runQueued(_walletId, () async => hold.future);
+    clock.elapse();
+    sync.cancelRetry(_walletId);
+    hold.complete();
+    await check;
+    await pumpEventQueue();
+    expect(calls, isEmpty);
+    expect(clock.pendingDelays, isEmpty);
+  });
+
   // Review round 1 (Codex probe): cancellation while the running retry awaits its balance re-fetch. This is also the
   // test that fails without the generation check (Claude nit 6): the registration alone cannot tell the cancel.
   test('[codex-cancel-running-retry] cancellation during balance retry must prevent resubscribe', () async {

@@ -43,6 +43,7 @@ class ScriptSyncService {
   final Map<int, Timer> _retryTimers = {};
   final Map<int, int> _retryAttempts = {};
   final Map<int, int> _retryGenerations = {};
+  final Map<int, int> _deferredRetries = {}; // 큐가 바빠 미룬 재시도: 지갑 → 예약 때 세대
   final Set<int> _removedWallets = {};
   final Set<int> _silentRetries = {}; // 조용한 자동 재시도가 큐를 쓰는 중인 지갑
 
@@ -288,10 +289,14 @@ class ScriptSyncService {
             failed ? null : _balanceSyncService.getWalletBalance(walletId),
           );
         }
+        final deferred = _deferredRetries.remove(walletId);
         if (failed) {
-          _scheduleRetry(walletId);
+          _scheduleRetry(walletId); // 미룬 재시도는 이 예약이 대신한다
         } else {
           _retryAttempts.remove(walletId);
+          // 미룬 재시도는 깨끗한 큐 뒤에도 돈다. 그 큐(예: 조회 주소 확인)가 실패한 구독을 다시 했는지는 알 수 없다.
+          // 그 사이 지갑이 삭제·재동기화돼 세대가 바뀌었으면 버린다.
+          if (deferred != null && deferred == (_retryGenerations[walletId] ?? 0)) _startRetry(walletId, deferred);
         }
       }
     });
@@ -314,13 +319,20 @@ class ScriptSyncService {
     // 같은 순간에 실패한 기기들이 같은 박자로 다시 묻지 않도록 ±20% 흔든다.
     _retryTimers[walletId] = _createTimer(_retryDelays[attempt] * (0.8 + 0.4 * _random()), () {
       _retryTimers.remove(walletId);
-      // 다른 작업이 큐를 쓰고 있으면 그 작업이 끝날 때 아직 실패면 다시 예약된다.
-      if (_walletSyncQueues.containsKey(walletId)) return;
-      // 기다리는 동안 깨끗한 큐가 횟수를 초기화했을 수 있어, 예약 시점 값이 아니라 지금 값에 더한다.
-      _retryAttempts.update(walletId, (count) => count + 1, ifAbsent: () => 1);
-      // 자동 재시도는 화면에 실패를 그대로 두고 조용히 돈다(시작·진행을 알리지 않고 성공하면 완료를 알린다).
-      runQueued(walletId, () => _retryWalletSync(walletId, generation), silentRetry: true).ignore();
+      // 다른 작업이 큐를 쓰고 있으면 그 큐가 끝난 뒤로 미룬다(조용한 재시도가 그 작업의 진행 표시를 숨기지 않게).
+      if (_walletSyncQueues.containsKey(walletId)) {
+        _deferredRetries[walletId] = generation;
+      } else {
+        _startRetry(walletId, generation);
+      }
     });
+  }
+
+  /// 자동 재시도는 화면에 실패를 그대로 두고 조용히 돈다(시작·진행을 알리지 않고 성공하면 완료를 알린다).
+  void _startRetry(int walletId, int generation) {
+    // 기다리는 동안 깨끗한 큐가 횟수를 초기화했을 수 있어, 예약 시점 값이 아니라 지금 값에 더한다.
+    _retryAttempts.update(walletId, (count) => count + 1, ifAbsent: () => 1);
+    runQueued(walletId, () => _retryWalletSync(walletId, generation), silentRetry: true).ignore();
   }
 
   /// 기억한 잔액 실패를 먼저 다시 조회한 뒤(잔액이 생긴 주소가 활성 주소로 구독되도록) 바뀐·실패한 스크립트를 다시 동기화한다.
