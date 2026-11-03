@@ -46,6 +46,7 @@ class ScriptSyncService {
   final Map<int, int> _deferredRetries = {}; // 큐가 바빠 미룬 재시도: 지갑 → 예약 때 세대
   final Set<int> _removedWallets = {};
   final Set<int> _silentRetries = {}; // 조용한 자동 재시도가 큐를 쓰는 중인 지갑
+  final Set<int> _shownFailed = {}; // 마지막으로 알린 큐 종료가 실패인 지갑
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
   static const Duration _dormantSyncThrottle = Duration(seconds: 30);
@@ -281,13 +282,19 @@ class ScriptSyncService {
         final removed = _removedWallets.contains(walletId);
         final silent = _silentRetries.remove(walletId);
         if (silent && !removed) _stateManager.setWalletSilent(walletId, false);
-        // 조용한 재시도가 실패로 끝나면 화면의 이전 실패 상태를 그대로 둔다. 성공하면 완료를 알린다.
-        if (!(silent && failed)) {
+        // 조용한 재시도가 실패로 끝나면 화면의 실패 상태를 그대로 둔다. 그 사이 다른 큐(푸시 등)가 완료를 알렸다면
+        // 실패를 다시 알린다. 성공하면 완료를 알린다.
+        if (!(silent && failed && _shownFailed.contains(walletId))) {
           _stateManager.setWalletSyncQueueState(
             walletId,
             false,
             failed ? null : _balanceSyncService.getWalletBalance(walletId),
           );
+          if (failed) {
+            _shownFailed.add(walletId);
+          } else {
+            _shownFailed.remove(walletId);
+          }
         }
         final deferred = _deferredRetries.remove(walletId);
         if (failed) {

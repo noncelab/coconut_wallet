@@ -399,6 +399,23 @@ void main() {
       expect(node.state.nodeSyncState, NodeSyncState.completed);
     });
 
+    // Review round 2: a clean queue (e.g. a push) can show completed while a subscription failure still waits for its
+    // retry. A silent retry that then fails must show the failure again instead of leaving completed on screen.
+    test('a silent retry that fails after another sync showed completed shows the failure again', () async {
+      final node = _Node();
+      node.manager.initWalletUpdateStatus(_walletId);
+      final sync = createSync(state: node.manager);
+      addTearDown(node.close);
+      await failQueue(sync); // a failed subscription; its retry is pending
+      await sync.runQueued(_walletId, () async => Result.success(true)); // a clean push
+      expect(node.state.nodeSyncState, NodeSyncState.completed, reason: 'precondition');
+      resubscribe = () async => _failure;
+      clock.elapse(); // the pending retry fails
+      await pumpEventQueue();
+      expect(node.state.nodeSyncState, NodeSyncState.failed);
+      expect(node.state.registeredWallets[_walletId]!.balance, WalletSyncState.waiting);
+    });
+
     // A deleted wallet must not come back into the screen state as failed and keep the global state failed.
     for (final silentRetry in [false, true]) {
       final what = silentRetry ? 'its silent retry' : 'a sync';
