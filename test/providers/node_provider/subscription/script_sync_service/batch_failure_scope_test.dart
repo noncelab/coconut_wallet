@@ -78,6 +78,25 @@ void main() {
     expect(ScriptSyncServiceMock.balanceSyncService.hasBalanceFetchFailures(walletId), isTrue);
   });
 
+  test('a failed 20-script chunk does not skip the later chunks; the first error is rethrown after them', () async {
+    final batch = scripts(0, 45); // chunks of 20, 20 and 5
+    final electrum = ScriptSyncServiceMock.electrumService;
+    when(electrum.getHistory(any, batch.first.address)).thenAnswer((call) async {
+      historyRequests.add(call.positionalArguments[1] as String);
+      throw StateError('injected get_history timeout');
+    });
+
+    await expectLater(
+      sync.syncBatchScriptStatusList(walletItem: wallet, scriptStatuses: batch),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', contains('get_history'))),
+    );
+
+    expect(historyRequests.toSet(), batch.map((s) => s.address).toSet());
+    verifyNever(electrum.getUnspentList(any, any));
+    final progress = ScriptSyncServiceMock.stateManager.fetchProgressByWallet[walletId]!;
+    expect((progress.dispatched, progress.completed), (45, 45));
+  });
+
   test('a balance failure on an address inside the batch still aborts it', () async {
     final batch = scripts(0, 2);
     final electrum = ScriptSyncServiceMock.electrumService;

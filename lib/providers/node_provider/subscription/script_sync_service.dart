@@ -417,7 +417,10 @@ class ScriptSyncService {
       _stateManager.addWalletFetchDispatched(walletItem.id, scriptStatuses.length);
       final transactionStartTime = DateTime.now();
 
+      // 한 청크가 실패해도 나머지 청크를 끝까지 조회해 그 거래들이 쓴 코인도 예약한 뒤 첫 실패를 던진다.
+      // 실패한 청크도 완료로 세야 거래 목록의 "업데이트 중"이 끝난다.
       const chunkSize = 20;
+      AsyncError? chunkError;
       for (int i = 0; i < scriptStatuses.length; i += chunkSize) {
         final endIndex = (i + chunkSize < scriptStatuses.length) ? i + chunkSize : scriptStatuses.length;
         final batch = scriptStatuses.sublist(i, endIndex);
@@ -425,7 +428,11 @@ class ScriptSyncService {
           (status) =>
               _transactionSyncService.fetchScriptTransaction(walletItem, status, inBatchProcess: true, now: now),
         );
-        await Future.wait(transactionFutures);
+        try {
+          await Future.wait(transactionFutures);
+        } catch (e, stackTrace) {
+          chunkError ??= AsyncError(e, stackTrace);
+        }
         reportProgress(batch.length);
         _stateManager.addWalletFetchCompleted(walletItem.id, batch.length);
 
@@ -433,6 +440,7 @@ class ScriptSyncService {
           await Future.delayed(const Duration(milliseconds: 100));
         }
       }
+      if (chunkError != null) Error.throwWithStackTrace(chunkError.error, chunkError.stackTrace);
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
       await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
 
