@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
@@ -161,9 +162,9 @@ class PreferenceProvider extends ChangeNotifier {
     _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
     _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
 
-    // 통화 설정 초기화
-    _initializeFiat();
     _initializeLanguageFromSystem();
+    // 통화 설정 초기화. 앱 언어(_language)를 쓰므로 언어 초기화 뒤에 둔다.
+    _selectedFiat = initializeFiat(_sharedPrefs, PlatformDispatcher.instance.locale, _language);
     _initializeNumberFormatFromLocale();
 
     _electrumServerProvider.addListener(notifyListeners);
@@ -204,15 +205,19 @@ class PreferenceProvider extends ChangeNotifier {
     Future<void>.microtask(loadCcosRuntimeState);
   }
 
-  /// 통화 설정 초기화
-  void _initializeFiat() {
-    final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
-    if (fiatCode.isNotEmpty) {
-      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
-    } else {
-      _selectedFiat = FiatCode.KRW;
-      _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
+  /// 통화 설정 초기화. [appLanguage]는 언어 초기화를 마친 앱 언어 설정값이다.
+  /// 저장된 통화가 있으면 그대로 쓰고, 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
+  @visibleForTesting
+  static FiatCode initializeFiat(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) {
+    final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
+    if (savedCode.isNotEmpty) {
+      return FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
     }
+
+    // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
+    final fiat = defaultFiatForLocale(Locale(appLanguage, systemLocale.countryCode));
+    prefs.setString(SharedPrefKeys.kSelectedFiat, fiat.code);
+    return fiat;
   }
 
   /// OS 설정에 따라 언어 설정 초기화
