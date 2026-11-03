@@ -64,6 +64,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<String> _tagSourceUtxoIds = [];
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
+  bool _isSendCancelled = false;
+  bool _isBroadcastRequested = false;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -110,6 +112,21 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   bool get tagInheritanceFailed => _tagInheritanceFailed;
+
+  /// 화면을 떠날 때 부른다. 아직 노드에 전송을 요청하지 않았으면 이후 전송을 막고 true를 돌려준다.
+  /// 이미 요청했으면 취소할 수 없으므로 false를 돌려주며, 화면은 결과를 기다려야 한다.
+  bool cancelPendingSend() {
+    if (_isBroadcastRequested) return false;
+    _isSendCancelled = true;
+    return true;
+  }
+
+  @override
+  void dispose() {
+    // 화면이 다른 경로로 사라져도 대기 중이던 보내기가 나중에 전송되지 않도록 한다.
+    _isSendCancelled = true;
+    super.dispose();
+  }
 
   List<UtxoTag> prepareTagInheritance() {
     if (!_isInitDone) throw StateError('Transaction is not ready');
@@ -177,6 +194,8 @@ class BroadcastingViewModel extends ChangeNotifier {
     final isConnected = await isElectrumServerConnected();
     Logger.log('[Send] 연결 확인 완료: $isConnected');
 
+    if (_isSendCancelled) return _cancelledSend();
+
     if (!isConnected) {
       Logger.log('[Send] 전송용 연결 준비 시작');
       final isOnion = isOnionHost(_nodeProvider.host);
@@ -194,9 +213,16 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.log('[Send] 전송용 연결 준비 완료');
     }
 
+    // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
+    // 이 검사와 요청 표시 사이에 await를 두지 않아야 취소와 전송이 엇갈리지 않는다.
+    if (_isSendCancelled) return _cancelledSend();
+    _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
     final result = await _nodeProvider.broadcast(_signedTx!);
-    if (result.isFailure) return result;
+    if (result.isFailure) {
+      _isBroadcastRequested = false;
+      return result;
+    }
 
     try {
       final tagApplication = _utxoRepository.applyInheritedTags(
@@ -217,6 +243,12 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
     return result;
+  }
+
+  /// 화면을 떠나 취소된 보내기의 결과. 화면이 없으므로 사용자에게 표시되지 않는다.
+  Result<String> _cancelledSend() {
+    Logger.log('[Send] 화면을 떠나 전송 취소');
+    return Result.failure(ErrorCodes.nodeConnectionError);
   }
 
   Future<bool> isElectrumServerConnected() async {

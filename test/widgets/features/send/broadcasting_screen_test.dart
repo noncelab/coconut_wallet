@@ -72,8 +72,19 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   String get host => 'node.example';
   int broadcasts = 0;
   final pending = Completer<Result<String>>();
+  bool connected = true;
+  int readinessRequests = 0;
+  // Created on request so it completes inside the test's fake-async zone.
+  Completer<Result<bool>>? readiness;
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+  @override
+  Future<Result<bool>> ensureConnectedForBroadcast() {
+    readinessRequests++;
+    return (readiness = Completer<Result<bool>>()).future;
+  }
+
   @override
   Future<Result<String>> broadcast(Transaction transaction) {
     broadcasts++;
@@ -104,6 +115,7 @@ void main() {
   late String target;
   late String transactionHash;
   final navigated = <String?>[];
+  final navigatorKey = GlobalKey<NavigatorState>();
   _PendingDraftRepository? pendingDraft;
 
   setUpAll(() {
@@ -122,7 +134,7 @@ void main() {
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2, bool slowCleanup = false}) async {
+  Future<void> open(WidgetTester tester, {int count = 2, bool slowCleanup = false, bool pushed = false}) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -181,14 +193,23 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          navigatorKey: navigatorKey,
           navigatorObservers: [_NavigationObserver(navigated)],
-          home: const LoaderOverlay(child: BroadcastingScreen()),
+          home: pushed ? const SizedBox() : const LoaderOverlay(child: BroadcastingScreen()),
           onGenerateRoute: (settings) {
             return MaterialPageRoute<void>(settings: settings, builder: (_) => const SizedBox());
           },
         ),
       ),
     );
+    if (pushed) {
+      // Opened from another screen so a back gesture has somewhere to return to.
+      navigatorKey.currentState!.push(
+        MaterialPageRoute<void>(builder: (_) => const LoaderOverlay(child: BroadcastingScreen())),
+      );
+      await tester.pump();
+      navigated.clear();
+    }
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
@@ -223,6 +244,41 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(completed(), isTrue, reason: 'Broadcast did not reach completion or a result dialog');
   }
+
+  testWidgets('going back while waiting for the connection cancels the send', (tester) async {
+    await open(tester, count: 0, pushed: true);
+    node.connected = false;
+    await tapSend(tester);
+    for (var frame = 0; frame < 30 && node.readinessRequests == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.readinessRequests, 1);
+    await tester.binding.handlePopRoute();
+    // Let the route exit transition finish.
+    for (var frame = 0; frame < 30 && find.byType(BroadcastingScreen).evaluate().isNotEmpty; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(BroadcastingScreen), findsNothing);
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    expect(node.broadcasts, 0, reason: 'a send the user left must never reach the node');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('going back after the broadcast request is sent keeps the screen until the result', (tester) async {
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 30 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.broadcasts, 1);
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(BroadcastingScreen), findsOneWidget, reason: 'the sent request cannot be cancelled');
+    await finish(tester);
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+  });
 
   testWidgets('cancel consent preserves tags and allows opening consent again without broadcasting', (tester) async {
     await open(tester);

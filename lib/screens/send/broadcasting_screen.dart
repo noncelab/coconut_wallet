@@ -260,8 +260,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return PopScope(
+      // 보내는 중에는 바로 닫지 않고, 아직 노드에 요청하기 전일 때만 보내기를 취소하고 닫는다.
+      canPop: !_isBroadcasting,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && _viewModel.isFromSignedDraft) {
+        if (!didPop) {
+          if (_viewModel.cancelPendingSend()) Navigator.of(context).pop();
+          return;
+        }
+        if (_viewModel.isFromSignedDraft) {
           _viewModel.clearSendInfo();
         }
       },

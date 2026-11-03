@@ -120,6 +120,7 @@ void main() {
   late SingleSignatureVault vault;
   late BroadcastingViewModel viewModel;
   late UtxoTagProvider tags;
+  BroadcastingViewModel? disposedViewModel;
 
   setUpAll(() {
     NetworkType.setNetworkType(NetworkType.testnet);
@@ -127,6 +128,7 @@ void main() {
   });
 
   setUp(() {
+    disposedViewModel = null;
     manager = TestRealmManager();
     repository = _DelayedUtxoRepository(manager);
     node = _NodeProvider();
@@ -189,7 +191,10 @@ void main() {
       repository,
       null,
     );
-    addTearDown(viewModel.dispose);
+    final created = viewModel;
+    addTearDown(() {
+      if (!identical(created, disposedViewModel)) created.dispose();
+    });
     expect(await viewModel.setTxInfo(), isNull);
     expect(viewModel.isInitDone, isTrue);
   }
@@ -317,6 +322,59 @@ void main() {
       expect(node.broadcasts, 1);
     });
   }
+
+  testWidgets('cancelling while waiting for the connection prevents a later broadcast', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(node.reconnects, 1);
+    expect(viewModel.cancelPendingSend(), isTrue);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('a send whose request reached the node cannot be cancelled', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null); // keep Realm off the fake clock
+    late bool cancelledDuringRequest;
+    node.duringBroadcast = () => cancelledDuringRequest = viewModel.cancelPendingSend();
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(cancelledDuringRequest, isFalse);
+    expect(outcome.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  test('a failed request can be cancelled before the next attempt', () async {
+    await initialize();
+    node.fails = true;
+    expect((await viewModel.broadcast(inheritedTagIds: [])).isFailure, isTrue);
+    expect(viewModel.cancelPendingSend(), isTrue);
+    node.fails = false;
+    expect((await viewModel.broadcast(inheritedTagIds: [])).isFailure, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('disposing the view model while waiting prevents a later broadcast', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    viewModel.dispose();
+    disposedViewModel = viewModel;
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    expect(node.broadcasts, 0);
+  });
 
   testWidgets('retry after recovery timeout joins it and broadcasts exactly once', (tester) async {
     await tester.runAsync(() => initialize());
