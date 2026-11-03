@@ -28,6 +28,8 @@ void main() {
     return SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   }
 
+  FiatCode resolve(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) =>
+      PreferenceProvider.resolveInitialFiat(prefs, systemLocale: systemLocale, appLanguage: appLanguage);
   String savedFiat(SharedPrefsRepository prefs) => prefs.getString(SharedPrefKeys.kSelectedFiat);
   bool isChecked(SharedPrefsRepository prefs) => prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
@@ -46,7 +48,7 @@ void main() {
       test('$locale, 앱 언어 $appLanguage → ${expected.code}', () async {
         final prefs = await prefsWith({});
 
-        expect(PreferenceProvider.initializeFiat(prefs, locale, appLanguage), expected);
+        expect(resolve(prefs, locale, appLanguage), expected);
         expect(savedFiat(prefs), expected.code);
         expect(isChecked(prefs), isTrue);
       });
@@ -54,12 +56,12 @@ void main() {
 
     test('플래그를 남겨서 나중에 직접 고른 KRW를 다시 바꾸지 않는다', () async {
       final prefs = await prefsWith({});
-      expect(PreferenceProvider.initializeFiat(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
       expect(isChecked(prefs), isTrue);
 
       await prefs.setString(SharedPrefKeys.kSelectedFiat, FiatCode.KRW.code);
 
-      expect(PreferenceProvider.initializeFiat(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
+      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
     });
   });
@@ -77,7 +79,7 @@ void main() {
       test('KRW, $locale, 앱 언어 $appLanguage → ${expected.code}', () async {
         final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
 
-        expect(PreferenceProvider.initializeFiat(prefs, locale, appLanguage), expected);
+        expect(resolve(prefs, locale, appLanguage), expected);
         expect(savedFiat(prefs), expected.code);
         expect(isChecked(prefs), isTrue);
       });
@@ -92,7 +94,7 @@ void main() {
       for (final (fiat, locale, appLanguage) in saved) {
         final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: fiat.code});
 
-        expect(PreferenceProvider.initializeFiat(prefs, locale, appLanguage), fiat);
+        expect(resolve(prefs, locale, appLanguage), fiat);
         expect(savedFiat(prefs), fiat.code);
         expect(isChecked(prefs), isTrue);
       }
@@ -104,7 +106,7 @@ void main() {
         SharedPrefKeys.kHasCheckedRegionDefaultFiat: true,
       });
 
-      expect(PreferenceProvider.initializeFiat(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
+      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
     });
   });

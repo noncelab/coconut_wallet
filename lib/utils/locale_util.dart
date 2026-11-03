@@ -56,11 +56,11 @@ const Set<String> _eurozoneCountryCodes = {
 FiatCode defaultFiatForLocale(Locale locale) {
   final region = locale.countryCode?.toUpperCase() ?? '';
   if (region.isEmpty) {
-    return switch (locale.languageCode.toLowerCase()) {
-      'ko' => FiatCode.KRW,
-      'ja' => FiatCode.JPY,
-      'de' => FiatCode.EUR,
-      _ => FiatCode.USD,
+    return switch (AppLanguage.fromCode(locale.languageCode.toLowerCase())) {
+      AppLanguage.ko => FiatCode.KRW,
+      AppLanguage.ja => FiatCode.JPY,
+      AppLanguage.de => FiatCode.EUR,
+      AppLanguage.en || AppLanguage.es => FiatCode.USD,
     };
   }
   return switch (region) {
