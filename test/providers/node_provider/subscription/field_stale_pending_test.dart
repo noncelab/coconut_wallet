@@ -988,34 +988,46 @@ void main() {
       );
     }
 
-    for (final persistent in [false, true]) {
+    /// The batch tx itself cannot be fetched during the mempool pass ([persistent]: the fault never clears).
+    Future<Map<String, Object?>> rawFails({required bool persistent}) async {
       final variant = persistent ? 'r2-raw-fails-persistently' : 'r2-raw-fails-once';
-      test(
-        '[$variant] the batch tx itself cannot be fetched during the mempool pass',
-        () async {
-          final (c, s, batch) = await batchCase();
-          var hits = 0;
-          c.backend.fault = (m, k) => m == 'getTransaction' && k == batch.hash && (persistent || hits++ == 0);
-          final mempool = await pass(c, s, batch, height: 0);
-          // Later pushes that resubscribe and retry the failed script: unrelated incoming payments.
-          final retries = <Map<String, Object?>>[];
-          for (var i = 0; i < 2; i++) {
-            final before = c.backend.calls.length;
-            await c.nextIncomingPush(s);
-            retries.add({'requests': batch.count(c.backend.calls.sublist(before)), ...batch.state(s)});
-          }
-          final confirmed = await pass(c, s, batch, height: 103);
-          _report(variant, '-', {'mempool': mempool, 'retries': retries, 'confirmed': confirmed});
-          expect(confirmed['record_height'], 103);
-          expect(confirmed['tx_list_updating'], isFalse, reason: '"업데이트 중" must clear once the sync completes');
-        },
-        skip:
-            persistent
-                ? 'PR2: the injected fault never clears, so the batch tx can never be fetched or recorded; '
-                    'PR2 owns what this variant should assert.'
-                : false,
-      );
+      final (c, s, batch) = await batchCase();
+      var hits = 0;
+      c.backend.fault = (m, k) => m == 'getTransaction' && k == batch.hash && (persistent || hits++ == 0);
+      final mempool = await pass(c, s, batch, height: 0);
+      // Later pushes that resubscribe and retry the failed script: unrelated incoming payments.
+      final retries = <Map<String, Object?>>[];
+      for (var i = 0; i < 2; i++) {
+        final before = c.backend.calls.length;
+        await c.nextIncomingPush(s);
+        retries.add({'requests': batch.count(c.backend.calls.sublist(before)), ...batch.state(s)});
+      }
+      final confirmed = await pass(c, s, batch, height: 103);
+      _report(variant, '-', {'mempool': mempool, 'retries': retries, 'confirmed': confirmed});
+      return confirmed;
     }
+
+    test('[r2-raw-fails-once] the batch tx itself cannot be fetched during the mempool pass', () async {
+      final confirmed = await rawFails(persistent: false);
+      expect(confirmed['record_height'], 103);
+      expect(confirmed['tx_list_updating'], isFalse, reason: '"업데이트 중" must clear once the sync completes');
+    });
+
+    test('[r2-raw-fails-persistently] "업데이트 중" clears although the batch tx can never be fetched', () async {
+      final confirmed = await rawFails(persistent: true);
+      expect(confirmed['tx_list_updating'], isFalse, reason: '"업데이트 중" must clear once the sync completes');
+    });
+
+    test(
+      '[r2-raw-fails-persistently] the batch tx is recorded once it confirms',
+      () async {
+        final confirmed = await rawFails(persistent: true);
+        expect(confirmed['record_height'], 103);
+      },
+      skip:
+          'PR2: the injected fault never clears, so the batch tx can never be fetched or recorded; '
+          'PR2 owns what this variant should assert.',
+    );
 
     test(
       '[r2-header-missing-at-confirmation] the confirmation pass keeps failing on a missing header',
