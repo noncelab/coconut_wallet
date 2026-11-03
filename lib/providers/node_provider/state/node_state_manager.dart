@@ -27,8 +27,12 @@ class NodeStateManager implements StateManagerInterface {
   Map<int, WalletFetchProgress> _fetchProgressByWallet = {};
   Map<int, WalletFetchProgress> get fetchProgressByWallet => _fetchProgressByWallet;
 
-  /// 진행 상태를 알리지 않는 지갑(조용한 자동 재시도, 삭제된 지갑). [setWalletSilent] 참고.
-  final Set<int> _silentWallets = {};
+  /// 자동 재시도 작업이 도는 지갑. 지갑 상태는 그대로 알리되 전체(홈 연결) 상태는 바꾸지 않는다([setWalletRetrying]).
+  final Set<int> _retryingWallets = {};
+
+  /// 삭제된 지갑(ID는 다시 쓰이지 않는다). 삭제 때 돌던 작업이 늦게 보낸 상태가 지갑을 다시 등록해
+  /// 전체 상태를 묶어 두지 않도록 버린다.
+  final Set<int> _deletedWallets = {};
 
   NodeStateManager(
     this._notifyListeners,
@@ -106,7 +110,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final previous = _state.registeredWallets[walletId];
     _setState(
       newUpdatedWallets: {
@@ -123,7 +127,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void setWalletSyncQueueState(int walletId, bool isSyncQueued, int? balanceSnapshot) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final previous = _state.registeredWallets[walletId] ?? WalletUpdateInfo(walletId);
     final completed = !isSyncQueued && balanceSnapshot != null;
     final updated = WalletUpdateInfo.fromExisting(
@@ -143,8 +147,11 @@ class NodeStateManager implements StateManagerInterface {
     final wallets = {..._state.registeredWallets, walletId: updated};
     _setState(
       newUpdatedWallets: wallets,
+      // 자동 재시도는 전체 상태를 바꾸지 않고(홈 상태가 깜빡이지 않게), 다른 지갑의 계산에도 진행 중으로 세지 않는다.
       newConnectionState:
-          wallets.values.any((wallet) => wallet.isSyncQueued)
+          _retryingWallets.contains(walletId)
+              ? null
+              : wallets.values.any((wallet) => wallet.isSyncQueued && !_retryingWallets.contains(wallet.walletId))
               ? NodeSyncState.syncing
               : isAllWalletsCompleted(updatedWallets: wallets)
               ? NodeSyncState.completed
@@ -155,7 +162,7 @@ class NodeStateManager implements StateManagerInterface {
   /// 지갑의 동기화 상태 증가 및 상태 업데이트
   @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final existingInfo = _state.registeredWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
@@ -183,7 +190,7 @@ class NodeStateManager implements StateManagerInterface {
 
     // 상태 업데이트
     _setState(
-      newConnectionState: NodeSyncState.syncing,
+      newConnectionState: _retryingWallets.contains(walletId) ? null : NodeSyncState.syncing,
       newUpdatedWallets: {..._state.registeredWallets, walletId: walletUpdateInfo},
     );
   }
@@ -191,7 +198,7 @@ class NodeStateManager implements StateManagerInterface {
   /// 지갑의 동기화 상태 감소 및 완료 여부 업데이트
   @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final existingInfo = _state.registeredWallets[walletId];
 
     if (existingInfo == null) {
@@ -228,7 +235,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void addWalletCompletedAllStates(int walletId) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final existingInfo = _state.registeredWallets[walletId];
     NodeSyncState? newConnectionState;
     WalletUpdateInfo updateInfo;
@@ -295,7 +302,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void addWalletFetchDispatched(int walletId, int count) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final current = _fetchProgressByWallet[walletId] ?? const WalletFetchProgress();
     _fetchProgressByWallet = {
       ..._fetchProgressByWallet,
@@ -306,7 +313,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void addWalletFetchCompleted(int walletId, int count) {
-    if (_silentWallets.contains(walletId)) return;
+    if (_deletedWallets.contains(walletId)) return;
     final current = _fetchProgressByWallet[walletId] ?? const WalletFetchProgress();
     _fetchProgressByWallet = {
       ..._fetchProgressByWallet,
@@ -316,11 +323,11 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   @override
-  void setWalletSilent(int walletId, bool silent) {
-    if (silent) {
-      _silentWallets.add(walletId);
+  void setWalletRetrying(int walletId, bool retrying) {
+    if (retrying) {
+      _retryingWallets.add(walletId);
     } else {
-      _silentWallets.remove(walletId);
+      _retryingWallets.remove(walletId);
     }
   }
 
@@ -366,8 +373,8 @@ class NodeStateManager implements StateManagerInterface {
         case IsolateStateMethod.setWalletSyncQueueState:
           setWalletSyncQueueState(params[0], params[1], params[2]);
           break;
-        case IsolateStateMethod.setWalletSilent:
-          setWalletSilent(params[0], params[1]);
+        case IsolateStateMethod.setWalletRetrying:
+          setWalletRetrying(params[0], params[1]);
           break;
       }
     } catch (e) {
@@ -376,6 +383,8 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   void unregisterWalletUpdateState(int walletId) {
+    _deletedWallets.add(walletId);
+    _retryingWallets.remove(walletId);
     final updatedWallets = Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
     updatedWallets.remove(walletId);
 

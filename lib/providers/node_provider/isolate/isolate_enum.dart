@@ -28,7 +28,7 @@ enum IsolateStateMethod {
   addWalletFetchDispatched,
   addWalletFetchCompleted,
   setWalletSyncQueueState,
-  setWalletSilent,
+  setWalletRetrying,
 }
 
 enum IsolateManagerCommand { initializationCompleted, initializationFailed, updateState }

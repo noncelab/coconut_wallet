@@ -302,7 +302,7 @@ void main() {
     expect(clock.pendingDelays, isEmpty);
   });
 
-  group('silent automatic retry (owner decision: retries make no UI change)', () {
+  group('automatic retry: the home status holds still, wallet data always reaches the screen', () {
     setUp(() => CoconutWalletApp.kFaucetHost = 'http://localhost');
 
     test('failing retries keep the failed state; neither the home status nor the wallet detail spins', () async {
@@ -332,13 +332,17 @@ void main() {
       final nodeStates = <NodeSyncState>[];
       final subscription = node.syncStateStream.listen(nodeStates.add);
       addTearDown(subscription.cancel);
-      final homeLabels = <String>{};
+      final homeBefore = (home.showElectrumReconnected, home.isSyncing);
+      final homeChanges = <(bool, bool)>[];
       home.addListener(() {
-        if (home.showElectrumReconnected) homeLabels.add('reconnected');
-        if (home.isSyncing) homeLabels.add('updating');
+        final now = (home.showElectrumReconnected, home.isSyncing);
+        if (now != homeBefore) homeChanges.add(now);
       });
       var detailSpun = false;
       detail.addListener(() => detailSpun |= detail.isWalletSyncing);
+      var walletEvents = 0;
+      final walletSubscription = node.getWalletStateStream(_walletId).listen((_) => walletEvents++);
+      addTearDown(walletSubscription.cancel);
 
       for (var attempt = 0; attempt < 2; attempt++) {
         final retry = Completer<Result<bool>>();
@@ -348,13 +352,14 @@ void main() {
         };
         clock.elapse(); // the retry starts
         await pumpEventQueue();
-        expect(detail.isWalletSyncing, isFalse, reason: 'a silent retry does not spin the wallet detail');
+        expect(detail.isWalletSyncing, isFalse, reason: 'a retry does not spin the wallet detail over the failure');
         retry.complete(_failure);
         await pumpEventQueue();
       }
       expect(nodeStates, isEmpty, reason: 'the failed state stays on screen while retries fail');
-      expect(homeLabels, isEmpty, reason: 'no reconnected/updating flashes on the home status');
+      expect(homeChanges, isEmpty, reason: 'no reconnected/updating flashes on the home status');
       expect(detailSpun, isFalse);
+      expect(walletEvents, greaterThan(0), reason: 'wallet events are never held back');
       expect(node.state.registeredWallets[_walletId]!.isSyncQueued, isFalse);
 
       resubscribe = () async => Result.success(true);
@@ -362,10 +367,11 @@ void main() {
       await pumpEventQueue();
       expect(nodeStates, [NodeSyncState.completed], reason: 'only the success is published');
       expect(node.state.registeredWallets[_walletId]!.balance, WalletSyncState.completed);
-      expect(detailSpun, isFalse);
+      // The success delivers the global and the wallet update one microtask apart, before any frame; check what settles.
+      expect(detail.isWalletSyncing, isFalse);
     });
 
-    test('once a silent retry ends, ordinary syncs (push, refresh) show their progress as before', () async {
+    test('once a retry ends, ordinary syncs (push, refresh) show their progress as before', () async {
       final node = _Node();
       node.manager.initWalletUpdateStatus(_walletId);
       final sync = createSync(state: node.manager);
@@ -383,7 +389,7 @@ void main() {
       });
       resubscribe = () async => _failure;
       await failQueue(sync);
-      clock.elapse(); // a silent retry fails
+      clock.elapse(); // a retry fails
       await pumpEventQueue();
       expect(node.state.nodeSyncState, NodeSyncState.failed);
 
@@ -400,8 +406,8 @@ void main() {
     });
 
     // Review round 2: a clean queue (e.g. a push) can show completed while a subscription failure still waits for its
-    // retry. A silent retry that then fails must show the failure again instead of leaving completed on screen.
-    test('a silent retry that fails after another sync showed completed shows the failure again', () async {
+    // retry. A retry that then fails must show the failure again instead of leaving completed on screen.
+    test('a retry that fails after another sync showed completed shows the failure again', () async {
       final node = _Node();
       node.manager.initWalletUpdateStatus(_walletId);
       final sync = createSync(state: node.manager);
@@ -416,9 +422,37 @@ void main() {
       expect(node.state.registeredWallets[_walletId]!.balance, WalletSyncState.waiting);
     });
 
+    // Review round 2 (Claude B): a payment push that joins the queue of a retry that then fails must still reach the
+    // screen (the transaction list reloads on the wallet's completed steps).
+    test('a push that joins a failing retry still reaches the screen', () async {
+      final node = _Node();
+      node.manager.initWalletUpdateStatus(_walletId);
+      final sync = createSync(state: node.manager);
+      addTearDown(node.close);
+      await failQueue(sync);
+      final events = <WalletUpdateInfo>[];
+      final subscription = node.getWalletStateStream(_walletId).listen(events.add);
+      addTearDown(subscription.cancel);
+      final retry = Completer<Result<bool>>();
+      resubscribe = () => retry.future;
+      clock.elapse(); // the retry runs
+      await pumpEventQueue();
+      final pushed = sync.runQueued(_walletId, () async {
+        // what _processScriptStatus reports for a new payment
+        node.manager.addWalletSyncState(_walletId, UpdateElement.transaction);
+        node.manager.addWalletCompletedState(_walletId, UpdateElement.transaction);
+        return Result.success(true);
+      }, retryWallet: _wallet);
+      retry.complete(_failure);
+      await pushed;
+      await pumpEventQueue();
+      expect(events.map((e) => e.transaction), contains(WalletSyncState.completed));
+      expect(node.state.nodeSyncState, NodeSyncState.failed, reason: 'the retry itself failed');
+    });
+
     // A deleted wallet must not come back into the screen state as failed and keep the global state failed.
     for (final silentRetry in [false, true]) {
-      final what = silentRetry ? 'its silent retry' : 'a sync';
+      final what = silentRetry ? 'its retry' : 'a sync';
       test('$what that ends after the wallet was deleted does not keep the global state failed', () async {
         final node = _Node();
         final other = WalletMock.createSingleSigWalletItem(id: _walletId + 1);

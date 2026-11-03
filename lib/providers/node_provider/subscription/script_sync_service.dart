@@ -45,8 +45,6 @@ class ScriptSyncService {
   final Map<int, int> _retryGenerations = {};
   final Map<int, int> _deferredRetries = {}; // 큐가 바빠 미룬 재시도: 지갑 → 예약 때 세대
   final Set<int> _removedWallets = {};
-  final Set<int> _silentRetries = {}; // 조용한 자동 재시도가 큐를 쓰는 중인 지갑
-  final Set<int> _shownFailed = {}; // 마지막으로 알린 큐 종료가 실패인 지갑
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
   static const Duration _dormantSyncThrottle = Duration(seconds: 30);
@@ -241,20 +239,9 @@ class ScriptSyncService {
   /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 이 isolate에서 처음 등록된 지갑 객체
   /// (구독 콜백과 구독 캐시를 가진 객체)를 쓴다. 메인 isolate가 휴면·조회 확인에 보내는 사본은 캐시가 비어 있어,
   /// 그것으로 재시도하면 모든 스크립트를 다시 구독한다.
-  /// [silentRetry]는 자동 재시도: 화면에 진행 상태를 알리지 않고, 실패하면 이전 실패 상태를 그대로 둔다.
-  /// 그동안 같은 큐에 들어온 작업(푸시 등)도 진행은 알리지 않고, 큐가 끝날 때 결과만 알린다.
-  Future<T> runQueued<T>(
-    int walletId,
-    Future<T> Function() task, {
-    WalletItemBase? retryWallet,
-    bool silentRetry = false,
-  }) {
+  Future<T> runQueued<T>(int walletId, Future<T> Function() task, {WalletItemBase? retryWallet}) {
     if (retryWallet != null && !_removedWallets.contains(walletId)) {
       _retryWallets.putIfAbsent(walletId, () => retryWallet);
-    }
-    if (silentRetry) {
-      _silentRetries.add(walletId);
-      _stateManager.setWalletSilent(walletId, true);
     }
     final startsQueue = !_walletSyncQueues.containsKey(walletId);
     final previousSync = _walletSyncQueues[walletId] ?? Future<void>.value();
@@ -279,23 +266,11 @@ class ScriptSyncService {
             _failedWalletSyncs.remove(walletId) ||
             _failedScriptSyncs.keys.any((entry) => entry.$1 == walletId) ||
             _balanceSyncService.hasBalanceFetchFailures(walletId);
-        final removed = _removedWallets.contains(walletId);
-        final silent = _silentRetries.remove(walletId);
-        if (silent && !removed) _stateManager.setWalletSilent(walletId, false);
-        // 조용한 재시도가 실패로 끝나면 화면의 실패 상태를 그대로 둔다. 그 사이 다른 큐(푸시 등)가 완료를 알렸다면
-        // 실패를 다시 알린다. 성공하면 완료를 알린다.
-        if (!(silent && failed && _shownFailed.contains(walletId))) {
-          _stateManager.setWalletSyncQueueState(
-            walletId,
-            false,
-            failed ? null : _balanceSyncService.getWalletBalance(walletId),
-          );
-          if (failed) {
-            _shownFailed.add(walletId);
-          } else {
-            _shownFailed.remove(walletId);
-          }
-        }
+        _stateManager.setWalletSyncQueueState(
+          walletId,
+          false,
+          failed ? null : _balanceSyncService.getWalletBalance(walletId),
+        );
         final deferred = _deferredRetries.remove(walletId);
         if (failed) {
           _scheduleRetry(walletId); // 미룬 재시도는 이 예약이 대신한다
@@ -326,7 +301,7 @@ class ScriptSyncService {
     // 같은 순간에 실패한 기기들이 같은 박자로 다시 묻지 않도록 ±20% 흔든다.
     _retryTimers[walletId] = _createTimer(_retryDelays[attempt] * (0.8 + 0.4 * _random()), () {
       _retryTimers.remove(walletId);
-      // 다른 작업이 큐를 쓰고 있으면 그 큐가 끝난 뒤로 미룬다(조용한 재시도가 그 작업의 진행 표시를 숨기지 않게).
+      // 다른 작업이 큐를 쓰고 있으면 그 큐가 끝난 뒤로 미룬다(재시도 표시가 그 작업의 전체 상태 진행을 가리지 않게).
       if (_walletSyncQueues.containsKey(walletId)) {
         _deferredRetries[walletId] = generation;
       } else {
@@ -335,11 +310,20 @@ class ScriptSyncService {
     });
   }
 
-  /// 자동 재시도는 화면에 실패를 그대로 두고 조용히 돈다(시작·진행을 알리지 않고 성공하면 완료를 알린다).
+  /// 자동 재시도. 지갑 상태(진행·완료·잔액)는 평소처럼 알리고, 재시도 작업이 도는 동안에만 전체(홈 연결) 상태를
+  /// 바꾸지 않는다(실패 → 동기화 중 → 실패로 깜빡이지 않게). 결과는 큐가 끝날 때 평소처럼 알린다.
   void _startRetry(int walletId, int generation) {
     // 기다리는 동안 깨끗한 큐가 횟수를 초기화했을 수 있어, 예약 시점 값이 아니라 지금 값에 더한다.
     _retryAttempts.update(walletId, (count) => count + 1, ifAbsent: () => 1);
-    runQueued(walletId, () => _retryWalletSync(walletId, generation), silentRetry: true).ignore();
+    _stateManager.setWalletRetrying(walletId, true);
+    runQueued(walletId, () async {
+      try {
+        return await _retryWalletSync(walletId, generation);
+      } finally {
+        // 같은 큐에 뒤이어 들어온 작업(푸시 등)의 진행은 평소처럼 전체 상태에 반영한다.
+        _stateManager.setWalletRetrying(walletId, false);
+      }
+    }).ignore();
   }
 
   /// 기억한 잔액 실패를 먼저 다시 조회한 뒤(잔액이 생긴 주소가 활성 주소로 구독되도록) 바뀐·실패한 스크립트를 다시 동기화한다.
@@ -371,17 +355,13 @@ class ScriptSyncService {
 
   /// 지갑 삭제: 재시도를 버리고, 이후 이 지갑의 푸시와 늦게 끝난 구독 응답을 받지 않는다.
   /// 같은 ID의 지갑이 다시 구독되면([reviveWallet]) 풀린다.
-  /// 삭제된 지갑의 진행 상태도 더는 알리지 않아, 삭제 때 돌던 작업이 늦게 끝나며 지갑을 화면 상태에 되살려
-  /// 전체 상태를 실패로 묶어 두지 않게 한다.
+  /// 삭제 때 돌던 작업이 늦게 보낸 상태는 메인의 NodeStateManager가 버린다(삭제된 지갑을 다시 등록하지 않는다).
   void removeWallet(int walletId) {
     cancelRetry(walletId);
     _removedWallets.add(walletId);
-    _stateManager.setWalletSilent(walletId, true);
   }
 
-  void reviveWallet(int walletId) {
-    if (_removedWallets.remove(walletId)) _stateManager.setWalletSilent(walletId, false);
-  }
+  void reviveWallet(int walletId) => _removedWallets.remove(walletId);
 
   bool isWalletRemoved(int walletId) => _removedWallets.contains(walletId);
 
