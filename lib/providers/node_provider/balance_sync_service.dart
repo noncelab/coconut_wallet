@@ -21,7 +21,9 @@ class BalanceSyncService {
 
   int getWalletBalance(int walletId) => _walletRepository.getWalletBalance(walletId)?.total ?? 0;
 
-  bool hasBalanceFetchFailures(int walletId) => _failedBalanceFetches.any((entry) => entry.$1 == walletId);
+  /// [addresses]를 주면 그 주소들의 실패만 본다.
+  bool hasBalanceFetchFailures(int walletId, {Set<String>? addresses}) =>
+      _failedBalanceFetches.any((entry) => entry.$1 == walletId && (addresses == null || addresses.contains(entry.$2)));
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {

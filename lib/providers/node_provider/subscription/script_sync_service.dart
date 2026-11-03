@@ -400,7 +400,12 @@ class ScriptSyncService {
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses, onBatchProgress: reportProgress);
-      if (_balanceSyncService.hasBalanceFetchFailures(walletItem.id)) {
+      // 이 배치의 주소만 본다. 다른 주소(휴면·조회 화면)의 이전 실패가 송금·확정 반영을 막지 않게 한다.
+      // 잔액 공개는 지갑 전체 기준으로 큐가 끝날 때 판단한다(runQueued).
+      if (_balanceSyncService.hasBalanceFetchFailures(
+        walletItem.id,
+        addresses: scriptStatuses.map((status) => status.address).toSet(),
+      )) {
         throw StateError('Incomplete wallet balance synchronization');
       }
       final balanceEndTime = DateTime.now();
