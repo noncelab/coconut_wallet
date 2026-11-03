@@ -160,6 +160,7 @@ class PreferenceProvider extends ChangeNotifier {
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
+    String? iosRegionCode,
   }) : _featureSettingsProvider = featureSettingsProvider {
     _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
     _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
@@ -168,6 +169,7 @@ class PreferenceProvider extends ChangeNotifier {
     // 통화 설정 초기화. 앱 언어(_language)를 쓰므로 언어 초기화 뒤에 둔다.
     _selectedFiat = resolveInitialFiat(
       _sharedPrefs,
+      iosRegionCode: iosRegionCode,
       systemLocale: PlatformDispatcher.instance.locale,
       appLanguage: _language,
     );
@@ -212,6 +214,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 앱 시작 때 쓸 통화를 정하고, 새로 정한 값은 저장한다. [appLanguage]는 언어 초기화를 마친 앱 언어 설정값이다.
+  /// 지역은 iOS 지역 설정([iosRegionCode]), 없으면 첫 번째 선호 locale([systemLocale])의 지역을 쓴다.
   /// - 저장된 통화가 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
   /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
   ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
@@ -219,16 +222,18 @@ class PreferenceProvider extends ChangeNotifier {
   @visibleForTesting
   static FiatCode resolveInitialFiat(
     SharedPrefsRepository prefs, {
+    String? iosRegionCode,
     required Locale systemLocale,
     required String appLanguage,
   }) {
+    final region = iosRegionCode == null || iosRegionCode.isEmpty ? systemLocale.countryCode : iosRegionCode;
     final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
     final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
     final isLegacyKrwDefault =
         isRegionCheckPending &&
         savedCode == FiatCode.KRW.code &&
-        systemLocale.countryCode?.toUpperCase() != 'KR' &&
+        region?.toUpperCase() != 'KR' &&
         appLanguage != AppLanguage.ko.code;
     if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
       if (isRegionCheckPending) {
@@ -238,7 +243,7 @@ class PreferenceProvider extends ChangeNotifier {
     }
 
     // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
-    final fiat = defaultFiatForLocale(Locale(appLanguage, systemLocale.countryCode));
+    final fiat = defaultFiatForLocale(Locale(appLanguage, region));
     unawaited(_saveResolvedFiat(prefs, fiat));
     return fiat;
   }

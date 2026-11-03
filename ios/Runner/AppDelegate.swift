@@ -43,6 +43,13 @@ import LocalAuthentication
         let context = LAContext()
         var error: NSError?
         result(context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error))
+      } else if call.method == "getRegionCode" {
+        // 설정 > 일반 > 언어 및 지역의 '지역'. 언어 목록과 따로 고르므로 Flutter locale의 지역과 다를 수 있다.
+        if #available(iOS 16, *) {
+          result(Locale.current.region?.identifier)
+        } else {
+          result(Locale.current.regionCode)
+        }
       } else if call.method == "openDeviceSecuritySettings" {
         // iOS는 화면 잠금 설정으로 이동하는 공식 URL을 제공하지 않는다.
         // 지원되는 기기에서는 암호 설정 화면을 열고, 실패하면 앱 설정 화면을 연다.

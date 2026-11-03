@@ -34,6 +34,9 @@ class CoconutWalletApp extends StatefulWidget {
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 
+  /// iOS 지역 설정. 기본 통화를 정할 때 쓴다. AppBootstrap에서 읽으며, iOS가 아니거나 읽지 못하면 null이다.
+  static String? kIosRegionCode;
+
   const CoconutWalletApp({super.key});
 
   @override
@@ -116,6 +119,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
         isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        iosRegionCode: CoconutWalletApp.kIosRegionCode,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(

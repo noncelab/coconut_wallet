@@ -54,8 +54,18 @@ void main() {
   }
 
   /// 정한 통화를 돌려주고, 미뤄 둔 저장이 끝날 때까지 기다린다.
-  Future<FiatCode> resolve(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) async {
-    final fiat = PreferenceProvider.resolveInitialFiat(prefs, systemLocale: systemLocale, appLanguage: appLanguage);
+  Future<FiatCode> resolve(
+    SharedPrefsRepository prefs,
+    Locale systemLocale,
+    String appLanguage, {
+    String? iosRegionCode,
+  }) async {
+    final fiat = PreferenceProvider.resolveInitialFiat(
+      prefs,
+      iosRegionCode: iosRegionCode,
+      systemLocale: systemLocale,
+      appLanguage: appLanguage,
+    );
     await Future<void>.delayed(Duration.zero);
     return fiat;
   }
@@ -138,6 +148,43 @@ void main() {
 
       expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
+    });
+  });
+
+  group('iOS는 지역 설정을 먼저 쓴다', () {
+    test('지역 설정 DE, 언어 English(US) → 새 설치는 EUR', () async {
+      final prefs = await prefsWith({});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', iosRegionCode: 'DE'), FiatCode.EUR);
+      expect(savedFiat(prefs), FiatCode.EUR.code);
+    });
+
+    test('지역 설정 DE, 언어 English(US) → 저장된 KRW도 EUR로 바로잡는다', () async {
+      final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', iosRegionCode: 'DE'), FiatCode.EUR);
+    });
+
+    test('지역 설정 KR이면 언어의 지역이 US여도 KRW를 지킨다', () async {
+      final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+
+      expect(await resolve(prefs, const Locale('en', 'US'), 'en', iosRegionCode: 'KR'), FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+    });
+
+    test('지역 설정이 없으면(Android 포함) 지금처럼 첫 번째 선호 locale의 지역을 쓴다', () async {
+      final cases = [(null, const Locale('ja', 'JP'), FiatCode.JPY), ('', const Locale('en', 'US'), FiatCode.USD)];
+      for (final (iosRegionCode, locale, expected) in cases) {
+        final prefs = await prefsWith({});
+
+        expect(await resolve(prefs, locale, locale.languageCode, iosRegionCode: iosRegionCode), expected);
+      }
+    });
+
+    test('지역 설정도 locale 지역도 없으면 앱 언어로 정한다', () async {
+      final prefs = await prefsWith({});
+
+      expect(await resolve(prefs, const Locale('ja'), 'ja', iosRegionCode: null), FiatCode.JPY);
     });
   });
 
