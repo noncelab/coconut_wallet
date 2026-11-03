@@ -76,6 +76,17 @@ class _NodeProvider extends Fake implements NodeProvider {
   }
 }
 
+class _PendingDraftRepository extends Fake implements TransactionDraftRepository {
+  final completion = Completer<Result<void>>();
+  final deleted = <int>[];
+
+  @override
+  Future<Result<void>> deleteOne(int draftId) {
+    deleted.add(draftId);
+    return completion.future;
+  }
+}
+
 class _DelayedUtxoRepository extends UtxoRepository {
   _DelayedUtxoRepository(super.manager);
   Future<Result<void>> Function()? onApply;
@@ -146,7 +157,12 @@ void main() {
   List<String> tagIds(String utxoId, {int walletId = 1}) =>
       repository.getUtxoTagsByTxHash(walletId, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> initializeTransaction(Transaction transaction, {bool returnPsbt = false}) async {
+  Future<void> initializeTransaction(
+    Transaction transaction, {
+    bool returnPsbt = false,
+    TransactionDraftRepository? drafts,
+    int? unsignedDraftId,
+  }) async {
     transaction.changeAddressDerivationPath = "${vault.derivationPath}/1/1";
     final original = Psbt.fromTransaction(transaction, vault);
     final signed = Psbt.parse(vault.addSignatureToPsbt(original.serialize()));
@@ -161,6 +177,7 @@ void main() {
           ..setSignedResult(
             returnPsbt ? signed.serialize() : signed.getSignedTransaction(AddressType.p2wpkh).serialize(),
           );
+    if (unsignedDraftId != null) sendInfo.setUnsignedDraftId(unsignedDraftId);
     viewModel = BroadcastingViewModel(
       sendInfo,
       wallets,
@@ -168,7 +185,7 @@ void main() {
       true,
       node,
       transactions,
-      TransactionDraftRepository(manager),
+      drafts ?? TransactionDraftRepository(manager),
       repository,
       null,
     );
@@ -182,6 +199,8 @@ void main() {
     bool outputDerivation = true,
     bool returnPsbt = false,
     int outputAmount = 999000,
+    TransactionDraftRepository? drafts,
+    int? unsignedDraftId,
   }) async {
     final recipient = ownOutput ? vault.getAddress(1, isChange: true) : vault.getAddress(10);
     final transaction = Transaction.withInputsAndOutputs(
@@ -197,7 +216,7 @@ void main() {
       AddressType.p2wpkh,
     );
     transaction.utxoList.add(Utxo(_inputHash, 0, 1000000, "${vault.derivationPath}/0/0"));
-    await initializeTransaction(transaction, returnPsbt: returnPsbt);
+    await initializeTransaction(transaction, returnPsbt: returnPsbt, drafts: drafts, unsignedDraftId: unsignedDraftId);
   }
 
   String targetId() => getUtxoId(viewModel.signedTx!.transactionHash, 0);
@@ -275,7 +294,9 @@ void main() {
 
   // --- review: additional timeout scenarios ---
   for (final onion in [false, true]) {
-    testWidgets('[review] connection check gives up at its limit then asks for recovery (onion=$onion)', (tester) async {
+    testWidgets('[review] connection check gives up at its limit then asks for recovery (onion=$onion)', (
+      tester,
+    ) async {
       await tester.runAsync(() => initialize());
       node.host = onion ? 'abc.ONION ' : 'node.example';
       final hung = Completer<Result<BlockTimestamp>>();
@@ -365,6 +386,28 @@ void main() {
     expect(viewModel.tagInheritanceFailed, isTrue);
     expect(tags.isUpdatedTagList, isFalse);
   });
+
+  for (final lateFailure in [false, true]) {
+    testWidgets('draft cleanup waits a bounded time and absorbs late results (failure=$lateFailure)', (tester) async {
+      final drafts = _PendingDraftRepository();
+      await tester.runAsync(() => initialize(drafts: drafts, unsignedDraftId: 123));
+      var finished = false;
+      viewModel.deleteDraftsIfNeeded().then((_) => finished = true);
+      await tester.pump();
+      expect(drafts.deleted, [123]);
+      await tester.pump(const Duration(seconds: 4));
+      expect(finished, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+      expect(finished, isTrue);
+      if (lateFailure) {
+        drafts.completion.completeError(StateError('late cleanup failure'));
+      } else {
+        drafts.completion.complete(Result<void>.success(null));
+      }
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final lateFailure in [false, true]) {
     testWidgets('tag timeout preserves send success and observes late result (failure=$lateFailure)', (tester) async {

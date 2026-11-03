@@ -540,7 +540,17 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - _signedDraftId: 화면 매개변수로 받은 서명 완료 트랜잭션 삭제 (불러오기)
   /// - _savedDraftId: 이 화면에서 임시 저장한 서명 완료 트랜잭션 삭제
   /// (_signedDraftId와 _savedDraftId는 동시에 존재하지 않음)
+  /// 이미 전송된 트랜잭션의 후처리이므로 지연·실패가 완료 흐름을 막지 않도록
+  /// [kSendLocalProcessingTimeout]까지만 기다리고, 오류는 기록만 한다. (삭제 작업은 시간 초과 후에도 계속된다)
   Future<void> deleteDraftsIfNeeded() async {
+    try {
+      await _deleteDrafts().timeout(kSendLocalProcessingTimeout);
+    } catch (e) {
+      Logger.error('Transaction sent, but draft cleanup did not finish: $e');
+    }
+  }
+
+  Future<void> _deleteDrafts() async {
     // 서명 전 트랜잭션 삭제
     if (_sendInfoProvider.unsignedDraftId != null) {
       try {
