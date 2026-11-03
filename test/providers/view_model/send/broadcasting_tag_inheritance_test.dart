@@ -49,17 +49,24 @@ class _NodeProvider extends Fake implements NodeProvider {
   Future<Result<bool>> Function()? onReconnect;
 
   @override
-  Future<Result<bool>> reconnect({bool reuseInFlight = false}) {
-    expectSync(reuseInFlight, isTrue);
+  Future<Result<bool>> ensureConnectedForBroadcast() {
+    reconnects++;
     return onReconnect!();
   }
+
+  int reconnects = 0;
+  Future<Result<BlockTimestamp>> Function()? onLatestBlock;
 
   bool fails = false;
   void Function()? duringBroadcast;
 
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async =>
-      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+      onLatestBlock != null
+          ? await onLatestBlock!()
+          : connected
+          ? Result.success(BlockTimestamp(100, DateTime(2026)))
+          : Result.failure(ErrorCodes.nodeConnectionError);
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
@@ -265,6 +272,99 @@ void main() {
       expect(node.broadcasts, 0);
     });
   }
+
+  // --- review: additional timeout scenarios ---
+  for (final onion in [false, true]) {
+    testWidgets('[review] connection check gives up at its limit then asks for recovery (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.host = onion ? 'abc.ONION ' : 'node.example';
+      final hung = Completer<Result<BlockTimestamp>>();
+      node.onLatestBlock = () => hung.future;
+      node.onReconnect = () async => Result.success(true);
+      repository.onApply = () async => Result<void>.success(null); // keep Realm off the fake clock
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      final limit = onion ? 100 : 10;
+      await tester.pump(Duration(seconds: limit - 1));
+      expect(node.reconnects, 0);
+      await tester.pump(const Duration(seconds: 1));
+      expect(node.reconnects, 1);
+      expect(outcome?.isSuccess, isTrue);
+      expect(node.broadcasts, 1);
+      // A late answer from the abandoned check must not trigger anything else.
+      hung.complete(Result.success(BlockTimestamp(100, DateTime(2026))));
+      await tester.pump();
+      expect(node.reconnects, 1);
+      expect(node.broadcasts, 1);
+    });
+  }
+
+  testWidgets('[review] retry after recovery timeout joins it and broadcasts exactly once', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future; // shared future, as NodeProvider does with reuseInFlight
+    repository.onApply = () async => Result<void>.success(null); // keep Realm off the fake clock
+    Result<String>? first;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => first = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    expect(first?.isFailure, isTrue);
+    expect(first?.error, ErrorCodes.nodeConnectionError);
+
+    Result<String>? second;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => second = value);
+    await tester.pump(const Duration(seconds: 3));
+    expect(second, isNull);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(second?.isSuccess, isTrue);
+    expect(node.broadcasts, 1, reason: 'the timed-out attempt must not resume');
+    await tester.pump(const Duration(seconds: 30));
+    expect(node.broadcasts, 1);
+  });
+
+  test('[review] recovery reporting false prevents broadcasting', () async {
+    await initialize();
+    node.connected = false;
+    node.onReconnect = () async => Result.success(false);
+    final result = await viewModel.broadcast(inheritedTagIds: []);
+    expect(result.error, ErrorCodes.nodeConnectionError);
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('[review] late tag success after the tag provider is disposed is ignored', (tester) async {
+    final original = tags;
+    final disposable = UtxoTagProvider(repository);
+    tags = disposable;
+    await tester.runAsync(() => initialize());
+    tags = original;
+    final completion = Completer<Result<void>>();
+    repository.onApply = () => completion.future;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 5));
+    expect(outcome?.isSuccess, isTrue);
+    expect(viewModel.tagInheritanceFailed, isTrue);
+    disposable.dispose();
+    completion.complete(Result<void>.success(null));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('[review] tag failure returned before the limit is reported without delay', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.failure(ErrorCodes.realmException);
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    expect(viewModel.tagInheritanceFailed, isTrue);
+    expect(tags.isUpdatedTagList, isFalse);
+  });
 
   for (final lateFailure in [false, true]) {
     testWidgets('tag timeout preserves send success and observes late result (failure=$lateFailure)', (tester) async {

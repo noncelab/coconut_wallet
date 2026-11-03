@@ -177,20 +177,20 @@ class BroadcastingViewModel extends ChangeNotifier {
     Logger.log('[Send] 연결 확인 완료: $isConnected');
 
     if (!isConnected) {
-      Logger.log('[Send] 재연결 시작');
+      Logger.log('[Send] 전송용 연결 준비 시작');
       final isOnion = _nodeProvider.host.trim().toLowerCase().endsWith('.onion');
       final timeout = isOnion ? kSendReconnectTimeoutForOnion : kSendReconnectTimeout;
       try {
         // Timeout stops only this send attempt. A retry joins the same recovery;
         // completing recovery later must never broadcast this transaction automatically.
-        final recovery = await _nodeProvider.reconnect(reuseInFlight: true).timeout(timeout);
+        final recovery = await _nodeProvider.ensureConnectedForBroadcast().timeout(timeout);
         if (recovery.isFailure) return Result.failure(recovery.error);
         if (!recovery.value) return Result.failure(ErrorCodes.nodeConnectionError);
       } on TimeoutException {
         Logger.log('[Send] 재연결 대기 시간 초과: ${timeout.inSeconds}s (onion=$isOnion)');
         return Result.failure(ErrorCodes.nodeConnectionError);
       }
-      Logger.log('[Send] 재연결 완료');
+      Logger.log('[Send] 전송용 연결 준비 완료');
     }
 
     Logger.log('[Send] 브로드캐스팅 시작');
@@ -550,7 +550,6 @@ class BroadcastingViewModel extends ChangeNotifier {
       }
     }
 
-    // 서명 완료 트랜잭션 삭제 (_signedDraftId와 _savedDraftId는 상호 배타적)
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     if (signedDraftIdToDelete != null) {
       try {

@@ -58,6 +58,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isDisposed = false;
   Future<bool>? _walletsRefresh;
   Future<Result<bool>>? _reconnecting;
+  Completer<Result<bool>>? _reconnectReady;
   int _latestReconnectId = 0;
   Completer<void>? _connectionIdle;
   Set<int> _knownWalletIds = {};
@@ -722,6 +723,27 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// Wait only for connection initialization; wallet subscriptions continue separately.
+  Future<Result<bool>> ensureConnectedForBroadcast() async {
+    if (_isDisposed || _isServerChanging || _connectivityProvider.isInternetOff) {
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
+    // reconnect() registers both futures synchronously. Do not await the bulk sync.
+    final recovery = reconnect(reuseInFlight: true);
+    final ready = _reconnectReady;
+    final generation = _latestReconnectId;
+    final endpoint = _electrumServer;
+    final result = await (ready?.future ?? recovery);
+    if (_isDisposed ||
+        _isServerChanging ||
+        generation != _latestReconnectId ||
+        !identical(endpoint, _electrumServer) ||
+        _connectivityProvider.isInternetOff) {
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
+    return result;
+  }
+
   /// 기본적으로 새로 연결하며, 보내기 재시도는 [reuseInFlight]로 기존 작업을 공유한다.
   Future<Result<bool>> reconnect({bool reuseInFlight = false}) {
     if (_isDisposed) return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
@@ -740,15 +762,20 @@ class NodeProvider extends ChangeNotifier {
       return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     }
 
-    final started = _reconnect(++_latestReconnectId);
+    final ready = Completer<Result<bool>>();
+    _reconnectReady = ready;
+    final started = _reconnect(++_latestReconnectId, ready);
     _reconnecting = started;
     started.whenComplete(() {
-      if (identical(_reconnecting, started)) _reconnecting = null;
+      if (identical(_reconnecting, started)) {
+        _reconnecting = null;
+        _reconnectReady = null;
+      }
     }).ignore();
     return started;
   }
 
-  Future<Result<bool>> _reconnect(int reconnectId) async {
+  Future<Result<bool>> _reconnect(int reconnectId, Completer<Result<bool>> ready) async {
     // 더 새로운 재연결에 밀려났으면 상태·연결 오류·분석 이벤트를 건드리지 않고 종료
     bool superseded() => _isDisposed || reconnectId != _latestReconnectId;
     try {
@@ -760,6 +787,12 @@ class NodeProvider extends ChangeNotifier {
       await initialize();
       if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
       _setConnectionError(false);
+
+      ready.complete(
+        isInitialized && !_connectivityProvider.isInternetOff
+            ? Result.success(true)
+            : Result.failure(ErrorCodes.nodeConnectionError),
+      );
 
       final walletLoadState = _walletLoadStateNotifier.value;
       final walletItems = _walletItemListNotifier.value;
@@ -803,6 +836,8 @@ class NodeProvider extends ChangeNotifier {
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
       return Result.failure(ErrorCodes.networkError);
+    } finally {
+      if (!ready.isCompleted) ready.complete(Result.failure(ErrorCodes.nodeConnectionError));
     }
   }
 
