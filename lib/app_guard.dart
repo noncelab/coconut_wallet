@@ -82,6 +82,10 @@ class AppGuard extends StatefulWidget {
   /// 앱 복귀 때 NodeProvider 연결을 확인하고 필요하면 재연결한다.
   @visibleForTesting
   static Future<void> reconnectNodeOnResume(NodeProvider nodeProvider, ResumeConnectionCheck resumeCheck) async {
+    // 0. 백그라운드에서 사라졌거나 걸지 못한 블록 확인을 되살리고 재연결 대기 간격을 처음으로 돌린다.
+    // 아래에서 재연결하면 그 재연결이 타이머를 다시 정한다.
+    nodeProvider.resumeBlockUpdates();
+
     // 1. 초기화가 진행 중이면 reconnect 무시
     if (nodeProvider.isInitializing) {
       Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');

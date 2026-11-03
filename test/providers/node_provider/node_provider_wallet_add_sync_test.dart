@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -596,6 +598,69 @@ void main() {
       final afterResume = isolate.initializationCount;
       await tester.pump(const Duration(seconds: 25)); // the second failure in a row waits 20 s ±20%
       expect(isolate.initializationCount - afterResume, 1, reason: 'probing resumes in the foreground');
+      await close(tester);
+    });
+
+    // Review round 2 (Codex): a reconnect probe that fires in the background is gone. A resume that does not reconnect
+    // (healthy flags, e.g. a silent retry recovered the wallet meanwhile) must bring polling back, with one timer.
+    testWidgets('a healthy resume restores block polling that a background probe consumed', (tester) async {
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError); // arms a reconnect probe
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletSyncQueueState, [1, false, 0]));
+      await tester.pump(); // the isolate's retry recovered the wallet
+      expect([provider!.state.nodeSyncState, provider!.hasConnectionError], [NodeSyncState.completed, false]);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 13)); // the probe fires in the background and stops
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final requests = isolate.blockRequestCount;
+      await AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none);
+      await tester.pump(const Duration(seconds: 25));
+      expect(isolate.blockRequestCount - requests, 2, reason: 'one timer, every 10 s');
+      await close(tester);
+    });
+
+    // Review round 2 (Claude D): after a long outage the next automatic attempt could be minutes away. A resume starts
+    // the backoff over, so a failed resume reconnect is retried after 10 s.
+    testWidgets('a resume starts the reconnect backoff over', (tester) async {
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      final start = await startOutage(tester);
+      await tester.pump(const Duration(seconds: 85)); // three more failed reconnects; the next would wait 80 s ±20%
+      expect(isolate.initializationCount - start, 3);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final beforeResume = isolate.initializationCount;
+      await AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none); // reconnects at once and fails
+      await tester.pump(const Duration(seconds: 13));
+      expect(
+        isolate.initializationCount - beforeResume,
+        2,
+        reason: 'the resume reconnect, then a probe 10 s ±20% later',
+      );
+      await close(tester);
+    });
+
+    testWidgets('a probe that completes after the app was paused does not start polling in the background', (
+      tester,
+    ) async {
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError);
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      final block = Completer<Result<BlockTimestamp>>();
+      isolate.onBlock = () => block.future;
+      await tester.pump(const Duration(seconds: 13)); // the reconnect probe sends its block request in the foreground
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      block.complete(Result.success(BlockTimestamp(2, DateTime(2026))));
+      await tester.pump();
+      final atPause = isolate.blockRequestCount;
+      await tester.pump(const Duration(seconds: 40));
+      expect(isolate.blockRequestCount, atPause, reason: 'nothing polls while paused');
       await close(tester);
     });
   });

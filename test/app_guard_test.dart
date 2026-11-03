@@ -1,5 +1,8 @@
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -88,8 +91,25 @@ void main() {
 
     await AppGuard.reconnectNodeOnResume(node, ResumeConnectionCheck.none);
 
-    expect(node.calls, ['reconnect'], reason: 'initialize()만으로는 첫 초기화가 아니면 지갑을 구독하지 않는다');
+    expect(node.calls, ['resumeBlockUpdates', 'reconnect'], reason: 'initialize()만으로는 첫 초기화가 아니면 지갑을 구독하지 않는다');
   });
+
+  // 리뷰 2차: 모든 복귀가 먼저 블록 확인 타이머를 되살린다(백그라운드에서 울린 재연결 대기 확인은 사라진다).
+  // 재연결이 필요하면 그 뒤에 재연결한다.
+  for (final (state, check, expected) in [
+    (NodeSyncState.completed, ResumeConnectionCheck.none, ['resumeBlockUpdates']),
+    (NodeSyncState.syncing, ResumeConnectionCheck.none, ['resumeBlockUpdates']),
+    (NodeSyncState.completed, ResumeConnectionCheck.probeSocket, ['resumeBlockUpdates', 'getLatestBlock']),
+    (NodeSyncState.failed, ResumeConnectionCheck.none, ['resumeBlockUpdates', 'reconnect']),
+  ]) {
+    test('복귀(${state.name}, ${check.name})는 $expected', () async {
+      final node = _OpenNode(state);
+
+      await AppGuard.reconnectNodeOnResume(node, check);
+
+      expect(node.calls, expected);
+    });
+  }
 }
 
 /// 실패 상태에서 paused가 되어 AppGuard가 closeConnection()한 NodeProvider
@@ -104,6 +124,44 @@ class _ClosedNode extends Fake implements NodeProvider {
 
   @override
   Future<void> initialize() async => calls.add('initialize');
+
+  @override
+  void resumeBlockUpdates() => calls.add('resumeBlockUpdates');
+
+  @override
+  Future<Result<bool>> reconnect() async {
+    calls.add('reconnect');
+    return Result.success(true);
+  }
+}
+
+/// 연결이 열려 있는 NodeProvider
+class _OpenNode extends Fake implements NodeProvider {
+  _OpenNode(this._nodeSyncState);
+
+  final NodeSyncState _nodeSyncState;
+  final calls = <String>[];
+
+  @override
+  bool get isInitializing => false;
+
+  @override
+  bool get isInitialized => true;
+
+  @override
+  bool get hasConnectionError => false;
+
+  @override
+  NodeProviderState get state => NodeProviderState(nodeSyncState: _nodeSyncState, registeredWallets: const {});
+
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async {
+    calls.add('getLatestBlock');
+    return Result.success(BlockTimestamp(1, DateTime(2026)));
+  }
+
+  @override
+  void resumeBlockUpdates() => calls.add('resumeBlockUpdates');
 
   @override
   Future<Result<bool>> reconnect() async {

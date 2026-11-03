@@ -170,17 +170,29 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 10초마다 블록 높이를 확인하는 타이머를 건다. 확인이 실패하면 [_updateCurrentBlock]이 재연결한다.
+  /// 백그라운드에서는 걸지 않는다(복귀하면 AppGuard가 [resumeBlockUpdates]로 다시 건다).
   void _armBlockUpdates() {
-    if (!isInitialized || (_blockUpdateTimer?.isActive ?? false)) return;
+    if (!isInitialized || _isInBackground || (_blockUpdateTimer?.isActive ?? false)) return;
     _blockUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!isInitialized) return;
       _updateCurrentBlock();
     });
   }
 
+  /// 앱 복귀 때 AppGuard가 먼저 부른다. 재연결 대기 간격을 처음(10초)으로 돌리고, 진행 중인 연결 작업이 없으면 블록
+  /// 확인을 정상 주기 타이머 하나로 다시 건다(백그라운드에서 울려 사라진 재연결 확인, 백그라운드라 걸지 못한 확인).
+  /// AppGuard가 이어서 재연결하면 그 재연결이 결과에 맞는 타이머로 바꾼다.
+  void resumeBlockUpdates() {
+    _failedReconnects = 0;
+    if (_reconnecting != null || _isInitializing || _isClosing) return;
+    _blockUpdateTimer?.cancel();
+    _blockUpdateTimer = null;
+    _armBlockUpdates();
+  }
+
   /// 연결·구독이 실패해도 다음 재연결 시도가 남도록 블록 확인을 다시 건다. 연속 실패마다 10·20·40·80·160초,
   /// 최대 5분으로 늘리고 ±20% 흔들어 장애 중 여러 기기가 같은 순간에 서버로 몰리지 않게 한다.
-  /// 백그라운드에서는 걸지 않는다(복귀하면 AppGuard가 바로 재연결한다).
+  /// 백그라운드에서는 걸지 않는다(복귀하면 AppGuard가 [resumeBlockUpdates]로 다시 걸고, 필요하면 재연결한다).
   void _scheduleReconnectProbe() {
     if (!isInitialized || _isInBackground) return;
     final seconds = min(10 << min(_failedReconnects, 5), 300);
