@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show Locale;
 
@@ -214,6 +215,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// - 저장된 통화가 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
   /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
   ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
+  ///   통화를 새로 저장할 때는 저장이 끝난 뒤에 플래그를 남긴다([_saveResolvedFiat]).
   @visibleForTesting
   static FiatCode resolveInitialFiat(
     SharedPrefsRepository prefs, {
@@ -222,9 +224,6 @@ class PreferenceProvider extends ChangeNotifier {
   }) {
     final savedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
     final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
-    if (isRegionCheckPending) {
-      prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
-    }
 
     final isLegacyKrwDefault =
         isRegionCheckPending &&
@@ -232,13 +231,27 @@ class PreferenceProvider extends ChangeNotifier {
         systemLocale.countryCode?.toUpperCase() != 'KR' &&
         appLanguage != AppLanguage.ko.code;
     if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
+      if (isRegionCheckPending) {
+        prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+      }
       return FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
     }
 
     // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
     final fiat = defaultFiatForLocale(Locale(appLanguage, systemLocale.countryCode));
-    prefs.setString(SharedPrefKeys.kSelectedFiat, fiat.code);
+    unawaited(_saveResolvedFiat(prefs, fiat));
     return fiat;
+  }
+
+  /// 통화를 먼저 저장하고, 저장이 끝난 뒤에만 확인 플래그를 남긴다.
+  /// 그 사이에 앱이 꺼지거나 저장이 실패하면 다음 실행에서 같은 확인을 다시 하고, 결과는 같다.
+  static Future<void> _saveResolvedFiat(SharedPrefsRepository prefs, FiatCode fiat) async {
+    try {
+      await prefs.setString(SharedPrefKeys.kSelectedFiat, fiat.code);
+      await prefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
+    } catch (e) {
+      Logger.error('PreferenceProvider: 기본 통화 저장 실패: $e');
+    }
   }
 
   /// OS 설정에 따라 언어 설정 초기화
@@ -477,6 +490,8 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
+    // 직접 고른 통화는 지역 보정이 다시 바꾸지 않는다. 앞서 플래그 저장이 실패했어도 여기서 남긴다.
+    await _sharedPrefs.setBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true);
     notifyListeners();
   }
 

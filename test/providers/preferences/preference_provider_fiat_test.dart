@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -21,6 +25,27 @@ class _WalletPreferences extends Fake implements WalletPreferencesRepository {
   List<int> getExcludedWalletIds() => [];
 }
 
+/// 통화 저장이 언제 끝날지 테스트가 정한다.
+class _SlowPrefs extends Fake implements SharedPrefsRepository {
+  _SlowPrefs(this.values);
+
+  final Map<String, Object> values;
+  final fiatWrite = Completer<void>();
+
+  @override
+  String getString(String key) => values[key] as String? ?? '';
+  @override
+  bool getBool(String key) => values[key] as bool? ?? false;
+  @override
+  Future setString(String key, String value) async {
+    await fiatWrite.future;
+    values[key] = value;
+  }
+
+  @override
+  Future setBool(String key, bool value) async => values[key] = value;
+}
+
 void main() {
   Future<SharedPrefsRepository> prefsWith(Map<String, Object> values) async {
     SharedPreferences.setMockInitialValues(values);
@@ -28,8 +53,13 @@ void main() {
     return SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   }
 
-  FiatCode resolve(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) =>
-      PreferenceProvider.resolveInitialFiat(prefs, systemLocale: systemLocale, appLanguage: appLanguage);
+  /// 정한 통화를 돌려주고, 미뤄 둔 저장이 끝날 때까지 기다린다.
+  Future<FiatCode> resolve(SharedPrefsRepository prefs, Locale systemLocale, String appLanguage) async {
+    final fiat = PreferenceProvider.resolveInitialFiat(prefs, systemLocale: systemLocale, appLanguage: appLanguage);
+    await Future<void>.delayed(Duration.zero);
+    return fiat;
+  }
+
   String savedFiat(SharedPrefsRepository prefs) => prefs.getString(SharedPrefKeys.kSelectedFiat);
   bool isChecked(SharedPrefsRepository prefs) => prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
@@ -48,7 +78,7 @@ void main() {
       test('$locale, 앱 언어 $appLanguage → ${expected.code}', () async {
         final prefs = await prefsWith({});
 
-        expect(resolve(prefs, locale, appLanguage), expected);
+        expect(await resolve(prefs, locale, appLanguage), expected);
         expect(savedFiat(prefs), expected.code);
         expect(isChecked(prefs), isTrue);
       });
@@ -56,12 +86,12 @@ void main() {
 
     test('플래그를 남겨서 나중에 직접 고른 KRW를 다시 바꾸지 않는다', () async {
       final prefs = await prefsWith({});
-      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
       expect(isChecked(prefs), isTrue);
 
       await prefs.setString(SharedPrefKeys.kSelectedFiat, FiatCode.KRW.code);
 
-      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
     });
   });
@@ -79,7 +109,7 @@ void main() {
       test('KRW, $locale, 앱 언어 $appLanguage → ${expected.code}', () async {
         final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
 
-        expect(resolve(prefs, locale, appLanguage), expected);
+        expect(await resolve(prefs, locale, appLanguage), expected);
         expect(savedFiat(prefs), expected.code);
         expect(isChecked(prefs), isTrue);
       });
@@ -94,7 +124,7 @@ void main() {
       for (final (fiat, locale, appLanguage) in saved) {
         final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: fiat.code});
 
-        expect(resolve(prefs, locale, appLanguage), fiat);
+        expect(await resolve(prefs, locale, appLanguage), fiat);
         expect(savedFiat(prefs), fiat.code);
         expect(isChecked(prefs), isTrue);
       }
@@ -106,7 +136,62 @@ void main() {
         SharedPrefKeys.kHasCheckedRegionDefaultFiat: true,
       });
 
-      expect(resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+    });
+  });
+
+  group('저장 순서', () {
+    test('통화 저장이 끝난 뒤에만 확인 플래그를 남긴다', () async {
+      final prefs = _SlowPrefs({});
+
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      expect(prefs.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isNull);
+
+      prefs.fiatWrite.complete();
+      await Future<void>.delayed(Duration.zero);
+      expect(prefs.values[SharedPrefKeys.kSelectedFiat], FiatCode.USD.code);
+      expect(prefs.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isTrue);
+    });
+
+    test('통화 저장이 실패하면 플래그를 남기지 않고, 다음 실행에서 같은 보정을 다시 한다', () async {
+      final prefs = _SlowPrefs({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      prefs.fiatWrite.completeError(StateError('저장 실패'));
+      await Future<void>.delayed(Duration.zero);
+      expect(prefs.values[SharedPrefKeys.kSelectedFiat], FiatCode.KRW.code);
+      expect(prefs.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isNull);
+
+      final nextLaunch = _SlowPrefs(prefs.values)..fiatWrite.complete();
+      expect(await resolve(nextLaunch, const Locale('en', 'IN'), 'en'), FiatCode.USD);
+      expect(nextLaunch.values[SharedPrefKeys.kSelectedFiat], FiatCode.USD.code);
+      expect(nextLaunch.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isTrue);
+    });
+
+    test('설정에서 고른 통화는 플래그를 남겨, 앞서 플래그 저장이 실패했어도 보정이 바꾸지 않는다', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.USD.code,
+        SharedPrefKeys.kLanguage: 'en',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
+      });
+      final electrum = ElectrumServerProvider();
+      final explorer = BlockExplorerProvider();
+      final provider = PreferenceProvider(_WalletPreferences(), electrum, explorer);
+      addTearDown(() {
+        provider.dispose();
+        electrum.dispose();
+        explorer.dispose();
+        NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+        LocaleSettings.setLocaleSync(AppLocale.ko);
+      });
+      await Future<void>.delayed(Duration.zero);
+      await prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
+
+      await provider.changeFiat(FiatCode.KRW);
+
+      expect(isChecked(prefs), isTrue);
+      expect(await resolve(prefs, const Locale('en', 'IN'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
     });
   });
