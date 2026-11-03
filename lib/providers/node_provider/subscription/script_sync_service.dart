@@ -230,9 +230,12 @@ class ScriptSyncService {
   /// 지갑 ID별로 작업을 도착 순서대로 직렬 처리합니다.
   /// 이미 이 큐 안에서 실행 중인 작업(예: [_processScriptStatus])에서
   /// 재귀적으로 호출하면 자기 자신의 완료를 기다리게 되어 데드락이 나므로, 중첩 호출하지 않도록 주의합니다.
-  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 그 지갑 객체로 자동 재시도한다.
+  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 이 isolate에서 처음 등록된 지갑 객체
+  /// (구독 콜백과 구독 캐시를 가진 객체)를 쓴다. 메인 isolate가 휴면·조회 확인에 보내는 사본은 캐시가 비어 있어,
+  /// 그것으로 재시도하면 모든 스크립트를 다시 구독한다.
   Future<T> runQueued<T>(int walletId, Future<T> Function() task, {WalletItemBase? retryWallet}) {
-    if (retryWallet != null && !_removedWallets.contains(walletId)) _retryWallets[walletId] = retryWallet;
+    if (retryWallet != null && !_removedWallets.contains(walletId))
+      _retryWallets.putIfAbsent(walletId, () => retryWallet);
     final startsQueue = !_walletSyncQueues.containsKey(walletId);
     final previousSync = _walletSyncQueues[walletId] ?? Future<void>.value();
     final completer = Completer<T>();

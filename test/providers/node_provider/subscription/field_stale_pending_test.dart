@@ -1054,6 +1054,37 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 1 (Claude probe): AppGuard runs a dormant check for every wallet on resume, with a main-isolate
+    // wallet copy whose subscription cache is empty. A retry after that must reuse the isolate's own wallet object.
+    for (final viaDormantCheck in [false, true]) {
+      final label = viaDormantCheck ? 'a resume dormant check (main-isolate copy)' : 'a push (live copy)';
+      test('[c-retry-wallet-copy] a retry after a failed $label does not resubscribe every script', () async {
+        final c = _Case();
+        await c.init(withNeighbour: true, dormantNeighbour: true);
+        final s = _Session.start(c.electrum);
+        expect(await s.subscribe(c.wallet), isTrue);
+        var hits = 0;
+        if (viaDormantCheck) {
+          c.backend.fault = (m, k) => m == 'getBalance' && k == c.neighbour && hits++ == 0;
+          await s.node.syncDormantAddresses(c.walletCopy());
+        } else {
+          c.backend.fault = (m, k) => m == 'getHistory' && k == c.input && hits++ == 0;
+          c.backend.notify(c.input);
+        }
+        await _drain(s);
+        expect(hits, 1, reason: 'precondition: the injected failure hit');
+        final before = c.backend.calls.length;
+        await s.waitForRetry();
+        final retryCalls = c.backend.calls.sublist(before);
+        final subscribes = retryCalls.where((call) => call.startsWith('subscribe:')).length;
+        _report('c-retry-wallet-copy', viaDormantCheck ? 'dormant-check' : 'push', {
+          'retry_requests': retryCalls.length,
+          'retry_subscribes': subscribes,
+        });
+        expect(subscribes, 0, reason: 'every script is already subscribed through the wallet object that owns it');
+      });
+    }
+
     // Review round 1 (Codex probe): the wallet is deleted while its automatic retry waits for a subscribe response.
     // The isolate command deserializes a separate wallet copy, as in the real deletion path.
     test('[codex-delete-running-retry] deleting during an active retry must not recreate subscriptions', () async {
