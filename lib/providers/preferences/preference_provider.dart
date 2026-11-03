@@ -424,35 +424,14 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁 재노출 주기
-  /// 실기기 정식 빌드는 하루(자정 기준)에 한 번만 노출
-  /// 디버그 빌드는 반복 테스트가 어려우므로 훨씬 짧게(1분) 잡는다.
-  static const Duration _kDebugTooltipCycle = Duration(minutes: 1);
-
   /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁을 이미 봤는지 여부
-  /// (정식 빌드: 오늘 자정 기준, 디버그 빌드: 최근 [_kDebugTooltipCycle] 이내)
-  bool hasSeenReceivingTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
-  bool hasSeenChangeTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kChangeTooltipLastShownDate);
+  bool hasSeenReceivingTooltip() => _sharedPrefs.getString(SharedPrefKeys.kReceivingTooltipLastShownDate).isNotEmpty;
+  bool hasSeenChangeTooltip() => _sharedPrefs.getString(SharedPrefKeys.kChangeTooltipLastShownDate).isNotEmpty;
 
-  Future<void> markReceivingTooltipShownToday() =>
-      _markTooltipShownToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
-  Future<void> markChangeTooltipShownToday() => _markTooltipShownToday(SharedPrefKeys.kChangeTooltipLastShownDate);
+  Future<void> markReceivingTooltipShown() => _markTooltipShown(SharedPrefKeys.kReceivingTooltipLastShownDate);
+  Future<void> markChangeTooltipShown() => _markTooltipShown(SharedPrefKeys.kChangeTooltipLastShownDate);
 
-  bool _hasSeenTooltipToday(String key) {
-    final lastShownDateString = _sharedPrefs.getString(key);
-    if (lastShownDateString.isEmpty) return false;
-
-    final lastShownDate = DateTime.parse(lastShownDateString);
-    final now = DateTime.now();
-
-    if (kDebugMode) {
-      return now.difference(lastShownDate) < _kDebugTooltipCycle;
-    }
-
-    return lastShownDate.year == now.year && lastShownDate.month == now.month && lastShownDate.day == now.day;
-  }
-
-  Future<void> _markTooltipShownToday(String key) {
+  Future<void> _markTooltipShown(String key) {
     return _sharedPrefs.setString(key, DateTime.now().toIso8601String());
   }
 

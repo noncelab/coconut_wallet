@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'dart:math' as math;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
@@ -597,20 +599,31 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         targetAnchor: Alignment.bottomRight,
                         followerAnchor: Alignment.topRight,
                         offset: Offset.zero,
-                        child: CoconutToolTip(
-                          width: MediaQuery.sizeOf(context).width - 32,
-                          isBubbleClipperSideLeft: false,
-                          bubbleArrowPosition: MediaQuery.sizeOf(context).width - 32 - 15,
-                          tooltipType: CoconutTooltipType.placement,
-                          backgroundColor: context.coconutColors.popoverBackground,
-                          isPlacementTooltipVisible: true,
-                          onTapRemove: _hideVaultInfo,
-                          richText: RichText(
-                            text: TextSpan(
-                              text: t.send_screen.vault_transfer_description,
-                              style: CoconutTypography.body3_12
-                                  .setColor(context.coconutColors.popoverText)
-                                  .copyWith(height: 1.3),
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: SizedBox(
+                            width: _vaultInfoWidth(context),
+                            child: CoconutToolTip(
+                              width: _vaultInfoWidth(context),
+                              isBubbleClipperSideLeft: false,
+                              bubbleArrowPosition: _vaultInfoWidth(context) - 15,
+                              tooltipType: CoconutTooltipType.placement,
+                              backgroundColor: context.coconutColors.popoverBackground,
+                              isPlacementTooltipVisible: true,
+                              onTapRemove: _hideVaultInfo,
+                              richText: RichText(
+                                text: TextSpan(
+                                  text:
+                                      LocaleSettings.currentLocale == AppLocale.ko
+                                          ? TextUtils.preventLineBreakInsideWords(
+                                            t.send_screen.vault_transfer_description,
+                                          )
+                                          : t.send_screen.vault_transfer_description,
+                                  style: CoconutTypography.body3_12
+                                      .setColor(context.coconutColors.popoverText)
+                                      .copyWith(height: 1.3),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -1721,6 +1734,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
   }
 
+  double _vaultInfoWidth(BuildContext context) => math.min(MediaQuery.sizeOf(context).width - 32, 280);
+
   Widget _buildVaultInfoLabel(BuildContext context) {
     return Positioned(
       top: 4,
@@ -1728,27 +1743,34 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       right: 16,
       child: CompositedTransformTarget(
         link: _vaultInfoLink,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _toggleVaultInfo,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 7),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  t.wallet_detail_screen.move_to_vault,
-                  style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.secondaryText),
-                ),
-                const SizedBox(width: 2),
-                SvgPicture.asset(
-                  CommonStateIconPath.circleInfo,
-                  width: 16,
-                  height: 16,
-                  colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-                ),
-              ],
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: ShrinkAnimationButton(
+            key: const Key('send-vault-info-chip'),
+            onPressed: _toggleVaultInfo,
+            defaultColor: context.coconutColors.surface,
+            pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+            borderRadius: 100,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    t.wallet_detail_screen.move_to_vault,
+                    style: CoconutTypography.body3_12_Bold
+                        .setColor(context.coconutColors.secondaryText)
+                        .copyWith(leadingDistribution: TextLeadingDistribution.even),
+                  ),
+                  const SizedBox(width: 4),
+                  SvgPicture.asset(
+                    CommonStateIconPath.circleInfo,
+                    width: 14,
+                    height: 14,
+                    colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

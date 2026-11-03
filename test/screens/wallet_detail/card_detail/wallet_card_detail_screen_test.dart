@@ -56,6 +56,7 @@ import '../../../mock/transaction_mock.dart';
 import '../../../mock/utxo_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   final List<WalletItemBase> wallets;
@@ -290,6 +291,7 @@ void main() {
     expect(find.byKey(const Key('wallet-detail-utxo-header')), findsOneWidget);
     expect(find.byKey(const Key('wallet-detail-transactions-header')), findsOneWidget);
     expect(find.byKey(const Key('wallet-detail-move-to-vault')), findsNothing);
+    expect(tester.widget<RecentTransactionsView>(find.byType(RecentTransactionsView)).showWalletName, isFalse);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('wallet-detail-card-1')),
@@ -535,7 +537,10 @@ void main() {
       final card = find.byKey(const ValueKey('wallet-detail-card-1'));
       expect(tester.widget<WalletDetailCard>(card).borderRadius.bottomLeft, Radius.zero);
       final container = find.byKey(const ValueKey('wallet-detail-card-container-1'));
-      expect(tester.widget<ClipRRect>(container).borderRadius, BorderRadius.circular(28));
+      expect(
+        tester.widget<ClipRRect>(container).borderRadius,
+        const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(16)),
+      );
       expect(find.descendant(of: container, matching: strip), findsOneWidget);
       expect(find.descendant(of: container, matching: card), findsOneWidget);
       expect(tester.getSize(container).height, closeTo(tester.getSize(card).height + 40, 0.1));
@@ -576,7 +581,10 @@ void main() {
         expect(find.byKey(const Key('wallet-settings-backup-dot')), findsNothing);
         final restoredCard = find.byKey(const ValueKey('wallet-detail-card-2'));
         final restoredContainer = find.byKey(const ValueKey('wallet-detail-card-container-2'));
-        expect(tester.widget<ClipRRect>(restoredContainer).borderRadius, BorderRadius.circular(28));
+        expect(
+          tester.widget<ClipRRect>(restoredContainer).borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(28)),
+        );
         expect(tester.getSize(restoredContainer).height, closeTo(tester.getSize(restoredCard).height, 0.1));
       }
       expect(tester.takeException(), isNull);

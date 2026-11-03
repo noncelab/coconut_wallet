@@ -1,3 +1,4 @@
+import 'dart:ui' show lerpDouble;
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
@@ -100,6 +101,11 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   late int _focused = widget.initialIndex;
   double _footerHeight = 0;
 
+  BorderRadius _containerRadius(int index) {
+    final footer = index == _focused ? (_footerHeight / 40).clamp(0.0, 1.0) : 0.0;
+    return BorderRadius.vertical(top: const Radius.circular(28), bottom: Radius.circular(lerpDouble(28, 16, footer)!));
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -170,12 +176,12 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
                     maxHeight: double.infinity,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: _containerRadius(index),
                         boxShadow: WalletCard.elevationOf(context),
                       ),
                       child: ClipRRect(
                         key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: _containerRadius(index),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [

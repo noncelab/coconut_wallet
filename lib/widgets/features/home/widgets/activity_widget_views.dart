@@ -23,6 +23,7 @@ class RecentTransactionsView extends StatelessWidget {
   final String Function(int sats) amountText;
   final DateTime now;
   final bool showAllTransactions;
+  final bool showWalletName;
   final String? emptyMessage;
   final String? highlightedTxHash;
   final Animation<double>? highlightAnimation;
@@ -39,6 +40,7 @@ class RecentTransactionsView extends StatelessWidget {
     this.onTransactionTap,
     this.onTransactionSelected,
     this.showAllTransactions = false,
+    this.showWalletName = true,
     this.emptyMessage,
     this.highlightedTxHash,
     this.highlightAnimation,
@@ -99,6 +101,7 @@ class RecentTransactionsView extends StatelessWidget {
                     tx: tx,
                     amountText: amountText,
                     now: now,
+                    showWalletName: showWalletName,
                     height: 64,
                     onTap:
                         onTransactionSelected != null
@@ -135,6 +138,7 @@ class RecentTransactionsView extends StatelessWidget {
                     tx: tx,
                     amountText: amountText,
                     now: now,
+                    showWalletName: showWalletName,
                     height: rowHeight,
                     onTap:
                         onTransactionSelected != null
@@ -172,6 +176,7 @@ class _TransactionRow extends StatelessWidget {
   final String Function(int sats) amountText;
   final DateTime now;
   final double height;
+  final bool showWalletName;
   final VoidCallback? onTap;
 
   const _TransactionRow({
@@ -180,6 +185,7 @@ class _TransactionRow extends StatelessWidget {
     required this.amountText,
     required this.now,
     required this.height,
+    this.showWalletName = true,
     this.onTap,
   });
 
@@ -200,6 +206,24 @@ class _TransactionRow extends StatelessWidget {
       TransactionStatus.sent || TransactionStatus.self => t.status_sent,
       TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
     };
+    final statusLabel = Text(
+      statusText,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
+    );
+    final amountLabel = FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Text(
+        '$sign ${amountText(tx.amount.abs())}',
+        style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
+      ),
+    );
+    final timeLabel = Text(
+      formatHomeDateTime(tx.time, now),
+      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
+    );
     final row = SizedBox(
       height: height,
       child: Padding(
@@ -223,55 +247,50 @@ class _TransactionRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          statusText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 3,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '$sign ${amountText(tx.amount.abs())}',
-                            style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
+              child:
+                  showWalletName
+                      ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(flex: 2, child: statusLabel),
+                              const SizedBox(width: 8),
+                              Expanded(flex: 3, child: amountLabel),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              timeLabel,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tx.walletName,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.right,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                      : Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [statusLabel, const SizedBox(height: 2), timeLabel],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(flex: 3, child: amountLabel),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        formatHomeDateTime(tx.time, now),
-                        style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          tx.walletName,
-                          maxLines: 1,
-                          textAlign: TextAlign.right,
-                          overflow: TextOverflow.ellipsis,
-                          style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
           ],
         ),

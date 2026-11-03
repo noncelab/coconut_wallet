@@ -35,6 +35,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final bool showOnlyMfpWallets;
   final BalanceMode balanceMode;
   final List<int>? candidateWalletIds;
+  final String? title;
 
   const SelectWalletBottomSheet({
     super.key,
@@ -45,6 +46,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
     this.scrollController,
     this.balanceMode = BalanceMode.includingPending,
     this.candidateWalletIds,
+    this.title,
   });
 
   static Future<T?> show<T>({required BuildContext context, required String screenName, required Widget child}) =>
@@ -109,31 +111,46 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   Widget _card(WalletItemBase wallet, {required bool grid, required int balance}) {
     final appearances = context.watchWalletAppearance();
     final selected = _selectedWalletId == wallet.id;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        WalletCard(
-          key: ValueKey('select-wallet-card-${wallet.id}'),
-          wallet: wallet,
-          appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
-          backgroundPhoto: appearances?.photoFileFor(wallet.id),
-          size: WalletCardSize.small,
-          balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),
-          onPressed: () => _viewModel.selectWallet(wallet.id),
-        ),
-        if (grid && selected)
-          Positioned.fill(
-            key: ValueKey('select-wallet-selected-${wallet.id}'),
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: context.coconutColors.iconPrimary, width: 2),
+    final card = WalletCard(
+      key: ValueKey('select-wallet-card-${wallet.id}'),
+      wallet: wallet,
+      appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+      backgroundPhoto: appearances?.photoFileFor(wallet.id),
+      size: WalletCardSize.small,
+      balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),
+      onPressed: () => _viewModel.selectWallet(wallet.id),
+    );
+    if (!grid) return card;
+    const inset = 8.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final scale = width > inset * 2 ? (width - inset * 2) / width : 1.0;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimatedScale(
+              key: ValueKey('select-wallet-card-scale-${wallet.id}'),
+              scale: selected ? scale : 1,
+              duration: Duration(milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 150),
+              curve: Curves.easeOut,
+              child: card,
+            ),
+            if (selected)
+              Positioned.fill(
+                key: ValueKey('select-wallet-selected-${wallet.id}'),
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20 * scale + inset),
+                      border: Border.all(color: context.coconutColors.iconPrimary, width: 2),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -205,7 +222,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
       resizeToAvoidBottomInset: false,
       backgroundColor: backgroundColor,
       appBar: CoconutAppBar.build(
-        title: t.send_screen.select_wallet,
+        title: widget.title ?? t.send_screen.select_wallet,
         context: context,
         backgroundColor: backgroundColor,
         isBottom: true,

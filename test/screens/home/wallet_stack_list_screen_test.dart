@@ -717,6 +717,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final walletCount in [8, 24]) {
+    testWidgets('dragging to the last of $walletCount wallets opens it', (tester) async {
+      await _pumpCupertinoHome(
+        tester,
+        items: [for (var id = 1; id <= walletCount; id++) WalletMock.createSingleSigWalletItem(id: id)],
+      );
+      await _open(tester);
+      final pager = find.byKey(const Key('wallet-stack-list-pager'));
+      final controller = tester.widget<PageView>(pager).controller!;
+      for (var i = 0; i < walletCount * 2 && controller.page!.round() < walletCount - 1; i++) {
+        await tester.drag(pager, const Offset(0, -220));
+        await tester.pumpAndSettle();
+      }
+      while (controller.page!.round() > walletCount - 1) {
+        await tester.drag(pager, const Offset(0, 220));
+        await tester.pumpAndSettle();
+      }
+      expect(controller.page!.round(), walletCount - 1);
+      expect(find.byKey(ValueKey('wallet-stack-list-facts-$walletCount')), findsOneWidget);
+      await tester.tapAt(tester.getCenter(find.byKey(ValueKey('wallet-stack-list-slot-${walletCount - 1}'))));
+      await tester.pumpAndSettle();
+      expect(find.byKey(_detailKey), findsOneWidget);
+    });
+  }
+
   for (final walletCount in [9, 40]) {
     testWidgets('bounded indicator follows first middle and add pages with $walletCount wallets', (tester) async {
       await _pumpCupertinoHome(

@@ -27,6 +27,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../mock/wallet_mock.dart';
 
 class _Wallets extends ChangeNotifier implements WalletProvider {
+  _Wallets({int count = 8})
+    : walletItemList = [
+        for (var i = 1; i <= count; i++) WalletMock.createSingleSigWalletItem(id: i, name: 'Wallet $i'),
+      ];
+
   int balanceOffset = 0;
   List<UtxoState> utxos = [];
   List<TransactionRecord> transactions = [];
@@ -56,9 +61,7 @@ class _Wallets extends ChangeNotifier implements WalletProvider {
   }
 
   @override
-  final List<WalletItemBase> walletItemList = [
-    for (var i = 1; i <= 8; i++) WalletMock.createSingleSigWalletItem(id: i, name: 'Wallet $i'),
-  ];
+  final List<WalletItemBase> walletItemList;
   @override
   Map<int, Balance> fetchWalletBalanceMap() => {
     for (final wallet in walletItemList) wallet.id: Balance(wallet.id * 1000 + balanceOffset, 100),
@@ -103,8 +106,9 @@ Future<void> _open(
   bool sheet = false,
   BalanceMode balanceMode = BalanceMode.includingPending,
   _Nodes? nodes,
+  int walletCount = 8,
 }) async {
-  final wallets = _Wallets();
+  final wallets = _Wallets(count: walletCount);
   final preferences = _Preferences();
   addTearDown(wallets.dispose);
   addTearDown(preferences.dispose);
@@ -174,6 +178,26 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
   tearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+  for (final grid in [true, false]) {
+    testWidgets('the last of many wallets can be selected in a sheet: grid=$grid', (tester) async {
+      await SharedPrefsRepository().setBool(SharedPrefKeys.kSelectWalletGridView, grid);
+      int? selected;
+      await _open(tester, walletCount: 24, sheet: true, onSelected: (id) => selected = id);
+      if (grid) {
+        await tester.scrollUntilVisible(_card(24), 200, scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+        await tester.tap(_card(24));
+      } else {
+        final page = tester.widget<PageView>(find.byType(PageView)).controller!;
+        page.jumpToPage(23);
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.complete));
+      await tester.pumpAndSettle();
+      expect(selected, 24);
+    });
+  }
 
   testWidgets('first opening uses grid and later openings restore the last layout', (tester) async {
     await SharedPrefsRepository().deleteSharedPrefsWithKey(SharedPrefKeys.kSelectWalletGridView);
@@ -377,6 +401,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(_button(tester).isActive, isTrue);
     expect(find.byKey(const ValueKey('select-wallet-selected-7')), findsOneWidget);
+    final border = tester.getRect(find.byKey(const ValueKey('select-wallet-selected-7')));
+    final selectedCard = tester.getRect(_card(7));
+    expect(selectedCard.left - border.left, moreOrLessEquals(8, epsilon: 0.5));
+    expect(border.bottom - selectedCard.bottom, moreOrLessEquals(8, epsilon: 0.5));
+    expect(tester.getRect(_card(6)).width, moreOrLessEquals(border.width));
     await tester.tap(_card(7));
     await tester.pumpAndSettle();
     expect(_button(tester).isActive, isFalse);

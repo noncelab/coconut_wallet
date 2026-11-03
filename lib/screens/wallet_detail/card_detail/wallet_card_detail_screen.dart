@@ -55,6 +55,7 @@ import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -330,7 +331,10 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
               if (!viewModel.detail.isWalletSyncing)
-                _onBackground(CupertinoSliverRefreshControl(onRefresh: viewModel.refresh)),
+                CupertinoSliverRefreshControl(
+                  onRefresh: viewModel.refresh,
+                  builder: (_, _, _, _, _) => const SizedBox.shrink(),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: WalletDetailCardCarousel(
@@ -407,6 +411,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                                 transactions: viewModel.recentTransactions,
                                 amountText: viewModel.amountText,
                                 now: DateTime.now(),
+                                showWalletName: false,
                                 onTransactionSelected: _openTransaction,
                                 highlightedTxHash: _focusedTransactionHash,
                                 highlightAnimation: _recentHighlightController,
@@ -416,7 +421,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                           ),
                         ],
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       _sectionHeader(
                         context,
                         key: const Key('wallet-detail-utxo-header'),
@@ -747,7 +752,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   Widget _buildMoveToVault(BuildContext context) {
     final colors = context.coconutColors;
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: 4, bottom: 12),
       child: Center(
         child: _lifted(
           radius: 100,
@@ -899,16 +904,10 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
     final destination = resolveMoveToVaultDestination(_detail.balance, watchOnlyWallets.length);
     if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
-      final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
+      final receivingVaultWalletId = await SelectWalletBottomSheet.show<int>(
         context: context,
         screenName: AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
-        heightRatio: 0.5,
-        childBuilder:
-            (scrollController) => ShowVaultSelectWalletBottomSheet(
-              walletId: walletId,
-              watchOnlyWallets: watchOnlyWallets,
-              scrollController: scrollController,
-            ),
+        child: ShowVaultSelectWalletBottomSheet(walletId: walletId, watchOnlyWallets: watchOnlyWallets),
       );
       if (!mounted || receivingVaultWalletId == null) return;
       _logAction(WalletDetailAction.send);
