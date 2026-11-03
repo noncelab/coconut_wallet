@@ -50,6 +50,7 @@ import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_syn
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -688,16 +689,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
     final destination = resolveMoveToVaultDestination(_viewModel.balance, watchOnlyWallets.length);
     if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
-      final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
+      final receivingVaultWalletId = await SelectWalletBottomSheet.show<int>(
         context: context,
         screenName: AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
-        heightRatio: 0.5,
-        childBuilder:
-            (scrollController) => ShowVaultSelectWalletBottomSheet(
-              walletId: widget.id,
-              watchOnlyWallets: watchOnlyWallets,
-              scrollController: scrollController,
-            ),
+        child: ShowVaultSelectWalletBottomSheet(walletId: widget.id, watchOnlyWallets: watchOnlyWallets),
       );
       if (!mounted || receivingVaultWalletId == null) return;
       _openSendToVault(receivingVaultWalletId);

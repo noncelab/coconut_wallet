@@ -6,6 +6,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,7 +53,7 @@ void main() {
     await tester.tap(find.text(strings.skip));
     await tester.pumpAndSettle();
     expect(find.byType(CoconutPopup), findsOneWidget);
-    expect(find.text(strings.backup_later_description), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(strings.backup_later_description)), findsOneWidget);
     expect(find.text('wallet detail'), findsNothing);
     Navigator.of(tester.element(find.byType(CoconutPopup))).pop();
     await tester.pumpAndSettle();
@@ -89,7 +90,7 @@ void main() {
     }
     final strings = t.wallet_home_screen.hot_wallet_setup;
     expect(find.text(strings.backup_preparation_title), findsOneWidget);
-    expect(find.text(strings.backup_preparation_description), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(strings.backup_preparation_description)), findsOneWidget);
     expect(find.text(strings.wallet_created_title), findsNothing);
     expect(find.byType(FixedBottomButton), findsOneWidget);
     expect(tester.widget<FixedBottomButton>(find.byType(FixedBottomButton)).text, strings.backup_start);

@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToolTip;
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -225,6 +227,24 @@ void main() {
       expect(tester.takeException(), isNull);
     }
     if (vaultEntry) {
+      final vaultInfo = find.text(
+        TextUtils.preventLineBreakInsideWords(t.send_screen.vault_transfer_description),
+        findRichText: true,
+      );
+      final vaultChipLabel = find.descendant(
+        of: find.byKey(const Key('send-vault-info-chip')),
+        matching: find.text(t.wallet_detail_screen.move_to_vault),
+      );
+      expect(vaultInfo, findsNothing);
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsOneWidget);
+      final bubble = tester.getRect(find.byType(CoconutToolTip));
+      expect(bubble.width, lessThanOrEqualTo(280));
+      expect(bubble.right, moreOrLessEquals(tester.getRect(find.byKey(const Key('send-vault-info-chip'))).right));
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsNothing);
       final fieldFinder = find.byType(VaultReceivingAddressField);
       final field = tester.widget<VaultReceivingAddressField>(fieldFinder);
       expect(field.address, vault.getAddress(0));

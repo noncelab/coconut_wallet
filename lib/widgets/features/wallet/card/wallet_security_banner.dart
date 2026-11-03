@@ -107,16 +107,16 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
                     child: InkWell(
                       onTap: widget.onTap,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 4),
+                        padding: const EdgeInsets.only(left: 20, right: 4),
                         child: Row(
                           children: [
                             SvgPicture.asset(
                               CommonStateIconPath.triangleWarning,
-                              width: 20,
-                              height: 20,
+                              width: 16,
+                              height: 16,
                               colorFilter: ColorFilter.mode(colors.appLockWarningForeground, BlendMode.srcIn),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -124,7 +124,7 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
                                   mnemonic
                                       ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
                                       : t.wallet_home_screen.app_lock_warning.title,
-                                  style: CoconutTypography.body2_14.copyWith(color: colors.appLockWarningForeground),
+                                  style: CoconutTypography.body3_12.copyWith(color: colors.appLockWarningForeground),
                                 ),
                               ),
                             ),
@@ -137,8 +137,8 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
                                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                                 icon: SvgPicture.asset(
                                   CommonActionIconPath.close,
-                                  width: 18,
-                                  height: 18,
+                                  width: 16,
+                                  height: 16,
                                   colorFilter: ColorFilter.mode(colors.appLockWarningForeground, BlendMode.srcIn),
                                 ),
                               ),
@@ -176,7 +176,7 @@ class WalletSettingsBackupBadge extends StatelessWidget {
             key: const Key('wallet-settings-backup-dot'),
             width: 6,
             height: 6,
-            decoration: BoxDecoration(color: context.coconutColors.danger, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: context.coconutColors.warning, shape: BoxShape.circle),
           ),
         ),
     ],

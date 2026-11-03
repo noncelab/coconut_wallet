@@ -10,8 +10,13 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/move_to_vault_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -44,11 +49,19 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   Balance getWalletBalance(int id) => Balance(0, 0);
   @override
   int getWatchedAddressCount(int id) => 0;
+  @override
+  Map<int, Balance> fetchWalletBalanceMap() => {wallet.id: Balance(0, 0)};
+  @override
+  List<UtxoState> getUtxoList(int walletId) => [];
+  @override
+  List<TransactionRecord> getTransactionRecordList(int walletId) => [];
 }
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
   _Node(this.info);
   WalletUpdateInfo info;
+  @override
+  final currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
   @override
   NodeProviderState get state =>
       NodeProviderState(nodeSyncState: NodeSyncState.syncing, registeredWallets: {info.walletId: info});
@@ -82,12 +95,21 @@ void main() {
     }
   });
 
+  Future<void> selectVault(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('select-wallet-card-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.complete));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> pumpSheet(
     WidgetTester tester, {
     required _Node node,
     required _Transactions transactions,
     required ValueChanged<int?> onSelected,
   }) async {
+    SharedPreferences.setMockInitialValues({});
+    await SharedPrefsRepository().init();
     final wallet = WalletMock.createSingleSigWalletItem();
     await tester.pumpWidget(
       MultiProvider(
@@ -119,8 +141,7 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(WalletItemCard));
-    await tester.pumpAndSettle();
+    await selectVault(tester);
   }
 
   testWidgets('unused vault requires explicit confirmation and supports cancellation', (tester) async {
@@ -131,12 +152,12 @@ void main() {
       transactions: _Transactions(false),
       onSelected: (id) => selected = id,
     );
-    expect(find.text(t.wallet_detail_screen.vault_unused_title), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.wallet_detail_screen.vault_unused_title)), findsOneWidget);
     expect(selected, isNull);
     await tester.tap(find.text(t.cancel));
     await tester.pumpAndSettle();
-    expect(find.byType(WalletItemCard), findsOneWidget);
-    await tester.tap(find.byType(WalletItemCard));
+    expect(find.byKey(const ValueKey('select-wallet-card-1')), findsOneWidget);
+    await tester.tap(find.text(t.complete));
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.wallet_detail_screen.vault_unused_continue));
     await tester.pumpAndSettle();
@@ -151,7 +172,7 @@ void main() {
       onSelected: (id) => selected = id,
     );
     expect(selected, 1);
-    expect(find.text(t.wallet_detail_screen.vault_unused_title), findsNothing);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.wallet_detail_screen.vault_unused_title)), findsNothing);
   });
   testWidgets('unfinished synchronization is blocked before checking empty history', (tester) async {
     final transactions = _Transactions(false);
@@ -161,8 +182,11 @@ void main() {
       transactions: transactions,
       onSelected: (_) => fail('must not proceed'),
     );
-    expect(find.text(t.wallet_detail_screen.vault_sync_required_title), findsOneWidget);
-    expect(find.text(t.wallet_detail_screen.vault_unused_title), findsNothing);
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_detail_screen.vault_sync_required_title)),
+      findsOneWidget,
+    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.wallet_detail_screen.vault_unused_title)), findsNothing);
     expect(transactions.reads, 0);
   });
   testWidgets('sync state is rechecked after confirmation', (tester) async {
@@ -176,6 +200,9 @@ void main() {
     node.info = WalletUpdateInfo(1);
     await tester.tap(find.text(t.wallet_detail_screen.vault_unused_continue));
     await tester.pumpAndSettle();
-    expect(find.text(t.wallet_detail_screen.vault_sync_required_title), findsOneWidget);
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_detail_screen.vault_sync_required_title)),
+      findsOneWidget,
+    );
   });
 }

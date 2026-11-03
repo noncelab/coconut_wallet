@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -207,8 +208,11 @@ void main() {
     node.pending.complete(success ? Result.success(transactionHash) : Result.failure(ErrorCodes.broadcastError));
     bool completed() =>
         navigated.isNotEmpty ||
-        find.text(t.broadcasting_screen.dialog.tag_apply_failed).evaluate().isNotEmpty ||
-        find.text(t.broadcasting_screen.error_popup_title).evaluate().isNotEmpty;
+        find
+            .text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.tag_apply_failed))
+            .evaluate()
+            .isNotEmpty ||
+        find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)).evaluate().isNotEmpty;
     // Native Realm commits need real async time as well as Flutter's fake-clock frames.
     for (var attempt = 0; !completed() && attempt < 200; attempt++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -248,7 +252,7 @@ void main() {
     expect(tagIds(_source), ['tag-0', 'tag-1']);
     expect(tagIds(target), isEmpty);
     expect(navigated, isEmpty);
-    expect(find.text(t.broadcasting_screen.error_popup_title), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)), findsOneWidget);
   });
 
   testWidgets('explicit decline sends once and clears consumed links without inheriting', (tester) async {
@@ -295,11 +299,17 @@ void main() {
     await finish(tester);
 
     expect(
-      find.descendant(of: find.byType(Dialog), matching: find.text(t.broadcasting_complete_screen.complete)),
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_complete_screen.complete)),
+      ),
       findsOneWidget,
     );
-    expect(find.text(t.broadcasting_screen.dialog.tag_apply_failed), findsOneWidget);
-    expect(find.text(t.broadcasting_screen.error_popup_title), findsNothing);
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.tag_apply_failed)),
+      findsOneWidget,
+    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)), findsNothing);
     expect(navigated, isEmpty);
     expect(tagIds(_source), ['tag-1']);
     expect(tagIds(target), isEmpty);
