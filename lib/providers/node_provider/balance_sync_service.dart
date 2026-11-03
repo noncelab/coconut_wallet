@@ -30,14 +30,17 @@ class BalanceSyncService {
     // 동기화 시작 state 업데이트
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
-    await syncAddressBalance(
-      walletItem,
-      address: scriptStatus.address,
-      index: scriptStatus.index,
-      isChange: scriptStatus.isChange,
-    );
-
-    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
+    try {
+      await syncAddressBalance(
+        walletItem,
+        address: scriptStatus.address,
+        index: scriptStatus.index,
+        isChange: scriptStatus.isChange,
+      );
+    } finally {
+      // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 데이터를 다시 읽지 않는다.
+      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
+    }
   }
 
   /// 주소의 잔액을 Electrum에서 조회해 지갑 총 잔액에 반영합니다.

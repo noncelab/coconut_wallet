@@ -39,17 +39,18 @@ class UtxoSyncService {
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
   }) async {
-    // UTXO 목록 조회
-    final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
+    try {
+      // UTXO 목록 조회
+      final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
-    final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
+      final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
 
-    if (!inBatchProcess) {
-      await restorePendingUtxoLocks(walletItem.id);
-      // UTXO 업데이트 완료 state 업데이트
-      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+      if (!inBatchProcess) await restorePendingUtxoLocks(walletItem.id);
+      return applied;
+    } finally {
+      // UTXO 업데이트 완료 state 업데이트. 실패해도 완료로 세야 진행 카운터가 남지 않는다.
+      if (!inBatchProcess) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     }
-    return applied;
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다. 조회가 실패하면 null(빈 목록과 다르다: 서버에 묻지 못했다).

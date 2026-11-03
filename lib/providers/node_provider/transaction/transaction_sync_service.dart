@@ -69,10 +69,24 @@ class TransactionSyncService {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
-    final int walletId = walletItem.id;
-
     // 1. 초기화 및 준비 단계
-    _prepareTransactionFetch(walletId, inBatchProcess);
+    _prepareTransactionFetch(walletItem.id, inBatchProcess);
+    try {
+      return await _fetchScriptTransaction(walletItem, scriptStatus, now: now, inBatchProcess: inBatchProcess);
+    } catch (_) {
+      // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 거래를 다시 읽지 않는다.
+      if (!inBatchProcess) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      rethrow;
+    }
+  }
+
+  Future<FetchScriptTransactionResult> _fetchScriptTransaction(
+    WalletItemBase walletItem,
+    ScriptStatus scriptStatus, {
+    DateTime? now,
+    required bool inBatchProcess,
+  }) async {
+    final int walletId = walletItem.id;
 
     // walletId의 트랜잭션 조회
     final knownTransactionHashes = _transactionRepository.getConfirmedTransactionHashSet(walletId);

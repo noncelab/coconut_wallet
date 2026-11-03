@@ -521,6 +521,10 @@ class ScriptSyncService {
     required List<ScriptStatus> scriptStatuses,
     void Function(int completed, int total)? onProgress,
   }) async {
+    // 시작한 단계는 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 데이터를
+    // 다시 읽지 않는다(잔액 단계는 fetchScriptBalanceBatch가 스스로 정리한다).
+    var transactionOpen = false;
+    var utxoOpen = false;
     try {
       final now = DateTime.now();
       final totalStartTime = DateTime.now();
@@ -548,6 +552,7 @@ class ScriptSyncService {
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+      transactionOpen = true;
       _stateManager.addWalletFetchDispatched(walletItem.id, scriptStatuses.length);
       final transactionStartTime = DateTime.now();
 
@@ -575,6 +580,7 @@ class ScriptSyncService {
         }
       }
       if (chunkError != null) Error.throwWithStackTrace(chunkError.error, chunkError.stackTrace);
+      transactionOpen = false;
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
       await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
 
@@ -587,6 +593,7 @@ class ScriptSyncService {
 
       // UTXO 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
+      utxoOpen = true;
       final utxoStartTime = DateTime.now();
 
       final utxosApplied = await Future.wait(
@@ -613,6 +620,7 @@ class ScriptSyncService {
       }
       _failedWalletSyncs.remove(walletItem.id);
 
+      utxoOpen = false;
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       final utxoEndTime = DateTime.now();
@@ -631,6 +639,8 @@ class ScriptSyncService {
         'Sync breakdown - Balance: ${balanceDuration.inMilliseconds}ms, Transaction: ${transactionDuration.inMilliseconds}ms, UTXO: ${utxoDuration.inMilliseconds}ms',
       );
     } catch (e, stackTrace) {
+      if (transactionOpen) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      if (utxoOpen) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
       for (final script in scriptStatuses) {
         _failedScriptSyncs[(walletItem.id, script.address)] = script;
       }

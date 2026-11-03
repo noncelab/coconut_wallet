@@ -14,19 +14,25 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/resync_progress.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
@@ -35,6 +41,12 @@ import 'package:coconut_wallet/providers/node_provider/subscription/subscription
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
@@ -43,13 +55,16 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
@@ -223,15 +238,30 @@ class _Session {
   final IsolateStateManager isolateState;
   final NodeStateManager main;
   final ManualTimers retryClock; // this isolate's retry timers; dropped with the session like a replaced isolate
-  _Session(this.node, this.isolateState, this.main, this.retryClock);
+  // What the main NodeStateManager publishes (NodeProvider's streams).
+  final StreamController<NodeSyncState> nodeEvents;
+  final StreamController<Map<int, WalletUpdateInfo>> walletEvents;
+  final StreamController<Map<int, WalletFetchProgress>> fetchEvents;
+  _Session(
+    this.node,
+    this.isolateState,
+    this.main,
+    this.retryClock,
+    this.nodeEvents,
+    this.walletEvents,
+    this.fetchEvents,
+  );
 
   factory _Session.start(MockElectrumService electrum) {
+    final nodeEvents = StreamController<NodeSyncState>.broadcast();
+    final walletEvents = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
+    final fetchEvents = StreamController<Map<int, WalletFetchProgress>>.broadcast();
     final main = NodeStateManager(
       () {},
-      StreamController<NodeSyncState>.broadcast(),
-      StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
+      nodeEvents,
+      walletEvents,
       StreamController<Map<int, ResyncProgress>>.broadcast(),
-      StreamController<Map<int, WalletFetchProgress>>.broadcast(),
+      fetchEvents,
     );
     final port = ReceivePort();
     _ports.add(port);
@@ -270,6 +300,9 @@ class _Session {
       state,
       main,
       retryClock,
+      nodeEvents,
+      walletEvents,
+      fetchEvents,
     );
   }
 
@@ -527,6 +560,7 @@ void _report(String variant, String order, Map<String, Object?> observed) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // the screen view models in '[r3-payment-visible]' need it
   setUp(ScriptSyncServiceMock.init);
   tearDown(() {
     for (final port in _ports) {
@@ -1107,6 +1141,65 @@ void main() {
       expect(s.retryClock.pendingDelays, isEmpty);
     });
 
+    // Review round 3 (Codex): the input address's history fails; during the retry its listunspent fails too; meanwhile
+    // a payment lands on another, older used address. The payment is saved, so the open screen must show it. A failed
+    // step used to leave its progress counter open, so the later successful steps never reported "completed" and the
+    // screens (which reload on "completed") never re-read the saved payment.
+    for (final retryFails in [false, true]) {
+      for (final listScreen in [false, true]) {
+        final screenName = listScreen ? 'transaction list' : 'wallet detail';
+        test(
+          '[r3-payment-visible] a payment saved next to a retry is shown on the $screenName (retry fails=$retryFails)',
+          () async {
+            CoconutWalletApp.kFaucetHost = 'http://localhost';
+            final (c, s, _) = await twoCoins();
+            final b = c.backend;
+            SharedPreferences.setMockInitialValues({});
+            await SharedPrefsRepository().init();
+            final wallets = _UiWallets(c.wallet);
+            final transactions = TransactionProvider(ScriptSyncServiceMock.transactionRepository);
+            final node = _UiNode(s);
+            final connectivity = _UiConnectivity();
+            final price = _UiPrice();
+            final prefs = _UiPreferences();
+            final ChangeNotifier screen =
+                listScreen
+                    ? TransactionListViewModel(_walletId, wallets, transactions, connectivity, price, prefs, node)
+                    : WalletDetailViewModel(_walletId, wallets, transactions, node, initialUnit: BitcoinUnit.btc);
+            addTearDown(() {
+              screen.dispose();
+              transactions.dispose();
+              wallets.dispose();
+              node.dispose();
+              connectivity.dispose();
+              price.dispose();
+              prefs.dispose();
+            });
+            await _settle();
+            b.fault = (m, k) => m == 'getHistory' && k == c.input;
+            b.notify(c.input);
+            await _drain(s);
+            expect(s.main.state.nodeSyncState, NodeSyncState.failed, reason: 'precondition');
+            b.fault = retryFails ? (m, k) => m == 'listunspent' && k == c.input : (_, __) => false;
+            b.faultDelay = const Duration(milliseconds: 300);
+            b.latency = const Duration(milliseconds: 20);
+            s.retryClock.elapse(); // the retry runs
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            final payment = _tx([(c.faucet.transactionHash, 7)], [(c.neighbour!, 70000), (_external, 4929000)]);
+            b.put(payment, 0);
+            b.notify(c.neighbour!); // an older used address: no gap extension, no dependency on the failing input
+            await _drain(s);
+            final saved = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
+              _walletId,
+              payment.transactionHash,
+            );
+            expect(saved, isNotNull, reason: 'the payment push saved its transaction');
+            expect(transactions.txList.map((tx) => tx.transactionHash), contains(payment.transactionHash));
+          },
+        );
+      }
+    }
+
     // Review round 1 (Claude probe): AppGuard runs a dormant check for every wallet on resume, with a main-isolate
     // wallet copy whose subscription cache is empty. A retry after that must reuse the isolate's own wallet object.
     for (final viaDormantCheck in [false, true]) {
@@ -1290,4 +1383,75 @@ void main() {
       expect([c.coinState(), c._utxo(y), record?.blockHeight], ['deleted', 'deleted', 105]);
     });
   });
+}
+
+/// NodeProvider as the screens see it: the session's main NodeStateManager and its streams.
+class _UiNode extends Fake with ChangeNotifier implements NodeProvider {
+  final _Session session;
+  _UiNode(this.session);
+
+  @override
+  NodeProviderState get state => session.main.state;
+
+  @override
+  Stream<NodeSyncState> get syncStateStream => Stream.multi((controller) {
+    controller.add(state.nodeSyncState);
+    final subscription = session.nodeEvents.stream.listen(controller.add);
+    controller.onCancel = subscription.cancel;
+  });
+
+  @override
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => Stream.multi((controller) {
+    final initial = state.registeredWallets[walletId];
+    if (initial != null) controller.add(initial);
+    final subscription = session.walletEvents.stream
+        .where((wallets) => wallets[walletId] != null)
+        .map((wallets) => wallets[walletId]!)
+        .listen(controller.add);
+    controller.onCancel = subscription.cancel;
+  });
+
+  @override
+  Stream<WalletFetchProgress> getWalletFetchProgressStream(int walletId) => Stream.multi((controller) {
+    final initial = session.main.fetchProgressByWallet[walletId];
+    if (initial != null) controller.add(initial);
+    final subscription = session.fetchEvents.stream
+        .where((progress) => progress[walletId] != null)
+        .map((progress) => progress[walletId]!)
+        .listen(controller.add);
+    controller.onCancel = subscription.cancel;
+  });
+}
+
+class _UiWallets extends Fake with ChangeNotifier implements WalletProvider {
+  final WalletItemBase wallet;
+  _UiWallets(this.wallet);
+
+  @override
+  WalletItemBase getWalletById(int id) => wallet;
+
+  @override
+  List<WalletItemBase> get walletItemList => [wallet];
+
+  @override
+  Balance getWalletBalance(int id) {
+    final balance = ScriptSyncServiceMock.walletRepository.getWalletBalance(id)!;
+    return Balance(balance.confirmed, balance.unconfirmed);
+  }
+
+  @override
+  WalletAddress getReceiveAddress(int id) =>
+      ScriptSyncServiceMock.addressRepository.getReceiveAddress(id, wallet: wallet.walletBase);
+}
+
+class _UiConnectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
+  @override
+  bool get isInternetOff => false;
+}
+
+class _UiPrice extends Fake with ChangeNotifier implements PriceProvider {}
+
+class _UiPreferences extends Fake with ChangeNotifier implements PreferenceProvider {
+  @override
+  bool get isManualUtxoSelectionMode => false;
 }
