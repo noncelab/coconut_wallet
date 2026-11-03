@@ -70,9 +70,10 @@ class CohortRecordingAnalytics extends AnalyticsService {
   int writes = 0;
 
   @override
-  Future<void> setUserProperty({required String name, required String value}) async {
+  Future<bool> setUserProperty({required String name, required String value}) async {
     properties[name] = value;
     writes++;
+    return true;
   }
 }
 

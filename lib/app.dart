@@ -33,6 +33,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
+  static late AnalyticsService kAnalyticsService;
 
   const CoconutWalletApp({super.key});
 
@@ -116,6 +117,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
         isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        analyticsService: CoconutWalletApp.kAnalyticsService,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(

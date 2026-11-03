@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -11,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _RecordingAnalytics extends Fake implements FirebaseAnalytics {
   final List<String> screens = [];
@@ -34,6 +36,9 @@ class _RecordingAnalytics extends Fake implements FirebaseAnalytics {
 
   @override
   Future<void> setDefaultEventParameters(Map<String, Object?>? defaultParameters) async {}
+
+  @override
+  Future<void> setAnalyticsCollectionEnabled(bool enabled) async {}
 }
 
 class _Harness {
@@ -54,9 +59,13 @@ class _Harness {
       buildNumber: '1',
       buildSignature: '',
     );
+    SharedPreferences.setMockInitialValues({});
+    await SharedPrefsRepository().init();
+    final service = AnalyticsService(analytics, false);
+    await service.initialize();
     await tester.pumpWidget(
       Provider<AnalyticsService>.value(
-        value: AnalyticsService(analytics, false),
+        value: service,
         child: MaterialApp(
           navigatorKey: navigatorKey,
           navigatorObservers: [observer],

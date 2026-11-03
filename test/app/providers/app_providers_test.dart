@@ -1,7 +1,10 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import '../../repository/realm/test_realm_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 void main() {
@@ -23,6 +26,7 @@ void main() {
         isMainFlow: false,
         isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -60,6 +64,7 @@ void main() {
         isMainFlow: true,
         isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -78,6 +83,7 @@ void main() {
         isMainFlow: false,
         isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -92,6 +98,7 @@ void main() {
         isMainFlow: false,
         isFirebaseAnalyticsUsed: false,
         networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
@@ -104,10 +111,35 @@ void main() {
         isMainFlow: false,
         isFirebaseAnalyticsUsed: true,
         networkType: NetworkType.testnet,
+        analyticsService: AnalyticsService(null, true),
       );
 
       final providerTypes = _extractProviderTypes(providers);
       expect(providerTypes, contains('AnalyticsService'));
+    });
+
+    testWidgets('bootstrap에서 전달한 AnalyticsService 인스턴스를 그대로 제공한다', (tester) async {
+      final analytics = AnalyticsService(null, true);
+      AnalyticsService? provided;
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: buildAppProviders(
+            realmManager: realmManager,
+            isMainFlow: false,
+            isFirebaseAnalyticsUsed: false,
+            networkType: NetworkType.testnet,
+            analyticsService: analytics,
+          ),
+          child: Builder(
+            builder: (context) {
+              provided = context.read<AnalyticsService>();
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(provided, same(analytics));
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   });
 }

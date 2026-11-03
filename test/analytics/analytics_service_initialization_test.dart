@@ -5,12 +5,14 @@ import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _commonKeys = {'app_version', 'platform', 'platform_version', 'network_type'};
 
@@ -36,6 +38,9 @@ class _AnalyticsFake extends Fake implements FirebaseAnalytics {
   final properties = <String, String>{};
   Map<String, Object?> _effectiveDefaults = {};
   int defaultCalls = 0;
+
+  @override
+  Future<void> setAnalyticsCollectionEnabled(bool enabled) async {}
 
   @override
   Future<void> setDefaultEventParameters(Map<String, Object?>? defaultParameters) async {
@@ -102,10 +107,15 @@ class _InitialScreenState extends State<_InitialScreen> {
   Widget build(BuildContext context) => const Text('QA');
 }
 
+/// 저장된 수집 선택(기본 켜짐)을 적용하기 시작한 서비스. 로깅은 적용이 끝날 때까지 기다린다.
+AnalyticsService _started(FirebaseAnalytics sdk) => AnalyticsService(sdk, false)..initialize();
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SharedPrefsRepository().init();
     PackageInfo.setMockInitialValues(
       appName: 'QA',
       packageName: 'qa',
@@ -122,7 +132,7 @@ void main() {
       if (!gate.isCompleted) gate.complete();
     });
     final sdk = _AnalyticsFake(defaultGate: gate);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     final event = service.logEvent(eventName: 'wallet_bulk_sync_completed');
     final screen = service.logScreenView(screenName: AnalyticsScreenNames.splash);
     await sdk.defaultsRequested.future;
@@ -143,7 +153,7 @@ void main() {
       if (!gate.isCompleted) gate.complete();
     });
     final sdk = _AnalyticsFake(defaultGate: gate);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     await sdk.defaultsRequested.future;
     final pending = [
       for (var i = 0; i < 4; i++) service.logEvent(eventName: 'wallet_bulk_sync_completed'),
@@ -163,7 +173,7 @@ void main() {
 
   test('an immediate first event waits even when PackageInfo is cached', () async {
     final sdk = _AnalyticsFake();
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     await service.logEvent(eventName: 'wallet_bulk_sync_completed');
     expect(sdk.order, ['defaults_applied', 'wallet_bulk_sync_completed']);
     expect(sdk.receipts.single.effectiveKeys, _commonKeys);
@@ -175,7 +185,7 @@ void main() {
       if (!gate.isCompleted) gate.complete();
     });
     final sdk = _AnalyticsFake(defaultGate: gate);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     service.logWalletAddSyncCompleted(AnalyticsWalletType.hotWallet, hasHistory: true);
     await sdk.defaultsRequested.future;
     expect(sdk.receipts, isEmpty);
@@ -187,7 +197,7 @@ void main() {
 
   test('SDK default failure does not prevent current or subsequent event delivery', () async {
     final sdk = _AnalyticsFake(failDefaults: true);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     await Future.wait([
       service.logEvent(eventName: 'wallet_bulk_sync_completed'),
       service.logScreenView(screenName: AnalyticsScreenNames.splash),
@@ -199,7 +209,7 @@ void main() {
 
   test('SDK logging errors remain swallowed after successful initialization', () async {
     final sdk = _AnalyticsFake(failLogging: true);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     await service.logEvent(eventName: 'wallet_bulk_sync_completed');
     await service.logScreenView(screenName: AnalyticsScreenNames.splash);
     expect(sdk.defaultCalls, 1);
@@ -224,18 +234,21 @@ void main() {
     await service.setUserProperty(name: 'user_cohort', value: 'dormant');
   });
 
-  test('user properties do not wait for common event initialization', () async {
+  // 수집 선택이 적용되기 전에는 사용자 속성도 보내지 않는다(PR #736 동의 게이트).
+  test('user properties wait for the startup collection choice before sending', () async {
     final gate = Completer<void>();
     addTearDown(() {
       if (!gate.isCompleted) gate.complete();
     });
     final sdk = _AnalyticsFake(defaultGate: gate);
-    final service = AnalyticsService(sdk, false);
+    final service = _started(sdk);
     await sdk.defaultsRequested.future;
-    await service.setUserProperty(name: 'user_cohort', value: 'dormant');
-    expect(sdk.properties, {'user_cohort': 'dormant'});
+    final property = service.setUserProperty(name: 'user_cohort', value: 'dormant');
+    await Future<void>.delayed(Duration.zero);
+    expect(sdk.properties, isEmpty);
     gate.complete();
-    await sdk.defaultsApplied.future;
+    await property;
+    expect(sdk.properties, {'user_cohort': 'dormant'});
   });
 
   testWidgets('first frame Navigator context reads its Provider and queues the splash without a drop', (tester) async {
@@ -261,7 +274,7 @@ void main() {
     late AnalyticsService providedService;
     await tester.pumpWidget(
       Provider<AnalyticsService>(
-        create: (_) => providedService = AnalyticsService(sdk, false),
+        create: (_) => providedService = _started(sdk),
         child: CupertinoApp(navigatorKey: key, navigatorObservers: [observer], home: const _InitialScreen()),
       ),
     );

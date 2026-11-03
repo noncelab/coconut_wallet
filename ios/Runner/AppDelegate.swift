@@ -1,6 +1,8 @@
 import UIKit
 import Flutter
 import LocalAuthentication
+import FirebaseCore
+import FirebaseAnalytics
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -16,6 +18,16 @@ import LocalAuthentication
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // 저장된 수집 거부를 플러그인 등록이 Firebase를 구성하기 전에 SDK에도 다시 적용한다.
+    // SDK에 영속된 ON은 Info.plist 기본값보다 우선해, Dart가 끄기 전에 자동 이벤트가 기록될 수 있다.
+    // 구성 전 호출은 문서화돼 있지 않아 고정 SDK(11.15.0)에서 확인했다. SDK를 올리면 다시 확인한다.
+    if let collectionEnabled = UserDefaults.standard.object(forKey: "flutter.ANALYTICS_COLLECTION_ENABLED") as? Bool,
+       !collectionEnabled,
+       Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil,
+       FirebaseOptions.defaultOptions() != nil {
+      Analytics.setAnalyticsCollectionEnabled(false)
+    }
+
     guard flutterEngine.run() else {
       return false
     }

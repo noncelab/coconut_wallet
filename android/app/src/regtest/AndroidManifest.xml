@@ -7,7 +7,7 @@
     
         <application
         android:label="@string/app_name"
-        android:name="${applicationName}"
+        android:name="onl.coconut.wallet.CoconutApplication"
         android:theme="@style/Theme.SplashEx"
         android:icon="@mipmap/ic_launcher_regtest"
         tools:replace="android:icon">

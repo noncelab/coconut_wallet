@@ -50,6 +50,9 @@ class SingleButton extends StatelessWidget {
   final EdgeInsets? customPadding;
   final bool enableShrinkAnim;
   final bool isVerticalSubtitle;
+
+  /// 제목과 세로 부제를 줄여 맞추지 않고 줄바꿈한다. 큰 글씨에서 긴 문구가 작아지지 않게 할 때 쓴다.
+  final bool wrapsText;
   final double animationEndValue;
   final bool showNotificationDot;
 
@@ -70,6 +73,7 @@ class SingleButton extends StatelessWidget {
     this.customPadding,
     this.enableShrinkAnim = false,
     this.isVerticalSubtitle = false,
+    this.wrapsText = false,
     this.animationEndValue = 0.95,
     this.showNotificationDot = false,
   });
@@ -132,9 +136,8 @@ class SingleButton extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
+                  _fitUnlessWrapping(
+                    Text(
                       title,
                       style: titleStyle ?? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                     ),
@@ -153,7 +156,7 @@ class SingleButton extends StatelessWidget {
               ),
               if (isVerticalSubtitle) ...{
                 SizedBox(height: betweenGap),
-                FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
+                _fitUnlessWrapping(Text(subtitle!, style: _resolvedSubtitleStyle(context))),
               },
             ],
           ),
@@ -168,6 +171,8 @@ class SingleButton extends StatelessWidget {
       ],
     );
   }
+
+  Widget _fitUnlessWrapping(Widget text) => wrapsText ? text : FittedBox(fit: BoxFit.scaleDown, child: text);
 
   Widget _rightArrow(BuildContext context) =>
       Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary);
