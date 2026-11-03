@@ -122,7 +122,14 @@ void main() {
         (const Locale('ja', 'JP'), FiatCode.JPY),
         (const Locale('de', 'DE'), FiatCode.EUR),
         (const Locale('en', 'BG'), FiatCode.EUR), // 2026-01-01 유로존 가입
-        (const Locale('de', 'CH'), FiatCode.USD), // 유로존이 아니다
+        (const Locale('sv', 'AX'), FiatCode.EUR), // EU 회원국 영토, 코드가 따로 있다
+        (const Locale('fr', 'RE'), FiatCode.EUR), // 프랑스 최외곽 지역
+        (const Locale('es', 'IC'), FiatCode.EUR), // 카나리아 제도
+        (const Locale('fr', 'MC'), FiatCode.EUR), // EU 밖, 통화 협정
+        (const Locale('fr', 'BL'), FiatCode.EUR), // EU 밖, 프랑스 해외 영토
+        (const Locale('sq', 'XK'), FiatCode.EUR), // EU 밖, 협정 없이 사용
+        (const Locale('de', 'CH'), FiatCode.USD), // 유로를 쓰지 않는다
+        (const Locale('da', 'DK'), FiatCode.USD), // EU 회원국이지만 유로를 쓰지 않는다
         (const Locale('en', 'IN'), FiatCode.USD),
         (const Locale('en', 'US'), FiatCode.USD),
         (const Locale('ko', 'US'), FiatCode.USD), // 언어보다 지역이 먼저다
