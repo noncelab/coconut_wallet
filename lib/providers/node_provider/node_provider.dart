@@ -449,6 +449,7 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
+
       await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
       if (_isDisposed) {
         await _isolateManager.closeIsolate();
@@ -728,12 +729,26 @@ class NodeProvider extends ChangeNotifier {
     if (_isDisposed || _isServerChanging || _connectivityProvider.isInternetOff) {
       return Result.failure(ErrorCodes.nodeConnectionError);
     }
-    // reconnect() registers both futures synchronously. Do not await the bulk sync.
-    final recovery = reconnect(reuseInFlight: true);
-    final ready = _reconnectReady;
-    final generation = _latestReconnectId;
-    final endpoint = _electrumServer;
-    final result = await (ready?.future ?? recovery);
+    final Result<bool> result;
+    final int generation;
+    final ElectrumServer endpoint;
+    final initialization = _initCompleter;
+    if (_reconnecting == null && _isInitializing && initialization != null) {
+      // Background initialization is not registered as a reconnect. Join its
+      // completion signal instead of failing or starting another initialization.
+      generation = _latestReconnectId;
+      endpoint = _electrumServer;
+      Logger.log('[Send] 진행 중인 백그라운드 초기화 대기');
+      final failure = await initialization.future;
+      result = failure == null && isInitialized ? Result.success(true) : Result.failure(ErrorCodes.nodeConnectionError);
+    } else {
+      // reconnect() registers both futures synchronously. Do not await the bulk sync.
+      final recovery = reconnect(reuseInFlight: true);
+      final ready = _reconnectReady;
+      generation = _latestReconnectId;
+      endpoint = _electrumServer;
+      result = await (ready?.future ?? recovery);
+    }
     if (_isDisposed ||
         _isServerChanging ||
         generation != _latestReconnectId ||

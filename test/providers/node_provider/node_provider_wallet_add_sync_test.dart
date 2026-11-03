@@ -562,6 +562,32 @@ void main() {
     });
   }
 
+  for (final fails in [false, true]) {
+    testWidgets('send joins direct background initialization without reconnect (fails=$fails)', (tester) async {
+      final initialization = Completer<void>();
+      isolate.onInitialize = () => initialization.future;
+      createProvider();
+      await tester.pump();
+      Result<bool>? outcome;
+      provider!.ensureConnectedForBroadcast().then((value) => outcome = value);
+      await tester.pump();
+      expect(outcome, isNull);
+      expect(isolate.initializationCount, 1);
+      if (fails) {
+        initialization.completeError(StateError('background initialization failed'));
+      } else {
+        initialization.complete();
+      }
+      await tester.pump();
+      expect(outcome?.isSuccess, !fails);
+      expect(isolate.initializationCount, 1);
+      await tester.pump(const Duration(seconds: 1));
+      await provider!.closeConnection();
+      provider!.dispose();
+      provider = null;
+    });
+  }
+
   // --- review: shared send recovery characterization ---
   testWidgets('[review] shared send recovery still waits for wallet subscription after the socket is usable', (
     tester,
