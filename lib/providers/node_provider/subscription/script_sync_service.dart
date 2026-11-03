@@ -529,10 +529,13 @@ class ScriptSyncService {
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
       final utxoStartTime = DateTime.now();
 
-      await Future.wait(
+      final utxosApplied = await Future.wait(
         scriptStatuses.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
       reportProgress(scriptStatuses.length);
+      // listunspent를 반영하지 못한 주소가 있으면 아래 정리가 그 주소의 코인을 지울 근거가 없다.
+      // 정리하지 않고 이 배치를 실패로 남겨, 스크립트가 실패 목록에 남아 재시도가 다시 조회하게 한다.
+      if (utxosApplied.contains(false)) throw StateError('Incomplete UTXO synchronization');
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
       await _utxoSyncService.createOutgoingUtxos(walletItem);

@@ -323,6 +323,27 @@ void main() {
     });
   });
 
+  group('fetchScriptUtxo 테스트', () {
+    test('listunspent 조회가 실패하면 아무것도 바꾸지 않고 반영하지 못했다고 알린다(빈 목록으로 보지 않는다)', () async {
+      final scriptStatus = ScriptStatus(
+        derivationPath: "m/84'/0'/0'/0/0",
+        address: testWalletItem.walletBase.getAddress(0),
+        index: 0,
+        isChange: false,
+        scriptPubKey: 'receive_script_pub_key',
+        status: 'receive_status_hash',
+        timestamp: DateTime.now(),
+      );
+      when(electrumService.getUnspentList(any, any)).thenThrow(StateError('listunspent timeout'));
+
+      expect(await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus), isNull);
+      expect(await utxoSyncService.fetchScriptUtxo(testWalletItem, scriptStatus, inBatchProcess: true), isFalse);
+
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => <ListUnspentRes>[]);
+      expect(await utxoSyncService.fetchScriptUtxo(testWalletItem, scriptStatus, inBatchProcess: true), isTrue);
+    });
+  });
+
   group('fetchUtxoStateList 테스트', () {
     test('같은 트랜잭션의 다른 output이 잠겨 있어도 잠근 적 없는 output은 unspent로 유지되는지 확인', () async {
       // Given: 하나의 트랜잭션이 지갑 소유 output을 2개 생성 (수신 output index 0, 잔돈 output index 1)
@@ -364,7 +385,7 @@ void main() {
       });
 
       // When: 잔돈 주소에 대해 UTXO 상태를 재계산
-      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, changeScriptStatus);
+      final result = (await utxoSyncService.fetchUtxoStateList(testWalletItem, changeScriptStatus))!;
 
       // Then: 잔돈 UTXO는 locked로 전파되지 않고 unspent 상태를 유지해야 함
       expect(result.length, 1);
@@ -394,7 +415,7 @@ void main() {
       });
 
       // When
-      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus);
+      final result = (await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus))!;
 
       // Then: 예외로 인해 빈 리스트가 아니라, UTXO가 그대로(타임스탬프만 대체돼서) 반환돼야 함
       expect(result.length, 1);

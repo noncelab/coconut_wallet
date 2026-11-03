@@ -33,7 +33,8 @@ class UtxoSyncService {
 
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
-  Future<void> fetchScriptUtxo(
+  /// listunspent 결과를 저장까지 반영했으면 true. 조회·저장이 실패하면 아무것도 바꾸지 않고 false다.
+  Future<bool> fetchScriptUtxo(
     WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
@@ -41,17 +42,18 @@ class UtxoSyncService {
     // UTXO 목록 조회
     final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
-    await _utxoRepository.addAllUtxos(walletItem.id, utxos);
+    final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
 
     if (!inBatchProcess) {
       await restorePendingUtxoLocks(walletItem.id);
       // UTXO 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     }
+    return applied;
   }
 
-  /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
+  /// 스크립트에 대한 UTXO 목록을 가져옵니다. 조회가 실패하면 null(빈 목록과 다르다: 서버에 묻지 못했다).
+  Future<List<UtxoState>?> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
       final unspentResList = await _electrumService.getUnspentList(
         walletItem.walletBase.addressType,
@@ -104,7 +106,7 @@ class UtxoSyncService {
     } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
-      return [];
+      return null;
     }
   }
 

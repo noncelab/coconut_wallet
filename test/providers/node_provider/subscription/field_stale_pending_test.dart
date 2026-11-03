@@ -1054,6 +1054,48 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 1 (Codex probe): the same recordless mark, but the retry's listunspent for the coin's own address
+    // fails. A failed request is not evidence that the coin is spent, so cleanup must not delete it for good.
+    test('[codex-listunspent-timeout] recordless mark must survive a failed own-address reconciliation', () async {
+      final (c, s, funding2) = await twoCoins();
+      final b = c.backend;
+      final sweep = _tx([(c.funding.transactionHash, 0), (funding2.transactionHash, 0)], [(_external, 1490000)]);
+      final blocker = _tx([(c.faucet.transactionHash, 6)], [(c.input, 30000), (_external, 4969000)]);
+      b
+        ..put(sweep, 0)
+        ..put(blocker, 0)
+        ..fault = ((m, k) => m == 'getTransaction' && k == blocker.transactionHash);
+      b.notify(c.input);
+      await _drain(s);
+      expect(c.coinState(), 'outgoing');
+      expect(
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, sweep.transactionHash),
+        isNull,
+      );
+      b.heights.remove(sweep.transactionHash);
+      b.fault = (m, k) => m == 'listunspent' && k == c.input;
+      await s.waitForRetry();
+      final afterFailedListunspent = c.coinState();
+      b.fault = (_, __) => false;
+      b.notify(c.input);
+      await _drain(s);
+      final afterHealthyListunspent = c.coinState();
+      final stored = ScriptSyncServiceMock.realmManager!.realm.find<RealmUtxo>('$_walletId:${c.coin}');
+      _report('codex-listunspent-timeout', '-', {
+        'after_failed_listunspent': afterFailedListunspent,
+        'after_healthy_listunspent': afterHealthyListunspent,
+        'realm_is_deleted': stored?.isDeleted,
+        'backend_coin_is_unspent': b.unspent(c.input).any((u) => u.txHash == c.funding.transactionHash),
+        ..._indicators(s),
+      });
+      expect(
+        afterFailedListunspent,
+        isNot('deleted'),
+        reason: 'a timeout is unknown, not evidence that the coin is spent',
+      );
+      expect(afterHealthyListunspent, 'unspent', reason: 'a subsequent successful listunspent must recover the coin');
+    });
+
     // A sweep of X and Y is seen only through `input`'s push, and another new tx on `input` cannot be fetched, so
     // the fetch reserves both inputs (mark-first) and fails before the sweep is recorded. The sweep then leaves the
     // mempool. A later successful batch that does not include `neighbour` must not delete Y for good.
