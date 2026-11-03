@@ -198,14 +198,18 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (result.isFailure) return result;
 
     try {
-      final applied = await _utxoRepository.applyInheritedTags(
+      final tagApplication = _utxoRepository.applyInheritedTags(
         _walletId!,
         sourceUtxoIds: _tagSourceUtxoIds,
         targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(_signedTx!.transactionHash, index)).toList(),
         tagIds: selectedIds.toList(),
       );
-      if (applied.isFailure) throw applied.error;
-      _tagProvider.notifyTagsChanged();
+      // Observe completion on the original future so late success refreshes tags too.
+      final observed = tagApplication.then((applied) {
+        if (applied.isFailure) throw applied.error;
+        _tagProvider.notifyTagsChanged();
+      });
+      await observed.timeout(kSendLocalProcessingTimeout);
     } catch (e) {
       // The node already accepted this transaction; a local tag error must not invite a resend.
       _tagInheritanceFailed = true;

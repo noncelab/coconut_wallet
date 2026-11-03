@@ -11,6 +11,7 @@ class UtxoTagProvider extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
 
   bool _isUpdatedTagList = false;
+  bool _isDisposed = false;
   bool get isUpdatedTagList => _isUpdatedTagList;
 
   UtxoTagProvider(this._utxoRepository);
@@ -31,7 +32,14 @@ class UtxoTagProvider extends ChangeNotifier {
     return false;
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   void notifyTagsChanged() {
+    if (_isDisposed) return;
     _isUpdatedTagList = true;
     notifyListeners();
   }

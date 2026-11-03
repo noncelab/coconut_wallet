@@ -67,6 +67,8 @@ class _Prices extends Fake with ChangeNotifier implements PriceProvider {
 class _Transactions extends Fake with ChangeNotifier implements TransactionProvider {}
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  @override
+  String get host => 'node.example';
   int broadcasts = 0;
   final pending = Completer<Result<String>>();
   @override
@@ -88,6 +90,12 @@ class _NavigationObserver extends NavigatorObserver {
   }
 }
 
+class _PendingDraftRepository extends Fake implements TransactionDraftRepository {
+  final completion = Completer<Result<void>>();
+  @override
+  Future<Result<void>> deleteOne(int draftId) => completion.future;
+}
+
 void main() {
   late TestRealmManager manager;
   late UtxoRepository repository;
@@ -95,6 +103,7 @@ void main() {
   late String target;
   late String transactionHash;
   final navigated = <String?>[];
+  _PendingDraftRepository? pendingDraft;
 
   setUpAll(() {
     NetworkType.setNetworkType(NetworkType.testnet);
@@ -106,12 +115,13 @@ void main() {
     node = _Node();
     addTearDown(node.dispose);
     navigated.clear();
+    pendingDraft = null;
   });
   tearDown(() => manager.dispose());
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2}) async {
+  Future<void> open(WidgetTester tester, {int count = 2, bool slowCleanup = false}) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -138,6 +148,10 @@ void main() {
           ..setWalletId(1)
           ..setTxWaitingForSign(psbt.serialize())
           ..setSignedResult(signed.serialize());
+    if (slowCleanup) {
+      send.setUnsignedDraftId(123);
+      pendingDraft = _PendingDraftRepository();
+    }
     manager.realm.write(() {
       for (var i = 0; i < count; i++) {
         manager.realm.add(RealmUtxoTag('tag-$i', 1, 'tag-$i', i, DateTime(2026), utxoIdList: [_source]));
@@ -162,7 +176,7 @@ void main() {
           ChangeNotifierProvider<TransactionProvider>(create: (_) => _Transactions()),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: repository),
-          Provider<TransactionDraftRepository>.value(value: TransactionDraftRepository(manager)),
+          Provider<TransactionDraftRepository>.value(value: pendingDraft ?? TransactionDraftRepository(manager)),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
@@ -196,7 +210,7 @@ void main() {
         find.text(t.broadcasting_screen.dialog.tag_apply_failed).evaluate().isNotEmpty ||
         find.text(t.broadcasting_screen.error_popup_title).evaluate().isNotEmpty;
     // Native Realm commits need real async time as well as Flutter's fake-clock frames.
-    for (var attempt = 0; !completed() && attempt < 100; attempt++) {
+    for (var attempt = 0; !completed() && attempt < 200; attempt++) {
       await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     }
@@ -259,6 +273,17 @@ void main() {
     expect(tagIds(_source), isEmpty);
     expect(tagIds(target), ['tag-1', 'tag-4']);
     expect(navigated, [AppRouteNames.broadcastingComplete]);
+  });
+
+  testWidgets('pending draft cleanup cannot block the sent screen', (tester) async {
+    await open(tester, count: 0, slowCleanup: true);
+    await tapSend(tester);
+    await finish(tester);
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(node.broadcasts, 1);
+    pendingDraft!.completion.completeError(StateError('late cleanup failure'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('accepted send with tag storage failure warns then completes without resending', (tester) async {

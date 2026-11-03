@@ -997,7 +997,7 @@ broadcasting_screen:
     already_saved_draft: "Esta transacción ya ha sido guardada."
   dialog:
     send_unavailable: "No se puede enviar"
-    tag_apply_failed: "La transacción se envió, pero no se pudieron aplicar las etiquetas. Revisa las etiquetas en tu lista de UTXO."
+    tag_apply_failed: "La transacción se envió, pero no se pudo confirmar el resultado de la aplicación de etiquetas. Revisa las etiquetas en tu lista de UTXO."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"

@@ -15,3 +15,6 @@ const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);
 /// Sending waits for recovery for a bounded time; the shared recovery continues.
 const Duration kSendReconnectTimeout = Duration(seconds: 15);
 const Duration kSendReconnectTimeoutForOnion = Duration(seconds: 120);
+
+/// Local post-send work must not indefinitely block the completion screen.
+const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);

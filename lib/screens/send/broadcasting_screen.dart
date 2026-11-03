@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -137,7 +138,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
       if (result.isSuccess) {
         try {
-          await _viewModel.deleteDraftsIfNeeded();
+          await _viewModel.deleteDraftsIfNeeded().timeout(kSendLocalProcessingTimeout);
         } catch (e) {
           Logger.error('Transaction sent, but draft cleanup failed: $e');
         }

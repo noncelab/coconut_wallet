@@ -994,7 +994,7 @@ broadcasting_screen:
     already_saved_draft: "すでに追加されたトランザクションです。"
   dialog:
     send_unavailable: "送信不可"
-    tag_apply_failed: "送信は完了しましたが、タグを適用できませんでした。UTXO一覧でタグを確認してください。"
+    tag_apply_failed: "送信は完了しましたが、タグの適用結果を確認できませんでした。UTXO一覧でタグを確認してください。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"

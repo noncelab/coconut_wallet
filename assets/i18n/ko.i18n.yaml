@@ -995,7 +995,7 @@ broadcasting_screen:
     already_saved_draft: "이미 추가한 트랜잭션이에요."
   dialog:
     send_unavailable: "전송 불가"
-    tag_apply_failed: "전송은 완료되었지만 태그를 적용하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
+    tag_apply_failed: "전송은 완료되었지만 태그 적용 결과를 확인하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"

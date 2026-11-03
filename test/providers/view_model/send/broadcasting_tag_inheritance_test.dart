@@ -69,6 +69,21 @@ class _NodeProvider extends Fake implements NodeProvider {
   }
 }
 
+class _DelayedUtxoRepository extends UtxoRepository {
+  _DelayedUtxoRepository(super.manager);
+  Future<Result<void>> Function()? onApply;
+
+  @override
+  Future<Result<void>> applyInheritedTags(
+    int walletId, {
+    required List<String> sourceUtxoIds,
+    required List<String> targetUtxoIds,
+    required List<String> tagIds,
+  }) =>
+      onApply?.call() ??
+      super.applyInheritedTags(walletId, sourceUtxoIds: sourceUtxoIds, targetUtxoIds: targetUtxoIds, tagIds: tagIds);
+}
+
 class _TransactionProvider extends Fake implements TransactionProvider {
   TransactionRecord? previous;
 
@@ -80,7 +95,7 @@ class _TransactionProvider extends Fake implements TransactionProvider {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late TestRealmManager manager;
-  late UtxoRepository repository;
+  late _DelayedUtxoRepository repository;
   late _NodeProvider node;
   late _TransactionProvider transactions;
   late _WalletProvider wallets;
@@ -95,7 +110,7 @@ void main() {
 
   setUp(() {
     manager = TestRealmManager();
-    repository = UtxoRepository(manager);
+    repository = _DelayedUtxoRepository(manager);
     node = _NodeProvider();
     transactions = _TransactionProvider();
     wallets = _WalletProvider(
@@ -248,6 +263,33 @@ void main() {
       recovery.complete(Result.success(true));
       await tester.pump();
       expect(node.broadcasts, 0);
+    });
+  }
+
+  for (final lateFailure in [false, true]) {
+    testWidgets('tag timeout preserves send success and observes late result (failure=$lateFailure)', (tester) async {
+      await tester.runAsync(() => initialize());
+      final completion = Completer<Result<void>>();
+      repository.onApply = () => completion.future;
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
+      expect(outcome, isNull);
+      await tester.pump(const Duration(seconds: 1));
+      expect(outcome?.isSuccess, isTrue);
+      expect(viewModel.tagInheritanceFailed, isTrue);
+      expect(node.broadcasts, 1);
+      expect(tags.isUpdatedTagList, isFalse);
+      if (lateFailure) {
+        completion.completeError(StateError('late database failure'));
+      } else {
+        completion.complete(Result<void>.success(null));
+      }
+      await tester.pump();
+      expect(tags.isUpdatedTagList, !lateFailure);
+      expect(node.broadcasts, 1);
+      expect(tester.takeException(), isNull);
     });
   }
 
