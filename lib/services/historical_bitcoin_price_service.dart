@@ -76,7 +76,9 @@ class HistoricalBitcoinPriceService {
 
   Future<List<double>> _fetchBinanceDailyCloses(String symbol) async {
     final response = await _dio.get<List<dynamic>>(
-      'https://api.binance.com/api/v3/klines',
+      // 바이낸스 시세 전용 주소(Market Data Only URLs). api.binance.com은 미국에서 HTTP 451로 막힌다.
+      // https://developers.binance.com/docs/binance-spot-api-docs/faqs/market_data_only
+      'https://data-api.binance.vision/api/v3/klines',
       queryParameters: {'symbol': symbol, 'interval': '1d', 'limit': 32},
     );
     final nowMilliseconds = DateTime.now().toUtc().millisecondsSinceEpoch;
