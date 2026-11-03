@@ -18,3 +18,7 @@ const Duration kSendReconnectTimeoutForOnion = Duration(seconds: 120);
 
 /// Local post-send work must not indefinitely block the completion screen.
 const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);
+
+/// Includes socket checks and isolate readiness before the connection probe.
+const Duration kSendConnectionCheckTimeout = Duration(seconds: 10);
+const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 100);

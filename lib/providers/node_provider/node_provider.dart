@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/network_util.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
@@ -926,8 +927,8 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
-    final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
-    final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+    final isOnion = isOnionHost(server.host);
+    final connectionTimeout = isOnion ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
     await service
         .connect(server.host, server.port, ssl: server.ssl, pinnedCertFingerprint: server.pinnedCertFingerprint)

@@ -22,6 +22,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/network_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/foundation.dart';
@@ -178,7 +179,7 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     if (!isConnected) {
       Logger.log('[Send] 전송용 연결 준비 시작');
-      final isOnion = _nodeProvider.host.trim().toLowerCase().endsWith('.onion');
+      final isOnion = isOnionHost(_nodeProvider.host);
       final timeout = isOnion ? kSendReconnectTimeoutForOnion : kSendReconnectTimeout;
       try {
         // Timeout stops only this send attempt. A retry joins the same recovery;
@@ -219,10 +220,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<bool> isElectrumServerConnected() async {
-    final isOnion = _nodeProvider.host.trim().toLowerCase().endsWith('.onion');
+    final isOnion = isOnionHost(_nodeProvider.host);
 
-    // 예시 기준: 일반 노드 10초, Tor 100초
-    final timeout = Duration(seconds: isOnion ? 100 : 10);
+    final timeout = isOnion ? kSendConnectionCheckTimeoutForOnion : kSendConnectionCheckTimeout;
 
     try {
       final result = await _nodeProvider.getLatestBlock().timeout(timeout);

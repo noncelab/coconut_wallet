@@ -16,6 +16,7 @@ import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/network_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 class IsolateManager {
@@ -127,7 +128,7 @@ class IsolateManager {
   }
 
   Duration _getTimeout() {
-    return _host.contains('.onion') ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+    return isOnionHost(_host) ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
   }
 
   Future<void> _forceCleanup() async {
@@ -362,8 +363,7 @@ class IsolateManager {
       case IsolateControllerCommand.getLatestBlock:
       case IsolateControllerCommand.getTransaction:
       case IsolateControllerCommand.getRecommendedFees:
-        final timeout =
-            _host.contains('.onion') ? kIsolateSimpleResponseTimeoutForOnion : kIsolateSimpleResponseTimeout;
+        final timeout = isOnionHost(_host) ? kIsolateSimpleResponseTimeoutForOnion : kIsolateSimpleResponseTimeout;
         return timeout;
     }
   }
