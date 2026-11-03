@@ -1040,4 +1040,86 @@ void main() {
           'PR2: the confirmation pass re-fetches the batch tx and its header instead of updating the existing record.',
     );
   });
+
+  group('PR1 regressions', () {
+    /// Coin X on `input` (receive 1) and coin Y on `neighbour` (receive 0), both confirmed and synced.
+    Future<(_Case, _Session, Transaction)> twoCoins() async {
+      final c = _Case();
+      await c.init(withNeighbour: true);
+      final funding2 = _tx([(c.faucet.transactionHash, 5)], [(c.neighbour!, 500000), (_external, 4499000)]);
+      c.backend.put(funding2, 100);
+      final s = _Session.start(c.electrum);
+      expect(await s.subscribe(c.wallet), isTrue);
+      expect([c.coinState(), c._utxo(getUtxoId(funding2.transactionHash, 0))], ['unspent', 'unspent']);
+      return (c, s, funding2);
+    }
+
+    // A sweep of X and Y is seen only through `input`'s push, and another new tx on `input` cannot be fetched, so
+    // the fetch reserves both inputs (mark-first) and fails before the sweep is recorded. The sweep then leaves the
+    // mempool. A later successful batch that does not include `neighbour` must not delete Y for good.
+    for (final replaceIsolate in [false, true]) {
+      final how = replaceIsolate ? 'after a reconnect (new isolate)' : 'by the bounded retry';
+      test('[m-recordless-mark] a reserved coin outlives a batch without its address, $how', () async {
+        final (c, s, funding2) = await twoCoins();
+        final y = getUtxoId(funding2.transactionHash, 0);
+        final b = c.backend;
+        final sweep = _tx([(c.funding.transactionHash, 0), (funding2.transactionHash, 0)], [(_external, 1490000)]);
+        final blocker = _tx([(c.faucet.transactionHash, 6)], [(c.input, 30000), (_external, 4969000)]);
+        b
+          ..put(sweep, 0)
+          ..put(blocker, 0)
+          ..fault = ((m, k) => m == 'getTransaction' && k == blocker.transactionHash);
+        b.notify(c.input); // the neighbour's push is lost
+        await _drain(s);
+        final records = ScriptSyncServiceMock.transactionRepository;
+        expect([c.coinState(), c._utxo(y)], ['outgoing', 'outgoing'], reason: 'mark-first reserved both inputs');
+        expect(records.getTransactionRecord(_walletId, sweep.transactionHash), isNull);
+
+        b.heights.remove(sweep.transactionHash);
+        b.fault = (_, __) => false;
+        var session = s;
+        if (replaceIsolate) {
+          final (s2, ok) = await c.reconnect();
+          expect(ok, isTrue);
+          session = s2;
+        } else {
+          await s.waitForRetry();
+        }
+        final observed = {'x_after_batch': c.coinState(), 'y_after_batch': c._utxo(y)};
+
+        b.notify(c.neighbour!); // the sweep left, so the neighbour's status changes again
+        await _drain(session);
+        observed['y_after_own_sync'] = c._utxo(y);
+        _report('m-recordless-mark', replaceIsolate ? 'reconnect' : 'retry', observed);
+        expect(observed, {'x_after_batch': 'unspent', 'y_after_batch': 'outgoing', 'y_after_own_sync': 'unspent'});
+      });
+    }
+
+    test('[m-block-between-history-calls] a spend confirmed between two history requests of one chunk', () async {
+      final (c, _, funding2) = await twoCoins();
+      final y = getUtxoId(funding2.transactionHash, 0);
+      final b = c.backend;
+      final sweep = _tx([(c.funding.transactionHash, 0), (funding2.transactionHash, 0)], [(_external, 1490000)]);
+      b.put(sweep, 0);
+      b.listeners.clear(); // both pushes are lost; the reconnect batch syncs both addresses in one chunk
+      var historyRequests = 0;
+      b.fault = (m, k) {
+        if (m == 'getHistory' && ++historyRequests == 2) b.heights[sweep.transactionHash] = 105; // a block arrives
+        return false;
+      };
+
+      final (s2, ok) = await c.reconnect().timeout(const Duration(seconds: 30));
+      final record = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, sweep.transactionHash);
+      _report('m-block-between-history-calls', '-', {
+        'subscribe_ok': ok,
+        'x': c.coinState(),
+        'y': c._utxo(y),
+        'sweep_height': record?.blockHeight,
+        ..._indicators(s2),
+      });
+      expect(historyRequests, greaterThanOrEqualTo(2), reason: 'the block arrived inside the chunk');
+      expect(ok, isTrue);
+      expect([c.coinState(), c._utxo(y), record?.blockHeight], ['deleted', 'deleted', 105]);
+    });
+  });
 }
