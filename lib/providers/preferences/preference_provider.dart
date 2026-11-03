@@ -155,12 +155,16 @@ class PreferenceProvider extends ChangeNotifier {
 
   bool get isCcosRuntimeReady => _isCcosRuntimeReady;
 
+  /// [iosRegionCode]는 AppBootstrap이 읽은 iOS 지역 설정이다.
+  /// [systemLocale]·[timeZoneName]은 테스트에서 기기 값을 고정할 때만 넘긴다. 없으면 기기 값을 쓴다.
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
     String? iosRegionCode,
+    Locale? systemLocale,
+    String? timeZoneName,
   }) : _featureSettingsProvider = featureSettingsProvider {
     _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
     _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
@@ -170,9 +174,9 @@ class PreferenceProvider extends ChangeNotifier {
     _selectedFiat = resolveInitialFiat(
       _sharedPrefs,
       iosRegionCode: iosRegionCode,
-      systemLocale: PlatformDispatcher.instance.locale,
+      systemLocale: systemLocale ?? PlatformDispatcher.instance.locale,
       appLanguage: _language,
-      timeZoneName: DateTime.now().timeZoneName,
+      timeZoneName: timeZoneName ?? DateTime.now().timeZoneName,
     );
     _initializeNumberFormatFromLocale();
 

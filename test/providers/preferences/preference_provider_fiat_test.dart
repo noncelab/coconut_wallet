@@ -74,6 +74,34 @@ void main() {
     return fiat;
   }
 
+  /// 기기 locale·시간대를 고정해 만들고, feature_search_navigation_test처럼 테스트가 끝나면 정리한다.
+  Future<PreferenceProvider> createProvider({
+    String? iosRegionCode,
+    Locale systemLocale = const Locale('en', 'US'),
+    String timeZoneName = 'UTC',
+  }) async {
+    final electrum = ElectrumServerProvider();
+    final explorer = BlockExplorerProvider();
+    final provider = PreferenceProvider(
+      _WalletPreferences(),
+      electrum,
+      explorer,
+      iosRegionCode: iosRegionCode,
+      systemLocale: systemLocale,
+      timeZoneName: timeZoneName,
+    );
+    addTearDown(() {
+      provider.dispose();
+      electrum.dispose();
+      explorer.dispose();
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+      LocaleSettings.setLocaleSync(AppLocale.ko);
+    });
+    // 생성자가 미뤄 둔 저장과 CCOS 상태 읽기를 끝낸 뒤에 확인하고 정리한다.
+    await Future<void>.delayed(Duration.zero);
+    return provider;
+  }
+
   String savedFiat(SharedPrefsRepository prefs) => prefs.getString(SharedPrefKeys.kSelectedFiat);
   bool isChecked(SharedPrefsRepository prefs) => prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
@@ -294,17 +322,7 @@ void main() {
         SharedPrefKeys.kLanguage: 'en',
         SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
       });
-      final electrum = ElectrumServerProvider();
-      final explorer = BlockExplorerProvider();
-      final provider = PreferenceProvider(_WalletPreferences(), electrum, explorer);
-      addTearDown(() {
-        provider.dispose();
-        electrum.dispose();
-        explorer.dispose();
-        NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
-        LocaleSettings.setLocaleSync(AppLocale.ko);
-      });
-      await Future<void>.delayed(Duration.zero);
+      final provider = await createProvider();
       await prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
 
       await provider.changeFiat(FiatCode.KRW);
@@ -315,14 +333,44 @@ void main() {
     });
   });
 
-  test('생성자는 앱 언어를 정한 뒤(예전 코드 kr → ko) 통화를 확인하므로 KRW를 유지한다', () async {
-    final prefs = await prefsWith({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code, SharedPrefKeys.kLanguage: 'kr'});
+  group('생성자', () {
+    test('앱 언어를 정한 뒤(예전 코드 kr → ko) 통화를 확인하므로 KRW를 유지한다', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code,
+        SharedPrefKeys.kLanguage: 'kr',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
+      });
 
-    final provider = PreferenceProvider(_WalletPreferences(), ElectrumServerProvider(), BlockExplorerProvider());
+      final provider = await createProvider(systemLocale: const Locale('en', 'US'), timeZoneName: 'UTC');
 
-    expect(provider.language, 'ko');
-    expect(provider.selectedFiat, FiatCode.KRW);
-    expect(savedFiat(prefs), FiatCode.KRW.code);
-    expect(isChecked(prefs), isTrue);
+      expect(provider.language, 'ko');
+      expect(provider.selectedFiat, FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+      expect(isChecked(prefs), isTrue);
+    });
+
+    test('받은 iOS 지역 설정과 시간대를 통화 결정에 넘긴다', () async {
+      final cases = [('UTC', FiatCode.EUR), ('KST', FiatCode.KRW)];
+      for (final (timeZoneName, expected) in cases) {
+        final prefs = await prefsWith({
+          SharedPrefKeys.kLanguage: 'en',
+          SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
+        });
+
+        final provider = await createProvider(
+          iosRegionCode: 'DE',
+          systemLocale: const Locale('en', 'US'),
+          timeZoneName: timeZoneName,
+        );
+
+        expect(provider.selectedFiat, expected);
+        expect(savedFiat(prefs), expected.code);
+      }
+    });
+  });
+
+  test('비밀번호 초기화(keysToReset)는 통화와 확인 플래그를 지우지 않는다', () {
+    expect(SharedPrefKeys.keysToReset, isNot(contains(SharedPrefKeys.kSelectedFiat)));
+    expect(SharedPrefKeys.keysToReset, isNot(contains(SharedPrefKeys.kHasCheckedRegionDefaultFiat)));
   });
 }
