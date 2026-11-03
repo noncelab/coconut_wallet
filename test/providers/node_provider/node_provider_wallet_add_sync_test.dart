@@ -663,6 +663,25 @@ void main() {
       await close(tester);
     });
 
+    // Review round 2 (Claude E): a resume that lands while the pause's closeConnection() still waits for the isolate to
+    // shut down skipped its reconnect (reconnect() returns early while closing), and nothing reconnected afterwards.
+    testWidgets("a resume during the pause's close reconnects once the close ends", (tester) async {
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      await startOutage(tester); // failed: AppGuard closes the connection when the app is paused
+      isolate.closeDelay = const Duration(seconds: 1);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      provider!.closeConnection().ignore(); // AppGuard._handleNodeProviderDisconnect
+      await tester.pump(const Duration(milliseconds: 100));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      serverUp = true;
+      final beforeResume = isolate.initializationCount;
+      AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none).ignore(); // the close is still running
+      await tester.pump(const Duration(seconds: 2));
+      expect(isolate.initializationCount - beforeResume, 1, reason: 'reconnected after the close ended');
+      expect(provider!.isConnected, isTrue);
+      await close(tester);
+    });
+
     // Review round 2 (Claude D): after a long outage the next automatic attempt could be minutes away. A resume starts
     // the backoff over, so a failed resume reconnect is retried after 10 s.
     testWidgets('a resume starts the reconnect backoff over', (tester) async {

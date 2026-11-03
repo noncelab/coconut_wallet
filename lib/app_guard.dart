@@ -96,7 +96,7 @@ class AppGuard extends StatefulWidget {
     // initialize()만 하면 첫 초기화가 아닌 한 지갑을 구독하지 않아 동기화가 멈춘 채로 남는다.
     if (!nodeProvider.isInitialized) {
       Logger.log('AppGuard: NodeProvider is not initialized, reconnecting');
-      nodeProvider.reconnect();
+      nodeProvider.reconnectWhenIdle();
       return;
     }
 
@@ -110,7 +110,7 @@ class AppGuard extends StatefulWidget {
     // 4. 연결 에러가 있거나 ping이 실패한 경우 재연결
     if (nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, attempting reconnect');
-      nodeProvider.reconnect();
+      nodeProvider.reconnectWhenIdle();
       return;
     }
 
@@ -129,7 +129,7 @@ class AppGuard extends StatefulWidget {
     final probe = await nodeProvider.getLatestBlock();
     if (probe.isFailure) {
       Logger.log('AppGuard: Long background + held socket probe failed, forcing reconnect');
-      nodeProvider.reconnect();
+      nodeProvider.reconnectWhenIdle();
     } else {
       Logger.log('AppGuard: Long background but held socket still alive, skipping reconnect');
     }

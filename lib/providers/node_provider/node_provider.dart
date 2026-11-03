@@ -193,6 +193,14 @@ class NodeProvider extends ChangeNotifier {
     _armBlockUpdates();
   }
 
+  /// 진행 중인 초기화·종료가 끝난 뒤 재연결한다. 앱 복귀가 백그라운드로 가며 시작한 연결 종료와 겹치면 [reconnect]는
+  /// 건너뛰어지고, 종료가 끝난 뒤에는 아무도 재연결하지 않는다. 그 사이 다시 백그라운드로 갔으면 재연결하지 않는다.
+  Future<Result<bool>> reconnectWhenIdle() async {
+    await _waitUntilConnectionIdle();
+    if (_isInBackground) return Result.failure(ErrorCodes.nodeConnectionError);
+    return reconnect();
+  }
+
   /// 연결·구독이 실패해도 다음 재연결 시도가 남도록 블록 확인을 다시 건다. 연속 실패마다 10·20·40·80·160초,
   /// 최대 5분으로 늘리고 ±20% 흔들어 장애 중 여러 기기가 같은 순간에 서버로 몰리지 않게 한다.
   /// 백그라운드에서는 걸지 않는다(복귀하면 AppGuard가 [resumeBlockUpdates]로 다시 걸고, 필요하면 재연결한다).

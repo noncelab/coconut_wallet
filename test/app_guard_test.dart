@@ -129,7 +129,7 @@ class _ClosedNode extends Fake implements NodeProvider {
   void resumeBlockUpdates() => calls.add('resumeBlockUpdates');
 
   @override
-  Future<Result<bool>> reconnect() async {
+  Future<Result<bool>> reconnectWhenIdle() async {
     calls.add('reconnect');
     return Result.success(true);
   }
@@ -164,7 +164,7 @@ class _OpenNode extends Fake implements NodeProvider {
   void resumeBlockUpdates() => calls.add('resumeBlockUpdates');
 
   @override
-  Future<Result<bool>> reconnect() async {
+  Future<Result<bool>> reconnectWhenIdle() async {
     calls.add('reconnect');
     return Result.success(true);
   }
