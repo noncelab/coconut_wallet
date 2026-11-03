@@ -451,7 +451,10 @@ class ScriptSyncService {
       await _utxoSyncService.createOutgoingUtxos(walletItem);
 
       // orphaned UTXO가 있으면 정리함
-      await _utxoSyncService.cleanupOrphanedUtxos(walletItem);
+      await _utxoSyncService.cleanupOrphanedUtxos(
+        walletItem,
+        reconciledAddresses: scriptStatuses.map((status) => status.address).toSet(),
+      );
 
       await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);
 

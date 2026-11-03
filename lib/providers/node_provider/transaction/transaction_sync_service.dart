@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
@@ -107,6 +109,7 @@ class TransactionSyncService {
     try {
       // 3. 트랜잭션 상세 정보 조회
       final FetchedTransactionDetails fetchedTransactionDetails = await _fetchTransactionDetails(
+        walletId,
         newTxHashes,
         txFetchResults,
         _electrumService,
@@ -192,11 +195,28 @@ class TransactionSyncService {
   }
 
   /// 3. 트랜잭션 상세 정보 조회
+  /// 원본 트랜잭션을 먼저 받아 그 입력을 예약(outgoing)한 뒤에야 실패를 던진다.
+  /// 같은 조회의 다른 거래나 블록 헤더가 실패해도, 이미 받은 거래가 쓴 코인은 다시 선택되지 않는다.
   Future<FetchedTransactionDetails> _fetchTransactionDetails(
+    int walletId,
     Set<String> newTxHashes,
     List<FetchTransactionResponse> allTxFetchResults,
     ElectrumService electrumService,
   ) async {
+    List<Transaction?> fetched;
+    AsyncError? fetchError;
+    try {
+      fetched = await newTxHashes.map(fetchTransaction).wait;
+    } on ParallelWaitError<List<Transaction?>, List<AsyncError?>> catch (e) {
+      fetched = e.values;
+      fetchError = e.errors.nonNulls.first;
+    }
+    for (final tx in fetched.nonNulls) {
+      await _utxoRepository.reserveSpentInputs(walletId, tx);
+    }
+    if (fetchError != null) Error.throwWithStackTrace(fetchError.error, fetchError.stackTrace);
+    final fetchedTransactions = fetched.cast<Transaction>();
+
     final filteredTxFetchResults = allTxFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
 
     final txBlockHeightMap = Map<String, int>.fromEntries(
@@ -211,8 +231,6 @@ class TransactionSyncService {
     if (txBlockHeightMap.values.any((height) => !blockTimestampMap.containsKey(height))) {
       throw StateError('Missing block metadata for confirmed transaction history');
     }
-
-    final fetchedTransactions = await fetchTransactions(newTxHashes);
 
     return (
       fetchedTransactions: fetchedTransactions,
@@ -465,13 +483,13 @@ class TransactionSyncService {
     }
   }
 
-  /// 일렉트럼으로 부터 트랜잭션 목록을 가져옵니다.
-  Future<List<Transaction>> fetchTransactions(Set<String> transactionHashes) {
-    return Future.wait(
-      transactionHashes.map((txHash) async {
-        final txHex = await _electrumService.getTransaction(txHash);
-        return Transaction.parse(txHex);
-      }),
-    );
+  /// 일렉트럼으로 부터 트랜잭션을 가져옵니다. 서버(또는 mempool.space 대체 조회)가 요청과 다른 거래를 주면 실패로 처리합니다.
+  Future<Transaction> fetchTransaction(String txHash) async {
+    final txHex = await _electrumService.getTransaction(txHash);
+    final transaction = Transaction.parse(txHex);
+    if (transaction.transactionHash != txHash) {
+      throw StateError('Server returned transaction ${transaction.transactionHash} for $txHash');
+    }
+    return transaction;
   }
 }

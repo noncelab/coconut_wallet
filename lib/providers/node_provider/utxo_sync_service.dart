@@ -205,14 +205,17 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
+  /// [reconciledAddresses]를 주면, 쓴 거래의 기록이 없는 outgoing 코인은 이번에 listunspent로 확인한 주소의 것만 지웁니다.
+  /// 기록 전에 예약만 된 코인(다른 주소 이벤트에서 조회가 실패한 거래)이 자기 주소 확인 없이 영구 삭제되지 않게 한다.
+  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {Set<String>? reconciledAddresses}) async {
     final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
-        if (tx == null || tx.blockHeight > 0) {
+        final reconciled = reconciledAddresses == null || reconciledAddresses.contains(utxo.to);
+        if ((tx == null && reconciled) || (tx != null && tx.blockHeight > 0)) {
           orphanUtxoSet.add(utxo);
         }
       } else if (utxo.status == UtxoStatus.incoming) {

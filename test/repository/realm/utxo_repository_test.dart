@@ -1,5 +1,7 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -178,6 +180,134 @@ void main() {
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
         expect(updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
+      });
+    });
+
+    group('reserveSpentInputs 테스트', () {
+      const staleSpender = '00000000000000000000000000000000000000000000000000000000000000aa';
+      final spend = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 900000);
+      final input = spend.inputs.single;
+      final utxoId = getUtxoId(input.transactionHash, input.index);
+
+      void addCoin({required int walletId, required UtxoStatus status, String? spentBy}) {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createMockUtxo(
+              walletId: walletId,
+              address: testAddress,
+              transactionHash: input.transactionHash,
+              index: input.index,
+              blockHeight: status == UtxoStatus.incoming ? 0 : 100,
+              status: status,
+              spentByTransactionHash: spentBy,
+            ),
+          );
+        });
+      }
+
+      void addRecord(String txHash, {int blockHeight = 0, String? replacedBy}) {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            RealmTransaction(
+              txHash.hashCode,
+              txHash,
+              testWalletId,
+              DateTime.now(),
+              blockHeight,
+              'sent',
+              -100000,
+              1000,
+              141,
+              DateTime.now(),
+              replaceByTransactionHash: replacedBy,
+            ),
+          );
+        });
+      }
+
+      UtxoState? coin([int walletId = testWalletId]) => utxoRepository.getUtxoState(walletId, utxoId);
+
+      test('unspent 코인은 outgoing이 되고 spender는 이 거래가 된다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, spend.transactionHash);
+      });
+
+      test('이미 outgoing인 코인은 RBF 감지를 위해 이전 spender를 유지한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.outgoing, spentBy: staleSpender);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.spentByTransactionHash, staleSpender);
+      });
+
+      test('되돌려진 코인의 이전 spender가 아직 미확정 기록이면 유지하고 outgoing으로 예약한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent, spentBy: staleSpender);
+        addRecord(staleSpender);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, staleSpender);
+      });
+
+      for (final (label, blockHeight, replacedBy) in [
+        ('기록이 없으면', null, null),
+        ('대체된 기록이면', 0, 'replacement'),
+        ('확정된 기록이면', 100, null),
+      ]) {
+        test('되돌려진 코인의 이전 spender가 $label 이 거래로 바꾼다', () async {
+          addCoin(walletId: testWalletId, status: UtxoStatus.unspent, spentBy: staleSpender);
+          if (blockHeight != null) addRecord(staleSpender, blockHeight: blockHeight, replacedBy: replacedBy);
+          await utxoRepository.reserveSpentInputs(testWalletId, spend);
+          expect(coin()!.status, UtxoStatus.outgoing);
+          expect(coin()!.spentByTransactionHash, spend.transactionHash);
+        });
+      }
+
+      test('미확정 받는 코인(CPFP 자식이 쓰는 incoming)도 예약한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.incoming);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, spend.transactionHash);
+      });
+
+      test('같은 outpoint를 가진 다른 지갑의 코인은 건드리지 않는다', () async {
+        const twinWalletId = 2;
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent);
+        addCoin(walletId: twinWalletId, status: UtxoStatus.unspent);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin(twinWalletId)!.status, UtxoStatus.unspent);
+      });
+
+      test('여러 입력을 함께 예약하고, 지워진 코인은 되살리지 않는다', () async {
+        final threeInputs = Transaction.withInputsAndOutputs(
+          [
+            for (final index in [0, 1, 2]) TransactionInput.forPayment(input.transactionHash, index),
+          ],
+          [TransactionOutput.forPayment(1000, toAddress)],
+          AddressType.p2wpkh,
+        );
+        realmManager.realm.write(() {
+          for (final index in [0, 1, 2]) {
+            final utxo = UtxoMock.createMockUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: input.transactionHash,
+              index: index,
+              blockHeight: 100,
+            );
+            utxo.isDeleted = index == 1;
+            realmManager.realm.add(utxo);
+          }
+        });
+
+        await utxoRepository.reserveSpentInputs(testWalletId, threeInputs);
+
+        RealmUtxo row(int index) =>
+            realmManager.realm.find<RealmUtxo>(getRealmUtxoId(testWalletId, input.transactionHash, index))!;
+        expect([row(0).status, row(2).status], everyElement(utxoStatusToString(UtxoStatus.outgoing)));
+        expect(row(1).isDeleted, isTrue);
+        expect(row(1).status, utxoStatusToString(UtxoStatus.unspent));
+        expect(row(1).spentByTransactionHash, isNull);
       });
     });
 

@@ -366,16 +366,29 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  // UTXO 상태를 "출금 중(outgoing)"으로 표시
-  Future<void> _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) async {
-    final utxoToMark = realm.find<RealmUtxo>('$walletId:$utxoId');
+  /// [transaction]이 쓴 이 지갑의 코인을 한 번의 쓰기로 "출금 중(outgoing)"으로 표시한다.
+  /// [spenderOf]가 행마다 새 spender를 돌려주고, null이면 그 행은 건드리지 않는다. 쓰기 안에서 다시 확인한다.
+  Future<void> _markInputsOutgoing(
+    int walletId,
+    lib.Transaction transaction,
+    String? Function(RealmUtxo utxo) spenderOf,
+  ) async {
+    final ids = transaction.inputs.map((input) => '$walletId:${getUtxoId(input.transactionHash, input.index)}');
+    String? spenderToWrite(String id) {
+      final utxo = realm.find<RealmUtxo>(id);
+      return utxo == null || utxo.isDeleted ? null : spenderOf(utxo);
+    }
 
-    if (utxoToMark == null) return;
-    if (utxoToMark.isDeleted) return;
-
+    realm.refresh();
+    if (ids.every((id) => spenderToWrite(id) == null)) return;
     await realm.writeAsync(() {
-      utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
-      utxoToMark.spentByTransactionHash = pendingTxHash;
+      for (final id in ids) {
+        final spender = spenderToWrite(id);
+        if (spender == null) continue;
+        final utxo = realm.find<RealmUtxo>(id)!;
+        utxo.status = utxoStatusToString(UtxoStatus.outgoing);
+        utxo.spentByTransactionHash = spender;
+      }
     });
   }
 
@@ -562,25 +575,30 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) async {
-    /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
-    for (var input in transaction.inputs) {
-      // UTXO 소유 지갑 ID 찾기
-      final utxoId = getUtxoId(input.transactionHash, input.index);
-      final utxo = getUtxoState(walletId, utxoId);
+  /// 트랜잭션에 사용된 UTXO를 outgoing으로 표시하고 spender를 이 거래로 바꿉니다(RBF 감지 뒤에 호출).
+  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {
+    final txHash = transaction.transactionHash;
+    // UTXO가 자기 자신을 참조하면 건너뜀
+    return _markInputsOutgoing(walletId, transaction, (utxo) => utxo.spentByTransactionHash == txHash ? null : txHash);
+  }
 
-      // UTXO가 자기 자신을 참조하지 않는지 확인
-      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
-        continue;
-      }
-
-      if (utxo == null) {
-        continue;
-      }
-
-      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
-      await _markUtxoAsOutgoing(walletId, utxoId, transaction.transactionHash);
-    }
+  /// 거래 기록을 만들기 전에, 받아 온 거래가 쓴 코인을 outgoing으로 예약합니다.
+  /// RBF 감지가 이전 spender를 볼 수 있도록 이미 outgoing인 코인은 그대로 두고, 되돌려진 코인의
+  /// 이전 spender도 아직 대체되지 않은 미확정 기록이 있으면 남겨 둡니다.
+  Future<void> reserveSpentInputs(int walletId, lib.Transaction transaction) {
+    final txHash = transaction.transactionHash;
+    return _markInputsOutgoing(walletId, transaction, (utxo) {
+      if (utxo.status == utxoStatusToString(UtxoStatus.outgoing)) return null;
+      final staleSpender = utxo.spentByTransactionHash;
+      final keepStaleSpender =
+          staleSpender != null &&
+          staleSpender != txHash &&
+          realm.query<RealmTransaction>(
+            r'walletId == $0 AND transactionHash == $1 AND blockHeight <= 0 AND replaceByTransactionHash == null',
+            [walletId, staleSpender],
+          ).isNotEmpty;
+      return keepStaleSpender ? staleSpender : txHash;
+    });
   }
 
   Future<void> deleteUtxosByTransaction(int walletId, lib.Transaction transaction) async {

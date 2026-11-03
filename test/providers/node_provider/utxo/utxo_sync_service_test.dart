@@ -181,6 +181,36 @@ void main() {
       expect(remainingUtxos.where((u) => u.utxoId == outgoingUtxo.utxoId).isEmpty, isTrue);
     });
 
+    test('기록 없는 outgoing UTXO는 이번 배치에서 listunspent로 확인한 주소의 것만 정리한다', () async {
+      const String unrecordedTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+      const String confirmedTxHash = '0000000000000000000000000000000000000000000000000000000000000123';
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createConfirmedTransactionRecord(transactionHash: confirmedTxHash, blockHeight: 100),
+      ]);
+      UtxoState outgoing(int index, String spender) => UtxoState(
+        transactionHash: '000000000000000000000000000000000000000000000000000000000000000$index',
+        index: 0,
+        amount: 500000,
+        derivationPath: "m/84'/0'/0'/0/$index",
+        blockHeight: 100,
+        to: testWalletItem.walletBase.getAddress(index),
+        timestamp: DateTime.now(),
+        status: UtxoStatus.outgoing,
+        spentByTransactionHash: spender,
+      );
+      final reconciled = outgoing(1, unrecordedTxHash);
+      final notReconciled = outgoing(2, unrecordedTxHash);
+      final spentByConfirmed = outgoing(3, confirmedTxHash);
+      await utxoRepository.addAllUtxos(testWalletId, [reconciled, notReconciled, spentByConfirmed]);
+
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, reconciledAddresses: {reconciled.to});
+
+      final remaining = utxoRepository.getUtxoStateList(testWalletId).map((u) => u.utxoId).toSet();
+      expect(remaining.contains(reconciled.utxoId), isFalse);
+      expect(remaining.contains(notReconciled.utxoId), isTrue, reason: 'its own address has not been synced yet');
+      expect(remaining.contains(spentByConfirmed.utxoId), isFalse, reason: 'a confirmed spend deletes regardless');
+    });
+
     test('존재하지 않는 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {
       // Given: 존재하지 않는 트랜잭션에 연결된 incoming UTXO 생성
       const String nonExistentTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';

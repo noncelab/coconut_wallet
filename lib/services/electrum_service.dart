@@ -232,13 +232,11 @@ class ElectrumService {
       }, timeout: timeout);
       return response.result;
     } catch (e) {
+      final mempoolApi = MempoolApi();
       try {
-        final mempoolApi = MempoolApi();
-        final txHex = await mempoolApi.fetchTxHex(txHash);
+        return await mempoolApi.fetchTxHex(txHash);
+      } finally {
         mempoolApi.close();
-        return txHex;
-      } catch (mempoolError) {
-        rethrow;
       }
     }
   }

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_r
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -277,6 +278,106 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
+    });
+
+    group('mark-first: 조회가 실패해도 받아 온 거래가 쓴 코인은 먼저 예약한다', () {
+      final coinAddress = testWalletItem.walletBase.getAddress(0);
+      final funding = TransactionMock.createMockTransaction(toAddress: coinAddress, amount: 1000000);
+      final coinId = getUtxoId(funding.transactionHash, 0);
+
+      setUp(() {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: coinAddress,
+              transactionHash: funding.transactionHash,
+            ),
+          );
+        });
+      });
+
+      String coinStatus() => utxoRepository.getUtxoState(testWalletId, coinId)!.status.name;
+      Transaction spendOf({required bool withChange}) => TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(9999),
+        amount: 900000,
+        inputTransactionHash: funding.transactionHash,
+        change: withChange ? (amount: 99000, address: testWalletItem.walletBase.getAddress(0, isChange: true)) : null,
+      );
+
+      test('같은 조회의 다른 거래를 받지 못해도 받아 온 거래의 입력은 outgoing이 된다', () async {
+        final spend = spendOf(withChange: true);
+        const unreachable = '00000000000000000000000000000000000000000000000000000000000000ff';
+        when(electrumService.getHistory(any, any)).thenAnswer(
+          (_) async => [
+            GetTxHistoryRes(height: 0, txHash: spend.transactionHash),
+            GetTxHistoryRes(height: 0, txHash: unreachable),
+          ],
+        );
+        when(electrumService.getTransaction(spend.transactionHash)).thenAnswer((_) async => spend.serialize());
+        when(electrumService.getTransaction(unreachable)).thenThrow(StateError('timeout'));
+
+        await expectLater(
+          transactionSyncService.fetchScriptTransaction(
+            testWalletItem,
+            mockScriptStatus,
+            now: now,
+            inBatchProcess: true,
+          ),
+          throwsStateError,
+        );
+
+        expect(coinStatus(), 'outgoing');
+        expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNull);
+      });
+
+      test('잔돈 없는 확정 sweep도 헤더를 받지 못한 채 실패하기 전에 입력을 예약한다', () async {
+        final sweep = spendOf(withChange: false);
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: 700001, txHash: sweep.transactionHash)]);
+        when(electrumService.getTransaction(sweep.transactionHash)).thenAnswer((_) async => sweep.serialize());
+        when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {});
+
+        await expectLater(
+          transactionSyncService.fetchScriptTransaction(
+            testWalletItem,
+            mockScriptStatus,
+            now: now,
+            inBatchProcess: true,
+          ),
+          throwsStateError,
+        );
+
+        expect(coinStatus(), 'outgoing');
+      });
+
+      test('서버가 요청과 다른 거래를 주면 아무것도 예약하거나 기록하지 않고 실패한다', () async {
+        final spend = spendOf(withChange: true);
+        const requested = '00000000000000000000000000000000000000000000000000000000000000ee';
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: requested)]);
+        when(electrumService.getTransaction(requested)).thenAnswer((_) async => spend.serialize());
+
+        await expectLater(
+          transactionSyncService.fetchScriptTransaction(
+            testWalletItem,
+            mockScriptStatus,
+            now: now,
+            inBatchProcess: true,
+          ),
+          throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+        );
+
+        expect(coinStatus(), 'unspent');
+        expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNull);
+        expect(
+          scriptCallbackService.isTransactionProcessable(txHashKey: '$testWalletId:$requested', isConfirmed: false),
+          isTrue,
+          reason: 'the failed claim is released so the next sync fetches it again',
+        );
+      });
     });
 
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
