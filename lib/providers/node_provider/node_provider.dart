@@ -165,7 +165,10 @@ class NodeProvider extends ChangeNotifier {
       return;
     }
 
+    final reconnectId = _latestReconnectId;
     await _updateCurrentBlock();
+    // 확인이 실패해 재연결을 시작했으면 닫히는 연결에 주기 타이머를 걸지 않는다(그 재연결이 타이머를 정한다).
+    if (reconnectId != _latestReconnectId) return;
     _armBlockUpdates();
   }
 
@@ -225,7 +228,8 @@ class NodeProvider extends ChangeNotifier {
     final Result<BlockTimestamp> result = await getLatestBlock();
     if (!isInitialized) return;
     if (result.isSuccess && result.value.height > 0) {
-      _failedReconnects = 0;
+      // 재연결 중(구독 중)의 성공은 아직 회복이 아니다: 그 구독이 실패하면 대기 간격이 처음으로 돌아가면 안 된다.
+      if (_reconnecting == null) _failedReconnects = 0;
       if (_hasConnectionError) {
         _setConnectionError(false);
       }

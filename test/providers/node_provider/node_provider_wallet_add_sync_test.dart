@@ -78,6 +78,7 @@ class _Isolate extends Fake implements IsolateManager {
   Future<Result<BlockTimestamp>> Function()? onBlock;
   int initializationCount = 0;
   int blockRequestCount = 0;
+  Duration closeDelay = Duration.zero; // IsolateManager.closeIsolate waits for the isolate's graceful-shutdown ack
 
   @override
   Stream<IsolateStateMessage> get stateStream => stateController.stream;
@@ -117,6 +118,7 @@ class _Isolate extends Fake implements IsolateManager {
 
   @override
   Future<void> closeIsolate() async {
+    if (closeDelay > Duration.zero) await Future<void>.delayed(closeDelay);
     initialized = false;
   }
 }
@@ -548,6 +550,7 @@ void main() {
     }
 
     Future<void> close(WidgetTester tester) async {
+      isolate.closeDelay = Duration.zero; // a fake-time delay awaited outside pump() would never end
       await provider!.closeConnection();
       provider!.dispose();
       provider = null;
@@ -620,6 +623,43 @@ void main() {
       await AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none);
       await tester.pump(const Duration(seconds: 25));
       expect(isolate.blockRequestCount - requests, 2, reason: 'one timer, every 10 s');
+      await close(tester);
+    });
+
+    // Review round 2 (Claude A): the server answers block probes during a slow re-subscription, then drops the session.
+    // A probe that succeeds mid-reconnect must not reset the backoff, and a probe that starts a reconnect must not leave
+    // a periodic timer on the closing connection (it would probe, and reset, during the next subscription).
+    testWidgets('a slow subscription that fails after successful probes still backs off', (tester) async {
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      isolate.closeDelay = const Duration(milliseconds: 50);
+      var sessionAlive = true;
+      isolate.onInitialize = () async => sessionAlive = true;
+      isolate.onBulkSubscribe = (_) async {
+        await Future<void>.delayed(const Duration(seconds: 15)); // a heavy re-subscription
+        sessionAlive = false; // then the server drops the session
+        return Result.failure(ErrorCodes.nodeConnectionError);
+      };
+      isolate.onBlock =
+          () async =>
+              sessionAlive && isolate.initialized
+                  ? Result.success(BlockTimestamp(2, DateTime(2026)))
+                  : Result.failure(ErrorCodes.nodeConnectionError);
+      final start = isolate.initializationCount;
+      final blocks = isolate.blockRequestCount;
+      provider!.reconnect().ignore();
+      for (var second = 0; second < 600; second += 5) {
+        await tester.pump(const Duration(seconds: 5));
+      }
+      final reconnects = isolate.initializationCount - start;
+      // Reconnects at about 0, 25, 60, 115, 210 and 385 s (10, 20, 40, 80, 160 s after each 15 s subscription).
+      expect(reconnects, inInclusiveRange(5, 7), reason: 'not every ~25 s (24 times without the fix)');
+      expect(isolate.blockRequestCount - blocks, lessThanOrEqualTo(reconnects), reason: 'one probe per reconnect');
+      isolate.onBulkSubscribe = null;
+      await tester.pump(const Duration(seconds: 20)); // let an in-flight 15 s subscription end before closing
       await close(tester);
     });
 
