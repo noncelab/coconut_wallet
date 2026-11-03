@@ -1052,7 +1052,7 @@ bitbox02_sign_screen:
     sign: "Firmar con BitBox02"
     connect_other_bitbox02: "Conectar otro BitBox02"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 trezor_sign_screen:
@@ -1084,7 +1084,7 @@ trezor_sign_screen:
     sign: "Firmar con Trezor"
     connect_other_trezor: "Conectar otro Trezor"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 signed_psbt_scanner_screen:

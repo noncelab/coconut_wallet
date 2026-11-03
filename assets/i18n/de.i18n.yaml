@@ -1947,7 +1947,7 @@ bitbox02_sign_screen:
   done:
     title: "Signiert"
     description: "Transaktion wurde von BitBox02 signiert."
-  error_title: "Signatur fehlgeschlagen"
+  error_title: "Signaturfehler"
   wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
@@ -1964,7 +1964,7 @@ bitbox02_sign_screen:
     sign: "Mit BitBox02 signieren"
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
   state_label:
-    idle: "Warten auf Signatur"
+    idle: "Signaturbereit"
     signing: "Signieren"
 
 trezor_sign_screen:
@@ -1984,7 +1984,7 @@ trezor_sign_screen:
   done:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."
-  error_title: "Signatur fehlgeschlagen"
+  error_title: "Signaturfehler"
   wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
@@ -1996,7 +1996,7 @@ trezor_sign_screen:
     sign: "Mit Trezor signieren"
     connect_other_trezor: "Anderes Trezor verbinden"
   state_label:
-    idle: "Warten auf Signatur"
+    idle: "Signaturbereit"
     signing: "Signieren"
 
 passphrase_input_text_field:
