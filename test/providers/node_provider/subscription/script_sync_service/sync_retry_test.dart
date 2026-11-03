@@ -17,7 +17,9 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_connection_status_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -76,7 +78,8 @@ void main() {
     ScriptSyncServiceMock.realmManager = null;
   });
 
-  ScriptSyncService createSync({StateManagerInterface? state}) =>
+  /// [random] 0.5 keeps the delays exactly 10/30/90 s.
+  ScriptSyncService createSync({StateManagerInterface? state, double random = 0.5}) =>
       ScriptSyncService(
           state ?? ScriptSyncServiceMock.stateManager,
           ScriptSyncServiceMock.balanceSyncService,
@@ -85,6 +88,7 @@ void main() {
           ScriptSyncServiceMock.addressRepository,
           ScriptSyncServiceMock.scriptCallbackService,
           createTimer: clock.create,
+          random: () => random,
         )
         ..subscribeWallet = (_) {
           calls.add('resubscribe');
@@ -101,6 +105,14 @@ void main() {
     clock.elapse();
     await sync.runQueued(walletId, () async {});
   }
+
+  test('retry delays are spread ±20% so wallets that failed together do not retry together', () async {
+    for (final (random, millis) in [(0.0, 8000), (0.9999, 11999)]) {
+      clock = ManualTimers();
+      await failQueue(createSync(random: random));
+      expect(clock.pendingDelays.single.inMilliseconds, millis);
+    }
+  });
 
   test('a failed queue retries after 10 s, re-fetching failed balances before it resubscribes', () async {
     final sync = createSync();
@@ -175,26 +187,33 @@ void main() {
     expect(clock.pendingDelays, [const Duration(seconds: 30)]);
   });
 
-  test('cancelRetry drops the pending timer, and a retry already queued does nothing', () async {
+  test('cancelRetry drops the pending timer', () async {
     final sync = createSync();
     await failQueue(sync);
-    sync.cancelRetry(_walletId);
-    expect(clock.pendingDelays, isEmpty);
-
-    await failQueue(sync);
-    final hold = Completer<void>();
-    final busy = sync.runQueued(_walletId, () => hold.future);
-    clock.elapse(); // the retry queues behind the running work
     sync.cancelRetry(_walletId); // e.g. resync wipes the wallet, or the wallet is deleted
-    hold.complete();
-    await busy;
+    expect(clock.pendingDelays, isEmpty);
     await sync.runQueued(_walletId, () async {});
-
-    expect(calls, isEmpty);
-    expect(clock.pendingDelays, isEmpty, reason: 'a cancelled wallet is not retried again');
+    expect(calls, isEmpty, reason: 'a cancelled wallet is not retried again');
   });
 
-  // Review round 1 (Codex probe): cancellation while the running retry awaits its balance re-fetch.
+  test('a retry whose timer fires while other work holds the queue waits for that work to end', () async {
+    final sync = createSync();
+    resubscribe = () async => _failure;
+    await failQueue(sync);
+    final hold = Completer<void>();
+    final busy = sync.runQueued(_walletId, () async {
+      await hold.future;
+      return _failure; // the busy work fails too
+    }, retryWallet: _wallet);
+    clock.elapse();
+    expect(calls, isEmpty, reason: 'no retry runs behind or inside the busy work');
+    hold.complete();
+    await busy;
+    expect(clock.pendingDelays, [const Duration(seconds: 10)], reason: 'the failed drain schedules it again');
+  });
+
+  // Review round 1 (Codex probe): cancellation while the running retry awaits its balance re-fetch. This is also the
+  // test that fails without the generation check (Claude nit 6): the registration alone cannot tell the cancel.
   test('[codex-cancel-running-retry] cancellation during balance retry must prevent resubscribe', () async {
     final sync = createSync();
     final script = ScriptStatusMock.createMockScriptStatus(_wallet, 3);
@@ -251,16 +270,72 @@ void main() {
     expect(clock.pendingDelays, isEmpty);
   });
 
-  group('wallet detail indicator', () {
+  group('silent automatic retry (owner decision: retries make no UI change)', () {
     setUp(() => CoconutWalletApp.kFaucetHost = 'http://localhost');
 
-    test('a failed wallet stops spinning while another wallet syncs, spins only during its own retry', () async {
+    test('failing retries keep the failed state; neither the home status nor the wallet detail spins', () async {
       final node = _Node();
-      final other = WalletMock.createSingleSigWalletItem(id: _walletId + 1);
-      for (final id in [_walletId, other.id]) {
-        node.manager.initWalletUpdateStatus(id); // IsolateController.subscribeWallets
-      }
+      node.manager.initWalletUpdateStatus(_walletId); // IsolateController.subscribeWallets
       node.manager.setNodeSyncStateToSyncing();
+      final sync = createSync(state: node.manager);
+      final detail = WalletDetailViewModel(
+        _walletId,
+        _Wallets(),
+        _Transactions(),
+        node,
+        initialUnit: BitcoinUnit.btc,
+        sharedPrefs: _Prefs(),
+      );
+      final home = HomeConnectionStatusViewModel(_Connectivity(), node, ValueNotifier<List<WalletItemBase>>([_wallet]));
+      addTearDown(() async {
+        detail.dispose();
+        home.dispose();
+        await node.close();
+      });
+      resubscribe = () async => _failure;
+      await failQueue(sync); // e.g. a push failed: the failed state is on screen
+      await pumpEventQueue();
+      expect(node.state.nodeSyncState, NodeSyncState.failed);
+
+      final nodeStates = <NodeSyncState>[];
+      final subscription = node.syncStateStream.listen(nodeStates.add);
+      addTearDown(subscription.cancel);
+      final homeLabels = <String>{};
+      home.addListener(() {
+        if (home.showElectrumReconnected) homeLabels.add('reconnected');
+        if (home.isSyncing) homeLabels.add('updating');
+      });
+      var detailSpun = false;
+      detail.addListener(() => detailSpun |= detail.isWalletSyncing);
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        final retry = Completer<Result<bool>>();
+        resubscribe = () {
+          node.manager.addWalletSyncState(_walletId, UpdateElement.subscription); // as SubscriptionService reports
+          return retry.future;
+        };
+        clock.elapse(); // the retry starts
+        await pumpEventQueue();
+        expect(detail.isWalletSyncing, isFalse, reason: 'a silent retry does not spin the wallet detail');
+        retry.complete(_failure);
+        await pumpEventQueue();
+      }
+      expect(nodeStates, isEmpty, reason: 'the failed state stays on screen while retries fail');
+      expect(homeLabels, isEmpty, reason: 'no reconnected/updating flashes on the home status');
+      expect(detailSpun, isFalse);
+      expect(node.state.registeredWallets[_walletId]!.isSyncQueued, isFalse);
+
+      resubscribe = () async => Result.success(true);
+      clock.elapse(); // the third retry succeeds
+      await pumpEventQueue();
+      expect(nodeStates, [NodeSyncState.completed], reason: 'only the success is published');
+      expect(node.state.registeredWallets[_walletId]!.balance, WalletSyncState.completed);
+      expect(detailSpun, isFalse);
+    });
+
+    test('once a silent retry ends, ordinary syncs (push, refresh) show their progress as before', () async {
+      final node = _Node();
+      node.manager.initWalletUpdateStatus(_walletId);
       final sync = createSync(state: node.manager);
       final detail = WalletDetailViewModel(
         _walletId,
@@ -274,28 +349,22 @@ void main() {
         detail.dispose();
         await node.close();
       });
-      final otherDone = Completer<void>();
-      final otherQueue = sync.runQueued(other.id, () => otherDone.future); // the other wallet keeps syncing
-
+      resubscribe = () async => _failure;
       await failQueue(sync);
+      clock.elapse(); // a silent retry fails
       await pumpEventQueue();
-      expect(node.state.nodeSyncState, NodeSyncState.syncing, reason: 'precondition: the other wallet is syncing');
-      expect(detail.isWalletSyncing, isFalse, reason: 'the failed wallet must not spin for the other wallet');
+      expect(node.state.nodeSyncState, NodeSyncState.failed);
 
-      final retryDone = Completer<Result<bool>>();
-      resubscribe = () => retryDone.future;
-      clock.elapse();
+      final hold = Completer<Result<bool>>();
+      final pushed = sync.runQueued(_walletId, () => hold.future, retryWallet: _wallet);
       await pumpEventQueue();
-      expect(detail.isWalletSyncing, isTrue, reason: 'its own retry runs');
-
-      retryDone.complete(Result.success(true));
-      await sync.runQueued(_walletId, () async {});
+      expect(detail.isWalletSyncing, isTrue, reason: 'an ordinary sync spins the wallet detail as today');
+      expect(node.state.nodeSyncState, NodeSyncState.syncing);
+      hold.complete(Result.success(true));
+      await pushed;
       await pumpEventQueue();
-      expect(detail.isWalletSyncing, isFalse, reason: 'the retry succeeded');
-      expect(node.state.registeredWallets[_walletId]!.balance, WalletSyncState.completed);
-
-      otherDone.complete();
-      await otherQueue;
+      expect(detail.isWalletSyncing, isFalse);
+      expect(node.state.nodeSyncState, NodeSyncState.completed);
     });
   });
 }
@@ -313,6 +382,14 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   @override
   Stream<WalletUpdateInfo> getWalletStateStream(int walletId) =>
       walletEvents.stream.where((e) => e.containsKey(walletId)).map((e) => e[walletId]!);
+  @override
+  bool get hasConnectionError => false; // the socket is fine: only the wallet's sync failed
+  @override
+  bool get isInitializing => false;
+  @override
+  bool get isConnected => manager.state.nodeSyncState != NodeSyncState.failed;
+  @override
+  Future<bool>? get walletsRefresh => null;
   Future<void> close() async {
     await Future.wait([nodeEvents.close(), walletEvents.close(), resyncEvents.close(), fetchEvents.close()]);
     dispose();
@@ -330,3 +407,16 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
 }
 
 class _Prefs extends Fake implements SharedPrefsRepository {}
+
+class _Connectivity extends ChangeNotifier implements ConnectivityProvider {
+  @override
+  bool get isInternetOn => true;
+  @override
+  bool get isInternetOff => false;
+  @override
+  bool get isVpnActive => false;
+  @override
+  bool get isVpnInactive => true;
+  @override
+  Future<void> refreshConnectivity() async {}
+}

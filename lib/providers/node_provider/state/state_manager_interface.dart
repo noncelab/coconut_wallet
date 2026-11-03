@@ -34,4 +34,8 @@ abstract class StateManagerInterface {
 
   /// 지갑의 트랜잭션 fetch 요청이 몇 건 완료됐는지 보고
   void addWalletFetchCompleted(int walletId, int count);
+
+  /// [silent]인 동안 이 지갑의 진행 상태(대기열 시작·각 단계·fetch 진행)를 화면에 알리지 않는다.
+  /// 자동 재시도는 화면에 실패를 그대로 두고 조용히 돌며, 삭제된 지갑의 늦은 작업도 상태를 되살리지 않는다.
+  void setWalletSilent(int walletId, bool silent);
 }

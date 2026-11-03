@@ -187,6 +187,11 @@ class IsolateStateManager implements StateManagerInterface {
     _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletFetchCompleted, [walletId, count]));
   }
 
+  @override
+  void setWalletSilent(int walletId, bool silent) {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setWalletSilent, [walletId, silent]));
+  }
+
   bool _isWalletAnySyncing(int walletId) {
     final walletInfo = _registeredWallets[walletId];
     if (walletInfo == null) {

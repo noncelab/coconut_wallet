@@ -225,6 +225,7 @@ SubscriptionService _startIsolate(MockElectrumService electrum) {
     addresses,
     callbacks,
     createTimer: _retryClock.create,
+    random: () => 0.5, // no jitter: the retry fires at exactly 10 s
   );
   return SubscriptionService(electrum, state, addresses, SubscriptionRepository(realmManager), sync);
 }
