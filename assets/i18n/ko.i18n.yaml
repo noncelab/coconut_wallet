@@ -379,6 +379,8 @@ home_widgets:
   fiat_price_trend: "법정화폐 가격 추이"
   fiat_values: "법정화폐 시세"
   balance_by_wallet: "지갑별 잔액"
+  wallet_list: "지갑 목록"
+  wallet_list_show_all(count): "지갑 ${count}개 모두 보기"
   recent_transactions: "최근 거래"
   transaction_activity: "기간별 거래 분석"
   savings_goal: "목표 수량"
@@ -420,6 +422,8 @@ home_presets:
   hide_balances_description: "잔액이나 법정화폐 금액을 보여 주지 않아요"
   statistics_name: "저축 현황"
   statistics_description: "잔액 추이와 저축 목표, UTXO 현황을 함께 봐요"
+  classic_name: "코코넛 클래식"
+  classic_description: "예전 코코넛 홈 구성대로 위젯을 배치해요"
   apply: "홈에 적용"
   applied: "'$name' 프리셋을 적용했어요"
   undo: "되돌리기"
@@ -1037,10 +1041,10 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
   error_title: "서명 실패"
   wrong_wallet_title: "잘못된 지갑이 연결됨"
-  device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
+  device_mismatch: "연결된 BitBox02가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1072,7 +1076,7 @@ trezor_sign_screen:
   device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1425,7 +1429,7 @@ wallet_info_screen:
     disconnected: "연결 안 됨"
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
-    disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
+    disconnect_confirm_description: "현재 연결된 기기를 해제할게요.\n다음 서명 시 다시 연결이 필요해요."
 wallet_resync_screen:
   title: "지갑 재동기화"
   exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"

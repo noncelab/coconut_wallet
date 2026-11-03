@@ -278,58 +278,7 @@ class _TransactionRow extends StatelessWidget {
       ),
     );
     if (onTap == null) return row;
-    return _PressableRow(onTap: onTap!, child: row);
-  }
-}
-
-/// 누르는 동안 홈 위젯과 같은 눌림 색을 깔고 살짝 줄어든다. 크기는 바꾸지 않는다.
-class _PressableRow extends StatefulWidget {
-  final VoidCallback onTap;
-  final Widget child;
-
-  const _PressableRow({required this.onTap, required this.child});
-
-  @override
-  State<_PressableRow> createState() => _PressableRowState();
-}
-
-class _PressableRowState extends State<_PressableRow> {
-  bool _pressed = false;
-  bool _snapBack = false;
-
-  void _setPressed(bool pressed, {bool snap = false}) {
-    if (_pressed == pressed) return;
-    setState(() {
-      _pressed = pressed;
-      _snapBack = snap;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false, snap: true),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1,
-        duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
-        child: AnimatedContainer(
-          duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color:
-                _pressed
-                    ? colors.homeSurfacePressOverlay.withValues(alpha: colors.homeSurfacePressOverlayOpacity)
-                    : colors.homeSurfacePressOverlay.withValues(alpha: 0),
-          ),
-          child: widget.child,
-        ),
-      ),
-    );
+    return HomePressableRow(onTap: onTap!, child: row);
   }
 }
 

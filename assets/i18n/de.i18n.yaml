@@ -379,6 +379,8 @@ home_widgets:
   fiat_price_trend: "Fiat-Preisverlauf"
   fiat_values: "Fiat-Kurse"
   balance_by_wallet: "Guthaben nach Wallet"
+  wallet_list: "Wallet-Liste"
+  wallet_list_show_all(count): "Alle $count Wallets anzeigen"
   recent_transactions: "Letzte Transaktionen"
   transaction_activity: "Transaktionsanalyse nach Zeitraum"
   savings_goal: "Sparziel"
@@ -420,6 +422,8 @@ home_presets:
   hide_balances_description: "Keine echten Guthaben oder Fiat-Werte auf der Startseite"
   statistics_name: "Sparübersicht"
   statistics_description: "Guthabenverlauf, Sparziel und UTXO-Status auf einen Blick"
+  classic_name: "Coconut Classic"
+  classic_description: "Widgets wie auf dem früheren Coconut-Startbildschirm anordnen"
   apply: "Auf Startseite anwenden"
   applied: "Voreinstellung „$name“ angewendet"
   undo: "Rückgängig"
@@ -1931,16 +1935,38 @@ taproot:
     inheritance_condition: "Vererbungsbedingung"
 
 bitbox02_sign_screen:
+  tx_card:
+    title: "Transaktion"
+    send: "Senden"
+    to: "An"
+    fee: "Gebühr"
+    total_cost: "Gesamtkosten"
+  device_status:
+    title: "Gerätestatus"
+  idle:
+    waiting: "Warten auf Signatur"
+  done:
+    title: "Signiert"
+    description: "Transaktion wurde von BitBox02 signiert."
+  error_title: "Signaturfehler"
   wrong_wallet_title: "Falsche Wallet verbunden"
-  device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
+  device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   status:
-    connecting_device: "Connecting to BitBox02 via USB..."
-    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
-    preparing_data: "Preparing transaction data..."
-    confirm_on_device: "Confirm amount, address, and fee on your device"
+    connecting_device: "Verbindung zum BitBox02 über USB..."
+    connecting_device_ble: "BitBox02 wird über Bluetooth gesucht..."
+    preparing_data: "Transaktionsdaten werden vorbereitet..."
+    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
   btn:
+    sign: "Mit BitBox02 signieren"
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
+  state_label:
+    idle: "Signaturbereit"
+    signing: "Signieren"
 
 trezor_sign_screen:
   tx_card:
@@ -1959,14 +1985,19 @@ trezor_sign_screen:
   done:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."
-  error_title: "Signatur fehlgeschlagen"
+  error_title: "Signaturfehler"
+  wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   btn:
     sign: "Mit Trezor signieren"
     connect_other_trezor: "Anderes Trezor verbinden"
   state_label:
-    idle: "Warten auf Signatur"
+    idle: "Signaturbereit"
     signing: "Signieren"
 
 passphrase_input_text_field:

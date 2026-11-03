@@ -380,6 +380,8 @@ home_widgets:
   fiat_price_trend: "Tendencia del precio en fiat"
   fiat_values: "Valores fiat"
   balance_by_wallet: "Saldo por billetera"
+  wallet_list: "Lista de billeteras"
+  wallet_list_show_all(count): "Ver las $count billeteras"
   recent_transactions: "Transacciones recientes"
   transaction_activity: "Análisis de transacciones por período"
   savings_goal: "Meta de ahorro"
@@ -421,6 +423,8 @@ home_presets:
   hide_balances_description: "No muestra saldos reales ni valores fiat en Inicio"
   statistics_name: "Resumen de ahorros"
   statistics_description: "Consulta la evolución del saldo, tu meta de ahorro y el estado de los UTXO de un vistazo"
+  classic_name: "Coconut Clásico"
+  classic_description: "Coloca los widgets como en la pantalla de inicio clásica de Coconut"
   apply: "Aplicar a Inicio"
   applied: "Se aplicó el ajuste predefinido «$name»"
   undo: "Deshacer"
@@ -1039,13 +1043,17 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
   error_title: "Error al firmar"
   wrong_wallet_title: "Billetera incorrecta conectada"
-  device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."
+  device_mismatch: "El BitBox02 conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con BitBox02"
     connect_other_bitbox02: "Conectar otro BitBox02"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 trezor_sign_screen:
@@ -1066,13 +1074,18 @@ trezor_sign_screen:
     title: "Firmado"
     description: "La transacción ha sido firmada por Trezor."
   error_title: "Error al firmar"
+  wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada pertenece a '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con Trezor"
     connect_other_trezor: "Conectar otro Trezor"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 signed_psbt_scanner_screen:

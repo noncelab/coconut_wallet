@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -53,6 +54,12 @@ String walletStackEmptyText(WalletStackKind kind) => switch (kind) {
   WalletStackKind.all => t.home_widgets.empty_all_wallets,
 };
 
+String walletStackEmptyActionText(WalletStackKind kind) => switch (kind) {
+  WalletStackKind.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
+  WalletStackKind.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.title,
+  WalletStackKind.all => t.home_widgets.add_wallet,
+};
+
 /// 지갑 스택. 각 종류는 홈에 하나만 두고, 크기는 2×2와 4×2 중에서 바꿀 수 있다.
 class WalletStackDefinition extends HomeItemDefinition {
   final WalletStackKind stackKind;
@@ -80,14 +87,15 @@ class WalletStackDefinition extends HomeItemDefinition {
     final isWide = item.span == HomeSpan.wide;
     if (viewModel.isWalletDataLoading) return HomeWidgetSkeleton(wide: isWide);
     final now = DateTime.now();
+    final wallets = switch (stackKind) {
+      WalletStackKind.hot => viewModel.hotWallets,
+      WalletStackKind.watchOnly => viewModel.watchOnlyWallets,
+      WalletStackKind.all => viewModel.wallets,
+    };
     return WalletStackView(
       key: ValueKey('$id-${item.id}-${item.span.toJson()}'),
       keyPrefix: id,
-      wallets: switch (stackKind) {
-        WalletStackKind.hot => viewModel.hotWallets,
-        WalletStackKind.watchOnly => viewModel.watchOnlyWallets,
-        WalletStackKind.all => viewModel.wallets,
-      },
+      wallets: wallets,
       size: isWide ? WalletCardSize.wide : WalletCardSize.small,
       emptyText: walletStackEmptyText(stackKind),
       balanceTextOf:
@@ -102,12 +110,15 @@ class WalletStackDefinition extends HomeItemDefinition {
                 return last == null ? null : formatHomeRelativeTime(last, now);
               },
       onPressed: () => WalletStackListScreen.open(context, kind: stackKind),
-      onOpen: (request) => WalletStackListScreen.open(context, kind: stackKind, request: request),
-      emptyActionText: switch (stackKind) {
-        WalletStackKind.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
-        WalletStackKind.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.title,
-        WalletStackKind.all => t.home_widgets.add_wallet,
-      },
+      onOpen:
+          (request) => WalletDetailExpandTransition.open(
+            context,
+            walletId: request.front.id,
+            walletIds: [for (final wallet in wallets) wallet.id],
+            cardRectOf: (_) => request.stackRect(),
+            onFocusChanged: request.showWallet,
+          ),
+      emptyActionText: walletStackEmptyActionText(stackKind),
       onEmptyPressed: () => openWalletAddFor(context, stackKind),
       onAddPressed: stackKind == WalletStackKind.all ? () => openWalletAddFor(context, stackKind) : null,
     );
