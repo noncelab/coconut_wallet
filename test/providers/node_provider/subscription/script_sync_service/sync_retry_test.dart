@@ -269,7 +269,7 @@ void main() {
     expect(calls, isNot(contains('resubscribe')), reason: 'the captured wallet belongs to the cancelled generation');
   });
 
-  test('a removed wallet drops its pushes and retry registrations until it is subscribed again', () async {
+  test('a removed wallet drops its pushes and retry registrations for good (wallet IDs are never reused)', () async {
     final sync = createSync();
     final push = SubscribeScriptStreamDto(
       walletItem: _wallet,
@@ -281,10 +281,6 @@ void main() {
     await failQueue(sync); // a retry registration is refused while removed
     expect(calls, isEmpty, reason: 'the push was dropped before any request');
     expect(clock.pendingDelays, isEmpty);
-
-    sync.reviveWallet(_walletId); // SubscriptionService.subscribeWallet for a re-added wallet with the same ID
-    await failQueue(sync);
-    expect(clock.pendingDelays, [const Duration(seconds: 10)]);
   });
 
   test('empty retry delays (ScriptSyncServiceMock) never arm a timer', () async {

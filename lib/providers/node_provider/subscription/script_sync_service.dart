@@ -353,15 +353,13 @@ class ScriptSyncService {
     _retryAttempts.remove(walletId);
   }
 
-  /// 지갑 삭제: 재시도를 버리고, 이후 이 지갑의 푸시와 늦게 끝난 구독 응답을 받지 않는다.
-  /// 같은 ID의 지갑이 다시 구독되면([reviveWallet]) 풀린다.
+  /// 지갑 삭제: 재시도를 버리고, 이후 이 지갑의 푸시, 늦게 끝난 구독 응답과 늦게 온 구독 요청을 받지 않는다.
+  /// 지갑 ID는 다시 쓰이지 않으므로 풀지 않는다.
   /// 삭제 때 돌던 작업이 늦게 보낸 상태는 메인의 NodeStateManager가 버린다(삭제된 지갑을 다시 등록하지 않는다).
   void removeWallet(int walletId) {
     cancelRetry(walletId);
     _removedWallets.add(walletId);
   }
-
-  void reviveWallet(int walletId) => _removedWallets.remove(walletId);
 
   bool isWalletRemoved(int walletId) => _removedWallets.contains(walletId);
 

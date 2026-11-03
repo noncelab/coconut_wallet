@@ -1067,6 +1067,28 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 2 (Claude C): IsolateController.subscribeWallets works through a wallet list taken before a deletion.
+    // When it reaches the deleted wallet it must not subscribe it again.
+    test('[c-stale-subscribe-after-deletion] a late bulk subscribe does not bring a deleted wallet back', () async {
+      final c = _Case();
+      await c.init();
+      final s = _Session.start(c.electrum);
+      expect(await s.subscribe(c.wallet), isTrue);
+      final b = c.backend;
+      final staleCopy = c.walletCopy(); // the bulk loop's list was taken before the deletion
+      await s.node.unsubscribeWallet(c.walletCopy()); // WalletProvider deletes the wallet
+      s.main.unregisterWalletUpdateState(_walletId); // NodeProvider drops its state
+      await ScriptSyncServiceMock.walletRepository.deleteWallet(_walletId);
+      final callsBefore = b.calls.length;
+      final result = await s.node.subscribeWallet(staleCopy); // the bulk loop reaches the deleted wallet
+      await _settle();
+      expect(result.isSuccess, isTrue, reason: 'nothing to do; the bulk result must not fail because of it');
+      expect(b.calls.sublist(callsBefore).where((call) => call.startsWith('subscribe:')), isEmpty);
+      expect(b.listeners, isEmpty);
+      expect(s.main.state.registeredWallets.containsKey(_walletId), isFalse);
+      expect(s.retryClock.pendingDelays, isEmpty);
+    });
+
     // Review round 1 (Claude probe): AppGuard runs a dormant check for every wallet on resume, with a main-isolate
     // wallet copy whose subscription cache is empty. A retry after that must reuse the isolate's own wallet object.
     for (final viaDormantCheck in [false, true]) {

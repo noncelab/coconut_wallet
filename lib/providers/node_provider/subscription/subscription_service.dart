@@ -61,7 +61,8 @@ class SubscriptionService {
     int? minReceiveUsedIndex,
     int? minChangeUsedIndex,
   }) {
-    _scriptSyncService.reviveWallet(walletItem.id); // 같은 ID로 다시 추가된 지갑
+    // 삭제된 지갑(ID는 다시 쓰이지 않는다): 삭제 전에 받은 목록으로 도는 일괄 구독이 늦게 닿아도 다시 구독하지 않는다.
+    if (_scriptSyncService.isWalletRemoved(walletItem.id)) return Future.value(Result.success(true));
     return _scriptSyncService.runQueued(
       walletItem.id,
       () => _subscribeWalletGuarded(
