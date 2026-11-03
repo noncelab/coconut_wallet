@@ -320,6 +320,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
+      // 실패 상태에서 당겨도 그대로 끝나지 않게, 다른 화면처럼 재연결을 시작한다.
+      _viewModel.reconnectIfNeeded().ignore();
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,

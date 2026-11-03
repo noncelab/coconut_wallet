@@ -95,7 +95,6 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
   WalletType get walletType => _walletListBaseItem.walletType;
-  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   String get utxoDataKey => utxoList
       .map((utxo) => '${utxo.utxoId}:${utxo.status.name}:${utxo.amount}:${utxo.tags?.map((tag) => tag.id).join(',')}')
@@ -325,8 +324,9 @@ class UtxoOverviewViewModel extends ChangeNotifier {
     return DateTimeUtil.formatTimestamp(tx.timestamp);
   }
 
+  /// 동기화가 실패해 UTXO 상태가 대기·동기화 중으로 남아 있어도 새로고침(DB 재조회와 필요 시 재연결)은 막지 않는다.
   Future<void> refresh() async {
-    if (_isRefreshing || isSyncing) return;
+    if (_isRefreshing) return;
 
     _isRefreshing = true;
     notifyListeners();
