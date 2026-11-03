@@ -484,17 +484,18 @@ void main() {
     await tester.pump();
     final subscription = Completer<Result<bool>>();
     isolate.onBulkSubscribe = (_) => subscription.future;
-    final recovery = provider!.reconnect();
+    final count = isolate.initializationCount;
+    final ready = await provider!.ensureConnectedForBroadcast(); // starts the recovery
+    expect(ready.isSuccess, isTrue);
+    expect(isolate.initializationCount, count + 1);
+    final recovery = provider!.reconnect(reuseInFlight: true);
     bool syncFinished = false;
     recovery.then((_) => syncFinished = true);
-    await tester.pump();
-    final count = isolate.initializationCount;
-    final ready = await provider!.ensureConnectedForBroadcast();
-    expect(ready.isSuccess, isTrue);
     await tester.pump(const Duration(seconds: 16));
     expect(syncFinished, isFalse);
-    expect((await provider!.ensureConnectedForBroadcast()).isSuccess, isTrue);
-    expect(isolate.initializationCount, count);
+    // A retry probes first and proceeds on the live connection without another recovery.
+    expect((await provider!.getLatestBlock()).isSuccess, isTrue);
+    expect(isolate.initializationCount, count + 1);
     subscription.complete(Result.success(true));
     await tester.pump();
     expect((await recovery).isSuccess, isTrue);
@@ -504,23 +505,22 @@ void main() {
     provider = null;
   });
 
-  testWidgets('send rejects readiness superseded by a newer reconnect', (tester) async {
+  testWidgets('send rejects readiness superseded by a server change', (tester) async {
     createProvider();
     wallets.value = [_Wallet(1)];
     load.value = WalletLoadState.loadCompleted;
     await tester.pump();
-    final subscription = Completer<Result<bool>>();
-    isolate.onBulkSubscribe = (_) => subscription.future;
-    final oldRecovery = provider!.reconnect();
+    final initialization = Completer<void>();
+    isolate.onInitialize = () => initialization.future;
+    Result<bool>? ready;
+    provider!.ensureConnectedForBroadcast().then((value) => ready = value);
     await tester.pump();
-    final ready = provider!.ensureConnectedForBroadcast();
-    final newer = provider!.reconnect();
+    final change = provider!.applyServerChange();
+    isolate.onInitialize = null;
+    initialization.complete();
     await tester.pump();
-    expect((await ready).isFailure, isTrue);
-    subscription.complete(Result.success(true));
-    await tester.pump();
-    expect((await oldRecovery).isFailure, isTrue);
-    expect((await newer).isSuccess, isTrue);
+    expect(ready?.isFailure, isTrue);
+    expect((await change).isSuccess, isTrue);
     await tester.pump(const Duration(seconds: 1));
     await provider!.closeConnection();
     provider!.dispose();
@@ -698,6 +698,63 @@ void main() {
     completion.complete(Result.success(true));
     await tester.pump();
     expect((await second).isSuccess, isTrue);
+    await tester.pump(const Duration(seconds: 1));
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
+  testWidgets('send retry after socket loss during bulk sync starts a fresh recovery', (tester) async {
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    final staleSubscription = Completer<Result<bool>>();
+    isolate.onBulkSubscribe = (_) => staleSubscription.future;
+    final stale = provider!.reconnect(); // readiness completes; the bulk sync stays pending
+    await tester.pump();
+    expect((await provider!.ensureConnectedForBroadcast()).isSuccess, isTrue);
+
+    // The Electrum socket drops while the isolate stays alive, so the sender's probe fails.
+    isolate.onBlock = () async => Result.failure(ErrorCodes.nodeConnectionError);
+    expect((await provider!.getLatestBlock()).isFailure, isTrue);
+    final count = isolate.initializationCount;
+    isolate.onBulkSubscribe = null;
+
+    final retry = await provider!.ensureConnectedForBroadcast();
+    expect(retry.isSuccess, isTrue);
+    expect(isolate.initializationCount, count + 1, reason: 'stale readiness must not be reused');
+
+    staleSubscription.complete(Result.success(true));
+    await tester.pump();
+    expect((await stale).isFailure, isTrue, reason: 'the superseded reconnect cannot report success');
+    await tester.pump(const Duration(seconds: 1));
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
+  testWidgets('send retry still shares a reconnect whose readiness is pending', (tester) async {
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    final initialization = Completer<void>();
+    isolate.onInitialize = () => initialization.future;
+    final count = isolate.initializationCount;
+    Result<bool>? first;
+    Result<bool>? second;
+    provider!.ensureConnectedForBroadcast().then((value) => first = value);
+    await tester.pump();
+    provider!.ensureConnectedForBroadcast().then((value) => second = value);
+    await tester.pump();
+    expect(isolate.initializationCount, count + 1);
+    isolate.onInitialize = null;
+    initialization.complete();
+    await tester.pump();
+    expect(first?.isSuccess, isTrue);
+    expect(second?.isSuccess, isTrue);
+    expect(isolate.initializationCount, count + 1);
     await tester.pump(const Duration(seconds: 1));
     await provider!.closeConnection();
     provider!.dispose();

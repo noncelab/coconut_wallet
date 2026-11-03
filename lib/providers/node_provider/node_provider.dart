@@ -768,9 +768,15 @@ class NodeProvider extends ChangeNotifier {
       final failure = await initialization.future;
       result = failure == null && isInitialized ? Result.success(true) : Result.failure(ErrorCodes.nodeConnectionError);
     } else {
+      // Senders reach here only after their connection probe failed. Share a reconnect
+      // only while its readiness is pending; a completed one may describe a socket that
+      // dropped during the bulk sync, so supersede it with a fresh reconnect.
+      final inFlightReady = _reconnectReady;
+      final canShare = _reconnecting != null && inFlightReady != null && !inFlightReady.isCompleted;
       // reconnect() registers both futures synchronously. Do not await the bulk sync.
-      final recovery = reconnect(reuseInFlight: true);
-      final ready = _reconnectReady;
+      final recovery = reconnect(reuseInFlight: canShare);
+      // An early failure (e.g. busy initializing) registers nothing; don't read stale readiness.
+      final ready = identical(recovery, _reconnecting) ? _reconnectReady : null;
       generation = _latestReconnectId;
       endpoint = _electrumServer;
       result = await (ready?.future ?? recovery);
