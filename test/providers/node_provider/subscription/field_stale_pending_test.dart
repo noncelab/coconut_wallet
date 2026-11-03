@@ -1054,6 +1054,48 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 1 (Codex probe): the wallet is deleted while its automatic retry waits for a subscribe response.
+    // The isolate command deserializes a separate wallet copy, as in the real deletion path.
+    test('[codex-delete-running-retry] deleting during an active retry must not recreate subscriptions', () async {
+      final c = _Case();
+      await c.init();
+      final s = _Session.start(c.electrum);
+      final b = c.backend;
+      b.fault = (m, k) => m == 'subscribe' && k == c.input;
+      expect(await s.subscribe(c.wallet), isFalse);
+      expect(s.retryClock.pendingDelays, isNotEmpty);
+      b.fault = (_, __) => false;
+      final entered = Completer<void>();
+      final release = Completer<String?>();
+      when(
+        c.electrum.subscribeScriptForWallet(
+          any,
+          c.input,
+          walletId: anyNamed('walletId'),
+          onUpdate: anyNamed('onUpdate'),
+        ),
+      ).thenAnswer((call) async {
+        entered.complete();
+        final status = await release.future;
+        // The real ElectrumService registers the socket callback after the subscribe RPC response.
+        b.listeners[c.input] = call.namedArguments[#onUpdate] as Function(String, String?);
+        return status;
+      });
+      s.retryClock.elapse();
+      await entered.future;
+      await s.node.unsubscribeWallet(c.walletCopy());
+      expect(b.listeners, isEmpty, reason: 'unsubscribe completed before deletion');
+      await ScriptSyncServiceMock.walletRepository.deleteWallet(_walletId);
+      release.complete(b.status(c.input));
+      await _drain(s);
+      _report('codex-delete-running-retry', '-', {
+        'listeners_after_deletion': b.listeners.length,
+        'deleted_wallet_still_gets_input_pushes': b.listeners.containsKey(c.input),
+        'node_state': s.main.state.nodeSyncState.name,
+      });
+      expect(b.listeners, isEmpty, reason: 'an RPC started by a cancelled retry must not reattach the deleted wallet');
+    });
+
     // Review round 1 (Codex probe): the same recordless mark, but the retry's listunspent for the coin's own address
     // fails. A failed request is not evidence that the coin is spent, so cleanup must not delete it for good.
     test('[codex-listunspent-timeout] recordless mark must survive a failed own-address reconciliation', () async {

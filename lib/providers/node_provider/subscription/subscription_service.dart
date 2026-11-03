@@ -61,6 +61,7 @@ class SubscriptionService {
     int? minReceiveUsedIndex,
     int? minChangeUsedIndex,
   }) {
+    _scriptSyncService.reviveWallet(walletItem.id); // 같은 ID로 다시 추가된 지갑
     return _scriptSyncService.runQueued(
       walletItem.id,
       () => _subscribeWalletGuarded(
@@ -213,7 +214,8 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
-    _scriptSyncService.cancelRetry(walletItem.id);
+    // 삭제 표시부터 한다. 이미 돌고 있는 재시도·동기화가 늦게 받은 구독 응답은 콜백을 다시 떼고 멈춘다.
+    _scriptSyncService.removeWallet(walletItem.id);
     try {
       await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
     } finally {
@@ -432,6 +434,15 @@ class SubscriptionService {
       walletId: walletItem.id,
       onUpdate: onUpdate,
     );
+    // 응답을 기다리는 사이 지갑이 삭제됐으면 방금 붙은 콜백을 떼고 이 작업(재시도·동기화)을 멈춘다.
+    if (_scriptSyncService.isWalletRemoved(walletItem.id)) {
+      await _electrumService.unsubscribeScriptForWallet(
+        walletItem.walletBase.addressType,
+        address,
+        walletId: walletItem.id,
+      );
+      throw StateError('Wallet ${walletItem.id} was removed while subscribing');
+    }
 
     scriptStatus.status = status;
     scriptStatus.timestamp = DateTime.now();

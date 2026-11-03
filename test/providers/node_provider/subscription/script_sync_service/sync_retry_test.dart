@@ -8,6 +8,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -191,6 +192,48 @@ void main() {
 
     expect(calls, isEmpty);
     expect(clock.pendingDelays, isEmpty, reason: 'a cancelled wallet is not retried again');
+  });
+
+  // Review round 1 (Codex probe): cancellation while the running retry awaits its balance re-fetch.
+  test('[codex-cancel-running-retry] cancellation during balance retry must prevent resubscribe', () async {
+    final sync = createSync();
+    final script = ScriptStatusMock.createMockScriptStatus(_wallet, 3);
+    when(ScriptSyncServiceMock.electrumService.getBalance(any, script.address)).thenThrow(StateError('timeout'));
+    await sync.runQueued(
+      _walletId,
+      () => ScriptSyncServiceMock.balanceSyncService.fetchScriptBalanceBatch(_wallet, [script]),
+      retryWallet: _wallet,
+    );
+    final entered = Completer<void>();
+    final response = Completer<GetBalanceRes>();
+    when(ScriptSyncServiceMock.electrumService.getBalance(any, script.address)).thenAnswer((_) {
+      entered.complete();
+      return response.future;
+    });
+    clock.elapse();
+    await entered.future;
+    sync.cancelRetry(_walletId); // SubscriptionService.unsubscribeWallet does this before its awaited unsubscribe.
+    response.complete(GetBalanceRes(confirmed: 0, unconfirmed: 0));
+    await sync.runQueued(_walletId, () async {});
+    expect(calls, isNot(contains('resubscribe')), reason: 'the captured wallet belongs to the cancelled generation');
+  });
+
+  test('a removed wallet drops its pushes and retry registrations until it is subscribed again', () async {
+    final sync = createSync();
+    final push = SubscribeScriptStreamDto(
+      walletItem: _wallet,
+      scriptStatus: ScriptStatusMock.createMockScriptStatus(_wallet, 0),
+      updateUsedIndex: false,
+    );
+    sync.removeWallet(_walletId);
+    await sync.syncScriptStatus(push); // a push through a callback that is still attached
+    await failQueue(sync); // a retry registration is refused while removed
+    expect(calls, isEmpty, reason: 'the push was dropped before any request');
+    expect(clock.pendingDelays, isEmpty);
+
+    sync.reviveWallet(_walletId); // SubscriptionService.subscribeWallet for a re-added wallet with the same ID
+    await failQueue(sync);
+    expect(clock.pendingDelays, [const Duration(seconds: 10)]);
   });
 
   test('empty retry delays (ScriptSyncServiceMock) never arm a timer', () async {

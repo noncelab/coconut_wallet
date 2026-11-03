@@ -41,6 +41,7 @@ class ScriptSyncService {
   final Map<int, Timer> _retryTimers = {};
   final Map<int, int> _retryAttempts = {};
   final Map<int, int> _retryGenerations = {};
+  final Set<int> _removedWallets = {};
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
   static const Duration _dormantSyncThrottle = Duration(seconds: 30);
@@ -231,7 +232,7 @@ class ScriptSyncService {
   /// 재귀적으로 호출하면 자기 자신의 완료를 기다리게 되어 데드락이 나므로, 중첩 호출하지 않도록 주의합니다.
   /// [retryWallet]을 주면 큐가 실패로 끝났을 때 그 지갑 객체로 자동 재시도한다.
   Future<T> runQueued<T>(int walletId, Future<T> Function() task, {WalletItemBase? retryWallet}) {
-    if (retryWallet != null) _retryWallets[walletId] = retryWallet;
+    if (retryWallet != null && !_removedWallets.contains(walletId)) _retryWallets[walletId] = retryWallet;
     final startsQueue = !_walletSyncQueues.containsKey(walletId);
     final previousSync = _walletSyncQueues[walletId] ?? Future<void>.value();
     final completer = Completer<T>();
@@ -293,8 +294,9 @@ class ScriptSyncService {
 
   /// 기억한 잔액 실패를 먼저 다시 조회한 뒤(잔액이 생긴 주소가 활성 주소로 구독되도록) 바뀐·실패한 스크립트를 다시 동기화한다.
   Future<Result<bool>> _retryWalletSync(int walletId, int generation) async {
+    bool cancelled() => generation != (_retryGenerations[walletId] ?? 0);
     final wallet = _retryWallets[walletId];
-    if (wallet == null || generation != (_retryGenerations[walletId] ?? 0) || !_isConnected()) {
+    if (wallet == null || cancelled() || !_isConnected()) {
       return Result.failure(ErrorCodes.nodeConnectionError);
     }
     Logger.log('ScriptSyncService: retrying sync of ${wallet.name}');
@@ -303,6 +305,9 @@ class ScriptSyncService {
     } catch (e) {
       Logger.error('ScriptSyncService: balance retry failed for ${wallet.name}: $e');
     }
+    // 잔액을 기다리는 사이 지갑이 삭제·재동기화됐으면 다시 구독하지 않는다.
+    // 구독 응답을 기다리는 사이의 삭제는 SubscriptionService가 늦게 붙은 콜백을 떼어 막는다.
+    if (cancelled()) return Result.failure(ErrorCodes.nodeConnectionError);
     return _subscribeWallet(wallet);
   }
 
@@ -314,8 +319,20 @@ class ScriptSyncService {
     _retryAttempts.remove(walletId);
   }
 
+  /// 지갑 삭제: 재시도를 버리고, 이후 이 지갑의 푸시와 늦게 끝난 구독 응답을 받지 않는다.
+  /// 같은 ID의 지갑이 다시 구독되면([reviveWallet]) 풀린다.
+  void removeWallet(int walletId) {
+    cancelRetry(walletId);
+    _removedWallets.add(walletId);
+  }
+
+  void reviveWallet(int walletId) => _removedWallets.remove(walletId);
+
+  bool isWalletRemoved(int walletId) => _removedWallets.contains(walletId);
+
   /// 스크립트 상태 변경 이벤트 처리
   Future<void> syncScriptStatus(SubscribeScriptStreamDto dto) {
+    if (_removedWallets.contains(dto.walletItem.id)) return Future.value(); // 삭제된 지갑에 남은 콜백의 푸시
     final receivedAt = DateTime.now();
     return runQueued(dto.walletItem.id, () => _processScriptStatus(dto, receivedAt), retryWallet: dto.walletItem);
   }
