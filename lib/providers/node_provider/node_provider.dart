@@ -32,6 +32,8 @@ import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
 import 'package:coconut_wallet/utils/certificate_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'dart:math';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
@@ -71,6 +73,7 @@ class NodeProvider extends ChangeNotifier {
 
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
   Timer? _blockUpdateTimer;
+  int _failedReconnects = 0; // 블록 확인이 성공하면 0으로 돌아간다
   ValueNotifier<BlockTimestamp?> get currentBlockNotifier => _currentBlockNotifier;
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
@@ -167,7 +170,6 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 10초마다 블록 높이를 확인하는 타이머를 건다. 확인이 실패하면 [_updateCurrentBlock]이 재연결한다.
-  /// 연결·구독이 실패한 뒤에도 불러서, 실패가 다음 재연결 시도 없이 남지 않게 한다.
   void _armBlockUpdates() {
     if (!isInitialized || (_blockUpdateTimer?.isActive ?? false)) return;
     _blockUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -175,6 +177,28 @@ class NodeProvider extends ChangeNotifier {
       _updateCurrentBlock();
     });
   }
+
+  /// 연결·구독이 실패해도 다음 재연결 시도가 남도록 블록 확인을 다시 건다. 연속 실패마다 10·20·40·80·160초,
+  /// 최대 5분으로 늘리고 ±20% 흔들어 장애 중 여러 기기가 같은 순간에 서버로 몰리지 않게 한다.
+  /// 백그라운드에서는 걸지 않는다(복귀하면 AppGuard가 바로 재연결한다).
+  void _scheduleReconnectProbe() {
+    if (!isInitialized || _isInBackground) return;
+    final seconds = min(10 << min(_failedReconnects, 5), 300);
+    _failedReconnects++;
+    _blockUpdateTimer?.cancel();
+    _blockUpdateTimer = Timer(
+      Duration(milliseconds: (seconds * 1000 * (0.8 + 0.4 * Random().nextDouble())).round()),
+      () {
+        _blockUpdateTimer = null;
+        if (!_isInBackground) _startBlockUpdates();
+      },
+    );
+  }
+
+  bool get _isInBackground => switch (SchedulerBinding.instance.lifecycleState) {
+    AppLifecycleState.paused || AppLifecycleState.hidden || AppLifecycleState.detached => true,
+    _ => false,
+  };
 
   Future<void> _restartBlockUpdates() async {
     _stopBlockUpdates();
@@ -189,6 +213,7 @@ class NodeProvider extends ChangeNotifier {
     final Result<BlockTimestamp> result = await getLatestBlock();
     if (!isInitialized) return;
     if (result.isSuccess && result.value.height > 0) {
+      _failedReconnects = 0;
       if (_hasConnectionError) {
         _setConnectionError(false);
       }
@@ -330,7 +355,7 @@ class NodeProvider extends ChangeNotifier {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
         _analyticsService?.logWalletBulkSyncFailed();
-        _armBlockUpdates();
+        _scheduleReconnectProbe();
       } else {
         _setConnectionError(false);
         // 건너뛴 구독(지갑 로딩 전, 오프라인, 지갑 없음)은 완료로 세지 않는다.
@@ -494,7 +519,7 @@ class NodeProvider extends ChangeNotifier {
           // 이미 완료된 경우 무시
         }
       }
-      _armBlockUpdates();
+      _scheduleReconnectProbe();
       rethrow;
     } finally {
       _isInitializing = false;
@@ -789,7 +814,7 @@ class NodeProvider extends ChangeNotifier {
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
           _analyticsService?.logWalletBulkSyncFailed();
-          _armBlockUpdates();
+          _scheduleReconnectProbe();
           return Result.failure(result.error);
         }
       } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {

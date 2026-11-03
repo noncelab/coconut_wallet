@@ -15,6 +15,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Connectivity extends ChangeNotifier implements ConnectivityProvider {
@@ -479,7 +480,7 @@ void main() {
 
   for (final initializationFails in [false, true]) {
     final failure = initializationFails ? 'initialization' : 'wallet subscription';
-    testWidgets('a reconnect whose $failure fails keeps the 10 s probe, which reconnects again', (tester) async {
+    testWidgets('a reconnect whose $failure fails keeps probing and reconnects again', (tester) async {
       createProvider();
       wallets.value = [_Wallet(1)];
       load.value = WalletLoadState.loadCompleted;
@@ -494,7 +495,7 @@ void main() {
 
       final result = await provider!.reconnect();
       final initializations = isolate.initializationCount;
-      await tester.pump(const Duration(seconds: 11));
+      await tester.pump(const Duration(seconds: 13)); // first probe after 10 s ±20%
 
       expect(result.isFailure, isTrue);
       expect(isolate.initializationCount, greaterThan(initializations), reason: 'nothing else would ever retry');
@@ -505,6 +506,87 @@ void main() {
       await tester.pump();
     });
   }
+
+  // Review round 1 (Codex outage probe): during an outage the reconnects back off instead of every 10 s.
+  group('reconnect backoff during an outage', () {
+    late bool serverUp;
+
+    /// A synced provider whose server then refuses connections. A block request succeeds only on a live isolate of a
+    /// reachable server. Returns the initialization count after the first failed reconnect.
+    Future<int> startOutage(WidgetTester tester) async {
+      serverUp = true;
+      isolate.onInitialize = () async {
+        if (!serverUp) throw StateError('server refuses connection');
+      };
+      isolate.onBlock =
+          () async =>
+              serverUp && isolate.initialized
+                  ? Result.success(BlockTimestamp(2, DateTime(2026)))
+                  : Result.failure(ErrorCodes.nodeConnectionError);
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      serverUp = false;
+      expect((await provider!.reconnect()).isFailure, isTrue);
+      return isolate.initializationCount;
+    }
+
+    Future<void> close(WidgetTester tester) async {
+      await provider!.closeConnection();
+      provider!.dispose();
+      provider = null;
+      await tester.pump();
+    }
+
+    testWidgets('delays double from 10 s to a 5 min cap with ±20% jitter', (tester) async {
+      final start = await startOutage(tester);
+      var elapsed = 0;
+      // Reconnect k happens after 10, 20, 40, 80, 160, 300 s (each ±20%), so these windows hold for any jitter.
+      final expected = {7: 0, 13: 1, 23: 1, 37: 2, 55: 2, 85: 3, 119: 3, 181: 4, 247: 4, 373: 5, 487: 5, 733: 6};
+      final observed = <int, int>{};
+      for (final second in expected.keys) {
+        await tester.pump(Duration(seconds: second - elapsed));
+        elapsed = second;
+        observed[second] = isolate.initializationCount - start;
+      }
+      expect(observed, expected);
+      await close(tester);
+    });
+
+    testWidgets('a healthy connection resets the backoff', (tester) async {
+      final start = await startOutage(tester);
+      await tester.pump(const Duration(seconds: 37)); // two more failed reconnects; the next waits 40 s ±20%
+      expect(isolate.initializationCount - start, 2);
+      serverUp = true;
+      await tester.pump(const Duration(seconds: 49));
+      expect(isolate.initializationCount - start, 3, reason: 'the pending probe reconnected successfully');
+      expect(provider!.hasConnectionError, isFalse);
+
+      serverUp = false;
+      expect((await provider!.reconnect()).isFailure, isTrue);
+      final afterSecondOutage = isolate.initializationCount;
+      await tester.pump(const Duration(seconds: 13));
+      expect(isolate.initializationCount - afterSecondOutage, 1, reason: 'the delay starts over at 10 s');
+      await close(tester);
+    });
+
+    testWidgets('no probe runs while the app is in the background', (tester) async {
+      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      final start = await startOutage(tester); // a probe is pending
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(minutes: 10));
+      expect(isolate.initializationCount, start, reason: 'the pending probe fires in the background and stops');
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      expect((await provider!.reconnect()).isFailure, isTrue); // AppGuard reconnects on resume
+      final afterResume = isolate.initializationCount;
+      await tester.pump(const Duration(seconds: 25)); // the second failure in a row waits 20 s ±20%
+      expect(isolate.initializationCount - afterResume, 1, reason: 'probing resumes in the foreground');
+      await close(tester);
+    });
+  });
 
   for (final crossErrorZone in [false, true]) {
     test('overlapping initialization retries StateError across error zones=$crossErrorZone', () async {
