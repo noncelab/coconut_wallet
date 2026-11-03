@@ -150,6 +150,28 @@ void main() {
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
+      test('늦은 listunspent로 되돌려진 코인은 같은 거래를 다시 처리하면 다시 outgoing이 된다', () async {
+        final mockTx = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 900000);
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createMockUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: mockTx.inputs[0].transactionHash,
+              index: mockTx.inputs[0].index,
+              blockHeight: 100,
+              status: UtxoStatus.unspent, // addAllUtxos overwrote the status but kept the spender
+              spentByTransactionHash: mockTx.transactionHash,
+            ),
+          );
+        });
+
+        await utxoRepository.markUtxoAsOutgoing(testWalletId, mockTx);
+
+        final utxoId = getUtxoId(mockTx.inputs[0].transactionHash, mockTx.inputs[0].index);
+        expect(utxoRepository.getUtxoState(testWalletId, utxoId)!.status, UtxoStatus.outgoing);
+      });
+
       test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () async {
         // Given
         final mockTx = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 1000000);

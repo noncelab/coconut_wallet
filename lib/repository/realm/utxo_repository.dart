@@ -576,10 +576,15 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 트랜잭션에 사용된 UTXO를 outgoing으로 표시하고 spender를 이 거래로 바꿉니다(RBF 감지 뒤에 호출).
+  /// 늦은 listunspent가 spender는 남긴 채 unspent로 되돌린 코인은 같은 거래를 다시 처리할 때 다시 표시합니다.
   Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {
     final txHash = transaction.transactionHash;
-    // UTXO가 자기 자신을 참조하면 건너뜀
-    return _markInputsOutgoing(walletId, transaction, (utxo) => utxo.spentByTransactionHash == txHash ? null : txHash);
+    final outgoing = utxoStatusToString(UtxoStatus.outgoing);
+    return _markInputsOutgoing(
+      walletId,
+      transaction,
+      (utxo) => utxo.spentByTransactionHash == txHash && utxo.status == outgoing ? null : txHash,
+    );
   }
 
   /// 거래 기록을 만들기 전에, 받아 온 거래가 쓴 코인을 outgoing으로 예약합니다.
