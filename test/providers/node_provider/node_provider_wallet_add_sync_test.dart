@@ -589,9 +589,7 @@ void main() {
   }
 
   // --- re-review: connectivity-restored initialization is followed by a reconnect ---
-  testWidgets('[re-review] send waiting on restored-network init fails once the follow-up reconnect supersedes it', (
-    tester,
-  ) async {
+  testWidgets('send waits for final restored-network connection before becoming ready', (tester) async {
     connectivity.online = false;
     createProvider();
     wallets.value = [_Wallet(1)];
@@ -607,16 +605,21 @@ void main() {
     provider!.ensureConnectedForBroadcast().then((value) => outcome = value);
     await tester.pump();
     expect(outcome, isNull, reason: 'L1: joins the background initialization instead of failing at once');
-    isolate.onInitialize = null;
+    final finalInitialization = Completer<void>();
+    final subscription = Completer<Result<bool>>();
+    isolate.onInitialize = () => finalInitialization.future;
+    isolate.onBulkSubscribe = (_) => subscription.future;
     initialization.complete();
     await tester.pump();
-
-    // The initialization succeeded, but reconnectOnSuccess immediately replaced the connection,
-    // so the waiting send is rejected (safe, but the user must retry).
     expect(isolate.initializationCount, 2);
-    expect(outcome?.error, ErrorCodes.nodeConnectionError);
+    expect(outcome, isNull, reason: 'intermediate initialization is not send-ready');
+    finalInitialization.complete();
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    // Slow subscription must not delay send readiness.
+    subscription.complete(Result.success(true));
+    await tester.pump();
 
-    // A user retry first probes the connection (as BroadcastingViewModel does) and can proceed.
     expect((await provider!.getLatestBlock()).isSuccess, isTrue);
 
     await tester.pump(const Duration(seconds: 1));

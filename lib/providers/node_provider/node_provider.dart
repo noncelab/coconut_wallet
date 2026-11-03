@@ -60,6 +60,7 @@ class NodeProvider extends ChangeNotifier {
   Future<bool>? _walletsRefresh;
   Future<Result<bool>>? _reconnecting;
   Completer<Result<bool>>? _reconnectReady;
+  Completer<Result<bool>>? _networkRecoveryReady;
   int _latestReconnectId = 0;
   Completer<void>? _connectionIdle;
   Set<int> _knownWalletIds = {};
@@ -290,14 +291,33 @@ class NodeProvider extends ChangeNotifier {
   /// 아무도 기다리지 않는 초기화(생성자·네트워크 복구). 실패는 initialize()가 연결 오류·동기화 실패로 이미 반영했으므로
   /// 기록만 하고, 직접 await하는 호출자에게는 initialize()가 그대로 오류를 전달한다.
   Future<void> _initializeInBackground({bool reconnectOnSuccess = false}) async {
+    // Register before initialize() can publish its intermediate completion.
+    // Senders must wait for the follow-up reconnect, not the initial socket.
+    if (reconnectOnSuccess && _networkRecoveryReady != null) return;
+    final ready = reconnectOnSuccess ? Completer<Result<bool>>() : null;
+    if (ready != null) _networkRecoveryReady = ready;
     try {
       await initialize();
+      if (_isDisposed) return;
+      if (reconnectOnSuccess) {
+        final recovery = reconnect(reuseInFlight: true);
+        final connectionReady = _reconnectReady;
+        final generation = _latestReconnectId;
+        final result = await (connectionReady?.future ?? recovery);
+        ready!.complete(
+          !_isDisposed && generation == _latestReconnectId ? result : Result.failure(ErrorCodes.nodeConnectionError),
+        );
+        if (identical(_networkRecoveryReady, ready)) _networkRecoveryReady = null;
+        await recovery;
+      }
     } catch (e) {
       Logger.log('NodeProvider: 백그라운드 초기화 실패: $e');
-      return;
+    } finally {
+      if (ready != null) {
+        if (!ready.isCompleted) ready.complete(Result.failure(ErrorCodes.nodeConnectionError));
+        if (identical(_networkRecoveryReady, ready)) _networkRecoveryReady = null;
+      }
     }
-    if (_isDisposed) return;
-    if (reconnectOnSuccess) await reconnect();
   }
 
   /// WalletLoadState 변경 감지 및 처리
@@ -734,7 +754,12 @@ class NodeProvider extends ChangeNotifier {
     final int generation;
     final ElectrumServer endpoint;
     final initialization = _initCompleter;
-    if (_reconnecting == null && _isInitializing && initialization != null) {
+    final networkRecovery = _networkRecoveryReady;
+    if (networkRecovery != null) {
+      endpoint = _electrumServer;
+      result = await networkRecovery.future;
+      generation = _latestReconnectId;
+    } else if (_reconnecting == null && _isInitializing && initialization != null) {
       // Background initialization is not registered as a reconnect. Join its
       // completion signal instead of failing or starting another initialization.
       generation = _latestReconnectId;
@@ -752,6 +777,9 @@ class NodeProvider extends ChangeNotifier {
     }
     if (_isDisposed ||
         _isServerChanging ||
+        _isInitializing ||
+        _isClosing ||
+        !isInitialized ||
         generation != _latestReconnectId ||
         !identical(endpoint, _electrumServer) ||
         _connectivityProvider.isInternetOff) {
