@@ -71,6 +71,34 @@ class BalanceSyncService {
     }
   }
 
+  /// 이전에 잔액 조회가 실패한 이 지갑의 주소(휴면·조회 화면·함께 소비된 주소 포함)를 다시 조회합니다.
+  /// 다시 실패한 주소는 실패로 남습니다.
+  Future<void> retryFailedBalances(WalletItemBase walletItem) async {
+    final walletId = walletItem.id;
+    final scripts = <ScriptStatus>[];
+    for (final (failedWalletId, address) in _failedBalanceFetches.toList()) {
+      if (failedWalletId != walletId) continue;
+      final location = _addressRepository.getIndexAndIsChange(walletId, address);
+      if (location == null) {
+        _failedBalanceFetches.remove((walletId, address));
+        continue;
+      }
+      scripts.add(
+        ScriptStatus(
+          derivationPath: _addressRepository.getDerivationPath(walletId, address),
+          address: address,
+          index: location.index,
+          isChange: location.isChange,
+          scriptPubKey: '',
+          status: null,
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
+    if (scripts.isEmpty) return;
+    await fetchScriptBalanceBatch(walletItem, scripts);
+  }
+
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
   /// [onBatchProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null).
   /// 배치(기본 50개)가 하나 끝날 때마다 그 배치에 포함된 스크립트 개수로 호출된다.

@@ -46,6 +46,7 @@ class SubscriptionService {
     _scriptSyncService.subscribeWallet = _subscribeWalletGuarded;
     _scriptSyncService.unsubscribeAddress = unsubscribeAddress;
     _scriptSyncService.subscribeAddress = subscribeAddress;
+    _scriptSyncService.isConnected = () => _electrumService.connectionStatus == SocketConnectionStatus.connected;
   }
 
   /// 지갑의 스크립트 구독 (외부 진입점)
@@ -68,8 +69,12 @@ class SubscriptionService {
         minReceiveUsedIndex: minReceiveUsedIndex,
         minChangeUsedIndex: minChangeUsedIndex,
       ),
+      retryWallet: walletItem,
     );
   }
+
+  /// 예약된 자동 재시도를 버린다(지갑 재동기화).
+  void cancelRetry(int walletId) => _scriptSyncService.cancelRetry(walletId);
 
   /// 지갑별 큐를 공유해서 [task] (subscribeWallet/스크립트 상태 처리)를 실행한다.
   /// 재동기화처럼 subscribeWallet을 거치지 않고 직접 Realm을 쓰는 작업이, 백그라운드에서 도는
@@ -83,7 +88,7 @@ class SubscriptionService {
     return _scriptSyncService.runQueued(walletItem.id, () async {
       await _scriptSyncService.syncDormantAddresses(walletItem);
       return Result.success(true);
-    });
+    }, retryWallet: walletItem);
   }
 
   /// 화면에서 실제로 보고 있는 주소들의 잔액을 온디맨드로 확인한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
@@ -92,7 +97,7 @@ class SubscriptionService {
     return _scriptSyncService.runQueued(walletItem.id, () async {
       final discovered = await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
       return Result.success(discovered);
-    });
+    }, retryWallet: walletItem);
   }
 
   /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
@@ -208,6 +213,7 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
+    _scriptSyncService.cancelRetry(walletItem.id);
     await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
     walletItem.subscribedScriptMap.clear();
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');

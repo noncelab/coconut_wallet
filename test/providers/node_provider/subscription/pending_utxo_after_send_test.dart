@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -41,12 +42,16 @@ import 'package:coconut_wallet/services/model/response/electrum_response_types.d
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../transaction/rbf_service_test.mocks.dart';
 
 const _walletId = 1;
 final _external = WalletMock.createMultiSigWalletItem().walletBase.getAddress(0);
+
+/// Retry timers of the latest isolate session; they fire only when a test advances this clock.
+var _retryClock = ManualTimers();
 
 /// One Fulcrum backend as seen through the app's current socket.
 class _Backend {
@@ -143,6 +148,7 @@ class _Backend {
     }
 
     String arg(Invocation call, int i) => call.positionalArguments[i] as String;
+    when(electrum.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(electrum.getBalance(any, any)).thenAnswer((c) => answer('getBalance', arg(c, 1), () => balance(arg(c, 1))));
     when(electrum.getHistory(any, any)).thenAnswer((c) => answer('getHistory', arg(c, 1), () => history(arg(c, 1))));
     when(
@@ -203,6 +209,7 @@ SubscriptionService _startIsolate(MockElectrumService electrum) {
   final utxos = UtxoRepository(realmManager);
   final callbacks = ScriptCallbackService();
   final wallets = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
+  _retryClock = ManualTimers();
   final sync = ScriptSyncService(
     state,
     BalanceSyncService(electrum, state, addresses, wallets),
@@ -217,6 +224,7 @@ SubscriptionService _startIsolate(MockElectrumService electrum) {
     UtxoSyncService(electrum, state, utxos, transactions, addresses),
     addresses,
     callbacks,
+    createTimer: _retryClock.create,
   );
   return SubscriptionService(electrum, state, addresses, SubscriptionRepository(realmManager), sync);
 }
@@ -361,6 +369,7 @@ class _Preferences extends Fake implements PreferenceProvider {
 }
 
 class _SendInfo extends Fake implements SendInfoProvider {
+  @override
   Transaction? transaction;
   @override
   void setTransaction(Transaction transaction) => this.transaction = transaction;
@@ -497,6 +506,12 @@ void main() {
         b.fault = (_, __) => false;
         b.missingHeaders.clear();
         await _drain(node);
+        if (variant == 'd-tx-not-yet-retrievable') {
+          // No push comes again: only the bounded retry can reserve the input, after its delay (10 s in the app).
+          expect(_retryClock.pendingDelays, [const Duration(seconds: 10)], reason: 'one retry is pending');
+          _retryClock.elapse();
+          await _drain(node);
+        }
         final observed = <String, Object?>{
           'coin_after_broadcast': coinAfterBroadcast,
           'faults_hit_after_send': b.faultsHit - faultsBeforeSend,

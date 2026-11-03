@@ -51,6 +51,7 @@ import 'package:coconut_wallet/utils/electrum_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../../../services/network/socket/socket_manager_test.mocks.dart';
@@ -158,6 +159,7 @@ class _Backend {
     }
 
     String arg(Invocation call, int i) => call.positionalArguments[i] as String;
+    when(electrum.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(electrum.getBalance(any, any)).thenAnswer((c) => answer('getBalance', arg(c, 1), () => balance(arg(c, 1))));
     when(electrum.getHistory(any, any)).thenAnswer((c) => answer('getHistory', arg(c, 1), () => history(arg(c, 1))));
     when(
@@ -220,7 +222,8 @@ class _Session {
   final SubscriptionService node;
   final IsolateStateManager isolateState;
   final NodeStateManager main;
-  _Session(this.node, this.isolateState, this.main);
+  final ManualTimers retryClock; // this isolate's retry timers; dropped with the session like a replaced isolate
+  _Session(this.node, this.isolateState, this.main, this.retryClock);
 
   factory _Session.start(MockElectrumService electrum) {
     final main = NodeStateManager(
@@ -244,6 +247,7 @@ class _Session {
     final utxos = UtxoRepository(realmManager);
     final callbacks = ScriptCallbackService();
     final wallets = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
+    final retryClock = ManualTimers();
     final sync = ScriptSyncService(
       state,
       BalanceSyncService(electrum, state, addresses, wallets),
@@ -258,11 +262,13 @@ class _Session {
       UtxoSyncService(electrum, state, utxos, transactions, addresses),
       addresses,
       callbacks,
+      createTimer: retryClock.create,
     );
     return _Session(
       SubscriptionService(electrum, state, addresses, SubscriptionRepository(realmManager), sync),
       state,
       main,
+      retryClock,
     );
   }
 
@@ -274,6 +280,13 @@ class _Session {
     await _settle();
     if (result.isFailure) main.setNodeSyncStateToFailed();
     return result.isSuccess;
+  }
+
+  /// The app stays open past the first retry delay (10 s): the pending bounded retry runs and the queue drains.
+  Future<void> waitForRetry() async {
+    expect(retryClock.pendingDelays, [const Duration(seconds: 10)], reason: 'one retry is pending after the failure');
+    retryClock.elapse();
+    await _drain(this);
   }
 }
 
@@ -558,7 +571,14 @@ void main() {
   }
 
   /// The spend confirms in block 102 and the server pushes [order]; then two recovery probes.
-  Future<Map<String, Object?>> confirmAndProbe(_Case c, _Session s, List<String> order, {void Function()? arm}) async {
+  /// [retry]: no other push follows the failed one, so the observation waits for the bounded retry.
+  Future<Map<String, Object?>> confirmAndProbe(
+    _Case c,
+    _Session s,
+    List<String> order, {
+    void Function()? arm,
+    bool retry = false,
+  }) async {
     final b = c.backend;
     b.heights[c.spend.transactionHash] = 102;
     if (c.unconfirmedFunding) b.heights[c.funding.transactionHash] = 102;
@@ -568,6 +588,7 @@ void main() {
       b.notify(address);
     }
     await _drain(s);
+    if (retry) await s.waitForRetry();
     final observed = <String, Object?>{'faults_hit': b.faultsHit - faultsBefore, ...c.ui(s)};
     b
       ..fault = ((_, __) => false)
@@ -644,7 +665,7 @@ void main() {
     for (final kind in onceFaults) {
       test('[b-single-push-$kind] sweep: only the input address is pushed', () async {
         final (c, s) = await pendingSend(sweep: true);
-        final observed = await confirmAndProbe(c, s, [c.input], arm: armOnce(c, kind));
+        final observed = await confirmAndProbe(c, s, [c.input], arm: armOnce(c, kind), retry: true);
         _report('b-single-push-$kind', 'input-only', observed);
         expect(observed['faults_hit'], 1);
         expectConfirmed(observed);
@@ -701,6 +722,7 @@ void main() {
         b.heights[c.spend.transactionHash] = 102;
         armOnce(c, kind)();
         final (s1, ok1) = await c.reconnect();
+        await s1.waitForRetry(); // the reconnect's one transient failure; nothing else happens on the server
         final observed = <String, Object?>{'faults_hit': b.faultsHit, 'subscribe_ok': ok1, ...c.ui(s1)};
         b
           ..fault = ((_, __) => false)
