@@ -464,6 +464,57 @@ void main() {
       expect(node.state.nodeSyncState, NodeSyncState.failed, reason: 'the retry itself failed');
     });
 
+    // Review round 3 (Claude): a retry can start on a wallet the screen shows as completed (a clean push or check drained
+    // after its failure). Another wallet finishing during that retry must not flip the home status to "connection
+    // failed": the retrying wallet counts as it was when the retry started.
+    for (final retrySucceeds in [true, false]) {
+      test('another wallet finishing during a retry keeps the home status (retry succeeds=$retrySucceeds)', () async {
+        final node = _Node();
+        final other = WalletMock.createSingleSigWalletItem(id: _walletId + 1);
+        for (final id in [_walletId, other.id]) {
+          node.manager.initWalletUpdateStatus(id);
+        }
+        final sync = createSync(state: node.manager);
+        final home = HomeConnectionStatusViewModel(
+          _Connectivity(),
+          node,
+          ValueNotifier<List<WalletItemBase>>([_wallet, other]),
+        );
+        addTearDown(() async {
+          home.dispose();
+          await node.close();
+        });
+        await sync.runQueued(other.id, () async => Result.success(true));
+        await failQueue(sync); // a subscription-level failure: a retry is armed
+        await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: _wallet); // a clean push
+        await pumpEventQueue();
+        expect(node.state.nodeSyncState, NodeSyncState.completed, reason: 'precondition: shown as completed');
+        final retry = Completer<Result<bool>>();
+        resubscribe = () => retry.future;
+        clock.elapse(); // the retry starts
+        await pumpEventQueue();
+        final states = <NodeSyncState>[];
+        final subscription = node.syncStateStream.listen(states.add);
+        addTearDown(subscription.cancel);
+        final network = <NetworkStatus>[];
+        home.addListener(() {
+          if (network.isEmpty || network.last != home.networkStatus) network.add(home.networkStatus);
+        });
+        await sync.runQueued(other.id, () async => Result.success(true), retryWallet: other); // e.g. a resume check
+        await pumpEventQueue();
+        expect(node.state.nodeSyncState, NodeSyncState.completed, reason: 'the retry has not ended');
+        retry.complete(retrySucceeds ? Result.success(true) : _failure);
+        await sync.runQueued(_walletId, () async {});
+        await pumpEventQueue();
+        expect(states, [
+          NodeSyncState.syncing, // the other wallet's queue
+          NodeSyncState.completed,
+          if (!retrySucceeds) NodeSyncState.failed, // only the retry's own end shows its failure
+        ]);
+        if (retrySucceeds) expect(network, isNot(contains(NetworkStatus.connectionFailed)));
+      });
+    }
+
     // A deleted wallet must not come back into the screen state as failed and keep the global state failed.
     for (final silentRetry in [false, true]) {
       final what = silentRetry ? 'its retry' : 'a sync';

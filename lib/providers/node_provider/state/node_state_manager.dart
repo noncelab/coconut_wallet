@@ -27,8 +27,9 @@ class NodeStateManager implements StateManagerInterface {
   Map<int, WalletFetchProgress> _fetchProgressByWallet = {};
   Map<int, WalletFetchProgress> get fetchProgressByWallet => _fetchProgressByWallet;
 
-  /// 자동 재시도 작업이 도는 지갑. 지갑 상태는 그대로 알리되 전체(홈 연결) 상태는 바꾸지 않는다([setWalletRetrying]).
-  final Set<int> _retryingWallets = {};
+  /// 자동 재시도 작업이 도는 지갑과 재시도를 시작할 때의 상태. 지갑 상태는 그대로 알리되, 전체(홈 연결) 상태는 이
+  /// 지갑을 재시도 전 상태로 보고 계산한다([setWalletRetrying]).
+  final Map<int, WalletUpdateInfo> _retryingWallets = {};
 
   /// 삭제된 지갑(ID는 다시 쓰이지 않는다). 삭제 때 돌던 작업이 늦게 보낸 상태가 지갑을 다시 등록해
   /// 전체 상태를 묶어 두지 않도록 버린다.
@@ -147,11 +148,12 @@ class NodeStateManager implements StateManagerInterface {
     final wallets = {..._state.registeredWallets, walletId: updated};
     _setState(
       newUpdatedWallets: wallets,
-      // 자동 재시도는 전체 상태를 바꾸지 않고(홈 상태가 깜빡이지 않게), 다른 지갑의 계산에도 진행 중으로 세지 않는다.
+      // 자동 재시도는 전체 상태를 바꾸지 않는다(홈 상태가 깜빡이지 않게). 다른 지갑이 끝날 때도 재시도 중인 지갑은
+      // 재시도 전 상태로 센다(isAllWalletsCompleted).
       newConnectionState:
-          _retryingWallets.contains(walletId)
+          _retryingWallets.containsKey(walletId)
               ? null
-              : wallets.values.any((wallet) => wallet.isSyncQueued && !_retryingWallets.contains(wallet.walletId))
+              : _asBeforeRetries(wallets).values.any((wallet) => wallet.isSyncQueued)
               ? NodeSyncState.syncing
               : isAllWalletsCompleted(updatedWallets: wallets)
               ? NodeSyncState.completed
@@ -190,7 +192,7 @@ class NodeStateManager implements StateManagerInterface {
 
     // 상태 업데이트
     _setState(
-      newConnectionState: _retryingWallets.contains(walletId) ? null : NodeSyncState.syncing,
+      newConnectionState: _retryingWallets.containsKey(walletId) ? null : NodeSyncState.syncing,
       newUpdatedWallets: {..._state.registeredWallets, walletId: walletUpdateInfo},
     );
   }
@@ -325,11 +327,16 @@ class NodeStateManager implements StateManagerInterface {
   @override
   void setWalletRetrying(int walletId, bool retrying) {
     if (retrying) {
-      _retryingWallets.add(walletId);
+      _retryingWallets[walletId] = _state.registeredWallets[walletId] ?? WalletUpdateInfo(walletId);
     } else {
       _retryingWallets.remove(walletId);
     }
   }
+
+  /// 재시도 중인 지갑을 재시도를 시작할 때의 상태로 바꾼 지갑 목록.
+  Map<int, WalletUpdateInfo> _asBeforeRetries(Map<int, WalletUpdateInfo> wallets) => {
+    for (final MapEntry(:key, :value) in wallets.entries) key: _retryingWallets[key] ?? value,
+  };
 
   void handleIsolateStateMessage(IsolateStateMessage message) {
     final methodName = message.methodName;
@@ -412,7 +419,7 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   bool isAllWalletsCompleted({Map<int, WalletUpdateInfo>? updatedWallets}) {
-    final registeredWallets = updatedWallets ?? _state.registeredWallets;
+    final registeredWallets = _asBeforeRetries(updatedWallets ?? _state.registeredWallets);
 
     for (final walletInfo in registeredWallets.values) {
       if (walletInfo.isSyncQueued ||
