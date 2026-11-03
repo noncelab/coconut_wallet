@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -80,4 +82,32 @@ void main() {
       expect(policy.onResumed(), ResumeConnectionCheck.none);
     });
   });
+
+  test('실패 상태로 백그라운드에 가며 닫힌 연결은 복귀 때 지갑 구독까지 다시 하도록 재연결한다', () async {
+    final node = _ClosedNode();
+
+    await AppGuard.reconnectNodeOnResume(node, ResumeConnectionCheck.none);
+
+    expect(node.calls, ['reconnect'], reason: 'initialize()만으로는 첫 초기화가 아니면 지갑을 구독하지 않는다');
+  });
+}
+
+/// 실패 상태에서 paused가 되어 AppGuard가 closeConnection()한 NodeProvider
+class _ClosedNode extends Fake implements NodeProvider {
+  final calls = <String>[];
+
+  @override
+  bool get isInitializing => false;
+
+  @override
+  bool get isInitialized => false;
+
+  @override
+  Future<void> initialize() async => calls.add('initialize');
+
+  @override
+  Future<Result<bool>> reconnect() async {
+    calls.add('reconnect');
+    return Result.success(true);
+  }
 }

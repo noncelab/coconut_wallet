@@ -79,6 +79,58 @@ class AppGuard extends StatefulWidget {
     }
   }
 
+  /// 앱 복귀 때 NodeProvider 연결을 확인하고 필요하면 재연결한다.
+  @visibleForTesting
+  static Future<void> reconnectNodeOnResume(NodeProvider nodeProvider, ResumeConnectionCheck resumeCheck) async {
+    // 1. 초기화가 진행 중이면 reconnect 무시
+    if (nodeProvider.isInitializing) {
+      Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');
+      return;
+    }
+
+    // 2. 연결이 없으면(실패 상태로 백그라운드에 가며 연결을 닫은 경우 등) 다시 연결하고 지갑을 다시 구독한다.
+    // initialize()만 하면 첫 초기화가 아닌 한 지갑을 구독하지 않아 동기화가 멈춘 채로 남는다.
+    if (!nodeProvider.isInitialized) {
+      Logger.log('AppGuard: NodeProvider is not initialized, reconnecting');
+      nodeProvider.reconnect();
+      return;
+    }
+
+    // 3. 초기 동기화(init/syncing) 중 reconnect 보류
+    final nodeSyncState = nodeProvider.state.nodeSyncState;
+    if (nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing) {
+      Logger.log('AppGuard: NodeProvider is syncing, skipping reconnect');
+      return;
+    }
+
+    // 4. 연결 에러가 있거나 ping이 실패한 경우 재연결
+    if (nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
+      nodeProvider.reconnect();
+      return;
+    }
+
+    // 5. 플래그가 정상이어도 백그라운드 체류가 길면 소켓이 끊겼거나 알림을 놓쳤을 수 있음
+    // 5분 이상이면 전체 재동기화, 30초 이상이면 소켓 확인
+    if (resumeCheck == ResumeConnectionCheck.resyncWallets) {
+      Logger.log('AppGuard: Long background, resyncing all wallets');
+      unawaited(nodeProvider.refreshWallets());
+      return;
+    }
+    if (resumeCheck == ResumeConnectionCheck.none) {
+      Logger.log('AppGuard: Connection is healthy, skipping reconnect');
+      return;
+    }
+
+    final probe = await nodeProvider.getLatestBlock();
+    if (probe.isFailure) {
+      Logger.log('AppGuard: Long background + held socket probe failed, forcing reconnect');
+      nodeProvider.reconnect();
+    } else {
+      Logger.log('AppGuard: Long background but held socket still alive, skipping reconnect');
+    }
+  }
+
   final Widget child;
   const AppGuard({super.key, required this.child});
 
@@ -172,59 +224,8 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   /// NodeProvider 재연결
-  Future<void> _handleNodeProviderReconnect(ResumeConnectionCheck resumeCheck) async {
-    // 1. 초기화가 진행 중이면 reconnect 무시
-    if (_nodeProvider.isInitializing) {
-      Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');
-      return;
-    }
-
-    // 2. 초기화 미완료 시 initialize 호출
-    if (!_nodeProvider.isInitialized) {
-      Logger.log('AppGuard: NodeProvider is not initialized yet, initializing instead of reconnect');
-      try {
-        await _nodeProvider.initialize();
-      } catch (e) {
-        // initialize() already exposes the connection failure through NodeProvider's state.
-        Logger.log('AppGuard: NodeProvider initialization failed: $e');
-      }
-      return;
-    }
-
-    // 3. 초기 동기화(init/syncing) 중 reconnect 보류
-    final nodeSyncState = _nodeProvider.state.nodeSyncState;
-    if (nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing) {
-      Logger.log('AppGuard: NodeProvider is syncing, skipping reconnect');
-      return;
-    }
-
-    // 4. 연결 에러가 있거나 ping이 실패한 경우 재연결
-    if (_nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
-      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
-      _nodeProvider.reconnect();
-      return;
-    }
-
-    // 5. 플래그가 정상이어도 백그라운드 체류가 길면 소켓이 끊겼거나 알림을 놓쳤을 수 있음
-    // 5분 이상이면 전체 재동기화, 30초 이상이면 소켓 확인
-    if (resumeCheck == ResumeConnectionCheck.resyncWallets) {
-      Logger.log('AppGuard: Long background, resyncing all wallets');
-      unawaited(_nodeProvider.refreshWallets());
-      return;
-    }
-    if (resumeCheck == ResumeConnectionCheck.none) {
-      Logger.log('AppGuard: Connection is healthy, skipping reconnect');
-      return;
-    }
-
-    final probe = await _nodeProvider.getLatestBlock();
-    if (probe.isFailure) {
-      Logger.log('AppGuard: Long background + held socket probe failed, forcing reconnect');
-      _nodeProvider.reconnect();
-    } else {
-      Logger.log('AppGuard: Long background but held socket still alive, skipping reconnect');
-    }
-  }
+  Future<void> _handleNodeProviderReconnect(ResumeConnectionCheck resumeCheck) =>
+      AppGuard.reconnectNodeOnResume(_nodeProvider, resumeCheck);
 
   /// NodeProvider 연결 해제
   void _handleNodeProviderDisconnect() {

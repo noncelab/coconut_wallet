@@ -202,6 +202,18 @@ void main() {
     expect(analytics.addResults, isEmpty);
   });
 
+  // AppGuard closes the connection when the app is paused with a failed sync; on resume it must reconnect.
+  test('after a closed connection, reconnect() subscribes the wallets again but initialize() alone does not', () async {
+    await loadExistingWallets();
+    await provider!.closeConnection();
+    await provider!.initialize(); // what AppGuard called on resume before
+    expect(isolate.bulkSubscriptions, hasLength(1), reason: 'only the startup subscription: the wallets stay idle');
+
+    await provider!.closeConnection();
+    expect((await provider!.reconnect()).isSuccess, isTrue); // what AppGuard calls now
+    expect(isolate.bulkSubscriptions, hasLength(2));
+  });
+
   test('already-loaded wallets are subscribed when the provider is created later', () async {
     wallets.value = [_Wallet(1)];
     load.value = WalletLoadState.loadCompleted;
