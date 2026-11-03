@@ -1934,6 +1934,20 @@ taproot:
     inheritance_condition: "Vererbungsbedingung"
 
 bitbox02_sign_screen:
+  tx_card:
+    title: "Transaktion"
+    send: "Senden"
+    to: "An"
+    fee: "Gebühr"
+    total_cost: "Gesamtkosten"
+  device_status:
+    title: "Gerätestatus"
+  idle:
+    waiting: "Warten auf Signatur"
+  done:
+    title: "Signiert"
+    description: "Transaktion wurde von BitBox02 signiert."
+  error_title: "Signatur fehlgeschlagen"
   wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
@@ -1942,12 +1956,16 @@ bitbox02_sign_screen:
     connected: "Verbundene Wallet"
   connected_wallet_label: "Verbundene Wallet"
   status:
-    connecting_device: "Connecting to BitBox02 via USB..."
-    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
-    preparing_data: "Preparing transaction data..."
-    confirm_on_device: "Confirm amount, address, and fee on your device"
+    connecting_device: "Verbindung zum BitBox02 über USB..."
+    connecting_device_ble: "BitBox02 wird über Bluetooth gesucht..."
+    preparing_data: "Transaktionsdaten werden vorbereitet..."
+    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
   btn:
+    sign: "Mit BitBox02 signieren"
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
+  state_label:
+    idle: "Warten auf Signatur"
+    signing: "Signieren"
 
 trezor_sign_screen:
   tx_card:
@@ -1967,6 +1985,7 @@ trezor_sign_screen:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."
   error_title: "Signatur fehlgeschlagen"
+  wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
   fingerprint_compare:

@@ -1073,6 +1073,7 @@ trezor_sign_screen:
     title: "Firmado"
     description: "La transacción ha sido firmada por Trezor."
   error_title: "Error al firmar"
+  wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada pertenece a '${wallet_name}'. Por favor conecte la billetera correcta."
   fingerprint_compare:

@@ -1070,6 +1070,7 @@ trezor_sign_screen:
     title: "署名完了"
     description: "Trezorがトランザクションに署名しました。"
   error_title: "署名に失敗"
+  wrong_wallet_title: "接続されたウォレットが正しくありません"
   device_mismatch: "接続されたデバイスがこのウォレットと一致しません。"
   device_mismatch_other_wallet: "接続されたウォレットは'${wallet_name}'に属しています。正しいウォレットを接続してください。"
   fingerprint_compare:
