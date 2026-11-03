@@ -316,6 +316,17 @@ void main() {
       expect(nextLaunch.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isTrue);
     });
 
+    test('지역 KR이나 KST로 KRW를 지킬 때는 통화를 다시 쓰지 않고 확인 플래그만 남긴다', () async {
+      final cases = [(const Locale('en', 'KR'), 'UTC'), (const Locale('en', 'US'), 'KST')];
+      for (final (locale, timeZoneName) in cases) {
+        // 통화 저장은 끝나지 않으므로, 통화를 다시 썼다면 플래그도 남지 않는다.
+        final prefs = _SlowPrefs({SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code});
+
+        expect(await resolve(prefs, locale, 'en', timeZoneName: timeZoneName), FiatCode.KRW);
+        expect(prefs.values[SharedPrefKeys.kHasCheckedRegionDefaultFiat], isTrue);
+      }
+    });
+
     test('설정에서 고른 통화는 플래그를 남겨, 앞서 플래그 저장이 실패했어도 보정이 바꾸지 않는다', () async {
       final prefs = await prefsWith({
         SharedPrefKeys.kSelectedFiat: FiatCode.USD.code,
