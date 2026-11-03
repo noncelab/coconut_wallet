@@ -39,7 +39,7 @@ class ScriptSyncService {
   final Timer Function(Duration delay, void Function() callback) _createTimer;
   bool Function() _isConnected = () => true;
   final double Function() _random;
-  final Map<int, WalletItemBase> _retryWallets = {}; // 이 isolate에서 처음 등록된 지갑 객체
+  final Map<int, WalletItemBase> _retryWallets = {}; // 재시도에 쓸 지갑 객체(구독을 가진 객체가 우선)
   final Map<int, Timer> _retryTimers = {};
   final Map<int, int> _retryAttempts = {};
   final Map<int, int> _retryGenerations = {};
@@ -236,12 +236,22 @@ class ScriptSyncService {
   /// 지갑 ID별로 작업을 도착 순서대로 직렬 처리합니다.
   /// 이미 이 큐 안에서 실행 중인 작업(예: [_processScriptStatus])에서
   /// 재귀적으로 호출하면 자기 자신의 완료를 기다리게 되어 데드락이 나므로, 중첩 호출하지 않도록 주의합니다.
-  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 이 isolate에서 처음 등록된 지갑 객체
-  /// (구독 콜백과 구독 캐시를 가진 객체)를 쓴다. 메인 isolate가 휴면·조회 확인에 보내는 사본은 캐시가 비어 있어,
-  /// 그것으로 재시도하면 모든 스크립트를 다시 구독한다.
-  Future<T> runQueued<T>(int walletId, Future<T> Function() task, {WalletItemBase? retryWallet}) {
+  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 구독을 가진 지갑 객체(구독 요청과 푸시가
+  /// 넘기는 객체: 구독 콜백과 구독 캐시를 가짐)를 쓴다. 메인 isolate가 휴면·조회 확인에 보내는 사본
+  /// ([retryWalletIsCopy])은 캐시가 비어 있어 그것으로 재시도하면 모든 스크립트를 다시 구독하므로, 구독을 가진 객체가
+  /// 아직 등록되지 않았을 때만 쓴다.
+  Future<T> runQueued<T>(
+    int walletId,
+    Future<T> Function() task, {
+    WalletItemBase? retryWallet,
+    bool retryWalletIsCopy = false,
+  }) {
     if (retryWallet != null && !_removedWallets.contains(walletId)) {
-      _retryWallets.putIfAbsent(walletId, () => retryWallet);
+      if (retryWalletIsCopy) {
+        _retryWallets.putIfAbsent(walletId, () => retryWallet);
+      } else {
+        _retryWallets[walletId] = retryWallet;
+      }
     }
     final startsQueue = !_walletSyncQueues.containsKey(walletId);
     final previousSync = _walletSyncQueues[walletId] ?? Future<void>.value();

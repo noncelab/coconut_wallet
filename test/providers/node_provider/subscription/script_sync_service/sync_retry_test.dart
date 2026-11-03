@@ -244,6 +244,24 @@ void main() {
     expect(clock.pendingDelays, isEmpty);
   });
 
+  // Review round 2 (Codex 3, Claude F): a dormant or viewed check can reach a new isolate before the bulk subscription
+  // and register its main-isolate copy first. The object that owns the subscription must still own the retry.
+  test('the subscription owner replaces an earlier main-isolate copy as the retry wallet', () async {
+    final sync = createSync();
+    WalletItemBase? retried;
+    sync.subscribeWallet = (wallet) {
+      retried = wallet;
+      return resubscribe();
+    };
+    final copy = WalletMock.createSingleSigWalletItem(id: _walletId); // what a dormant check sends
+    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: copy, retryWalletIsCopy: true);
+    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: _wallet); // the bulk subscribe
+    await sync.runQueued(_walletId, () async => _failure, retryWallet: copy, retryWalletIsCopy: true); // a failed check
+    clock.elapse();
+    await pumpEventQueue();
+    expect(identical(retried, _wallet), isTrue);
+  });
+
   // Review round 1 (Codex probe): cancellation while the running retry awaits its balance re-fetch. This is also the
   // test that fails without the generation check (Claude nit 6): the registration alone cannot tell the cancel.
   test('[codex-cancel-running-retry] cancellation during balance retry must prevent resubscribe', () async {

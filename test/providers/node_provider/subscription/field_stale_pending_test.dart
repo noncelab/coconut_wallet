@@ -1067,6 +1067,24 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 2 (Codex 3, Claude F): a wallet screen opened during the startup subscription runs a dormant check
+    // before the bulk loop reaches the wallet. A retry after that must still use the subscribing object.
+    test('[c-retry-first-registration-copy] an early dormant check does not make the retry resubscribe', () async {
+      final c = _Case();
+      await c.init(withNeighbour: true, dormantNeighbour: true);
+      final s = _Session.start(c.electrum);
+      expect((await s.node.syncDormantAddresses(c.walletCopy())).isSuccess, isTrue);
+      expect(await s.subscribe(c.wallet), isTrue);
+      var hits = 0;
+      c.backend.fault = (m, k) => m == 'getHistory' && k == c.input && hits++ == 0;
+      c.backend.notify(c.input);
+      await _drain(s);
+      expect(hits, 1, reason: 'precondition: the push failed once');
+      final before = c.backend.calls.length;
+      await s.waitForRetry();
+      expect(c.backend.calls.sublist(before).where((call) => call.startsWith('subscribe:')), isEmpty);
+    });
+
     // Review round 2 (Claude C): IsolateController.subscribeWallets works through a wallet list taken before a deletion.
     // When it reaches the deleted wallet it must not subscribe it again.
     test('[c-stale-subscribe-after-deletion] a late bulk subscribe does not bring a deleted wallet back', () async {

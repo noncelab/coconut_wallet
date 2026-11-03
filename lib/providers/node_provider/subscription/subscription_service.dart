@@ -87,19 +87,29 @@ class SubscriptionService {
 
   /// dormant 주소들의 잔액을 재검증한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) {
-    return _scriptSyncService.runQueued(walletItem.id, () async {
-      await _scriptSyncService.syncDormantAddresses(walletItem);
-      return Result.success(true);
-    }, retryWallet: walletItem);
+    return _scriptSyncService.runQueued(
+      walletItem.id,
+      () async {
+        await _scriptSyncService.syncDormantAddresses(walletItem);
+        return Result.success(true);
+      },
+      retryWallet: walletItem,
+      retryWalletIsCopy: true,
+    );
   }
 
   /// 화면에서 실제로 보고 있는 주소들의 잔액을 온디맨드로 확인한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
   /// 반환값은 이번 호출로 새로 사용됨이 발견된 주소 목록이다.
   Future<Result<List<WalletAddress>>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) {
-    return _scriptSyncService.runQueued(walletItem.id, () async {
-      final discovered = await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
-      return Result.success(discovered);
-    }, retryWallet: walletItem);
+    return _scriptSyncService.runQueued(
+      walletItem.id,
+      () async {
+        final discovered = await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
+        return Result.success(discovered);
+      },
+      retryWallet: walletItem,
+      retryWalletIsCopy: true,
+    );
   }
 
   /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
