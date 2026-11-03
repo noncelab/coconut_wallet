@@ -55,6 +55,39 @@ void main() {
       expect(result, '패스포트');
     });
 
+    test('패스포트 프라임 모델이면 "패스포트 프라임"을 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [], passportModel: 'passport-prime');
+      expect(result, '패스포트 프라임');
+    });
+
+    test('패스포트 코어 모델이면 "패스포트 코어"를 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [], passportModel: 'passport-core');
+      expect(result, '패스포트 코어');
+    });
+
+    test('알 수 없는 패스포트 모델이면 기본 이름을 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [], passportModel: 'passport-x');
+      expect(result, '패스포트');
+    });
+
+    test('패스포트 프라임 지갑이 하나 있을 때는 "패스포트 프라임 2"를 반환', () {
+      final result = getNextThirdPartyWalletName(
+        WalletImportSource.passport,
+        ['패스포트 프라임'],
+        passportModel: 'passport-prime',
+      );
+      expect(result, '패스포트 프라임 2');
+    });
+
+    test('패스포트 코어 번호는 다른 패스포트 지갑 이름과 별도로 매김', () {
+      final result = getNextThirdPartyWalletName(
+        WalletImportSource.passport,
+        ['패스포트', '패스포트 프라임', '패스포트 코어'],
+        passportModel: 'passport-core',
+      );
+      expect(result, '패스포트 코어 2');
+    });
+
     test('코코넛볼트를 입력하면 예외 발생', () {
       expect(() => getNextThirdPartyWalletName(WalletImportSource.coconutVault, []), throwsAssertionError);
     });
