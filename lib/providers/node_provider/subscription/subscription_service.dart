@@ -228,7 +228,12 @@ class SubscriptionService {
       return;
     }
 
-    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+    // 같은 주소를 가진 다른 지갑(예: 같은 지갑의 보기 전용 사본)의 구독은 남긴다.
+    await _electrumService.unsubscribeScriptForWallet(
+      walletItem.walletBase.addressType,
+      address,
+      walletId: walletItem.id,
+    );
     walletItem.subscribedScriptMap.remove(script);
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
@@ -483,7 +488,11 @@ class SubscriptionService {
 
     await Future.wait(
       addressesToUnsubscribe.map((address) {
-        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+        return _electrumService.unsubscribeScriptForWallet(
+          walletItem.walletBase.addressType,
+          address,
+          walletId: walletItem.id,
+        );
       }),
     );
   }

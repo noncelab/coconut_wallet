@@ -186,7 +186,7 @@ class _Backend {
         return status(arg(c, 1));
       }),
     );
-    when(electrum.unsubscribeScript(any, any)).thenAnswer((c) async {
+    when(electrum.unsubscribeScriptForWallet(any, any, walletId: anyNamed('walletId'))).thenAnswer((c) async {
       listeners.remove(arg(c, 1));
       return true;
     });
