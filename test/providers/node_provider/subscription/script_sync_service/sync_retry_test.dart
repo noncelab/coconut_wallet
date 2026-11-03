@@ -254,9 +254,34 @@ void main() {
       return resubscribe();
     };
     final copy = WalletMock.createSingleSigWalletItem(id: _walletId); // what a dormant check sends
-    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: copy, retryWalletIsCopy: true);
-    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: _wallet); // the bulk subscribe
-    await sync.runQueued(_walletId, () async => _failure, retryWallet: copy, retryWalletIsCopy: true); // a failed check
+    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: copy);
+    // the bulk subscribe
+    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: _wallet, ownsSubscription: true);
+    await sync.runQueued(_walletId, () async => _failure, retryWallet: copy); // a failed check
+    clock.elapse();
+    await pumpEventQueue();
+    expect(identical(retried, _wallet), isTrue);
+  });
+
+  // Review round 3 (both reviewers): a dormant or viewed check that re-activates an address attaches its callback with
+  // its main-isolate copy, so that address's pushes carry the copy. They must not replace the subscription owner.
+  test('a push that carries a main-isolate copy does not replace the subscription owner', () async {
+    final sync = createSync();
+    WalletItemBase? retried;
+    sync.subscribeWallet = (wallet) {
+      retried = wallet;
+      return resubscribe();
+    };
+    final copy = WalletMock.createSingleSigWalletItem(id: _walletId);
+    await sync.runQueued(_walletId, () async => Result.success(true), retryWallet: _wallet, ownsSubscription: true);
+    final push = SubscribeScriptStreamDto(
+      walletItem: copy,
+      scriptStatus: ScriptStatusMock.createMockScriptStatus(_wallet, 0),
+      updateUsedIndex: false,
+    );
+    when(ScriptSyncServiceMock.electrumService.getHistory(any, any)).thenThrow(StateError('timeout'));
+    await sync.syncScriptStatus(push); // the push fails
+    expect(clock.pendingDelays, isNotEmpty, reason: 'precondition: the failed push armed a retry');
     clock.elapse();
     await pumpEventQueue();
     expect(identical(retried, _wallet), isTrue);

@@ -236,21 +236,21 @@ class ScriptSyncService {
   /// 지갑 ID별로 작업을 도착 순서대로 직렬 처리합니다.
   /// 이미 이 큐 안에서 실행 중인 작업(예: [_processScriptStatus])에서
   /// 재귀적으로 호출하면 자기 자신의 완료를 기다리게 되어 데드락이 나므로, 중첩 호출하지 않도록 주의합니다.
-  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 구독을 가진 지갑 객체(구독 요청과 푸시가
-  /// 넘기는 객체: 구독 콜백과 구독 캐시를 가짐)를 쓴다. 메인 isolate가 휴면·조회 확인에 보내는 사본
-  /// ([retryWalletIsCopy])은 캐시가 비어 있어 그것으로 재시도하면 모든 스크립트를 다시 구독하므로, 구독을 가진 객체가
-  /// 아직 등록되지 않았을 때만 쓴다.
+  /// [retryWallet]을 주면 큐가 실패로 끝났을 때 자동 재시도한다. 재시도는 지갑 구독([ownsSubscription])이 넘긴 객체,
+  /// 곧 구독 콜백과 전체 구독 캐시를 가진 객체를 쓴다. 휴면·조회 확인이 보내는 메인 isolate 사본과, 그 확인이 다시
+  /// 붙인 콜백을 타고 오는 푸시의 사본은 캐시가 비었거나 일부라 그것으로 재시도하면 스크립트를 거의 다 다시 구독하므로,
+  /// 비어 있는 자리만 채운다.
   Future<T> runQueued<T>(
     int walletId,
     Future<T> Function() task, {
     WalletItemBase? retryWallet,
-    bool retryWalletIsCopy = false,
+    bool ownsSubscription = false,
   }) {
     if (retryWallet != null && !_removedWallets.contains(walletId)) {
-      if (retryWalletIsCopy) {
-        _retryWallets.putIfAbsent(walletId, () => retryWallet);
-      } else {
+      if (ownsSubscription) {
         _retryWallets[walletId] = retryWallet;
+      } else {
+        _retryWallets.putIfAbsent(walletId, () => retryWallet);
       }
     }
     final startsQueue = !_walletSyncQueues.containsKey(walletId);

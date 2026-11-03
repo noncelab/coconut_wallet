@@ -1101,6 +1101,32 @@ void main() {
       return (c, s, funding2);
     }
 
+    // Review round 3 (both reviewers): a dormant neighbour is paid again; a resume dormant check re-activates it with a
+    // main-isolate copy, so its push carries that copy. A failure on that push must not make the retry resubscribe the
+    // whole wallet with the copy.
+    test('[r3-split-owner] a push through a re-activated address keeps the subscription owner', () async {
+      final c = _Case();
+      await c.init(withNeighbour: true, dormantNeighbour: true);
+      final s = _Session.start(c.electrum);
+      final b = c.backend;
+      expect(await s.subscribe(c.wallet), isTrue);
+      expect(b.listeners.containsKey(c.neighbour), isFalse, reason: 'precondition: the spent neighbour is dormant');
+      final payment = _tx([(c.faucet.transactionHash, 6)], [(c.neighbour!, 70000), (_external, 4929000)]);
+      b.put(payment, 0);
+      final copy = c.walletCopy();
+      expect((await s.node.syncDormantAddresses(copy)).isSuccess, isTrue);
+      expect(b.listeners.containsKey(c.neighbour), isTrue, reason: 'precondition: re-activated with the copy');
+      var hits = 0;
+      b.fault = (m, k) => m == 'getHistory' && k == c.neighbour && hits++ == 0;
+      b.notify(c.neighbour!);
+      await _drain(s);
+      expect(hits, 1, reason: 'precondition: the push failed once');
+      final before = b.calls.length;
+      await s.waitForRetry();
+      final subscribes = b.calls.sublist(before).where((call) => call.startsWith('subscribe:')).length;
+      expect(subscribes, lessThanOrEqualTo(1), reason: 'only the re-activated address is missing from the owner cache');
+    });
+
     // Review round 2 (Codex 3, Claude F): a wallet screen opened during the startup subscription runs a dormant check
     // before the bulk loop reaches the wallet. A retry after that must still use the subscribing object.
     test('[c-retry-first-registration-copy] an early dormant check does not make the retry resubscribe', () async {
