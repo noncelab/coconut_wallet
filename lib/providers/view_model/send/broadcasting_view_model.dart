@@ -215,16 +215,20 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<bool> isElectrumServerConnected() async {
-    try {
-      // getLatestBlock 호출하여 실제 네트워크 연결 상태 확인
-      final result = await _nodeProvider.getLatestBlock();
+    final isOnion = _nodeProvider.host.trim().toLowerCase().endsWith('.onion');
 
-      if (result.isSuccess) {
-        return true;
-      } else {
-        return false;
-      }
+    // 예시 기준: 일반 노드 10초, Tor 100초
+    final timeout = Duration(seconds: isOnion ? 100 : 10);
+
+    try {
+      final result = await _nodeProvider.getLatestBlock().timeout(timeout);
+
+      return result.isSuccess;
+    } on TimeoutException {
+      Logger.log('[Send] 연결 확인 시간 초과: ${timeout.inSeconds}s');
+      return false;
     } catch (e) {
+      Logger.log('[Send] 연결 확인 실패: $e');
       return false;
     }
   }
