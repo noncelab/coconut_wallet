@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
-import 'package:coconut_wallet/app/router/app_route_names.dart';
-import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
@@ -14,7 +12,6 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_
 import 'package:coconut_wallet/widgets/features/wallet/add/wallet_add_options.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -255,36 +252,13 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     return box.localToGlobal(Offset.zero) & box.size;
   }
 
-  void _openWallet(WalletItemBase wallet) {
-    final openedWalletId = ValueNotifier(wallet.id);
-    final args = WalletDetailRouteArgs(
-      id: wallet.id,
-      walletIds: [for (final item in _viewModel.wallets) item.id],
-      onFocusChanged: (walletId) {
-        openedWalletId.value = walletId;
-        _showWallet(walletId);
-      },
-    );
-    final routeBuilder = context.findAncestorWidgetOfExactType<WidgetsApp>()?.routes?[AppRouteNames.walletDetail];
-    Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
-        transitionDuration: WalletCardDetailScreen.transitionDuration,
-        reverseTransitionDuration: WalletCardDetailScreen.transitionDuration,
-        pageBuilder:
-            (routeContext, _, __) =>
-                routeBuilder?.call(routeContext) ??
-                WalletCardDetailScreen(id: args.id, walletIds: args.walletIds, onFocusChanged: args.onFocusChanged),
-        transitionsBuilder:
-            (_, animation, __, child) => WalletDetailExpandTransition(
-              animation: animation,
-              walletId: openedWalletId,
-              cardRectOf: _cardRectOf,
-              child: child,
-            ),
-      ),
-    );
-  }
+  void _openWallet(WalletItemBase wallet) => WalletDetailExpandTransition.open(
+    context,
+    walletId: wallet.id,
+    walletIds: [for (final item in _viewModel.wallets) item.id],
+    cardRectOf: _cardRectOf,
+    onFocusChanged: _showWallet,
+  );
 
   void _addWallet() => openWalletAddFor(context, _viewModel.kind);
 

@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -86,14 +87,15 @@ class WalletStackDefinition extends HomeItemDefinition {
     final isWide = item.span == HomeSpan.wide;
     if (viewModel.isWalletDataLoading) return HomeWidgetSkeleton(wide: isWide);
     final now = DateTime.now();
+    final wallets = switch (stackKind) {
+      WalletStackKind.hot => viewModel.hotWallets,
+      WalletStackKind.watchOnly => viewModel.watchOnlyWallets,
+      WalletStackKind.all => viewModel.wallets,
+    };
     return WalletStackView(
       key: ValueKey('$id-${item.id}-${item.span.toJson()}'),
       keyPrefix: id,
-      wallets: switch (stackKind) {
-        WalletStackKind.hot => viewModel.hotWallets,
-        WalletStackKind.watchOnly => viewModel.watchOnlyWallets,
-        WalletStackKind.all => viewModel.wallets,
-      },
+      wallets: wallets,
       size: isWide ? WalletCardSize.wide : WalletCardSize.small,
       emptyText: walletStackEmptyText(stackKind),
       balanceTextOf:
@@ -108,7 +110,14 @@ class WalletStackDefinition extends HomeItemDefinition {
                 return last == null ? null : formatHomeRelativeTime(last, now);
               },
       onPressed: () => WalletStackListScreen.open(context, kind: stackKind),
-      onOpen: (request) => WalletStackListScreen.open(context, kind: stackKind, request: request),
+      onOpen:
+          (request) => WalletDetailExpandTransition.open(
+            context,
+            walletId: request.front.id,
+            walletIds: [for (final wallet in wallets) wallet.id],
+            cardRectOf: (_) => request.stackRect(),
+            onFocusChanged: request.showWallet,
+          ),
       emptyActionText: walletStackEmptyActionText(stackKind),
       onEmptyPressed: () => openWalletAddFor(context, stackKind),
       onAddPressed: stackKind == WalletStackKind.all ? () => openWalletAddFor(context, stackKind) : null,

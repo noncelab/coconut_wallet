@@ -17,14 +17,20 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-/// 스택을 눌러 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
-/// 목록에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다.
+/// 스택에서 지갑 상세나 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
+/// 열린 화면에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다. [stackRect]는 스택의 화면 좌표다.
 class WalletStackOpenRequest {
   final WalletItemBase front;
   final Object Function(int walletId) heroTagOf;
   final void Function(int walletId) showWallet;
+  final Rect? Function() stackRect;
 
-  const WalletStackOpenRequest({required this.front, required this.heroTagOf, required this.showWallet});
+  const WalletStackOpenRequest({
+    required this.front,
+    required this.heroTagOf,
+    required this.showWallet,
+    required this.stackRect,
+  });
 }
 
 /// 지갑 카드가 포개진 위젯. 왼쪽으로 넘기면 앞 카드는 작아지며 왼쪽으로 물러나고, 다음 카드는 오른쪽에서 커지며 들어온다.
@@ -67,11 +73,21 @@ class WalletStackView extends StatefulWidget {
     this.onAddPressed,
   });
 
+  /// 지금 화면에 보이는 [keyPrefix] 스택을 펼칠 때 넘길 값. 보이는 스택이 없으면 null
+  static WalletStackOpenRequest? visibleRequest(String keyPrefix) {
+    for (final state in _WalletStackViewState._mounted) {
+      if (state.widget.keyPrefix == keyPrefix && state._isVisible) return state._request();
+    }
+    return null;
+  }
+
   @override
   State<WalletStackView> createState() => _WalletStackViewState();
 }
 
 class _WalletStackViewState extends State<WalletStackView> {
+  static final Set<_WalletStackViewState> _mounted = {};
+
   static const _indicatorHideDelay = Duration(milliseconds: 800);
 
   final PageController _controller = PageController();
@@ -92,7 +108,14 @@ class _WalletStackViewState extends State<WalletStackView> {
   int get _pageCount => widget.wallets.length + (widget.onAddPressed == null ? 0 : 1);
 
   @override
+  void initState() {
+    super.initState();
+    _mounted.add(this);
+  }
+
+  @override
   void dispose() {
+    _mounted.remove(this);
     _hideIndicator?.cancel();
     _cardRepeat?.cancel();
     _indicatorRepeat?.cancel();
@@ -368,6 +391,28 @@ class _WalletStackViewState extends State<WalletStackView> {
     if (index >= 0 && _controller.hasClients && _page.round() != index) _controller.jumpToPage(index);
   }
 
+  Rect? _stackRect() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  bool get _isVisible {
+    if (!mounted || widget.wallets.isEmpty || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
+    if (!TickerMode.of(context)) return false;
+    return _stackRect()?.overlaps(Offset.zero & MediaQuery.sizeOf(context)) ?? false;
+  }
+
+  WalletStackOpenRequest _request() {
+    final index = _page.round().clamp(0, widget.wallets.length - 1);
+    return WalletStackOpenRequest(
+      front: widget.wallets[index],
+      heroTagOf: _heroTagOf,
+      showWallet: _showWallet,
+      stackRect: _stackRect,
+    );
+  }
+
   void _onTap() {
     if (widget.onAddPressed != null && _page.round() >= widget.wallets.length) {
       widget.onAddPressed!();
@@ -378,8 +423,7 @@ class _WalletStackViewState extends State<WalletStackView> {
       widget.onPressed?.call();
       return;
     }
-    final index = _page.round().clamp(0, widget.wallets.length - 1);
-    onOpen(WalletStackOpenRequest(front: widget.wallets[index], heroTagOf: _heroTagOf, showWallet: _showWallet));
+    onOpen(_request());
   }
 
   Widget _card(WalletItemBase wallet) {

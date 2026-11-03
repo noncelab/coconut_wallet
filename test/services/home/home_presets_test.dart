@@ -45,6 +45,7 @@ void main() {
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
       HomeItemIds.shortcut(FeatureIds.hodlInsights),
+      HomeItemIds.shortcut(FeatureIds.myWallets),
       HomeItemIds.recentTransactions,
     ]);
   });

@@ -20,6 +20,8 @@ import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/model/home/home_item_ids.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/screens/settings/tools/glossary_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -321,7 +323,13 @@ List<FeatureItem> builtinFeatures() {
       label: () => _labels.my_wallets,
       iconPath: FeatureShortcutIconPath.myWallets,
       shortcutEligible: true,
-      launch: (context, _) => WalletStackListScreen.open(context, kind: WalletStackKind.all, title: _labels.my_wallets),
+      launch:
+          (context, _) => WalletStackListScreen.open(
+            context,
+            kind: WalletStackKind.all,
+            title: _labels.my_wallets,
+            request: WalletStackView.visibleRequest(HomeItemIds.allWalletStack),
+          ),
     ),
     FeatureItem(
       id: FeatureIds.transactionDraft,

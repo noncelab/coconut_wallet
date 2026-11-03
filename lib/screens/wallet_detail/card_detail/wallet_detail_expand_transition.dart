@@ -1,7 +1,10 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +32,44 @@ class WalletDetailExpandTransition extends StatelessWidget {
   });
 
   static const double _cardRadius = 20;
+
+  /// [walletId] 지갑 상세를 그 카드 자리에서 펼쳐 연다. 상세에서 다른 지갑으로 넘기면 [onFocusChanged]로 알린다.
+  static Future<void> open(
+    BuildContext context, {
+    required int walletId,
+    required List<int> walletIds,
+    required Rect? Function(int walletId) cardRectOf,
+    void Function(int walletId)? onFocusChanged,
+  }) {
+    final openedWalletId = ValueNotifier(walletId);
+    final args = WalletDetailRouteArgs(
+      id: walletId,
+      walletIds: walletIds,
+      onFocusChanged: (focusedWalletId) {
+        openedWalletId.value = focusedWalletId;
+        onFocusChanged?.call(focusedWalletId);
+      },
+    );
+    final routeBuilder = context.findAncestorWidgetOfExactType<WidgetsApp>()?.routes?[AppRouteNames.walletDetail];
+    return Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
+        transitionDuration: WalletCardDetailScreen.transitionDuration,
+        reverseTransitionDuration: WalletCardDetailScreen.transitionDuration,
+        pageBuilder:
+            (routeContext, _, __) =>
+                routeBuilder?.call(routeContext) ??
+                WalletCardDetailScreen(id: args.id, walletIds: args.walletIds, onFocusChanged: args.onFocusChanged),
+        transitionsBuilder:
+            (_, animation, __, child) => WalletDetailExpandTransition(
+              animation: animation,
+              walletId: openedWalletId,
+              cardRectOf: cardRectOf,
+              child: child,
+            ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
