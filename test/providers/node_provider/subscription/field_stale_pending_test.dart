@@ -675,6 +675,40 @@ void main() {
     });
   }
 
+  test('[claude-r2-same-address-coin] healthy sibling coin reaches the UTXO table while the other tx fails', () async {
+    final c = _Case();
+    await c.init();
+    final s = _Session.start(c.electrum);
+    expect(await s.subscribe(c.wallet), isTrue);
+    final parent = _tx([(c.faucet.transactionHash, 2)], [(_external, 200000)]);
+    final good = _tx([(c.faucet.transactionHash, 1)], [(c.input, 41000), (_external, 4958000)]);
+    final bad = _tx([(parent.transactionHash, 0)], [(c.input, 25000), (_external, 174000)]);
+    c.backend
+      ..put(parent, 101)
+      ..put(good, 102)
+      ..put(bad, 102);
+    c.backend.fault = (method, hash) => method == 'getTransaction' && hash == parent.transactionHash;
+    c.backend.notify(c.input);
+    await _drain(s);
+    for (var i = 0; i < 4; i++) {
+      s.retryClock.elapse();
+      await _drain(s);
+    }
+    final goodRecord = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
+      _walletId,
+      good.transactionHash,
+    );
+    final goodCoin = c._utxo(getUtxoId(good.transactionHash, 0));
+    final listedByServer = c.backend.unspent(c.input).any((u) => u.txHash == good.transactionHash);
+    c.backend.fault = (_, __) => false;
+    s.retryClock.elapse();
+    await _drain(s);
+    expect(goodRecord?.blockHeight, 102);
+    expect(listedByServer, isTrue);
+    expect(c._utxo(getUtxoId(good.transactionHash, 0)), 'unspent');
+    expect(goodCoin, 'unspent', reason: 'listunspent tolerates the missing sibling record');
+  });
+
   test('[codex-pr2-mixed-real] real loader records healthy same-address sibling despite poisoned parent', () async {
     final c = _Case();
     await c.init();

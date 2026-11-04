@@ -619,7 +619,7 @@ class ScriptSyncService {
           scriptStatuses.where((status) {
             final result = transactionResults[status];
             return result != null && _scriptCallbackService.areAllTransactionsCompleted(walletItem.id, result.txHashes);
-          }).toList();
+          }).toSet();
       if (readyScripts.length != scriptStatuses.length) {
         chunkError ??= AsyncError(StateError('Incomplete transaction dependencies'), StackTrace.current);
       }
@@ -638,7 +638,14 @@ class ScriptSyncService {
       final utxoStartTime = DateTime.now();
 
       final utxosApplied = await Future.wait(
-        readyScripts.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
+        scriptStatuses.map(
+          (status) => _utxoSyncService.fetchScriptUtxo(
+            walletItem,
+            status,
+            inBatchProcess: true,
+            preserveOutgoing: !readyScripts.contains(status),
+          ),
+        ),
       );
       reportProgress(scriptStatuses.length);
       // listunspent를 반영하지 못한 주소가 있으면 아래 정리가 그 주소의 코인을 지울 근거가 없다.

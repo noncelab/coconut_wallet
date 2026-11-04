@@ -255,7 +255,7 @@ void main() {
       expect(remainingUtxos.where((u) => u.utxoId == outgoingUtxo.utxoId).isEmpty, isTrue);
     });
 
-    test('기록 없는 outgoing UTXO는 이번 배치에서 listunspent로 확인한 주소의 것만 정리한다', () async {
+    test('배치 정리는 거래와 listunspent를 확인한 주소의 outgoing UTXO만 처리한다', () async {
       const String unrecordedTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
       const String confirmedTxHash = '0000000000000000000000000000000000000000000000000000000000000123';
       await transactionRepository.addAllTransactions(testWalletId, [
@@ -282,7 +282,11 @@ void main() {
       final remaining = utxoRepository.getUtxoStateList(testWalletId).map((u) => u.utxoId).toSet();
       expect(remaining.contains(reconciled.utxoId), isFalse);
       expect(remaining.contains(notReconciled.utxoId), isTrue, reason: 'its own address has not been synced yet');
-      expect(remaining.contains(spentByConfirmed.utxoId), isFalse, reason: 'a confirmed spend deletes regardless');
+      expect(remaining.contains(spentByConfirmed.utxoId), isTrue, reason: 'batch cleanup excludes this address too');
+
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, reconciledAddresses: {spentByConfirmed.to});
+      expect(utxoRepository.getUtxoState(testWalletId, spentByConfirmed.utxoId), isNull);
+      expect(utxoRepository.getUtxoState(testWalletId, notReconciled.utxoId), isNotNull);
     });
 
     test('존재하지 않는 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {

@@ -39,10 +39,17 @@ class UtxoSyncService {
     WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
+    bool preserveOutgoing = false,
   }) async {
     try {
       // UTXO 목록 조회
       final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
+      if (utxos != null && preserveOutgoing) {
+        // 거래 조회가 덜 끝난 주소도 새 코인을 반영하되, 지연된 listunspent로 입력 예약을 풀지 않는다.
+        final reserved =
+            _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.outgoing).map((u) => u.utxoId).toSet();
+        utxos.removeWhere((utxo) => reserved.contains(utxo.utxoId));
+      }
 
       final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
 
@@ -216,17 +223,17 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  /// [reconciledAddresses]를 주면, 쓴 거래의 기록이 없는 outgoing 코인은 이번에 listunspent로 확인한 주소의 것만 지웁니다.
+  /// [reconciledAddresses]를 주면, 거래와 listunspent를 모두 확인한 주소의 미확정 코인만 정리합니다.
   /// 기록 전에 예약만 된 코인(다른 주소 이벤트에서 조회가 실패한 거래)이 자기 주소 확인 없이 영구 삭제되지 않게 한다.
   Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {Set<String>? reconciledAddresses}) async {
     final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
+      if (reconciledAddresses != null && !reconciledAddresses.contains(utxo.to)) continue;
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
-        final reconciled = reconciledAddresses == null || reconciledAddresses.contains(utxo.to);
-        if ((tx == null && reconciled) || (tx != null && tx.blockHeight > 0)) {
+        if (tx == null || tx.blockHeight > 0) {
           orphanUtxoSet.add(utxo);
         }
       } else if (utxo.status == UtxoStatus.incoming) {

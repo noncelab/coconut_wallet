@@ -1,5 +1,7 @@
 // A batch fails only for its own work: an earlier balance failure elsewhere in the wallet must not abort it.
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import '../../../../mock/transaction_mock.dart';
@@ -95,15 +97,14 @@ void main() {
     );
 
     expect(historyRequests.toSet(), batch.map((s) => s.address).toSet());
-    verifyNever(electrum.getUnspentList(any, batch.first.address));
-    for (final script in batch.skip(1)) {
+    for (final script in batch) {
       verify(electrum.getUnspentList(any, script.address)).called(1);
     }
     final progress = ScriptSyncServiceMock.stateManager.fetchProgressByWallet[walletId]!;
     expect((progress.dispatched, progress.completed), (45, 45));
   });
 
-  test('a failed shared transaction gates only dependent scripts and healthy addresses get their coins', () async {
+  test('a failed shared transaction keeps dependent scripts retryable while every address gets its coins', () async {
     final batch = scripts(0, 3);
     final electrum = ScriptSyncServiceMock.electrumService;
     final parent = TransactionMock.createMockTransaction(toAddress: wallet.walletBase.getAddress(999), amount: 10000);
@@ -142,8 +143,8 @@ void main() {
       electrum.getUnspentList(any, batch.last.address),
     ).thenAnswer((_) async => [ListUnspentRes(txHash: good.transactionHash, txPos: 0, value: 9000, height: 100)]);
     await expectLater(sync.syncBatchScriptStatusList(walletItem: wallet, scriptStatuses: batch), throwsStateError);
-    verifyNever(electrum.getUnspentList(any, batch[0].address));
-    verifyNever(electrum.getUnspentList(any, batch[1].address));
+    verify(electrum.getUnspentList(any, batch[0].address)).called(1);
+    verify(electrum.getUnspentList(any, batch[1].address)).called(1);
     verify(electrum.getUnspentList(any, batch.last.address)).called(1);
     final records = ScriptSyncServiceMock.transactionRepository;
     expect(records.getTransactionRecord(walletId, bad.transactionHash), isNull);
@@ -157,6 +158,49 @@ void main() {
     for (final script in batch.take(2)) {
       verify(electrum.getUnspentList(any, script.address)).called(1);
     }
+  });
+
+  test('an incomplete script receives new coins but preserves reservations and skips every pending cleanup', () async {
+    final batch = scripts(0, 2);
+    final electrum = ScriptSyncServiceMock.electrumService;
+    final utxos = ScriptSyncServiceMock.utxoRepository;
+    final reservedHash = '11' * 32;
+    final orphanHash = '22' * 32;
+    final incomingHash = '33' * 32;
+    final healthyHash = '44' * 32;
+    final spenderHash = '55' * 32;
+    await utxos.addAllUtxos(walletId, [
+      for (final (hash, script) in [(reservedHash, batch.first), (orphanHash, batch.last)])
+        UtxoState(
+          transactionHash: hash,
+          index: 0,
+          amount: 1000,
+          derivationPath: script.derivationPath,
+          blockHeight: 100,
+          to: script.address,
+          timestamp: DateTime(2026),
+          status: UtxoStatus.outgoing,
+          spentByTransactionHash: spenderHash,
+        ),
+    ]);
+    when(electrum.getHistory(any, batch.first.address)).thenThrow(StateError('history timeout'));
+    when(electrum.getUnspentList(any, batch.first.address)).thenAnswer(
+      (_) async => [
+        ListUnspentRes(txHash: reservedHash, txPos: 0, value: 1000, height: 100),
+        ListUnspentRes(txHash: incomingHash, txPos: 0, value: 2000, height: 0),
+        ListUnspentRes(txHash: healthyHash, txPos: 0, value: 3000, height: 100),
+      ],
+    );
+
+    await expectLater(sync.syncBatchScriptStatusList(walletItem: wallet, scriptStatuses: batch), throwsStateError);
+
+    expect(utxos.getUtxoState(walletId, getUtxoId(reservedHash, 0))?.status, UtxoStatus.outgoing);
+    expect(utxos.getUtxoState(walletId, getUtxoId(reservedHash, 0))?.spentByTransactionHash, spenderHash);
+    expect(utxos.getUtxoState(walletId, getUtxoId(incomingHash, 0))?.status, UtxoStatus.incoming);
+    expect(utxos.getUtxoState(walletId, getUtxoId(healthyHash, 0))?.status, UtxoStatus.unspent);
+    expect(utxos.getUtxoState(walletId, getUtxoId(orphanHash, 0)), isNull);
+    final progress = ScriptSyncServiceMock.stateManager.fetchProgressByWallet[walletId]!;
+    expect(progress.completed, progress.dispatched);
   });
 
   test('a balance failure on an address inside the batch still aborts it', () async {
