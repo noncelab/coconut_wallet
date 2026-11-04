@@ -221,13 +221,13 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
   }
 
-  /// Electrum 브로드캐스트 실패 시 [Result]의 `error` getter(`AppError`)에 담기는 에러 코드
-  /// - `1004` [ErrorCodes.nodeConnectionError]: `IsolateManager`에서 명령 전 소켓 상태 선검사 실패·종료
-  /// - `1301` [ErrorCodes.nodeIsolateError]: isolate 미준비·준비 대기 타임아웃·isolate 응답 타임아웃 등
-  /// - `1300` [ErrorCodes.nodeUnknown]: 메인 isolate 브리지의 기타 예외, 또는 isolate가 `Result`가 아닌 `Exception`을 보낸 경우(`IsolateController` 최상위 catch 등)
-  /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
+  /// 실패 시 [Result]의 `error`에 담기는 에러 코드
+  /// - 노드에 요청하기 전: 연결 준비 실패·대기 종료·취소·백그라운드 전환은 `1004` [ErrorCodes.nodeConnectionError]
+  /// - `1302` [ErrorCodes.broadcastError]: 노드가 거래를 받아 명시적으로 거절함(메시지에 노드의 사유 포함)
+  /// - `1305` [ErrorCodes.broadcastUnconfirmed]: 요청의 응답을 받지 못했고 거래 ID로도 전송 여부를 확인하지 못함
   ///
-  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
+  /// 요청 후 응답을 받지 못한 실패(`1004`, `1301`, `1300` 등)는 그대로 돌려주지 않는다.
+  /// 거래 ID로 확인해 성공 또는 `1305`로 바꾼다.
   Future<Result<String>> broadcast({
     required List<String> inheritedTagIds,
     ConnectionWaitExtension? onConnectionWaitExtension,
