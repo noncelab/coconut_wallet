@@ -528,12 +528,13 @@ class TransactionSyncService {
     }
   }
 
-  /// 일렉트럼으로 부터 트랜잭션을 가져옵니다. 서버(또는 mempool.space 대체 조회)가 요청과 다른 거래를 주면 실패로 처리합니다.
+  /// 일렉트럼으로부터 트랜잭션을 가져옵니다. 라이브러리 재직렬화로 해시가 달라져도 동기화는 계속합니다.
   Future<Transaction> fetchTransaction(String txHash) async {
     final txHex = await _electrumService.getTransaction(txHash);
     final transaction = Transaction.parse(txHex);
-    if (transaction.transactionHash != txHash) {
-      throw StateError('Server returned transaction ${transaction.transactionHash} for $txHash');
+    final parsedHash = transaction.transactionHash;
+    if (parsedHash != txHash) {
+      Logger.error('Transaction hash differs after parsing: requested=$txHash, reserialized=$parsedHash');
     }
     return transaction;
   }

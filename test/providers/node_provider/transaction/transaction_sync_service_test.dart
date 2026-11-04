@@ -478,13 +478,13 @@ void main() {
         expect(coinStatus(), 'outgoing');
       });
 
-      test('서버가 요청과 다른 거래를 주면 아무것도 예약하거나 기록하지 않고 실패한다', () async {
+      test('파싱할 수 없는 거래는 아무것도 예약하거나 기록하지 않고 실패한다', () async {
         final spend = spendOf(withChange: true);
         const requested = '00000000000000000000000000000000000000000000000000000000000000ee';
         when(
           electrumService.getHistory(any, any),
         ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: requested)]);
-        when(electrumService.getTransaction(requested)).thenAnswer((_) async => spend.serialize());
+        when(electrumService.getTransaction(requested)).thenAnswer((_) async => '00');
 
         await expectLater(
           transactionSyncService.fetchScriptTransaction(
@@ -493,7 +493,7 @@ void main() {
             now: now,
             inBatchProcess: true,
           ),
-          throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+          throwsA(isA<FormatException>()),
         );
 
         expect(coinStatus(), 'unspent');
@@ -503,6 +503,36 @@ void main() {
           isTrue,
           reason: 'the failed claim is released so the next sync fetches it again',
         );
+      });
+
+      test('a recomputed target hash mismatch does not fail sync or release the claim for a retry loop', () async {
+        await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+        final spend = spendOf(withChange: true);
+        const requested = '00000000000000000000000000000000000000000000000000000000000000ee';
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: requested)]);
+        when(electrumService.getTransaction(requested)).thenAnswer((_) async => spend.serialize());
+        when(electrumService.getTransaction(spend.transactionHash)).thenAnswer((_) async => spend.serialize());
+        when(
+          electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        ).thenAnswer((_) async => [funding]);
+
+        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+        final record = transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash)!;
+        expect(record.amount, -901000);
+        expect(record.fee, 1000);
+        expect(record.transactionType, TransactionType.sent);
+        expect(coinStatus(), 'outgoing');
+        // The lib hash is still the record key (pre-existing behavior); preserving raw script bytes belongs to lib.
+        expect(transactionRepository.getTransactionRecord(testWalletId, requested), isNull);
+        expect(
+          scriptCallbackService.isTransactionProcessable(txHashKey: '$testWalletId:$requested', isConfirmed: false),
+          isFalse,
+        );
+        verify(electrumService.getTransaction(requested)).called(1);
       });
     });
 
