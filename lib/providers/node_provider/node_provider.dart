@@ -266,7 +266,10 @@ class NodeProvider extends ChangeNotifier {
         _stateManager?.setNodeSyncStateToFailed();
       }
       final nodeSyncState = state.nodeSyncState;
-      final isBootstrapping = nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing;
+      final isBootstrapping =
+          nodeSyncState == NodeSyncState.init ||
+          nodeSyncState == NodeSyncState.syncing ||
+          (_stateManager?.hasRetryingWallets ?? false);
       if (_connectivityProvider.isInternetOn && !isBootstrapping) {
         unawaited(reconnect());
       }

@@ -572,6 +572,35 @@ void main() {
       await close(tester);
     });
 
+    testWidgets('failed block probes preserve an active retry only until that retry settles', (tester) async {
+      createProvider();
+      wallets.value = [_Wallet(1)];
+      load.value = WalletLoadState.loadCompleted;
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletSyncQueueState, [1, false, 0]));
+      await tester.pump();
+      expect(provider!.state.nodeSyncState, NodeSyncState.completed);
+      final initializations = isolate.initializationCount;
+      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletRetrying, [1, true]));
+      await tester.pump();
+      isolate.onBlock = () async => Result.failure(ErrorCodes.nodeConnectionError);
+      final requests = isolate.blockRequestCount;
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pump(const Duration(seconds: 10));
+      expect(isolate.blockRequestCount, greaterThan(requests), reason: 'the probe really failed during retry');
+      expect(isolate.initializationCount, initializations, reason: 'do not tear down the retry on a saturated socket');
+      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletRetrying, [1, false]));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 10));
+      expect(
+        isolate.initializationCount,
+        greaterThan(initializations),
+        reason: 'no reconnect grace after the retry ends',
+      );
+      await close(tester);
+    });
+
     testWidgets('a healthy connection resets the backoff', (tester) async {
       final start = await startOutage(tester);
       await tester.pump(const Duration(seconds: 37)); // two more failed reconnects; the next waits 40 s ±20%

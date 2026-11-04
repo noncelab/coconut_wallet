@@ -30,6 +30,7 @@ class NodeStateManager implements StateManagerInterface {
   /// 자동 재시도 작업이 도는 지갑과 재시도를 시작할 때의 상태. 지갑 상태는 그대로 알리되, 전체(홈 연결) 상태는 이
   /// 지갑을 재시도 전 상태로 보고 계산한다([setWalletRetrying]).
   final Map<int, WalletUpdateInfo> _retryingWallets = {};
+  bool get hasRetryingWallets => _retryingWallets.isNotEmpty;
 
   /// 삭제된 지갑(ID는 다시 쓰이지 않는다). 삭제 때 돌던 작업이 늦게 보낸 상태가 지갑을 다시 등록해
   /// 전체 상태를 묶어 두지 않도록 버린다.
