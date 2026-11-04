@@ -163,6 +163,7 @@ class TransactionRecordService {
     try {
       final txRaw = await _electrumService.getTransaction(txHash);
       final tx = Transaction.parse(txRaw);
+      if (tx.transactionHash != txHash) throw StateError('Server returned a different transaction');
       final previousTxs = await _electrumService.getPreviousTransactions(tx);
       final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
       final blockTimestamp = await getTxHeight(

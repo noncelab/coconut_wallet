@@ -79,6 +79,30 @@ void main() {
   });
 
   group('getTransactionRecord 테스트', () {
+    test('[P7-detail-refresh-substitute] rejects a different raw before building a refreshed record', () async {
+      final address = testWalletItem.walletBase.getAddress(0);
+      final parent = TransactionMock.createMockTransaction(toAddress: address, amount: 10000);
+      final requested = TransactionMock.createMockTransaction(
+        toAddress: address,
+        amount: 9000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      final substitute = TransactionMock.createMockTransaction(
+        toAddress: address,
+        amount: 8000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      when(electrumService.getTransaction(requested.transactionHash)).thenAnswer((_) async => substitute.serialize());
+      when(electrumService.getPreviousTransactions(any)).thenAnswer((_) async => [parent]);
+      when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
+
+      final result = await transactionRecordService.getTransactionRecord(testWalletItem, requested.transactionHash);
+
+      expect(result.isFailure, isTrue, reason: 'onRefresh only saves a successful refreshed record');
+      verifyNever(electrumService.getPreviousTransactions(any));
+      verifyNever(electrumService.getHistory(any, any));
+    });
+
     test('컨펌 트랜잭션을 올바르게 조회하는지 확인', () async {
       // Given
       final testAddress = testWalletItem.walletBase.getAddress(0);
