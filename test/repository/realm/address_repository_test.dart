@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -725,5 +726,67 @@ void main() {
       );
       expect(checkCount, 4);
     });
+  });
+
+  test('지운 코인 다시 맞추기는 되살릴 수 있는 코인이 있는 주소만 고르고, 지운 코인이 많아도 주소마다 묻지 않는다', () {
+    const walletId = 9;
+    final realm = realmManager.realm;
+    final creator = 'aa' * 32, ownBumpLost = 'bb' * 32, spender = 'cc' * 32;
+    void address(String name, int total) =>
+        realm.add(RealmWalletAddress(name.hashCode, walletId, name, 0, false, 'm/0', true, total, 0, total));
+    void removed(String name, String creatorHash, {String? spentBy}) => realm.add(
+      UtxoMock.createMockUtxo(
+        walletId: walletId,
+        address: name,
+        transactionHash: creatorHash,
+        index: name.hashCode,
+        amount: 1000,
+        status: UtxoStatus.incoming,
+        spentByTransactionHash: spentBy,
+      )..isDeleted = true,
+    );
+    realm.write(() {
+      for (final (hash, replacedBy) in [(creator, null), (spender, null), (ownBumpLost, spender)]) {
+        realm.add(
+          RealmTransaction(
+            hash.hashCode,
+            hash,
+            walletId,
+            DateTime.now(),
+            100,
+            'received',
+            1000,
+            0,
+            141,
+            DateTime.now(),
+            replaceByTransactionHash: replacedBy,
+          ),
+        );
+      }
+      for (var i = 0; i < 5000; i++) {
+        address('dropped$i', 1000); // the sender replaced or dropped the creating tx: its record is gone
+        removed('dropped$i', i.toRadixString(16).padLeft(64, '0'));
+      }
+      address('own-bump-lost', 1000); // the original we bumped confirmed, but stays marked replaced
+      removed('own-bump-lost', ownBumpLost);
+      address('spent', 1000);
+      removed('spent', creator, spentBy: spender);
+      address('no-balance', 0);
+      removed('no-balance', creator);
+      address('already-listed', 1000);
+      removed('already-listed', creator);
+      realm.add(UtxoMock.createMockUtxo(walletId: walletId, address: 'already-listed', amount: 1000, index: 7));
+      address('missing', 1000);
+      removed('missing', creator);
+    });
+
+    final watch = Stopwatch()..start();
+    final first = addressRepository.getAddressesWithMissingCoins(walletId);
+    final second = addressRepository.getAddressesWithMissingCoins(walletId);
+    watch.stop();
+
+    expect(first, {'missing'});
+    expect(second, {'missing'});
+    expect(watch.elapsed, lessThan(const Duration(seconds: 1)), reason: 'one pass, not a query per address');
   });
 }

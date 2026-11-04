@@ -14,6 +14,7 @@ import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart' show restorableTombstones;
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:realm/realm.dart';
@@ -662,23 +663,37 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  /// 받는 중에 정리된 코인(쓴 거래로 예약된 적 없음)이 있고, 서버 잔액이 남은 코인 합보다 큰 주소.
-  /// 상태가 저장된 값과 같아도 listunspent를 다시 받아야 그 코인을 되살릴 수 있다.
+  /// 되살릴 수 있는 지운 코인([restorableTombstones], 되살리기와 같은 규칙)이 있고 저장된 서버 잔액이 남은 코인 합보다
+  /// 큰 주소. 상태가 저장된 값과 같아도 listunspent를 다시 받아야 그 코인을 되살릴 수 있다.
+  /// 되살릴 수 없는 지운 코인은 고르지 않으므로, 되살리고 나면 다음 구독은 아무 주소도 더하지 않는다.
+  /// 잔액이 있는 주소, 그 주소의 지운 코인, 만든·쓴 거래 기록, 남은 코인 합을 각각 한 번의 쿼리로 읽는다.
+  /// 알려진 한계: 저장된 잔액이 실제보다 낮게 남은 주소는 다시 묻지 않는다(잔액 조회가 실패하면 상태를 저장하지 않아
+  /// 다음 구독이 그 주소를 다시 맞추므로 정상 흐름에서는 생기지 않는다).
   Set<String> getAddressesWithMissingCoins(int walletId) {
-    final removed = realm.query<RealmUtxo>(
-      r'walletId == $0 AND isDeleted == true AND status == $1 AND spentByTransactionHash == null',
-      [walletId, utxoStatusToString(UtxoStatus.incoming)],
-    );
-    return removed.map((utxo) => utxo.address).toSet().where((address) {
-      final stored =
-          realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
-      final live = realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
-        walletId,
-        address,
-        utxoStatusToString(UtxoStatus.outgoing),
-      ]);
-      return stored != null && stored.total > live.fold<int>(0, (sum, utxo) => sum + utxo.amount);
-    }).toSet();
+    final totals = {
+      for (final address in realm.query<RealmWalletAddress>(r'walletId == $0 AND total > 0', [walletId]))
+        address.address: address.total,
+    };
+    if (totals.isEmpty) return {};
+    final removed = realm.query<RealmUtxo>(r'walletId == $0 AND isDeleted == true AND status == $1 AND address IN $2', [
+      walletId,
+      utxoStatusToString(UtxoStatus.incoming),
+      totals.keys.toList(),
+    ]);
+    if (removed.isEmpty) return {};
+    final candidates = restorableTombstones(realm, walletId, removed).map((utxo) => utxo.address).toSet();
+    if (candidates.isEmpty) return {};
+    final live = <String, int>{};
+    for (final utxo in realm.query<RealmUtxo>(
+      r'walletId == $0 AND isDeleted == false AND status != $1 AND address IN $2',
+      [walletId, utxoStatusToString(UtxoStatus.outgoing), candidates.toList()],
+    )) {
+      live[utxo.address] = (live[utxo.address] ?? 0) + utxo.amount;
+    }
+    return {
+      for (final address in candidates)
+        if (totals[address]! > (live[address] ?? 0)) address,
+    };
   }
 
   RealmResults<RealmTransaction> _pendingTransactions(int walletId) => realm.query<RealmTransaction>(

@@ -814,4 +814,42 @@ void main() {
       expect(c.coinState(), 'deleted');
     });
   }
+
+  // Claude review (M1): our fee bump loses the race and the original confirms. The original's change coin stays removed
+  // (the original stays marked replaced, tracked separately), but that must not re-list its address on every start.
+  test(
+    '[heavy-reuse-own-bump-loses] an unrestorable removed coin does not re-list its address on every start',
+    () async {
+      final c = _Case();
+      await c.init();
+      final node = _startIsolate(c.electrum);
+      expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+      final b = c.backend;
+      Future<void> push() async {
+        b
+          ..notify(c.input)
+          ..notify(c.change);
+        await _drain(node);
+      }
+
+      b.heights[c.spend.transactionHash] = 0;
+      await push();
+      final bump = _Case._tx([(c.funding.transactionHash, 0)], [(_external, 300000), (c.change, 690000)]);
+      b.heights.remove(c.spend.transactionHash);
+      b.put(bump, 0);
+      await push();
+      b.heights.remove(bump.transactionHash);
+      b.heights[c.spend.transactionHash] = 101; // the original wins
+      await push();
+      await c.reconnect(); // stores the statuses after the race
+      final requests = <int>[];
+      for (var i = 0; i < 2; i++) {
+        final from = b.calls.length;
+        await c.reconnect();
+        requests.add(b.calls.skip(from).where((call) => !call.startsWith('subscribe:')).length);
+      }
+      _report('heavy-reuse-own-bump-loses', '-', {'requests_per_start': requests});
+      expect(requests, [0, 0]);
+    },
+  );
 }
