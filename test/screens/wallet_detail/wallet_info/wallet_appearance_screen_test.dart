@@ -185,6 +185,20 @@ void main() {
     }
   }
 
+  testWidgets('tapping the name field with the fold keyboard keeps it above the complete button', (tester) async {
+    walletProvider = _WalletProvider(_hotWallet());
+    await open(tester, logicalSize: const Size(841, 874));
+    final field = find.byType(EditableText);
+    await tester.ensureVisible(field);
+    await tester.showKeyboard(field);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getRect(field).bottom, lessThanOrEqualTo(tester.getRect(find.text(t.complete)).top));
+    expect(field.hitTestable(), findsOneWidget);
+  });
+
   for (final variant in [CoconutThemeVariant.dark, CoconutThemeVariant.coconutTheme]) {
     for (final scale in [1.0, 1.6, 2.0]) {
       testWidgets('fold keyboard keeps editing and completion reachable ${variant.name} $scale', (tester) async {
@@ -221,7 +235,8 @@ void main() {
         tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
         await tester.pumpAndSettle();
         final lastIcon = find.byKey(const Key('wallet-appearance-icon-${CustomWalletIcons.totalCount - 1}'));
-        await Scrollable.ensureVisible(tester.element(lastIcon), alignment: 0.5);
+        // 원래 레이아웃(81de8fa88)은 폴드에서 아래 편집 영역이 좁아 가운데가 버튼 뒤에 온다. 위쪽에 맞춰 닿는지 본다.
+        await Scrollable.ensureVisible(tester.element(lastIcon));
         await tester.pumpAndSettle();
         expect(tester.getBottomLeft(lastIcon).dy, lessThan(tester.getTopLeft(find.text(t.complete)).dy));
         expect(lastIcon.hitTestable(), findsOneWidget);

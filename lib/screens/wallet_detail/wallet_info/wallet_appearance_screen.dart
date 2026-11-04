@@ -50,11 +50,15 @@ class _WalletAppearanceBody extends StatelessWidget {
 
   static const double _horizontalPadding = 16;
   static const double _cardGap = 12;
+  // 아래 '완료' 버튼이 가리는 높이만큼 내용과 입력칸 아래에 둔다.
+  static const double _bottomButtonSpace = 120;
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<WalletAppearanceViewModel>();
     final colors = context.coconutColors;
+    // Scaffold가 body에서는 키보드 높이를 지우므로 여기서 읽는다.
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
       canPop: !viewModel.isSaving,
       onPopInvokedWithResult: (didPop, _) {
@@ -70,33 +74,55 @@ class _WalletAppearanceBody extends StatelessWidget {
         ),
         body: Stack(
           children: [
-            Column(
-              children: [
-                _preview(context, viewModel),
-                CoconutLayout.spacing_300h,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final size in WalletCardSize.values)
-                      SpanSizeOption(
-                        key: Key('wallet-appearance-size-${size.name}'),
-                        columns: size == WalletCardSize.wide ? 4 : 2,
-                        rows: 2,
-                        isSelected: viewModel.previewSize == size,
-                        onTap: () => viewModel.selectPreviewSize(size),
+            // 키보드가 열리면 열리기 전 배치를 그대로 두고 화면을 스크롤한다.
+            // 넓은 화면(폴드, 큰 글씨)에서 고정된 위쪽 영역이 이름 입력칸을 0 높이로 누르지 않게 한다.
+            // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 기존 화면과 같다.
+            LayoutBuilder(
+              builder:
+                  (context, constraints) => SingleChildScrollView(
+                    primary: false,
+                    clipBehavior: Clip.none,
+                    child: SizedBox(
+                      height: constraints.maxHeight + keyboardHeight,
+                      child: Column(
+                        children: [
+                          _preview(context, viewModel),
+                          CoconutLayout.spacing_300h,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (final size in WalletCardSize.values)
+                                SpanSizeOption(
+                                  key: Key('wallet-appearance-size-${size.name}'),
+                                  columns: size == WalletCardSize.wide ? 4 : 2,
+                                  rows: 2,
+                                  isSelected: viewModel.previewSize == size,
+                                  onTap: () => viewModel.selectPreviewSize(size),
+                                ),
+                            ],
+                          ),
+                          CoconutLayout.spacing_400h,
+                          _WallpaperTabBar(
+                            tabs: viewModel.tabs,
+                            selected: viewModel.tab,
+                            onSelected: viewModel.selectTab,
+                          ),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+                              padding: const EdgeInsets.fromLTRB(
+                                _horizontalPadding,
+                                24,
+                                _horizontalPadding,
+                                _bottomButtonSpace,
+                              ),
+                              child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-                CoconutLayout.spacing_400h,
-                _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
-                    padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
-                    child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                    ),
                   ),
-                ),
-              ],
             ),
             Align(
               alignment: Alignment.bottomCenter,
@@ -480,6 +506,7 @@ class _WalletTabState extends State<_WalletTab> {
             },
             isError: viewModel.isNameDuplicated,
             errorText: viewModel.isNameDuplicated ? t.wallet_info_screen.duplicated_name : '',
+            scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, _WalletAppearanceBody._bottomButtonSpace),
           ),
         if (viewModel.canEditPalette) ...[
           if (viewModel.canEditName) SizedBox(height: hasError ? 16 : 8),
