@@ -239,11 +239,16 @@ void main() {
       expect(details.amount, -100000);
     });
 
-    test('이전 거래가 하나라도 빠지면 입력 없이 기록해 거래 상세의 멤풀 보정 대상이 된다', () {
+    test('이전 거래가 하나라도 빠지면 입력 없이 수수료 0으로 기록해 거래 상세의 멤풀 보정 대상이 된다', () {
       final details = transactionRecordService.processTransactionDetails(spendTx, [prevA], testWalletId);
 
       expect(details.inputAddressList, isEmpty);
-      expect(details.fee, isNot(-39000), reason: '일부 입력만으로 계산한 수수료를 저장하지 않는다');
+      expect(details.fee, 0, reason: '출력 합계만 뺀 음수 수수료를 저장하지 않는다');
+      expect(
+        details.txType,
+        TransactionType.received,
+        reason: '입력을 모르면 보낸 거래인지 알 수 없음. 거래 상세에서 멤풀 보정 전까지 빨리 받기·보내기를 막는다',
+      );
     });
   });
 }

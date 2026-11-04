@@ -264,4 +264,30 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
   });
+
+  testWidgets('다음 화면으로 넘어가 가려진 동안 고른 UTXO가 빠지면, 그 화면 위에 알리지 않고 돌아왔을 때 알린다', (tester) async {
+    node.setSyncing(1, true);
+    await openSend(tester, 1, selectedUtxoList: [_utxo('a', 50000000), _utxo('b', 30000000)]);
+    final navigator = Navigator.of(tester.element(find.byType(SendScreen)));
+    navigator.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('confirm'))));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    _utxosByWallet[1] = [_utxo('a', 50000000), _utxo('b', 30000000, status: UtxoStatus.outgoing)];
+    node.setSyncing(1, false);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsNothing);
+
+    navigator.pop();
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsOneWidget);
+    for (var i = 0; i < 50; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  });
 }

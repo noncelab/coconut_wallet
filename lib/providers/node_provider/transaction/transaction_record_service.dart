@@ -77,7 +77,7 @@ class TransactionRecordService {
     int amount = 0;
 
     var previousTxByHash = TransactionUtil.indexByHash(previousTxs);
-    // 이전 거래가 하나라도 빠지면 금액·수수료가 틀리므로 입력 없이 기록 (거래 상세에서 멤풀로 보정)
+    // 이전 거래가 하나라도 빠지면 금액·수수료가 틀리므로 입력 없이, 수수료 0으로 기록 (거래 상세에서 멤풀로 보정)
     final hasAllPreviousTxs = tx.inputs.every(
       (input) => input.index < (previousTxByHash[input.transactionHash]?.outputs.length ?? 0),
     );
@@ -128,6 +128,8 @@ class TransactionRecordService {
         amount += outputAddress.amount;
       }
     }
+
+    if (!hasAllPreviousTxs) fee = 0;
 
     // 트랜잭션 유형 결정
     TransactionType txType = determineTransactionType(

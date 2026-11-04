@@ -14,6 +14,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -43,6 +44,8 @@ const _segwitCoinbase =
     '010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff54030cde0e174d696e6564206279204c75786f72c500a5066efcffb601fabe6d6da908b586aba7f6acac5bab755ca68c0bcbf3acf63aa36658a8811e288ebd509c100000000000000000000ad0000000000000001affffffff05220200000000000017a914bf73ad4cf3a107812bad3deb310611bee49a3c79875181a2120000000017a914056adde53ebc396a1b3b678bb0d3a5c116ff430c870000000000000000266a24aa21a9ede81ab8ab0f420793c41e1b720e64683981756d14bd63c30ae4cc357f5dc983e000000000000000002f6a2d434f524501a21cbd3caa4fe89bccd1d716c92ce4533e4d4733f459cc4ca322d298304ff163b2a360d756c5db8400000000000000002b6a2952534b424c4f434b3ae027f6b7e503f9e32b9e598a5d16bdc9d2a223bda39073ba11117f1d008f1f7e0120000000000000000000000000000000000000000000000000000000000000000000000000';
 
 /// mainnet 블록 974375의 일반 거래 (P2SH 멀티시그 지출)
+final _knownInputs = [TransactionAddress('bc1qknowninput0000000000000000000000000000', 100000)];
+
 const _normalTransaction =
     '020000000102817ff5816ab1089c3ab748c396966c95f6804d3fd4d2502f26239b6028114400000000fc0047304402202e62a8721861731146eb233300b6bb69f874e96fd00014406de81cf5bef36c8402206fe7b73a97f51bd0f41c4df15c0b13748029b714053b2f2497e4c118ada82c2a0147304402201405683cd4dbbb0a276e44dba891555ab46c8f0e70bc897a3f551e7116a351f902206052a0f6975865d600835bd046079eb11392605a74619b42a730fc146465e4cd014c6952210222a9e782e240e4af71abc5a3596ea79cae3464c0b24068aed78bb152f730248d210259ed71ed808ada292c5b53ff5dbacad2c92be4d6d77e4369c57732b31ea3fdc1210368960b9ac05e1b8a7bd8b914ab116e82f9846964201e4f4c876747c3abd5407b53aefdffffff01dd4c00000000000016001456c3ae770a0af960fc238745f7a73d919cd24b5824de0e00';
 
@@ -176,7 +179,12 @@ void main() {
   tearDown(() => manager.dispose());
 
   /// 이전 거래 없이 기록을 만들어 입력 목록이 빈 상태로 상세 화면을 연다
-  Future<void> openDetail(WidgetTester tester, String hex, {int blockHeight = 974348}) async {
+  Future<void> openDetail(
+    WidgetTester tester,
+    String hex, {
+    int blockHeight = 974348,
+    List<TransactionAddress>? inputAddressList,
+  }) async {
     _txHex = hex;
     final tx = Transaction.parse(hex);
     _myAddress = tx.outputs.map((output) => output.scriptPubKey.getAddress()).first;
@@ -198,7 +206,7 @@ void main() {
       transactionType: details.txType,
       amount: details.amount,
       fee: details.fee,
-      inputAddressList: details.inputAddressList,
+      inputAddressList: inputAddressList ?? details.inputAddressList,
       outputAddressList: details.outputAddressList,
       vSize: tx.getVirtualByte(),
     );
@@ -277,7 +285,7 @@ void main() {
   group('빨리 받기', () {
     testWidgets('이 지갑이 업데이트 중이면 눌러도 수수료 올리기로 넘어가지 않고, 끝나면 넘어간다', (tester) async {
       node.setSyncing(1, true);
-      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      await openDetail(tester, _normalTransaction, blockHeight: 0, inputAddressList: _knownInputs);
       await capture(tester, 'quick_receive_syncing');
 
       await tester.tap(find.text(t.quick_receive));
@@ -294,11 +302,21 @@ void main() {
 
     testWidgets('다른 지갑만 업데이트 중이면 막지 않는다', (tester) async {
       node.setSyncing(2, true);
-      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      await openDetail(tester, _normalTransaction, blockHeight: 0, inputAddressList: _knownInputs);
 
       await tester.tap(find.text(t.quick_receive));
       await tester.pump(const Duration(milliseconds: 300));
       expect(pushedRoutes, [AppRouteNames.transactionFeeBumping]);
+    });
+
+    testWidgets('이전 거래를 못 받아 입력을 모르는 기록이면 업데이트가 끝나도 막는다', (tester) async {
+      node.setSyncing(1, false);
+      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      await capture(tester, 'quick_receive_unknown_inputs');
+
+      await tester.tap(find.text(t.quick_receive));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(pushedRoutes, isEmpty);
     });
   });
 }

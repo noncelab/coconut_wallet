@@ -68,6 +68,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   /// 이 지갑이 업데이트 중이면 빨리 받기·빨리 보내기를 막음 (다른 지갑의 업데이트와는 무관)
   bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
 
+  /// 입력을 모르는 기록(이전 거래 조회 실패)은 수수료·유형이 틀릴 수 있어 멤풀 보정 전까지 막음
+  bool isFeeBumpingBlocked(TransactionRecord tx) => isWalletSyncing || (tx.inputAddressList.isEmpty && !_isCoinbase);
+
   @override
   void dispose() {
     _disposed = true;

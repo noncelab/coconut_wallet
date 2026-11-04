@@ -376,6 +376,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void didChangeDependencies() {
     super.didChangeDependencies();
     _flutterView = View.maybeOf(context);
+    if (ModalRoute.of(context)?.isCurrent ?? true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onUtxoExcludedBySync());
+    }
   }
 
   @override
@@ -793,9 +796,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
+  /// 다른 화면에 가려져 있으면 안내를 미뤘다가 다시 보일 때 띄움
   void _onUtxoExcludedBySync() {
     final nonce = _viewModel.excludedUtxoNonce;
-    if (nonce == _lastExcludedUtxoNonce) return;
+    if (!mounted || nonce == _lastExcludedUtxoNonce) return;
+    if (ModalRoute.of(context)?.isCurrent == false) return;
     _lastExcludedUtxoNonce = nonce;
     _showExcludedUtxoToast(_viewModel.lastExcludedUtxoStatus!);
   }
