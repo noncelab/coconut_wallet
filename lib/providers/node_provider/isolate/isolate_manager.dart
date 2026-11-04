@@ -370,8 +370,11 @@ class IsolateManager {
       case IsolateControllerCommand.shutdown:
         return kIsolateGracefulShutdownTimeout;
 
-      // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
+      // 송금: 응답 대기와 서버 확인까지 기다린다(broadcast()는 시도마다 늘린 값을 직접 넘긴다).
       case IsolateControllerCommand.broadcast:
+        return broadcastLimits(onion: _host.contains('.onion'), attempt: 0).command;
+
+      // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
       case IsolateControllerCommand.getNetworkMinimumFeeRate:
       case IsolateControllerCommand.getLatestBlock:
       case IsolateControllerCommand.getTransaction:
@@ -546,14 +549,25 @@ class IsolateManager {
   }
 
   /// [attempt]: 결과를 모르는 전송을 같은 거래로 다시 보낸 횟수. 다시 보낼 때마다 기다림을 두 배로 늘린다.
+  /// 송금 명령에 넘기는 값(서명된 거래, 응답 대기, 서버 확인 대기)과 메인 쪽이 결과를 기다리는 시간.
+  /// 메인 쪽이 3초 만에 끊으면 노드가 받은 송금도 실패로 보여 다시 보내게 된다(테스트로 고정).
+  static ({List<Object> params, Duration timeout}) broadcastCommand(
+    Transaction signedTx, {
+    required bool onion,
+    required int attempt,
+  }) {
+    final limits = broadcastLimits(onion: onion, attempt: attempt);
+    return (params: [signedTx, limits.reply, limits.check], timeout: limits.command);
+  }
+
   Future<Result<String>> broadcast(Transaction signedTx, {int attempt = 0}) async {
     // 응답이 늦거나 사라져도 노드가 받았을 수 있다. 응답 대기와 서버 확인이 끝날 때까지 기다린다.
-    final limits = broadcastLimits(onion: _host.contains('.onion'), attempt: attempt);
-    final result = await _sendWithSocketCheck<String>(IsolateControllerCommand.broadcast, [
-      signedTx,
-      limits.reply,
-      limits.check,
-    ], timeout: limits.command);
+    final command = broadcastCommand(signedTx, onion: _host.contains('.onion'), attempt: attempt);
+    final result = await _sendWithSocketCheck<String>(
+      IsolateControllerCommand.broadcast,
+      command.params,
+      timeout: command.timeout,
+    );
     // isolate에서 만든 오류 문구는 isolate 기본 언어(한국어)라 메인 쪽 오류로 다시 만든다.
     if (result.isFailure && result.error.code == ErrorCodes.nodeIsolateError.code) {
       return Result.failure(ErrorCodes.nodeIsolateError);
