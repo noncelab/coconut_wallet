@@ -53,10 +53,18 @@ class _NodeProvider extends Fake implements NodeProvider {
   final attempts = <int>[];
   int reconnects = 0;
   FutureOr<void> Function()? duringBroadcast;
+  FutureOr<void> Function()? duringConnectivityCheck;
 
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async =>
-      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+  String get host => 'regtest-electrum.example';
+
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async {
+    await duringConnectivityCheck?.call();
+    return connected
+        ? Result.success(BlockTimestamp(100, DateTime(2026)))
+        : Result.failure(ErrorCodes.nodeConnectionError);
+  }
 
   @override
   Future<Result<bool>> reconnect() async {
@@ -356,6 +364,33 @@ void main() {
     node.failures.addAll([ErrorCodes.nodeIsolateError, ErrorCodes.broadcastError]);
     expect((await viewModel.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.broadcastError.code);
     expect(node.broadcasts, 2);
+  });
+
+  test('leaving during the connectivity check before a resend does not reconnect the shared connection', () async {
+    await initialize();
+    final leaving = BroadcastingViewModel(
+      sendInfo,
+      wallets,
+      tags,
+      true,
+      node,
+      transactions,
+      TransactionDraftRepository(manager),
+      repository,
+      null,
+    );
+    expect(await leaving.setTxInfo(), isNull);
+    node.failures.add(ErrorCodes.nodeIsolateError);
+    var checks = 0;
+    node.duringConnectivityCheck = () {
+      // The first check runs before the first send; the second is the resend's check, during which the user leaves.
+      if (++checks == 2) {
+        node.connected = false;
+        leaving.dispose();
+      }
+    };
+    expect((await leaving.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.nodeIsolateError.code);
+    expect((node.broadcasts, node.reconnects), (1, 0));
   });
 
   test('nothing is sent again after the user left the screen', () async {

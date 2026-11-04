@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/constants/isolate_constants.dart';
+
 const Duration kHttpReceiveTimeout = Duration(milliseconds: 5000);
 
 const Duration kHttpConnectionTimeout = Duration(milliseconds: 3000);
@@ -21,6 +23,30 @@ const int kBroadcastRetries = 2;
 
 /// 다시 보내기 전 재연결을 기다리는 상한. 지갑 구독까지 기다리지 않는다(재연결은 뒤에서 계속된다).
 const Duration kBroadcastReconnectWait = Duration(seconds: 10);
+
+/// 송금 하나의 결과를 기다리는 전체 상한. 다음 다시 보내기가 이를 넘길 수 있으면 보내지 않는다.
+const Duration kBroadcastTotalLimit = Duration(seconds: 120);
+const Duration kBroadcastTotalLimitForOnion = Duration(seconds: 720);
+
+/// 송금 한 번(응답 대기 + 서버 확인)의 대기. 결과를 모르는 송금을 같은 거래로 다시 보낼 때마다 두 배로 늘린다.
+/// [command]는 메인 쪽이 isolate 결과를 기다리는 시간, [worstCase]는 다시 보내기 전 연결 확인·재연결·isolate 준비까지 더한 최대치다.
+({Duration reply, Duration check, Duration command, Duration worstCase}) broadcastLimits({
+  required bool onion,
+  required int attempt,
+}) {
+  final scale = 1 << attempt;
+  final reply = (onion ? kElectrumResponseTimeout : kBroadcastReplyTimeout) * scale;
+  final check = (onion ? kBroadcastCheckTimeoutForOnion : kBroadcastCheckTimeout) * scale;
+  final command = reply + check + const Duration(seconds: 3);
+  final connectivityCheck = onion ? kIsolateSimpleResponseTimeoutForOnion : kIsolateSimpleResponseTimeout;
+  final isolateStart = onion ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+  return (
+    reply: reply,
+    check: check,
+    command: command,
+    worstCase: command + connectivityCheck + kBroadcastReconnectWait + isolateStart,
+  );
+}
 
 const Duration kElectrumPingInterval = Duration(seconds: 20);
 

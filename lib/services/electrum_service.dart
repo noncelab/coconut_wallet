@@ -231,27 +231,33 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<String> broadcast(String rawTransaction) async {
+  /// [timeout]: 응답을 기다리는 시간(기본 [kElectrumResponseTimeout]). [onRpcError]: 서버가 오류로 답했을 때 불린다.
+  Future<String> broadcast(String rawTransaction, {Duration? timeout, void Function()? onRpcError}) async {
     var response = await _call(
       _BroadcastReq(rawTransaction),
       (json, {int? id}) => ElectrumResponse(result: json as String),
+      timeout: timeout,
+      onRpcError: onRpcError,
     );
 
     return response.result;
   }
 
-  /// 브로드캐스트 결과를 모를 때 서버가 이 거래를 이미 갖고 있는지 확인합니다. 확인하지 못하면 false입니다.
+  /// 브로드캐스트 결과를 모를 때 서버가 이 거래를 갖고 있는지 묻습니다.
+  /// true: 갖고 있음, false: 서버가 없다고 답함, null: 답을 받지 못함(시간 초과·연결 끊김·잘못된 응답).
   /// 보낸 직후의 txid를 제3자에게 알리지 않도록 외부 API로 대체하지 않고 같은 Electrum 서버에만 묻습니다.
-  Future<bool> isTransactionKnown(String txHash, {required Duration timeout}) async {
+  Future<bool?> lookUpTransaction(String txHash, {required Duration timeout}) async {
+    var serverSaidNo = false;
     try {
       final response = await _call(
         _BlockchainTransactionGetReq(txHash),
         (json, {int? id}) => ElectrumResponse(result: json as String),
         timeout: timeout,
+        onRpcError: () => serverSaidNo = true,
       );
-      return Transaction.parse(response.result).transactionHash == txHash;
+      return Transaction.parse(response.result).transactionHash == txHash ? true : null;
     } catch (_) {
-      return false;
+      return serverSaidNo ? false : null;
     }
   }
 

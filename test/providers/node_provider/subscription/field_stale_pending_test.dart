@@ -214,13 +214,15 @@ class _Backend {
       listeners.remove(arg(c, 1));
       return true;
     });
-    when(electrum.broadcast(any)).thenAnswer(
+    when(electrum.broadcast(any, timeout: anyNamed('timeout'), onRpcError: anyNamed('onRpcError'))).thenAnswer(
       (c) => answer('broadcast', '', () {
         final tx = Transaction.parse(arg(c, 0));
         put(tx, 0);
         return tx.transactionHash;
       }),
     );
+    // A failed broadcast asks the server for the txid; these scenarios never lose a broadcast reply.
+    when(electrum.lookUpTransaction(any, timeout: anyNamed('timeout'))).thenAnswer((_) async => null);
   }
 }
 

@@ -30,7 +30,7 @@ void main() {
   });
 
   /// [broadcast]: reply | drop | reject. [lookup]: found | missing | other | drop (blockchain.transaction.get).
-  Future<({Result<String> result, List<String> methods, int fallbackCalls})> send(
+  Future<({Result<String> result, List<String> methods, int fallbackCalls, MockSocketManager socket})> send(
     String broadcast,
     String lookup, {
     bool connected = true,
@@ -81,7 +81,7 @@ void main() {
     final result = await NetworkService(
       electrum,
     ).broadcast(sent, replyTimeout: const Duration(milliseconds: 20), checkTimeout: const Duration(milliseconds: 20));
-    return (result: result, methods: methods, fallbackCalls: fallbackCalls);
+    return (result: result, methods: methods, fallbackCalls: fallbackCalls, socket: socket);
   }
 
   test('a normal reply needs no lookup', () async {
@@ -114,10 +114,25 @@ void main() {
     expect(r.result.error.message, contains('rejected'));
   });
 
-  test('no connection stays a failure without any request', () async {
+  test('a rejection the lookup could not answer is an unknown outcome, not a failure', () async {
+    // e.g. the same transaction sent earlier is already in a block and its lookup timed out
+    for (final lookup in ['drop', 'other']) {
+      expect((await send('reject', lookup)).result.error.code, ErrorCodes.nodeIsolateError.code, reason: lookup);
+    }
+  });
+
+  test('no connection sends nothing and stays an unknown outcome', () async {
     final r = await send('reply', 'found', connected: false);
-    expect(r.result.isFailure, isTrue);
+    expect(r.result.error.code, ErrorCodes.nodeIsolateError.code);
     expect(r.methods, isEmpty);
+  });
+
+  test('the reply wait is the RPC timeout itself, so nothing waits on past it', () async {
+    final r = await send('drop', 'missing');
+    // Both registrations are already gone when broadcast returns: the broadcast RPC used the reply limit,
+    // not the default 60 s that an outer timeout could not shorten or extend.
+    verify(r.socket.removeCompleter(1)).called(1);
+    verify(r.socket.removeCompleter(2)).called(1);
   });
 
   test('the check asks only the Electrum server, never the mempool API fallback', () async {

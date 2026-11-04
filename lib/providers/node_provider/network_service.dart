@@ -128,17 +128,24 @@ class NetworkService {
     Duration replyTimeout = kBroadcastReplyTimeout,
     Duration checkTimeout = kBroadcastCheckTimeout,
   }) async {
+    var rejected = false;
     try {
-      final txHash = await _electrumService.broadcast(signedTx.serialize()).timeout(replyTimeout);
+      final txHash = await _electrumService.broadcast(
+        signedTx.serialize(),
+        timeout: replyTimeout,
+        onRpcError: () => rejected = true,
+      );
 
       return Result.success(txHash);
     } catch (e) {
-      // 응답을 못 받았거나 거절돼도 노드가 이미 받았을 수 있다. 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
+      // 응답을 못 받았거나 거절돼도 노드가 이미 받았을 수 있다(예: 앞서 보낸 같은 거래가 이미 블록에 있음).
+      // 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
       final txHash = signedTx.transactionHash;
-      if (await _electrumService.isTransactionKnown(txHash, timeout: checkTimeout)) return Result.success(txHash);
-      // 서버가 답한 거절(또는 보내기 전 연결 없음)만 확정된 실패다. 응답 시간 초과·연결 끊김은 결과를 모르는 것이라
-      // 예전 메인 쪽 응답 시간 초과와 같은 오류로 알린다(같은 문구). 화면은 이 오류에서 같은 거래를 한 번 더 보낸다.
-      if (e is Map || e is String) return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
+      final known = await _electrumService.lookUpTransaction(txHash, timeout: checkTimeout);
+      if (known == true) return Result.success(txHash);
+      // 서버가 거절했고 그 거래가 없다고 답했을 때만 확정된 실패다. 나머지는 결과를 모르는 것이라 예전 메인 쪽
+      // 응답 시간 초과와 같은 오류로 알린다(같은 문구). 화면은 이 오류에서 같은 거래를 다시 보낸다.
+      if (rejected && known == false) return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
       return Result.failure(ErrorCodes.nodeIsolateError);
     }
   }
