@@ -109,6 +109,15 @@ void main() {
       expect([row.blockHeight, row.amount, row.fee], [101, 40000, 1000]);
     });
 
+    test('주소 목록 더 보기로 나중에 더한 주소도 이미 저장된 받기 기록에 반영한다', () async {
+      await transactionRepository.addAllTransactions(testWalletItem.id, [received(0, 20000)]); // a1을 모를 때
+      expect(transactionRepository.getTransactionRecord(testWalletItem.id, hash)!.amount, 20000);
+
+      await addReceive1(); // addAddressesWithGapLimit: 주소 쪽 재계산(접두어 조회)
+
+      expect(transactionRepository.getTransactionRecord(testWalletItem.id, hash)!.amount, 40000);
+    });
+
     test('입력에 내 주소가 있거나 RECEIVED가 아니면 그대로 둔다', () async {
       await addReceive1();
       final sent = TransactionRecord.fromTransactions(
