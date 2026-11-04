@@ -297,15 +297,20 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
-    var result = await _nodeProvider.broadcast(_signedTx!);
-    if (result.isFailure && !_isExplicitRejection(result.error)) {
-      // 응답을 받지 못했으면 노드가 거래를 받았을 수 있다. 실패로 알리기 전에 거래 ID로 확인한다.
-      result = await _confirmAfterFailedRequest(result.error);
+    late Result<String> result;
+    var settled = false;
+    try {
+      result = await _nodeProvider.broadcast(_signedTx!);
+      if (result.isFailure && !_isExplicitRejection(result.error)) {
+        // 응답을 받지 못했으면 노드가 거래를 받았을 수 있다. 실패로 알리기 전에 거래 ID로 확인한다.
+        result = await _confirmAfterFailedRequest(result.error);
+      }
+      settled = result.isSuccess;
+    } finally {
+      // 실패나 예외로 끝나면 다음 시도의 연결 대기 중 취소가 다시 동작하도록 요청 표시를 지운다.
+      if (!settled) _isBroadcastRequested = false;
     }
-    if (result.isFailure) {
-      _isBroadcastRequested = false;
-      return result;
-    }
+    if (result.isFailure) return result;
 
     try {
       final tagApplication = _utxoRepository.applyInheritedTags(
@@ -386,7 +391,8 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   Future<bool> _isTransactionOnNode(String txHash) async {
     try {
-      return (await _nodeProvider.getTransaction(txHash)).isSuccess;
+      // 외부 탐색기로 넘어가지 않게 연결된 노드에만 묻는다.
+      return (await _nodeProvider.getTransactionFromNode(txHash)).isSuccess;
     } catch (e) {
       Logger.error('[Send] 거래 조회 실패: $e');
       return false;

@@ -665,6 +665,11 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getTransaction(txHash);
   }
 
+  /// 연결된 노드에만 거래를 조회한다. 사용자가 고른 노드·Tor 밖의 외부 탐색기로 거래 ID를 보내지 않는다.
+  Future<Result<String>> getTransactionFromNode(String txHash) async {
+    return _isolateManager.getTransactionFromNode(txHash);
+  }
+
   Future<Result<RecommendedFee>> getRecommendedFees() async {
     return _isolateManager.getRecommendedFees();
   }

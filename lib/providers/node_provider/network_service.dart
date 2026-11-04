@@ -134,6 +134,15 @@ class NetworkService {
     }
   }
 
+  /// 연결된 노드에만 트랜잭션을 조회합니다. 외부 탐색기로 넘어가지 않습니다.
+  Future<Result<String>> getTransactionFromNode(String txHash) async {
+    try {
+      return Result.success(await _electrumService.getTransactionFromServer(txHash));
+    } catch (e) {
+      return Result.failure(e is AppError ? e : ErrorCodes.withMessage(ErrorCodes.nodeUnknown, e.toString()));
+    }
+  }
+
   /// 특정 트랜잭션을 조회합니다.
   Future<Result<String>> getTransaction(String txHash) async {
     try {

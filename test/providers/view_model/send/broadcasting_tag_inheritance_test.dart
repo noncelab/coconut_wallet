@@ -73,6 +73,7 @@ class _NodeProvider extends Fake implements NodeProvider {
   // A node rejection by default; a lost reply (no answer from the node) when set to a connection error.
   AppError failure = ErrorCodes.broadcastError;
   void Function()? duringBroadcast;
+  Object? throwOnBroadcast;
 
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async =>
@@ -86,7 +87,7 @@ class _NodeProvider extends Fake implements NodeProvider {
   Future<Result<String>> Function(String txHash)? onGetTransaction;
 
   @override
-  Future<Result<String>> getTransaction(String txHash) async {
+  Future<Result<String>> getTransactionFromNode(String txHash) async {
     lookups++;
     return onGetTransaction != null ? onGetTransaction!(txHash) : Result.failure(ErrorCodes.nodeUnknown);
   }
@@ -95,6 +96,7 @@ class _NodeProvider extends Fake implements NodeProvider {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
     duringBroadcast?.call();
+    if (throwOnBroadcast != null) throw throwOnBroadcast!;
     return fails ? Result.failure(failure) : Result.success(signedTx.transactionHash);
   }
 }
@@ -997,6 +999,24 @@ void main() {
     expect(outcome?.isFailure, isTrue);
     expect(viewModel.stoppedInBackground, isTrue);
     expect(node.broadcasts, 0);
+  });
+
+  testWidgets('an exception during the request still lets the next attempt be cancelled', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.throwOnBroadcast = StateError('unexpected');
+    await expectLater(viewModel.broadcast(inheritedTagIds: []), throwsStateError);
+    node.throwOnBroadcast = null;
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.cancelPendingSend(), isTrue, reason: 'a request that ended in an exception is not in flight');
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    expect(node.broadcasts, 1, reason: 'the cancelled retry must not reach the node');
   });
 
   testWidgets('disposing the view model while waiting prevents a later broadcast', (tester) async {

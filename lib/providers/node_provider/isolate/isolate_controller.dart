@@ -86,7 +86,13 @@ class IsolateController {
           isolateToMainSendPort.send(await _networkManager.getLatestBlock());
           break;
         case IsolateControllerCommand.getTransaction:
-          isolateToMainSendPort.send(await _networkManager.getTransaction(params[0]));
+          // params[1] == true: 연결된 노드에만 조회(외부 탐색기 대체 조회 없음)
+          final nodeOnly = params.length > 1 && params[1] == true;
+          isolateToMainSendPort.send(
+            await (nodeOnly
+                ? _networkManager.getTransactionFromNode(params[0])
+                : _networkManager.getTransaction(params[0])),
+          );
           break;
         case IsolateControllerCommand.getRecommendedFees:
           isolateToMainSendPort.send(await _networkManager.getRecommendedFees());

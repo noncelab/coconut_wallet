@@ -100,7 +100,7 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   bool hasTransaction = false;
   int lookups = 0;
   @override
-  Future<Result<String>> getTransaction(String txHash) async {
+  Future<Result<String>> getTransactionFromNode(String txHash) async {
     lookups++;
     return hasTransaction && connected ? Result.success('raw') : Result.failure(ErrorCodes.nodeUnknown);
   }

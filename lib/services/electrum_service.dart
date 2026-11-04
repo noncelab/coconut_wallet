@@ -221,16 +221,27 @@ class ElectrumService {
     return response.result;
   }
 
+  /// 연결된 Electrum 서버에만 거래를 조회한다. 외부 탐색기로 넘어가지 않으므로 사용자가 고른 노드·Tor 밖으로
+  /// 거래 ID가 나가지 않는다. 서버가 거래를 모르면 [ElectrumServerError]를 던진다.
+  Future<String> getTransactionFromServer(
+    String txHash, {
+    bool? verbose,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
+      // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
+      if (json is Map) {
+        return ElectrumResponse(result: jsonEncode(json));
+      }
+      return ElectrumResponse(result: json as String);
+    }, timeout: timeout);
+    return response.result;
+  }
+
+  /// 서버 조회가 실패하면 공개 탐색기(mempool API)로 한 번 더 조회한다.
   Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
     try {
-      var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
-        // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
-        if (json is Map) {
-          return ElectrumResponse(result: jsonEncode(json));
-        }
-        return ElectrumResponse(result: json as String);
-      }, timeout: timeout);
-      return response.result;
+      return await getTransactionFromServer(txHash, verbose: verbose, timeout: timeout);
     } catch (e) {
       try {
         final mempoolApi = MempoolApi();

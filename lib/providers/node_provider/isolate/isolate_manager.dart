@@ -551,6 +551,11 @@ class IsolateManager {
     return _sendWithSocketCheck(IsolateControllerCommand.getTransaction, [txHash]);
   }
 
+  /// 연결된 노드에만 거래를 조회한다. 외부 탐색기로 넘어가지 않는다.
+  Future<Result<String>> getTransactionFromNode(String txHash) async {
+    return _sendWithSocketCheck(IsolateControllerCommand.getTransaction, [txHash, true]);
+  }
+
   Future<Result<RecommendedFee>> getRecommendedFees() async {
     return _sendWithSocketCheck(IsolateControllerCommand.getRecommendedFees, []);
   }

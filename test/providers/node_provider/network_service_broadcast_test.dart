@@ -14,6 +14,22 @@ const _rawTransaction =
 
 class _Electrum extends Fake implements ElectrumService {
   Object? error;
+  int explorerFallbackLookups = 0;
+
+  @override
+  Future<String> getTransactionFromServer(
+    String txHash, {
+    bool? verbose,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    throw const ElectrumServerError({'code': 2, 'message': 'missing transaction'});
+  }
+
+  @override
+  Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
+    explorerFallbackLookups++;
+    return 'raw from explorer';
+  }
 
   @override
   Future<String> broadcast(String rawTransaction) async {
@@ -50,4 +66,10 @@ void main() {
       expect(result.error.code, ErrorCodes.nodeConnectionError.code);
     });
   }
+
+  test('a node-only lookup never falls back to the public explorer', () async {
+    final result = await service.getTransactionFromNode('txid');
+    expect(result.isFailure, isTrue);
+    expect(electrum.explorerFallbackLookups, 0, reason: 'the txid must not leave the chosen node');
+  });
 }
