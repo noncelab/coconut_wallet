@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -214,6 +215,16 @@ void main() {
       await tester.pump();
       navigated.clear();
     }
+    await tester.pump();
+    final consumer = tester.element(find.byType(Consumer<BroadcastingViewModel>));
+    final model = consumer.read<BroadcastingViewModel>();
+    // compute() completes on a real isolate; pumping only the fake clock cannot
+    // deliver its result. Wait for readiness before attempting to tap Send.
+    for (var attempt = 0; !model.isInitDone && attempt < 150; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(model.isInitDone, isTrue);
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);

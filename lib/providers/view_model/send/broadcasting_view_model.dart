@@ -25,7 +25,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/network_util.dart';
 import 'package:coconut_wallet/utils/progressive_connection_wait.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
+import 'package:coconut_wallet/services/transaction/broadcast_transaction_service.dart';
 import 'package:flutter/foundation.dart';
 
 class InvalidTransactionException implements Exception {
@@ -390,34 +390,19 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
 
-    final originalPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
-    final expectedTransaction = originalPsbt.unsignedTransaction;
-    late final Psbt signedPsbt;
-    if (isPsbt(_sendInfoProvider.signedResult!)) {
-      signedPsbt = Psbt.parse(_sendInfoProvider.signedResult!);
-      TransactionIntentValidator.ensureMatches(expectedTransaction, signedPsbt.unsignedTransaction);
-
-      final finalizedTransaction = signedPsbt.getSignedTransaction(walletAddressType!);
-      TransactionIntentValidator.ensureMatches(expectedTransaction, finalizedTransaction);
-      _signedTx = finalizedTransaction;
-    } else {
-      try {
-        signedPsbt = originalPsbt;
-
-        // raw transaction 데이터 처리 (hex 또는 base64)
-        final hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
-        final signedTx = Transaction.parse(hexTransaction);
-        TransactionIntentValidator.ensureMatches(expectedTransaction, signedTx);
-
-        _signedTx = signedTx;
-      } catch (e) {
-        Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
-        rethrow;
-      }
-    }
+    final signedPayload = _sendInfoProvider.signedResult!;
+    final signedIsPsbt = isPsbt(signedPayload);
+    final prepared = await prepareBroadcastTransaction(
+      originalPsbt: _sendInfoProvider.txWaitingForSign!,
+      signedPayload: signedIsPsbt ? signedPayload : decodeTransactionToHex(signedPayload),
+      signedIsPsbt: signedIsPsbt,
+      wallet: _wallet,
+    );
+    if (_isSendCancelled) return null;
+    _signedTx = prepared.transaction;
     _outputIndexesToMyAddress.clear();
     for (var i = 0; i < _signedTx!.outputs.length; i++) {
-      if (originalPsbt.outputs[i].isOwnedBy(_wallet) ||
+      if (prepared.originalOutputOwned[i] ||
           _walletProvider.containsAddress(_walletId!, _signedTx!.outputs[i].getAddress())) {
         _outputIndexesToMyAddress.add(i);
       }
@@ -429,14 +414,7 @@ class BroadcastingViewModel extends ChangeNotifier {
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
 
-    //_debugPrintSendInfoProvider();
-
-    Psbt psbt;
-    if (_hasAllInputsBip32Derivation(signedPsbt)) {
-      psbt = signedPsbt;
-    } else {
-      psbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
-    }
+    final psbt = prepared.psbt;
 
     List<PsbtOutput> outputs = psbt.outputs;
     _inputCount = _signedTx?.inputs.length ?? 0;
@@ -457,10 +435,10 @@ class BroadcastingViewModel extends ChangeNotifier {
           outputIndex: outputIndex,
           address: output.outAddress,
           amount: amount,
-          isChange: output.isChange(_wallet),
+          isChange: prepared.outputChange[outputIndex],
         ),
       );
-      if (output.isChange(_wallet)) {
+      if (prepared.outputChange[outputIndex]) {
         _changeOutputAmounts.add(amount);
       } else {
         _externalOutputAmounts.add(amount);
@@ -476,9 +454,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     List<PsbtOutput> outputToMyChangeAddress = [];
     List<PsbtOutput> outputsToOther = [];
     for (int i = 0; i < outputs.length; i++) {
-      if (!outputs[i].isOwnedBy(_wallet)) {
+      if (!prepared.outputOwned[i]) {
         outputsToOther.add(outputs[i]);
-      } else if (outputs[i].isChange(_wallet)) {
+      } else if (prepared.outputChange[i]) {
         outputToMyChangeAddress.add(outputs[i]);
       } else {
         outputToMyReceivingAddress.add(outputs[i]);
@@ -504,7 +482,7 @@ class BroadcastingViewModel extends ChangeNotifier {
           recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
-      _sendingAmount = psbt.sendingAmount(_wallet);
+      _sendingAmount = prepared.sendingAmount;
       _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
@@ -527,13 +505,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         _isSendingToMyAddress = true;
       }
 
-      _sendingAmount = psbt.sendingAmount(_wallet);
+      _sendingAmount = prepared.sendingAmount;
       if (output != null) {
         _recipientAddresses.add(output.outAddress);
       }
     }
-    _fee = psbt.fee;
-    _totalAmount = psbt.sendingAmount(_wallet) + psbt.fee;
+    _fee = prepared.fee;
+    _totalAmount = prepared.sendingAmount + prepared.fee;
 
     if (excludedUtxoStatus == null) {
       _isInitDone = true;
@@ -569,10 +547,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
     return _txProvider.hasTransactionConfirmed(walletId!, _txProvider.transaction!.transactionHash);
-  }
-
-  bool _hasAllInputsBip32Derivation(Psbt psbt) {
-    return psbt.inputs.every((input) => input.bip32Derivation != null);
   }
 
   /// 트랜잭션 문자열을 hex 형식으로 디코딩하는 헬퍼 메서드
