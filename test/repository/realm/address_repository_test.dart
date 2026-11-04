@@ -525,9 +525,15 @@ void main() {
           address: testWalletItem.walletBase.getAddress(8),
         )..status = status;
         realmManager.realm.write(() => realmManager.realm.add(coin));
-        expect(addressRepository.getActiveUsedAddresses(testWalletId, false).map((a) => a.index), [8]);
-        realmManager.realm.write(() => coin.isDeleted = true);
         expect(addressRepository.getActiveUsedAddresses(testWalletId, false), isEmpty);
+        expect(
+          addressRepository
+              .getActiveUsedAddresses(testWalletId, false, includeUnreconciledUtxos: true)
+              .map((a) => a.index),
+          [8],
+        );
+        realmManager.realm.write(() => coin.isDeleted = true);
+        expect(addressRepository.getActiveUsedAddresses(testWalletId, false, includeUnreconciledUtxos: true), isEmpty);
       });
     }
 
@@ -549,7 +555,14 @@ void main() {
         ]),
       );
       expect(addressRepository.getActiveUsedAddresses(testWalletId, false), isEmpty);
-      expect(addressRepository.getActiveUsedAddresses(testWalletId, true).map((a) => a.index), [9]);
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, true), isEmpty);
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, false, includeUnreconciledUtxos: true), isEmpty);
+      expect(
+        addressRepository
+            .getActiveUsedAddresses(testWalletId, true, includeUnreconciledUtxos: true)
+            .map((a) => a.index),
+        [9],
+      );
     });
 
     test('getActiveUsedAddresses: 잔액/미확정이 남아있는 사용된 주소만, 지정한 체인만 반환한다', () {

@@ -666,7 +666,9 @@ void main() {
       expect(c.coinState(), 'deleted');
       expect(c.backend.calls.sublist(requestStart).where((call) => call == 'getHistory:${c.input}'), isNotEmpty);
       expect(
-        ScriptSyncServiceMock.addressRepository.getActiveUsedAddresses(_walletId, false).map((a) => a.address),
+        ScriptSyncServiceMock.addressRepository
+            .getActiveUsedAddresses(_walletId, false, includeUnreconciledUtxos: true)
+            .map((a) => a.address),
         isNot(contains(c.input)),
         reason: 'successful reconciliation makes the swept address dormant again',
       );

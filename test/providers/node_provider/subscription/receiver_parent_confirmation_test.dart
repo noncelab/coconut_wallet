@@ -342,12 +342,17 @@ void main() {
         expect(failingUtxos.getUtxoState(wallet.id, outpoint)?.status, UtxoStatus.outgoing);
         expect(
           addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
+          isNot(contains(receive.address)),
+          reason: 'UI address queries keep the balance/pending-record rule.',
+        );
+        expect(
+          addresses.getActiveUsedAddresses(wallet.id, false, includeUnreconciledUtxos: true).map((row) => row.address),
           contains(receive.address),
           reason: 'A replaced record does not remove the remaining coin that a new isolate must reconcile.',
         );
         await failingUtxos.deleteUtxoList(wallet.id, [outpoint]);
         expect(
-          addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
+          addresses.getActiveUsedAddresses(wallet.id, false, includeUnreconciledUtxos: true).map((row) => row.address),
           isNot(contains(receive.address)),
         );
         return;

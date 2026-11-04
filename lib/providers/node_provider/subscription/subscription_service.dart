@@ -275,7 +275,11 @@ class SubscriptionService {
       return _scanAndSubscribeRange(walletItem, isChange, 0, minKnownUsedIndex ?? -1, scriptStatusController);
     }
 
-    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(
+      walletItem.id,
+      isChange,
+      includeUnreconciledUtxos: true,
+    );
     final activeAddressSet = activeAddresses.map((address) => address.address).toSet();
     final activeResults = await Future.wait([
       ...activeAddresses.map(
@@ -500,7 +504,11 @@ class SubscriptionService {
   Future<void> _unsubscribeScript(WalletItemBase walletItem, bool isChange) async {
     final lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
 
-    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(
+      walletItem.id,
+      isChange,
+      includeUnreconciledUtxos: true,
+    );
     final gapWindowAddresses =
         ElectrumUtil.prepareAddressesMap(
           walletItem.walletBase,
