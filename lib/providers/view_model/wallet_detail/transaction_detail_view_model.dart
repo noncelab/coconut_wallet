@@ -209,10 +209,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
           updatedTx.transactionHash != currentTx.transactionHash ||
           updatedTx.transactionType != currentTx.transactionType ||
           updatedTx.inputAddressList.length != currentTx.inputAddressList.length) {
-        _initTransactionList();
         _setPreviousTransactionIndex(0);
         _setSelectedTransactionIndex(0);
-        _syncTransactionStatus();
+        _initTransactionList();
       }
     }
     safeNotifyListeners();
@@ -253,6 +252,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       _fetchTransactionFromMempoolAndUpdate();
       _transactionList = [currentTransaction];
       _syncFeeHistoryList();
+      _syncTransactionStatus();
       safeNotifyListeners();
       return;
     }
@@ -330,6 +330,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('✅ Transaction Initialization Complete');
     debugPrint('====================================================================');
     _syncFeeHistoryList();
+    _syncTransactionStatus();
     safeNotifyListeners();
   }
 
@@ -354,7 +355,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// 입력·유형이 보정된 기록으로 상태를 다시 정함
+  /// 목록을 다시 만들 때마다 선택된 기록으로 상태를 다시 정함
   void _syncTransactionStatus() {
     final transactionList = _transactionList;
     if (transactionList == null || transactionList.isEmpty) return;
@@ -405,7 +406,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (txRecord != null) {
         await _txProvider.updateTransaction(_walletId, _txHash, txRecord);
         _initTransactionList();
-        _syncTransactionStatus();
       }
     } catch (e) {
       Logger.error('[_fetchTransactionFromMempool] Failed to fetch tx from mempool: $_txHash, error=$e');
@@ -511,17 +511,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (updatedTxResult.isSuccess) {
       Logger.log('onRefresh: getTransactionRecord success');
       await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
-      _initTransactionList();
       _setPreviousTransactionIndex(0);
       _setSelectedTransactionIndex(0);
-      safeNotifyListeners();
+      _initTransactionList();
     } else {
       Logger.error(
         'onRefresh: getTransactionRecord failed - error: ${updatedTxResult.error}, falling back to mempool API',
       );
-      await _fetchTransactionFromMempoolAndUpdate();
       _setPreviousTransactionIndex(0);
       _setSelectedTransactionIndex(0);
+      await _fetchTransactionFromMempoolAndUpdate();
       safeNotifyListeners();
     }
 

@@ -28,6 +28,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -83,6 +84,9 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
   @override
   void initTransaction(int walletId, String txHash, {String? utxoTo}) {}
 
+  @override
+  Future<void> updateTransaction(int walletId, String txHash, TransactionRecord updatedTx) async => _tx = updatedTx;
+
   /// 동기화·멤풀 보정으로 저장된 기록이 바뀐 것처럼 알림
   void replaceRecord(TransactionRecord record) {
     _tx = record;
@@ -122,6 +126,14 @@ class _Addresses extends Fake implements AddressRepository {
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
   final _walletStates = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
   Map<int, WalletUpdateInfo> _registered = {};
+  TransactionRecord? refreshedRecord;
+
+  @override
+  Future<Result<TransactionRecord>> getTransactionRecord(
+    WalletItemBase walletItem,
+    String txHash, {
+    Duration? timeout,
+  }) async => Result.success(refreshedRecord!);
 
   void setSyncing(int walletId, bool syncing) {
     _registered = {
@@ -189,6 +201,18 @@ void main() {
   tearDown(() => manager.dispose());
 
   /// 이전 거래 없이 기록을 만들어 입력 목록이 빈 상태로 상세 화면을 연다
+  TransactionRecord correctedSentRecord() => TransactionRecord.fromTransactions(
+    transactionHash: _tx.transactionHash,
+    timestamp: _tx.timestamp,
+    blockHeight: 0,
+    transactionType: TransactionType.sent,
+    amount: -_tx.amount,
+    fee: 300,
+    inputAddressList: _knownInputs,
+    outputAddressList: _tx.outputAddressList,
+    vSize: _tx.vSize,
+  );
+
   Future<void> openDetail(
     WidgetTester tester,
     String hex, {
@@ -335,17 +359,7 @@ void main() {
       await openDetail(tester, _normalTransaction, blockHeight: 0);
       expect(find.text(t.quick_receive), findsOneWidget);
 
-      final corrected = TransactionRecord.fromTransactions(
-        transactionHash: _tx.transactionHash,
-        timestamp: _tx.timestamp,
-        blockHeight: 0,
-        transactionType: TransactionType.sent,
-        amount: -_tx.amount,
-        fee: 300,
-        inputAddressList: _knownInputs,
-        outputAddressList: _tx.outputAddressList,
-        vSize: _tx.vSize,
-      );
+      final corrected = correctedSentRecord();
       (tester.element(find.byType(TransactionDetailScreen)).read<TransactionProvider>() as _Transactions).replaceRecord(
         corrected,
       );
@@ -355,6 +369,21 @@ void main() {
       await tester.tap(find.text(t.quick_send));
       await tester.pump(const Duration(milliseconds: 300));
       expect(pushedRoutes, [AppRouteNames.transactionFeeBumping]);
+      expect((pushedArguments.single as TransactionFeeBumpingRouteArgs).feeBumpingType, FeeBumpingType.rbf);
+    });
+
+    testWidgets('당겨서 새로고침으로 보정된 보낸 거래도 빨리 보내기(RBF)로 열린다', (tester) async {
+      node.setSyncing(1, false);
+      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      expect(find.text(t.quick_receive), findsOneWidget);
+
+      node.refreshedRecord = correctedSentRecord();
+      await tester.element(find.text(t.quick_receive)).read<TransactionDetailViewModel>().onRefresh();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(t.quick_send), findsOneWidget);
+      await tester.tap(find.text(t.quick_send));
+      await tester.pump(const Duration(milliseconds: 300));
       expect((pushedArguments.single as TransactionFeeBumpingRouteArgs).feeBumpingType, FeeBumpingType.rbf);
     });
   });
