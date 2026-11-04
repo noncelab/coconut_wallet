@@ -435,7 +435,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                                       padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
                                       child: Text(
                                         viewModel.isConfirmingBroadcast
-                                            ? t.broadcasting_screen.confirming_message
+                                            ? viewModel.confirmingMinutesLeft != null
+                                                ? t.broadcasting_screen.confirming_delay_message_onion(
+                                                  minutes: viewModel.confirmingMinutesLeft!,
+                                                )
+                                                : t.broadcasting_screen.confirming_message
                                             : t.broadcasting_screen.connection_delay_message,
                                         key: ValueKey(
                                           viewModel.isConfirmingBroadcast

@@ -27,8 +27,13 @@ const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);
 const Duration kSendConnectionCheckTimeout = Duration(seconds: 3);
 const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 10);
 
+/// 노드에 전송을 요청한 뒤 결과를 알기까지 기다리는 총 시간(앱이 백그라운드에 있던 시간은 빼고 센다).
+/// 요청 응답 대기와 거래 ID 확인을 합한 시간이며, 넘으면 전송 결과를 알 수 없음으로 알린다.
+const Duration kSendBroadcastResultWaitLimit = Duration(seconds: 120);
+const Duration kSendBroadcastResultWaitLimitForOnion = Duration(seconds: 720);
+
 /// 전송 요청의 응답이 실패한 뒤 거래 ID로 노드에 전송 여부를 다시 묻는 간격.
-/// 모두 확인하지 못하면 전송 결과를 알 수 없음으로 알린다.
+/// 마지막 간격을 반복하며, 총 대기 시간 안에서만 묻는다.
 const List<Duration> kSendBroadcastConfirmRetryDelays = [
   Duration(seconds: 1),
   Duration(seconds: 2),

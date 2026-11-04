@@ -990,6 +990,7 @@ broadcasting_screen:
   requesting: "전송 요청 중"
   connection_delay_message: "노드 연결이 지연되고 있어요.\n아직 전송 전이며, 연결이 준비되면 자동으로 전송해요."
   confirming_message: "전송 결과를 확인하고 있어요.\n확인이 끝날 때까지 기다려 주세요."
+  confirming_delay_message_onion: "Tor 노드의 응답이 늦어 전송 결과 확인이 길어지고 있어요.\n최대 약 $minutes분 더 걸릴 수 있어요."
   unconfirmed_popup_title: "전송 결과 확인 불가"
   background_stopped_title: "전송 중단"
   background_stopped_message: "앱이 백그라운드로 전환되어 전송하지 않았어요.\n다시 보내 주세요."

@@ -78,6 +78,14 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   /// 노드 요청의 응답이 실패해 거래 ID로 전송 여부를 확인하는 중인지. 결과를 모르므로 화면을 떠날 수 없다.
   bool get isConfirmingBroadcast => _isConfirmingBroadcast;
+  Duration _resultWaitRemaining = Duration.zero;
+  Timer? _resultWaitTicker;
+  Completer<void>? _resultWaitExpired;
+  bool _isOnionResultWait = false;
+
+  /// Tor 노드에서 결과를 확인하는 동안 남은 최대 대기 시간(분, 올림). 그 밖에는 null.
+  int? get confirmingMinutesLeft =>
+      _isConfirmingBroadcast && _isOnionResultWait ? (_resultWaitRemaining.inSeconds / 60).ceil() : null;
   bool _isInBackground = false;
   Completer<void>? _foreground;
   bool _stoppedInBackground = false;
@@ -165,6 +173,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   void dispose() {
     // 화면이 다른 경로로 사라져도 대기 중이던 보내기가 나중에 전송되지 않도록 한다.
     _isSendCancelled = true;
+    _stopResultWait();
     _stopConnectionPreparation();
     super.dispose();
   }
@@ -297,6 +306,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
+    _startResultWait(isOnion ? kSendBroadcastResultWaitLimitForOnion : kSendBroadcastResultWaitLimit, isOnion);
     late Result<String> result;
     var settled = false;
     try {
@@ -307,6 +317,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       }
       settled = result.isSuccess;
     } finally {
+      _stopResultWait();
       // 실패나 예외로 끝나면 다음 시도의 연결 대기 중 취소가 다시 동작하도록 요청 표시를 지운다.
       if (!settled) _isBroadcastRequested = false;
     }
@@ -350,11 +361,36 @@ class BroadcastingViewModel extends ChangeNotifier {
     return !alreadyKnown.any(message.contains);
   }
 
+  /// 노드에 요청한 순간부터 결과를 기다리는 총 시간을 센다. 앱이 백그라운드에 있는 동안은 세지 않는다.
+  /// 1초마다 줄이며, Tor 결과 확인 중에는 남은 분이 바뀔 때 화면을 갱신한다.
+  void _startResultWait(Duration limit, bool isOnion) {
+    _stopResultWait();
+    _resultWaitRemaining = limit;
+    _isOnionResultWait = isOnion;
+    final expired = _resultWaitExpired = Completer<void>();
+    _resultWaitTicker = Timer.periodic(const Duration(seconds: 1), (ticker) {
+      if (_isInBackground) return;
+      final minutesBefore = confirmingMinutesLeft;
+      _resultWaitRemaining -= const Duration(seconds: 1);
+      if (_resultWaitRemaining <= Duration.zero) {
+        ticker.cancel();
+        if (!expired.isCompleted) expired.complete();
+      }
+      if (confirmingMinutesLeft != minutesBefore && !_isSendCancelled) notifyListeners();
+    });
+  }
+
+  void _stopResultWait() {
+    _resultWaitTicker?.cancel();
+    _resultWaitTicker = null;
+  }
+
   /// 요청의 응답을 받지 못했거나 이미 받은 거래라는 응답이면, 노드에 거래가 있는지 거래 ID로 확인한다.
   /// - 거래가 있으면 성공으로 본다.
-  /// - 끝까지 찾지 못하면 [ErrorCodes.broadcastUnconfirmed]를 돌려준다. 조회 실패와 '거래 없음'은 구분하지 않는다.
-  ///   노드가 거절했다는 응답 없이 실패를 확정하면, 이미 전송된 거래를 실패로 알려 새 거래를 만들게 할 수 있기 때문이다.
-  ///   같은 거래를 다시 보내는 것은 안전하므로 확인 불가 안내는 다시 보내기를 권한다.
+  /// - 총 대기 시간(일반 120초, Tor 720초) 안에 찾지 못하면 [ErrorCodes.broadcastUnconfirmed]를 돌려준다.
+  ///   조회 실패와 '거래 없음'은 구분하지 않는다. 노드가 거절했다는 응답 없이 실패를 확정하면, 이미 전송된 거래를
+  ///   실패로 알려 새 거래를 만들게 할 수 있기 때문이다. 같은 거래를 다시 보내는 것은 안전하므로 안내는 다시 보내기를 권한다.
+  /// - 조회·연결 확인·복구·재시도 간격 모두 남은 시간 안에서만 기다린다.
   /// 앱이 백그라운드에 있으면 돌아올 때까지 확인을 미룬다.
   Future<Result<String>> _confirmAfterFailedRequest(AppError requestError) async {
     final txHash = _signedTx!.transactionHash;
@@ -362,27 +398,40 @@ class BroadcastingViewModel extends ChangeNotifier {
     final delays = isOnion ? kSendBroadcastConfirmRetryDelaysForOnion : kSendBroadcastConfirmRetryDelays;
     // 연결 복구가 끝나지 않아도 확인이 멈추지 않게 한 번의 복구 대기에 상한을 둔다.
     final recoveryLimit = isOnion ? kSendConnectionWaitLimitsForOnion.first : kSendConnectionWaitLimits.first;
+    final expired = _resultWaitExpired ?? (Completer<void>()..complete());
+    // 남은 시간이 끝나면 기다리던 작업을 버리고 null을 돌려준다.
+    Future<T?> withinLimit<T>(Future<T> work) =>
+        Future.any<T?>([work.then<T?>((value) => value), expired.future.then<T?>((_) => null)]);
     Logger.log('[Send] 전송 응답 실패(${requestError.code}), 거래 ID로 전송 여부 확인: $txHash');
     _setConfirmingBroadcast(true);
     try {
-      for (var attempt = 0; ; attempt++) {
+      for (var attempt = 0; !expired.isCompleted; attempt++) {
         await _foreground?.future;
-        if (await _isTransactionOnNode(txHash)) {
+        if (expired.isCompleted) break;
+        if (await withinLimit(_isTransactionOnNode(txHash)) == true) {
           Logger.log('[Send] 노드에서 거래 확인, 전송 성공으로 처리: $txHash');
           return Result.success(txHash);
         }
+        if (expired.isCompleted) break;
         // 연결 상태는 복구가 필요한지 판단하는 데만 쓴다. 전송 여부의 근거로 쓰지 않는다.
-        if (!await _isNodeReachable()) {
-          try {
-            await _nodeProvider.ensureConnectedForBroadcast().timeout(recoveryLimit);
-          } catch (e) {
-            Logger.error('[Send] 전송 결과 확인 중 연결 복구 실패: $e');
-          }
+        if (await withinLimit(_isNodeReachable()) == false) {
+          await withinLimit(
+            _nodeProvider
+                .ensureConnectedForBroadcast()
+                .timeout(recoveryLimit)
+                .then<void>((_) {}, onError: (Object e) => Logger.error('[Send] 전송 결과 확인 중 연결 복구 실패: $e')),
+          );
         }
-        if (attempt >= delays.length) break;
-        await Future<void>.delayed(delays[attempt]);
+        if (expired.isCompleted) break;
+        final pause = Completer<void>();
+        final timer = Timer(delays[attempt < delays.length ? attempt : delays.length - 1], pause.complete);
+        try {
+          await withinLimit(pause.future);
+        } finally {
+          timer.cancel();
+        }
       }
-      Logger.error('[Send] 전송 결과를 확인하지 못함: $txHash');
+      Logger.error('[Send] 총 대기 시간 안에 전송 결과를 확인하지 못함: $txHash');
       return Result.failure(ErrorCodes.broadcastUnconfirmed);
     } finally {
       _setConfirmingBroadcast(false);

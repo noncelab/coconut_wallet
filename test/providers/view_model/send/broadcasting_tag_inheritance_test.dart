@@ -862,6 +862,16 @@ void main() {
     expect(node.lookups, 1);
   });
 
+  /// Pumps one second at a time until [outcome] arrives; returns the elapsed seconds.
+  Future<int> pumpUntilOutcome(WidgetTester tester, Result<String>? Function() outcome, {int maxSeconds = 900}) async {
+    var seconds = 0;
+    while (outcome() == null && seconds < maxSeconds) {
+      await tester.pump(const Duration(seconds: 1));
+      seconds++;
+    }
+    return seconds;
+  }
+
   testWidgets('failed lookups with a reachable node report an unknown result, not a failure', (tester) async {
     await tester.runAsync(() => initialize());
     node.fails = true;
@@ -872,15 +882,14 @@ void main() {
     await tester.pump();
     expect(viewModel.isConfirmingBroadcast, isTrue);
     expect(viewModel.cancelPendingSend(), isFalse, reason: 'the result is unknown while confirming');
-    for (final delay in kSendBroadcastConfirmRetryDelays) {
-      await tester.pump(delay);
-    }
+    final seconds = await pumpUntilOutcome(tester, () => outcome);
     expect(
       outcome?.error.code,
       ErrorCodes.broadcastUnconfirmed.code,
       reason: 'a lookup failure is not proof of absence',
     );
-    expect(node.lookups, kSendBroadcastConfirmRetryDelays.length + 1);
+    expect(seconds, kSendBroadcastResultWaitLimit.inSeconds, reason: 'checks continue until the total limit');
+    expect(node.lookups, greaterThan(5), reason: 'there is no fixed number of attempts');
     expect(node.reconnects, 0, reason: 'a reachable node needs no recovery');
     expect(viewModel.isConfirmingBroadcast, isFalse);
     expect(node.broadcasts, 1);
@@ -893,14 +902,15 @@ void main() {
     Result<String>? outcome;
     viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
     await tester.pump();
-    for (final delay in kSendBroadcastConfirmRetryDelays) {
-      await tester.pump(delay);
-    }
+    await pumpUntilOutcome(tester, () => outcome);
     expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
     expect(node.broadcasts, 1);
   });
 
   for (final onion in [false, true]) {
+    final limit = onion ? kSendBroadcastResultWaitLimitForOnion : kSendBroadcastResultWaitLimit;
+    final probeTimeout = onion ? const Duration(seconds: 75) : const Duration(seconds: 3);
+
     testWidgets('an unreachable node during confirmation reports an unknown result (onion=$onion)', (tester) async {
       await tester.runAsync(() => initialize());
       node.host = onion ? 'node.onion' : 'node.example';
@@ -911,19 +921,97 @@ void main() {
       Result<String>? outcome;
       viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
       await tester.pump();
-      final delays = onion ? kSendBroadcastConfirmRetryDelaysForOnion : kSendBroadcastConfirmRetryDelays;
-      for (final delay in delays.take(delays.length - 1)) {
-        await tester.pump(delay);
-      }
-      expect(outcome, isNull, reason: 'confirmation keeps trying through every delay');
-      expect(viewModel.isConfirmingBroadcast, isTrue);
-      await tester.pump(delays.last);
+      final seconds = await pumpUntilOutcome(tester, () => outcome);
       expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
-      expect(node.lookups, delays.length + 1);
+      expect(seconds, limit.inSeconds);
       expect(node.broadcasts, 1, reason: 'confirmation must not resend');
       expect(viewModel.isConfirmingBroadcast, isFalse);
     });
+
+    testWidgets('a node that answers nothing until each timeout still ends at the total limit (onion=$onion)', (
+      tester,
+    ) async {
+      await tester.runAsync(() => initialize());
+      node.host = onion ? 'node.onion' : 'node.example';
+      node.fails = true;
+      node.failure = ErrorCodes.nodeIsolateError;
+      // Like #777, once the request is out: the socket looks connected, but every call waits for its own
+      // timeout and then fails, and recovery never finishes.
+      node.duringBroadcast = () {
+        node.onGetTransaction = (txHash) async {
+          await Future<void>.delayed(probeTimeout);
+          return Result.failure(ErrorCodes.nodeIsolateError);
+        };
+        node.onLatestBlock = () async {
+          await Future<void>.delayed(probeTimeout);
+          return Result.failure(ErrorCodes.nodeIsolateError);
+        };
+        node.onReconnect = () => Completer<Result<bool>>().future;
+      };
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      final seconds = await pumpUntilOutcome(tester, () => outcome);
+      expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
+      expect(seconds, limit.inSeconds, reason: 'the screen must not stay locked past the total limit');
+      // Let abandoned calls settle so no timer outlives the test.
+      await tester.pump(const Duration(minutes: 5));
+    });
   }
+
+  testWidgets('Tor confirmation shows the remaining minutes and updates them', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.host = 'node.onion';
+    node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
+    var notifications = 0;
+    viewModel.addListener(() => notifications++);
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.confirmingMinutesLeft, 12);
+    await tester.pump(const Duration(seconds: 61));
+    expect(viewModel.confirmingMinutesLeft, 11);
+    final before = notifications;
+    await tester.pump(const Duration(seconds: 60));
+    expect(viewModel.confirmingMinutesLeft, 10);
+    expect(notifications, greaterThan(before), reason: 'the screen is told when the minutes change');
+    await pumpUntilOutcome(tester, () => outcome);
+    expect(viewModel.confirmingMinutesLeft, isNull);
+  });
+
+  testWidgets('a regular node shows no remaining minutes', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.isConfirmingBroadcast, isTrue);
+    expect(viewModel.confirmingMinutesLeft, isNull);
+    await pumpUntilOutcome(tester, () => outcome);
+  });
+
+  testWidgets('time in the background does not count toward the total limit', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 60));
+    viewModel.onAppPaused();
+    await tester.pump(const Duration(minutes: 10));
+    expect(outcome, isNull, reason: 'background time is not counted');
+    viewModel.onAppResumed();
+    await tester.pump();
+    final seconds = await pumpUntilOutcome(tester, () => outcome);
+    expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
+    expect(
+      seconds,
+      inInclusiveRange(kSendBroadcastResultWaitLimit.inSeconds - 62, kSendBroadcastResultWaitLimit.inSeconds - 58),
+    );
+  });
 
   testWidgets('a transaction found after the connection recovers is treated as sent', (tester) async {
     await tester.runAsync(() => initialize());

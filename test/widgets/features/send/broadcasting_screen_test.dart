@@ -75,7 +75,7 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   @override
   bool isServerChanging = false;
   @override
-  String get host => 'node.example';
+  String host = 'node.example';
   int broadcasts = 0;
   final pending = Completer<Result<String>>();
   bool connected = true;
@@ -470,11 +470,36 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(BroadcastingScreen), findsOneWidget, reason: 'the screen stays while the result is unknown');
     final title = find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.unconfirmed_popup_title));
-    for (var second = 0; second < 120 && title.evaluate().isEmpty; second++) {
+    for (var second = 0; second < 200 && title.evaluate().isEmpty; second++) {
       await tester.pump(const Duration(seconds: 1));
     }
     expect(title, findsOneWidget);
     expect(node.broadcasts, 1, reason: 'confirmation must not resend');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Tor result checks show the remaining minutes and count down', (tester) async {
+    node.host = 'node.onion';
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    final notice = find.byKey(const ValueKey('broadcast-confirming-notice'));
+    for (var attempt = 0; attempt < 20 && notice.evaluate().isEmpty; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    String shown() => (tester.widget<Text>(notice)).data!;
+    expect(shown(), t.broadcasting_screen.confirming_delay_message_onion(minutes: 12));
+    await tester.pump(const Duration(seconds: 61));
+    expect(shown(), t.broadcasting_screen.confirming_delay_message_onion(minutes: 11));
+    final title = find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.unconfirmed_popup_title));
+    for (var second = 0; second < 800 && title.evaluate().isEmpty; second++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(title, findsOneWidget, reason: 'the Tor check ends at its total limit');
     expect(tester.takeException(), isNull);
   });
 

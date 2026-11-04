@@ -989,6 +989,7 @@ broadcasting_screen:
   requesting: "送信をリクエスト中"
   connection_delay_message: "ノードへの接続に時間がかかっています。\n取引はまだ送信されておらず、接続が完了すると自動的に送信します。"
   confirming_message: "送信結果を確認しています。\n確認が終わるまでお待ちください。"
+  confirming_delay_message_onion: "Torノードの応答が遅いため、送信結果の確認に時間がかかっています。\n最大で約$minutes分かかる場合があります。"
   unconfirmed_popup_title: "送信結果を確認できません"
   background_stopped_title: "送信を中断しました"
   background_stopped_message: "アプリがバックグラウンドに移ったため、送信しませんでした。\nもう一度送信してください。"
