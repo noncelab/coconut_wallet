@@ -168,6 +168,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   late final SendViewModel _viewModel;
   late int _lastExcludedUtxoNonce;
+  bool _isInitialUtxoSelectionPending = false;
   Timer? _ownAddressCheckTimer;
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
@@ -230,6 +231,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
     _lastExcludedUtxoNonce = _viewModel.excludedUtxoNonce;
     _viewModel.addListener(_onUtxoExcludedBySync);
+    _viewModel.addListener(_retryInitialUtxoSelection);
     if (widget.isMoveToVault && widget.receivingVaultWalletId != null) {
       final walletProvider = context.read<WalletProvider>();
       final vault = walletProvider.getWalletById(widget.receivingVaultWalletId!);
@@ -377,13 +379,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     super.didChangeDependencies();
     _flutterView = View.maybeOf(context);
     if (ModalRoute.of(context)?.isCurrent ?? true) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _onUtxoExcludedBySync());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _onUtxoExcludedBySync();
+        _retryInitialUtxoSelection();
+      });
     }
   }
 
   @override
   void dispose() {
     _viewModel.removeListener(_onUtxoExcludedBySync);
+    _viewModel.removeListener(_retryInitialUtxoSelection);
     WidgetsBinding.instance.removeObserver(this);
     _vaultInfoTimer?.cancel();
     _ownAddressCheckTimer?.cancel();
@@ -805,20 +811,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _showExcludedUtxoToast(_viewModel.lastExcludedUtxoStatus!);
   }
 
-  /// 지갑 업데이트 중이면 끝난 뒤에 UTXO 선택 시트를 띄움
+  /// 지갑 업데이트가 끝나고 스택의 가장 위에 이 화면이 있을때만 UTXO 선택 시트를 띄움
   void _openInitialUtxoSelection() {
-    if (!mounted || _viewModel.isUtxoSelectionAuto || _viewModel.selectedUtxoList.isNotEmpty) return;
-    if (_viewModel.isWalletSyncing) {
-      _viewModel.addListener(_openInitialUtxoSelectionWhenSynced);
+    if (!mounted || _viewModel.isUtxoSelectionAuto || _viewModel.selectedUtxoList.isNotEmpty) {
+      _isInitialUtxoSelectionPending = false;
       return;
     }
+    if (_viewModel.isWalletSyncing || ModalRoute.of(context)?.isCurrent == false) {
+      _isInitialUtxoSelectionPending = true;
+      return;
+    }
+    _isInitialUtxoSelectionPending = false;
     _onUtxoSelectionModeButtonPressed();
   }
 
-  void _openInitialUtxoSelectionWhenSynced() {
-    if (_viewModel.isWalletSyncing) return;
-    _viewModel.removeListener(_openInitialUtxoSelectionWhenSynced);
-    _openInitialUtxoSelection();
+  void _retryInitialUtxoSelection() {
+    if (_isInitialUtxoSelectionPending) _openInitialUtxoSelection();
   }
 
   void _onUtxoSelectionModeButtonPressed() async {

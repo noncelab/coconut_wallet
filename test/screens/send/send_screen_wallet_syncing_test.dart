@@ -21,6 +21,11 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -31,6 +36,7 @@ import 'package:provider/provider.dart';
 const _captureDir = String.fromEnvironment('SEND_SYNC_CAPTURE_DIR');
 
 late List<WalletItemBase> _wallets;
+var _isManualUtxoSelectionMode = false;
 final Map<int, List<UtxoState>> _utxosByWallet = {};
 
 UtxoState _utxo(String hash, int amount, {UtxoStatus status = UtxoStatus.unspent}) => UtxoState(
@@ -64,11 +70,27 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   bool containsAddress(int walletId, String address, {bool? isChange}) => false;
 }
 
+class _Tags extends Fake with ChangeNotifier implements UtxoTagProvider {
+  @override
+  List<UtxoTag> getUtxoTagList(int walletId) => const [];
+  @override
+  List<UtxoTag> getUtxoTagsByUtxoId(int walletId, String utxoId) => const [];
+}
+
+class _Prices extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  int? get bitcoinPriceKrw => null;
+  @override
+  String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
+}
+
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
   @override
   BitcoinUnit get currentUnit => BitcoinUnit.btc;
   @override
-  bool get isManualUtxoSelectionMode => false;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
+  @override
+  UtxoOrder get utxoSortOrder => UtxoOrder.byAmountDesc;
   @override
   List<int> get walletOrder => const [];
   @override
@@ -168,6 +190,7 @@ void main() {
       ..[1] = [_utxo('a', 50000000), _utxo('b', 30000000)]
       ..[2] = [_utxo('c', 10000000)];
     node = _Node();
+    _isManualUtxoSelectionMode = false;
   });
 
   Future<void> openSend(WidgetTester tester, int walletId, {List<UtxoState>? selectedUtxoList}) async {
@@ -182,6 +205,8 @@ void main() {
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
           ChangeNotifierProvider<AuthProvider>(create: (_) => _Auth()),
           ChangeNotifierProvider<NodeProvider>.value(value: node),
+          ChangeNotifierProvider<UtxoTagProvider>(create: (_) => _Tags()),
+          ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           Provider<SendInfoProvider>(create: (_) => SendInfoProvider()),
           Provider<TransactionDraftRepository>(create: (_) => _Drafts()),
           Provider<UtxoRepository>(create: (_) => _Utxos()),
@@ -289,5 +314,29 @@ void main() {
     for (var i = 0; i < 50; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+  });
+
+  testWidgets('수동 선택 모드에서 업데이트를 기다리는 동안 다른 화면을 열면, 그 위에 UTXO 선택 시트를 띄우지 않고 돌아왔을 때 띄운다', (tester) async {
+    _isManualUtxoSelectionMode = true;
+    node.setSyncing(1, true);
+    await openSend(tester, 1);
+    final navigator = Navigator.of(tester.element(find.byType(SendScreen)));
+    navigator.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('scanner'))));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    node.setSyncing(1, false);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(UtxoSelectionScreen, skipOffstage: false), findsNothing);
+
+    navigator.pop();
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(UtxoSelectionScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
   });
 }
