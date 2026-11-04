@@ -108,14 +108,18 @@ class ElectrumService {
     final completer = Completer<Map>();
     _socketManager.setCompleter(requestId, completer);
 
-    Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
+    try {
+      Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
 
-    if (res['error'] != null) {
-      onRpcError?.call();
-      throw res['error'];
+      if (res['error'] != null) {
+        onRpcError?.call();
+        throw res['error'];
+      }
+      // Logger.log('[${DateTime.now()}]RES - $res');
+      return fromJson(res['result'], id: requestId);
+    } finally {
+      _socketManager.removeCompleter(requestId);
     }
-    // Logger.log('[${DateTime.now()}]RES - $res');
-    return fromJson(res['result'], id: requestId);
   }
 
   Future<String> ping() async {
