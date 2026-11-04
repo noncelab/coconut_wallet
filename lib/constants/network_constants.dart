@@ -29,7 +29,8 @@ const Duration kBroadcastTotalLimit = Duration(seconds: 120);
 const Duration kBroadcastTotalLimitForOnion = Duration(seconds: 720);
 
 /// 송금 한 번(응답 대기 + 서버 확인)의 대기. 결과를 모르는 송금을 같은 거래로 다시 보낼 때마다 두 배로 늘린다.
-/// [command]는 메인 쪽이 isolate 결과를 기다리는 시간, [worstCase]는 다시 보내기 전 연결 확인·재연결·isolate 준비까지 더한 최대치다.
+/// [command]는 메인 쪽이 isolate 결과를 기다리는 시간, [worstCase]는 다시 보내기 전 연결 확인·재연결·isolate 준비·준비 확인과
+/// 명령 전 소켓 확인까지 더한 한 번의 다시 보내기 최대치다.
 ({Duration reply, Duration check, Duration command, Duration worstCase}) broadcastLimits({
   required bool onion,
   required int attempt,
@@ -44,10 +45,15 @@ const Duration kBroadcastTotalLimitForOnion = Duration(seconds: 720);
     reply: reply,
     check: check,
     command: command,
-    worstCase: command + connectivityCheck + kBroadcastReconnectWait + isolateStart,
+    worstCase: command + connectivityCheck * 2 + kBroadcastReconnectWait + isolateStart + const Duration(seconds: 1),
   );
 }
 
 const Duration kElectrumPingInterval = Duration(seconds: 20);
 
 const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);
+
+/// 결과를 모르는 송금을 [attempt]번째로 다시 보내도 송금 시작부터 [elapsed]가 지난 지금 전체 상한 안에 끝나는지.
+bool canResendWithinLimit({required Duration elapsed, required bool onion, required int attempt}) =>
+    elapsed + broadcastLimits(onion: onion, attempt: attempt).worstCase <=
+    (onion ? kBroadcastTotalLimitForOnion : kBroadcastTotalLimit);

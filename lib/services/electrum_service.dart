@@ -244,20 +244,23 @@ class ElectrumService {
   }
 
   /// 브로드캐스트 결과를 모를 때 서버가 이 거래를 갖고 있는지 묻습니다.
-  /// true: 갖고 있음, false: 서버가 없다고 답함, null: 답을 받지 못함(시간 초과·연결 끊김·잘못된 응답).
+  /// true: 갖고 있음, false: 서버가 '그런 거래 없음'이라고 답함, null: 모름(시간 초과·연결 끊김·잘못된 응답·다른 서버 오류).
   /// 보낸 직후의 txid를 제3자에게 알리지 않도록 외부 API로 대체하지 않고 같은 Electrum 서버에만 묻습니다.
   Future<bool?> lookUpTransaction(String txHash, {required Duration timeout}) async {
-    var serverSaidNo = false;
+    var serverAnswered = false;
     try {
       final response = await _call(
         _BlockchainTransactionGetReq(txHash),
         (json, {int? id}) => ElectrumResponse(result: json as String),
         timeout: timeout,
-        onRpcError: () => serverSaidNo = true,
+        onRpcError: () => serverAnswered = true,
       );
       return Transaction.parse(response.result).transactionHash == txHash ? true : null;
-    } catch (_) {
-      return serverSaidNo ? false : null;
+    } catch (e) {
+      // 바쁨·내부 오류 같은 다른 서버 오류는 거래가 없다는 뜻이 아니다.
+      final text = e.toString().toLowerCase();
+      final notFound = text.contains('no such mempool') || text.contains('not found');
+      return serverAnswered && notFound ? false : null;
     }
   }
 

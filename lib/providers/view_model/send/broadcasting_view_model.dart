@@ -175,12 +175,13 @@ class BroadcastingViewModel extends ChangeNotifier {
     final signedTx = _signedTx!;
     final txid = signedTx.transactionHash;
     _tagInheritanceFailed = false;
+    // 전체 대기 상한은 송금 시작(연결 확인 포함)부터 잰다.
+    final waiting = Stopwatch()..start();
     Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    final waiting = Stopwatch()..start();
     var result = await _nodeProvider.broadcast(signedTx);
     // 노드가 답하지 않아 보냈는지 모르는 채 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
     // 같은 거래를 다시 보내는 것은 안전하므로(같은 txid), 화면을 떠나지 않은 동안 연결을 되살려 다시 보낸다.
@@ -191,8 +192,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     ) {
       // 다시 보내기까지 더해 전체 상한(일반 120초, Tor 720초)을 넘길 수 있으면 더 보내지 않는다.
       final onion = _nodeProvider.host.contains('.onion');
-      final limit = onion ? kBroadcastTotalLimitForOnion : kBroadcastTotalLimit;
-      if (waiting.elapsed + broadcastLimits(onion: onion, attempt: attempt).worstCase > limit) break;
+      if (!canResendWithinLimit(elapsed: waiting.elapsed, onion: onion, attempt: attempt)) break;
       await _restoreConnectionForRetry();
       if (_isDisposed) break;
       final retried = await _nodeProvider.broadcast(signedTx, attempt: attempt);
@@ -233,11 +233,11 @@ class BroadcastingViewModel extends ChangeNotifier {
       // 연결 확인을 기다리는 사이 화면을 떠났으면 다른 화면이 쓰는 연결을 끊지 않는다.
       if (await isElectrumServerConnected() || _isDisposed) return;
       await _nodeProvider.reconnect().timeout(kBroadcastReconnectWait);
-      // 새 isolate가 준비될 때까지 여기서 기다려, 화면을 떠났는지 다시 확인한 직후 바로 보내게 한다.
-      await isElectrumServerConnected();
     } catch (e) {
       Logger.error('Reconnect before resending the same transaction failed: $e');
     }
+    // 재연결이 늦어도 새 isolate가 준비될 때까지 여기서 기다려, 화면을 떠났는지 다시 확인한 직후 바로 보내게 한다.
+    if (!_isDisposed) await isElectrumServerConnected();
   }
 
   @override

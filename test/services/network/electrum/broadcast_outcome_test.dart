@@ -64,6 +64,10 @@ void main() {
           });
         case 'other':
           completer.complete({'result': other.serialize()});
+        case 'busy':
+          completer.complete({
+            'error': {'code': -32603, 'message': 'server busy, retry later'},
+          });
       }
     });
     var fallbackCalls = 0;
@@ -115,8 +119,8 @@ void main() {
   });
 
   test('a rejection the lookup could not answer is an unknown outcome, not a failure', () async {
-    // e.g. the same transaction sent earlier is already in a block and its lookup timed out
-    for (final lookup in ['drop', 'other']) {
+    // e.g. the same transaction sent earlier is already in a block and its lookup timed out or the server was busy
+    for (final lookup in ['drop', 'other', 'busy']) {
       expect((await send('reject', lookup)).result.error.code, ErrorCodes.nodeIsolateError.code, reason: lookup);
     }
   });
