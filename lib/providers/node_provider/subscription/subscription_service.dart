@@ -187,6 +187,8 @@ class SubscriptionService {
       fetchedScriptStatuses,
       walletItem.id,
     );
+    // 컨펌됐는데도 대체 표시가 남은 거래(이전 버전)를 먼저 되돌려, 그 잔돈 주소가 아래 재확인에 잡히게 한다.
+    await _scriptSyncService.restoreConfirmedReplacedTransactions(walletItem.id);
     // 실패한 스크립트와, 받는 중에 정리된 코인을 서버 잔액이 아직 세는 주소는 상태가 같아도 다시 맞춘다.
     final recheckAddresses = {
       ..._scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address),

@@ -716,17 +716,6 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  /// 다시 유효해진 거래의 출력에 남은 삭제 표시를 없앤다. 삭제 표시는 listunspent가 같은 코인을 다시 넣지 못하게 막으므로,
-  /// 지우면 다음 listunspent가 서버 기준으로(아직 쓰이지 않은 코인만) 다시 넣는다.
-  Future<void> forgetDeletedOutputs(int walletId, Set<String> txHashes) async {
-    final tombstones = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1 AND isDeleted == true', [
-      walletId,
-      txHashes.toList(),
-    ]);
-    if (tombstones.isEmpty) return;
-    await realm.writeAsync(() => realm.deleteMany(tombstones));
-  }
-
   /// 트랜잭션에 사용된 UTXO를 outgoing으로 표시하고 spender를 이 거래로 바꿉니다(RBF 감지 뒤에 호출).
   /// 늦은 listunspent가 spender는 남긴 채 unspent로 되돌린 코인은 같은 거래를 다시 처리할 때 다시 표시합니다.
   Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {

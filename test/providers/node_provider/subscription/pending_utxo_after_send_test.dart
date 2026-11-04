@@ -820,43 +820,40 @@ void main() {
     });
   }
 
-  // Claude review (M1): our fee bump loses the race and the original confirms. The original's change coin stays removed
-  // (the original stays marked replaced, tracked separately), but that must not re-list its address on every start.
-  test(
-    '[heavy-reuse-own-bump-loses] an unrestorable removed coin does not re-list its address on every start',
-    () async {
-      final c = _Case();
-      await c.init();
-      final node = _startIsolate(c.electrum);
-      expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
-      final b = c.backend;
-      Future<void> push() async {
-        b
-          ..notify(c.input)
-          ..notify(c.change);
-        await _drain(node);
-      }
+  // Claude review (M1): our fee bump loses the race and the original confirms. The original comes back with its change
+  // coin ([rbf-original-confirms]), and its address must not be re-listed on every start.
+  test('[heavy-reuse-own-bump-loses] the original\'s change address is not re-listed on every start', () async {
+    final c = _Case();
+    await c.init();
+    final node = _startIsolate(c.electrum);
+    expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+    final b = c.backend;
+    Future<void> push() async {
+      b
+        ..notify(c.input)
+        ..notify(c.change);
+      await _drain(node);
+    }
 
-      b.heights[c.spend.transactionHash] = 0;
-      await push();
-      final bump = _Case._tx([(c.funding.transactionHash, 0)], [(_external, 300000), (c.change, 690000)]);
-      b.heights.remove(c.spend.transactionHash);
-      b.put(bump, 0);
-      await push();
-      b.heights.remove(bump.transactionHash);
-      b.heights[c.spend.transactionHash] = 101; // the original wins
-      await push();
-      await c.reconnect(); // stores the statuses after the race
-      final requests = <int>[];
-      for (var i = 0; i < 2; i++) {
-        final from = b.calls.length;
-        await c.reconnect();
-        requests.add(b.calls.skip(from).where((call) => !call.startsWith('subscribe:')).length);
-      }
-      _report('heavy-reuse-own-bump-loses', '-', {'requests_per_start': requests});
-      expect(requests, [0, 0]);
-    },
-  );
+    b.heights[c.spend.transactionHash] = 0;
+    await push();
+    final bump = _Case._tx([(c.funding.transactionHash, 0)], [(_external, 300000), (c.change, 690000)]);
+    b.heights.remove(c.spend.transactionHash);
+    b.put(bump, 0);
+    await push();
+    b.heights.remove(bump.transactionHash);
+    b.heights[c.spend.transactionHash] = 101; // the original wins
+    await push();
+    await c.reconnect(); // stores the statuses after the race
+    final requests = <int>[];
+    for (var i = 0; i < 2; i++) {
+      final from = b.calls.length;
+      await c.reconnect();
+      requests.add(b.calls.skip(from).where((call) => !call.startsWith('subscribe:')).length);
+    }
+    _report('heavy-reuse-own-bump-loses', '-', {'requests_per_start': requests});
+    expect(requests, [0, 0]);
+  });
 
   // Codex review v2 (MUST): a tombstone left by a build before the spend marker, whose confirmed spend is already
   // stored, must stay removed when a stale listunspent lists it, even when another coin's balance covers its amount.
@@ -1125,4 +1122,163 @@ void main() {
       });
     }
   }
+
+  test('[codex-rbf] two bumps, original pending on the current server', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 2);
+    for (final tx in chain.skip(1)) {
+      c.backend.heights.remove(tx.transactionHash);
+    }
+    c.backend.heights[chain.first.transactionHash] = 0;
+    await c.reconnect();
+    await c.reconnect();
+    final observed = {
+      'history': history(),
+      'original_change': changeCoin(chain.first),
+      'replacement_records': chain.skip(1).where(hasRecord).length,
+      'coins_vs_server': coinsVsServer(c),
+    };
+    _report('codex-rbf-two-bumps-pending', '-', observed);
+    expect(history(), {c.funding.transactionHash: 100, chain.first.transactionHash: 0});
+    expect(changeCoin(chain.first), 'incoming');
+    expect(coinsVsServer(c), [699000, 699000]);
+  });
+
+  test('[codex-rbf] three bumps, original confirms with unclassified absence', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 3, classified: false);
+    for (final tx in chain.skip(1)) {
+      c.backend.heights.remove(tx.transactionHash);
+    }
+    c.backend.heights[chain.first.transactionHash] = 101;
+    await c.reconnect();
+    _report('codex-rbf-three-bumps', '-', {
+      'replacement_records': chain.skip(1).map(hasRecord).toList(),
+      'coins_vs_server': coinsVsServer(c),
+    });
+    expect(chain.skip(1).where(hasRecord), isEmpty);
+  });
+
+  test('[codex-rbf] original confirms after the replacement gained a CPFP child', () async {
+    final (c, node, chain) = await bumpOwnSend(bumps: 1, classified: false);
+    final [t1, t2] = chain;
+    final child = _Case._tx([(t2.transactionHash, 1)], [(c.input, 680000)]);
+    c.backend.put(child, -1);
+    await deliver(c, node, 'input-first');
+    expect(hasRecord(child), isTrue, reason: 'precondition: child is known');
+    expect(ScriptSyncServiceMock.transactionRepository.getCpfpHistory(_walletId, t2.transactionHash), isNotNull);
+    c.backend.heights.remove(t2.transactionHash);
+    c.backend.heights.remove(child.transactionHash);
+    c.backend.heights[t1.transactionHash] = 101;
+    await c.reconnect();
+    final childCoin = c.utxos.getUtxoState(_walletId, getUtxoId(child.transactionHash, 0));
+    _report('codex-rbf-losing-cpfp', '-', {
+      'child_record': hasRecord(child),
+      'child_coin': childCoin?.status.name,
+      'cpfp_history': ScriptSyncServiceMock.transactionRepository.getCpfpHistory(_walletId, t2.transactionHash) != null,
+      'coins_vs_server': coinsVsServer(c),
+    });
+    expect(hasRecord(child), isFalse);
+    expect(childCoin, isNull);
+    expect(coinsVsServer(c), [699000, 699000]);
+  });
+
+  for (final staleBalance in [false, true]) {
+    test('[codex-rbf] spent original output with stale listunspent, stale balance=$staleBalance', () async {
+      final (c, _, chain) = await bumpOwnSend(bumps: 1, classified: false);
+      final [t1, t2] = chain;
+      final child = _Case._tx([(t1.transactionHash, 1)], [(_external, 698000)]);
+      c.backend.heights.remove(t2.transactionHash);
+      c.backend.heights[t1.transactionHash] = 101;
+      c.backend.put(child, 102); // another device spent the original change
+      when(c.electrum.getUnspentList(any, any)).thenAnswer((call) async {
+        final address = call.positionalArguments[1] as String;
+        return address == c.change
+            ? [ListUnspentRes(height: 101, txHash: t1.transactionHash, txPos: 1, value: 699000)]
+            : c.backend.unspent(address);
+      });
+      if (staleBalance) {
+        when(
+          c.electrum.getBalance(any, c.change),
+        ).thenAnswer((_) async => GetBalanceRes(confirmed: 699000, unconfirmed: 0));
+      }
+      await c.reconnect();
+      final output = c.utxos.getUtxoState(_walletId, getUtxoId(t1.transactionHash, 1), includeDeleted: true);
+      _report('codex-rbf-spent-output', '$staleBalance', {
+        'child_height':
+            ScriptSyncServiceMock.transactionRepository
+                .getTransactionRecord(_walletId, child.transactionHash)
+                ?.blockHeight,
+        'original_change': changeCoin(t1),
+        'spender': output?.spentByTransactionHash,
+        'coins_vs_server': coinsVsServer(c),
+      });
+      expect(
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, child.transactionHash)?.blockHeight,
+        102,
+      );
+      expect(changeCoin(t1), 'deleted', reason: 'a known confirmed spend must survive restoration');
+      expect(coinsVsServer(c), [0, 0]);
+    });
+  }
+
+  test('[codex-rbf] both pending transactions briefly reported keeps the replacement', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 1);
+    final [t1, t2] = chain;
+    c.backend.heights[t1.transactionHash] = 0;
+    await c.reconnect();
+    _report('codex-rbf-both-pending', '-', {'history': history()});
+    expect(history(), {c.funding.transactionHash: 100, t2.transactionHash: 0});
+    expect(changeCoin(t1), 'deleted');
+    expect(hasRecord(t2), isTrue);
+  });
+
+  test('[codex-rbf] a record already confirmed by the old version is healed', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 1);
+    final [t1, t2] = chain;
+    c.backend.heights.remove(t2.transactionHash);
+    c.backend.heights[t1.transactionHash] = 101;
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    realm.write(
+      () => realm.find<RealmTransaction>(getRealmTransactionId(_walletId, t1.transactionHash))!.blockHeight = 101,
+    );
+    await c.utxos.deleteUtxoList(_walletId, [c.coin]);
+    await c.reconnect();
+    _report('codex-rbf-already-confirmed', '-', {'history': history(), 'original_change': changeCoin(t1)});
+    expect(history().keys, contains(t1.transactionHash));
+    expect(changeCoin(t1), 'unspent');
+  });
+
+  test(
+    '[codex-rbf] receiving wallet original confirms after the sender bumped',
+    skip:
+        'Known gap (pre-existing, also before the RBF fix): the received coin the sender\'s bump removed comes back only '
+        'on the next reconnect (1,000,000 of 2,000,000 sats on the first sync).',
+    () async {
+      final (c, node) = await sendFromSyncedWallet();
+      c.backend.classifiedAbsence = true;
+      final t1 = _Case._tx([(c.faucet.transactionHash, 1)], [(c.input, 1000000), (_external, 3999000)]);
+      final t2 = _Case._tx([(c.faucet.transactionHash, 1)], [(c.input, 1000000), (_external, 3989000)]);
+      c.backend.put(t1, 0);
+      await deliver(c, node, 'input-first');
+      c.backend.heights.remove(t1.transactionHash);
+      c.backend.put(t2, 0);
+      await deliver(c, node, 'input-first');
+      c.backend.heights.remove(t2.transactionHash);
+      c.backend.heights[t1.transactionHash] = 101;
+      await c.reconnect();
+      final firstCoins = coinsVsServer(c);
+      _report('codex-rbf-receiving', '-', {'history': history(), 'coins_vs_server': firstCoins});
+      await c.reconnect();
+      _report('codex-rbf-receiving-next-sync', '-', {
+        'coins_vs_server': coinsVsServer(c),
+        'amount':
+            ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, t1.transactionHash)?.amount,
+      });
+      expect(history(), {c.funding.transactionHash: 100, t1.transactionHash: 101});
+      expect(firstCoins, [2000000, 2000000]);
+      expect(
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, t1.transactionHash)?.amount,
+        1000000,
+      );
+    },
+  );
 }

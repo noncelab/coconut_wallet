@@ -565,31 +565,108 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
-  /// [txHashes] 중 대체됐다고 표시된 거래: 거래 해시 → 대체한 거래 해시
-  Map<String, String> getReplacedByMap(int walletId, Iterable<String> txHashes) => {
-    for (final tx in realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1 AND replaceByTransactionHash != null',
-      [walletId, txHashes.toList()],
-    ))
-      tx.transactionHash: tx.replaceByTransactionHash!,
-  };
+  /// 대체됐다고 표시했지만 다시 유효해진 원래 거래를 내역에 되돌린다. [originalTxHashes]가 null이면 컨펌됐는데도 표시가
+  /// 남은 기록(이전 버전이 남긴 상태)을 고른다. 대체 사슬에서 바로 다음 거래와 원래 거래와 같은 코인(주소·금액이 같은
+  /// 입력)을 쓴 거래, 그리고 그 출력을 쓴 자손(CPFP 자식 등)은 무효이므로 미확정 기록과 CPFP 연결을 지운다. 겹치지 않는
+  /// 거래는 남긴다. 원래 거래가 미확정이면 무효 거래가 이미 지워졌거나 서버가 없다고 답한 경우([absentTxHashes])만
+  /// 되돌린다. 컨펌된 대체 거래가 있으면 건드리지 않는다. 출력을 지울 무효 거래 해시를 돌려준다.
+  Future<Set<String>> restoreReplacedTransactions(
+    int walletId, {
+    Set<String>? originalTxHashes,
+    Set<String> absentTxHashes = const {},
+  }) async {
+    final originals =
+        originalTxHashes == null
+            ? realm.query<RealmTransaction>(
+              r'walletId == $0 AND blockHeight > 0 AND replaceByTransactionHash != null',
+              [walletId],
+            )
+            : realm.query<RealmTransaction>(
+              r'walletId == $0 AND transactionHash IN $1 AND replaceByTransactionHash != null',
+              [walletId, originalTxHashes.toList()],
+            );
+    if (originals.isEmpty) return {};
+    RealmTransaction? find(String hash) => realm.find<RealmTransaction>(getRealmTransactionId(walletId, hash));
+    final restored = <String>{};
+    final invalid = <String>{};
+    for (final original in originals) {
+      final inputs = original.inputAddressList.toSet();
+      final conflicting = <String>{};
+      final seen = {original.transactionHash};
+      var direct = true; // 바로 다음 거래는 원래 거래가 쓴 코인을 써서 대체로 감지됐다
+      var keep = false;
+      for (String? next = original.replaceByTransactionHash; next != null && seen.add(next); direct = false) {
+        final replacement = find(next);
+        if (replacement == null) {
+          conflicting.add(next); // 이미 지워졌다
+          break;
+        }
+        if (direct || replacement.inputAddressList.any(inputs.contains)) {
+          if (replacement.blockHeight > 0 || (original.blockHeight <= 0 && !absentTxHashes.contains(next))) {
+            keep = true;
+            break;
+          }
+          conflicting.add(next);
+        }
+        next = replacement.replaceByTransactionHash;
+      }
+      if (keep) continue;
+      restored.add(original.transactionHash);
+      invalid.addAll(conflicting);
+    }
+    if (restored.isEmpty) return {};
 
-  /// 서버가 다시 보여 준 원래 거래의 대체 표시를 지우고, 같은 코인을 써서 무효가 된 미확정 대체 거래 기록을 지운다.
-  Future<void> restoreReplacedTransactions(int walletId, Set<String> restoredTxHashes, Set<String> lostTxHashes) async {
-    final restored = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
-      walletId,
-      restoredTxHashes.toList(),
-    ]);
-    final lost = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight <= 0', [
-      walletId,
-      lostTxHashes.toList(),
-    ]);
+    // 무효가 된 거래의 출력을 쓴 거래도 무효다. 기록된 사용과 CPFP 연결로 따라간다.
+    for (var frontier = {...invalid}; frontier.isNotEmpty; invalid.addAll(frontier)) {
+      final args = [walletId, frontier.toList()];
+      frontier = {
+        for (final utxo in realm.query<RealmUtxo>(
+          r'walletId == $0 AND transactionHash IN $1 AND spentByTransactionHash != null',
+          args,
+        ))
+          utxo.spentByTransactionHash!,
+        for (final link in realm.query<RealmCpfpHistory>(r'walletId == $0 AND parentTransactionHash IN $1', args))
+          link.childTransactionHash,
+      }.difference(invalid);
+    }
+    final invalidHashes = invalid.toList();
+    final confirmed = {
+      for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight > 0', [
+        walletId,
+        invalidHashes,
+      ]))
+        tx.transactionHash,
+    };
+    final markedByInvalid =
+        realm.query<RealmTransaction>(r'walletId == $0 AND replaceByTransactionHash IN $1', [
+          walletId,
+          invalidHashes,
+        ]).toList();
     await realm.writeAsync(() {
-      for (final tx in restored) {
+      for (final tx in markedByInvalid) {
         tx.replaceByTransactionHash = null;
       }
-      realm.deleteMany(lost);
+      realm.deleteMany(
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight <= 0', [
+          walletId,
+          invalidHashes,
+        ]),
+      );
+      realm.deleteMany(
+        realm.query<RealmCpfpHistory>(
+          r'walletId == $0 AND (parentTransactionHash IN $1 OR childTransactionHash IN $1)',
+          [walletId, invalidHashes],
+        ),
+      );
+      realm.deleteMany(
+        realm.query<RealmRbfHistory>(r'walletId == $0 AND (originalTransactionHash IN $1 OR transactionHash IN $2)', [
+          walletId,
+          restored.toList(),
+          invalidHashes,
+        ]),
+      );
     });
+    return invalid.difference(confirmed);
   }
 
   /// [address]의 코인을 썼을 수 있는 거래: 입력에 이 주소가 있는 저장된 기록(대체된 기록 제외), 그리고 서버 내역

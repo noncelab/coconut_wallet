@@ -115,6 +115,10 @@ class ScriptSyncService {
     return _utxoSyncService.restorePendingUtxoLocks(walletId);
   }
 
+  Future<void> restoreConfirmedReplacedTransactions(int walletId) {
+    return _transactionSyncService.restoreConfirmedReplacedTransactions(walletId);
+  }
+
   Iterable<ScriptStatus> getFailedScripts(int walletId) =>
       _failedScriptSyncs.entries.where((entry) => entry.key.$1 == walletId).map((entry) => entry.value);
 

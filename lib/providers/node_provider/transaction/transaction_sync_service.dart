@@ -219,7 +219,7 @@ class TransactionSyncService {
       await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
 
       // 7. 대체된 언컨펌 트랜잭션 삭제
-      await _cleanupOrphanedUnconfirmedTransactions(
+      final absentTxHashes = await _cleanupOrphanedUnconfirmedTransactions(
         walletId,
         successfulTransactions,
         unresolvedTxHashes: newTxHashes.difference(successfulHashes),
@@ -228,13 +228,13 @@ class TransactionSyncService {
         transactionFetch: transactionFetch,
       );
 
-      // 7-1. 대체됐다고 표시한 원래 거래를 서버가 다시 보여 주면 내역과 코인을 되돌린다
-      await _restoreReplacedOriginals(walletId, successfulTransactions, confirmedFetchedTxHashes);
-
       final confirmedRecords = txRecords.where((record) => record.blockHeight > 0).toList();
       if (confirmedRecords.isNotEmpty) {
         await _transactionRepository.addAllTransactions(walletId, confirmedRecords);
       }
+
+      // 7-1. 대체됐다고 표시한 원래 거래를 서버가 다시 보여 주면 내역과 코인을 되돌린다
+      await _restoreReplacedOriginals(walletId, originalTxHashes: successfulHashes, absentTxHashes: absentTxHashes);
 
       // 8. 마무리 단계
       // 자식의 기록을 저장했어도 미확정 부모 기록이 없으면 CPFP 연결은 아직 끝나지 않았다.
@@ -476,8 +476,9 @@ class TransactionSyncService {
     }
   }
 
-  /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupOrphanedUnconfirmedTransactions(
+  /// 7. 대체된 언컨펌 트랜잭션 삭제. 서버에 없다고 확인했거나 대체된 것으로 본 거래 해시를 돌려준다
+  /// (대체 표시가 남은 기록은 지우지 않으므로 7-1이 이 결과로 판단한다).
+  Future<Set<String>> _cleanupOrphanedUnconfirmedTransactions(
     int walletId,
     List<Transaction> newTxs, {
     required Map<String, TransactionRecord> preparedRecords,
@@ -539,49 +540,31 @@ class TransactionSyncService {
         Logger.log('[$walletId] Deleted orphaned unconfirmed transactions: $toDeleteTxs');
       }
     }
+    return toDeleteTxs.toSet();
   }
 
-  /// 7-1. 대체됐다고 표시한 거래가 이번 조회에 다시 보이면(원래 거래가 컨펌됐거나, 대체 거래를 모르는 서버가 보여 줌)
-  /// 표시를 지워 내역에 되돌린다. 컨펌됐으면 같은 코인을 쓴 대체 거래(직접 대체한 거래와 그 코인을 마지막으로 쓴 거래)는
-  /// 무효이므로 기록과 출력을 지운다. 미확정이면 서버가 대체 거래가 없다고 답해 7단계가 그 기록을 지운 경우만 되돌린다.
-  /// 원래 거래의 출력은 RBF 때 남긴 삭제 표시를 지워, 이어지는 listunspent가 서버 기준으로 다시 넣게 한다.
+  /// 7-1. 대체됐다고 표시한 원래 거래가 이번 조회에 다시 보이면(컨펌됐거나, 대체 거래를 모르는 서버가 보여 줌) 내역에
+  /// 되돌리고, 그 거래와 같은 코인을 쓴 대체 거래와 자손의 기록·출력을 지운다
+  /// ([TransactionRepository.restoreReplacedTransactions]). 원래 거래의 출력은 삭제 표시를 그대로 두어, 이어지는
+  /// listunspent가 쓴 증거와 서버 잔액을 확인하는 되살리기([UtxoRepository.restoreListedUtxos])로만 돌아오게 한다.
   Future<void> _restoreReplacedOriginals(
-    int walletId,
-    List<Transaction> transactions,
-    Set<String> confirmedTxHashes,
-  ) async {
-    final replacedBy = _transactionRepository.getReplacedByMap(walletId, transactions.map((tx) => tx.transactionHash));
-    if (replacedBy.isEmpty) return;
-    final restored = <Transaction>[];
-    final lost = <String>{};
-    for (final tx in transactions.where((tx) => replacedBy.containsKey(tx.transactionHash))) {
-      final confirmed = confirmedTxHashes.contains(tx.transactionHash);
-      final replacements =
-          {
-            replacedBy[tx.transactionHash]!,
-            if (confirmed)
-              for (final input in tx.inputs)
-                _utxoRepository
-                    .getUtxoState(walletId, getUtxoId(input.transactionHash, input.index), includeDeleted: true)
-                    ?.spentByTransactionHash,
-          }.nonNulls.where((hash) => hash != tx.transactionHash).toSet();
-      final records = replacements.map((hash) => _transactionRepository.getTransactionRecord(walletId, hash)).nonNulls;
-      if (confirmed ? records.any((record) => record.blockHeight > 0) : records.isNotEmpty) continue;
-      restored.add(tx);
-      lost.addAll(replacements);
-    }
-    if (restored.isEmpty) return;
-
-    final restoredHashes = restored.map((tx) => tx.transactionHash).toSet();
-    Logger.log('[$walletId] Restoring ${restored.length} replaced transaction(s), dropping ${lost.length}');
-    await _transactionRepository.restoreReplacedTransactions(walletId, restoredHashes, lost);
-    await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, lost);
-    await _utxoRepository.forgetDeletedOutputs(walletId, restoredHashes);
-    // 남은 RBF 내역이 있으면 대체 거래가 다시 나타나도 RBF로 감지되지 않는다(컨펌된 거래는 5단계가 이미 지웠다).
-    for (final tx in restored) {
-      await _transactionRepository.deleteRbfHistory(walletId, tx);
-    }
+    int walletId, {
+    Set<String>? originalTxHashes,
+    Set<String> absentTxHashes = const {},
+  }) async {
+    final invalid = await _transactionRepository.restoreReplacedTransactions(
+      walletId,
+      originalTxHashes: originalTxHashes,
+      absentTxHashes: absentTxHashes,
+    );
+    if (invalid.isEmpty) return;
+    Logger.log('[$walletId] Restored replaced transaction(s), dropped ${invalid.length} invalid transaction(s)');
+    await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, invalid);
   }
+
+  /// 이전 버전이 컨펌된 원래 거래에 남긴 대체 표시를 지운다. 구독 때 지운 코인 재확인보다 먼저 불러, 그 거래의 잔돈이
+  /// 되살릴 수 있는 코인으로 잡히게 한다.
+  Future<void> restoreConfirmedReplacedTransactions(int walletId) => _restoreReplacedOriginals(walletId);
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
   Future<void> _finalizeTransactionFetch(
