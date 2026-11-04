@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -189,6 +190,36 @@ void main() {
       realm.write(() => realm.find<RealmTransaction>(5)!.amount = 20000);
       await healReceiveOnlyAmountsOnce(realm, prefs);
       expect(realm.find<RealmTransaction>(5)!.amount, 20000, reason: 'the full pass runs once, not on every start');
+    });
+
+    test('200개씩 나눠 쓰고 사이마다 양보하며 모든 묶음의 받기 기록을 바로잡는다', () async {
+      SharedPreferences.setMockInitialValues({});
+      // ignore: deprecated_member_use_from_same_package
+      final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
+      final realm = realmManager.realm;
+      final walletId = testWalletItem.id;
+      String entry(String address, int amount) => jsonEncode({'address': address, 'amount': amount});
+      realm.write(() {
+        realm.add(RealmWalletAddress(0, walletId, 'own0', 0, false, 'm/0/0', true, 0, 0, 0));
+        realm.add(RealmWalletAddress(1, walletId, 'own1', 1, false, 'm/0/1', true, 0, 0, 0));
+        for (var id = 1; id <= 450; id++) {
+          realm.add(
+            RealmTransaction(id, 'tx$id', walletId, DateTime.utc(2026), 100, 'RECEIVED', 20000, 1000, 141,
+                DateTime.utc(2026),
+                inputAddressList: [entry('external', 50000)],
+                outputAddressList: [entry('own0', 20000), entry('own1', 20000), entry('external', 9000)]),
+          );
+        }
+      });
+      var ticks = 0;
+      final ticker = Timer.periodic(Duration.zero, (_) => ticks++);
+
+      await healReceiveOnlyAmountsOnce(realm, prefs);
+      ticker.cancel();
+
+      expect(realm.all<RealmTransaction>().map((tx) => tx.amount).toSet(), {40000});
+      expect(ticks, greaterThanOrEqualTo(2), reason: 'the event loop ran between the three chunks');
+      expect(prefs.getBool(SharedPrefKeys.kHealedReceiveOnlyAmounts), isTrue);
     });
   });
 

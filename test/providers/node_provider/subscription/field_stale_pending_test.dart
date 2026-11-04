@@ -1761,10 +1761,12 @@ void main() {
       expect(ok, isTrue);
       expect(stored().amount, 20000, reason: 'a warm start does not rescan stored records');
 
-      realm.write(() => recountReceivedAmountsOfAllWallets(realm)); // the one-time heal at app start
+      SharedPreferences.setMockInitialValues({});
+      // ignore: deprecated_member_use_from_same_package
+      final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
+      await healReceiveOnlyAmountsOnce(realm, prefs); // the one-time heal at app start
       expect(stored().amount, 60000);
       expect(stored().transactionType, TransactionType.received.name);
-      expect(realm.write(() => recountReceivedAmountsOfAllWallets(realm)), 0, reason: 'correct records are left alone');
       await _drain(restarted);
     });
   });

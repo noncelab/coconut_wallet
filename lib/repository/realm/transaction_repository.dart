@@ -62,27 +62,40 @@ int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction>
   return changed;
 }
 
-/// 모든 지갑의 받기 기록을 지금의 내 주소로 다시 센다(지갑별 RECEIVED만 차례로 읽는다). 바꾼 기록 수를 돌려준다.
-int recountReceivedAmountsOfAllWallets(Realm realm) {
-  var changed = 0;
-  for (final wallet in realm.all<RealmWalletBase>()) {
-    changed += recountReceivedAmounts(
-      realm,
-      wallet.id,
-      realm.query<RealmTransaction>(r'walletId == $0 AND transactionType == $1', [
-        wallet.id,
-        TransactionType.received.name,
-      ]),
-    );
-  }
-  return changed;
-}
-
 /// 이 수정 전 버전이 남긴 낮은 받기 금액을 앱 시작 때 한 번만 바로잡는다. 이후의 경우는 기록 저장과 주소 추가가 맡는다.
-/// 금액은 올리기만 하므로 중간에 끊겨 다시 돌아도 안전하고, 끝난 뒤에만 표시를 남긴다.
+/// UI isolate에서 돌므로 고정 스냅샷의 기록 표를 200개씩 걸으며 그 안의 받기 기록만 따로 쓰고, 사이마다 이벤트 루프에
+/// 양보한다. 쿼리 하나로 모으면 첫 평가와 한 번의 쓰기가 기록 수만큼 화면을 멈춘다(2만 기록 367ms).
+/// 스냅샷에서 id를 읽어 그사이 다른 isolate가 기록을 더하거나 지워도 건너뛰지 않는다(새 기록은 저장할 때 맞춰진다).
+/// 금액은 올리기만 하므로 중간에 끊겨 다시 돌아도 같고, 모두 끝난 뒤에만 표시를 남긴다.
 Future<void> healReceiveOnlyAmountsOnce(Realm realm, SharedPrefsRepository prefs) async {
   if (prefs.getBool(SharedPrefKeys.kHealedReceiveOnlyAmounts)) return;
-  final changed = await realm.writeAsync(() => recountReceivedAmountsOfAllWallets(realm));
+  final snapshot = realm.freeze();
+  var changed = 0;
+  try {
+    final records = snapshot.all<RealmTransaction>();
+    for (var start = 0; start < records.length; start += 200) {
+      final received = <int, List<int>>{}; // walletId -> 기록 id
+      for (var i = start; i < start + 200 && i < records.length; i++) {
+        final record = records[i];
+        if (record.transactionType == TransactionType.received.name) (received[record.walletId] ??= []).add(record.id);
+      }
+      if (received.isNotEmpty) {
+        changed += await realm.writeAsync(() {
+          var count = 0;
+          for (final MapEntry(key: walletId, value: ids) in received.entries) {
+            count += recountReceivedAmounts(realm, walletId, [
+              for (final id in ids)
+                if (realm.find<RealmTransaction>(id) case final record?) record,
+            ]);
+          }
+          return count;
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+    }
+  } finally {
+    snapshot.close();
+  }
   await prefs.setBool(SharedPrefKeys.kHealedReceiveOnlyAmounts, true);
   Logger.log('healReceiveOnlyAmountsOnce: $changed records');
 }
