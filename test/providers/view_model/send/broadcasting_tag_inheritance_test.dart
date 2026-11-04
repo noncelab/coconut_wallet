@@ -42,6 +42,10 @@ class _WalletProvider extends Fake implements WalletProvider {
 }
 
 class _NodeProvider extends Fake implements NodeProvider {
+  @override
+  Object connectionEndpointIdentity = Object();
+  @override
+  bool isServerChanging = false;
   int broadcasts = 0;
   bool connected = true;
   @override
@@ -265,13 +269,13 @@ void main() {
     }
   });
 
-  test('reconnection failure prevents broadcasting', () async {
+  test('certificate failure prevents broadcasting without retry', () async {
     await initialize();
     node.connected = false;
-    node.onReconnect = () async => Result.failure(ErrorCodes.networkError);
+    node.onReconnect = () async => Result.failure(ErrorCodes.untrustedCertificateError);
     final result = await viewModel.broadcast(inheritedTagIds: []);
     expect(result.isFailure, isTrue);
-    expect(result.error, ErrorCodes.networkError);
+    expect(result.error, ErrorCodes.untrustedCertificateError);
     expect(node.broadcasts, 0);
   });
 
@@ -389,6 +393,80 @@ void main() {
       await tester.pump();
     });
   }
+
+  for (final onion in [false, true]) {
+    testWidgets('failed recovery retries with backoff and sends once (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.connected = false;
+      node.host = onion ? 'node.onion' : 'node.example';
+      node.onReconnect =
+          () async => node.reconnects < 3 ? Result.failure(ErrorCodes.nodeConnectionError) : Result.success(true);
+      repository.onApply = () async => Result<void>.success(null);
+      Result<String>? outcome;
+      viewModel
+          .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
+          .then((value) => outcome = value);
+      await tester.pump();
+      expect(node.reconnects, 1);
+      expect(viewModel.isConnectionRecovering, isTrue);
+      await tester.pump(Duration(seconds: onion ? 3 : 1));
+      expect(node.reconnects, 2);
+      await tester.pump(Duration(seconds: onion ? 6 : 2));
+      expect(node.reconnects, 3);
+      expect(outcome?.isSuccess, isTrue);
+      expect(node.broadcasts, 1);
+      expect(viewModel.isConnectionRecovering, isFalse);
+    });
+  }
+
+  for (final stopBy in ['cancel', 'server', 'deadline']) {
+    testWidgets('failed recovery retries stop on $stopBy without late attempts', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.connected = false;
+      node.onReconnect = () async => Result.failure(ErrorCodes.nodeConnectionError);
+      Result<String>? outcome;
+      viewModel
+          .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
+          .then((value) => outcome = value);
+      await tester.pump();
+      expect(node.reconnects, 1);
+      if (stopBy == 'cancel') {
+        expect(viewModel.cancelPendingSend(), isTrue);
+      } else if (stopBy == 'server') {
+        node.connectionEndpointIdentity = Object();
+      }
+      // Advance individual retry timers without skipping the fake clock's microtasks.
+      for (var second = 0; second < 60; second++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(outcome?.isFailure, isTrue);
+      final attempts = node.reconnects;
+      if (stopBy != 'deadline') expect(attempts, 1);
+      await tester.pump(const Duration(seconds: 120));
+      expect(node.reconnects, attempts);
+      expect(node.broadcasts, 0);
+    });
+  }
+
+  testWidgets('pending recovery is not restarted when a wait stage advances', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    repository.onApply = () async => Result<void>.success(null);
+    Result<String>? outcome;
+    viewModel
+        .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
+        .then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    await tester.pump(const Duration(seconds: 15));
+    expect(node.reconnects, 1);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
 
   testWidgets('time spent deciding on an extension consumes the cumulative budget', (tester) async {
     await tester.runAsync(() => initialize());

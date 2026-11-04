@@ -26,3 +26,17 @@ const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);
 /// Includes socket checks and isolate readiness before the connection probe.
 const Duration kSendConnectionCheckTimeout = Duration(seconds: 3);
 const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 10);
+
+/// Delay after an explicitly failed pre-send recovery; reuse the last delay afterwards.
+const List<Duration> kSendRecoveryRetryDelays = [
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 4),
+  Duration(seconds: 8),
+];
+const List<Duration> kSendRecoveryRetryDelaysForOnion = [
+  Duration(seconds: 3),
+  Duration(seconds: 6),
+  Duration(seconds: 12),
+  Duration(seconds: 24),
+];

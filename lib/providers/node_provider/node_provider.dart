@@ -217,6 +217,9 @@ class NodeProvider extends ChangeNotifier {
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => !_isDisposed && (_initCompleter?.isCompleted ?? false);
+
+  /// Identity changes whenever the configured endpoint changes.
+  Object get connectionEndpointIdentity => _electrumServer;
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
@@ -312,6 +315,9 @@ class NodeProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger.log('NodeProvider: 백그라운드 초기화 실패: $e');
+      if (ready != null && !ready.isCompleted) {
+        ready.complete(Result.failure(e is AppError ? e : ErrorCodes.nodeConnectionError));
+      }
     } finally {
       if (ready != null) {
         if (!ready.isCompleted) ready.complete(Result.failure(ErrorCodes.nodeConnectionError));
@@ -766,7 +772,12 @@ class NodeProvider extends ChangeNotifier {
       endpoint = _electrumServer;
       Logger.log('[Send] 진행 중인 백그라운드 초기화 대기');
       final failure = await initialization.future;
-      result = failure == null && isInitialized ? Result.success(true) : Result.failure(ErrorCodes.nodeConnectionError);
+      result =
+          failure == null && isInitialized
+              ? Result.success(true)
+              : Result.failure(
+                failure?.error is AppError ? failure!.error as AppError : ErrorCodes.nodeConnectionError,
+              );
     } else {
       // Senders reach here only after their connection probe failed. Share a reconnect
       // only while its readiness is pending; a completed one may describe a socket that
@@ -790,6 +801,24 @@ class NodeProvider extends ChangeNotifier {
         !identical(endpoint, _electrumServer) ||
         _connectivityProvider.isInternetOff) {
       return Result.failure(ErrorCodes.nodeConnectionError);
+    }
+    if (result.isSuccess && result.value) {
+      try {
+        final socket = await _isolateManager.getSocketConnectionStatus().timeout(kIsolateSocketCheckTimeout);
+        if (socket.isFailure ||
+            socket.value != SocketConnectionStatus.connected ||
+            _isDisposed ||
+            _isServerChanging ||
+            _isInitializing ||
+            _isClosing ||
+            generation != _latestReconnectId ||
+            !identical(endpoint, _electrumServer) ||
+            _connectivityProvider.isInternetOff) {
+          return Result.failure(ErrorCodes.nodeConnectionError);
+        }
+      } catch (_) {
+        return Result.failure(ErrorCodes.nodeConnectionError);
+      }
     }
     return result;
   }
@@ -885,7 +914,9 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
-      return Result.failure(ErrorCodes.networkError);
+      final error = e is AppError ? e : ErrorCodes.networkError;
+      if (!ready.isCompleted) ready.complete(Result.failure(error));
+      return Result.failure(error);
     } finally {
       if (!ready.isCompleted) ready.complete(Result.failure(ErrorCodes.nodeConnectionError));
     }

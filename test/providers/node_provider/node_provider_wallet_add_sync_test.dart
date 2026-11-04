@@ -65,6 +65,11 @@ class _Analytics extends AnalyticsService {
 }
 
 class _Isolate extends Fake implements IsolateManager {
+  @override
+  Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async => Result.success(
+    socketOverride ?? (initialized ? SocketConnectionStatus.connected : SocketConnectionStatus.terminated),
+  );
+  SocketConnectionStatus? socketOverride;
   bool initialized = false;
   final stateController = StreamController<IsolateStateMessage>.broadcast();
   final List<int> individualSubscriptions = [];
@@ -698,6 +703,31 @@ void main() {
     await tester.pump();
     expect((await second).isSuccess, isTrue);
     await tester.pump(const Duration(seconds: 1));
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
+  testWidgets('send readiness verifies socket state even after initialization succeeded', (tester) async {
+    createProvider();
+    await tester.pump();
+    isolate.socketOverride = SocketConnectionStatus.terminated;
+    final failed = await provider!.ensureConnectedForBroadcast();
+    expect(failed.isFailure, isTrue);
+    isolate.socketOverride = SocketConnectionStatus.connected;
+    expect((await provider!.ensureConnectedForBroadcast()).isSuccess, isTrue);
+    await provider!.closeConnection();
+    provider!.dispose();
+    provider = null;
+  });
+
+  testWidgets('certificate error survives reconnect readiness without becoming retryable', (tester) async {
+    createProvider();
+    await tester.pump();
+    isolate.onInitialize = () async => throw ErrorCodes.untrustedCertificateError;
+    final result = await provider!.ensureConnectedForBroadcast();
+    expect(result.isFailure, isTrue);
+    expect(result.error.code, ErrorCodes.untrustedCertificateError.code);
     await provider!.closeConnection();
     provider!.dispose();
     provider = null;

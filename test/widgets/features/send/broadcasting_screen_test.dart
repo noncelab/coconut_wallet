@@ -69,6 +69,10 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
   @override
+  Object connectionEndpointIdentity = Object();
+  @override
+  bool isServerChanging = false;
+  @override
   String get host => 'node.example';
   int broadcasts = 0;
   final pending = Completer<Result<String>>();

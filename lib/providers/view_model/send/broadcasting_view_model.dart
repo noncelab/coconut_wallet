@@ -66,6 +66,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
   bool _isSendCancelled = false;
+  Completer<void>? _connectionPreparationStop;
   bool _connectionWaitDeclined = false;
   bool _isConnectionRecovering = false;
   bool get isConnectionRecovering => _isConnectionRecovering;
@@ -123,6 +124,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool cancelPendingSend() {
     if (_isBroadcastRequested) return false;
     _isSendCancelled = true;
+    _stopConnectionPreparation();
     return true;
   }
 
@@ -130,7 +132,13 @@ class BroadcastingViewModel extends ChangeNotifier {
   void dispose() {
     // 화면이 다른 경로로 사라져도 대기 중이던 보내기가 나중에 전송되지 않도록 한다.
     _isSendCancelled = true;
+    _stopConnectionPreparation();
     super.dispose();
+  }
+
+  void _stopConnectionPreparation() {
+    final stop = _connectionPreparationStop;
+    if (stop != null && !stop.isCompleted) stop.complete();
   }
 
   List<UtxoTag> prepareTagInheritance() {
@@ -199,10 +207,16 @@ class BroadcastingViewModel extends ChangeNotifier {
     _tagInheritanceFailed = false;
     _connectionWaitDeclined = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
+    final endpoint = _nodeProvider.connectionEndpointIdentity;
+    final stop = Completer<void>();
+    _connectionPreparationStop = stop;
     final limits = isOnionHost(_nodeProvider.host) ? kSendConnectionWaitLimitsForOnion : kSendConnectionWaitLimits;
     try {
       final prepared = await waitForConnection(
-        _prepareConnectionForSend(),
+        Future.any<Result<bool>>([
+          _prepareConnectionForSend(stop, endpoint),
+          stop.future.then((_) => Result.failure(ErrorCodes.nodeConnectionError)),
+        ]),
         limits: limits,
         onExtend:
             onConnectionWaitExtension == null
@@ -220,9 +234,14 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.log('[Send] 연결 준비 대기 종료');
       return Result.failure(ErrorCodes.nodeConnectionError);
     } finally {
+      if (!stop.isCompleted) stop.complete();
+      if (identical(_connectionPreparationStop, stop)) _connectionPreparationStop = null;
       _setConnectionRecovering(false);
     }
 
+    if (!identical(endpoint, _nodeProvider.connectionEndpointIdentity) || _nodeProvider.isServerChanging) {
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
     // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
     // 이 검사와 요청 표시 사이에 await를 두지 않아야 취소와 전송이 엇갈리지 않는다.
     if (_isSendCancelled) return _cancelledSend();
@@ -261,15 +280,51 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (!_isSendCancelled) notifyListeners();
   }
 
-  Future<Result<bool>> _prepareConnectionForSend() async {
+  Future<Result<bool>> _prepareConnectionForSend(Completer<void> stop, Object endpoint) async {
+    bool active() =>
+        !stop.isCompleted &&
+        !_isSendCancelled &&
+        !_nodeProvider.isServerChanging &&
+        identical(endpoint, _nodeProvider.connectionEndpointIdentity);
     Logger.log('[Send] 연결 확인 시작');
     final connected = await isElectrumServerConnected();
-    if (_isSendCancelled) return Result.failure(ErrorCodes.nodeConnectionError);
+    if (!active()) return Result.failure(ErrorCodes.nodeConnectionError);
     if (connected) return Result.success(true);
     _setConnectionRecovering(true);
-    Logger.log('[Send] 전송용 연결 준비 시작');
-    // This future never broadcasts. Stopping the UI wait cannot cause a late send.
-    return _nodeProvider.ensureConnectedForBroadcast();
+    final delays = isOnionHost(_nodeProvider.host) ? kSendRecoveryRetryDelaysForOnion : kSendRecoveryRetryDelays;
+    var failures = 0;
+    while (active()) {
+      Logger.log('[Send] 전송용 연결 복구 시도 ${failures + 1}');
+      Result<bool> result;
+      try {
+        // Await a pending recovery without restarting it. Only a returned failure
+        // triggers a retry; the caller's absolute deadline stops this loop.
+        result = await _nodeProvider.ensureConnectedForBroadcast();
+      } on TimeoutException {
+        result = Result.failure(ErrorCodes.nodeIsolateError);
+      } on AppError catch (error) {
+        result = Result.failure(error);
+      }
+      if (!active()) return Result.failure(ErrorCodes.nodeConnectionError);
+      if (result.isSuccess) return result;
+      final retryable = {
+        ErrorCodes.networkError.code,
+        ErrorCodes.nodeConnectionError.code,
+        ErrorCodes.nodeIsolateError.code,
+      }.contains(result.error.code);
+      if (!retryable) return result;
+      final delay = delays[failures < delays.length ? failures : delays.length - 1];
+      failures++;
+      Logger.log('[Send] 연결 복구 실패, ${delay.inSeconds}초 후 재시도: ${result.error.code}');
+      final elapsed = Completer<void>();
+      final timer = Timer(delay, () => elapsed.complete());
+      try {
+        await Future.any<void>([elapsed.future, stop.future]);
+      } finally {
+        timer.cancel();
+      }
+    }
+    return Result.failure(ErrorCodes.nodeConnectionError);
   }
 
   /// 화면을 떠나 취소된 보내기의 결과. 화면이 없으므로 사용자에게 표시되지 않는다.
