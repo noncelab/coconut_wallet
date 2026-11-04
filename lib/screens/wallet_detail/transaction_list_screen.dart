@@ -339,8 +339,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 }
 
-/// 거래 목록 라벨 옆 '업데이트 중'. WalletRefreshIndicator와 같은 타이밍으로 폭과 함께 페이드 인하고,
-/// 동기화가 끝나면 300ms 더 보였다가 페이드 아웃한다. 그 사이 다시 시작되면 깜빡이지 않고 그대로 보인다.
+/// 거래 목록 라벨 옆 '업데이트 중'. WalletRefreshIndicator와 같은 타이밍으로 페이드 인하고, 동기화가 끝나면 300ms 더
+/// 보였다가 페이드 아웃한다. 그 사이 다시 시작되면 깜빡이지 않고 그대로 보인다. 보이는 동안은 WalletRefreshIndicator처럼
+/// 폭을 다 차지해서, 페이드 중에도 옆의 거래 개수 위에 겹쳐 그려지지 않는다.
 @visibleForTesting
 class TransactionListSyncingIndicator extends StatefulWidget {
   const TransactionListSyncingIndicator({super.key, required this.isSyncing});
@@ -386,15 +387,7 @@ class _TransactionListSyncingIndicatorState extends State<TransactionListSyncing
     tween: Tween(begin: 0, end: _isVisible ? 1 : 0),
     duration: const Duration(milliseconds: 350),
     curve: Curves.easeInOut,
-    builder:
-        (context, value, child) =>
-            value == 0
-                ? const SizedBox.shrink()
-                : Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  widthFactor: value,
-                  child: Opacity(opacity: value, child: child),
-                ),
+    builder: (context, value, child) => value == 0 ? const SizedBox.shrink() : Opacity(opacity: value, child: child),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
