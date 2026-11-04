@@ -147,59 +147,63 @@ class UtxoSyncService {
 
       // 3. 각 트랜잭션에 대해 트랜잭션 상세 정보 조회
       for (final txRecord in sentTransactions) {
-        final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
-        final transaction = Transaction.parse(txHex);
+        try {
+          final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
+          final transaction = Transaction.parse(txHex);
 
-        // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
-        final previousTxs = await _electrumService.getPreviousTransactions(transaction);
+          // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
+          final previousTxs = await _electrumService.getPreviousTransactions(transaction);
 
-        if (previousTxs.isEmpty) {
-          continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
-        }
-
-        // 5. 트랜잭션 입력 분석하여 내 지갑의 UTXO인지 확인
-        for (int i = 0; i < transaction.inputs.length; i++) {
-          final input = transaction.inputs[i];
-          final utxoId = getUtxoId(input.transactionHash, input.index);
-
-          if (existingUtxoIds.contains(utxoId)) {
-            continue;
+          if (previousTxs.isEmpty) {
+            continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
           }
 
-          Transaction? previousTx;
-          try {
-            previousTx =
-                previousTxs is PreviousTransactions
-                    ? previousTxs.byHash[input.transactionHash]
-                    : previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-          } catch (_) {
-            continue;
+          // 5. 트랜잭션 입력 분석하여 내 지갑의 UTXO인지 확인
+          for (int i = 0; i < transaction.inputs.length; i++) {
+            final input = transaction.inputs[i];
+            final utxoId = getUtxoId(input.transactionHash, input.index);
+
+            if (existingUtxoIds.contains(utxoId)) {
+              continue;
+            }
+
+            Transaction? previousTx;
+            try {
+              previousTx =
+                  previousTxs is PreviousTransactions
+                      ? previousTxs.byHash[input.transactionHash]
+                      : previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+            } catch (_) {
+              continue;
+            }
+
+            if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
+              continue;
+            }
+
+            final previousOutput = previousTx.outputs[input.index];
+            final address = previousOutput.scriptPubKey.getAddress();
+
+            if (!_addressRepository.containsAddress(walletItem.id, address)) {
+              continue;
+            }
+
+            final newUtxo = UtxoState(
+              transactionHash: input.transactionHash,
+              index: input.index,
+              amount: previousOutput.amount,
+              derivationPath: _addressRepository.getDerivationPath(walletItem.id, address),
+              blockHeight: 0,
+              to: address,
+              status: UtxoStatus.outgoing,
+              spentByTransactionHash: transaction.transactionHash,
+              // 언컨펌 상태이므로 블록 높이나 타임스탬프 값 대신 createdAt 값 사용
+              timestamp: txRecord.createdAt,
+            );
+            newUtxoList.add(newUtxo);
           }
-
-          if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
-            continue;
-          }
-
-          final previousOutput = previousTx.outputs[input.index];
-          final address = previousOutput.scriptPubKey.getAddress();
-
-          if (!_addressRepository.containsAddress(walletItem.id, address)) {
-            continue;
-          }
-
-          final newUtxo = UtxoState(
-            transactionHash: input.transactionHash,
-            index: input.index,
-            amount: previousOutput.amount,
-            derivationPath: _addressRepository.getDerivationPath(walletItem.id, address),
-            blockHeight: 0,
-            to: address,
-            status: UtxoStatus.outgoing,
-            spentByTransactionHash: transaction.transactionHash,
-            // 언컨펌 상태이므로 블록 높이나 타임스탬프 값 대신 createdAt 값 사용
-            timestamp: txRecord.createdAt,
-          );
-          newUtxoList.add(newUtxo);
+        } catch (e, stackTrace) {
+          Logger.error('Failed to restore outgoing UTXOs for ${txRecord.transactionHash}: $e\n$stackTrace');
         }
       }
 

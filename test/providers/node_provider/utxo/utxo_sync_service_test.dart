@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import '../../../mock/electrum_transaction_transport.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -59,6 +62,77 @@ void main() {
     realmManager.reset();
     realmManager.dispose();
   });
+
+  for (final failedFirst in [true, false]) {
+    test('[P3-outgoing] a failed send does not discard healthy outgoing coins (failedFirst=$failedFirst)', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 2,
+        isChange: false,
+      );
+      final foreign = testWalletItem.walletBase.getAddress(9999);
+      final fundA = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(0),
+        amount: 50000,
+      );
+      final fundB = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(1),
+        amount: 60000,
+      );
+      final sendA = TransactionMock.createMockTransaction(
+        toAddress: foreign,
+        amount: 40000,
+        inputTransactionHash: fundA.transactionHash,
+      );
+      final sendB = TransactionMock.createMockTransaction(
+        toAddress: foreign,
+        amount: 50000,
+        inputTransactionHash: fundB.transactionHash,
+      );
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createMockTransactionRecord(
+          transactionHash: sendA.transactionHash,
+          blockHeight: 0,
+          createdAt: DateTime(2026, 1, failedFirst ? 2 : 1),
+        ),
+        TransactionMock.createMockTransactionRecord(
+          transactionHash: sendB.transactionHash,
+          blockHeight: 0,
+          createdAt: DateTime(2026, 1, failedFirst ? 1 : 2),
+        ),
+      ]);
+      final raw = {
+        sendA.transactionHash: sendA.serialize(),
+        sendB.transactionHash: sendB.serialize(),
+        fundB.transactionHash: fundB.serialize(),
+      };
+      final transport = ElectrumTransactionTransport((hash) {
+        final hex = raw[hash];
+        if (hex == null) throw TimeoutException('slow link'); // fundA never arrives
+        return hex;
+      });
+      final utxoSync = UtxoSyncService(
+        transport.service,
+        stateManager,
+        utxoRepository,
+        transactionRepository,
+        addressRepository,
+      );
+
+      await utxoSync.createOutgoingUtxos(testWalletItem);
+
+      final coinA = utxoRepository.getUtxoState(testWalletId, getUtxoId(fundA.transactionHash, 0));
+      final coinB = utxoRepository.getUtxoState(testWalletId, getUtxoId(fundB.transactionHash, 0));
+      // ignore: avoid_print
+      print('[P3-outgoing] sendA coin=${coinA?.status.name} sendB coin=${coinB?.status.name}');
+      expect(coinA, isNull);
+      expect(coinB?.spentByTransactionHash, sendB.transactionHash);
+      expect(coinB?.amount, 60000);
+      expect(coinB?.status.name, 'outgoing', reason: 'sendB has all parents; 7e6cffa9 created its outgoing coin');
+    });
+  }
 
   group('cleanupOrphanedUtxos 테스트', () {
     test('컨펌된 트랜잭션에 연결된 outgoing UTXO가 정리되는지 확인', () async {
