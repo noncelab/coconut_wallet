@@ -30,6 +30,8 @@ class IsolateController {
     this._realmManager,
   );
 
+  void setRetrySuspended(bool suspended) => _subscriptionService.setRetrySuspended(suspended);
+
   Future<void> executeNetworkCommand(
     IsolateControllerCommand messageType,
     SendPort isolateToMainSendPort,

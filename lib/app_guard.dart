@@ -166,6 +166,9 @@ class _AppGuardState extends State<AppGuard> {
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
 
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+    if (lifecycleState != null) _nodeProvider.setAppLifecycleState(lifecycleState);
+
     _lifecycleListener = AppLifecycleListener(onStateChange: _handleAppLifecycleState);
 
     _screenListener.addScreenShotListener((_) {
@@ -182,6 +185,9 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   Future<void> _handleAppLifecycleState(AppLifecycleState state) async {
+    // 화면보호기용 early return과 무관하게 node isolate에도 pause/resume을 전달한다.
+    _nodeProvider.setAppLifecycleState(state);
+
     /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
     if (Platform.isAndroid && !_isFirstInactiveSkipped) {
       _isFirstInactiveSkipped = true;

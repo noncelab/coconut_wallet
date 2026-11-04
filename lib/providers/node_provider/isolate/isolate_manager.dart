@@ -28,6 +28,13 @@ class IsolateManager {
   bool _receivePortListening = false;
   bool _isInitializing = false;
   String _host = '';
+  bool _retrySuspended = false;
+
+  void setRetrySuspended(bool suspended) {
+    if (_retrySuspended == suspended) return;
+    _retrySuspended = suspended;
+    _mainToIsolateSendPort?.send([IsolateControllerSignal.retrySuspended, suspended]);
+  }
 
   bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
@@ -225,6 +232,8 @@ class IsolateManager {
       case IsolateManagerCommand.initializationCompleted:
         if (params is SendPort) {
           _mainToIsolateSendPort = params;
+          // 초기화 중 들어온 pause도 첫 구독 명령보다 먼저 전달한다. 재연결해도 현재 생명주기를 유지한다.
+          if (_retrySuspended) params.send([IsolateControllerSignal.retrySuspended, true]);
 
           // scheduleMicrotask를 사용하여 메시지 처리 완료 후 초기화 완료 신호 전송
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
@@ -308,6 +317,10 @@ class IsolateManager {
 
       isolateFromMainReceivePort.listen(
         (message) async {
+          if (message case [IsolateControllerSignal.retrySuspended, bool suspended]) {
+            isolateController.setRetrySuspended(suspended);
+            return;
+          }
           if (message is List && message.length == 3) {
             IsolateControllerCommand messageType = message[0];
             SendPort isolateToMainSendPort = message[1];

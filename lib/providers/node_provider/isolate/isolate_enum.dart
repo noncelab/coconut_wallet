@@ -32,3 +32,6 @@ enum IsolateStateMethod {
 }
 
 enum IsolateManagerCommand { initializationCompleted, initializationFailed, updateState }
+
+/// One-way lifecycle signals need no response port or timeout.
+enum IsolateControllerSignal { retrySuspended }

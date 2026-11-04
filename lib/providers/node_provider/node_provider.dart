@@ -223,6 +223,17 @@ class NodeProvider extends ChangeNotifier {
     _ => false,
   };
 
+  /// AppGuard의 기존 listener가 전달한다. inactive(인증/제어 센터)는 pause/resume 상태를 바꾸지 않는다.
+  void setAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _isolateManager.setRetrySuspended(false);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _isolateManager.setRetrySuspended(true);
+    }
+  }
+
   Future<void> _restartBlockUpdates() async {
     _stopBlockUpdates();
     _startBlockUpdates();

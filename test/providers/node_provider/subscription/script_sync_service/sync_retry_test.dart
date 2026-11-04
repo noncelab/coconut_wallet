@@ -1,4 +1,4 @@
-// Bounded automatic retry after a failed wallet queue (10/30/90 s, one timer per wallet).
+// Automatic retry after a failed wallet queue (10/30/90 s, then 5 min, one timer per wallet).
 import 'dart:async';
 
 import 'package:coconut_wallet/app.dart';
@@ -146,22 +146,154 @@ void main() {
     expect(clock.pendingDelays, [const Duration(seconds: 10)]);
   });
 
-  test('stops after 10/30/90 s and keeps the failure; a clean queue resets the count', () async {
+  test('after 10/30/90 s retries continue every 5 min until success resets the count', () async {
     final sync = createSync();
     resubscribe = () async => _failure;
     await failQueue(sync);
-    for (final delay in [30, 90]) {
+    for (final delay in [30, 90, 300, 300]) {
       await elapse(sync);
       expect(clock.pendingDelays, [Duration(seconds: delay)]);
     }
-    await elapse(sync);
-    expect(calls, ['resubscribe', 'resubscribe', 'resubscribe']);
-    expect(clock.pendingDelays, isEmpty, reason: 'capped at three attempts');
+    expect(calls, List.filled(4, 'resubscribe'));
     expect(ScriptSyncServiceMock.stateManager.state.nodeSyncState, NodeSyncState.failed);
 
-    await sync.runQueued(_walletId, () async => Result.success(true)); // e.g. a later push syncs cleanly
+    resubscribe = () async => Result.success(true);
+    await elapse(sync);
+    expect(clock.pendingDelays, isEmpty, reason: 'success stops the slow retries');
     await failQueue(sync);
     expect(clock.pendingDelays, [const Duration(seconds: 10)], reason: 'the count starts over');
+  });
+
+  test('slow retries keep the ±20% jitter bounds', () async {
+    for (final (random, millis) in [(0.0, 240000), (0.9999, 359988)]) {
+      clock = ManualTimers();
+      final sync = createSync(random: random);
+      resubscribe = () async => _failure;
+      await failQueue(sync);
+      for (var i = 0; i < 3; i++) {
+        await elapse(sync);
+      }
+      expect(clock.pendingDelays.single.inMilliseconds, millis);
+      sync.cancelRetry(_walletId);
+      expect(clock.pendingDelays, isEmpty);
+    }
+  });
+
+  for (final remove in [false, true]) {
+    test('slow retry is cancelled on ${remove ? 'delete' : 'resync'}', () async {
+      final sync = createSync();
+      resubscribe = () async => _failure;
+      await failQueue(sync);
+      for (var i = 0; i < 3; i++) {
+        await elapse(sync);
+      }
+      expect(clock.pendingDelays, [const Duration(minutes: 5)]);
+      remove ? sync.removeWallet(_walletId) : sync.cancelRetry(_walletId);
+      expect(clock.pendingDelays, isEmpty);
+      calls.clear();
+      await elapse(sync);
+      expect(calls, isEmpty);
+      expect(clock.pendingDelays, isEmpty);
+    });
+  }
+
+  test('a disconnected slow retry makes no requests and leaves one slow timer', () async {
+    final sync = createSync();
+    connected = false;
+    await failQueue(sync);
+    for (var i = 0; i < 5; i++) {
+      await elapse(sync);
+    }
+    expect(calls, isEmpty);
+    expect(clock.pendingDelays, [const Duration(minutes: 5)]);
+  });
+
+  for (final retriesBeforePause in [0, 3]) {
+    test('pause suspends the retry at step $retriesBeforePause; resume runs it without resetting backoff', () async {
+      final sync = createSync();
+      resubscribe = () async => _failure;
+      await failQueue(sync);
+      for (var i = 0; i < retriesBeforePause; i++) {
+        await elapse(sync);
+      }
+      calls.clear();
+      sync.setRetrySuspended(true);
+      expect(clock.pendingDelays, isEmpty);
+      clock.elapse();
+      await pumpEventQueue();
+      expect(calls, isEmpty);
+      sync.setRetrySuspended(false);
+      await pumpEventQueue();
+      expect(calls, ['resubscribe']);
+      expect(clock.pendingDelays, [Duration(seconds: retriesBeforePause == 0 ? 30 : 300)]);
+      sync.cancelRetry(_walletId);
+    });
+  }
+
+  test('pause while disconnected performs no retry; resume still obeys connection gating', () async {
+    final sync = createSync();
+    connected = false;
+    await failQueue(sync);
+    sync.setRetrySuspended(true);
+    await elapse(sync);
+    expect(calls, isEmpty);
+    expect(clock.pendingDelays, isEmpty);
+    sync.setRetrySuspended(false);
+    await pumpEventQueue();
+    expect(calls, isEmpty);
+    expect(clock.pendingDelays, [const Duration(seconds: 30)]);
+    connected = true;
+    await elapse(sync);
+    expect(calls, ['resubscribe']);
+    expect(clock.pendingDelays, isEmpty);
+  });
+
+  for (final remove in [false, true]) {
+    test('${remove ? 'delete' : 'resync'} during pause discards the suspended retry', () async {
+      final sync = createSync();
+      await failQueue(sync);
+      sync.setRetrySuspended(true);
+      remove ? sync.removeWallet(_walletId) : sync.cancelRetry(_walletId);
+      sync.setRetrySuspended(false);
+      await pumpEventQueue();
+      expect(calls, isEmpty);
+      expect(clock.pendingDelays, isEmpty);
+    });
+  }
+
+  test('an in-flight retry finishes across pause with balanced progress and no next timer', () async {
+    final state = ScriptSyncServiceMock.stateManager;
+    state.initWalletUpdateStatus(_walletId);
+    final sync = createSync();
+    final hold = Completer<void>();
+    resubscribe = () async {
+      state.addWalletSyncState(_walletId, UpdateElement.transaction);
+      state.addWalletFetchDispatched(_walletId, 1);
+      try {
+        await hold.future;
+        return _failure;
+      } finally {
+        state.addWalletCompletedState(_walletId, UpdateElement.transaction);
+        state.addWalletFetchCompleted(_walletId, 1);
+      }
+    };
+    await failQueue(sync);
+    clock.elapse();
+    await pumpEventQueue();
+    expect(calls, ['resubscribe']);
+    sync.setRetrySuspended(true);
+    hold.complete();
+    await pumpEventQueue();
+    final walletState = state.state.registeredWallets[_walletId]!;
+    expect(walletState.isSyncQueued, isFalse);
+    expect(walletState.transaction, WalletSyncState.completed);
+    expect(state.fetchProgressByWallet[_walletId]!.completed, state.fetchProgressByWallet[_walletId]!.dispatched);
+    expect(clock.pendingDelays, isEmpty);
+    resubscribe = () async => Result.success(true);
+    sync.setRetrySuspended(false);
+    await pumpEventQueue();
+    expect(calls, ['resubscribe', 'resubscribe']);
+    expect(clock.pendingDelays, isEmpty);
   });
 
   test('a clean queue while a retry is pending resets the count the late retry starts from', () async {

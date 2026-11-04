@@ -34,7 +34,7 @@ class ScriptSyncService {
   final Map<int, DateTime> _lastDormantSyncAt = {};
   final Map<String, DateTime> _lastAddressCheckAt = {};
 
-  // 실패 뒤 자동 재시도: 지갑마다 타이머 하나, [_retryDelays] 횟수까지. 깨끗하게 끝난 큐가 횟수를 초기화한다.
+  // 실패 뒤 자동 재시도: 초기 간격 뒤에는 5분마다, 지갑마다 타이머 하나. 깨끗한 큐가 횟수를 초기화한다.
   final List<Duration> _retryDelays;
   final Timer Function(Duration delay, void Function() callback) _createTimer;
   bool Function() _isConnected = () => true;
@@ -45,6 +45,7 @@ class ScriptSyncService {
   final Map<int, int> _retryGenerations = {};
   final Map<int, int> _deferredRetries = {}; // 큐가 바빠 미룬 재시도: 지갑 → 예약 때 세대
   final Set<int> _removedWallets = {};
+  bool _retrySuspended = false;
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
   static const Duration _dormantSyncThrottle = Duration(seconds: 30);
@@ -78,6 +79,26 @@ class ScriptSyncService {
   /// 소켓이 연결돼 있는지. 끊긴 동안의 재시도는 건너뛴다(재연결은 isolate를 새로 만든다).
   set isConnected(bool Function() isConnected) {
     _isConnected = isConnected;
+  }
+
+  /// 기존 앱 생명주기 신호로 타이머만 멈춘다. 이미 실행 중인 작업은 정상적으로 큐를 비우게 둔다.
+  /// 복귀 때 미뤄 둔 재시도를 바로 실행하므로 짧은 복귀가 반복돼도 재시도가 사라지지 않는다.
+  void setRetrySuspended(bool suspended) {
+    if (_retrySuspended == suspended) return;
+    _retrySuspended = suspended;
+    if (suspended) {
+      for (final entry in _retryTimers.entries) {
+        entry.value.cancel();
+        _deferredRetries[entry.key] = _retryGenerations[entry.key] ?? 0;
+      }
+      _retryTimers.clear();
+    } else {
+      for (final entry in _deferredRetries.entries.toList()) {
+        if (_walletSyncQueues.containsKey(entry.key)) continue;
+        _deferredRetries.remove(entry.key);
+        _startRetry(entry.key, entry.value);
+      }
+    }
   }
 
   set unsubscribeAddress(Future<void> Function(WalletItemBase walletItem, String address) unsubscribeAddress) {
@@ -300,19 +321,23 @@ class ScriptSyncService {
     return completer.future.whenComplete(() => queuedSyncWithCleanup);
   }
 
-  /// 큐가 실패로 끝난 지갑을 정해진 간격 뒤에 다시 동기화한다. 지갑마다 타이머는 하나이고, 횟수를 다 쓰면
-  /// 실패를 남긴 채 멈춘다(다음 푸시·새로고침·재연결이 다시 동기화한다).
+  /// 실패가 남은 동안 초기 10/30/90초 뒤에도 5분 간격으로 계속 시도한다.
   void _scheduleRetry(int walletId) {
     final attempt = _retryAttempts[walletId] ?? 0;
-    if (!_retryWallets.containsKey(walletId) || attempt >= _retryDelays.length || _retryTimers.containsKey(walletId)) {
+    if (!_retryWallets.containsKey(walletId) || _retryDelays.isEmpty || _retryTimers.containsKey(walletId)) {
       return;
     }
     final generation = _retryGenerations[walletId] ?? 0;
+    if (_retrySuspended) {
+      _deferredRetries[walletId] = generation;
+      return;
+    }
+    final delay = attempt < _retryDelays.length ? _retryDelays[attempt] : const Duration(minutes: 5);
     // 같은 순간에 실패한 기기들이 같은 박자로 다시 묻지 않도록 ±20% 흔든다.
-    _retryTimers[walletId] = _createTimer(_retryDelays[attempt] * (0.8 + 0.4 * _random()), () {
+    _retryTimers[walletId] = _createTimer(delay * (0.8 + 0.4 * _random()), () {
       _retryTimers.remove(walletId);
       // 다른 작업이 큐를 쓰고 있으면 그 큐가 끝난 뒤로 미룬다(재시도 표시가 그 작업의 전체 상태 진행을 가리지 않게).
-      if (_walletSyncQueues.containsKey(walletId)) {
+      if (_retrySuspended || _walletSyncQueues.containsKey(walletId)) {
         _deferredRetries[walletId] = generation;
       } else {
         _startRetry(walletId, generation);
@@ -323,8 +348,13 @@ class ScriptSyncService {
   /// 자동 재시도. 지갑 상태(진행·완료·잔액)는 평소처럼 알리고, 재시도 작업이 도는 동안에만 전체(홈 연결) 상태를
   /// 바꾸지 않는다(실패 → 동기화 중 → 실패로 깜빡이지 않게). 결과는 큐가 끝날 때 평소처럼 알린다.
   void _startRetry(int walletId, int generation) {
+    if (!_retryWallets.containsKey(walletId) || generation != (_retryGenerations[walletId] ?? 0)) return;
+    if (_retrySuspended) {
+      _deferredRetries[walletId] = generation;
+      return;
+    }
     // 기다리는 동안 깨끗한 큐가 횟수를 초기화했을 수 있어, 예약 시점 값이 아니라 지금 값에 더한다.
-    _retryAttempts.update(walletId, (count) => count + 1, ifAbsent: () => 1);
+    _retryAttempts.update(walletId, (count) => min(count + 1, _retryDelays.length), ifAbsent: () => 1);
     _stateManager.setWalletRetrying(walletId, true);
     runQueued(walletId, () async {
       try {
@@ -340,7 +370,7 @@ class ScriptSyncService {
   Future<Result<bool>> _retryWalletSync(int walletId, int generation) async {
     bool cancelled() => generation != (_retryGenerations[walletId] ?? 0);
     final wallet = _retryWallets[walletId];
-    if (wallet == null || cancelled() || !_isConnected()) {
+    if (wallet == null || cancelled() || _retrySuspended || !_isConnected()) {
       return Result.failure(ErrorCodes.nodeConnectionError);
     }
     Logger.log('ScriptSyncService: retrying sync of ${wallet.name}');
@@ -361,6 +391,7 @@ class ScriptSyncService {
     _retryTimers.remove(walletId)?.cancel();
     _retryWallets.remove(walletId);
     _retryAttempts.remove(walletId);
+    _deferredRetries.remove(walletId);
   }
 
   /// 지갑 삭제: 재시도를 버리고, 이후 이 지갑의 푸시, 늦게 끝난 구독 응답과 늦게 온 구독 요청을 받지 않는다.

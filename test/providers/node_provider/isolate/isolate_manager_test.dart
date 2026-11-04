@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.d
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_test/flutter_test.dart';
 
 /// Stands in for the node isolate (Electrum connection, Realm): the test decides when the spawn finishes and what
@@ -252,5 +253,52 @@ void main() {
 
     await initialization;
     await spawn.exited.first;
+  });
+
+  test('lifecycle pause is retained across initialization and resume is sent without response ports', () async {
+    final spawn = _Spawn()..ready.complete();
+    final isolateSide = ReceivePort();
+    addTearDown(spawn.exited.close);
+    addTearDown(isolateSide.close);
+    final signals = <bool>[];
+    final subscription = isolateSide.listen((message) {
+      final request = message as List;
+      if (request.first == IsolateControllerSignal.retrySuspended) {
+        expect(request.length, 2, reason: 'no reply port or timeout for lifecycle events');
+        signals.add(request[1] as bool);
+      } else {
+        expect(request.first, IsolateControllerCommand.shutdown);
+        (request[1] as SendPort).send(true);
+      }
+    });
+    addTearDown(subscription.cancel);
+    final manager = IsolateManager(spawnIsolate: spawn.call);
+    final provider = NodeProvider(
+      const ElectrumServer('unused.example', 50002, true),
+      NetworkType.regtest,
+      _Connectivity(),
+      ValueNotifier(WalletLoadState.loadingFromDB),
+      ValueNotifier<List<WalletItemBase>>([]),
+      null,
+      isolateManager: manager,
+    );
+    provider.setAppLifecycleState(AppLifecycleState.inactive);
+    provider.setAppLifecycleState(AppLifecycleState.hidden);
+    provider.setAppLifecycleState(AppLifecycleState.paused);
+    final initialization = initialize(manager);
+    (await spawn.requested.future).isolateToMainSendPort.send([
+      IsolateManagerCommand.initializationCompleted,
+      isolateSide.sendPort,
+    ]);
+    await initialization;
+    await pumpEventQueue();
+    expect(signals, [true]);
+    provider.setAppLifecycleState(AppLifecycleState.inactive);
+    provider.setAppLifecycleState(AppLifecycleState.resumed);
+    await pumpEventQueue();
+    expect(signals, [true, false]);
+    await manager.closeIsolate();
+    await spawn.exited.first;
+    provider.dispose();
   });
 }

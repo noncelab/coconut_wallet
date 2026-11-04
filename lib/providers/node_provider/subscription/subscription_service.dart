@@ -79,6 +79,8 @@ class SubscriptionService {
   /// 예약된 자동 재시도를 버린다(지갑 재동기화).
   void cancelRetry(int walletId) => _scriptSyncService.cancelRetry(walletId);
 
+  void setRetrySuspended(bool suspended) => _scriptSyncService.setRetrySuspended(suspended);
+
   /// 지갑별 큐를 공유해서 [task] (subscribeWallet/스크립트 상태 처리)를 실행한다.
   /// 재동기화처럼 subscribeWallet을 거치지 않고 직접 Realm을 쓰는 작업이, 백그라운드에서 도는
   /// 지갑의 일반 구독과 순서 없이 경합하지 않도록 도착 순서대로 직렬화한다.

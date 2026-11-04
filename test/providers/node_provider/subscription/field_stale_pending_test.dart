@@ -993,6 +993,43 @@ void main() {
       expect(after.memo, 'exchange withdrawal');
     });
 
+    test('[r2-parent-slow-recovery] persistent parent failure recovers on the next 5 min retry', () async {
+      final (c, s, batch) = await batchCase();
+      final victim = batch.parents[77].transactionHash;
+      c.backend.fault = (method, hash) => method == 'getTransaction' && hash == victim;
+      final records = ScriptSyncServiceMock.transactionRepository;
+      await pass(c, s, batch, height: 0);
+      expect(records.getTransactionRecord(_walletId, batch.hash), isNull);
+      for (final seconds in [10, 30, 90]) {
+        expect(s.retryClock.pendingDelays, [Duration(seconds: seconds)]);
+        final before = c.backend.calls.length;
+        s.retryClock.elapse();
+        await _drain(s);
+        expect(records.getTransactionRecord(_walletId, batch.hash), isNull);
+        final requests = batch.count(c.backend.calls.sublist(before));
+        expect(requests['raw_batch'], 1);
+        expect(requests['raw_prev'], 150);
+        expect(batch.state(s)['tx_list_updating'], isFalse);
+      }
+      expect(s.retryClock.pendingDelays, [const Duration(minutes: 5)]);
+      c.backend.fault = (_, __) => false;
+      s.retryClock.elapse();
+      await _drain(s);
+      final recovered = records.getTransactionRecord(_walletId, batch.hash)!;
+      expect(recovered.inputAddressList.length, 150);
+      expect(recovered.amount, 250000);
+      expect(
+        recovered.fee,
+        batch.parents.fold<int>(0, (sum, tx) => sum + tx.outputs.first.amount) -
+            batch.tx.outputs.fold<int>(0, (sum, output) => sum + output.amount),
+      );
+      expect(recovered.transactionType, TransactionType.received);
+      expect(s.retryClock.pendingDelays, isEmpty);
+      final progress = s.main.fetchProgressByWallet[_walletId]!;
+      expect(progress.completed, progress.dispatched);
+      expect(s.main.state.registeredWallets[_walletId]!.isSyncQueued, isFalse);
+    });
+
     test(
       '[r2-pending-batch-refetch-fails] another unconfirmed tx syncs while the pending batch tx times out',
       () async {
