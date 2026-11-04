@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -32,6 +33,20 @@ class InvalidTransactionException implements Exception {
 }
 
 class BroadcastingViewModel extends ChangeNotifier {
+  /// 전송 실패 사유를 사용자 안내 문구로 변환 (모르는 사유는 원문 그대로)
+  static String broadcastFailureMessage(Object error) {
+    final reason = error.toString();
+    if (reason.contains('min relay fee not met')) return t.alert.error_send.insufficient_fee;
+    if (reason.contains('premature-spend-of-coinbase')) {
+      final depth = RegExp(r'spend coinbase at depth (\d+)').firstMatch(reason)?.group(1);
+      final remaining = depth == null ? 0 : kCoinbaseMaturity - int.parse(depth);
+      return remaining > 0
+          ? t.alert.error_send.immature_coinbase_remaining(count: remaining)
+          : t.alert.error_send.immature_coinbase;
+    }
+    return reason;
+  }
+
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late final UtxoTagProvider _tagProvider;

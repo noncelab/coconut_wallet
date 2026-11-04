@@ -1280,6 +1280,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "입출력 상세 보기"
+  coinbase_input: "채굴 보상으로 새로 발행된 비트코인이라 입력이 없어요."
   confirmation: "$height ($count승인)"
   time_ago:
     just_now: 방금 전
@@ -1863,6 +1864,8 @@ alert:
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$amount부터 전송할 수 있어요"
     insufficient_fee: "수수료율을 높여서\n다시 시도해주세요."
+    immature_coinbase: "채굴 보상은 100승인이 지나야 보낼 수 있어요."
+    immature_coinbase_remaining: "채굴 보상은 100승인이 지나야 보낼 수 있어요.\n$count블록 남았어요."
     non_final_taproot_child: "자식 지갑의 상속 일시를 확인하세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."

@@ -1216,6 +1216,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "Eingabe-/Ausgabedetails anzeigen"
+  coinbase_input: "Neu geschürfte Bitcoin aus einer Blockbelohnung haben keine Eingaben."
   confirmation: "$height ($count Bestätigungen)"
   time_ago:
     just_now: gerade eben
@@ -1796,6 +1797,8 @@ alert:
     insufficient_balance: "Unzureichendes Guthaben"
     minimum_amount: "Sie können mindestens $amount senden"
     insufficient_fee: "Bitte versuchen Sie es erneut, indem Sie\ndie Gebührenrate erhöhen."
+    immature_coinbase: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden."
+    immature_coinbase_remaining: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden.\nNoch $count Blöcke."
     non_final_taproot_child: "Bitte überprüfen Sie das Vererbungsdatum und die Uhrzeit der untergeordneten Wallet."
   signed_psbt:
     wrong_send_info: "Sendeinformationen sind unterschiedlich.\nBitte versuchen Sie es von Anfang an erneut."

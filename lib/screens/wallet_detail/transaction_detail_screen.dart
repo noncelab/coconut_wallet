@@ -591,6 +591,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               key: ValueKey(viewModel.getTransactionKey(viewModel.previousTransactionIndex)),
               transaction: viewModel.transactionList![viewModel.previousTransactionIndex],
               isSameAddress: viewModel.isSameAddress,
+              isCoinbase: viewModel.isCoinbase,
               currentUnit: _currentUnit,
               isOutputNavigable:
                   (address, outputIndex) => _isOutputNavigable(
@@ -619,6 +620,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             key: ValueKey(viewModel.getTransactionKey(viewModel.selectedTransactionIndex)),
             transaction: viewModel.transactionList![viewModel.selectedTransactionIndex],
             isSameAddress: viewModel.isSameAddress,
+            isCoinbase: viewModel.isCoinbase,
             currentUnit: _currentUnit,
             isOutputNavigable:
                 (address, outputIndex) => _isOutputNavigable(

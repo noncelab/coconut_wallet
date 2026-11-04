@@ -1274,6 +1274,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "入出力詳細を見る"
+  coinbase_input: "マイニング報酬として新しく発行されたビットコインのため、入力はありません。"
   confirmation: "$height（$count確認）"
   time_ago:
     just_now: たった今
@@ -1854,6 +1855,8 @@ alert:
     insufficient_balance: "残高が不足しています。"
     minimum_amount: "$amountから送信できます。"
     insufficient_fee: "手数料を増やして\n再度お試しください。"
+    immature_coinbase: "マイニング報酬は100確認後に送金できます。"
+    immature_coinbase_remaining: "マイニング報酬は100確認後に送金できます。\nあと$countブロックです。"
     non_final_taproot_child: "子ウォレットの相続日時を確認してください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"

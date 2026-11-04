@@ -184,10 +184,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       await lottieAnimation;
       if (!mounted) return;
       _restoreAfterBroadcastFailure();
-      String message = e.toString();
-      if (e.toString().contains('min relay fee not met')) {
-        message = t.alert.error_send.insufficient_fee;
-      }
+      final message = BroadcastingViewModel.broadcastFailureMessage(e);
       if (!mounted) return;
       showInfoDialog(
         context,

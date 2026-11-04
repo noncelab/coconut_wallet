@@ -39,6 +39,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   List<TransactionRecord>? _transactionList;
   List<FeeHistory> _feeBumpingHistoryList = [];
   bool _isFetchingFromMempool = false;
+  bool _isCoinbase = false;
+  bool _isCheckingCoinbase = false;
+  bool _coinbaseChecked = false;
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
@@ -51,6 +54,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   bool _disposed = false;
   bool get isDisposed => _disposed;
+  bool get isCoinbase => _isCoinbase;
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) =>
       _blockExplorerProvider.explorerUrlFor(pathType, value);
@@ -230,6 +234,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     // DB에 저장된 트랜잭션에 input 주소 정보가 없는 경우
     // 멤풀 API를 통해 트랜잭션 조회
     if (currentTransaction.inputAddressList.isEmpty && !_isFetchingFromMempool) {
+      _checkCoinbase();
       _fetchTransactionFromMempoolAndUpdate();
       _transactionList = [currentTransaction];
       _syncFeeHistoryList();
@@ -340,6 +345,23 @@ class TransactionDetailViewModel extends ChangeNotifier {
         status == TransactionStatus.selfsending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.sent;
+  }
+
+  /// 입력이 없는 거래는 원본 거래로 coinbase 여부 판별 (조회 실패 시 다음 갱신 때 다시 시도)
+  Future<void> _checkCoinbase() async {
+    if (_coinbaseChecked || _isCheckingCoinbase) return;
+    _isCheckingCoinbase = true;
+    try {
+      final result = await _nodeProvider.getTransaction(_txHash);
+      if (_disposed || result.isFailure) return;
+      _isCoinbase = TransactionUtil.isCoinbaseTransaction(Transaction.parse(result.value));
+      _coinbaseChecked = true;
+      if (_isCoinbase) safeNotifyListeners();
+    } catch (e) {
+      Logger.error('[_checkCoinbase] Failed to check coinbase: $_txHash, error=$e');
+    } finally {
+      _isCheckingCoinbase = false;
+    }
   }
 
   Future<void> _fetchTransactionFromMempoolAndUpdate() async {
