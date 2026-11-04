@@ -551,6 +551,33 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
+  /// [txHashes] 중 대체됐다고 표시된 거래: 거래 해시 → 대체한 거래 해시
+  Map<String, String> getReplacedByMap(int walletId, Iterable<String> txHashes) => {
+    for (final tx in realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash IN $1 AND replaceByTransactionHash != null',
+      [walletId, txHashes.toList()],
+    ))
+      tx.transactionHash: tx.replaceByTransactionHash!,
+  };
+
+  /// 서버가 다시 보여 준 원래 거래의 대체 표시를 지우고, 같은 코인을 써서 무효가 된 미확정 대체 거래 기록을 지운다.
+  Future<void> restoreReplacedTransactions(int walletId, Set<String> restoredTxHashes, Set<String> lostTxHashes) async {
+    final restored = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      restoredTxHashes.toList(),
+    ]);
+    final lost = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight <= 0', [
+      walletId,
+      lostTxHashes.toList(),
+    ]);
+    await realm.writeAsync(() {
+      for (final tx in restored) {
+        tx.replaceByTransactionHash = null;
+      }
+      realm.deleteMany(lost);
+    });
+  }
+
   Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
     final realmTransactions =
         realm

@@ -37,6 +37,7 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/electrum_service.dart' show TransactionNotFound;
 import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
@@ -66,6 +67,8 @@ class _Backend {
   final calls = <String>[]; // '$method:$key' of every request
   int get requests => calls.length;
   Duration latency = Duration.zero;
+  // ElectrumService reports TransactionNotFound only when the mempool fallback also answers 404; otherwise unknown.
+  bool classifiedAbsence = false;
 
   void put(Transaction tx, [int? height]) {
     txs[tx.transactionHash] = tx;
@@ -132,7 +135,9 @@ class _Backend {
   }
 
   String rawTx(String hash) {
-    if (!heights.containsKey(hash)) throw StateError('No such mempool or blockchain transaction');
+    if (!heights.containsKey(hash)) {
+      throw classifiedAbsence ? TransactionNotFound(hash) : StateError('No such mempool or blockchain transaction');
+    }
     return txs[hash]!.serialize();
   }
 
@@ -897,4 +902,158 @@ void main() {
         'Known gap (pre-existing): a confirmed record is never re-validated, so after a reorg drops it the spend stays '
         'recorded and its input stays removed. Needs reorg handling for confirmed records.',
   );
+
+  // The app bumps its own send T1 (T2, then T3) and marks each bumped send replaced. When the server instead shows T1
+  // (it confirmed, or a server that never saw the bump keeps it), T1 must be back in the history with its change coin,
+  // the losing bumps' records and coins must be gone, and the coins must add up to the server balance.
+  Map<String, int> history() => {
+    for (final tx in ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(_walletId))
+      tx.transactionHash: tx.blockHeight,
+  };
+  String changeCoin(Transaction tx) =>
+      ScriptSyncServiceMock.utxoRepository.getUtxoState(_walletId, getUtxoId(tx.transactionHash, 1))?.status.name ??
+      'deleted';
+  // [coins the wallet counts, server balance]; outgoing coins are already subtracted from the server balance.
+  List<int> coinsVsServer(_Case c) => [
+    c.utxos.getUtxoStateList(_walletId).where((u) => u.status != UtxoStatus.outgoing).fold(0, (s, u) => s + u.amount),
+    [c.input, c.change].map(c.backend.balance).fold(0, (s, b) => s + b.confirmed + b.unconfirmed),
+  ];
+  bool hasRecord(Transaction tx) =>
+      ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, tx.transactionHash) != null;
+
+  /// T1 spends the coin (change 699,000); each bump keeps the input and lowers the change by 10,000.
+  Future<(_Case, SubscriptionService, List<Transaction>)> bumpOwnSend({
+    required int bumps,
+    bool classified = true,
+  }) async {
+    final (c, node) = await sendFromSyncedWallet();
+    final b = c.backend..classifiedAbsence = classified;
+    final chain = [c.spend];
+    b.heights[c.spend.transactionHash] = 0;
+    for (var i = 0; i <= bumps; i++) {
+      if (i > 0) {
+        b.heights.remove(chain.last.transactionHash);
+        chain.add(_Case._tx([(c.funding.transactionHash, 0)], [(_external, 300000), (c.change, 699000 - 10000 * i)]));
+        b.put(chain.last, 0);
+      }
+      b
+        ..notify(c.input)
+        ..notify(c.change);
+      await _drain(node);
+    }
+    expect(history().keys, isNot(contains(c.spend.transactionHash)), reason: 'precondition: T1 is marked replaced');
+    expect(changeCoin(c.spend), 'deleted', reason: 'precondition: T1\'s change coin left with it');
+    expect(changeCoin(chain.last), 'incoming');
+    return (c, node, chain);
+  }
+
+  Future<SubscriptionService> deliver(_Case c, SubscriptionService node, String path) async {
+    if (path == 'reconnect') return c.reconnect();
+    for (final address in path == 'input-first' ? [c.input, c.change] : [c.change, c.input]) {
+      c.backend.notify(address);
+    }
+    await _drain(node);
+    return node;
+  }
+
+  const paths = ['input-first', 'change-first', 'reconnect'];
+  for (final bumps in [1, 2]) {
+    for (final classified in [true, false]) {
+      for (final path in paths) {
+        final variant = '$bumps bump(s), $path, ${classified ? 'classified' : 'unclassified'} absence';
+        test('[rbf-original-confirms] $variant: T1 is shown with its change coin, the bumps are gone', () async {
+          final (c, node, chain) = await bumpOwnSend(bumps: bumps, classified: classified);
+          final [t1, ...bumped] = chain;
+          for (final tx in bumped) {
+            c.backend.heights.remove(tx.transactionHash);
+          }
+          c.backend.heights[t1.transactionHash] = 101; // a miner kept the original
+          await deliver(c, node, path);
+          for (final stage in ['after sync', 'after the next reconnect']) {
+            if (stage != 'after sync') await c.reconnect();
+            final observed = {
+              'history': history(),
+              't1_change': changeCoin(t1),
+              'bump_changes': bumped.map(changeCoin).toList(),
+              'bump_records': bumped.where(hasRecord).length,
+              'coins_vs_server': coinsVsServer(c),
+            };
+            _report('rbf-original-confirms', '$variant, $stage', observed);
+            expect(observed, {
+              'history': {c.funding.transactionHash: 100, t1.transactionHash: 101},
+              't1_change': 'unspent',
+              'bump_changes': List.filled(bumps, 'deleted'),
+              'bump_records': 0,
+              'coins_vs_server': [699000, 699000],
+            }, reason: stage);
+          }
+        });
+      }
+    }
+  }
+
+  test('[rbf-original-shown] a server that never saw the bump keeps T1 pending, then T1 confirms', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 1);
+    final [t1, t2] = chain;
+    c.backend.heights.remove(t2.transactionHash);
+    c.backend.heights[t1.transactionHash] = 0; // the server the app switches to kept T1 in its mempool
+    var node = await c.reconnect();
+    final observed = {
+      'history': history(),
+      't1_change': changeCoin(t1),
+      'bump_change': changeCoin(t2),
+      'bump_record': hasRecord(t2),
+      'input_coin': c.coinState(),
+      'coins_vs_server': coinsVsServer(c),
+    };
+    c.backend.heights[t1.transactionHash] = 101;
+    node = await deliver(c, node, 'input-first');
+    observed['history_after_confirm'] = history();
+    observed['t1_change_after_confirm'] = changeCoin(t1);
+    observed['coins_vs_server_after_confirm'] = coinsVsServer(c);
+    _report('rbf-original-shown', '-', observed);
+    expect(observed, {
+      'history': {c.funding.transactionHash: 100, t1.transactionHash: 0},
+      't1_change': 'incoming',
+      'bump_change': 'deleted',
+      'bump_record': false,
+      'input_coin': 'outgoing',
+      'coins_vs_server': [699000, 699000],
+      'history_after_confirm': {c.funding.transactionHash: 100, t1.transactionHash: 101},
+      't1_change_after_confirm': 'unspent',
+      'coins_vs_server_after_confirm': [699000, 699000],
+    });
+  });
+
+  // The normal RBF outcome: the bump confirms, T1 stays replaced and hidden.
+  for (final classified in [true, false]) {
+    for (final path in paths) {
+      final variant = '$path, ${classified ? 'classified' : 'unclassified'} absence';
+      test('[rbf-bump-confirms] $variant: the bump is shown, T1 stays replaced', () async {
+        final (c, node, chain) = await bumpOwnSend(bumps: 1, classified: classified);
+        final [t1, t2] = chain;
+        c.backend.heights[t2.transactionHash] = 101;
+        await deliver(c, node, path);
+        final realm = ScriptSyncServiceMock.realmManager!.realm;
+        final observed = {
+          'history': history(),
+          't1_replaced_by':
+              realm
+                  .find<RealmTransaction>(getRealmTransactionId(_walletId, t1.transactionHash))
+                  ?.replaceByTransactionHash,
+          't1_change': changeCoin(t1),
+          'bump_change': changeCoin(t2),
+          'coins_vs_server': coinsVsServer(c),
+        };
+        _report('rbf-bump-confirms', variant, observed);
+        expect(observed, {
+          'history': {c.funding.transactionHash: 100, t2.transactionHash: 101},
+          't1_replaced_by': t2.transactionHash,
+          't1_change': 'deleted',
+          'bump_change': 'unspent',
+          'coins_vs_server': [689000, 689000],
+        });
+      });
+    }
+  }
 }
