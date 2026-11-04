@@ -345,7 +345,7 @@ void main() {
         .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
         .then((value) => outcome = value);
     await tester.pump();
-    expect(viewModel.isConnectionRecovering, isTrue);
+    expect(viewModel.isConnectionRecovering, isFalse, reason: 'a failure within the probe time is not a delay yet');
     final count = isolate.initializations;
     connectivity.setOnline(false);
     await tester.pump();
@@ -356,6 +356,7 @@ void main() {
     }
     expect(isolate.broadcasts, 0);
     expect(isolate.initializations, count, reason: 'offline retries must not reopen the socket');
+    expect(viewModel.isConnectionRecovering, isTrue);
     expect(viewModel.cancelPendingSend(), isTrue);
     await tester.pump();
     expect(outcome?.isFailure, isTrue);
@@ -389,7 +390,7 @@ void main() {
         .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
         .then((value) => outcome = value);
     await tester.pump();
-    expect(viewModel.isConnectionRecovering, isTrue);
+    expect(viewModel.isConnectionRecovering, isFalse, reason: 'a failure within the probe time is not a delay yet');
     firstInitialization.complete();
     await tester.pump();
     expect(isolate.initializations, 2);
@@ -573,6 +574,34 @@ void main() {
   }
 
   for (final onion in [false, true]) {
+    testWidgets('an instantly failed probe is shown as delayed only after the probe time (onion=$onion)', (
+      tester,
+    ) async {
+      await tester.runAsync(() => initialize());
+      node.connected = false;
+      node.host = onion ? 'node.onion' : 'node.example';
+      final recovery = Completer<Result<bool>>();
+      node.onReconnect = () => recovery.future;
+      repository.onApply = () async => Result<void>.success(null);
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      expect(node.reconnects, 1, reason: 'recovery starts right away');
+      expect(viewModel.isConnectionRecovering, isFalse, reason: 'the notice must not appear with the request text');
+      final probeSeconds = onion ? 10 : 3;
+      await tester.pump(Duration(seconds: probeSeconds - 1));
+      expect(viewModel.isConnectionRecovering, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+      expect(viewModel.isConnectionRecovering, isTrue);
+      recovery.complete(Result.success(true));
+      await tester.pump();
+      expect(viewModel.isConnectionRecovering, isFalse);
+      expect(outcome?.isSuccess, isTrue);
+      expect(node.broadcasts, 1);
+    });
+  }
+
+  for (final onion in [false, true]) {
     testWidgets('failed recovery retries with backoff and sends once (onion=$onion)', (tester) async {
       await tester.runAsync(() => initialize());
       node.connected = false;
@@ -586,7 +615,7 @@ void main() {
           .then((value) => outcome = value);
       await tester.pump();
       expect(node.reconnects, 1);
-      expect(viewModel.isConnectionRecovering, isTrue);
+      expect(viewModel.isConnectionRecovering, isFalse, reason: 'a failure within the probe time is not a delay yet');
       await tester.pump(Duration(seconds: onion ? 3 : 1));
       expect(node.reconnects, 2);
       await tester.pump(Duration(seconds: onion ? 6 : 2));

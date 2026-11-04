@@ -281,8 +281,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     await tester.pump();
+    expect(
+      find.byKey(const ValueKey('connection-delay-notice')),
+      findsNothing,
+      reason: 'the notice must not appear together with the request text',
+    );
+    await tester.pump(const Duration(seconds: 3));
     expect(find.byKey(const ValueKey('connection-delay-notice')), findsOneWidget);
-    await tester.pump(const Duration(seconds: 15));
+    await tester.pump(const Duration(seconds: 12));
     await tester.pump();
     expect(find.byType(Dialog), findsNothing);
     expect(find.text(t.broadcasting_screen.connection_delay_message), findsOneWidget);
@@ -326,7 +332,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(node.readinessRequests, 1);
-    await tester.pump();
+    // The notice and the way back appear once the connection check time has passed.
+    for (
+      var frame = 0;
+      frame < 40 && find.byKey(const ValueKey('connection-delay-notice')).evaluate().isEmpty;
+      frame++
+    ) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.byKey(const ValueKey('connection-delay-notice')), findsOneWidget);
   }
 

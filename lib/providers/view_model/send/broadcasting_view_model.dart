@@ -69,6 +69,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   Completer<void>? _connectionPreparationStop;
   bool _connectionWaitDeclined = false;
   bool _isConnectionRecovering = false;
+
+  /// 노드 요청 전 연결 준비가 연결 확인 제한 시간을 넘겨 이어지는 중인지. 화면은 이때 지연 안내를 띄우고 이탈을 허용한다.
   bool get isConnectionRecovering => _isConnectionRecovering;
   bool get connectionWaitDeclined => _connectionWaitDeclined;
   bool _isBroadcastRequested = false;
@@ -211,7 +213,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     final endpoint = _nodeProvider.connectionEndpointIdentity;
     final stop = Completer<void>();
     _connectionPreparationStop = stop;
-    final limits = isOnionHost(_nodeProvider.host) ? kSendConnectionWaitLimitsForOnion : kSendConnectionWaitLimits;
+    final isOnion = isOnionHost(_nodeProvider.host);
+    final limits = isOnion ? kSendConnectionWaitLimitsForOnion : kSendConnectionWaitLimits;
+    // 연결 확인 시간 안에 준비되면 지연으로 보지 않는다. 확인이 바로 실패해도 이 시간이 지나야 지연 안내를 띄운다.
+    final delayNotice = Timer(isOnion ? kSendConnectionCheckTimeoutForOnion : kSendConnectionCheckTimeout, () {
+      if (!stop.isCompleted) _setConnectionRecovering(true);
+    });
     try {
       final prepared = await waitForConnection(
         Future.any<Result<bool>>([
@@ -235,6 +242,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.log('[Send] 연결 준비 대기 종료');
       return Result.failure(ErrorCodes.nodeConnectionError);
     } finally {
+      delayNotice.cancel();
       if (!stop.isCompleted) stop.complete();
       if (identical(_connectionPreparationStop, stop)) _connectionPreparationStop = null;
       _setConnectionRecovering(false);
@@ -294,7 +302,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     final connected = await isElectrumServerConnected();
     if (!active()) return Result.failure(ErrorCodes.nodeConnectionError);
     if (connected) return Result.success(true);
-    _setConnectionRecovering(true);
     final delays = isOnionHost(_nodeProvider.host) ? kSendRecoveryRetryDelaysForOnion : kSendRecoveryRetryDelays;
     var failures = 0;
     while (active()) {
