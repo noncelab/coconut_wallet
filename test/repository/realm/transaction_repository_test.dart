@@ -1,4 +1,9 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -41,6 +46,92 @@ void main() {
     // 테스트 실행 후 정리
     realmManager.reset();
     realmManager.dispose();
+  });
+
+  group('받기 금액은 저장하는 쓰기 안에서 지금의 내 주소로 맞춘다', () {
+    late AddressRepository addresses;
+    late String a0, a1;
+    final hash = 'ab' * 32;
+    TransactionRecord received(int height, int amount) => TransactionRecord.fromTransactions(
+      transactionHash: hash,
+      timestamp: DateTime.utc(2026),
+      blockHeight: height,
+      transactionType: TransactionType.received,
+      amount: amount,
+      fee: 1000,
+      inputAddressList: [TransactionAddress('external-in', 200000)],
+      outputAddressList: [TransactionAddress(a0, 20000), TransactionAddress(a1, 20000), TransactionAddress('ext', 159000)],
+      vSize: 141,
+    );
+    Future<void> addReceive1() => addresses.addAddressesWithGapLimit(
+      walletItemBase: testWalletItem,
+      newAddresses: [addresses.generateAddress(testWalletItem.walletBase, 1, false)],
+      isChange: false,
+    );
+
+    setUp(() async {
+      addresses = AddressRepository(realmManager);
+      await addresses.ensureAddressesInit(walletItemBase: testWalletItem); // receive 0
+      a0 = testWalletItem.walletBase.getAddress(0);
+      a1 = testWalletItem.walletBase.getAddress(1);
+    });
+
+    test('계산 뒤 저장 전에 다른 isolate가 더한 주소도 센다', () async {
+      // a1을 모를 때 20,000으로 계산됐고, 저장 전에 a1이 더해졌다(그때는 고칠 기록이 없었다).
+      await addReceive1();
+      await transactionRepository.addAllTransactions(testWalletItem.id, [received(0, 20000)]);
+      expect(transactionRepository.getTransactionRecord(testWalletItem.id, hash)!.amount, 40000);
+
+      // 확정 때 오래된 금액을 다시 넘겨도 낮아지지 않는다.
+      await transactionRepository.addAllTransactions(testWalletItem.id, [received(101, 20000)]);
+      final stored = transactionRepository.getTransactionRecord(testWalletItem.id, hash)!;
+      expect([stored.blockHeight, stored.amount, stored.fee, stored.transactionType], [
+        101,
+        40000,
+        1000,
+        TransactionType.received,
+      ]);
+    });
+
+    test('확정 시 저장된 기록을 재사용해도 낮게 저장된 금액을 바로잡는다', () async {
+      await transactionRepository.addAllTransactions(testWalletItem.id, [received(0, 20000)]); // a1 모름
+      await addReceive1();
+      final realm = realmManager.realm;
+      final row = realm.find<RealmTransaction>(getRealmTransactionId(testWalletItem.id, hash))!;
+      realm.write(() => row.amount = 20000); // 이 수정 전 버전이 남긴 값
+
+      await transactionRepository.addAllTransactions(testWalletItem.id, [received(101, 20000)]);
+      expect([row.blockHeight, row.amount, row.fee], [101, 40000, 1000]);
+    });
+
+    test('입력에 내 주소가 있거나 RECEIVED가 아니면 그대로 둔다', () async {
+      await addReceive1();
+      final sent = TransactionRecord.fromTransactions(
+        transactionHash: 'cd' * 32,
+        timestamp: DateTime.utc(2026),
+        blockHeight: 0,
+        transactionType: TransactionType.sent,
+        amount: -31000,
+        fee: 1000,
+        inputAddressList: [],
+        outputAddressList: [TransactionAddress(a0, 69000), TransactionAddress('ext', 30000)],
+        vSize: 141,
+      );
+      final mixed = TransactionRecord.fromTransactions(
+        transactionHash: 'ef' * 32,
+        timestamp: DateTime.utc(2026),
+        blockHeight: 0,
+        transactionType: TransactionType.received,
+        amount: 99000,
+        fee: 1000,
+        inputAddressList: [TransactionAddress(a1, 100000)],
+        outputAddressList: [TransactionAddress(a0, 199000)],
+        vSize: 141,
+      );
+      await transactionRepository.addAllTransactions(testWalletItem.id, [sent, mixed]);
+      expect(transactionRepository.getTransactionRecord(testWalletItem.id, 'cd' * 32)!.amount, -31000);
+      expect(transactionRepository.getTransactionRecord(testWalletItem.id, 'ef' * 32)!.amount, 99000);
+    });
   });
 
   group('트랜잭션 기본 CRUD 테스트', () {

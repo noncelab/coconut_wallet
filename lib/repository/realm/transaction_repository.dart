@@ -51,7 +51,7 @@ int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction>
     for (final (record, inputs, outputs) in decoded) {
       if (inputs.any(own.contains)) continue;
       final amount = outputs.fold(0, (sum, output) => own.contains(output.address) ? sum + output.amount : sum);
-      if (amount <= record.amount) continue;
+      if (amount == 0 || amount <= record.amount) continue;
       record.amount = amount;
       changed++;
     }
@@ -303,6 +303,10 @@ class TransactionRepository extends BaseRepository {
         existingTx.blockHeight = newTx.blockHeight;
         existingTx.timestamp = newTx.timestamp;
       }
+
+      // 금액은 주소 표를 보고 계산했으므로, 계산과 저장 사이에 다른 isolate가 주소를 더했으면 낮게 남는다.
+      // 같은 쓰기 안에서 지금의 주소로 받기 기록을 맞춘다. 저장된 기록을 다시 넘긴 경우(확정 시 재사용)도 같다.
+      recountReceivedAmounts(realm, walletId, [...newTxsToAdd, ...existingTxMap.values.where((tx) => tx.isValid)]);
     });
   }
 
@@ -575,7 +579,10 @@ class TransactionRepository extends BaseRepository {
 
     await realm.writeAsync(() {
       realm.delete(realmTransaction);
-      realm.add(mapTransactionToRealmTransaction(updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
+      final replaced = realm.add(
+        mapTransactionToRealmTransaction(updatedTx, walletId, getRealmTransactionId(walletId, txHash)),
+      );
+      recountReceivedAmounts(realm, walletId, [replaced]); // 새로 계산한 기록도 저장 시점의 주소로 맞춘다
       Logger.log('[TransactionRepository] updateTransactionRecord: $txHash');
     });
   }
