@@ -439,8 +439,8 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
       // UI 갱신
       notifyListeners();
-    } catch (e) {
-      debugPrint('UTXO 상태 업데이트 실패: $e');
+    } catch (_) {
+      Logger.error('UTXO 상태 업데이트 실패');
       rethrow;
     }
   }

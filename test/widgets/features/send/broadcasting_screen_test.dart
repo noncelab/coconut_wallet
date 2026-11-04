@@ -100,7 +100,7 @@ void main() {
   final navigated = <String?>[];
 
   setUpAll(() {
-    NetworkType.setNetworkType(NetworkType.testnet);
+    NetworkType.setNetworkType(NetworkType.regtest);
     LocaleSettings.setLocaleSync(AppLocale.ko);
   });
   setUp(() {

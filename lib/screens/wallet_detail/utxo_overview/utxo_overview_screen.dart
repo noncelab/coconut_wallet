@@ -48,6 +48,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_list.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
 
@@ -987,8 +988,8 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
           text: toastText,
         );
       }
-    } catch (e) {
-      debugPrint('UTXO 상태 업데이트 실패: $e');
+    } catch (_) {
+      Logger.error('UTXO 상태 업데이트 실패');
     }
   }
 

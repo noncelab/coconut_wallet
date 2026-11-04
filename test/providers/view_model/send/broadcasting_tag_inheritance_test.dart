@@ -98,7 +98,7 @@ void main() {
   late SendInfoProvider sendInfo;
 
   setUpAll(() {
-    NetworkType.setNetworkType(NetworkType.testnet);
+    NetworkType.setNetworkType(NetworkType.regtest);
     vault = SingleSignatureVault.fromEntropy(Uint8List(16));
   });
 
@@ -222,9 +222,12 @@ void main() {
 
   test('mismatched success txid adds nothing, then a matching acceptance reserves', () async {
     await initialize();
-    node.returnedTxid = 'not-the-submitted-transaction';
-    expect((await viewModel.broadcast(inheritedTagIds: [])).value, node.returnedTxid);
-    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+    final txid = viewModel.signedTx!.transactionHash;
+    for (final response in ['not-the-submitted-transaction', txid.substring(1), ' $txid', '$txid ']) {
+      node.returnedTxid = response;
+      expect((await viewModel.broadcast(inheritedTagIds: [])).value, response);
+      expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+    }
     node.returnedTxid = null;
     await viewModel.broadcast(inheritedTagIds: []);
     expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
