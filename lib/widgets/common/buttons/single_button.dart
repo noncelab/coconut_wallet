@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 enum SingleButtonPosition { none, top, middle, bottom }
 
@@ -155,10 +158,12 @@ class SingleButton extends StatelessWidget {
         Expanded(
           child:
               subtitle != null && !isVerticalSubtitle
-                  ? LayoutBuilder(
-                    builder:
-                        (context, constraints) =>
-                            _titleAndValue(context, constraints.maxWidth, titleColumn, resolvedTitleStyle),
+                  ? _TitleValueRow(
+                    title: titleColumn,
+                    value: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(subtitle!, style: _resolvedSubtitleStyle(context)),
+                    ),
                   )
                   : titleColumn,
         ),
@@ -171,42 +176,115 @@ class SingleButton extends StatelessWidget {
     );
   }
 
-  /// 제목과 값이 한 줄에 들어가면 원래 배치 그대로다(제목은 남는 폭, 값은 제 너비, 사이 8).
-  /// 큰 글씨·좁은 화면에서 넘칠 때만 제목 혼자 줄어들어 읽을 수 없게 되지 않도록 둘을 같은 비율로 줄인다.
-  Widget _titleAndValue(BuildContext context, double maxWidth, Widget titleColumn, TextStyle titleStyle) {
-    final valueStyle = _resolvedSubtitleStyle(context);
-    final value = FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: valueStyle));
-    final titleWidth = _naturalWidth(context, title, titleStyle);
-    final valueWidth = _naturalWidth(context, subtitle!, valueStyle);
-    final room = maxWidth - Sizes.size8;
-    if (titleWidth + valueWidth <= room) {
-      return Row(children: [Expanded(child: titleColumn), CoconutLayout.spacing_200w, value]);
-    }
-    return Row(
-      children: [
-        SizedBox(width: titleWidth * room / (titleWidth + valueWidth), child: titleColumn),
-        CoconutLayout.spacing_200w,
-        Expanded(child: value),
-      ],
-    );
-  }
-
-  /// Text가 FittedBox 안에서 한 줄로 그려질 때의 너비. Text와 같은 스타일 병합·글자 배율·굵은 글씨를 따른다.
-  static double _naturalWidth(BuildContext context, String text, TextStyle style) {
-    var effective = DefaultTextStyle.of(context).style.merge(style);
-    if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: effective),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      locale: Localizations.maybeLocaleOf(context),
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
-  }
-
   Widget _rightArrow(BuildContext context) =>
       Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary);
+}
+
+/// 제목과 값을 한 줄에 둔다. 다 들어가면 원래 배치 그대로다(제목은 남는 폭, 값은 제 너비, 사이 8).
+/// 큰 글씨·좁은 화면에서 넘칠 때만, 제목 혼자 줄어 읽을 수 없게 되지 않도록 둘의 폭을 같은 비율로 줄인다.
+/// 자연 폭은 자식의 intrinsic 폭을 쓴다. Flutter가 캐시하고 글·글꼴이 바뀌면 지우므로 그대로인 재빌드에서는 다시 재지 않는다.
+class _TitleValueRow extends MultiChildRenderObjectWidget {
+  _TitleValueRow({required Widget title, required Widget value}) : super(children: [title, value]);
+
+  @override
+  _RenderTitleValueRow createRenderObject(BuildContext context) => _RenderTitleValueRow(Directionality.of(context));
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTitleValueRow renderObject) {
+    renderObject.textDirection = Directionality.of(context);
+  }
+}
+
+class _TitleValueParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderTitleValueRow extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _TitleValueParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _TitleValueParentData> {
+  _RenderTitleValueRow(this._textDirection);
+
+  static const double _gap = Sizes.size8;
+
+  TextDirection _textDirection;
+  set textDirection(TextDirection value) {
+    if (_textDirection == value) return;
+    _textDirection = value;
+    markNeedsLayout();
+  }
+
+  RenderBox get _title => firstChild!;
+  RenderBox get _value => lastChild!;
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _TitleValueParentData) child.parentData = _TitleValueParentData();
+  }
+
+  /// 제목 칸 폭과 값의 최대 폭.
+  (double, double) _widths(double maxWidth) {
+    final title = _title.getMaxIntrinsicWidth(double.infinity);
+    final value = _value.getMaxIntrinsicWidth(double.infinity);
+    if (!maxWidth.isFinite) return (title, value);
+    final room = math.max(0.0, maxWidth - _gap);
+    if (title + value <= room) return (room - value, value);
+    final titleWidth = title * room / (title + value);
+    return (titleWidth, room - titleWidth);
+  }
+
+  Size _size(BoxConstraints constraints, ChildLayouter layoutChild) {
+    final (titleWidth, valueWidth) = _widths(constraints.maxWidth);
+    final title = layoutChild(
+      _title,
+      BoxConstraints(minWidth: titleWidth, maxWidth: titleWidth, maxHeight: constraints.maxHeight),
+    );
+    final value = layoutChild(_value, BoxConstraints(maxWidth: valueWidth, maxHeight: constraints.maxHeight));
+    final width = constraints.maxWidth.isFinite ? constraints.maxWidth : titleWidth + _gap + value.width;
+    return constraints.constrain(Size(width, math.max(title.height, value.height)));
+  }
+
+  @override
+  Size computeDryLayout(covariant BoxConstraints constraints) => _size(constraints, ChildLayoutHelper.dryLayoutChild);
+
+  @override
+  void performLayout() {
+    size = _size(constraints, ChildLayoutHelper.layoutChild);
+    final ltr = _textDirection == TextDirection.ltr;
+    _place(_title, ltr ? 0 : size.width - _title.size.width);
+    _place(_value, ltr ? size.width - _value.size.width : 0);
+  }
+
+  void _place(RenderBox child, double x) {
+    (child.parentData! as _TitleValueParentData).offset = Offset(x, (size.height - child.size.height) / 2);
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) =>
+      _title.getMinIntrinsicWidth(height) + _gap + _value.getMinIntrinsicWidth(height);
+
+  @override
+  double computeMaxIntrinsicWidth(double height) =>
+      _title.getMaxIntrinsicWidth(height) + _gap + _value.getMaxIntrinsicWidth(height);
+
+  @override
+  double computeMinIntrinsicHeight(double width) {
+    final (titleWidth, valueWidth) = _widths(width);
+    return math.max(_title.getMinIntrinsicHeight(titleWidth), _value.getMinIntrinsicHeight(valueWidth));
+  }
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    final (titleWidth, valueWidth) = _widths(width);
+    return math.max(_title.getMaxIntrinsicHeight(titleWidth), _value.getMaxIntrinsicHeight(valueWidth));
+  }
+
+  @override
+  double? computeDistanceToActualBaseline(TextBaseline baseline) =>
+      defaultComputeDistanceToHighestActualBaseline(baseline);
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
