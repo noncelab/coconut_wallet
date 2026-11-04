@@ -8,6 +8,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/wallet_mock.dart';
+import '../../mock/utxo_mock.dart';
 import 'test_realm_manager.dart';
 
 void main() {
@@ -516,6 +517,41 @@ void main() {
       expect(dormantIndices.contains((5, false)), isFalse);
     });
 
+    for (final status in ['unspent', 'outgoing', 'incoming', 'locked']) {
+      test('getActiveUsedAddresses keeps zero-balance used addresses with $status rows until cleanup', () {
+        setAddressState(8, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+        final coin = UtxoMock.createUnspentRealmUtxo(
+          walletId: testWalletId,
+          address: testWalletItem.walletBase.getAddress(8),
+        )..status = status;
+        realmManager.realm.write(() => realmManager.realm.add(coin));
+        expect(addressRepository.getActiveUsedAddresses(testWalletId, false).map((a) => a.index), [8]);
+        realmManager.realm.write(() => coin.isDeleted = true);
+        expect(addressRepository.getActiveUsedAddresses(testWalletId, false), isEmpty);
+      });
+    }
+
+    test('UTXO selection stays scoped to used addresses, wallet and chain', () {
+      setAddressState(8, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      setAddressState(9, true, isUsed: true, confirmed: 0, unconfirmed: 0);
+      realmManager.realm.write(
+        () => realmManager.realm.addAll([
+          UtxoMock.createUnspentRealmUtxo(walletId: 2, address: testWalletItem.walletBase.getAddress(8)),
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testWalletItem.walletBase.getAddress(9, isChange: true),
+          ),
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testWalletItem.walletBase.getAddress(4),
+            transactionHash: '33' * 32,
+          ),
+        ]),
+      );
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, false), isEmpty);
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, true).map((a) => a.index), [9]);
+    });
+
     test('getActiveUsedAddresses: 잔액/미확정이 남아있는 사용된 주소만, 지정한 체인만 반환한다', () {
       setAddressState(7, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
       setAddressState(8, false, isUsed: true, confirmed: 0, unconfirmed: 0);
@@ -524,12 +560,29 @@ void main() {
       final activeReceiveAddresses = addressRepository.getActiveUsedAddresses(testWalletId, false);
       final activeReceiveIndices = activeReceiveAddresses.map((a) => a.index).toSet();
 
-      expect(activeReceiveIndices.contains(7), isTrue);
+      expect(activeReceiveIndices, {7});
       expect(activeReceiveIndices.contains(8), isFalse);
       expect(activeReceiveIndices.contains(9), isFalse);
 
       final activeChangeAddresses = addressRepository.getActiveUsedAddresses(testWalletId, true);
-      expect(activeChangeAddresses.map((a) => a.index), contains(9));
+      expect(activeChangeAddresses.map((a) => a.index), [9]);
+      realmManager.realm.write(
+        () => realmManager.realm.addAll([
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testWalletItem.walletBase.getAddress(7),
+            amount: 1000,
+          ),
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testWalletItem.walletBase.getAddress(9, isChange: true),
+            amount: 500,
+            index: 1,
+          ),
+        ]),
+      );
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, false).map((a) => a.index), [7]);
+      expect(addressRepository.getActiveUsedAddresses(testWalletId, true).map((a) => a.index), [9]);
     });
 
     void addAddressAt(int index, bool isChange) {

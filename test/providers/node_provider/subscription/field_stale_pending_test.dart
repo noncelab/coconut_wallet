@@ -640,6 +640,39 @@ void main() {
     expect(observed['spend_height'], 102, reason: 'the spend must stop showing as 보내는 중');
   }
 
+  for (final rawFailure in [false, true]) {
+    test('[codex-pr2-restart] failed confirmed sweep recovers after replacement (rawFailure=$rawFailure)', () async {
+      final c = _Case();
+      await c.init(sweep: true);
+      final s = _Session.start(c.electrum);
+      expect(await s.subscribe(c.wallet), isTrue);
+      c.backend.heights[c.spend.transactionHash] = 102;
+      final failedHash = rawFailure ? c.spend.transactionHash : c.funding.transactionHash;
+      c.backend.fault = (method, hash) => method == 'getTransaction' && hash == failedHash;
+      c.backend.notify(c.input);
+      await _drain(s);
+      final records = ScriptSyncServiceMock.transactionRepository;
+      expect(records.getTransactionRecord(_walletId, c.spend.transactionHash), isNull);
+      expect(c.coinState(), rawFailure ? 'unspent' : 'outgoing');
+      expect(s.retryClock.pendingDelays, isNotEmpty);
+      expect(ScriptSyncServiceMock.addressRepository.isAddressDormant(_walletId, c.input), isTrue);
+      c.backend.fault = (_, __) => false;
+      final requestStart = c.backend.calls.length;
+      final (restarted, ok) = await c.reconnect();
+      await restarted.node.syncDormantAddresses(c.walletCopy());
+      await _drain(restarted);
+      expect(ok, isTrue);
+      expect(records.getTransactionRecord(_walletId, c.spend.transactionHash)?.blockHeight, 102);
+      expect(c.coinState(), 'deleted');
+      expect(c.backend.calls.sublist(requestStart).where((call) => call == 'getHistory:${c.input}'), isNotEmpty);
+      expect(
+        ScriptSyncServiceMock.addressRepository.getActiveUsedAddresses(_walletId, false).map((a) => a.address),
+        isNot(contains(c.input)),
+        reason: 'successful reconciliation makes the swept address dormant again',
+      );
+    });
+  }
+
   test('[codex-pr2-mixed-real] real loader records healthy same-address sibling despite poisoned parent', () async {
     final c = _Case();
     await c.init();

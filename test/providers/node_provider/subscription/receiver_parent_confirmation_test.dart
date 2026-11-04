@@ -338,6 +338,14 @@ void main() {
         });
         expect(addresses.isAddressActive(wallet.id, receive.address), isFalse);
         expect(addresses.isAddressDormant(wallet.id, receive.address), isTrue);
+        final outpoint = getUtxoId(parent.transactionHash, 0);
+        expect(failingUtxos.getUtxoState(wallet.id, outpoint)?.status, UtxoStatus.outgoing);
+        expect(
+          addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
+          contains(receive.address),
+          reason: 'A replaced record does not remove the remaining coin that a new isolate must reconcile.',
+        );
+        await failingUtxos.deleteUtxoList(wallet.id, [outpoint]);
         expect(
           addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
           isNot(contains(receive.address)),

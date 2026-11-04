@@ -638,17 +638,22 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
+  /// 사용된 주소 중 잔액, 미확정 거래 또는 정리되지 않은 UTXO가 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
   List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
-    final pendingAddresses = <String>{};
+    // 잔액만 먼저 0이 된 뒤 거래 조회가 실패했어도, 다음 isolate가 남은 코인을 다시 확인한다.
+    final watchedAddresses =
+        realm
+            .query<RealmUtxo>(r'walletId == $0 AND isDeleted == false', [walletId])
+            .map((utxo) => utxo.address)
+            .toSet();
     for (final tx in _pendingTransactions(walletId)) {
       for (final encoded in [...tx.inputAddressList, ...tx.outputAddressList]) {
-        pendingAddresses.add(jsonDecode(encoded)['address'] as String);
+        watchedAddresses.add(jsonDecode(encoded)['address'] as String);
       }
     }
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0 OR address IN $2) SORT(index ASC)',
-      [walletId, isChange, pendingAddresses.toList()],
+      [walletId, isChange, watchedAddresses.toList()],
     );
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
