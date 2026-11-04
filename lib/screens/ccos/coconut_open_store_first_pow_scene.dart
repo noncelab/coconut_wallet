@@ -361,6 +361,8 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
         const minCopyGap = 16.0;
         const designedLineGap = 22.0;
         const minLineGap = 12.0;
+        // 1.0.0처럼 소개 문구는 OS 글자 크기를 따르지 않는다(RichText 기본). '추가' 버튼은 Text라 따른다.
+        const copyScaler = TextScaler.noScaling;
         final textScaler = MediaQuery.textScalerOf(context);
         final textDirection = Directionality.of(context);
         final locale = Localizations.maybeLocaleOf(context);
@@ -371,7 +373,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
           strutStyle: strutStyle,
           highlightPhrases: introHighlights,
           maxWidth: width,
-          textScaler: textScaler,
+          textScaler: copyScaler,
           textDirection: textDirection,
           locale: locale,
         );
@@ -382,7 +384,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
           strutStyle: text2StrutStyle,
           highlightPhrases: const <String>{},
           maxWidth: width,
-          textScaler: textScaler,
+          textScaler: copyScaler,
           textDirection: textDirection,
           locale: locale,
         );
@@ -507,7 +509,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                       children: [
                         RichText(
                           textAlign: TextAlign.left,
-                          textScaler: textScaler,
+                          textScaler: copyScaler,
                           strutStyle: strutStyle,
                           text: typewriterSpan(
                             source: text1,
@@ -521,7 +523,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                         SizedBox(height: lineGap),
                         RichText(
                           textAlign: TextAlign.left,
-                          textScaler: textScaler,
+                          textScaler: copyScaler,
                           strutStyle: text2StrutStyle,
                           text: typewriterSpan(
                             source: text2,

@@ -209,7 +209,7 @@ void main() {
     expect(find.text(t.ccos.first_pow_scene.add_button).hitTestable(), findsOneWidget);
   });
 
-  testWidgets('Duo outer display keeps large text and the add button inside the scene', (tester) async {
+  testWidgets('Duo outer display at large OS text keeps the copy and the add button inside the scene', (tester) async {
     await _pumpIntro(tester, logical: _duoLogical, dpr: _duoDpr, bottomPadding: _duoBottomPadding, textScale: 1.3);
     _drain(tester);
     final duringScene = await _showFirstPow(tester);
@@ -218,33 +218,37 @@ void main() {
     expect(find.text(t.ccos.first_pow_scene.add_button).hitTestable(), findsOneWidget);
     _expectCopyClearsAddButton(tester);
     final scaled = tester.renderObject<RenderParagraph>(_introLine(t.ccos.first_pow_scene.intro_line1));
-    expect(scaled.textScaler, const TextScaler.linear(1.3));
-    // Unscaled strut is 18 * 1.4 * 1.3 = 32.76, two lines. Scaled paint is taller.
-    expect(scaled.size.height, greaterThan(32.76 * 2 + 8));
+    // 1.0.0처럼 소개 문구는 OS 글자 크기를 따르지 않는다(Max 결정, 11/05). 넘침과 버튼 겹침은 위에서 확인했다.
+    expect(scaled.textScaler, TextScaler.noScaling);
   });
 
-  testWidgets('a roomy phone keeps the designed 44px gap above the first-pow copy', (tester) async {
-    await _pumpIntro(tester, logical: const Size(414, 896), dpr: 1, bottomPadding: 0, textScale: 1);
-    _drain(tester);
-    final duringScene = await _showFirstPow(tester);
-    expect(duringScene.where((message) => message.contains('RenderFlex')), isEmpty, reason: duringScene.join('\n'));
-    final sceneTop = tester.getTopLeft(find.byType(FirstPowSceneBody)).dy;
-    final textTop = tester.getTopLeft(_introLine(t.ccos.first_pow_scene.intro_line1)).dy;
-    final width = tester.getSize(find.byType(FirstPowSceneBody)).width;
-    final idealCardWidth = width / 3 * 1.4;
-    final idealCardHeight = idealCardWidth * 1.42;
-    final cardBlock = idealCardHeight + idealCardHeight * 0.08 + 24;
-    expect(textTop - sceneTop, closeTo(cardBlock + 44, 0.5));
-    final lineGap =
-        tester.getTopLeft(_introLine(t.ccos.first_pow_scene.intro_line2)).dy -
-        tester.getBottomLeft(_introLine(t.ccos.first_pow_scene.intro_line1)).dy;
-    expect(lineGap, closeTo(22, 0.5));
-    _expectCopyClearsAddButton(tester);
-    expect(
-      find.descendant(of: find.byType(FirstPowSceneBody), matching: find.byType(SingleChildScrollView)),
-      findsNothing,
-    );
-  });
+  // 일반 휴대폰은 큰 글씨에서도 1.0.0과 같아야 한다(문구는 글자 크기를 따르지 않고 작은 화면 맞춤도 켜지지 않는다).
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets('a roomy phone keeps the designed 44px gap above the first-pow copy at text $textScale', (
+      tester,
+    ) async {
+      await _pumpIntro(tester, logical: const Size(414, 896), dpr: 1, bottomPadding: 0, textScale: textScale);
+      _drain(tester);
+      final duringScene = await _showFirstPow(tester);
+      expect(duringScene.where((message) => message.contains('RenderFlex')), isEmpty, reason: duringScene.join('\n'));
+      final sceneTop = tester.getTopLeft(find.byType(FirstPowSceneBody)).dy;
+      final textTop = tester.getTopLeft(_introLine(t.ccos.first_pow_scene.intro_line1)).dy;
+      final width = tester.getSize(find.byType(FirstPowSceneBody)).width;
+      final idealCardWidth = width / 3 * 1.4;
+      final idealCardHeight = idealCardWidth * 1.42;
+      final cardBlock = idealCardHeight + idealCardHeight * 0.08 + 24;
+      expect(textTop - sceneTop, closeTo(cardBlock + 44, 0.5));
+      final lineGap =
+          tester.getTopLeft(_introLine(t.ccos.first_pow_scene.intro_line2)).dy -
+          tester.getBottomLeft(_introLine(t.ccos.first_pow_scene.intro_line1)).dy;
+      expect(lineGap, closeTo(22, 0.5));
+      _expectCopyClearsAddButton(tester);
+      expect(
+        find.descendant(of: find.byType(FirstPowSceneBody), matching: find.byType(SingleChildScrollView)),
+        findsNothing,
+      );
+    });
+  }
 
   testWidgets('a short large-text scene keeps cards, copy, and the add button reachable', (tester) async {
     final preferences = _Preferences();
@@ -323,7 +327,8 @@ void main() {
     await tester.ensureVisible(copy);
     expect(copy, findsOneWidget);
     final scaled = tester.renderObject<RenderParagraph>(_introLine(t.ccos.first_pow_scene.intro_line1));
-    expect(scaled.textScaler, const TextScaler.linear(2));
+    // 1.0.0처럼 소개 문구는 OS 글자 크기를 따르지 않는다(Max 결정, 11/05). 넘치지 않고 버튼에 닿는지는 아래에서 본다.
+    expect(scaled.textScaler, TextScaler.noScaling);
     final button = find.text(t.ccos.first_pow_scene.add_button);
     await tester.ensureVisible(button);
     expect(button.hitTestable(), findsOneWidget);
