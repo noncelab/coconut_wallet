@@ -477,9 +477,7 @@ class TransactionSyncService {
       }
       Transaction? unconfirmedTx;
       try {
-        unconfirmedTx = Transaction.parse(
-          await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash),
-        );
+        unconfirmedTx = await fetchTransaction(localUnconfirmedTxRecord.transactionHash);
       } on TransactionNotFound {
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);

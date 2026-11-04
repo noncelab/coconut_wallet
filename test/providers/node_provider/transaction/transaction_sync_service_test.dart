@@ -283,6 +283,36 @@ void main() {
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
     });
 
+    test('[codex-r2-cleanup-id] unrelated pending record survives wrong-identity cleanup response', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      final old = TransactionMock.createUnconfirmedTransactionRecord(fee: 1);
+      await transactionRepository.addAllTransactions(testWalletId, [old]);
+      final parent = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 11000);
+      final fresh = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 10000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      final substituted = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 10500,
+        inputTransactionHash: parent.transactionHash,
+      );
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 100, txHash: fresh.transactionHash)]);
+      when(electrumService.getTransaction(fresh.transactionHash)).thenAnswer((_) async => fresh.serialize());
+      when(electrumService.getTransaction(old.transactionHash)).thenAnswer((_) async => substituted.serialize());
+      when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [parent]);
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+      final savedOld = transactionRepository.getTransactionRecord(testWalletId, old.transactionHash);
+      expect(savedOld, isNotNull, reason: 'unverified raw cannot justify deleting a different local transaction');
+      expect(transactionRepository.getTransactionRecord(testWalletId, fresh.transactionHash)?.blockHeight, 100);
+    });
+
     test('classified absence removes an old record while another transaction confirms', () async {
       final old = TransactionMock.createUnconfirmedTransactionRecord();
       await transactionRepository.addAllTransactions(testWalletId, [old]);
