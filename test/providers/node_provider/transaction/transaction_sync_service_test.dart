@@ -308,6 +308,31 @@ void main() {
       expect(transactionRepository.getTransactionRecord(testWalletId, fresh.transactionHash)!.blockHeight, 100);
     });
 
+    test('a record for the same hash in another wallet cannot bypass parent validation', () async {
+      final tx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 10000);
+      realmManager.realm.write(() {
+        realmManager.realm.add(RealmWalletBase(2, 0, 0, 'other', 'Other wallet', 'singleSignature'));
+      });
+      await transactionRepository.addAllTransactions(2, [
+        TransactionMock.createUnconfirmedTransactionRecord(transactionHash: tx.transactionHash),
+      ]);
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: tx.transactionHash)]);
+      when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenThrow(StateError('parents unavailable'));
+
+      await expectLater(
+        transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(transactionRepository.getTransactionRecord(testWalletId, tx.transactionHash), isNull);
+      expect(transactionRepository.getTransactionRecord(2, tx.transactionHash), isNotNull);
+    });
+
     for (final failure in ['timeout', 'transport', 'parse']) {
       test(
         '$failure on old pending transactions preserves coins and CPFP children while another tx confirms',

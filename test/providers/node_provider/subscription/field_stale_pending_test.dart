@@ -959,9 +959,39 @@ void main() {
           _report(variant, '-', {'mempool': mempool, 'confirmed': confirmed});
           expect(mempool['record_inputs'], 150);
           expect(confirmed['record_height'], 103);
+          final requests = confirmed['requests'] as Map<String, int>;
+          expect(requests['raw_batch'], 1);
+          expect(requests['raw_prev'] ?? 0, 0, reason: 'a stored record needs no parents on confirmation');
         });
       }
     }
+
+    test('[r2-confirm-after-restart] persisted record confirms with one raw fetch and no parents', () async {
+      final (c, s, batch) = await batchCase();
+      await pass(c, s, batch, height: 0);
+      final records = ScriptSyncServiceMock.transactionRepository;
+      records.updateTransactionMemo(_walletId, batch.hash, 'exchange withdrawal');
+      final before = records.getTransactionRecord(_walletId, batch.hash)!;
+      final (restarted, ok) = await c.reconnect();
+      expect(ok, isTrue);
+      c.backend.fault = (method, hash) => method == 'getTransaction' && batch.parentHashes.contains(hash);
+
+      final confirmed = await pass(c, restarted, batch, height: 103);
+
+      final after = records.getTransactionRecord(_walletId, batch.hash)!;
+      final requests = confirmed['requests'] as Map<String, int>;
+      expect(requests['raw_batch'], 1);
+      expect(requests['raw_prev'] ?? 0, 0);
+      expect(after.blockHeight, 103);
+      expect(after.createdAt, before.createdAt);
+      expect(after.inputAddressList, before.inputAddressList);
+      expect(after.outputAddressList, before.outputAddressList);
+      expect(after.amount, before.amount);
+      expect(after.fee, before.fee);
+      expect(after.transactionType, before.transactionType);
+      expect(after.vSize, before.vSize);
+      expect(after.memo, 'exchange withdrawal');
+    });
 
     test(
       '[r2-pending-batch-refetch-fails] another unconfirmed tx syncs while the pending batch tx times out',
@@ -1017,7 +1047,7 @@ void main() {
     }
 
     /// The batch tx itself cannot be fetched during the mempool pass ([persistent]: the fault never clears).
-    Future<Map<String, Object?>> rawFails({required bool persistent}) async {
+    Future<Map<String, Object?>> rawFails({required bool persistent, bool recover = false}) async {
       final variant = persistent ? 'r2-raw-fails-persistently' : 'r2-raw-fails-once';
       final (c, s, batch) = await batchCase();
       var hits = 0;
@@ -1030,6 +1060,7 @@ void main() {
         await c.nextIncomingPush(s);
         retries.add({'requests': batch.count(c.backend.calls.sublist(before)), ...batch.state(s)});
       }
+      if (recover) c.backend.fault = (_, __) => false;
       final confirmed = await pass(c, s, batch, height: 103);
       _report(variant, '-', {'mempool': mempool, 'retries': retries, 'confirmed': confirmed});
       return confirmed;
@@ -1046,40 +1077,32 @@ void main() {
       expect(confirmed['tx_list_updating'], isFalse, reason: '"업데이트 중" must clear once the sync completes');
     });
 
-    test(
-      '[r2-raw-fails-persistently] the batch tx is recorded once it confirms',
-      () async {
-        final confirmed = await rawFails(persistent: true);
-        expect(confirmed['record_height'], 103);
-      },
-      skip:
-          'PR2: the injected fault never clears, so the batch tx can never be fetched or recorded; '
-          'PR2 owns what this variant should assert.',
-    );
+    test('[r2-raw-fails-persistently] the batch tx is recorded after the fault clears and it confirms', () async {
+      final confirmed = await rawFails(persistent: true, recover: true);
+      expect(confirmed['record_height'], 103);
+    });
 
-    test(
-      '[r2-header-missing-at-confirmation] the confirmation pass keeps failing on a missing header',
-      () async {
-        final (c, s, batch) = await batchCase();
-        final mempool = await pass(c, s, batch, height: 0);
-        c.backend.missingHeaders.add(103);
-        final confirmed = await pass(c, s, batch, height: 103);
-        final retries = <Map<String, Object?>>[];
-        for (var i = 0; i < 2; i++) {
-          final before = c.backend.calls.length;
-          await c.nextIncomingPush(s);
-          retries.add({'requests': batch.count(c.backend.calls.sublist(before)), ...batch.state(s)});
-        }
-        _report('r2-header-missing-at-confirmation', '-', {
-          'mempool': mempool,
-          'confirmed': confirmed,
-          'retries': retries,
-        });
-        expect(confirmed['record_height'], 103);
-      },
-      skip:
-          'PR2: the confirmation pass re-fetches the batch tx and its header instead of updating the existing record.',
-    );
+    test('[r2-header-missing-at-confirmation] retain pending data until the missing header recovers', () async {
+      final (c, s, batch) = await batchCase();
+      final mempool = await pass(c, s, batch, height: 0);
+      c.backend.missingHeaders.add(103);
+      final confirmed = await pass(c, s, batch, height: 103);
+      expect(confirmed['record_height'], 0, reason: 'a missing header must not fabricate a confirmed timestamp');
+      c.backend.missingHeaders.clear();
+      final before = c.backend.calls.length;
+      await s.waitForRetry();
+      final recovered = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, batch.hash)!;
+      final requests = batch.count(c.backend.calls.sublist(before));
+      _report('r2-header-missing-at-confirmation', '-', {
+        'mempool': mempool,
+        'confirmed': confirmed,
+        'recovery_requests': requests,
+      });
+      expect(recovered.blockHeight, 103);
+      expect(recovered.timestamp, DateTime.utc(2026, 10, 27).add(const Duration(minutes: 103)));
+      expect(requests['raw_batch'], 1);
+      expect(requests['raw_prev'] ?? 0, 0);
+    });
   });
 
   group('PR1 regressions', () {

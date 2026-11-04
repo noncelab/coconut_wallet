@@ -130,10 +130,38 @@ class TransactionSyncService {
       );
 
       // 4. 트랜잭션 레코드 생성 및 저장
-      final List<TransactionRecord> txRecords = await _transactionRecordService.createTransactionRecords(
-        walletId,
-        fetchedTransactionDetails,
-        now: now,
+      final txRecords = await Future.wait(
+        fetchedTransactionDetails.fetchedTransactions.map((tx) async {
+          final hash = tx.transactionHash;
+          final height = fetchedTransactionDetails.txBlockHeightMap[hash];
+          final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[height];
+          final existing = _transactionRepository.getTransactionRecord(walletId, hash);
+          if (existing == null) {
+            return _transactionRecordService.createTransactionRecord(
+              walletId,
+              tx,
+              blockTimestamp: blockTimestamp,
+              now: now,
+            );
+          }
+          // 저장된 입출력/금액은 그대로 쓰고 이번 조회의 컨펌 정보만 기존 저장 경로로 넘긴다.
+          // 상세 조회에서 raw 검증과 입력 예약, 헤더 검증은 이미 완료했다.
+          return TransactionRecord(
+            hash,
+            blockTimestamp?.timestamp ?? now ?? DateTime.now(),
+            blockTimestamp?.height ?? 0,
+            existing.transactionType,
+            existing.memo,
+            existing.amount,
+            existing.fee,
+            existing.inputAddressList,
+            existing.outputAddressList,
+            existing.vSize,
+            existing.createdAt,
+            rbfHistoryList: existing.rbfHistoryList,
+            cpfpHistory: existing.cpfpHistory,
+          );
+        }),
       );
       final unconfirmedRecords = txRecords.where((record) => record.blockHeight <= 0).toList();
       if (unconfirmedRecords.isNotEmpty) {
