@@ -92,43 +92,44 @@ class _WalletAppearanceBody extends StatelessWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) viewModel.discard();
       },
-      child: Scaffold(
-        backgroundColor: colors.background,
-        appBar: CoconutAppBar.build(
-          context: context,
-          onBackPressed: () {
-            if (!viewModel.isSaving) Navigator.maybePop(context);
-          },
-        ),
-        body: Stack(
-          children: [
-            // 키보드가 열리면 열리기 전 배치를 그대로 두고 화면을 스크롤한다.
-            // 넓은 화면(폴드, 큰 글씨)에서 고정된 위쪽 영역이 이름 입력칸을 0 높이로 누르지 않게 한다.
-            // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 화면과 동작은 기존과 같다(접근성 트리에 스크롤 경계만 하나 더해진다).
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Scaffold가 body의 MediaQuery에서 키보드 높이를 지우므로 View에서 읽는다.
-                // 키보드가 움직이는 동안 이 builder만 다시 돌고, content는 같은 인스턴스라 다시 만들지 않는다.
-                final view = View.of(context);
-                final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
-                return SingleChildScrollView(
-                  primary: false,
-                  child: SizedBox(height: constraints.maxHeight + keyboardHeight, child: content),
-                );
-              },
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FixedBottomButton(
-                text: t.complete,
-                isActive: viewModel.canSave,
-                onButtonClicked: () async {
-                  await viewModel.save();
-                  if (context.mounted) Navigator.pop(context);
+      child: _KeyboardInsetScope(
+        child: Scaffold(
+          backgroundColor: colors.background,
+          appBar: CoconutAppBar.build(
+            context: context,
+            onBackPressed: () {
+              if (!viewModel.isSaving) Navigator.maybePop(context);
+            },
+          ),
+          body: Stack(
+            children: [
+              // 키보드가 열리면 열리기 전 배치를 그대로 두고 화면을 스크롤한다.
+              // 넓은 화면(폴드, 큰 글씨)에서 고정된 위쪽 영역이 이름 입력칸을 0 높이로 누르지 않게 한다.
+              // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 화면과 동작은 기존과 같다(접근성 트리에 스크롤 경계만 하나 더해진다).
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // 키보드 높이는 Scaffold가 쓰는 값과 같게 Scaffold 위에서 읽어 둔 것을 쓴다(_KeyboardInsetScope).
+                  // 키보드가 움직이는 동안 이 builder만 다시 돌고, content는 같은 인스턴스라 다시 만들지 않는다.
+                  final keyboardHeight = _KeyboardInset.of(context);
+                  return SingleChildScrollView(
+                    primary: false,
+                    child: SizedBox(height: constraints.maxHeight + keyboardHeight, child: content),
+                  );
                 },
               ),
-            ),
-          ],
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: FixedBottomButton(
+                  text: t.complete,
+                  isActive: viewModel.canSave,
+                  onButtonClicked: () async {
+                    await viewModel.save();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -158,6 +159,28 @@ class _WalletAppearanceBody extends StatelessWidget {
     );
     return Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: card));
   }
+}
+
+/// Scaffold는 body의 MediaQuery에서 키보드 높이를 지운다. 그 높이를 Scaffold 위에서 읽어 아래로 넘긴다.
+/// 키보드가 움직일 때 이 위젯만 다시 빌드되고, child(Scaffold)는 같은 인스턴스라 다시 만들지 않는다.
+class _KeyboardInsetScope extends StatelessWidget {
+  const _KeyboardInsetScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => _KeyboardInset(bottom: MediaQuery.viewInsetsOf(context).bottom, child: child);
+}
+
+class _KeyboardInset extends InheritedWidget {
+  const _KeyboardInset({required this.bottom, required super.child});
+
+  final double bottom;
+
+  static double of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_KeyboardInset>()!.bottom;
+
+  @override
+  bool updateShouldNotify(_KeyboardInset oldWidget) => bottom != oldWidget.bottom;
 }
 
 class _WallpaperTabBar extends StatelessWidget {
