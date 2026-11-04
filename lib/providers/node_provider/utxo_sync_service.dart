@@ -71,7 +71,8 @@ class UtxoSyncService {
 
   /// 되살릴 지운 코인이 다시 나열되면, 그 코인을 쓴 거래가 이미 있는지 정확한 outpoint로 확인한 뒤 되살린다.
   /// 이 주소의 코인을 썼을 수 있는 거래를 모두 받아 보고 쓴 코인에는 증거를 남긴다(이 수정 전에 처리돼 표시가 없는
-  /// 사용도 막는다). 하나라도 받지 못하면 이번에는 되살리지 않는다.
+  /// 사용도 막는다). 이번에 받은 거래가 쓴 코인은 그 거래 기록을 아직 저장하지 못했어도(예: 블록 헤더 실패) 되살리지
+  /// 않는다. 서버가 모른다고 분명히 답한 거래는 건너뛰고, 그 밖의 이유로 받지 못하면 이번에는 되살리지 않는다.
   Future<void> _restoreListedUtxos(
     WalletItemBase walletItem,
     String address,
@@ -84,14 +85,23 @@ class UtxoSyncService {
       final history = await _electrumService.getHistory(walletItem.walletBase.addressType, address);
       final fetch = transactionFetch ?? TransactionFetchPass(_electrumService.getTransaction);
       final spenders = _transactionRepository.getPossibleSpendersFrom(walletId, address, history.map((h) => h.txHash));
+      final spentNow = <String>{};
       for (final hash in spenders) {
-        await _utxoRepository.markRemovedInputsSpent(walletId, await fetch.fetch(hash));
+        final Transaction spender;
+        try {
+          spender = await fetch.fetch(hash);
+        } on TransactionNotFound {
+          // 서버에 없는 거래(누락된 우리 송금 등)는 아무 코인도 쓰지 않는다. 확정 기록만은 이미 확인된 사용이라 믿지 않는다.
+          if ((_transactionRepository.getTransactionRecord(walletId, hash)?.blockHeight ?? 0) > 0) rethrow;
+          continue;
+        }
+        await _utxoRepository.markRemovedInputsSpent(walletId, spender);
+        spentNow.addAll(spender.inputs.map((input) => getUtxoId(input.transactionHash, input.index)));
       }
+      await _utxoRepository.restoreListedUtxos(walletId, address, listed, spentNow: spentNow);
     } catch (e) {
       Logger.error('UtxoSyncService: could not check spends before restoring a removed coin: $e');
-      return;
     }
-    await _utxoRepository.restoreListedUtxos(walletId, address, listed);
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다. 조회가 실패하면 null(빈 목록과 다르다: 서버에 묻지 못했다).

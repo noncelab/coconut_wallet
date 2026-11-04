@@ -896,6 +896,90 @@ void main() {
     });
   }
 
+  // Codex review v3 (MUST): a spend fetched and checked in this pass must block the restore even when its record cannot
+  // be saved yet (here its block header is missing). With the header the record is saved; both stay removed.
+  for (final header in ['missing', 'complete']) {
+    test(
+      '[heavy-reuse-spent-this-pass] a removed coin spent by a tx first seen now stays removed (header $header)',
+      () async {
+        final c = _Case();
+        await c.init();
+        expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+        final b = c.backend;
+        b.put(c.spend, 101); // first seen in the next sync
+        final realm = ScriptSyncServiceMock.realmManager!.realm;
+        realm.write(() {
+          realm.find<RealmUtxo>('$_walletId:${c.coin}')!
+            ..isDeleted = true
+            ..status = 'incoming'
+            ..blockHeight = 0
+            ..spentByTransactionHash = null;
+        }); // what a build before the spend marker left behind
+        final fresh = _Case._tx([(c.faucet.transactionHash, 2)], [(c.input, 1500000), (_external, 3499000)]);
+        b.put(fresh, 102);
+        realm.write(() {
+          realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [_walletId, c.input]).single
+            ..confirmed = 1500000
+            ..unconfirmed = 0
+            ..total = 1500000;
+        });
+        when(c.electrum.getUnspentList(any, any)).thenAnswer((call) async {
+          final address = call.positionalArguments[1] as String;
+          return address == c.input
+              ? [ListUnspentRes(height: 100, txHash: c.funding.transactionHash, txPos: 0, value: 1000000)]
+              : b.unspent(address);
+        });
+        if (header == 'missing') b.missingHeaders.add(101);
+        await c.reconnect();
+        final stored = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
+          _walletId,
+          c.spend.transactionHash,
+        );
+        _report('heavy-reuse-spent-this-pass', header, {'coin': c.coinState(), 'spend_stored': stored != null});
+        expect(stored != null, header == 'complete', reason: 'precondition: a missing header keeps the spend unsaved');
+        expect(c.coinState(), 'deleted');
+        expect(c.autoSelectsCoin(), isFalse);
+      },
+    );
+  }
+
+  // Claude review v3 (S4): our own send that the server dropped leaves its record behind, and the server answers that it
+  // does not know it. That send spends nothing, so it must not keep a missing coin at the same address deleted.
+  test('[heavy-reuse-dropped-own-send] a dropped own send at the address does not block the heal', () async {
+    final c = _Case();
+    await c.init();
+    final b = c.backend..classifiedAbsence = true;
+    final payment = c.paymentTo(c.input);
+    b.put(payment, 102);
+    final node = _startIsolate(c.electrum);
+    expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+    b.heights[c.spend.transactionHash] = 0; // our send of the funding coin
+    b
+      ..notify(c.input)
+      ..notify(c.change);
+    await _drain(node);
+    b.heights.remove(c.spend.transactionHash); // dropped from the mempool; its record stays
+    final coin = getUtxoId(payment.transactionHash, 0);
+    String coinState() => c.utxos.getUtxoState(_walletId, coin)?.status.name ?? 'deleted';
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    realm.write(() {
+      realm.find<RealmUtxo>('$_walletId:$coin')!
+        ..status = 'incoming'
+        ..blockHeight = 0
+        ..isDeleted = true;
+    }); // what the batch cleanup left behind
+    final states = <String>[];
+    final rechecks = <int>[];
+    for (var i = 0; i < 3; i++) {
+      await c.reconnect();
+      states.add(coinState());
+      rechecks.add(ScriptSyncServiceMock.addressRepository.getAddressesWithMissingCoins(_walletId).length);
+    }
+    _report('heavy-reuse-dropped-own-send', '-', {'coin_per_start': states, 'rechecks_per_start': rechecks});
+    expect(states, ['unspent', 'unspent', 'unspent']);
+    expect(rechecks, [0, 0, 0], reason: 'once restored, no start re-lists the address for it');
+  });
+
   // The check above must not block a heal: a stored spend of another coin at the same address leaves this one alone.
   test(
     '[heavy-reuse-heal-after-spend] a stored spend of another coin at the address does not block the heal',

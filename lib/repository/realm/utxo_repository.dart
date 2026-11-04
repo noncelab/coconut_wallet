@@ -458,11 +458,22 @@ class UtxoRepository extends BaseRepository {
   /// 같은 동기화에서 먼저 받은 이 주소의 서버 잔액이 남은 코인과 함께 모두 셀 때만 한꺼번에 되살린다. 늦은 응답이
   /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다. 태그는 지울 때 떼어졌으므로 돌아오지 않는다.
   /// 판단은 쓰기 안에서 한다. 잠금을 기다리는 동안 다른 쓰기가 spender를 남기거나 잔액을 낮췄을 수 있다.
-  Future<void> restoreListedUtxos(int walletId, String address, List<UtxoState> listed) async {
+  /// [spentNow]는 이번 동기화에서 받은 거래가 쓴 코인(outpoint)이다. 그 거래 기록이 아직 없어도 되살리지 않는다.
+  Future<void> restoreListedUtxos(
+    int walletId,
+    String address,
+    List<UtxoState> listed, {
+    Set<String> spentNow = const {},
+  }) async {
     if (!hasRestorableListedUtxos(walletId, address, listed)) return;
     final listedById = {for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index): utxo};
     await realm.writeAsync(() {
-      final rows = restorableTombstones(realm, walletId, _listedTombstones(walletId, address, listed));
+      final rows =
+          restorableTombstones(
+            realm,
+            walletId,
+            _listedTombstones(walletId, address, listed),
+          ).where((row) => !spentNow.contains(getUtxoId(row.transactionHash, row.index))).toList();
       final total =
           realm
               .query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address])
