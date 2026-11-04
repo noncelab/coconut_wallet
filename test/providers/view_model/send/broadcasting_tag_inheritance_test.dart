@@ -78,6 +78,13 @@ class _TransactionProvider extends Fake implements TransactionProvider {
       walletId == 1 && previous?.transactionHash == txHash ? previous : null;
 }
 
+class _ThrowingReservationRepository extends UtxoRepository {
+  _ThrowingReservationRepository(super.manager);
+
+  @override
+  void reserveBroadcastInputs(Transaction transaction, String txid) => throw StateError('fixture reservation error');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late TestRealmManager manager;
@@ -222,6 +229,27 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: []);
     expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
     expect(manager.realm.find<RealmUtxo>(realmInputId)!.status, 'unspent');
+  });
+
+  test('uppercase accepted txid reserves the same signed inputs', () async {
+    await initialize();
+    final txid = viewModel.signedTx!.transactionHash;
+    node.returnedTxid = txid.toUpperCase();
+    expect((await viewModel.broadcast(inheritedTagIds: [])).value, node.returnedTxid);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+    expect(repository.getUtxoState(1, inputId)!.spentByTransactionHash, txid);
+  });
+
+  test('reservation error preserves accepted success and still applies tags', () async {
+    repository = _ThrowingReservationRepository(manager);
+    addTag('savings', inputId);
+    await initialize();
+    final result = await viewModel.broadcast(inheritedTagIds: ['savings']);
+    expect(result.value, viewModel.signedTx!.transactionHash);
+    expect(node.broadcasts, 1);
+    expect(viewModel.tagInheritanceFailed, isFalse);
+    expect(tagIds(targetId()), ['savings']);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
   });
 
   test('reservation uses the wallet and transaction captured before submission', () async {

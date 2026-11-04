@@ -17,8 +17,8 @@ void main() {
   late TestRealmManager manager;
   late UtxoRepository ui;
   late UtxoRepository sync;
-  late DateTime now;
-  late DateTime start;
+  late Duration now;
+  late Duration start;
 
   Transaction spend(List<int> indexes) => Transaction.withInputsAndOutputs(
     [for (final index in indexes) TransactionInput.forPayment(hash, index)],
@@ -32,7 +32,7 @@ void main() {
   setUp(() {
     NetworkType.setNetworkType(NetworkType.regtest);
     manager = TestRealmManager();
-    start = now = DateTime.utc(2026, 11, 4);
+    start = now = Duration.zero;
     ui = UtxoRepository(manager, clock: () => now);
     sync = UtxoRepository(manager);
     manager.realm.write(() {
@@ -112,9 +112,9 @@ void main() {
   test('expiry is exactly thirty minutes and a restart has no reservation', () {
     ui.reserveBroadcastInputs(spend([0]), spender);
     expect(UtxoRepository(manager).getUtxoState(1, id(0))!.status, UtxoStatus.unspent);
-    now = start.add(const Duration(minutes: 30)).subtract(const Duration(microseconds: 1));
+    now = start + const Duration(minutes: 30) - const Duration(microseconds: 1);
     expect(coin(0)!.status, UtxoStatus.outgoing);
-    now = start.add(const Duration(minutes: 30));
+    now = start + const Duration(minutes: 30);
     expect(coin(0)!.status, UtxoStatus.unspent);
     now = start;
     expect(coin(0)!.status, UtxoStatus.unspent, reason: 'expiry was pruned, not only hidden');
@@ -122,19 +122,19 @@ void main() {
 
   test('adds prune expired entries and replacements refresh only their own input entries', () {
     ui.reserveBroadcastInputs(spend([0, 1]), spender);
-    now = start.add(const Duration(minutes: 10));
+    now = start + const Duration(minutes: 10);
     ui.reserveBroadcastInputs(spend([0, 5]), replacement);
     expect(coin(0)!.spentByTransactionHash, replacement);
     expect(coin(1)!.spentByTransactionHash, spender);
-    now = start.add(const Duration(minutes: 30));
+    now = start + const Duration(minutes: 30);
     ui.reserveBroadcastInputs(spend([5]), replacement);
     now = start;
     expect(coin(1)!.status, UtxoStatus.incoming, reason: 'adding pruned expired entries');
     expect(coin(0)!.status, UtxoStatus.outgoing);
-    now = start.add(const Duration(minutes: 40));
+    now = start + const Duration(minutes: 40);
     expect(coin(0)!.status, UtxoStatus.unspent);
     expect(coin(5)!.status, UtxoStatus.outgoing);
-    now = start.add(const Duration(minutes: 60));
+    now = start + const Duration(minutes: 60);
     expect(coin(5)!.status, UtxoStatus.unspent);
   });
 }

@@ -25,18 +25,21 @@ int _normalizeTagColorIndex(int colorIndex) {
 }
 
 class UtxoRepository extends BaseRepository {
-  UtxoRepository(super._realmManager, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+  UtxoRepository(super._realmManager, {Duration Function()? clock}) {
+    final stopwatch = Stopwatch()..start();
+    _clock = clock ?? () => stopwatch.elapsed;
+  }
 
-  final DateTime Function() _clock;
-  final _broadcastReservations = <String, ({String txid, DateTime expiresAt})>{};
-  DateTime? _nextReservationExpiry;
+  late final Duration Function() _clock;
+  final _broadcastReservations = <String, ({String txid, Duration expiresAt})>{};
+  Duration? _nextReservationExpiry;
 
   /// UI 저장소에서만 사용한다. 동기화 저장소와 Realm에는 예약을 전달하지 않는다.
   void reserveBroadcastInputs(lib.Transaction transaction, String txid) {
     final now = _clock();
     _pruneBroadcastReservations(now);
-    final reservation = (txid: txid, expiresAt: now.add(const Duration(minutes: 30)));
-    if (_nextReservationExpiry == null || reservation.expiresAt.isBefore(_nextReservationExpiry!)) {
+    final reservation = (txid: txid, expiresAt: now + const Duration(minutes: 30));
+    if (_nextReservationExpiry == null || reservation.expiresAt < _nextReservationExpiry!) {
       _nextReservationExpiry = reservation.expiresAt;
     }
     for (final input in transaction.inputs) {
@@ -44,16 +47,16 @@ class UtxoRepository extends BaseRepository {
     }
   }
 
-  void _pruneBroadcastReservations([DateTime? now]) {
+  void _pruneBroadcastReservations([Duration? now]) {
     if (_broadcastReservations.isEmpty) return;
     final cutoff = now ?? _clock();
     // 가장 이른 만료 전에는 단건 조회마다 예약 전체를 다시 순회하지 않는다.
-    if (_nextReservationExpiry?.isAfter(cutoff) ?? false) return;
-    _broadcastReservations.removeWhere((_, reservation) => !reservation.expiresAt.isAfter(cutoff));
-    _nextReservationExpiry = _broadcastReservations.values.fold<DateTime?>(
+    if (_nextReservationExpiry != null && _nextReservationExpiry! > cutoff) return;
+    _broadcastReservations.removeWhere((_, reservation) => reservation.expiresAt <= cutoff);
+    _nextReservationExpiry = _broadcastReservations.values.fold<Duration?>(
       null,
       (earliest, reservation) =>
-          earliest == null || reservation.expiresAt.isBefore(earliest) ? reservation.expiresAt : earliest,
+          earliest == null || reservation.expiresAt < earliest ? reservation.expiresAt : earliest,
     );
   }
 

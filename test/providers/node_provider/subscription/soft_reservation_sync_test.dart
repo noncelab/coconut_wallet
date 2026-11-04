@@ -38,6 +38,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_r
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -48,6 +49,7 @@ import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_mod
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_merge/utxo_merge_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_split/utxo_split_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -335,7 +337,7 @@ class _Case {
   late final Transaction faucet, funding, spend;
 
   String get coin => getUtxoId(funding.transactionHash, 0);
-  DateTime now = DateTime.utc(2026, 11, 4);
+  Duration now = Duration.zero;
   late final UtxoRepository utxos = UtxoRepository(ScriptSyncServiceMock.realmManager!, clock: () => now);
   List<String> get spendAddresses => [input, change];
 
@@ -486,6 +488,16 @@ class _ProbeWallets extends _UiWallets {
   final UtxoRepository utxos;
   @override
   List<UtxoState> getUtxoList(int id) => utxos.getUtxoStateList(id);
+  @override
+  UtxoState? getUtxoState(int id, String utxoId) => utxos.getUtxoState(id, utxoId);
+  @override
+  Future<void> updateUtxoStatus(int id, List<String> ids, UtxoStatus status) => utxos.updateUtxoStatus(id, ids, status);
+  @override
+  Future<void> toggleUtxoLockStatus(int id, String utxoId) async {
+    final result = await utxos.toggleUtxoLockStatus(id, utxoId);
+    if (result.isFailure) throw result.error;
+  }
+
   @override
   WalletAddress getChangeAddress(int id) =>
       ScriptSyncServiceMock.addressRepository.getChangeAddress(id, wallet: wallet.walletBase);
@@ -692,6 +704,182 @@ void main() {
     expect(detail.transactions.any((t) => t.transactionHash == c.spend.transactionHash), isFalse);
   });
 
+  test('[codex] unlocking through a fresh overview must preserve the overlay in displayed rows', () async {
+    final (c, s, vm) = await fixture();
+    expect((await vm.broadcast(inheritedTagIds: [])).isSuccess, isTrue);
+    final wallets = _ProbeWallets(c.wallet, c.utxos);
+    final prefs = _ProbePrefs();
+    final tags = UtxoTagProvider(c.utxos);
+    final txs = TransactionProvider(ScriptSyncServiceMock.transactionRepository);
+    final node = _ProbeNode(s, c);
+    final explorer = BlockExplorerProvider();
+    final detail = UtxoDetailViewModel(
+      _walletId,
+      c.utxos.getUtxoState(_walletId, c.coin)!,
+      tags,
+      txs,
+      wallets,
+      ScriptSyncServiceMock.addressRepository,
+      const Stream<WalletUpdateInfo>.empty(),
+      explorer,
+    );
+    addTearDown(() {
+      detail.dispose();
+      explorer.dispose();
+    });
+    expect(await detail.toggleUtxoLockStatus(), isTrue);
+    expect(c.coinState(), 'locked');
+    final overview = UtxoOverviewViewModel(
+      _walletId,
+      wallets,
+      txs,
+      tags,
+      _UiConnectivity(),
+      _UiPrice(),
+      prefs,
+      node,
+      node.getWalletStateStream(_walletId),
+    );
+    expect(overview.utxoList.single.status, UtxoStatus.locked);
+    overview.selectedUtxoIds.add(c.coin);
+    overview.setSelectedUtxoList(overview.utxoList);
+    expect(overview.selectedUtxoAmountSum, 1000000);
+    // Actual overview button path, not a direct UTXO mutation in the test.
+    expect(await overview.setUtxoLockStatus([c.coin], false), 1);
+    expect(overview.utxoList.single.status, UtxoStatus.outgoing);
+    expect(overview.selectedUtxoIds, isEmpty);
+    await overview.updateSelectedUtxosStatus([c.coin], UtxoStatus.locked);
+    overview.selectedUtxoIds.add(c.coin);
+    overview.setSelectedUtxoList(overview.utxoList);
+    expect(overview.selectedUtxoAmountSum, 1000000);
+    await overview.updateSelectedUtxosStatus([c.coin], UtxoStatus.unspent);
+    final available = overview.utxoList
+        .where((u) => u.status == UtxoStatus.unspent)
+        .fold<int>(0, (sum, u) => sum + u.amount);
+    final fresh = _ProbeSend(wallets, prefs);
+    // Same pending-row guard as the overview's tap/long-press selection handlers.
+    final overviewRowSelectable =
+        overview.utxoList.single.status != UtxoStatus.outgoing &&
+        overview.utxoList.single.status != UtxoStatus.incoming;
+    final manuallySelected = overviewRowSelectable ? overview.getUtxosByIds([c.coin]) : <UtxoState>[];
+    final info = SendInfoProvider();
+    final manual = _ProbeSend(wallets, prefs, sendInfo: info);
+    await _settle();
+    manual.setSelectedUtxoList(manuallySelected);
+    manual.setAddressText(_external, 0);
+    manual.setAmountText(50000, 0);
+    manual.setFeeRateText('1');
+    manual.validateAllFieldsOnFocusLost();
+    if (manual.canGoNext) manual.saveSendInfo();
+    _report('pr3c-fresh-unlock', '-', {
+      'raw_status': ScriptSyncServiceMock.utxoRepository.getUtxoState(_walletId, c.coin)!.status.name,
+      'repository_status': c.coinState(),
+      'overview_status': overview.utxoList.single.status.name,
+      'overview_row_selectable': overviewRowSelectable,
+      'overview_available': available,
+      'fresh_send_available': fresh.balance,
+      'manual_available': manual.balance,
+      'manual_can_next': manual.canGoNext,
+      'manual_reuses_accepted_input': info.transaction?.inputs.any(
+        (i) => getUtxoId(i.transactionHash, i.index) == c.coin,
+      ),
+    });
+    addTearDown(() {
+      overview.dispose();
+      fresh.dispose();
+      manual.dispose();
+      wallets.dispose();
+      prefs.dispose();
+      tags.dispose();
+      txs.dispose();
+      node.dispose();
+    });
+    expect(available, fresh.balance, reason: 'a screen opened after acceptance must keep the projection after unlock');
+    expect(available, 0);
+    expect(overviewRowSelectable, isFalse);
+    expect(manual.canGoNext, isFalse);
+    expect(overview.selectedUtxoIds, isEmpty);
+    expect(overview.selectedUtxoList, isEmpty);
+    expect(overview.selectedUtxoAmountSum, 0);
+  });
+
+  test('[codex] reopening picker must not carry invisible reserved initial selections', () async {
+    final (c, s, vm) = await fixture();
+    final extra = _tx([(c.faucet.transactionHash, 1)], [(c.input, 200000), (_external, 4799000)]);
+    c.backend.put(extra, 100);
+    await ScriptSyncServiceMock.utxoSyncService.fetchScriptUtxo(c.wallet, _inputScript(c));
+    final cached = c.utxos.getUtxoState(_walletId, c.coin)!;
+    await vm.broadcast(inheritedTagIds: []);
+    final wallets = _ProbeWallets(c.wallet, c.utxos);
+    final tags = UtxoTagProvider(c.utxos);
+    final price = _UiPrice();
+    final prefs = _ProbePrefs();
+    final picker = UtxoSelectionViewModel(wallets, tags, price, prefs, true, _walletId)..initialize([cached]);
+    expect(picker.confirmedUtxoList.map((u) => u.utxoId), [getUtxoId(extra.transactionHash, 0)]);
+    picker.toggleUtxoSelection(picker.confirmedUtxoList.single);
+    _report('pr3c-picker-initial', '-', {
+      'visible_count': picker.confirmedUtxoList.length,
+      'selected_count': picker.selectedUtxoList.length,
+      'selected_amount': picker.selectedUtxoAmountSum,
+      'done_enabled': picker.hasSelectionChanged,
+      'reserved_selected': picker.selectedUtxoList.any((u) => u.utxoId == c.coin),
+    });
+    addTearDown(() {
+      picker.dispose();
+      wallets.dispose();
+      tags.dispose();
+      price.dispose();
+      prefs.dispose();
+    });
+    expect(picker.selectedUtxoList.any((u) => u.utxoId == c.coin), isFalse);
+    expect(picker.selectedUtxoAmountSum, 200000);
+    expect(picker.hasSelectionChanged, isTrue);
+    final send = _ProbeSend(wallets, prefs)..setSelectedUtxoList(picker.selectedUtxoList);
+    addTearDown(send.dispose);
+    expect(send.selectedUtxoAmountSum, 200000);
+  });
+
+  test('detail lock and unlock re-read the projection without mutating old snapshots', () async {
+    final (c, s, vm) = await fixture();
+    expect((await vm.broadcast(inheritedTagIds: [])).isSuccess, isTrue);
+    final wallets = _ProbeWallets(c.wallet, c.utxos);
+    final tags = UtxoTagProvider(c.utxos);
+    final txs = TransactionProvider(ScriptSyncServiceMock.transactionRepository);
+    final explorer = BlockExplorerProvider();
+    final snapshot = c.utxos.getUtxoState(_walletId, c.coin)!;
+    final detail = UtxoDetailViewModel(
+      _walletId,
+      snapshot,
+      tags,
+      txs,
+      wallets,
+      ScriptSyncServiceMock.addressRepository,
+      const Stream<WalletUpdateInfo>.empty(),
+      explorer,
+    );
+    addTearDown(() {
+      detail.dispose();
+      explorer.dispose();
+      wallets.dispose();
+      tags.dispose();
+      txs.dispose();
+    });
+    expect(await detail.toggleUtxoLockStatus(), isTrue);
+    expect(detail.utxoStatus, UtxoStatus.locked);
+    expect(snapshot.status, UtxoStatus.outgoing);
+    expect(await detail.toggleUtxoLockStatus(), isTrue);
+    expect(detail.utxoStatus, UtxoStatus.outgoing);
+    expect(c.coinState(), 'outgoing');
+    final prefs = _ProbePrefs();
+    final send = _ProbeSend(wallets, prefs);
+    addTearDown(() {
+      send.dispose();
+      prefs.dispose();
+    });
+    expect(send.balance, 0);
+    expect(detail.utxoStatus == UtxoStatus.unspent ? snapshot.amount : 0, send.balance);
+  });
+
   test('auto/manual/MAX, merge, split and draft reads exclude reserved inputs', () async {
     final (c, s, vm) = await fixture();
     for (final (index, amount) in [(1, 200000), (2, 100000)]) {
@@ -773,6 +961,7 @@ void main() {
       ..put(availableExtra, 100);
     await ScriptSyncServiceMock.utxoSyncService.fetchScriptUtxo(c.wallet, _inputScript(c));
     final anotherSend = _tx([(reservedExtra.transactionHash, 0)], [(_external, 199000)]);
+    final staleExtra = c.utxos.getUtxoState(_walletId, getUtxoId(reservedExtra.transactionHash, 0))!;
     c.utxos.reserveBroadcastInputs(anotherSend, anotherSend.transactionHash);
     expect((await vm.broadcast(inheritedTagIds: [])).isSuccess, isTrue);
     for (final address in c.spendAddresses) {
@@ -815,6 +1004,18 @@ void main() {
     for (final model in feeModels) {
       expect(model.availableUtxos.map((u) => u.utxoId), [availableId]);
     }
+    final tags = UtxoTagProvider(c.utxos);
+    final price = _UiPrice();
+    final picker = UtxoSelectionViewModel(wallets, tags, price, prefs, true, _walletId)
+      ..initialize([staleExtra, feeModels.first.availableUtxos.single]);
+    addTearDown(() {
+      picker.dispose();
+      tags.dispose();
+      price.dispose();
+    });
+    expect(picker.hasSelectionChanged, isTrue);
+    expect(picker.selectedUtxoList.map((u) => u.utxoId), [availableId]);
+    expect(picker.selectedUtxoAmountSum, 800000);
     final preparer = RbfPreparer.fromPendingTx(
       pendingTx: pending,
       rawTx: c.spend.serialize(),
@@ -824,15 +1025,17 @@ void main() {
               ScriptSyncServiceMock.addressRepository.containsAddress(_walletId, address),
       getDerivationPath: (address) => ScriptSyncServiceMock.addressRepository.getDerivationPath(_walletId, address),
     );
-    final replacement = RbfBuilder(
-      preparer: preparer,
-      walletItemBase: c.wallet,
-      nextChangeAddress: wallets.getChangeAddress(_walletId),
-      additionalSpendable: feeModels.first.availableUtxos,
-    ).build(newFeeRate: 5000);
-    expect(replacement.isSuccess, isTrue, reason: replacement.exception.toString());
-    expect(replacement.addedInputs!.map((u) => u.utxoId), [availableId]);
-    expect(replacement.transaction!.inputs.map((i) => getUtxoId(i.transactionHash, i.index)), [c.coin, availableId]);
+    for (final extras in [feeModels.first.availableUtxos, picker.selectedUtxoList]) {
+      final replacement = RbfBuilder(
+        preparer: preparer,
+        walletItemBase: c.wallet,
+        nextChangeAddress: wallets.getChangeAddress(_walletId),
+        additionalSpendable: extras,
+      ).build(newFeeRate: 5000);
+      expect(replacement.isSuccess, isTrue, reason: replacement.exception.toString());
+      expect(replacement.addedInputs!.map((u) => u.utxoId), [availableId]);
+      expect(replacement.transaction!.inputs.map((i) => getUtxoId(i.transactionHash, i.index)), [c.coin, availableId]);
+    }
     expect(preparer.inputUtxos.single.spentByTransactionHash, c.spend.transactionHash);
   });
 
@@ -920,7 +1123,7 @@ void main() {
       UtxoRepository(ScriptSyncServiceMock.realmManager!).getUtxoState(_walletId, c.coin)!.status,
       UtxoStatus.unspent,
     );
-    c.now = c.now.add(const Duration(minutes: 30));
+    c.now += const Duration(minutes: 30);
     expect(c.coinState(), 'unspent');
   });
 
@@ -990,7 +1193,7 @@ void main() {
     expect(finalState, 'outgoing');
     expect(row!.isDeleted, isFalse);
     expect(row.status, 'unspent');
-    c.now = c.now.add(const Duration(minutes: 30));
+    c.now += const Duration(minutes: 30);
     expect(c.coinState(), 'unspent');
   });
 
@@ -1002,7 +1205,7 @@ void main() {
     await ScriptSyncServiceMock.utxoSyncService.cleanupOrphanedUtxos(c.wallet, reconciledAddresses: {c.input});
     _report('pr3-drop-own-reconcile', '-', {'coin': c.coinState()});
     expect(c.coinState(), 'outgoing');
-    c.now = c.now.add(const Duration(minutes: 30));
+    c.now += const Duration(minutes: 30);
     expect(c.coinState(), 'unspent');
   });
 

@@ -154,6 +154,28 @@ void main() {
   });
 
   group('개별 토글', () {
+    test('fresh eligible rows replace stale initial objects and remove ineligible outpoints', () {
+      final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
+      final staleLarge = _utxo(1, 999999);
+      viewModel.reload([staleLarge, _utxo(8, 70000), locked, belowMinimum, _utxo(99, 90000)]);
+      expect(viewModel.selectedUtxoList, [large]);
+      expect(viewModel.selectedUtxoList.single, same(large));
+      expect(viewModel.selectedUtxoAmountSum, 50000);
+      expect(viewModel.hasSelectionChanged, isTrue);
+      expectConsistent(viewModel);
+      viewModel.dispose();
+    });
+
+    test('removing the only ineligible initial selection enables Done to return empty', () {
+      final viewModel = createViewModel();
+      viewModel.reload([_utxo(8, 70000)]);
+      expect(viewModel.selectedUtxoList, isEmpty);
+      expect(viewModel.selectedUtxoIdSet, isEmpty);
+      expect(viewModel.selectedUtxoAmountSum, 0);
+      expect(viewModel.hasSelectionChanged, isTrue);
+      viewModel.dispose();
+    });
+
     test('여러 UTXO를 토글하면 합계와 ID 집합이 선택 목록과 일치한다', () {
       final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
 

@@ -85,8 +85,15 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
-      _selectedUtxoList = List.from(selectedUtxoList);
-      _selectedUtxoIdSet.addAll(selectedUtxoList.map((utxo) => utxo.utxoId));
+      final eligibleById = {for (final utxo in _confirmedUtxoList.where(_isSelectable)) utxo.utxoId: utxo};
+      _selectedUtxoList =
+          selectedUtxoList
+              .map((utxo) => utxo.utxoId)
+              .toSet()
+              .map((id) => eligibleById[id])
+              .whereType<UtxoState>()
+              .toList();
+      _selectedUtxoIdSet.addAll(_selectedUtxoList.map((utxo) => utxo.utxoId));
       _initialSelectedUtxoList.addAll(selectedUtxoList);
       _cachedSelectedUtxoAmountSum = null;
       _isInitialized = true;
@@ -150,7 +157,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   bool isBelowMinimumSelectableAmount(UtxoState utxo) =>
       minimumSelectableUtxoAmount != null && utxo.amount < minimumSelectableUtxoAmount!;
 
-  bool _isSelectable(UtxoState utxo) => utxo.status != UtxoStatus.locked && !isBelowMinimumSelectableAmount(utxo);
+  bool _isSelectable(UtxoState utxo) => utxo.status == UtxoStatus.unspent && !isBelowMinimumSelectableAmount(utxo);
 
   void deselectAllUtxo() {
     _clearUtxoList();
@@ -255,11 +262,6 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   /// 선택 상태가 초기 상태와 다른지 확인
   bool get hasSelectionChanged {
-    // 선택된 UTXO가 하나도 없으면 비활성화
-    if (_selectedUtxoList.isEmpty) {
-      return false;
-    }
-
     if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
       return true;
     }

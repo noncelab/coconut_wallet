@@ -207,6 +207,7 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
   void clearUtxoList() {
     _selectedUtxoList = [];
+    selectedUtxoIds.clear();
     _cachedSelectedUtxoAmountSum = 0;
     notifyListeners();
   }
@@ -416,41 +417,21 @@ class UtxoOverviewViewModel extends ChangeNotifier {
       // DB에서 한번에 상태 업데이트
       await _walletProvider.updateUtxoStatus(_walletId, utxoIds, status);
 
-      // 메모리 리스트도 일괄 업데이트
-      for (final utxo in _utxoList) {
-        if (utxoIds.contains(utxo.utxoId)) {
-          utxo.status = status;
-        }
-      }
-
-      // affected 목록
-      final affectedUtxos = _utxoList.where((u) => utxoIds.contains(u.utxoId)).toList();
-
-      // selected 리스트 갱신
-      if (status == UtxoStatus.locked) {
-        if (_activeUtxoFilter == UtxoFilter.locked) {
-          _selectedUtxoList = affectedUtxos;
-        } else {
-          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
-        }
-      } else if (status == UtxoStatus.unspent) {
-        if (_activeUtxoFilter != UtxoFilter.locked) {
-          _selectedUtxoList
-            ..removeWhere((u) => utxoIds.contains(u.utxoId))
-            ..addAll(affectedUtxos);
-        } else {
-          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
-        }
-      }
-
-      // confirmed 리스트 갱신
-      _confirmedUtxoList
+      final selectedIds = {...selectedUtxoIds, ..._selectedUtxoList.map((utxo) => utxo.utxoId)};
+      // 잠금 변경 뒤에도 전송 예약이 반영된 상태로 화면과 선택 목록을 다시 구성한다.
+      _initUtxoAndTags();
+      _confirmedUtxoList =
+          _utxoList.where((utxo) => utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked).toList();
+      _utxoTagMap.clear();
+      _initUtxoTagMap();
+      _selectedUtxoList =
+          _confirmedUtxoList
+              .where((utxo) => selectedIds.contains(utxo.utxoId) && _activeUtxoFilter.matches(utxo, tags: utxo.tags))
+              .toList();
+      selectedUtxoIds
         ..clear()
-        ..addAll(
-          _walletProvider
-              .getUtxoList(_walletId)
-              .where((u) => u.status == UtxoStatus.unspent || u.status == UtxoStatus.locked),
-        );
+        ..addAll(_selectedUtxoList.map((utxo) => utxo.utxoId));
+      _cachedSelectedUtxoAmountSum = null;
 
       // 정렬 + 필터링
       _sortConfirmedUtxoList(_activeUtxoOrder);

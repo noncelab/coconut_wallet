@@ -180,8 +180,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     final result = await _nodeProvider.broadcast(signedTx);
     if (result.isFailure) return result;
 
-    if (result.value == txid) {
-      _utxoRepository.reserveBroadcastInputs(signedTx, txid);
+    if (result.value.toLowerCase() == txid.toLowerCase()) {
+      try {
+        _utxoRepository.reserveBroadcastInputs(signedTx, txid);
+      } catch (_) {
+        Logger.error('Transaction accepted, but input reservation failed');
+      }
     } else {
       Logger.error('Broadcast txid mismatch; input reservation skipped');
     }

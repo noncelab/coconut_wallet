@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton;
 
 import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -71,8 +72,8 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
   bool get isInternetOn => true;
 }
 
-UtxoState _utxo(UtxoStatus status, {int amount = 10000}) => UtxoState(
-  transactionHash: 'a' * 64,
+UtxoState _utxo(UtxoStatus status, {int amount = 10000, String? hash}) => UtxoState(
+  transactionHash: hash ?? 'a' * 64,
   index: 0,
   amount: amount,
   derivationPath: "m/84'/0'/0'/0/0",
@@ -104,6 +105,83 @@ void main() {
     await loader.load();
   });
   setUp(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+  for (final (feeBump, selectOther) in [(false, false), (false, true), (true, false), (true, true)]) {
+    testWidgets(
+      '${feeBump ? "fee-bump extras route" : "send picker sheet"}: Done returns ${selectOther ? "eligible coin" : "empty selection"}',
+      (tester) async {
+        final stale = _utxo(UtxoStatus.unspent, amount: 1000000);
+        final eligible = _utxo(UtxoStatus.unspent, amount: 200000, hash: 'b' * 64);
+        final wallets = _Wallets()..utxos = [_utxo(UtxoStatus.outgoing, amount: 1000000), eligible];
+        List<UtxoState> callerSelection = [stale];
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider<WalletProvider>.value(value: wallets),
+              ChangeNotifierProvider<UtxoTagProvider>(create: (_) => _Tags()),
+              ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
+              ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences()),
+              ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
+            ],
+            child: MaterialApp(
+              theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+              routes: {AppRouteNames.utxoSelection: buildAppRoutes()[AppRouteNames.utxoSelection]!},
+              home: Builder(
+                builder:
+                    (context) => Scaffold(
+                      body: TextButton(
+                        onPressed: () async {
+                          final result =
+                              feeBump
+                                  ? await Navigator.pushNamed(
+                                    context,
+                                    AppRouteNames.utxoSelection,
+                                    arguments: UtxoSelectionRouteArgs(
+                                      selectedUtxoList: callerSelection,
+                                      id: 7,
+                                      currentUnit: BitcoinUnit.sats,
+                                    ),
+                                  )
+                                  : await showModalBottomSheet<List<UtxoState>>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    builder:
+                                        (_) => SizedBox(
+                                          height: 650,
+                                          child: UtxoSelectionScreen(
+                                            walletId: 7,
+                                            currentUnit: BitcoinUnit.sats,
+                                            selectedUtxoList: callerSelection,
+                                          ),
+                                        ),
+                                  );
+                          if (result != null) callerSelection = List<UtxoState>.from(result as List<UtxoState>);
+                        },
+                        child: const Text('Open picker'),
+                      ),
+                    ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Open picker'));
+        await tester.pumpAndSettle();
+        final model = tester.element(find.byType(UtxoSelectionCard)).read<UtxoSelectionViewModel>();
+        expect(model.selectedUtxoAmountSum, 0);
+        expect(model.hasSelectionChanged, isTrue, reason: 'removed-only selection must be returnable too');
+        if (selectOther) {
+          await tester.tap(find.byKey(ValueKey(eligible.utxoId)));
+          await tester.pumpAndSettle();
+          expect(model.selectedUtxoAmountSum, 200000);
+        }
+        await tester.tap(find.text(t.done));
+        await tester.pumpAndSettle();
+        expect(callerSelection.map((u) => u.utxoId), selectOther ? [eligible.utxoId] : isEmpty);
+        expect(callerSelection.fold<int>(0, (sum, u) => sum + u.amount), selectOther ? 200000 : 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   Future<GlobalKey> pump(
     WidgetTester tester,
