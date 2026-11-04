@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -71,6 +72,10 @@ import 'package:realm/realm.dart';
 /// [addHotWalletBackupVerifiedAt] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 nullable backupVerifiedAt 필드 추가
 /// 2. 기존 백업 완료 지갑은 정확한 완료 시각을 알 수 없으므로 null 유지
+///
+/// [recountOwnAmountsOfAllWallets] (10 -> 11)
+/// 1. 주소 창보다 먼저 처리돼 내 주소 몫이 빠진 채 저장된 거래 기록의 금액·유형을 저장된 입출력으로 다시 센다.
+/// 2. 이후 새로 생기는 주소는 AddressRepository가 그 주소가 든 기록만 다시 세므로, 전체 재계산은 이 한 번뿐이다.
 void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -93,10 +98,20 @@ void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWa
       scopeWalletSyncDataByWallet(migration);
       addHotWalletLifecycleState(migration.newRealm);
     }
+    if (oldVersion < 11) recountOwnAmountsOfAllWallets(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+/// 모든 지갑의 거래 기록 금액·유형을 지금의 내 주소로 다시 센다. 바꾼 기록 수를 돌려준다.
+int recountOwnAmountsOfAllWallets(Realm realm) {
+  var changed = 0;
+  for (final wallet in realm.all<RealmWalletBase>()) {
+    changed += recountOwnAmounts(realm, wallet.id);
+  }
+  return changed;
 }
 
 void addHotWalletLifecycleState(Realm realm) {

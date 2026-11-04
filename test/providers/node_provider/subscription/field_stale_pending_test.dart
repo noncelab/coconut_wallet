@@ -48,6 +48,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_li
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/migration/migration.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
@@ -90,6 +91,7 @@ class _Backend {
   Duration faultDelay = Duration.zero; // a failing request first hangs this long (a timeout instead of an error)
   int faultsHit = 0;
   final calls = <String>[]; // '$method:$key' of every request
+  void Function(String address)? onSubscribed; // runs after a subscribe is answered (its status already taken)
   Duration latency = Duration.zero;
 
   void put(Transaction tx, [int? height]) {
@@ -220,7 +222,9 @@ class _Backend {
     ).thenAnswer(
       (c) => answer('subscribe', arg(c, 1), () {
         listeners[arg(c, 1)] = c.namedArguments[#onUpdate] as Function(String, String?);
-        return status(arg(c, 1));
+        final answered = status(arg(c, 1));
+        onSubscribed?.call(arg(c, 1));
+        return answered;
       }),
     );
     when(electrum.unsubscribeScriptForWallet(any, any, walletId: anyNamed('walletId'))).thenAnswer((c) async {
@@ -1677,6 +1681,92 @@ void main() {
       expect(historyRequests, greaterThanOrEqualTo(2), reason: 'the block arrived inside the chunk');
       expect(ok, isTrue);
       expect([c.coinState(), c._utxo(y), record?.blockHeight], ['deleted', 'deleted', 105]);
+    });
+  });
+
+  // HEAVY_GROW (Fold, 11/04): batch 10 (20 x 20,000 to W2) was recorded as +40,000. The gap scan ended with the
+  // window at used+20 = 235, pushes for 234/235 (the batch landed after their subscribe answers) turned their
+  // statuses non-null before the batch sync, which recorded the tx while 236..253 were not in the address table.
+  group('HEAVY_GROW batch straddling the gap window', () {
+    test('[heavy-grow-straddle] the record is recounted once the window covers its outputs', () async {
+      final c = _Case();
+      await c.init(); // receive 0 is used (confirmed funding)
+      final b = c.backend;
+      final base = c.wallet.walletBase;
+      Transaction batch(int from, int faucetOutput) => _tx(
+        [(c.faucet.transactionHash, faucetOutput)],
+        [for (var i = from; i < from + 20; i++) (base.getAddress(i), 20000), (_external, 4598000)],
+      );
+      final first = batch(1, 1), straddling = batch(39, 2);
+      b
+        ..put(first, 0)
+        ..put(straddling); // broadcast while the scan finishes
+      // The scan covers 0..40 (used 20); the second batch lands after receive 40's subscribe answer.
+      b.onSubscribed = (address) {
+        if (address != base.getAddress(40)) return;
+        b.onSubscribed = null;
+        Timer.run(() {
+          b.heights[straddling.transactionHash] = 0;
+          b.notify(base.getAddress(39));
+          b.notify(base.getAddress(40));
+        });
+      };
+      final s = _Session.start(c.electrum);
+      s.isolateState
+        ..initWalletUpdateStatus(c.wallet.id)
+        ..setNodeSyncStateToSyncing();
+      expect((await s.node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+      final records = ScriptSyncServiceMock.transactionRepository;
+      // Read before the queued pushes run (they wait out the indexing delay first).
+      final early = records.getTransactionRecord(_walletId, straddling.transactionHash);
+      expect(early?.amount, 40000, reason: 'precondition: recorded while only receive 39 and 40 were known');
+
+      await _drain(s); // the pushes grow the window to 58 + 20
+      final pending = records.getTransactionRecord(_walletId, straddling.transactionHash)!;
+      _report('heavy-grow-straddle', '-', {'early': early!.amount, 'pending': pending.amount});
+      expect(pending.amount, 400000, reason: 'all 20 outputs are ours once the window covers them');
+      expect(pending.transactionType, TransactionType.received);
+      expect(pending.fee, early.fee);
+      expect(pending.outputAddressList, early.outputAddressList);
+
+      // Confirmation reuses the stored record (no parents), now with the recounted amount.
+      b.heights[first.transactionHash] = b.heights[straddling.transactionHash] = 103;
+      for (var i = 1; i <= 58; i++) {
+        b.notify(base.getAddress(i));
+      }
+      await _drain(s);
+      final confirmed = records.getTransactionRecord(_walletId, straddling.transactionHash)!;
+      expect([confirmed.blockHeight, confirmed.amount, confirmed.fee], [103, 400000, early.fee]);
+    });
+
+    test('[heavy-grow-persisted] a wrong record saved by an older version heals once, not on every start', () async {
+      final c = _Case();
+      await c.init();
+      final s = _Session.start(c.electrum);
+      expect(await s.subscribe(c.wallet), isTrue);
+      final base = c.wallet.walletBase;
+      final payout = _tx(
+        [(c.faucet.transactionHash, 1)],
+        [for (var i = 1; i <= 3; i++) (base.getAddress(i), 20000), (_external, 4938000)],
+      );
+      c.backend.put(payout, 104);
+      c.backend.notify(base.getAddress(1));
+      await _drain(s);
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      RealmTransaction stored() =>
+          realm.find<RealmTransaction>(getRealmTransactionId(_walletId, payout.transactionHash))!;
+      expect(stored().amount, 60000, reason: 'precondition');
+      realm.write(() => stored().amount = 20000); // as left by a version that recorded it with 2 and 3 unknown
+
+      final (restarted, ok) = await c.reconnect();
+      expect(ok, isTrue);
+      expect(stored().amount, 20000, reason: 'a warm start does not rescan stored records');
+
+      realm.write(() => recountOwnAmountsOfAllWallets(realm)); // the 10 -> 11 Realm migration
+      expect(stored().amount, 60000);
+      expect(stored().transactionType, TransactionType.received.name);
+      expect(realm.write(() => recountOwnAmountsOfAllWallets(realm)), 0, reason: 'correct records are left alone');
+      await _drain(restarted);
     });
   });
 }
