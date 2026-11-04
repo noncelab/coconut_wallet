@@ -1107,6 +1107,56 @@ void main() {
     expect(node.broadcasts, 1, reason: 'the cancelled retry must not reach the node');
   });
 
+  testWidgets('a pause after tapping send but before broadcast stays stopped after returning', (tester) async {
+    await tester.runAsync(() => initialize());
+    viewModel.beginSendAttempt();
+    viewModel.onAppPaused();
+    viewModel.onAppResumed();
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(outcome.isFailure, isTrue);
+    expect(viewModel.stoppedInBackground, isTrue);
+    expect(node.broadcasts, 0, reason: 'returning to the app must not resume a stopped attempt');
+  });
+
+  testWidgets('a pause while waiting for the back gesture stays stopped after returning', (tester) async {
+    await tester.runAsync(() => initialize());
+    final outcome = await viewModel.broadcast(
+      inheritedTagIds: [],
+      beforeRequest: () async {
+        viewModel.onAppPaused();
+        viewModel.onAppResumed();
+      },
+    );
+    expect(outcome.isFailure, isTrue);
+    expect(viewModel.stoppedInBackground, isTrue);
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('a pause outside a send attempt does not stop the next send', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    viewModel.onAppPaused();
+    viewModel.onAppResumed();
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(outcome.isSuccess, isTrue);
+    expect(viewModel.stoppedInBackground, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a new attempt after a stopped one can send', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    viewModel.beginSendAttempt();
+    viewModel.onAppPaused();
+    viewModel.onAppResumed();
+    expect((await viewModel.broadcast(inheritedTagIds: [])).isFailure, isTrue);
+    viewModel.beginSendAttempt();
+    final retried = await viewModel.broadcast(inheritedTagIds: []);
+    expect(retried.isSuccess, isTrue);
+    expect(viewModel.stoppedInBackground, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
   testWidgets('disposing the view model while waiting prevents a later broadcast', (tester) async {
     await tester.runAsync(() => initialize());
     node.connected = false;

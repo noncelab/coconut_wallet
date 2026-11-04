@@ -503,6 +503,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('going to the background during the send animation stops the send', (tester) async {
+    await open(tester, count: 0, pushed: true);
+    await tester.tap(find.text(t.broadcasting_screen.btn_submit));
+    await tester.pump(const Duration(milliseconds: 50));
+    await setLifecycle(tester, [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]);
+    await tester.pump(const Duration(milliseconds: 100));
+    await setLifecycle(tester, [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]);
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.broadcasts, 0, reason: 'returning to the app must not resume a stopped attempt');
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.background_stopped_title)),
+      findsOneWidget,
+    );
+    expect(find.byType(BroadcastingScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('going to the background while waiting stops the send and asks to send again', (tester) async {
     await open(tester, count: 0, pushed: true);
     await waitForConnectionDelay(tester);

@@ -106,6 +106,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       return;
     }
     _isPreparingBroadcast = true;
+    // 애니메이션 중에 앱이 백그라운드로 가도 이번 보내기를 멈출 수 있게, 누른 시점부터 시도를 시작한다.
+    _viewModel.beginSendAttempt();
     if (_scrollController.hasClients && _scrollController.offset > 0) {
       await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
     }

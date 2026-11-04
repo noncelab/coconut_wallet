@@ -89,6 +89,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool _isInBackground = false;
   Completer<void>? _foreground;
   bool _stoppedInBackground = false;
+  bool _isSendAttemptActive = false;
 
   /// 노드 요청 전에 앱이 백그라운드로 가서 이번 보내기를 멈췄는지.
   bool get stoppedInBackground => _stoppedInBackground;
@@ -148,17 +149,24 @@ class BroadcastingViewModel extends ChangeNotifier {
     return true;
   }
 
-  /// 앱이 백그라운드로 가면 부른다. 노드 요청 전이면 이번 보내기를 멈춘다. 같은 거래는 다시 보내도 안전하다.
-  /// 요청 후라면 결과 확인을 앱이 돌아올 때까지 미룬다.
+  /// 사용자가 보내기를 누른 직후, 화면이 보내기 애니메이션을 시작하기 전에 부른다.
+  /// 이때부터 노드에 요청하기 직전까지가 하나의 보내기 시도이며, 그 사이 백그라운드로 가면
+  /// 앱이 돌아와도 이번 시도는 전송하지 않는다.
+  void beginSendAttempt() {
+    _isSendAttemptActive = true;
+    _stoppedInBackground = false;
+  }
+
+  /// 앱이 백그라운드로 가면 부른다. 노드 요청 전의 보내기 시도는 멈추고, 돌아와도 이어서 보내지 않는다.
+  /// 같은 거래는 다시 보내도 안전하다. 요청 후라면 결과 확인을 앱이 돌아올 때까지 미룬다.
   void onAppPaused() {
     if (_isInBackground) return;
     _isInBackground = true;
     _foreground = Completer<void>();
-    final stop = _connectionPreparationStop;
-    if (!_isBroadcastRequested && stop != null && !stop.isCompleted) {
+    if (_isSendAttemptActive && !_isBroadcastRequested) {
       Logger.log('[Send] 앱이 백그라운드로 전환되어 요청 전 보내기 중단');
       _stoppedInBackground = true;
-      stop.complete();
+      _stopConnectionPreparation();
     }
   }
 
@@ -242,6 +250,24 @@ class BroadcastingViewModel extends ChangeNotifier {
     ConnectionWaitExtension? onConnectionWaitExtension,
     Future<void> Function()? beforeRequest,
   }) async {
+    // 화면이 시도를 먼저 시작했다면 그 사이의 백그라운드 중단 기록을 유지한다.
+    if (!_isSendAttemptActive) beginSendAttempt();
+    try {
+      return await _broadcastAttempt(
+        inheritedTagIds: inheritedTagIds,
+        onConnectionWaitExtension: onConnectionWaitExtension,
+        beforeRequest: beforeRequest,
+      );
+    } finally {
+      _isSendAttemptActive = false;
+    }
+  }
+
+  Future<Result<String>> _broadcastAttempt({
+    required List<String> inheritedTagIds,
+    ConnectionWaitExtension? onConnectionWaitExtension,
+    Future<void> Function()? beforeRequest,
+  }) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
@@ -249,7 +275,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _tagInheritanceFailed = false;
     _connectionWaitDeclined = false;
-    _stoppedInBackground = false;
+    if (_stoppedInBackground || _isInBackground) return _stoppedForBackground();
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final endpoint = _nodeProvider.connectionEndpointIdentity;
     final stop = Completer<void>();
@@ -277,7 +303,7 @@ class BroadcastingViewModel extends ChangeNotifier {
                   return extend;
                 },
       );
-      if (_stoppedInBackground) return Result.failure(ErrorCodes.nodeConnectionError);
+      if (_stoppedInBackground) return _stoppedForBackground();
       if (prepared.isFailure) return Result.failure(prepared.error);
       if (!prepared.value) return Result.failure(ErrorCodes.nodeConnectionError);
     } on TimeoutException {
@@ -299,11 +325,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
     // 이 검사와 요청 표시 사이에 await를 두지 않아야 취소와 전송이 엇갈리지 않는다.
     if (_isSendCancelled) return _cancelledSend();
-    if (_isInBackground) {
-      Logger.log('[Send] 앱이 백그라운드로 전환되어 요청 전 보내기 중단');
-      _stoppedInBackground = true;
-      return Result.failure(ErrorCodes.nodeConnectionError);
-    }
+    if (_stoppedInBackground || _isInBackground) return _stoppedForBackground();
     _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
     _startResultWait(isOnion ? kSendBroadcastResultWaitLimitForOnion : kSendBroadcastResultWaitLimit, isOnion);
@@ -511,6 +533,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         timer.cancel();
       }
     }
+    return Result.failure(ErrorCodes.nodeConnectionError);
+  }
+
+  /// 요청 전에 앱이 백그라운드로 가서 멈춘 보내기 시도의 결과. 화면은 돌아온 사용자에게 다시 보내기를 안내한다.
+  Result<String> _stoppedForBackground() {
+    if (!_stoppedInBackground) Logger.log('[Send] 앱이 백그라운드로 전환되어 요청 전 보내기 중단');
+    _stoppedInBackground = true;
     return Result.failure(ErrorCodes.nodeConnectionError);
   }
 
