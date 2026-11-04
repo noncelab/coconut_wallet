@@ -3,6 +3,13 @@ import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier, ValueNotifier;
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -77,6 +84,66 @@ class _NodeProvider extends Fake implements NodeProvider {
     broadcasts++;
     duringBroadcast?.call();
     return fails ? Result.failure(ErrorCodes.broadcastError) : Result.success(signedTx.transactionHash);
+  }
+}
+
+/// Only transport and connectivity are controlled; NodeProvider itself is real.
+class _ConnectionEvents extends ChangeNotifier implements ConnectivityProvider {
+  bool online = true;
+  @override
+  bool get isInternetOn => online;
+  @override
+  bool get isInternetOff => !online;
+  @override
+  bool get isVpnActive => false;
+  @override
+  bool get isVpnInactive => true;
+  @override
+  Future<void> refreshConnectivity() async {}
+  void setOnline(bool value) {
+    online = value;
+    notifyListeners();
+  }
+}
+
+class _ControlledIsolate extends Fake implements IsolateManager {
+  final events = StreamController<IsolateStateMessage>.broadcast();
+  bool connected = false;
+  int initializations = 0;
+  int broadcasts = 0;
+  int subscriptions = 0;
+  Future<void> Function()? onInitialize;
+  Completer<Result<bool>>? subscription;
+  @override
+  Stream<IsolateStateMessage> get stateStream => events.stream;
+  @override
+  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType, [String? fingerprint]) async {
+    initializations++;
+    await onInitialize?.call();
+    connected = true;
+  }
+
+  @override
+  Future<void> closeIsolate() async {
+    connected = false;
+  }
+
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+  @override
+  Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async =>
+      Result.success(connected ? SocketConnectionStatus.connected : SocketConnectionStatus.terminated);
+  @override
+  Future<Result<bool>> subscribeWallets(List<WalletItemBase> wallets) async {
+    subscriptions++;
+    return subscription?.future ?? Result.success(true);
+  }
+
+  @override
+  Future<Result<String>> broadcast(Transaction transaction) async {
+    broadcasts++;
+    return connected ? Result.success(transaction.transactionHash) : Result.failure(ErrorCodes.nodeConnectionError);
   }
 }
 
@@ -168,6 +235,7 @@ void main() {
     bool returnPsbt = false,
     TransactionDraftRepository? drafts,
     int? unsignedDraftId,
+    NodeProvider? connectedNode,
   }) async {
     transaction.changeAddressDerivationPath = "${vault.derivationPath}/1/1";
     final original = Psbt.fromTransaction(transaction, vault);
@@ -189,7 +257,7 @@ void main() {
       wallets,
       tags,
       true,
-      node,
+      connectedNode ?? node,
       transactions,
       drafts ?? TransactionDraftRepository(manager),
       repository,
@@ -210,6 +278,7 @@ void main() {
     int outputAmount = 999000,
     TransactionDraftRepository? drafts,
     int? unsignedDraftId,
+    NodeProvider? connectedNode,
   }) async {
     final recipient = ownOutput ? vault.getAddress(1, isChange: true) : vault.getAddress(10);
     final transaction = Transaction.withInputsAndOutputs(
@@ -225,12 +294,121 @@ void main() {
       AddressType.p2wpkh,
     );
     transaction.utxoList.add(Utxo(_inputHash, 0, 1000000, "${vault.derivationPath}/0/0"));
-    await initializeTransaction(transaction, returnPsbt: returnPsbt, drafts: drafts, unsignedDraftId: unsignedDraftId);
+    await initializeTransaction(
+      transaction,
+      returnPsbt: returnPsbt,
+      drafts: drafts,
+      unsignedDraftId: unsignedDraftId,
+      connectedNode: connectedNode,
+    );
   }
 
   String targetId() => getUtxoId(viewModel.signedTx!.transactionHash, 0);
   final inputId = getUtxoId(_inputHash, 0);
   final realmInputId = getRealmUtxoId(1, _inputHash, 0);
+
+  NodeProvider createRealNode(_ConnectionEvents connectivity, _ControlledIsolate isolate) {
+    final load = ValueNotifier(WalletLoadState.loadCompleted);
+    final items = ValueNotifier<List<WalletItemBase>>([wallets.wallet]);
+    final real = NodeProvider(
+      const ElectrumServer('unused.example', 50002, true),
+      NetworkType.testnet,
+      connectivity,
+      load,
+      items,
+      null,
+      isolateManager: isolate,
+    );
+    addTearDown(() async {
+      await real.closeConnection();
+      real.dispose();
+      await isolate.events.close();
+      load.dispose();
+      items.dispose();
+      connectivity.dispose();
+    });
+    return real;
+  }
+
+  testWidgets('network loss during preparation blocks transmission even after later restoration', (tester) async {
+    final connectivity = _ConnectionEvents();
+    final isolate = _ControlledIsolate();
+    final real = createRealNode(connectivity, isolate);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.runAsync(() => initialize(connectedNode: real));
+    final initialization = Completer<void>();
+    isolate.onInitialize = () => initialization.future;
+    isolate.connected = false;
+    Result<String>? outcome;
+    viewModel
+        .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
+        .then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.isConnectionRecovering, isTrue);
+    final count = isolate.initializations;
+    connectivity.setOnline(false);
+    await tester.pump();
+    initialization.complete();
+    await tester.pump();
+    for (var second = 0; second < 5; second++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(isolate.broadcasts, 0);
+    expect(isolate.initializations, count, reason: 'offline retries must not reopen the socket');
+    expect(viewModel.cancelPendingSend(), isTrue);
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    isolate.onInitialize = null;
+    connectivity.setOnline(true);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    expect(isolate.connected, isTrue);
+    expect(isolate.broadcasts, 0, reason: 'restoring the network must not revive a cancelled send');
+    await real.closeConnection();
+  });
+
+  testWidgets('view model waits for actual NodeProvider final recovery and sends once before bulk sync ends', (
+    tester,
+  ) async {
+    final connectivity = _ConnectionEvents()..online = false;
+    final isolate = _ControlledIsolate();
+    final real = createRealNode(connectivity, isolate);
+    await tester.runAsync(() => initialize(connectedNode: real));
+    repository.onApply = () async => Result<void>.success(null);
+    final firstInitialization = Completer<void>();
+    final finalInitialization = Completer<void>();
+    final bulk = Completer<Result<bool>>();
+    isolate.subscription = bulk;
+    isolate.onInitialize = () => isolate.initializations == 1 ? firstInitialization.future : finalInitialization.future;
+    connectivity.setOnline(true);
+    await tester.pump();
+    expect(isolate.initializations, 1);
+    Result<String>? outcome;
+    viewModel
+        .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => true)
+        .then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.isConnectionRecovering, isTrue);
+    firstInitialization.complete();
+    await tester.pump();
+    expect(isolate.initializations, 2);
+    expect(isolate.broadcasts, 0, reason: 'the intermediate socket must not be used');
+    expect(outcome, isNull);
+    await tester.pump(const Duration(seconds: 2));
+    expect(isolate.initializations, 2, reason: 'pending final initialization must be shared');
+    finalInitialization.complete();
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    expect(isolate.broadcasts, 1);
+    expect(bulk.isCompleted, isFalse, reason: 'bulk sync must not block transmission');
+    expect(isolate.subscriptions, greaterThan(0));
+    bulk.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    expect(isolate.broadcasts, 1, reason: 'late sync results must not repeat the transaction');
+    await real.closeConnection();
+  });
 
   test('output details preserve transaction indices with change at any position', () async {
     for (final changeIndex in [0, 1, 2]) {
