@@ -23,7 +23,7 @@ class TransactionNotFound implements Exception {
   TransactionNotFound(this.transactionHash);
 
   @override
-  String toString() => 'Transaction not found: $transactionHash';
+  String toString() => 'Transaction not found';
 }
 
 class ElectrumService {
@@ -295,7 +295,7 @@ class ElectrumService {
     final futures = missingHashes.map((hash) async {
       final tx = Transaction.parse(await getTransaction(hash, timeout: timeout));
       final parsedHash = tx.transactionHash;
-      if (parsedHash != hash) throw StateError('Server returned parent $parsedHash for $hash');
+      if (parsedHash != hash) throw StateError('Server returned a different parent transaction');
       return MapEntry(hash, tx);
     });
 
@@ -304,7 +304,7 @@ class ElectrumService {
     for (final input in transaction.inputs) {
       final parent = parentsByHash[input.transactionHash];
       if (parent == null || input.index < 0 || input.index >= parent.outputs.length) {
-        throw StateError('Missing previous output ${input.transactionHash}:${input.index}');
+        throw StateError('Missing previous output');
       }
     }
     parentsByHash.removeWhere((hash, _) => !requiredHashes.contains(hash));

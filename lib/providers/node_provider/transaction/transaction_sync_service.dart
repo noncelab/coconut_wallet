@@ -148,7 +148,7 @@ class TransactionSyncService {
               final height = fetchedTransactionDetails.txBlockHeightMap[hash];
               final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[height];
               if (height != null && blockTimestamp == null) {
-                throw StateError('Missing block metadata for confirmed transaction $hash');
+                throw StateError('Missing block metadata for confirmed transaction');
               }
               final existing = _transactionRepository.getTransactionRecord(walletId, hash);
               if (existing == null) {
@@ -581,7 +581,7 @@ class TransactionSyncService {
     final transaction = Transaction.parse(txHex);
     final parsedHash = transaction.transactionHash;
     if (parsedHash != txHash) {
-      throw StateError('Server returned transaction $parsedHash for $txHash');
+      throw StateError('Server returned a different transaction');
     }
     return transaction;
   }

@@ -11,7 +11,7 @@ class MempoolHttpNotFound implements Exception {
   MempoolHttpNotFound(this.transactionHash);
 
   @override
-  String toString() => 'HTTP 404 for transaction $transactionHash';
+  String toString() => 'HTTP 404 for transaction';
 }
 
 class MempoolApi {

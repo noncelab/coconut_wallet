@@ -87,7 +87,7 @@ class TransactionRecordService {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       final previousTx = parentsByHash[input.transactionHash];
       if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
-        throw StateError('Missing previous output ${input.transactionHash}:${input.index}');
+        throw StateError('Missing previous output');
       }
 
       final previousOutput = previousTx.outputs[input.index];

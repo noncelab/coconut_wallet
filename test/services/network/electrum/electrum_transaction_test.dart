@@ -13,6 +13,11 @@ import 'electrum_service_test.mocks.dart';
 void main() {
   const txid = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  test('typed absence diagnostics contain no transaction identifiers', () {
+    final failures = [TransactionNotFound(txid), MempoolHttpNotFound(txid)];
+    expect(failures.map((error) => error.toString()), everyElement(isNot(contains(txid))));
+  });
+
   test('HTTP 404 has a dedicated exception and other statuses do not', () async {
     for (final status in [404, 429, 500]) {
       final api = MempoolApi(client: MockClient((_) async => http.Response('unavailable', status)));

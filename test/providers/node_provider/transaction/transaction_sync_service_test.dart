@@ -678,7 +678,13 @@ void main() {
             now: now,
             inBatchProcess: true,
           ),
-          throwsStateError,
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'redacted diagnostic',
+              'Missing block metadata for confirmed transaction',
+            ),
+          ),
         );
 
         expect(coinStatus(), 'outgoing');
@@ -722,7 +728,13 @@ void main() {
           for (var attempt = 0; attempt < 2; attempt++) {
             await expectLater(
               transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now),
-              throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+              throwsA(
+                isA<StateError>().having(
+                  (e) => e.message,
+                  'redacted diagnostic',
+                  'Server returned a different transaction',
+                ),
+              ),
             );
             expect(
               scriptCallbackService.isTransactionProcessable(

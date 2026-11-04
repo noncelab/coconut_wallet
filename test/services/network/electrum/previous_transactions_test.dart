@@ -133,7 +133,13 @@ void main() {
     final records = TransactionRecordService(transport.service, _OwnedAddressRepository(owned));
     await expectLater(
       records.createTransactionRecord(1, spending),
-      throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+      throwsA(
+        isA<StateError>().having(
+          (e) => e.message,
+          'redacted diagnostic',
+          'Server returned a different parent transaction',
+        ),
+      ),
     );
     expect(transport.requestedHashes.length, parents.length);
   });
@@ -164,15 +170,24 @@ void main() {
         AddressType.p2wpkh,
       );
       final service = ElectrumService();
-      await expectLater(service.getPreviousTransactions(tx, existingTxList: parents), throwsA(isA<StateError>()));
+      await expectLater(
+        service.getPreviousTransactions(tx, existingTxList: parents),
+        throwsA(isA<StateError>().having((e) => e.message, 'redacted diagnostic', 'Missing previous output')),
+      );
       final records = TransactionRecordService(service, _OwnedAddressRepository(owned));
-      expect(() => records.processTransactionDetails(tx, parents, 1), throwsA(isA<StateError>()));
+      expect(
+        () => records.processTransactionDetails(tx, parents, 1),
+        throwsA(isA<StateError>().having((e) => e.message, 'redacted diagnostic', 'Missing previous output')),
+      );
     });
   }
 
   test('record construction also rejects a missing parent from another caller', () {
     final records = TransactionRecordService(ElectrumService(), _OwnedAddressRepository(owned));
-    expect(() => records.processTransactionDetails(spending, parents.skip(1).toList(), 1), throwsA(isA<StateError>()));
+    expect(
+      () => records.processTransactionDetails(spending, parents.skip(1).toList(), 1),
+      throwsA(isA<StateError>().having((e) => e.message, 'redacted diagnostic', 'Missing previous output')),
+    );
   });
 
   test('coinbase and empty inputs require no parents or network calls', () async {
