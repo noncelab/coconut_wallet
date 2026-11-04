@@ -1277,6 +1277,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "View Input/Output Details"
+  coinbase_input: "This is newly mined bitcoin from a block reward, so it has no inputs."
   confirmation: "$height ($count confirmations)"
   time_ago:
     just_now: just now
@@ -1857,6 +1858,10 @@ alert:
     insufficient_balance: "Insufficient balance"
     minimum_amount: "You can send at least $amount"
     insufficient_fee: "Please try again by\nincreasing the fee rate."
+    immature_coinbase: "Mining rewards can be sent after 100 confirmations."
+    immature_coinbase_remaining: "Mining rewards can be sent after 100 confirmations.\n$count more blocks to go."
+    used_utxo_included: "This transaction includes bitcoin that has already been spent.\nPlease create the transaction again."
+    locked_utxo_included: "This transaction includes locked bitcoin.\nPlease try again from the beginning."
     non_final_taproot_child: "Please check the child wallet's inheritance date and time."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."

@@ -12,6 +12,8 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -53,6 +55,8 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   final UtxoTagProvider _utxoTagProvider;
   final SendInfoProvider _sendInfoProvider;
   final WalletProvider _walletProvider;
+  final VoidCallback _onWalletSynced;
+  late final WalletSyncWatcher _walletSyncWatcher;
   late final WalletItemBase _wallet;
   late final int _dustThreshold;
   late String _selectedReceiveAddress;
@@ -64,7 +68,10 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     this._utxoTagProvider,
     this._sendInfoProvider,
     this._walletProvider,
+    NodeProvider nodeProvider,
+    this._onWalletSynced,
   ) {
+    _walletSyncWatcher = WalletSyncWatcher(nodeProvider, _onWalletSyncChanged)..watch(walletId);
     _wallet = _walletProvider.getWalletById(walletId);
     _dustThreshold = _wallet.walletType.addressType.dustThreshold;
     clearSendInfo();
@@ -141,7 +148,16 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   bool get hasUnexpectedError => unexpectedErrorMessage.isNotEmpty;
 
   bool get isMergeButtonVisible => _mergeState == MergeState.ready || _mergeState == MergeState.notEnoughSelectedUtxo;
-  bool get isMergeButtonEnabled => _mergeState == MergeState.ready && (feeRate != null && feeRate != 0);
+  bool get isMergeButtonEnabled =>
+      !isWalletSyncing && _mergeState == MergeState.ready && (feeRate != null && feeRate != 0);
+
+  /// 이 지갑이 업데이트 중이면 합치기를 기다림 (다른 지갑의 업데이트와는 무관)
+  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
+
+  int _usedUtxoExcludedNonce = 0;
+
+  /// 직접 고친 선택에서 이미 사용된 UTXO가 빠질 때마다 증가
+  int get usedUtxoExcludedNonce => _usedUtxoExcludedNonce;
   bool get isDirectInputReceiveAddressWarning {
     return _customReceiveAddressText != null &&
         _selectedReceiveAddress == _customReceiveAddressText &&
@@ -278,7 +294,11 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     final selectionBefore = selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toSet();
 
     _utxoList = latestUtxos;
+    final editedCountBefore = _editedSelectedUtxoIds?.length;
     _editedSelectedUtxoIds = _editedSelectedUtxoIds?.intersection(latestIds);
+    if (editedCountBefore != null && _editedSelectedUtxoIds!.length < editedCountBefore) {
+      _usedUtxoExcludedNonce++;
+    }
 
     final selectionAfter = selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toSet();
     if (previousIds.length == latestIds.length &&
@@ -292,6 +312,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
       summaryState: selectedUtxoCount >= 2 ? MergeState.idle : MergeState.notEnoughSelectedUtxo,
     );
     notifyListeners();
+    if (_currentStep == UtxoMergeStep.selectReceiveAddress) unawaited(prepareMergeTransaction());
   }
 
   void setCurrentStep(UtxoMergeStep step) {
@@ -832,9 +853,16 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     }
   }
 
+  void _onWalletSyncChanged(bool isSyncing) {
+    if (_isDisposed) return;
+    notifyListeners();
+    if (!isSyncing) _onWalletSynced();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
+    _walletSyncWatcher.dispose();
     _estimatePrepareDebounceTimer?.cancel();
     feeRateController.dispose();
     feeRateFocusNode.dispose();

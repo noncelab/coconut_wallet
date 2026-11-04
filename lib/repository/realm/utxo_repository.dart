@@ -583,6 +583,15 @@ class UtxoRepository extends BaseRepository {
     }
   }
 
+  /// 방금 전송한 거래의 입력 중 아직 사용 가능으로 남은 UTXO만 보내는 중으로 표시 (동기화 전 재선택 방지)
+  Future<void> markUnspentInputsAsOutgoing(int walletId, lib.Transaction transaction) async {
+    for (final input in transaction.inputs) {
+      final utxoId = getUtxoId(input.transactionHash, input.index);
+      if (getUtxoState(walletId, utxoId)?.status != UtxoStatus.unspent) continue;
+      await _markUtxoAsOutgoing(walletId, utxoId, transaction.transactionHash);
+    }
+  }
+
   Future<void> deleteUtxosByTransaction(int walletId, lib.Transaction transaction) async {
     final utxoIds = transaction.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
 

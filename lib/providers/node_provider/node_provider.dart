@@ -665,6 +665,17 @@ class NodeProvider extends ChangeNotifier {
     return reconnect();
   }
 
+  /// 연결이 정상이면 지갑 하나만 다시 동기화, 연결에 문제가 있거나 실패하면 전체 재연결
+  Future<bool> refreshWallet(WalletItemBase walletItem) async {
+    if (_isDisposed || _connectivityProvider.isInternetOff) return false;
+    if (!isConnected) return refreshWallets();
+    final result = await subscribeWallet(walletItem);
+    if (_isDisposed) return false;
+    if (result.isFailure) return refreshWallets();
+    unawaited(syncDormantAddresses(walletItem));
+    return true;
+  }
+
   /// 서버 재연결 후 모든 지갑 재동기화, 이미 동기화 중이면 완료까지 대기
   /// 모니터링 중인 주소 동기화를 마쳤을 때만 true 반환 (휴면 주소 확인은 백그라운드)
   Future<bool> refreshWallets() {

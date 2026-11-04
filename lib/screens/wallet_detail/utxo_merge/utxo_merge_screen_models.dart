@@ -4,7 +4,10 @@ class _BottomSheetTab {
   final String label;
   final Widget child;
 
-  const _BottomSheetTab({required this.label, required this.child});
+  /// 세그먼트 아래 여백. 목록 항목은 자체 위 여백이 있어 0
+  final double topSpacing;
+
+  const _BottomSheetTab({required this.label, required this.child, this.topSpacing = 16});
 }
 
 class _TaggedUtxoGroup {

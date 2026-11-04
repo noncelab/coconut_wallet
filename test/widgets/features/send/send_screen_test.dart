@@ -1,3 +1,7 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToolTip;
 import 'dart:typed_data';
@@ -114,6 +118,15 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   UtxoOrder get utxoSortOrder => UtxoOrder.byAmountDesc;
 }
 
+class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  @override
+  NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
+  @override
+  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
+  @override
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
+}
+
 class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
   @override
   bool get isInternetOn => true;
@@ -181,6 +194,7 @@ void main() {
           ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets(wallet, vault)),
           ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences(manualMode)),
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
+          ChangeNotifierProvider<NodeProvider>(create: (_) => _Node()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: repository),
