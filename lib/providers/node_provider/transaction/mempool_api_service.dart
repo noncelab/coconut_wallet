@@ -5,6 +5,15 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:http/http.dart' as http;
 
+class MempoolHttpNotFound implements Exception {
+  final String transactionHash;
+
+  MempoolHttpNotFound(this.transactionHash);
+
+  @override
+  String toString() => 'HTTP 404 for transaction $transactionHash';
+}
+
 class MempoolApi {
   final Uri _baseUrl;
   final http.Client _client;
@@ -38,6 +47,7 @@ class MempoolApi {
       return hex;
     }
 
+    if (res.statusCode == 404) throw MempoolHttpNotFound(txid);
     throw Exception('HTTP ${res.statusCode}: ${res.body}');
   }
 

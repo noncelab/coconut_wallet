@@ -15,19 +15,31 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 
 part 'model/request/electrum_request_types.dart';
 
+/// An Electrum RPC error response was followed by an HTTP 404 from the fallback.
+class TransactionNotFound implements Exception {
+  final String transactionHash;
+
+  TransactionNotFound(this.transactionHash);
+
+  @override
+  String toString() => 'Transaction not found: $transactionHash';
+}
+
 class ElectrumService {
   // static final ElectrumClient _instance = ElectrumClient._();
   int _idCounter = 0;
   SocketManager _socketManager;
   Timer? _pingTimer;
+  MempoolApi Function() _createMempoolApi = MempoolApi.new;
 
   int get reqId => _idCounter;
 
   ElectrumService._() : _socketManager = SocketManager();
 
-  factory ElectrumService({SocketManager? socketManager}) {
+  factory ElectrumService({SocketManager? socketManager, MempoolApi Function()? mempoolApiFactory}) {
     ElectrumService instance = ElectrumService._();
     instance._socketManager = socketManager ?? SocketManager();
+    instance._createMempoolApi = mempoolApiFactory ?? MempoolApi.new;
 
     return instance;
   }
@@ -82,6 +94,7 @@ class ElectrumService {
     _ElectrumRequest request,
     ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson, {
     Duration? timeout,
+    void Function()? onRpcError,
   }) async {
     if (connectionStatus != SocketConnectionStatus.connected) {
       throw 'Can not connect to the server. Please connect and try again.';
@@ -97,6 +110,7 @@ class ElectrumService {
     Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
 
     if (res['error'] != null) {
+      onRpcError?.call();
       throw res['error'];
     }
     // Logger.log('[${DateTime.now()}]RES - $res');
@@ -222,19 +236,29 @@ class ElectrumService {
   }
 
   Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
+    var receivedRpcError = false;
     try {
-      var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
-        // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
-        if (json is Map) {
-          return ElectrumResponse(result: jsonEncode(json));
-        }
-        return ElectrumResponse(result: json as String);
-      }, timeout: timeout);
+      var response = await _call(
+        _BlockchainTransactionGetReq(txHash, verbose: verbose),
+        (json, {int? id}) {
+          // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
+          if (json is Map) {
+            return ElectrumResponse(result: jsonEncode(json));
+          }
+          return ElectrumResponse(result: json as String);
+        },
+        timeout: timeout,
+        onRpcError: () => receivedRpcError = true,
+      );
       return response.result;
     } catch (e) {
-      final mempoolApi = MempoolApi();
+      final mempoolApi = _createMempoolApi();
       try {
         return await mempoolApi.fetchTxHex(txHash);
+      } on MempoolHttpNotFound {
+        if (receivedRpcError) throw TransactionNotFound(txHash);
+        // A fallback 404 cannot establish absence after a timeout or transport failure.
+        rethrow;
       } finally {
         mempoolApi.close();
       }

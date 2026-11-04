@@ -401,10 +401,13 @@ class TransactionSyncService {
         unconfirmedTx = Transaction.parse(
           await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash),
         );
-      } catch (e) {
-        // 언컨펌 트랜잭션을 다시 조회해서 실패한 경우 대체된 것으로 간주
+      } on TransactionNotFound {
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
+        continue;
+      } catch (e) {
+        // 부재를 확인하지 못한 거래는 유지하고, 다른 거래의 컨펌 처리는 계속한다.
+        Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} lookup deferred: $e');
         continue;
       }
 

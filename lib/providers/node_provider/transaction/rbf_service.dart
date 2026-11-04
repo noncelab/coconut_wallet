@@ -144,10 +144,11 @@ class RbfService {
             return oldTx.transactionHash;
           }
         }
-      } catch (e) {
-        // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
-        Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
+      } on TransactionNotFound {
         return utxo.transactionHash;
+      } catch (e) {
+        // 일시적인 조회/파싱 실패만으로 기존 거래와 CPFP 자식을 삭제하지 않는다.
+        Logger.log('트랜잭션 ${utxo.transactionHash} 확인 보류: $e');
       }
     }
 

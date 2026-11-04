@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -279,6 +282,104 @@ void main() {
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
     });
+
+    test('classified absence removes an old record while another transaction confirms', () async {
+      final old = TransactionMock.createUnconfirmedTransactionRecord();
+      await transactionRepository.addAllTransactions(testWalletId, [old]);
+      final parent = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 11000);
+      final fresh = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 10000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 100, txHash: fresh.transactionHash)]);
+      when(electrumService.getTransaction(fresh.transactionHash)).thenAnswer((_) async => fresh.serialize());
+      when(electrumService.getTransaction(old.transactionHash)).thenThrow(TransactionNotFound(old.transactionHash));
+      when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [parent]);
+
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+      expect(transactionRepository.getTransactionRecord(testWalletId, old.transactionHash), isNull);
+      expect(transactionRepository.getTransactionRecord(testWalletId, fresh.transactionHash)!.blockHeight, 100);
+    });
+
+    for (final failure in ['timeout', 'transport', 'parse']) {
+      test(
+        '$failure on old pending transactions preserves coins and CPFP children while another tx confirms',
+        () async {
+          final parent = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 10000);
+          final child = TransactionMock.createMockTransaction(
+            toAddress: testAddress,
+            amount: 9000,
+            inputTransactionHash: parent.transactionHash,
+          );
+          await transactionRepository.addAllTransactions(testWalletId, [
+            TransactionMock.createUnconfirmedTransactionRecord(transactionHash: parent.transactionHash),
+            TransactionMock.createUnconfirmedTransactionRecord(transactionHash: child.transactionHash),
+          ]);
+          transactionRepository.addAllCpfpHistory([
+            CpfpHistory(
+              walletId: testWalletId,
+              parentTransactionHash: parent.transactionHash,
+              childTransactionHash: child.transactionHash,
+              originalFee: 1,
+              newFee: 2,
+              timestamp: now,
+            ),
+          ]);
+          await utxoRepository.addAllUtxos(testWalletId, [
+            UtxoMock.createIncomingUtxo(transactionHash: parent.transactionHash),
+            UtxoMock.createIncomingUtxo(transactionHash: child.transactionHash),
+          ]);
+          for (final old in [parent, child]) {
+            when(electrumService.getTransaction(old.transactionHash)).thenAnswer((_) async {
+              if (failure == 'parse') return '00';
+              if (failure == 'timeout') throw TimeoutException('old transaction lookup');
+              throw StateError('disconnected');
+            });
+          }
+          final funding = [
+            TransactionMock.createMockTransaction(toAddress: testAddress, amount: 20000),
+            TransactionMock.createMockTransaction(toAddress: testAddress, amount: 30000),
+          ];
+          final fresh = [
+            for (final tx in funding)
+              TransactionMock.createMockTransaction(
+                toAddress: testAddress,
+                amount: tx.outputs.first.amount - 1000,
+                inputTransactionHash: tx.transactionHash,
+              ),
+          ];
+          when(electrumService.getHistory(any, any)).thenAnswer(
+            (_) async => [
+              GetTxHistoryRes(height: 100, txHash: fresh[0].transactionHash),
+              GetTxHistoryRes(height: 0, txHash: fresh[1].transactionHash),
+            ],
+          );
+          for (final tx in fresh) {
+            when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+          }
+          when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
+          when(
+            electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+          ).thenAnswer((_) async => funding);
+
+          await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+          expect(transactionRepository.getTransactionRecord(testWalletId, fresh[0].transactionHash)!.blockHeight, 100);
+          for (final old in [parent, child]) {
+            expect(transactionRepository.getTransactionRecord(testWalletId, old.transactionHash), isNotNull);
+            expect(utxoRepository.getUtxoState(testWalletId, getUtxoId(old.transactionHash, 0)), isNotNull);
+          }
+          expect(transactionRepository.getCpfpHistory(testWalletId, child.transactionHash), isNotNull);
+        },
+      );
+    }
 
     group('mark-first: 조회가 실패해도 받아 온 거래가 쓴 코인은 먼저 예약한다', () {
       final coinAddress = testWalletItem.walletBase.getAddress(0);
