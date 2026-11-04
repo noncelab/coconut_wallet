@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
 
@@ -14,6 +15,7 @@ class TransactionFetchPass {
   final _settled = <String, ({Transaction transaction, int bytes})>{};
   final _inFlight = <String, _Request>{};
   final _waiting = <String, _Waiter>{};
+  final _queue = ListQueue<String>();
   int _settledBytes = 0;
 
   TransactionFetchPass(this._fetchRaw, {this.maxEntries = 1024, this.maxBytes = 8 << 20, Stopwatch? stopwatch})
@@ -22,8 +24,8 @@ class TransactionFetchPass {
     if (maxBytes < 0) throw ArgumentError.value(maxBytes, 'maxBytes', 'Must not be negative');
   }
 
-  /// [timeout] is this caller's own window. Waiting for a free slot does not use it up, and a shared request
-  /// that times out sooner is asked again with what remains of it.
+  /// [timeout] is this caller's own window. Waiting for a free slot does not use it up, a shared request that
+  /// times out sooner is asked again with what remains of it, and a shared request that outlasts it is left running.
   Future<Transaction> fetch(String txHash, {Duration timeout = const Duration(seconds: 5)}) async {
     var budget = timeout;
     while (true) {
@@ -38,11 +40,19 @@ class TransactionFetchPass {
       if (request == null && _makeRoom()) {
         request = _start(txHash, budget, now);
       } else if (request == null) {
+        if (!_waiting.containsKey(txHash)) _queue.add(txHash);
         request = await (_waiting[txHash] ??= _Waiter(budget)).admitted.future;
         deadline = request.startedAt + budget;
       }
       try {
-        return await request.result.future;
+        final shared = request.result.future;
+        // Once this caller's own Electrum wait would have timed out, it asks the fallback as that request would.
+        return await (deadline < request.deadline
+            ? shared.timeout(
+              deadline - _clock.elapsed,
+              onTimeout: () async => _checked(txHash, await _fetchRaw(txHash, timeout: Duration.zero)),
+            )
+            : shared);
       } catch (_) {
         final failedAt = _clock.elapsed;
         // Any failure before the shared request's own deadline would have reached this caller's request too.
@@ -50,6 +60,12 @@ class TransactionFetchPass {
         budget = deadline - failedAt;
       }
     }
+  }
+
+  static Transaction _checked(String txHash, String raw) {
+    final transaction = Transaction.parse(raw);
+    if (transaction.transactionHash != txHash) throw StateError('Server returned a different transaction');
+    return transaction;
   }
 
   bool _makeRoom() {
@@ -70,8 +86,7 @@ class TransactionFetchPass {
   Future<void> _load(String txHash, Duration timeout, _Request request) async {
     try {
       final raw = await _fetchRaw(txHash, timeout: timeout);
-      final transaction = Transaction.parse(raw);
-      if (transaction.transactionHash != txHash) throw StateError('Server returned a different transaction');
+      final transaction = _checked(txHash, raw);
       _inFlight.remove(txHash);
       _settled[txHash] = (transaction: transaction, bytes: raw.length ~/ 2);
       _settledBytes += raw.length ~/ 2;
@@ -84,8 +99,8 @@ class TransactionFetchPass {
       request.result.completeError(error, stackTrace);
     } finally {
       // Each completion frees one slot: admit exactly as many queued txids as fit, oldest first.
-      while (_waiting.isNotEmpty && _makeRoom()) {
-        final next = _waiting.keys.first;
+      while (_queue.isNotEmpty && _makeRoom()) {
+        final next = _queue.removeFirst();
         final waiter = _waiting.remove(next)!;
         waiter.admitted.complete(_start(next, waiter.timeout, _clock.elapsed));
       }

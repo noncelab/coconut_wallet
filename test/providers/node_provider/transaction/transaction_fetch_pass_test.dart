@@ -115,47 +115,51 @@ void main() {
     expect(loaded.map((tx) => tx.transactionHash), hashes.take(2));
   });
 
-  testWidgets('a 60-second parent load outlives the 5.3-second request it shares and still needs every parent', (
-    tester,
-  ) async {
-    final shared = [
-      for (var i = 0; i < 200; i++)
-        TransactionMock.createMockTransaction(
-          toAddress: address,
-          amount: 1000 + i,
-          change: (amount: 2500, address: address),
-        ),
-    ];
-    final rawShared = {for (final tx in shared) tx.transactionHash: tx.serialize()};
-    final slow = shared.first.transactionHash;
-    Transaction child(Iterable<Transaction> inputs, {int outputIndex = 0}) => Transaction.withInputsAndOutputs(
-      [for (final parent in inputs) TransactionInput.forPayment(parent.transactionHash, outputIndex)],
-      [TransactionOutput.forPayment(500, address)],
-      AddressType.p2wpkh,
-    );
-    // Every request for the shared parent is answered after 8 seconds; the HTTP fallback is offline.
-    final transport = ElectrumTransactionTransport(
-      (hash) => hash == slow ? Future.delayed(const Duration(seconds: 8), () => rawShared[hash]!) : rawShared[hash]!,
-    );
-    final pass = TransactionFetchPass(transport.service.getTransaction, stopwatch: tester.binding.clock.stopwatch());
-    Object? smallError;
-    List<Transaction>? largeResult;
-    final smallDone = transport.service
-        .getPreviousTransactions(child(shared.take(1), outputIndex: 1), transactionFetch: pass)
-        .then<void>((_) {}, onError: (Object e) => smallError = e);
-    final largeDone = transport.service
-        .getPreviousTransactions(child(shared), transactionFetch: pass)
-        .then<void>((txs) => largeResult = txs);
-    await tester.pump();
-    expect(transport.requestedHashes.length, 200, reason: 'the large load joins the small load\'s request');
-    await tester.pump(const Duration(milliseconds: 5300));
-    expect(smallError, isNotNull, reason: 'the small load has no window left');
-    expect(transport.requestedHashes.where((hash) => hash == slow).length, 2);
-    await tester.pump(const Duration(seconds: 8));
-    await Future.wait([smallDone, largeDone]);
-    expect(largeResult?.map((tx) => tx.transactionHash), shared.map((tx) => tx.transactionHash));
-    expect(transport.requestedHashes.length, 201);
-  });
+  for (final smallFirst in [true, false]) {
+    testWidgets('a 5.3-second and a 60-second parent load sharing a slow parent each keep their own window '
+        '(small first: $smallFirst)', (tester) async {
+      final shared = [
+        for (var i = 0; i < 200; i++)
+          TransactionMock.createMockTransaction(
+            toAddress: address,
+            amount: 1000 + i,
+            change: (amount: 2500, address: address),
+          ),
+      ];
+      final rawShared = {for (final tx in shared) tx.transactionHash: tx.serialize()};
+      final slow = shared.first.transactionHash;
+      Transaction child(Iterable<Transaction> inputs, {int outputIndex = 0}) => Transaction.withInputsAndOutputs(
+        [for (final parent in inputs) TransactionInput.forPayment(parent.transactionHash, outputIndex)],
+        [TransactionOutput.forPayment(500, address)],
+        AddressType.p2wpkh,
+      );
+      // Every request for the shared parent is answered after 8 seconds; the HTTP fallback is offline.
+      final transport = ElectrumTransactionTransport(
+        (hash) => hash == slow ? Future.delayed(const Duration(seconds: 8), () => rawShared[hash]!) : rawShared[hash]!,
+      );
+      final pass = TransactionFetchPass(transport.service.getTransaction, stopwatch: tester.binding.clock.stopwatch());
+      Object? smallError;
+      List<Transaction>? largeResult;
+      Future<void> small() => transport.service
+          .getPreviousTransactions(child(shared.take(1), outputIndex: 1), transactionFetch: pass)
+          .then<void>((_) {}, onError: (Object e) => smallError = e);
+      Future<void> large() => transport.service
+          .getPreviousTransactions(child(shared), transactionFetch: pass)
+          .then<void>((txs) => largeResult = txs);
+      final done = smallFirst ? [small(), large()] : [large(), small()];
+      await tester.pump();
+      expect(transport.requestedHashes.length, 200, reason: 'the second load joins the first load\'s request');
+      await tester.pump(const Duration(milliseconds: 5300));
+      expect(smallError, isNotNull, reason: 'the small load ends at its own deadline');
+      expect(largeResult, isNull);
+      // First: the large load asks again with its remaining window. Second: the small load's own fallback attempt.
+      expect(transport.requestedHashes.where((hash) => hash == slow).length, 2);
+      await tester.pump(const Duration(seconds: 8));
+      await Future.wait(done);
+      expect(largeResult?.map((tx) => tx.transactionHash), shared.map((tx) => tx.transactionHash));
+      expect(transport.requestedHashes.length, 201);
+    });
+  }
 
   test('staggered completions past the cap admit one queued txid per freed slot with linear work', () async {
     const cap = 1024;
@@ -191,6 +195,26 @@ void main() {
     expect(maxInFlight, cap);
     expect(replies.length, txids.length);
     expect(pass.fetchEntries, txids.length + overflow, reason: 'a completion never re-enters waiting callers');
+  });
+
+  test('draining 262,144 queued txids takes linear time', () async {
+    const queued = 262144;
+    // Outside the test zone, whose per-callback bookkeeping would hide the queue's own cost.
+    final (failed, elapsed) = await Zone.root.run(() async {
+      final pass = TransactionFetchPass(
+        (String hash, {Duration timeout = const Duration(seconds: 5)}) => Future<String>.error(StateError('offline')),
+      );
+      var failed = 0;
+      final watch = Stopwatch()..start();
+      await Future.wait([
+        for (var i = 0; i < pass.maxEntries + queued; i++)
+          pass.fetch(i.toRadixString(16).padLeft(64, '0')).then<void>((_) {}, onError: (Object _) => failed++),
+      ]);
+      return (failed, watch.elapsed);
+    });
+    expect(failed, 1024 + queued);
+    // About 1 s when linear; scanning a map from its head for every admission took about 15 s.
+    expect(elapsed, lessThan(const Duration(seconds: 5)));
   });
 
   test('settled transactions stay within 8 MiB of raw data however large each one is', () async {
