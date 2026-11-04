@@ -443,7 +443,7 @@ class UtxoRepository extends BaseRepository {
 
   /// [address]의 listunspent가 다시 돌려준 코인 중 받는 중에 정리됐을 뿐인 코인([restorableTombstones])을 되살린다.
   /// 같은 동기화에서 먼저 받은 이 주소의 서버 잔액이 남은 코인과 함께 모두 셀 때만 한꺼번에 되살린다. 늦은 응답이
-  /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다.
+  /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다. 태그는 지울 때 떼어졌으므로 돌아오지 않는다.
   Future<void> restoreListedUtxos(int walletId, String address, List<UtxoState> listed) async {
     realm.refresh();
     final listedById = {for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index): utxo};

@@ -852,4 +852,49 @@ void main() {
       expect(requests, [0, 0]);
     },
   );
+
+  // Codex review (SHOULD): two recovery gaps left open, kept as reproductions with the reason.
+  test(
+    '[heavy-reuse-gap] a removed coin whose stored balance is stale-low comes back at startup',
+    () async {
+      final c = _Case();
+      await c.init();
+      expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      realm.write(() {
+        realm.find<RealmUtxo>('$_walletId:${c.coin}')!
+          ..status = 'incoming'
+          ..blockHeight = 0
+          ..isDeleted = true;
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [_walletId, c.input]).single
+          ..confirmed = 0
+          ..unconfirmed = 0
+          ..total = 0;
+      });
+      await c.reconnect();
+      expect(c.coinState(), 'unspent');
+    },
+    skip:
+        'Known gap: the startup recheck trusts the stored balance. A sync stores the balance after the statuses it '
+        'started from, and a failed balance fetch keeps the old status so the next start re-syncs the address; only an '
+        'edited or corrupted balance can be lower than the coins its stored status covers.',
+  );
+
+  test(
+    '[heavy-reuse-gap] a coin freed by a reorg-like removal of its confirmed spender comes back',
+    () async {
+      final c = _Case();
+      await c.init();
+      expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+      c.backend.put(c.spend, 101);
+      await c.reconnect();
+      expect(c.coinState(), 'deleted');
+      c.backend.heights.remove(c.spend.transactionHash);
+      await c.reconnect();
+      expect(c.coinState(), 'unspent');
+    },
+    skip:
+        'Known gap (pre-existing): a confirmed record is never re-validated, so after a reorg drops it the spend stays '
+        'recorded and its input stays removed. Needs reorg handling for confirmed records.',
+  );
 }
