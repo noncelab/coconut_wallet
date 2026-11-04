@@ -775,4 +775,43 @@ void main() {
     expect(healRequests, contains('listunspent:${c.input}'));
     expect(observed, {'after_reconnect': 'unspent', 'requests_after_heal': 0});
   });
+
+  // Codex review (MUST 1): a coin that the old cleanup removed and another device then spent must stay removed, even
+  // when the server's listunspent (and get_balance) still report it. The spend leaves its hash on the tombstone.
+  for (final server in ['honest', 'stale-list', 'stale-list-and-balance']) {
+    test('[heavy-reuse-spent] a removed coin spent from another device stays removed ($server)', () async {
+      final c = _Case();
+      await c.init();
+      expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      realm.write(() {
+        realm.find<RealmUtxo>('$_walletId:${c.coin}')!
+          ..status = 'incoming'
+          ..blockHeight = 0
+          ..isDeleted = true;
+      });
+      c.backend.put(c.spend, 101);
+      if (server != 'honest') {
+        when(c.electrum.getUnspentList(any, any)).thenAnswer((call) async {
+          final address = call.positionalArguments[1] as String;
+          return address == c.input
+              ? [ListUnspentRes(height: 100, txHash: c.funding.transactionHash, txPos: 0, value: 1000000)]
+              : c.backend.unspent(address);
+        });
+      }
+      if (server == 'stale-list-and-balance') {
+        when(
+          c.electrum.getBalance(any, c.input),
+        ).thenAnswer((_) async => GetBalanceRes(confirmed: 1000000, unconfirmed: 0));
+      }
+      await c.reconnect();
+      final spend = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
+        _walletId,
+        c.spend.transactionHash,
+      );
+      _report('heavy-reuse-spent', server, {'coin': c.coinState(), 'spend_height': spend?.blockHeight});
+      expect(spend?.blockHeight, 101);
+      expect(c.coinState(), 'deleted');
+    });
+  }
 }

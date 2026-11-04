@@ -329,74 +329,77 @@ void main() {
         expect([row(0).status, row(2).status], everyElement(utxoStatusToString(UtxoStatus.outgoing)));
         expect(row(1).isDeleted, isTrue);
         expect(row(1).status, utxoStatusToString(UtxoStatus.unspent));
-        expect(row(1).spentByTransactionHash, isNull);
+        expect(row(1).spentByTransactionHash, threeInputs.transactionHash, reason: 'spend evidence on the tombstone');
       });
     });
 
-    test('listunspent는 받는 중에 정리된 코인만 되살리고, 쓴·대체된·사라진 거래의 코인은 지운 채로 둔다', () async {
-      const recorded = '0000000000000000000000000000000000000000000000000000000000000041';
-      const dropped = '0000000000000000000000000000000000000000000000000000000000000042';
-      const replaced = '0000000000000000000000000000000000000000000000000000000000000043';
-      const spender = '0000000000000000000000000000000000000000000000000000000000000044';
-      final tombstones = {
-        'removed while incoming': (recorded, 0, UtxoStatus.incoming, null),
-        'spent: reserved, then deleted': (recorded, 1, UtxoStatus.outgoing, spender),
-        'spent: reverted by a late listunspent, then deleted': (recorded, 2, UtxoStatus.incoming, spender),
-        'creating tx dropped or replaced by the sender': (dropped, 0, UtxoStatus.incoming, null),
-        'creating tx replaced by our own fee bump': (replaced, 0, UtxoStatus.incoming, null),
-      };
-      realmManager.realm.write(() {
-        for (final (hash, replacedBy) in [(recorded, null), (replaced, spender)]) {
+    for (final balanceCountsThem in [true, false]) {
+      test('listunspent는 받는 중에 정리됐을 뿐인 코인만, 서버 잔액이 셀 때 되살린다 (잔액이 셈: $balanceCountsThem)', () async {
+        const recorded = '0000000000000000000000000000000000000000000000000000000000000041';
+        const dropped = '0000000000000000000000000000000000000000000000000000000000000042';
+        const replaced = '0000000000000000000000000000000000000000000000000000000000000043';
+        const spender = '0000000000000000000000000000000000000000000000000000000000000044';
+        const droppedSpender = '0000000000000000000000000000000000000000000000000000000000000045';
+        final tombstones = {
+          'removed while incoming': (recorded, 0, UtxoStatus.incoming, null),
+          'its spender dropped from the records': (recorded, 1, UtxoStatus.incoming, droppedSpender),
+          'spent: reserved, then deleted': (recorded, 2, UtxoStatus.outgoing, spender),
+          'spent while already removed (spend evidence)': (recorded, 3, UtxoStatus.incoming, spender),
+          'creating tx dropped or replaced by the sender': (dropped, 0, UtxoStatus.incoming, null),
+          'creating tx replaced by our own fee bump': (replaced, 0, UtxoStatus.incoming, null),
+        };
+        realmManager.realm.write(() {
+          for (final (hash, replacedBy) in [(recorded, null), (spender, null), (replaced, spender)]) {
+            realmManager.realm.add(
+              RealmTransaction(
+                hash.hashCode,
+                hash,
+                testWalletId,
+                DateTime.now(),
+                replacedBy == null ? 100 : 0,
+                'received',
+                20000,
+                1000,
+                141,
+                DateTime.now(),
+                replaceByTransactionHash: replacedBy,
+              ),
+            );
+          }
+          // get_balance of this sync: the two coins that are really unspent, or (stale list) not even those.
           realmManager.realm.add(
-            RealmTransaction(
-              hash.hashCode,
-              hash,
-              testWalletId,
-              DateTime.now(),
-              replacedBy == null ? 100 : 0,
-              'received',
-              20000,
-              1000,
-              141,
-              DateTime.now(),
-              replaceByTransactionHash: replacedBy,
-            ),
+            RealmWalletAddress(1, testWalletId, testAddress, 0, false, "m/84'/1'/0'/0/0", true, 0, 0, 0)
+              ..total = balanceCountsThem ? 2000000 : 1000000,
           );
-        }
-        for (final (hash, index, status, spentBy) in tombstones.values) {
-          realmManager.realm.add(
-            UtxoMock.createMockUtxo(
+          for (final (hash, index, status, spentBy) in tombstones.values) {
+            realmManager.realm.add(
+              UtxoMock.createMockUtxo(
                 walletId: testWalletId,
                 address: testAddress,
                 transactionHash: hash,
                 index: index,
                 status: status,
                 spentByTransactionHash: spentBy,
-              )
-              ..isDeleted = true,
-          );
-        }
+              )..isDeleted = true,
+            );
+          }
+        });
+
+        await utxoRepository.restoreListedUtxos(testWalletId, testAddress, [
+          for (final (hash, index, _, _) in tombstones.values)
+            UtxoMock.createMockUtxoState(transactionHash: hash, index: index, address: testAddress, blockHeight: 100),
+        ]);
+
+        final restorable = {'removed while incoming', 'its spender dropped from the records'};
+        expect(
+          {
+            for (final MapEntry(:key, value: (hash, index, _, _)) in tombstones.entries)
+              key: !realmManager.realm.find<RealmUtxo>(getRealmUtxoId(testWalletId, hash, index))!.isDeleted,
+          },
+          {for (final key in tombstones.keys) key: balanceCountsThem && restorable.contains(key)},
+        );
       });
-
-      await utxoRepository.addAllUtxos(testWalletId, [
-        for (final (hash, index, _, _) in tombstones.values)
-          UtxoMock.createMockUtxoState(transactionHash: hash, index: index, address: testAddress, blockHeight: 100),
-      ]);
-
-      expect(
-        {
-          for (final MapEntry(:key, value: (hash, index, _, _)) in tombstones.entries)
-            key: realmManager.realm.find<RealmUtxo>(getRealmUtxoId(testWalletId, hash, index))!.isDeleted,
-        },
-        {
-          'removed while incoming': false,
-          'spent: reserved, then deleted': true,
-          'spent: reverted by a late listunspent, then deleted': true,
-          'creating tx dropped or replaced by the sender': true,
-          'creating tx replaced by our own fee bump': true,
-        },
-      );
-    });
+    }
 
     group('snapshotLockedUtxoIds / restoreLockedUtxos 테스트', () {
       test('도메인 UTXO id 목록으로 여러 UTXO를 잠근다', () async {

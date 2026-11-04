@@ -55,7 +55,10 @@ class UtxoSyncService {
       }
 
       final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
-      if (applied) listedUtxoIds?.addAll(utxos.map((utxo) => utxo.utxoId));
+      if (applied) {
+        listedUtxoIds?.addAll(utxos.map((utxo) => utxo.utxoId));
+        await _utxoRepository.restoreListedUtxos(walletItem.id, scriptStatus.address, utxos);
+      }
 
       if (!inBatchProcess) await restorePendingUtxoLocks(walletItem.id);
       return applied;

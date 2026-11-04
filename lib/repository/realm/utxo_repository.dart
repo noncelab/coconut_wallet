@@ -24,6 +24,34 @@ int _normalizeTagColorIndex(int colorIndex) {
   return WalletVisualStyleUtil.normalizePaletteIndex(colorIndex);
 }
 
+/// [removed] 중 받는 중에 정리됐을 뿐이라 서버가 다시 알려 주면 되살릴 수 있는 코인만 고른다.
+/// incoming으로 지워졌고, 만든 거래가 기록돼 있고 대체되지 않았으며, 이 코인을 쓴 거래가 기록에 없어야 한다
+/// (쓴 거래가 누락돼 기록에서 사라지면 그 증거도 사라진다). 쓴 코인과 대체·누락된 거래의 코인은 지운 채로 둔다.
+List<RealmUtxo> restorableTombstones(Realm realm, int walletId, Iterable<RealmUtxo> removed) {
+  final incoming = utxoStatusToString(UtxoStatus.incoming);
+  final rows = removed.where((row) => row.isDeleted && row.status == incoming).toList();
+  if (rows.isEmpty) return const [];
+  final hashes = {
+    for (final row in rows) ...[
+      row.transactionHash,
+      if (row.spentByTransactionHash != null) row.spentByTransactionHash!,
+    ],
+  };
+  final replacedByHash = {
+    for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      hashes.toList(),
+    ]))
+      tx.transactionHash: tx.replaceByTransactionHash != null,
+  };
+  return rows
+      .where(
+        (row) =>
+            replacedByHash[row.transactionHash] == false && !replacedByHash.containsKey(row.spentByTransactionHash),
+      )
+      .toList();
+}
+
 class UtxoRepository extends BaseRepository {
   UtxoRepository(super._realmManager, {Duration Function()? clock}) {
     final stopwatch = Stopwatch()..start();
@@ -396,33 +424,56 @@ class UtxoRepository extends BaseRepository {
               .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
               .toList();
 
-      // 받는 중에 정리됐을 뿐인 코인만 서버가 다시 알려 주면 되살린다. 쓴 코인은 spender와 함께 예약된 뒤 지워지고,
-      // 대체·누락된 거래는 기록이 지워지거나 대체로 표시되므로, 그런 코인은 지운 채로 둔다.
-      bool restorable(RealmUtxo row) =>
-          row.status == utxoStatusToString(UtxoStatus.incoming) &&
-          row.spentByTransactionHash == null &&
-          realm.query<RealmTransaction>(
-            r'walletId == $0 AND transactionHash == $1 AND replaceByTransactionHash == null',
-            [walletId, row.transactionHash],
-          ).isNotEmpty;
       await realm.writeAsync(() {
         realm.deleteMany(legacyUtxos);
         for (final toUpdateUtxo in toUpdateUtxos) {
           final existingUtxo = existingUtxoMap[getUtxoId(toUpdateUtxo.transactionHash, toUpdateUtxo.index)];
-          if (existingUtxo == null) continue;
-          if (existingUtxo.isDeleted) {
-            if (!restorable(existingUtxo)) continue;
-            existingUtxo.isDeleted = false;
-            existingUtxo.spentByTransactionHash = toUpdateUtxo.spentByTransactionHash;
+          if (existingUtxo != null && !existingUtxo.isDeleted) {
+            existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
+            existingUtxo.timestamp = toUpdateUtxo.timestamp;
+            existingUtxo.status = toUpdateUtxo.status;
           }
-          existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
-          existingUtxo.timestamp = toUpdateUtxo.timestamp;
-          existingUtxo.status = toUpdateUtxo.status;
         }
         realm.addAll<RealmUtxo>(newUtxos);
       });
 
       return true;
+    });
+  }
+
+  /// [address]의 listunspent가 다시 돌려준 코인 중 받는 중에 정리됐을 뿐인 코인([restorableTombstones])을 되살린다.
+  /// 같은 동기화에서 먼저 받은 이 주소의 서버 잔액이 남은 코인과 함께 모두 셀 때만 한꺼번에 되살린다. 늦은 응답이
+  /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다.
+  Future<void> restoreListedUtxos(int walletId, String address, List<UtxoState> listed) async {
+    realm.refresh();
+    final listedById = {for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index): utxo};
+    final removed = realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == true AND id IN $2', [
+      walletId,
+      address,
+      listedById.keys.toList(),
+    ]);
+    final rows = restorableTombstones(realm, walletId, removed);
+    if (rows.isEmpty) return;
+    final total =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull?.total ??
+        0;
+    final live = realm
+        .query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
+          walletId,
+          address,
+          utxoStatusToString(UtxoStatus.outgoing),
+        ])
+        .fold<int>(0, (sum, utxo) => sum + utxo.amount);
+    if (live + rows.fold<int>(0, (sum, row) => sum + row.amount) > total) return;
+    await realm.writeAsync(() {
+      for (final row in rows) {
+        final utxo = listedById[row.id]!;
+        row
+          ..isDeleted = false
+          ..blockHeight = utxo.blockHeight
+          ..timestamp = utxo.timestamp
+          ..status = utxoStatusToString(utxo.status);
+      }
     });
   }
 
@@ -433,16 +484,24 @@ class UtxoRepository extends BaseRepository {
     lib.Transaction transaction,
     String? Function(RealmUtxo utxo) spenderOf,
   ) async {
+    final txHash = transaction.transactionHash;
     final ids = transaction.inputs.map((input) => '$walletId:${getUtxoId(input.transactionHash, input.index)}');
     String? spenderToWrite(String id) {
       final utxo = realm.find<RealmUtxo>(id);
       return utxo == null || utxo.isDeleted ? null : spenderOf(utxo);
     }
 
+    // 이미 지운 코인은 되살리지 않되, 이 거래가 썼다는 증거를 남겨 늦은 listunspent가 되살리지 못하게 한다.
+    RealmUtxo? unmarkedTombstone(String id) {
+      final utxo = realm.find<RealmUtxo>(id);
+      return utxo != null && utxo.isDeleted && utxo.spentByTransactionHash != txHash ? utxo : null;
+    }
+
     realm.refresh();
-    if (ids.every((id) => spenderToWrite(id) == null)) return;
+    if (ids.every((id) => spenderToWrite(id) == null && unmarkedTombstone(id) == null)) return;
     await realm.writeAsync(() {
       for (final id in ids) {
+        unmarkedTombstone(id)?.spentByTransactionHash = txHash;
         final spender = spenderToWrite(id);
         if (spender == null) continue;
         final utxo = realm.find<RealmUtxo>(id)!;
