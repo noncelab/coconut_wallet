@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -188,26 +189,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     ),
                   ),
 
-                  if (isWalletSyncing)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: InlineLoadingIndicator(
-                            padding: EdgeInsets.zero,
-                            color: context.coconutColors.primary,
-                            radius: 8,
-                          ),
-                        ),
-                        CoconutLayout.spacing_100w,
-                        Text(
-                          t.status_updating,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
-                        ),
-                      ],
-                    ),
+                  TransactionListSyncingIndicator(isSyncing: isWalletSyncing),
                 ],
               ),
             ),
@@ -355,6 +337,77 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       level: CoconutToastLevel.info,
     );
   }
+}
+
+/// 거래 목록 라벨 옆 '업데이트 중'. WalletRefreshIndicator와 같은 타이밍으로 폭과 함께 페이드 인하고,
+/// 동기화가 끝나면 300ms 더 보였다가 페이드 아웃한다. 그 사이 다시 시작되면 깜빡이지 않고 그대로 보인다.
+@visibleForTesting
+class TransactionListSyncingIndicator extends StatefulWidget {
+  const TransactionListSyncingIndicator({super.key, required this.isSyncing});
+
+  final bool isSyncing;
+
+  @override
+  State<TransactionListSyncingIndicator> createState() => _TransactionListSyncingIndicatorState();
+}
+
+class _TransactionListSyncingIndicatorState extends State<TransactionListSyncingIndicator> {
+  Timer? _hideTimer;
+  late bool _isVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    _isVisible = widget.isSyncing;
+  }
+
+  @override
+  void didUpdateWidget(covariant TransactionListSyncingIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSyncing == widget.isSyncing) return;
+    _hideTimer?.cancel();
+    if (widget.isSyncing) {
+      _isVisible = true;
+    } else {
+      _hideTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) setState(() => _isVisible = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: _isVisible ? 1 : 0),
+    duration: const Duration(milliseconds: 350),
+    curve: Curves.easeInOut,
+    builder:
+        (context, value, child) =>
+            value == 0
+                ? const SizedBox.shrink()
+                : Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  widthFactor: value,
+                  child: Opacity(opacity: value, child: child),
+                ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 14,
+          height: 14,
+          child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.primary, radius: 8),
+        ),
+        CoconutLayout.spacing_100w,
+        Text(t.status_updating, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary)),
+      ],
+    ),
+  );
 }
 
 class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
