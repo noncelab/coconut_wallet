@@ -11,6 +11,7 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 class TransactionRecordService {
   final ElectrumService _electrumService;
@@ -77,13 +78,12 @@ class TransactionRecordService {
     final parentsByHash = {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
 
     // 입력 처리
-    for (int i = 0; i < tx.inputs.length; i++) {
-      final input = tx.inputs[i];
-
+    final inputs = TransactionUtil.isCoinbaseTransaction(tx) ? <TransactionInput>[] : tx.inputs;
+    for (final input in inputs) {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       final previousTx = parentsByHash[input.transactionHash];
-      if (previousTx == null || input.index >= previousTx.outputs.length) {
-        continue;
+      if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
+        throw StateError('Missing previous output ${input.transactionHash}:${input.index}');
       }
 
       final previousOutput = previousTx.outputs[input.index];

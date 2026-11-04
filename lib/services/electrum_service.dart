@@ -265,7 +265,7 @@ class ElectrumService {
     }
   }
 
-  /// 이전 트랜잭션을 조회합니다.
+  /// 모든 입력의 부모와 출력 인덱스가 검증된 경우에만 반환합니다. 실패는 스크립트 재시도로 전파합니다.
   Future<List<Transaction>> getPreviousTransactions(
     Transaction transaction, {
     List<Transaction>? existingTxList,
@@ -282,15 +282,20 @@ class ElectrumService {
     final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
     final futures = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).map((hash) async {
       final tx = Transaction.parse(await getTransaction(hash));
+      final actualHash = tx.transactionHash;
+      if (actualHash != hash) throw StateError('Server returned parent $actualHash for $hash');
       return MapEntry(hash, tx);
     });
 
-    try {
-      parentsByHash.addEntries(await Future.wait(futures));
-      return requiredHashes.map((hash) => parentsByHash[hash]).whereType<Transaction>().toList();
-    } catch (e) {
-      return [];
+    // eagerError=false: 실패해도 이미 시작한 요청을 모두 회수한 뒤 오류를 전달한다.
+    parentsByHash.addEntries(await Future.wait(futures));
+    for (final input in transaction.inputs) {
+      final parent = parentsByHash[input.transactionHash];
+      if (parent == null || input.index < 0 || input.index >= parent.outputs.length) {
+        throw StateError('Missing previous output ${input.transactionHash}:${input.index}');
+      }
     }
+    return requiredHashes.map((hash) => parentsByHash[hash]!).toList();
   }
 
   Future<List<List<num>>> getMempoolFeeHistogram() async {

@@ -63,6 +63,7 @@ import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
 import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:flutter_test/flutter_test.dart';
+import '../../../mock/electrum_transaction_transport.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -181,21 +182,12 @@ class _Backend {
       electrum.getUnspentList(any, any),
     ).thenAnswer((c) => answer('listunspent', arg(c, 1), () => unspent(arg(c, 1))));
     when(electrum.getTransaction(any)).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
-    // Mirrors ElectrumService.getPreviousTransactions (electrum_service.dart:247-299): one getTransaction per distinct
-    // parent, all in flight at once (Future.wait), and [] when any of them fails.
+    // Use the real loader: this harness must not copy its failure behavior or silently produce partial inputs.
+    final parents = ElectrumTransactionTransport((hash) => answer('getTransaction', hash, () => rawTx(hash))).service;
     when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((c) async {
       final tx = c.positionalArguments[0] as Transaction;
       final existing = (c.namedArguments[#existingTxList] as List<Transaction>?) ?? const <Transaction>[];
-      final known = existing.map((t) => t.transactionHash).toSet();
-      final hashes = tx.inputs.map((i) => i.transactionHash).where((h) => !known.contains(h)).toSet();
-      try {
-        final fetched = await Future.wait(
-          hashes.map((hash) async => Transaction.parse(await answer('getTransaction', hash, () => rawTx(hash)))),
-        );
-        return [...fetched, ...existing];
-      } catch (_) {
-        return <Transaction>[];
-      }
+      return parents.getPreviousTransactions(tx, existingTxList: existing);
     });
     // ElectrumService.fetchBlocksByHeight swallows per-height failures and returns a partial map.
     when(electrum.fetchBlocksByHeight(any)).thenAnswer(
@@ -800,68 +792,63 @@ void main() {
       expect(subscribed, isTrue);
       expectConfirmed(observed);
     });
-    test(
-      '[e-unconfirmed-coin-sweep-parent-unfetchable] its parent cannot be fetched while the spend syncs',
-      () async {
-        final (c, s) = await pendingSend(
-          sweep: true,
-          unconfirmedFunding: true,
-          // e.g. a large exchange withdrawal that times out (5 s) and the mempool.space fallback fails
-          duringSendPush: (c) => c.backend.fault = (m, k) => m == 'getTransaction' && k == c.funding.transactionHash,
-          requireOutgoing: false,
-        );
-        final coinAfterSend = c.coinState();
-        final subscribed = c.backend.listeners.containsKey(c.input);
-        final record = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
-          _walletId,
-          c.spend.transactionHash,
-        );
-        final observed = {
-          'coin_after_send': coinAfterSend,
-          'input_subscribed_before_confirmation': subscribed,
-          'parent_record_kept':
-              ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, c.funding.transactionHash) !=
-              null,
-          'spend_record_type': record?.transactionType.name,
-          'spend_record_inputs': record?.inputAddressList.length,
-          ...await confirmAndProbe(c, s, [c.input]),
-        };
-        _report('e-unconfirmed-coin-sweep-parent-unfetchable', 'input-only', observed);
-        expect(subscribed, isTrue);
-        expectConfirmed(observed);
-      },
-      skip:
-          'PR2: getPreviousTransactions drops every parent when one fails, so the spend is recorded without its inputs.',
-    );
+    test('[e-unconfirmed-coin-sweep-parent-unfetchable] its parent cannot be fetched while the spend syncs', () async {
+      final (c, s) = await pendingSend(
+        sweep: true,
+        unconfirmedFunding: true,
+        // e.g. a large exchange withdrawal that times out (5 s) and the mempool.space fallback fails
+        duringSendPush: (c) => c.backend.fault = (m, k) => m == 'getTransaction' && k == c.funding.transactionHash,
+        requireOutgoing: false,
+      );
+      final coinAfterSend = c.coinState();
+      final subscribed = c.backend.listeners.containsKey(c.input);
+      final record = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(
+        _walletId,
+        c.spend.transactionHash,
+      );
+      final observed = {
+        'coin_after_send': coinAfterSend,
+        'input_subscribed_before_confirmation': subscribed,
+        'parent_record_kept':
+            ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, c.funding.transactionHash) !=
+            null,
+        'spend_record_type': record?.transactionType.name,
+        'spend_record_inputs': record?.inputAddressList.length,
+        ...await confirmAndProbe(c, s, [c.input]),
+      };
+      _report('e-unconfirmed-coin-sweep-parent-unfetchable', 'input-only', observed);
+      expect(record, isNull, reason: 'incomplete parents must not create a wrong-direction record');
+      expect(coinAfterSend, 'outgoing', reason: 'PR1 keeps the spent input reserved');
+      expect(observed['parent_record_kept'], isTrue);
+      expect(subscribed, isTrue);
+      expectConfirmed(observed);
+    });
   });
 
   group('Codex cross-checks', () {
     // (b) getPreviousTransactions drops every parent when one fails (electrum_service.dart:269-298).
-    test(
-      '[x-send-parent-unfetchable] the funding tx cannot be fetched while the app\'s own send syncs',
-      () async {
-        final (c, s) = await pendingSend(
-          duringSendPush: (c) => c.backend.fault = (m, k) => m == 'getTransaction' && k == c.funding.transactionHash,
-        );
-        final records = ScriptSyncServiceMock.transactionRepository;
-        final pending = records.getTransactionRecord(_walletId, c.spend.transactionHash)!;
-        final observed = <String, Object?>{
-          'pending_type': pending.transactionType.name,
-          'pending_amount': pending.amount,
-          'pending_fee': pending.fee,
-          'pending_inputs': pending.inputAddressList.length,
-          ...await confirmAndProbe(c, s, [c.input, c.change]),
-        };
-        final settled = records.getTransactionRecord(_walletId, c.spend.transactionHash)!;
-        observed['type_after_confirmation_and_reconnect'] = settled.transactionType.name;
-        observed['amount_after_confirmation_and_reconnect'] = settled.amount;
-        _report('x-send-parent-unfetchable', 'input-first', observed);
-        expect(pending.transactionType.name, TransactionType.sent.name, reason: 'the app\'s own send is not a receipt');
-        expect(settled.transactionType.name, TransactionType.sent.name);
-      },
-      skip:
-          'PR2: getPreviousTransactions drops every parent when one fails, so the spend is recorded without its inputs.',
-    );
+    test('[x-send-parent-unfetchable] the funding tx cannot be fetched while the app\'s own send syncs', () async {
+      final (c, s) = await pendingSend(
+        duringSendPush: (c) => c.backend.fault = (m, k) => m == 'getTransaction' && k == c.funding.transactionHash,
+      );
+      final records = ScriptSyncServiceMock.transactionRepository;
+      final pending = records.getTransactionRecord(_walletId, c.spend.transactionHash);
+      final observed = <String, Object?>{
+        'pending_type': pending?.transactionType.name,
+        'pending_amount': pending?.amount,
+        'pending_fee': pending?.fee,
+        'pending_inputs': pending?.inputAddressList.length,
+        ...await confirmAndProbe(c, s, [c.input, c.change]),
+      };
+      final settled = records.getTransactionRecord(_walletId, c.spend.transactionHash)!;
+      observed['type_after_confirmation_and_reconnect'] = settled.transactionType.name;
+      observed['amount_after_confirmation_and_reconnect'] = settled.amount;
+      _report('x-send-parent-unfetchable', 'input-first', observed);
+      expect(pending, isNull, reason: 'do not record a send as a receipt when its parent is unavailable');
+      expect(settled.transactionType.name, TransactionType.sent.name);
+      expect(settled.amount, -301000);
+      expect(settled.fee, 1000);
+    });
 
     // (c) dormant unsubscribe is global (subscription_service.dart:219-226 -> electrum_service.dart:345-354 ->
     // socket_manager.dart:61-63), through the real ElectrumService and SocketManager over a fake socket.
@@ -997,29 +984,36 @@ void main() {
         expect(afterOtherTx['record_height'], 0, reason: 'a timeout is not evidence that the tx left the mempool');
         expect(confirmed['utxos'], ['unspent'], reason: 'the received coin must be spendable after it confirms');
       },
-      skip: 'PR2: a re-fetch timeout of a pending record deletes it (Q5) and its coin.',
     );
 
     for (final persistent in [false, true]) {
       final variant = persistent ? 'r2-prev-fails-persistently' : 'r2-prev-fails-once';
-      test(
-        '[$variant] one previous-tx fetch fails (after a 1 s hang) during the mempool pass',
-        () async {
-          final (c, s, batch) = await batchCase();
-          final victim = batch.parents[77].transactionHash;
-          var hits = 0;
-          c.backend
-            ..fault = ((m, k) => m == 'getTransaction' && k == victim && (persistent || hits++ == 0))
-            ..faultDelay = const Duration(seconds: 1);
-          final mempool = await pass(c, s, batch, height: 0);
-          final confirmed = await pass(c, s, batch, height: 103);
-          _report(variant, '-', {'faults_hit': c.backend.faultsHit, 'mempool': mempool, 'confirmed': confirmed});
-          expect(mempool['node_sync'], 'completed', reason: 'the pass completes');
-          expect(confirmed['record_inputs'], 150, reason: 'the record must not keep a partial input list');
-        },
-        skip:
-            'PR2: getPreviousTransactions drops every parent when one fails, so the spend is recorded without its inputs.',
-      );
+      test('[$variant] one previous-tx fetch fails (after a 1 s hang) during the mempool pass', () async {
+        final (c, s, batch) = await batchCase();
+        final victim = batch.parents[77].transactionHash;
+        var hits = 0;
+        c.backend
+          ..fault = ((m, k) => m == 'getTransaction' && k == victim && (persistent || hits++ == 0))
+          ..faultDelay = const Duration(seconds: 1);
+        final mempool = await pass(c, s, batch, height: 0);
+        expect(mempool['record_height'], isNull);
+        expect(mempool['tx_list_updating'], isFalse);
+        final confirmed = await pass(c, s, batch, height: 103);
+        if (persistent) expect(confirmed['record_height'], isNull);
+        c.backend.fault = (_, __) => false;
+        await s.waitForRetry();
+        final recovered = ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, batch.hash)!;
+        _report(variant, '-', {'faults_hit': c.backend.faultsHit, 'mempool': mempool, 'confirmed': confirmed});
+        expect(recovered.inputAddressList.length, 150);
+        expect(recovered.blockHeight, 103);
+        expect(recovered.amount, 250000);
+        expect(
+          recovered.fee,
+          batch.parents.fold<int>(0, (sum, tx) => sum + tx.outputs.first.amount) -
+              batch.tx.outputs.fold<int>(0, (sum, output) => sum + output.amount),
+        );
+        expect(recovered.transactionType, TransactionType.received);
+      });
     }
 
     /// The batch tx itself cannot be fetched during the mempool pass ([persistent]: the fault never clears).

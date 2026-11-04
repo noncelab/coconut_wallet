@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../mock/transaction_mock.dart';
+import '../../../mock/electrum_transaction_transport.dart';
 import '../../../mock/wallet_mock.dart';
 import 'electrum_service_test.mocks.dart';
 
@@ -64,6 +67,88 @@ void main() {
     expect(details.txType, TransactionType.received);
     expect(parents.map((tx) => tx.hashReads), everyElement(1));
   });
+
+  test('fetches each missing parent once and reuses a supplied parent', () async {
+    final raw = {for (final tx in parents) tx.transactionHash: tx.serialize()};
+    final transport = ElectrumTransactionTransport((hash) => raw[hash]!);
+    final loaded = await transport.service.getPreviousTransactions(spending, existingTxList: [parents.first]);
+    expect(loaded.length, parents.length);
+    expect(loaded.map((tx) => tx.transactionHash).toSet(), raw.keys.toSet());
+    expect(transport.requestedHashes.length, parents.length - 1);
+    expect(transport.requestedHashes.toSet().length, transport.requestedHashes.length);
+    expect(transport.requestedHashes, isNot(contains(parents.first.transactionHash)));
+  });
+
+  for (final failure in ['one fetch', 'all fetches', 'parse', 'wrong hash']) {
+    test('$failure fails the entire parent lookup instead of returning partial data', () async {
+      final raw = {for (final tx in parents) tx.transactionHash: tx.serialize()};
+      final failedHash = raw.keys.first;
+      final transport = ElectrumTransactionTransport((hash) {
+        if (failure == 'all fetches' || hash == failedHash) {
+          if (failure == 'parse') return '00';
+          if (failure == 'wrong hash') return parents.last.serialize();
+          throw StateError('parent unavailable');
+        }
+        return raw[hash]!;
+      });
+      await expectLater(transport.service.getPreviousTransactions(spending), throwsA(anything));
+      expect(transport.requestedHashes.length, parents.length);
+    });
+  }
+
+  test('a failed lookup drains already submitted parent futures before escaping', () async {
+    final raw = {for (final tx in parents) tx.transactionHash: tx.serialize()};
+    final delayed = Completer<String>();
+    final transport = ElectrumTransactionTransport((hash) {
+      if (hash == raw.keys.first) throw StateError('parent unavailable');
+      if (hash == raw.keys.last) return delayed.future;
+      return raw[hash]!;
+    });
+    var completed = false;
+    final result = transport.service.getPreviousTransactions(spending);
+    final checked = expectLater(result, throwsA(anything)).whenComplete(() => completed = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(transport.requestedHashes.length, parents.length);
+    expect(completed, isFalse);
+    delayed.complete(raw.values.last);
+    await checked;
+  });
+
+  for (final index in [-1, 2]) {
+    test('invalid prevout index $index cannot produce a record', () async {
+      final tx = Transaction.withInputsAndOutputs(
+        [_Input(parents.first.transactionHash, index)],
+        spending.outputs,
+        AddressType.p2wpkh,
+      );
+      final service = ElectrumService();
+      await expectLater(service.getPreviousTransactions(tx, existingTxList: parents), throwsA(isA<StateError>()));
+      final records = TransactionRecordService(service, _OwnedAddressRepository(owned));
+      expect(() => records.processTransactionDetails(tx, parents, 1), throwsA(isA<StateError>()));
+    });
+  }
+
+  test('record construction also rejects a missing parent from another caller', () {
+    final records = TransactionRecordService(ElectrumService(), _OwnedAddressRepository(owned));
+    expect(() => records.processTransactionDetails(spending, parents.skip(1).toList(), 1), throwsA(isA<StateError>()));
+  });
+
+  test('coinbase and empty inputs require no parents or network calls', () async {
+    final transport = ElectrumTransactionTransport((_) => throw StateError('must not fetch'));
+    final coinbase = TransactionMock.createMockTransaction(toAddress: owned, amount: 1000, isCoinbase: true);
+    final empty = Transaction.withInputsAndOutputs([], spending.outputs, AddressType.p2wpkh);
+    expect(await transport.service.getPreviousTransactions(coinbase), isEmpty);
+    expect(await transport.service.getPreviousTransactions(empty), isEmpty);
+    expect(transport.requestedHashes, isEmpty);
+  });
+}
+
+class _Input extends Fake implements TransactionInput {
+  @override
+  final String transactionHash;
+  @override
+  final int index;
+  _Input(this.transactionHash, this.index);
 }
 
 class _CountingTransaction extends Transaction {
