@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
@@ -75,17 +76,15 @@ class TransactionRecordService {
     int fee = 0;
     int amount = 0;
 
+    final previousTxByHash = TransactionUtil.indexByHash(previousTxs);
+
     // 입력 처리
     for (int i = 0; i < tx.inputs.length; i++) {
       final input = tx.inputs[i];
 
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
-      Transaction? previousTx;
-      try {
-        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-      } catch (_) {
-        continue;
-      }
+      final previousTx = previousTxByHash[input.transactionHash];
+      if (previousTx == null) continue;
 
       if (input.index >= previousTx.outputs.length) {
         continue;
