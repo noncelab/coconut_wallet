@@ -25,6 +25,7 @@ import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dar
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -188,15 +189,16 @@ void main() {
   testWidgets('tapping the name field with the fold keyboard keeps it above the complete button', (tester) async {
     walletProvider = _WalletProvider(_hotWallet());
     await open(tester, logicalSize: const Size(841, 874));
-    final field = find.byType(EditableText);
-    await tester.ensureVisible(field);
-    await tester.showKeyboard(field);
+    final control = find.byKey(const Key('wallet-appearance-name-field'));
+    await tester.ensureVisible(control);
+    await tester.tap(control);
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(tester.getRect(field).bottom, lessThanOrEqualTo(tester.getRect(find.text(t.complete)).top));
-    expect(field.hitTestable(), findsOneWidget);
+    final button = find.ancestor(of: find.text(t.complete), matching: find.byType(ShrinkAnimationButton));
+    expect(tester.getRect(control).bottom, lessThanOrEqualTo(tester.getRect(button).top));
+    expect(find.byType(EditableText).hitTestable(), findsOneWidget);
   });
 
   for (final variant in [CoconutThemeVariant.dark, CoconutThemeVariant.coconutTheme]) {

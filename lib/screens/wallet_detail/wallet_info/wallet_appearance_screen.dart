@@ -57,8 +57,34 @@ class _WalletAppearanceBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<WalletAppearanceViewModel>();
     final colors = context.coconutColors;
-    // Scaffold가 body에서는 키보드 높이를 지우므로 여기서 읽는다.
-    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final content = Column(
+      children: [
+        _preview(context, viewModel),
+        CoconutLayout.spacing_300h,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final size in WalletCardSize.values)
+              SpanSizeOption(
+                key: Key('wallet-appearance-size-${size.name}'),
+                columns: size == WalletCardSize.wide ? 4 : 2,
+                rows: 2,
+                isSelected: viewModel.previewSize == size,
+                onTap: () => viewModel.selectPreviewSize(size),
+              ),
+          ],
+        ),
+        CoconutLayout.spacing_400h,
+        _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
+        Expanded(
+          child: SingleChildScrollView(
+            key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+            padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, _bottomButtonSpace),
+            child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+          ),
+        ),
+      ],
+    );
     return PopScope(
       canPop: !viewModel.isSaving,
       onPopInvokedWithResult: (didPop, _) {
@@ -76,53 +102,19 @@ class _WalletAppearanceBody extends StatelessWidget {
           children: [
             // 키보드가 열리면 열리기 전 배치를 그대로 두고 화면을 스크롤한다.
             // 넓은 화면(폴드, 큰 글씨)에서 고정된 위쪽 영역이 이름 입력칸을 0 높이로 누르지 않게 한다.
-            // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 기존 화면과 같다.
+            // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 화면과 동작은 기존과 같다(접근성 트리에 스크롤 경계만 하나 더해진다).
             LayoutBuilder(
-              builder:
-                  (context, constraints) => SingleChildScrollView(
-                    primary: false,
-                    clipBehavior: Clip.none,
-                    child: SizedBox(
-                      height: constraints.maxHeight + keyboardHeight,
-                      child: Column(
-                        children: [
-                          _preview(context, viewModel),
-                          CoconutLayout.spacing_300h,
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (final size in WalletCardSize.values)
-                                SpanSizeOption(
-                                  key: Key('wallet-appearance-size-${size.name}'),
-                                  columns: size == WalletCardSize.wide ? 4 : 2,
-                                  rows: 2,
-                                  isSelected: viewModel.previewSize == size,
-                                  onTap: () => viewModel.selectPreviewSize(size),
-                                ),
-                            ],
-                          ),
-                          CoconutLayout.spacing_400h,
-                          _WallpaperTabBar(
-                            tabs: viewModel.tabs,
-                            selected: viewModel.tab,
-                            onSelected: viewModel.selectTab,
-                          ),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
-                              padding: const EdgeInsets.fromLTRB(
-                                _horizontalPadding,
-                                24,
-                                _horizontalPadding,
-                                _bottomButtonSpace,
-                              ),
-                              child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              builder: (context, constraints) {
+                // Scaffold가 body의 MediaQuery에서 키보드 높이를 지우므로 View에서 읽는다.
+                // 키보드가 움직이는 동안 이 builder만 다시 돌고, content는 같은 인스턴스라 다시 만들지 않는다.
+                final view = View.of(context);
+                final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
+                return SingleChildScrollView(
+                  primary: false,
+                  clipBehavior: Clip.none,
+                  child: SizedBox(height: constraints.maxHeight + keyboardHeight, child: content),
+                );
+              },
             ),
             Align(
               alignment: Alignment.bottomCenter,
