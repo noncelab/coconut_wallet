@@ -1,5 +1,3 @@
-import 'dart:math' show max;
-
 import 'package:coconut_design_system/coconut_design_system.dart'
     show CoconutLayout, CoconutTypography, TextColorExtension;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -173,13 +171,19 @@ void main() {
       for (final width in [320.0, 360.0, 390.0]) {
         tester.view.physicalSize = Size(width, 200);
         for (final textScale in [1.0, 1.3, 1.5]) {
+          final layout = '${locale.name} ${width}dp x$textScale';
+          // The one layout that already overflows when fully shown, by the same 24.95 px as on develop: the count does
+          // not fit beside the label. There the fades may not make it worse; every other layout may not overlap at all.
+          final developOverflow = locale == AppLocale.es && width == 320 && textScale == 1.5;
           await tester.pumpWidget(const SizedBox());
           await _pumpLabelRow(tester, syncing: true, textScale: textScale);
           await tester.pump(const Duration(milliseconds: 350));
-          // The fully shown row is laid out exactly as before the fade. Only es at 320 dp x1.5 overflows there (the
-          // count does not fit beside the label); the fades may not make that worse.
-          expect('${tester.takeException() ?? 'none'}', anyOf('none', contains('A RenderFlex overflowed')));
-          final allowed = max(0.0, _countOverlap(tester)!);
+          final shownOverlap = _countOverlap(tester)!;
+          if (developOverflow) {
+            expect('${tester.takeException()}', contains('A RenderFlex overflowed'));
+            expect(shownOverlap, closeTo(24.95, 0.5), reason: 'the overflow develop already has');
+          }
+          final allowed = developOverflow ? shownOverlap : 0.0;
           await _pumpLabelRow(tester, syncing: false, textScale: textScale);
           // A frame every 10 ms: the hold and the fade-out, then a restart at 800 ms and the fade-in.
           for (var ms = 10; ms <= 1200; ms += 10) {
@@ -187,9 +191,10 @@ void main() {
             await tester.pump(const Duration(milliseconds: 10));
             final overlap = _countOverlap(tester);
             if (overlap != null && overlap > allowed + 0.01) {
-              overlaps.add('${locale.name} ${width}dp x$textScale at $ms ms: ${overlap.toStringAsFixed(1)} px');
+              overlaps.add('$layout at $ms ms: ${overlap.toStringAsFixed(1)} px');
             }
           }
+          expect(tester.takeException(), isNull, reason: '$layout overflowed');
         }
       }
     }
