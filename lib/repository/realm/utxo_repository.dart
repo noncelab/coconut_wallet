@@ -441,31 +441,42 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  RealmResults<RealmUtxo> _listedTombstones(int walletId, String address, List<UtxoState> listed) =>
+      realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == true AND id IN $2', [
+        walletId,
+        address,
+        [for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index)],
+      ]);
+
+  /// [listed] 중 되살릴 수 있는 지운 코인([restorableTombstones])이 있는지.
+  bool hasRestorableListedUtxos(int walletId, String address, List<UtxoState> listed) {
+    realm.refresh();
+    return restorableTombstones(realm, walletId, _listedTombstones(walletId, address, listed)).isNotEmpty;
+  }
+
   /// [address]의 listunspent가 다시 돌려준 코인 중 받는 중에 정리됐을 뿐인 코인([restorableTombstones])을 되살린다.
   /// 같은 동기화에서 먼저 받은 이 주소의 서버 잔액이 남은 코인과 함께 모두 셀 때만 한꺼번에 되살린다. 늦은 응답이
   /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다. 태그는 지울 때 떼어졌으므로 돌아오지 않는다.
+  /// 판단은 쓰기 안에서 한다. 잠금을 기다리는 동안 다른 쓰기가 spender를 남기거나 잔액을 낮췄을 수 있다.
   Future<void> restoreListedUtxos(int walletId, String address, List<UtxoState> listed) async {
-    realm.refresh();
+    if (!hasRestorableListedUtxos(walletId, address, listed)) return;
     final listedById = {for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index): utxo};
-    final removed = realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == true AND id IN $2', [
-      walletId,
-      address,
-      listedById.keys.toList(),
-    ]);
-    final rows = restorableTombstones(realm, walletId, removed);
-    if (rows.isEmpty) return;
-    final total =
-        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull?.total ??
-        0;
-    final live = realm
-        .query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
-          walletId,
-          address,
-          utxoStatusToString(UtxoStatus.outgoing),
-        ])
-        .fold<int>(0, (sum, utxo) => sum + utxo.amount);
-    if (live + rows.fold<int>(0, (sum, row) => sum + row.amount) > total) return;
     await realm.writeAsync(() {
+      final rows = restorableTombstones(realm, walletId, _listedTombstones(walletId, address, listed));
+      final total =
+          realm
+              .query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address])
+              .firstOrNull
+              ?.total ??
+          0;
+      final live = realm
+          .query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
+            walletId,
+            address,
+            utxoStatusToString(UtxoStatus.outgoing),
+          ])
+          .fold<int>(0, (sum, utxo) => sum + utxo.amount);
+      if (rows.isEmpty || live + rows.fold<int>(0, (sum, row) => sum + row.amount) > total) return;
       for (final row in rows) {
         final utxo = listedById[row.id]!;
         row
@@ -476,6 +487,10 @@ class UtxoRepository extends BaseRepository {
       }
     });
   }
+
+  /// [transaction]이 쓴 이미 지운 코인에 사용 증거(spender)만 남긴다. 살아 있는 코인은 건드리지 않는다.
+  Future<void> markRemovedInputsSpent(int walletId, lib.Transaction transaction) =>
+      _markInputsOutgoing(walletId, transaction, (_) => null);
 
   /// [transaction]이 쓴 이 지갑의 코인을 한 번의 쓰기로 "출금 중(outgoing)"으로 표시한다.
   /// [spenderOf]가 행마다 새 spender를 돌려주고, null이면 그 행은 건드리지 않는다. 쓰기 안에서 다시 확인한다.

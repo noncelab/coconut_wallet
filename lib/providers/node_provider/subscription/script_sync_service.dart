@@ -648,6 +648,7 @@ class ScriptSyncService {
             inBatchProcess: true,
             preserveOutgoing: !readyScripts.contains(status),
             listedUtxoIds: listedUtxoIds,
+            transactionFetch: transactionFetch,
           ),
         ),
       );

@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:realm/realm.dart' hide Transaction;
 
 import '../../mock/transaction_mock.dart';
 import '../../mock/utxo_mock.dart';
@@ -570,4 +575,56 @@ void main() {
       });
     });
   });
+
+  // Codex review v2 (S2): the restore decides inside its write. Another writer may record a spend or lower the balance
+  // while the restore waits for the write lock.
+  for (final mutation in ['spend', 'balance']) {
+    test('restoreListedUtxos rechecks inside the write after waiting for another writer ($mutation)', () async {
+      final directory = Directory.systemTemp.createTempSync('restore-race-');
+      final path = '${directory.path}/race.realm';
+      final realm = Realm(Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, path: path));
+      final other = Realm(Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, path: path));
+      addTearDown(() {
+        other.close();
+        realm.close();
+        Realm.deleteRealm(path);
+        directory.deleteSync(recursive: true);
+      });
+      const creator = '0000000000000000000000000000000000000000000000000000000000000051';
+      const spender = '0000000000000000000000000000000000000000000000000000000000000052';
+      final coinId = getRealmUtxoId(1, creator, 0);
+      RealmTransaction record(int id, String hash) =>
+          RealmTransaction(id, hash, 1, DateTime.utc(2026), 100, 'received', 1000, 0, 141, DateTime.utc(2026));
+      realm.write(() {
+        realm.add(RealmWalletAddress(1, 1, 'own', 0, false, 'm', true, 1000, 0, 1000));
+        realm.add(record(1, creator));
+        realm.add(
+          RealmUtxo(coinId, 1, 'own', 1000, DateTime.utc(2026), creator, 0, 'm', 0, 'incoming', isDeleted: true),
+        );
+      });
+      other.refresh();
+      final blocker = other.beginWrite();
+      final restore = UtxoRepository(RealmManager.withRealm(realm)).restoreListedUtxos(1, 'own', [
+        UtxoState(
+          transactionHash: creator,
+          index: 0,
+          amount: 1000,
+          derivationPath: 'm',
+          blockHeight: 100,
+          to: 'own',
+          timestamp: DateTime.utc(2026),
+        ),
+      ]);
+      if (mutation == 'spend') {
+        other.add(record(2, spender));
+        other.find<RealmUtxo>(coinId)!.spentByTransactionHash = spender;
+      } else {
+        other.find<RealmWalletAddress>(1)!.total = 0;
+      }
+      blocker.commit();
+      await restore;
+      realm.refresh();
+      expect(realm.find<RealmUtxo>(coinId)!.isDeleted, isTrue);
+    });
+  }
 }

@@ -592,6 +592,27 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
+  /// [address]의 코인을 썼을 수 있는 거래: 입력에 이 주소가 있는 저장된 기록(대체된 기록 제외), 그리고 서버 내역
+  /// [historyHashes] 중 기록이 없거나 입력을 모르는(빈 입력 목록) 거래. 입력이 다 있는 기록은 이 주소를 안 쓴다.
+  Set<String> getPossibleSpendersFrom(int walletId, String address, Iterable<String> historyHashes) {
+    final recordedHasInputs = {
+      for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+        walletId,
+        historyHashes.toList(),
+      ]))
+        tx.transactionHash: tx.inputAddressList.isNotEmpty,
+    };
+    return {
+      for (final tx in realm.query<RealmTransaction>(
+        r'walletId == $0 AND replaceByTransactionHash == null AND ANY inputAddressList CONTAINS $1',
+        [walletId, jsonEncode(address)],
+      ))
+        tx.transactionHash,
+      for (final hash in historyHashes)
+        if (recordedHasInputs[hash] != true) hash,
+    };
+  }
+
   Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
     final realmTransactions =
         realm

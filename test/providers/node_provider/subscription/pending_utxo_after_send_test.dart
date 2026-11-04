@@ -858,6 +858,75 @@ void main() {
     },
   );
 
+  // Codex review v2 (MUST): a tombstone left by a build before the spend marker, whose confirmed spend is already
+  // stored, must stay removed when a stale listunspent lists it, even when another coin's balance covers its amount.
+  for (final server in ['honest', 'stale-list']) {
+    test('[heavy-reuse-upgrade-spent] a removed coin spent before this fix stays removed ($server)', () async {
+      final c = _Case();
+      await c.init();
+      expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+      final b = c.backend;
+      b.put(c.spend, 101);
+      await c.reconnect();
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      realm.write(() {
+        realm.find<RealmUtxo>('$_walletId:${c.coin}')!
+          ..isDeleted = true
+          ..status = 'incoming'
+          ..spentByTransactionHash = null;
+      }); // what a build before the spend marker left behind
+      final fresh = _Case._tx([(c.faucet.transactionHash, 2)], [(c.input, 1500000), (_external, 3499000)]);
+      b.put(fresh, 102);
+      realm.write(() {
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [_walletId, c.input]).single
+          ..confirmed = 1500000
+          ..unconfirmed = 0
+          ..total = 1500000;
+      }); // the stored balance counts the fresh coin, which the stale list leaves out
+      if (server == 'stale-list') {
+        when(c.electrum.getUnspentList(any, any)).thenAnswer((call) async {
+          final address = call.positionalArguments[1] as String;
+          return address == c.input
+              ? [ListUnspentRes(height: 100, txHash: c.funding.transactionHash, txPos: 0, value: 1000000)]
+              : b.unspent(address);
+        });
+      }
+      await c.reconnect();
+      final marked = realm.find<RealmUtxo>('$_walletId:${c.coin}')!.spentByTransactionHash == c.spend.transactionHash;
+      _report('heavy-reuse-upgrade-spent', server, {'coin': c.coinState(), 'spend_marker_backfilled': marked});
+      expect(c.coinState(), 'deleted');
+      expect(c.autoSelectsCoin(), isFalse);
+    });
+  }
+
+  // The check above must not block a heal: a stored spend of another coin at the same address leaves this one alone.
+  test(
+    '[heavy-reuse-heal-after-spend] a stored spend of another coin at the address does not block the heal',
+    () async {
+      final c = _Case();
+      await c.init();
+      final b = c.backend;
+      final single = _Case._tx([(c.faucet.transactionHash, 2)], [(c.input, 2780), (_external, 4996220)]);
+      final coin = getUtxoId(single.transactionHash, 0);
+      String coinState() => c.utxos.getUtxoState(_walletId, coin)?.status.name ?? 'deleted';
+      b
+        ..put(single, 101)
+        ..put(c.spend, 102); // the funding coin at the same address is spent, the single is not
+      expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue);
+      expect([c.coinState(), coinState()], ['deleted', 'unspent'], reason: 'precondition');
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      realm.write(() {
+        realm.find<RealmUtxo>('$_walletId:$coin')!
+          ..isDeleted = true
+          ..status = 'incoming'
+          ..blockHeight = 0;
+      }); // what the batch cleanup left behind
+      await c.reconnect();
+      _report('heavy-reuse-heal-after-spend', '-', {'coin': coinState(), 'spent_coin': c.coinState()});
+      expect([coinState(), c.coinState()], ['unspent', 'deleted']);
+    },
+  );
+
   // Codex review (SHOULD): two recovery gaps left open, kept as reproductions with the reason.
   test(
     '[heavy-reuse-gap] a removed coin whose stored balance is stale-low comes back at startup',
