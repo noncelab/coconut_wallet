@@ -1018,21 +1018,24 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           ValueListenableBuilder<bool>(
             valueListenable: isEditingNotifier,
             builder:
-                (context, isEditing, _) => MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutUnderlinedButton(
-                    text: isEditing ? t.done : t.edit,
-                    onTap: () {
-                      if (isEditing) {
-                        final committedSelectedUtxoIds = Set<String>.from(draftSelectedUtxoIdsNotifier.value);
-                        setState(() {
-                          _viewModel.commitEditedSelectedUtxoIds(committedSelectedUtxoIds);
-                        });
-                        unawaited(_viewModel.prepareMergeTransaction());
-                      }
-                      isEditingNotifier.value = !isEditing;
-                      vibrateExtraLight();
-                    },
+                (context, isEditing, _) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                    child: CoconutUnderlinedButton(
+                      text: isEditing ? t.done : t.edit,
+                      onTap: () {
+                        if (isEditing) {
+                          final committedSelectedUtxoIds = Set<String>.from(draftSelectedUtxoIdsNotifier.value);
+                          setState(() {
+                            _viewModel.commitEditedSelectedUtxoIds(committedSelectedUtxoIds);
+                          });
+                          unawaited(_viewModel.prepareMergeTransaction());
+                        }
+                        isEditingNotifier.value = !isEditing;
+                        vibrateExtraLight();
+                      },
+                    ),
                   ),
                 ),
           ),

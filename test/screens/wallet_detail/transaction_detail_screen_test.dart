@@ -29,6 +29,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
@@ -80,6 +82,12 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
   TransactionRecord? get transaction => _tx;
   @override
   void initTransaction(int walletId, String txHash, {String? utxoTo}) {}
+
+  /// 동기화·멤풀 보정으로 저장된 기록이 바뀐 것처럼 알림
+  void replaceRecord(TransactionRecord record) {
+    _tx = record;
+    notifyListeners();
+  }
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
@@ -152,6 +160,7 @@ void main() {
   late TestRealmManager manager;
   late _Node node;
   late List<String?> pushedRoutes;
+  late List<Object?> pushedArguments;
   final boundaryKey = GlobalKey();
 
   setUpAll(() async {
@@ -175,6 +184,7 @@ void main() {
     manager = TestRealmManager();
     node = _Node();
     pushedRoutes = [];
+    pushedArguments = [];
   });
   tearDown(() => manager.dispose());
 
@@ -237,6 +247,7 @@ void main() {
             home: TransactionDetailScreen(id: 1, txHash: tx.transactionHash),
             onGenerateRoute: (settings) {
               pushedRoutes.add(settings.name);
+              pushedArguments.add(settings.arguments);
               return MaterialPageRoute<void>(builder: (_) => const SizedBox());
             },
           ),
@@ -317,6 +328,34 @@ void main() {
       await tester.tap(find.text(t.quick_receive));
       await tester.pump(const Duration(milliseconds: 300));
       expect(pushedRoutes, isEmpty);
+    });
+
+    testWidgets('입력을 모르던 보낸 거래가 보정되면 빨리 보내기(RBF)로 열린다', (tester) async {
+      node.setSyncing(1, false);
+      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      expect(find.text(t.quick_receive), findsOneWidget);
+
+      final corrected = TransactionRecord.fromTransactions(
+        transactionHash: _tx.transactionHash,
+        timestamp: _tx.timestamp,
+        blockHeight: 0,
+        transactionType: TransactionType.sent,
+        amount: -_tx.amount,
+        fee: 300,
+        inputAddressList: _knownInputs,
+        outputAddressList: _tx.outputAddressList,
+        vSize: _tx.vSize,
+      );
+      (tester.element(find.byType(TransactionDetailScreen)).read<TransactionProvider>() as _Transactions).replaceRecord(
+        corrected,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(t.quick_send), findsOneWidget);
+      await tester.tap(find.text(t.quick_send));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(pushedRoutes, [AppRouteNames.transactionFeeBumping]);
+      expect((pushedArguments.single as TransactionFeeBumpingRouteArgs).feeBumpingType, FeeBumpingType.rbf);
     });
   });
 }

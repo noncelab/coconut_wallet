@@ -205,10 +205,14 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (updatedTx == null) return;
 
       TransactionRecord currentTx = transactionList!.first;
-      if (updatedTx.blockHeight != currentTx.blockHeight || updatedTx.transactionHash != currentTx.transactionHash) {
+      if (updatedTx.blockHeight != currentTx.blockHeight ||
+          updatedTx.transactionHash != currentTx.transactionHash ||
+          updatedTx.transactionType != currentTx.transactionType ||
+          updatedTx.inputAddressList.length != currentTx.inputAddressList.length) {
         _initTransactionList();
         _setPreviousTransactionIndex(0);
         _setSelectedTransactionIndex(0);
+        _syncTransactionStatus();
       }
     }
     safeNotifyListeners();
@@ -350,6 +354,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
   }
 
+  /// 입력·유형이 보정된 기록으로 상태를 다시 정함
+  void _syncTransactionStatus() {
+    final transactionList = _transactionList;
+    if (transactionList == null || transactionList.isEmpty) return;
+    final index = _selectedTransactionIndex.clamp(0, transactionList.length - 1);
+    _transactionStatus = TransactionUtil.getStatus(transactionList[index]);
+    _setSendType(_transactionStatus);
+  }
+
   void _setSendType(TransactionStatus? status) {
     _isSendType =
         status == TransactionStatus.sending ||
@@ -392,6 +405,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (txRecord != null) {
         await _txProvider.updateTransaction(_walletId, _txHash, txRecord);
         _initTransactionList();
+        _syncTransactionStatus();
       }
     } catch (e) {
       Logger.error('[_fetchTransactionFromMempool] Failed to fetch tx from mempool: $_txHash, error=$e');
