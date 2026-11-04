@@ -45,10 +45,11 @@ int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction>
     final mentioned = {
       for (final (_, inputs, outputs) in decoded) ...[...inputs, for (final output in outputs) output.address],
     };
+    // 색인된 address로 먼저 좁힌다. walletId를 앞에 두면 지갑의 주소 수만큼 훑는다(2만 주소에서 1.95 -> 0.25ms).
     final own =
-        realm.query<RealmWalletAddress>(r'walletId == $0 AND address IN $1', [
-          walletId,
+        realm.query<RealmWalletAddress>(r'address IN $0 AND walletId == $1', [
           mentioned.toList(),
+          walletId,
         ]).map((address) => address.address).toSet();
     for (final (record, inputs, outputs) in decoded) {
       if (inputs.any(own.contains)) continue;
