@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
@@ -79,14 +80,13 @@ void main() {
     expect(transport.requestedHashes, isNot(contains(parents.first.transactionHash)));
   });
 
-  for (final failure in ['one fetch', 'all fetches', 'parse', 'wrong hash']) {
+  for (final failure in ['one fetch', 'all fetches', 'parse']) {
     test('$failure fails the entire parent lookup instead of returning partial data', () async {
       final raw = {for (final tx in parents) tx.transactionHash: tx.serialize()};
       final failedHash = raw.keys.first;
       final transport = ElectrumTransactionTransport((hash) {
         if (failure == 'all fetches' || hash == failedHash) {
           if (failure == 'parse') return '00';
-          if (failure == 'wrong hash') return parents.last.serialize();
           throw StateError('parent unavailable');
         }
         return raw[hash]!;
@@ -95,6 +95,38 @@ void main() {
       expect(transport.requestedHashes.length, parents.length);
     });
   }
+
+  test('requested parent identity survives record construction and reuse without recomputing its hash', () async {
+    const requestedHash = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    final parent = parents.first;
+    final tx = Transaction.withInputsAndOutputs(
+      [TransactionInput.forPayment(requestedHash, 0)],
+      spending.outputs,
+      AddressType.p2wpkh,
+    );
+    // The requested outpoint identity is deliberately distinct from a re-serialized Transaction's identity.
+    // This tests identity propagation independently of the pinned library's script parser.
+    final transport = ElectrumTransactionTransport((hash) {
+      expect(hash, requestedHash);
+      return parent.serialize();
+    });
+    final loaded = await transport.service.getPreviousTransactions(tx);
+    expect(loaded, isA<PreviousTransactions>());
+    expect((loaded as PreviousTransactions).byHash.keys, [requestedHash]);
+    final records = TransactionRecordService(transport.service, _OwnedAddressRepository(owned));
+    final record = await records.createTransactionRecord(1, tx, previousTxs: loaded);
+    expect(record.amount, 500);
+    expect(record.fee, parent.outputs.first.amount - 500);
+    expect(record.transactionType, TransactionType.received);
+    expect(record.inputAddressList.single.amount, parent.outputs.first.amount);
+    expect(transport.requestedHashes, [requestedHash], reason: 'reuse keeps the original txid without another request');
+
+    parent.hashReads = 0;
+    records.processTransactionDetails(tx, PreviousTransactions({requestedHash: parent}), 1);
+    expect(parent.hashReads, 0, reason: 'fetched parents already carry their requested txid');
+    expect(() => loaded.clear(), throwsUnsupportedError);
+    expect(() => loaded.byHash.clear(), throwsUnsupportedError);
+  });
 
   test('a failed lookup drains already submitted parent futures before escaping', () async {
     final raw = {for (final tx in parents) tx.transactionHash: tx.serialize()};

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_s
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -75,7 +76,10 @@ class TransactionRecordService {
     int selfOutputCount = 0;
     int fee = 0;
     int amount = 0;
-    final parentsByHash = {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
+    final parentsByHash =
+        previousTxs is PreviousTransactions
+            ? previousTxs.byHash
+            : {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
 
     // 입력 처리
     final inputs = TransactionUtil.isCoinbaseTransaction(tx) ? <TransactionInput>[] : tx.inputs;

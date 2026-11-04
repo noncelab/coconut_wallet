@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_s
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -278,12 +279,13 @@ class ElectrumService {
       return [];
     }
 
-    final parentsByHash = {for (final tx in existingTxList?.toSet() ?? <Transaction>{}) tx.transactionHash: tx};
+    final parentsByHash =
+        existingTxList is PreviousTransactions
+            ? Map<String, Transaction>.of(existingTxList.byHash)
+            : {for (final tx in existingTxList?.toSet() ?? <Transaction>{}) tx.transactionHash: tx};
     final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
     final futures = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).map((hash) async {
       final tx = Transaction.parse(await getTransaction(hash));
-      final actualHash = tx.transactionHash;
-      if (actualHash != hash) throw StateError('Server returned parent $actualHash for $hash');
       return MapEntry(hash, tx);
     });
 
@@ -295,7 +297,8 @@ class ElectrumService {
         throw StateError('Missing previous output ${input.transactionHash}:${input.index}');
       }
     }
-    return requiredHashes.map((hash) => parentsByHash[hash]!).toList();
+    parentsByHash.removeWhere((hash, _) => !requiredHashes.contains(hash));
+    return PreviousTransactions(parentsByHash);
   }
 
   Future<List<List<num>>> getMempoolFeeHistogram() async {

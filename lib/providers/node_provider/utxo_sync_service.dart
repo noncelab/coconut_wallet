@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -167,12 +168,15 @@ class UtxoSyncService {
 
           Transaction? previousTx;
           try {
-            previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+            previousTx =
+                previousTxs is PreviousTransactions
+                    ? previousTxs.byHash[input.transactionHash]
+                    : previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
           } catch (_) {
             continue;
           }
 
-          if (input.index >= previousTx.outputs.length) {
+          if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
             continue;
           }
 
