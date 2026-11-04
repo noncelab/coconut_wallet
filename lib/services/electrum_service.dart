@@ -10,6 +10,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -303,6 +304,7 @@ class ElectrumService {
   Future<List<Transaction>> getPreviousTransactions(
     Transaction transaction, {
     List<Transaction>? existingTxList,
+    TransactionFetchPass? transactionFetch,
   }) async {
     if (transaction.inputs.isEmpty) {
       return [];
@@ -322,7 +324,10 @@ class ElectrumService {
     final timeoutMs = 5000 + 300 * missingHashes.length;
     final timeout = Duration(milliseconds: timeoutMs > 60000 ? 60000 : timeoutMs);
     final futures = missingHashes.map((hash) async {
-      final tx = Transaction.parse(await getTransaction(hash, timeout: timeout));
+      final tx =
+          transactionFetch == null
+              ? Transaction.parse(await getTransaction(hash, timeout: timeout))
+              : await transactionFetch.fetch(hash, timeout: timeout);
       final parsedHash = tx.transactionHash;
       if (parsedHash != hash) throw StateError('Server returned a different parent transaction');
       return MapEntry(hash, tx);

@@ -12,6 +12,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -34,6 +35,7 @@ void main() {
     late UtxoRepository utxoRepository;
     late MockElectrumService electrumService;
     late RbfService rbfService;
+    late TransactionFetchPass transactionFetch;
 
     const int walletId = 1;
     final walletItem = WalletMock.createSingleSigWalletItem(id: walletId);
@@ -81,6 +83,7 @@ void main() {
       );
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
       electrumService = MockElectrumService();
+      transactionFetch = TransactionFetchPass(electrumService.getTransaction);
       rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
     });
 
@@ -330,7 +333,10 @@ void main() {
           electrumService.getTransaction(originalTx.transactionHash),
         ).thenThrow(TransactionNotFound(originalTx.transactionHash));
 
-        expect(await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx), originalTx.transactionHash);
+        expect(
+          await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx, transactionFetch: transactionFetch),
+          originalTx.transactionHash,
+        );
       });
 
       test('incoming 트랜잭션이 대체된 경우 해당 트랜잭션 해시 반환', () async {
@@ -356,7 +362,11 @@ void main() {
         ).thenAnswer((_) async => originalTx.serialize());
 
         // When
-        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectIncomingRbfTransaction(
+          walletId,
+          firstRbfTx,
+          transactionFetch: transactionFetch,
+        );
 
         // Then
         expect(result, originalTx.transactionHash);
@@ -379,7 +389,11 @@ void main() {
         ).thenAnswer((_) async => originalTx.serialize());
 
         // When
-        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectIncomingRbfTransaction(
+          walletId,
+          firstRbfTx,
+          transactionFetch: transactionFetch,
+        );
 
         // Then
         expect(result, isNull);
@@ -405,7 +419,11 @@ void main() {
         ).thenAnswer((_) async => firstRbfTx.serialize());
 
         // When
-        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectIncomingRbfTransaction(
+          walletId,
+          firstRbfTx,
+          transactionFetch: transactionFetch,
+        );
 
         // Then: 해시 불일치를 감지해 RBF 대체로 판단하지 않아야 함
         expect(result, isNull);

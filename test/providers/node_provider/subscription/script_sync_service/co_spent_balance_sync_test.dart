@@ -137,7 +137,11 @@ void main() {
       when(electrumService.getUnspentList(any, addressChange)).thenAnswer((_) async => []);
 
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [receiveTx, changeTx]);
 
       // receive 주소의 구독 이벤트에서는 잔액 조회가 실패(네트워크 타임아웃 등)하고,

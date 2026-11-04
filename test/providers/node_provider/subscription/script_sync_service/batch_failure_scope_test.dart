@@ -133,7 +133,13 @@ void main() {
     when(electrum.getTransaction(good.transactionHash)).thenAnswer((_) async => good.serialize());
     when(electrum.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, DateTime(2026))});
     var failed = true;
-    when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((call) async {
+    when(
+      electrum.getPreviousTransactions(
+        any,
+        existingTxList: anyNamed('existingTxList'),
+        transactionFetch: anyNamed('transactionFetch'),
+      ),
+    ).thenAnswer((call) async {
       if (failed && (call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
         throw StateError('missing parent');
       }

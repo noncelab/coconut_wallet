@@ -15,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -62,6 +63,9 @@ class TransactionSyncService {
   ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
       _cpfpService = CpfpService(_transactionRepository, _utxoRepository);
 
+  /// The caller owns this pass; batches share it across scripts, never across sync calls.
+  TransactionFetchPass createFetchPass() => TransactionFetchPass(_electrumService.getTransaction);
+
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<FetchScriptTransactionResult> fetchScriptTransaction(
     WalletItemBase walletItem,
@@ -69,6 +73,7 @@ class TransactionSyncService {
     DateTime? now,
     bool inBatchProcess = false,
     Future<void> Function(Set<String>)? onCoSpentAddresses,
+    TransactionFetchPass? transactionFetch,
   }) async {
     // 1. 초기화 및 준비 단계
     _prepareTransactionFetch(walletItem.id, inBatchProcess);
@@ -79,6 +84,7 @@ class TransactionSyncService {
         now: now,
         inBatchProcess: inBatchProcess,
         onCoSpentAddresses: onCoSpentAddresses,
+        transactionFetch: transactionFetch ?? createFetchPass(),
       );
     } finally {
       // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 거래를 다시 읽지 않는다.
@@ -92,6 +98,7 @@ class TransactionSyncService {
     DateTime? now,
     required bool inBatchProcess,
     Future<void> Function(Set<String>)? onCoSpentAddresses,
+    required TransactionFetchPass transactionFetch,
   }) async {
     final int walletId = walletItem.id;
 
@@ -137,6 +144,7 @@ class TransactionSyncService {
         txFetchResults,
         _electrumService,
         errors,
+        transactionFetch,
       );
 
       // 4. 트랜잭션 레코드 생성 및 저장
@@ -157,6 +165,7 @@ class TransactionSyncService {
                   tx,
                   blockTimestamp: blockTimestamp,
                   now: now,
+                  transactionFetch: transactionFetch,
                 );
               }
               // 저장된 입출력/금액은 그대로 쓰고 이번 조회의 컨펌 정보만 기존 저장 경로로 넘긴다.
@@ -203,6 +212,7 @@ class TransactionSyncService {
         confirmedFetchedTxHashes,
         triggeringAddress: scriptStatus.address,
         inBatchProcess: inBatchProcess,
+        transactionFetch: transactionFetch,
       );
 
       // 6. RBF/CPFP 히스토리 저장
@@ -215,6 +225,7 @@ class TransactionSyncService {
         unresolvedTxHashes: newTxHashes.difference(successfulHashes),
         preparedRecords: {for (final record in txRecords) record.transactionHash: record},
         confirmedTxHashes: confirmedFetchedTxHashes,
+        transactionFetch: transactionFetch,
       );
 
       final confirmedRecords = txRecords.where((record) => record.blockHeight > 0).toList();
@@ -292,10 +303,11 @@ class TransactionSyncService {
     List<FetchTransactionResponse> allTxFetchResults,
     ElectrumService electrumService,
     List<AsyncError> errors,
+    TransactionFetchPass transactionFetch,
   ) async {
     List<Transaction?> fetched;
     try {
-      fetched = await newTxHashes.map(fetchTransaction).wait;
+      fetched = await newTxHashes.map(transactionFetch.fetch).wait;
     } on ParallelWaitError<List<Transaction?>, List<AsyncError?>> catch (e) {
       fetched = e.values;
       errors.add(e.errors.nonNulls.first);
@@ -336,6 +348,7 @@ class TransactionSyncService {
     Set<String> confirmedFetchedTxHashes, {
     required String triggeringAddress,
     bool inBatchProcess = false,
+    required TransactionFetchPass transactionFetch,
   }) async {
     Map<String, RbfInfo> outgoingingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
     Set<String> replacedTxHashSetByIncomingRbf = {};
@@ -358,6 +371,7 @@ class TransactionSyncService {
           walletId,
           fetchedTx,
           confirmedTxHashes: confirmedFetchedTxHashes,
+          transactionFetch: transactionFetch,
         );
         if (replacedTxHashByIncomingRbf != null) {
           replacedTxHashSetByIncomingRbf.add(replacedTxHashByIncomingRbf);
@@ -466,6 +480,7 @@ class TransactionSyncService {
     required Map<String, TransactionRecord> preparedRecords,
     required Set<String> confirmedTxHashes,
     Set<String> unresolvedTxHashes = const {},
+    required TransactionFetchPass transactionFetch,
   }) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
@@ -477,7 +492,7 @@ class TransactionSyncService {
       }
       Transaction? unconfirmedTx;
       try {
-        unconfirmedTx = await fetchTransaction(localUnconfirmedTxRecord.transactionHash);
+        unconfirmedTx = await transactionFetch.fetch(localUnconfirmedTxRecord.transactionHash);
       } on TransactionNotFound {
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);

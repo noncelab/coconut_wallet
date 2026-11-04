@@ -267,7 +267,11 @@ void main() {
           when(electrum.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
           when(electrum.getTransaction(funding.transactionHash)).thenAnswer((_) async => funding.serialize());
           when(
-            electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+            electrum.getPreviousTransactions(
+              any,
+              existingTxList: anyNamed('existingTxList'),
+              transactionFetch: anyNamed('transactionFetch'),
+            ),
           ).thenAnswer((_) async => [funding]);
           when(
             electrum.fetchBlocksByHeight(any),

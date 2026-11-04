@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -50,10 +51,15 @@ class TransactionRecordService {
     BlockTimestamp? blockTimestamp,
     List<Transaction> previousTxs = const [],
     DateTime? now,
+    TransactionFetchPass? transactionFetch,
   }) async {
     now ??= DateTime.now();
 
-    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    final prevTxs = await _electrumService.getPreviousTransactions(
+      tx,
+      existingTxList: previousTxs,
+      transactionFetch: transactionFetch,
+    );
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
     return TransactionRecord.fromTransactions(

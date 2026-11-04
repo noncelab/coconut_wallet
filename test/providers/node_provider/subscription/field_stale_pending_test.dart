@@ -57,6 +57,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
@@ -181,13 +182,25 @@ class _Backend {
     when(
       electrum.getUnspentList(any, any),
     ).thenAnswer((c) => answer('listunspent', arg(c, 1), () => unspent(arg(c, 1))));
-    when(electrum.getTransaction(any)).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
+    when(
+      electrum.getTransaction(any, timeout: anyNamed('timeout')),
+    ).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
     // Use the real loader: this harness must not copy its failure behavior or silently produce partial inputs.
     final parents = ElectrumTransactionTransport((hash) => answer('getTransaction', hash, () => rawTx(hash))).service;
-    when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((c) async {
+    when(
+      electrum.getPreviousTransactions(
+        any,
+        existingTxList: anyNamed('existingTxList'),
+        transactionFetch: anyNamed('transactionFetch'),
+      ),
+    ).thenAnswer((c) async {
       final tx = c.positionalArguments[0] as Transaction;
       final existing = (c.namedArguments[#existingTxList] as List<Transaction>?) ?? const <Transaction>[];
-      return parents.getPreviousTransactions(tx, existingTxList: existing);
+      return parents.getPreviousTransactions(
+        tx,
+        existingTxList: existing,
+        transactionFetch: c.namedArguments[#transactionFetch] as TransactionFetchPass?,
+      );
     });
     // ElectrumService.fetchBlocksByHeight swallows per-height failures and returns a partial map.
     when(electrum.fetchBlocksByHeight(any)).thenAnswer(
@@ -563,6 +576,74 @@ void main() {
     _ports.clear();
     ScriptSyncServiceMock.realmManager?.dispose();
     ScriptSyncServiceMock.realmManager = null;
+  });
+
+  test('[heavy-refetch] shares pending transactions and parents only within each sync pass', () async {
+    final c = _Case();
+    await c.init();
+    final pending = _tx([(c.faucet.transactionHash, 1)], List.filled(20, (c.input, 10000)));
+    c.backend.put(pending, 0);
+    final s = _Session.start(c.electrum);
+    expect(await s.subscribe(c.wallet), isTrue);
+    expect(c.utxos.getUtxoStateList(_walletId).where((u) => u.transactionHash == pending.transactionHash).length, 20);
+
+    // Ten independent payments on five scripts spend distinct outputs of one foreign pool.
+    // The old pending payment has twenty outputs: RBF and orphan cleanup must reuse its raw tx.
+    final pool = _tx([('22' * 32, 0)], List.filled(11, (_external, 100000)));
+    final payments = [
+      for (var i = 0; i < 10; i++)
+        _tx([(pool.transactionHash, i)], [(c.wallet.walletBase.getAddress(1 + i ~/ 2), 99000)]),
+    ];
+    c.backend
+      ..put(pool, 50)
+      ..latency = const Duration(milliseconds: 1);
+    for (final payment in payments) {
+      c.backend.put(payment, 0);
+    }
+    c.backend.calls.clear();
+    expect(await s.subscribe(c.walletCopy()), isTrue);
+
+    Map<String, int> transactionCalls() {
+      final counts = <String, int>{};
+      for (final call in c.backend.calls.where((call) => call.startsWith('getTransaction:'))) {
+        final hash = call.substring('getTransaction:'.length);
+        counts[hash] = (counts[hash] ?? 0) + 1;
+      }
+      return counts;
+    }
+
+    final batchCalls = transactionCalls();
+    _report('heavy-refetch', 'batch', {
+      'transaction_get': batchCalls.values.fold<int>(0, (a, b) => a + b),
+      'distinct': batchCalls.length,
+      'pending': batchCalls[pending.transactionHash],
+      'pool': batchCalls[pool.transactionHash],
+    });
+    for (final payment in payments) {
+      final record =
+          ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, payment.transactionHash)!;
+      expect(record.amount, 99000);
+      expect(record.fee, 1000);
+      expect(record.transactionType, TransactionType.received);
+    }
+    expect(batchCalls.length, 12);
+    expect(batchCalls.values, everyElement(1), reason: 'one raw request per txid across the whole batch');
+
+    // A later pushed status uses fresh requests even though the isolate and services are unchanged.
+    final next = _tx([(pool.transactionHash, 10)], [(c.wallet.walletBase.getAddress(1), 99000)]);
+    c.backend.put(next, 0);
+    c.backend.calls.clear();
+    c.backend.notify(c.wallet.walletBase.getAddress(1));
+    await _drain(s);
+    final liveCalls = transactionCalls();
+    expect(liveCalls.length, 13);
+    expect(liveCalls.values, everyElement(1));
+    expect(liveCalls[pool.transactionHash], 1);
+    expect(liveCalls[pending.transactionHash], 1);
+    expect(
+      ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, next.transactionHash),
+      isNotNull,
+    );
   });
 
   /// Synced wallet, the app broadcasts its own spend and both statuses are pushed and synced on a healthy socket:

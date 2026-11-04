@@ -64,6 +64,7 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
@@ -74,6 +75,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../mock/electrum_transaction_transport.dart';
 import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
 import '../../../mock/wallet_mock.dart';
@@ -178,22 +180,23 @@ class _Backend {
     when(
       electrum.getUnspentList(any, any),
     ).thenAnswer((c) => answer('listunspent', arg(c, 1), () => unspent(arg(c, 1))));
-    when(electrum.getTransaction(any)).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
-    // Mirrors ElectrumService.getPreviousTransactions (electrum_service.dart:247-299): one getTransaction per distinct
-    // parent, all in flight at once (Future.wait), and [] when any of them fails.
-    when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((c) async {
-      final tx = c.positionalArguments[0] as Transaction;
-      final existing = (c.namedArguments[#existingTxList] as List<Transaction>?) ?? const <Transaction>[];
-      final known = existing.map((t) => t.transactionHash).toSet();
-      final hashes = tx.inputs.map((i) => i.transactionHash).where((h) => !known.contains(h)).toSet();
-      try {
-        final fetched = await Future.wait(
-          hashes.map((hash) async => Transaction.parse(await answer('getTransaction', hash, () => rawTx(hash)))),
-        );
-        return [...fetched, ...existing];
-      } catch (_) {
-        return <Transaction>[];
-      }
+    when(
+      electrum.getTransaction(any, timeout: anyNamed('timeout')),
+    ).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
+    // Exercise the real all-or-throw parent loader and its per-pass request sharing.
+    final parents = ElectrumTransactionTransport((hash) => answer('getTransaction', hash, () => rawTx(hash))).service;
+    when(
+      electrum.getPreviousTransactions(
+        any,
+        existingTxList: anyNamed('existingTxList'),
+        transactionFetch: anyNamed('transactionFetch'),
+      ),
+    ).thenAnswer((c) async {
+      return parents.getPreviousTransactions(
+        c.positionalArguments[0] as Transaction,
+        existingTxList: c.namedArguments[#existingTxList] as List<Transaction>?,
+        transactionFetch: c.namedArguments[#transactionFetch] as TransactionFetchPass?,
+      );
     });
     when(electrum.fetchBlocksByHeight(any)).thenAnswer(
       (c) => answer('headers', '', () {

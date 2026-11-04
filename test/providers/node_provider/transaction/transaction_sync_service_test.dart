@@ -237,7 +237,11 @@ void main() {
       );
       when(electrumService.getTransaction(mockTx.transactionHash)).thenAnswer((_) async => mockTx.serialize());
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [prevTx]);
 
       // 함수 실행
@@ -245,7 +249,8 @@ void main() {
 
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
-      verify(electrumService.getTransaction(mockTx.transactionHash)).called(2);
+      // Orphan cleanup reuses the raw transaction already fetched in this pass.
+      verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
     });
 
     test('확인된 트랜잭션 처리를 올바르게 하는지 확인', () async {
@@ -272,7 +277,11 @@ void main() {
       ).thenAnswer((_) async => prevTx.serialize());
       when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {mockBlockHeight: mockBlockTimestamp});
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [prevTx]);
 
       // 함수 실행
@@ -305,7 +314,11 @@ void main() {
       when(electrumService.getTransaction(old.transactionHash)).thenAnswer((_) async => substituted.serialize());
       when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [parent]);
       await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
       final savedOld = transactionRepository.getTransactionRecord(testWalletId, old.transactionHash);
@@ -329,7 +342,11 @@ void main() {
       when(electrumService.getTransaction(old.transactionHash)).thenThrow(TransactionNotFound(old.transactionHash));
       when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [parent]);
 
       await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
@@ -351,7 +368,11 @@ void main() {
       ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: tx.transactionHash)]);
       when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenThrow(StateError('parents unavailable'));
 
       await expectLater(
@@ -421,7 +442,11 @@ void main() {
           }
           when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
           when(
-            electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+            electrumService.getPreviousTransactions(
+              any,
+              existingTxList: anyNamed('existingTxList'),
+              transactionFetch: anyNamed('transactionFetch'),
+            ),
           ).thenAnswer((_) async => funding);
 
           await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
@@ -485,9 +510,13 @@ void main() {
           when(electrumService.fetchBlocksByHeight(any)).thenAnswer(
             (_) async => {100: BlockTimestamp(100, now), if (failure != 'header') 101: BlockTimestamp(101, now)},
           );
-          when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-            call,
-          ) async {
+          when(
+            electrumService.getPreviousTransactions(
+              any,
+              existingTxList: anyNamed('existingTxList'),
+              transactionFetch: anyNamed('transactionFetch'),
+            ),
+          ).thenAnswer((call) async {
             if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
               throw StateError('parent unavailable');
             }
@@ -551,9 +580,13 @@ void main() {
       for (final tx in [parent, child, bad]) {
         when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
       }
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-        call,
-      ) async {
+      when(
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
+      ).thenAnswer((call) async {
         if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
           throw StateError('parent unavailable');
         }
@@ -604,9 +637,13 @@ void main() {
         when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
       }
       var failed = true;
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-        call,
-      ) async {
+      when(
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
+      ).thenAnswer((call) async {
         if ((call.positionalArguments.first as Transaction).transactionHash == parent.transactionHash) {
           if (failed) throw StateError('parent unavailable');
           return [funding];
@@ -672,9 +709,13 @@ void main() {
         when(electrumService.getTransaction(spend.transactionHash)).thenAnswer((_) async => spend.serialize());
         when(electrumService.getTransaction(unreachable)).thenThrow(StateError('timeout'));
 
-        when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-          _,
-        ) async {
+        when(
+          electrumService.getPreviousTransactions(
+            any,
+            existingTxList: anyNamed('existingTxList'),
+            transactionFetch: anyNamed('transactionFetch'),
+          ),
+        ).thenAnswer((_) async {
           expect(coinStatus(), 'outgoing', reason: 'reservation precedes parent loading');
           return [funding];
         });
@@ -779,7 +820,13 @@ void main() {
           expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNull);
           verify(electrumService.getTransaction(requested)).called(2);
           verifyNever(electrumService.fetchBlocksByHeight(any));
-          verifyNever(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')));
+          verifyNever(
+            electrumService.getPreviousTransactions(
+              any,
+              existingTxList: anyNamed('existingTxList'),
+              transactionFetch: anyNamed('transactionFetch'),
+            ),
+          );
         });
       }
     });
@@ -860,9 +907,13 @@ void main() {
         when(
           electrumService.getTransaction(prevTx.inputs[0].transactionHash),
         ).thenAnswer((_) async => originalTx.serialize());
-        when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-          call,
-        ) async {
+        when(
+          electrumService.getPreviousTransactions(
+            any,
+            existingTxList: anyNamed('existingTxList'),
+            transactionFetch: anyNamed('transactionFetch'),
+          ),
+        ).thenAnswer((call) async {
           if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
             throw StateError('parent unavailable');
           }
@@ -931,7 +982,11 @@ void main() {
         when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
       }
       when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
       ).thenAnswer((_) async => [fundingTx]);
 
       for (var index = 1; index < replacements.length; index++) {

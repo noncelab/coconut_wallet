@@ -230,9 +230,13 @@ void main() {
         if (hash == grandchild.transactionHash) return grandchild.serialize();
         return funding.serialize();
       });
-      when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-        invocation,
-      ) async {
+      when(
+        electrum.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
+      ).thenAnswer((invocation) async {
         final tx = invocation.positionalArguments[0] as Transaction;
         if (tx.transactionHash == grandchild.transactionHash) return [child];
         return tx.transactionHash == child.transactionHash ? [parent] : [funding];

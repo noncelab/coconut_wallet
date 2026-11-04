@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
@@ -134,7 +135,7 @@ class UtxoSyncService {
 
   /// 언컨펌 출금 트랜잭션에 대한 UTXO를 생성합니다.
   /// 지갑 추가 시 기존 UTXO가 조회되지 않는 경우를 대비하여 필요한 UTXO를 추가합니다.
-  Future<void> createOutgoingUtxos(WalletItemBase walletItem) async {
+  Future<void> createOutgoingUtxos(WalletItemBase walletItem, {TransactionFetchPass? transactionFetch}) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
       final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
@@ -155,11 +156,16 @@ class UtxoSyncService {
       // 3. 각 트랜잭션에 대해 트랜잭션 상세 정보 조회
       for (final txRecord in sentTransactions) {
         try {
-          final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
-          final transaction = Transaction.parse(txHex);
+          final transaction =
+              transactionFetch == null
+                  ? Transaction.parse(await _electrumService.getTransaction(txRecord.transactionHash))
+                  : await transactionFetch.fetch(txRecord.transactionHash);
 
           // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
-          final previousTxs = await _electrumService.getPreviousTransactions(transaction);
+          final previousTxs = await _electrumService.getPreviousTransactions(
+            transaction,
+            transactionFetch: transactionFetch,
+          );
 
           if (previousTxs.isEmpty) {
             continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가

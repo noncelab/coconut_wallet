@@ -37,11 +37,13 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
+import '../../../mock/electrum_transaction_transport.dart';
 import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
 import '../../../mock/wallet_mock.dart';
@@ -154,18 +156,22 @@ class _Backend {
     when(
       electrum.getUnspentList(any, any),
     ).thenAnswer((c) => answer('listunspent', arg(c, 1), () => unspent(arg(c, 1))));
-    when(electrum.getTransaction(any)).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
-    when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((c) async {
-      // ElectrumService.getPreviousTransactions returns [] when any parent fetch fails.
-      try {
-        final tx = c.positionalArguments[0] as Transaction;
-        return [
-          for (final hash in tx.inputs.map((i) => i.transactionHash).toSet())
-            Transaction.parse(await answer('getTransaction', hash, () => rawTx(hash))),
-        ];
-      } catch (_) {
-        return <Transaction>[];
-      }
+    when(
+      electrum.getTransaction(any, timeout: anyNamed('timeout')),
+    ).thenAnswer((c) => answer('getTransaction', arg(c, 0), () => rawTx(arg(c, 0))));
+    final parents = ElectrumTransactionTransport((hash) => answer('getTransaction', hash, () => rawTx(hash))).service;
+    when(
+      electrum.getPreviousTransactions(
+        any,
+        existingTxList: anyNamed('existingTxList'),
+        transactionFetch: anyNamed('transactionFetch'),
+      ),
+    ).thenAnswer((c) async {
+      return parents.getPreviousTransactions(
+        c.positionalArguments[0] as Transaction,
+        existingTxList: c.namedArguments[#existingTxList] as List<Transaction>?,
+        transactionFetch: c.namedArguments[#transactionFetch] as TransactionFetchPass?,
+      );
     });
     // ElectrumService.fetchBlocksByHeight swallows per-height failures and returns a partial map.
     when(electrum.fetchBlocksByHeight(any)).thenAnswer(

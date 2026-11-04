@@ -582,6 +582,7 @@ class ScriptSyncService {
       transactionOpen = true;
       _stateManager.addWalletFetchDispatched(walletItem.id, scriptStatuses.length);
       final transactionStartTime = DateTime.now();
+      final transactionFetch = _transactionSyncService.createFetchPass();
 
       // 한 청크가 실패해도 나머지 청크를 끝까지 조회해 그 거래들이 쓴 코인도 예약한 뒤 첫 실패를 던진다.
       // 실패한 청크도 완료로 세야 거래 목록의 "업데이트 중"이 끝난다.
@@ -599,6 +600,7 @@ class ScriptSyncService {
                 status,
                 inBatchProcess: true,
                 now: now,
+                transactionFetch: transactionFetch,
               );
             } catch (e, stackTrace) {
               chunkError ??= AsyncError(e, stackTrace);
@@ -653,7 +655,7 @@ class ScriptSyncService {
       if (utxosApplied.contains(false)) throw StateError('Incomplete UTXO synchronization');
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
-      await _utxoSyncService.createOutgoingUtxos(walletItem);
+      await _utxoSyncService.createOutgoingUtxos(walletItem, transactionFetch: transactionFetch);
 
       // orphaned UTXO가 있으면 정리함
       await _utxoSyncService.cleanupOrphanedUtxos(
