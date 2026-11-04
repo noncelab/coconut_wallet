@@ -1154,7 +1154,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildCurrentPriceWidget(isVisible),
+        // 가격은 글자 배율 1.2로 고정이고 통화 버튼은 배율을 따른다. 좁은 화면에서 큰 글씨면 한 줄에 다 들어가지 않으므로
+        // 그때만 가격 쪽을 줄인다. 들어가면 배율 1이라 기존과 같다.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: _buildCurrentPriceWidget(isVisible),
+          ),
+        ),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
