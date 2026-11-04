@@ -96,6 +96,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isMethodBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
   bool _shouldRevalidateOnBuild = false;
+  bool _needsRevalidation = false;
+  UtxoSplitViewModel? _viewModel;
   bool _isRestarting = false;
   static const Duration _restartFadeDuration = Duration(milliseconds: 300);
 
@@ -113,6 +115,27 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     } else if (!oldWidget.isActive && widget.isActive) {
       _shouldRevalidateOnBuild = true;
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (ModalRoute.of(context)?.isCurrent ?? true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revalidateIfVisible());
+    }
+  }
+
+  /// 업데이트가 끝났을 때 이 탭이 보이는 중이면 바로, 아니면 다시 보일 때 UTXO를 다시 확인
+  void _onWalletSynced() {
+    _needsRevalidation = true;
+    _revalidateIfVisible();
+  }
+
+  void _revalidateIfVisible() {
+    if (!_needsRevalidation || !mounted || !widget.isActive) return;
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    _needsRevalidation = false;
+    _viewModel?.revalidateSelectedUtxo();
   }
 
   @override
@@ -149,24 +172,27 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoSplitViewModel>(
       create:
-          (context) => UtxoSplitViewModel(
-            widget.id,
-            context.read<PreferenceProvider>(),
-            context.read<WalletProvider>(),
-            context.read<AddressRepository>(),
-            context.read<UtxoRepository>(),
-            context.read<SendInfoProvider>(),
-            context.read<UtxoTagProvider>(),
-            () => _showUsePreviewConfirmDialog(context),
-            context.read<NodeProvider>(),
-            (restart) => _restartAfterUsedUtxoExcluded(context, restart),
-          ),
+          (context) =>
+              _viewModel = UtxoSplitViewModel(
+                widget.id,
+                context.read<PreferenceProvider>(),
+                context.read<WalletProvider>(),
+                context.read<AddressRepository>(),
+                context.read<UtxoRepository>(),
+                context.read<SendInfoProvider>(),
+                context.read<UtxoTagProvider>(),
+                () => _showUsePreviewConfirmDialog(context),
+                context.read<NodeProvider>(),
+                (restart) => _restartAfterUsedUtxoExcluded(context, restart),
+                _onWalletSynced,
+              ),
       child: Builder(
         builder: (context) {
           if (_shouldRevalidateOnBuild) {
             _shouldRevalidateOnBuild = false;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && widget.isActive) {
+                _needsRevalidation = false;
                 context.read<UtxoSplitViewModel>().revalidateSelectedUtxo();
               }
             });
@@ -673,6 +699,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                     arguments: SendConfirmRouteArgs(currentUnit: viewModel.currentUnit),
                   );
                   if (context.mounted && widget.isActive) {
+                    _needsRevalidation = false;
                     viewModel.revalidateSelectedUtxo();
                   }
                 }

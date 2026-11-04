@@ -143,8 +143,10 @@ void main() {
     UsePreviewConfirmPrompt? prompt,
     WalletSyncNodeProviderMock? node,
     UsedUtxoExcludedHandler? onUsedUtxoExcluded,
+    VoidCallback? onWalletSynced,
   }) {
-    final viewModel = UtxoSplitViewModel(
+    late final UtxoSplitViewModel viewModel;
+    viewModel = UtxoSplitViewModel(
       wallet.id,
       _PreferenceProvider(),
       _WalletProvider(wallet),
@@ -155,6 +157,7 @@ void main() {
       prompt ?? () async => false,
       node ?? WalletSyncNodeProviderMock(),
       onUsedUtxoExcluded ?? (restart) => restart(),
+      onWalletSynced ?? () => viewModel.revalidateSelectedUtxo(),
     );
     viewModel.feeRateController.text = '1';
     createdViewModels.add(viewModel);
@@ -495,6 +498,22 @@ void main() {
       final viewModel = createViewModel(node: node);
 
       expect(viewModel.isWalletSyncing, isFalse);
+    });
+
+    test('업데이트가 끝나면 화면에 알리기만 하고 직접 다시 확인하지 않는다', () async {
+      final utxo = createUtxo(100000);
+      utxoRepository.utxos = [utxo];
+      final node = WalletSyncNodeProviderMock()..setSyncing(wallet.id, true);
+      var syncedCount = 0;
+      final viewModel = createViewModel(node: node, onWalletSynced: () => syncedCount++);
+      viewModel.setSelectedUtxoList([utxo]);
+
+      utxoRepository.utxos = [createUtxo(100000, status: UtxoStatus.outgoing)];
+      node.setSyncing(wallet.id, false);
+      await Future.delayed(Duration.zero);
+
+      expect(syncedCount, 1);
+      expect(viewModel.selectedUtxoList, hasLength(1), reason: '보이지 않는 탭이면 화면이 다시 보일 때 확인한다');
     });
   });
 }

@@ -209,4 +209,41 @@ void main() {
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
     });
   });
+
+  group('이전 거래 일부 누락', () {
+    late Transaction prevA;
+    late Transaction prevB;
+    late Transaction spendTx;
+
+    setUp(() {
+      final testAddress = testWalletItem.walletBase.getAddress(0);
+      final externalAddress = testExternalWalletItem.walletBase.getAddress(0);
+      prevA = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 60000);
+      prevB = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 40000,
+        inputTransactionHash: prevA.transactionHash,
+      );
+      spendTx = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment(prevA.transactionHash, 0), TransactionInput.forPayment(prevB.transactionHash, 0)],
+        [TransactionOutput.forPayment(99000, externalAddress)],
+        AddressType.p2wpkh,
+      );
+    });
+
+    test('모든 이전 거래가 있으면 입력과 수수료를 그대로 기록한다', () {
+      final details = transactionRecordService.processTransactionDetails(spendTx, [prevA, prevB], testWalletId);
+
+      expect(details.inputAddressList, hasLength(2));
+      expect(details.fee, 1000);
+      expect(details.amount, -100000);
+    });
+
+    test('이전 거래가 하나라도 빠지면 입력 없이 기록해 거래 상세의 멤풀 보정 대상이 된다', () {
+      final details = transactionRecordService.processTransactionDetails(spendTx, [prevA], testWalletId);
+
+      expect(details.inputAddressList, isEmpty);
+      expect(details.fee, isNot(-39000), reason: '일부 입력만으로 계산한 수수료를 저장하지 않는다');
+    });
+  });
 }

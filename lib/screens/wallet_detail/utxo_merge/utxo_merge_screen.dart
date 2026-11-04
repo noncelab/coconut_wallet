@@ -77,6 +77,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   late final AnimationController _receiveAddressSummaryLottieController;
   MergeState? _lastObservedSummaryMergeState;
   late int _lastUsedUtxoExcludedNonce;
+  bool _needsRevalidation = false;
   bool _isAmountTextHighlighted = false;
   UtxoMergeStep? _displayedHeaderStep;
   UtxoMergeStep? _pendingHeaderStep;
@@ -107,6 +108,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       context.read<SendInfoProvider>(),
       context.read<WalletProvider>(),
       context.read<NodeProvider>(),
+      _onWalletSynced,
     )..initialize();
     _lastObservedSummaryMergeState = _viewModel.mergeState;
     _lastUsedUtxoExcludedNonce = _viewModel.usedUtxoExcludedNonce;
@@ -118,8 +120,30 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   void didUpdateWidget(covariant UtxoMergeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isActive && widget.isActive) {
-      _viewModel.revalidateAvailableUtxos();
+      _needsRevalidation = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revalidateIfVisible());
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (ModalRoute.of(context)?.isCurrent ?? true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revalidateIfVisible());
+    }
+  }
+
+  /// 업데이트가 끝났을 때 이 탭이 보이는 중이면 바로, 아니면 다시 보일 때 UTXO를 다시 확인
+  void _onWalletSynced() {
+    _needsRevalidation = true;
+    _revalidateIfVisible();
+  }
+
+  void _revalidateIfVisible() {
+    if (!_needsRevalidation || !mounted || !widget.isActive) return;
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    _needsRevalidation = false;
+    _viewModel.revalidateAvailableUtxos();
   }
 
   @override
@@ -452,6 +476,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         arguments: SendConfirmRouteArgs(currentUnit: context.read<PreferenceProvider>().currentUnit),
       );
       if (mounted && widget.isActive) {
+        _needsRevalidation = false;
         _viewModel.revalidateAvailableUtxos();
       }
     } finally {

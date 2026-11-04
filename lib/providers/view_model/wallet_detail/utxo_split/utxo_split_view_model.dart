@@ -58,6 +58,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final UtxoTagProvider _utxoTagProvider;
   final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
   final UsedUtxoExcludedHandler _onUsedUtxoExcluded;
+  final VoidCallback _onWalletSynced;
   late final WalletSyncWatcher _walletSyncWatcher;
 
   /// 이 지갑이 업데이트 중이면 나누기를 기다림 (다른 지갑의 업데이트와는 무관)
@@ -180,6 +181,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._showUsePreviewConfirmPrompt,
     NodeProvider nodeProvider,
     this._onUsedUtxoExcluded,
+    this._onWalletSynced,
   ) {
     _walletSyncWatcher = WalletSyncWatcher(nodeProvider, _onWalletSyncChanged)..watch(walletId);
     amountController.addListener(() {
@@ -623,8 +625,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _onWalletSyncChanged(bool isSyncing) {
     if (_isDisposed) return;
-    if (!isSyncing) revalidateSelectedUtxo();
     notifyListeners();
+    if (!isSyncing) _onWalletSynced();
   }
 
   void setSplitMethod(SplitMethod method) {

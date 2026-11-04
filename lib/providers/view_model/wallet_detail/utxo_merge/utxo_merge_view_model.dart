@@ -55,6 +55,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   final UtxoTagProvider _utxoTagProvider;
   final SendInfoProvider _sendInfoProvider;
   final WalletProvider _walletProvider;
+  final VoidCallback _onWalletSynced;
   late final WalletSyncWatcher _walletSyncWatcher;
   late final WalletItemBase _wallet;
   late final int _dustThreshold;
@@ -68,6 +69,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     this._sendInfoProvider,
     this._walletProvider,
     NodeProvider nodeProvider,
+    this._onWalletSynced,
   ) {
     _walletSyncWatcher = WalletSyncWatcher(nodeProvider, _onWalletSyncChanged)..watch(walletId);
     _wallet = _walletProvider.getWalletById(walletId);
@@ -853,8 +855,8 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _onWalletSyncChanged(bool isSyncing) {
     if (_isDisposed) return;
-    if (!isSyncing) revalidateAvailableUtxos();
     notifyListeners();
+    if (!isSyncing) _onWalletSynced();
   }
 
   @override

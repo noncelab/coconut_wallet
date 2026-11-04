@@ -391,4 +391,85 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
   }
+
+  testWidgets('나누기 선택이 있는 채로 합치기 탭을 보는 중에 업데이트가 끝나면, 합치기 화면에는 알리지 않고 나누기로 돌아올 때 처리한다', (tester) async {
+    node.setSyncing(1, true);
+    await openOrganizer(tester);
+    final viewModel = await prepareSplit(tester);
+    await tester.tap(find.text(t.utxo_organizer_screen.merge));
+    await settle(tester);
+
+    manager.realm.write(() => manager.realm.delete(manager.realm.find<RealmUtxo>(getRealmUtxoId(1, 'f' * 64, 0))!));
+    node.setSyncing(1, false);
+    await settle(tester);
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsNothing);
+    expect(viewModel.selectedUtxoList, hasLength(1), reason: '보이지 않는 나누기 선택을 지우지 않는다');
+
+    await tester.tap(find.text(t.utxo_organizer_screen.split));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(viewModel.selectedUtxoList, isEmpty);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('합치기 선택을 고친 채로 나누기 탭을 보는 중에 업데이트가 끝나면, 합치기로 돌아올 때 처리한다', (tester) async {
+    node.setSyncing(1, true);
+    await openOrganizer(tester);
+    final hashes = [for (var i = 0; i < 3; i++) i.toRadixString(16).padLeft(64, '0')];
+    final ids = [for (final hash in hashes) getUtxoId(hash, 0)];
+    final viewModel = await prepareMerge(tester, editedSelection: ids.toSet());
+    await tester.tap(find.text(t.utxo_organizer_screen.split));
+    await tester.pump();
+    final split = splitViewModel(tester);
+    split
+      ..setSelectedUtxoList([UtxoRepository(manager).getUtxoStateList(1).firstWhere((utxo) => utxo.amount == 1000000)])
+      ..setSplitMethod(SplitMethod.evenly);
+    await settle(tester);
+
+    manager.realm.write(() => manager.realm.find<RealmUtxo>(getRealmUtxoId(1, hashes.first, 0))!.status = 'outgoing');
+    node.setSyncing(1, false);
+    await settle(tester);
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsNothing);
+    expect(viewModel.editedSelectedUtxoIds, ids.toSet(), reason: '보이지 않는 합치기 선택을 바꾸지 않는다');
+
+    await tester.tap(find.text(t.utxo_organizer_screen.merge));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsOneWidget);
+    expect(viewModel.editedSelectedUtxoIds, ids.skip(1).toSet());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('다른 화면이 위에 있는 동안 업데이트가 끝나면 알리지 않고, 돌아왔을 때 처리한다', (tester) async {
+    node.setSyncing(1, true);
+    await openOrganizer(tester);
+    final viewModel = await prepareSplit(tester);
+    final navigator = Navigator.of(tester.element(find.byType(UtxoOrganizerScreen)));
+    navigator.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('confirm'))));
+    await settle(tester);
+
+    manager.realm.write(() => manager.realm.delete(manager.realm.find<RealmUtxo>(getRealmUtxoId(1, 'f' * 64, 0))!));
+    node.setSyncing(1, false);
+    await settle(tester);
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsNothing);
+    expect(viewModel.selectedUtxoList, hasLength(1), reason: '가려진 화면의 선택을 지우지 않는다');
+
+    navigator.pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsOneWidget);
+    await settle(tester);
+    expect(viewModel.selectedUtxoList, isEmpty);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 5));
+  });
 }
