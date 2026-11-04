@@ -27,6 +27,21 @@ const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);
 const Duration kSendConnectionCheckTimeout = Duration(seconds: 3);
 const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 10);
 
+/// 전송 요청의 응답이 실패한 뒤 거래 ID로 노드에 전송 여부를 다시 묻는 간격.
+/// 모두 확인하지 못하면 전송 결과를 알 수 없음으로 알린다.
+const List<Duration> kSendBroadcastConfirmRetryDelays = [
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 4),
+  Duration(seconds: 8),
+];
+const List<Duration> kSendBroadcastConfirmRetryDelaysForOnion = [
+  Duration(seconds: 3),
+  Duration(seconds: 6),
+  Duration(seconds: 12),
+  Duration(seconds: 24),
+];
+
 /// Delay after an explicitly failed pre-send recovery; reuse the last delay afterwards.
 const List<Duration> kSendRecoveryRetryDelays = [
   Duration(seconds: 1),

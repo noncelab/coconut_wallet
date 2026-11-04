@@ -532,7 +532,11 @@ class IsolateManager {
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [signedTx]);
+    return _sendWithSocketCheck(
+      IsolateControllerCommand.broadcast,
+      [signedTx],
+      timeout: isOnionHost(_host) ? kIsolateBroadcastResponseTimeoutForOnion : kIsolateBroadcastResponseTimeout,
+    );
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {

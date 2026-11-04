@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -78,6 +79,15 @@ class _NodeProvider extends Fake implements NodeProvider {
           : connected
           ? Result.success(BlockTimestamp(100, DateTime(2026)))
           : Result.failure(ErrorCodes.nodeConnectionError);
+
+  int lookups = 0;
+  Future<Result<String>> Function(String txHash)? onGetTransaction;
+
+  @override
+  Future<Result<String>> getTransaction(String txHash) async {
+    lookups++;
+    return onGetTransaction != null ? onGetTransaction!(txHash) : Result.failure(ErrorCodes.nodeUnknown);
+  }
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
@@ -810,6 +820,132 @@ void main() {
     node.fails = false;
     expect((await viewModel.broadcast(inheritedTagIds: [])).isFailure, isTrue);
     expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a lost reply for a transaction the node has is treated as sent', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    node.fails = true;
+    node.onGetTransaction = (txHash) async => Result.success('raw');
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(outcome.isSuccess, isTrue);
+    expect(outcome.value, viewModel.signedTx!.transactionHash);
+    expect(node.broadcasts, 1, reason: 'confirmation must not resend');
+    expect(node.lookups, 1);
+    expect(viewModel.cancelPendingSend(), isFalse, reason: 'a confirmed send cannot be cancelled');
+  });
+
+  testWidgets('a transaction missing from a reachable node reports the original failure', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.fails = true;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(viewModel.isConfirmingBroadcast, isTrue);
+    expect(viewModel.cancelPendingSend(), isFalse, reason: 'the result is unknown while confirming');
+    await tester.pump(const Duration(seconds: 1));
+    expect(outcome?.error.code, ErrorCodes.broadcastError.code);
+    expect(node.lookups, 2, reason: 'one miss could be a node still processing the request');
+    expect(viewModel.isConfirmingBroadcast, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  for (final onion in [false, true]) {
+    testWidgets('an unreachable node during confirmation reports an unknown result (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.host = onion ? 'node.onion' : 'node.example';
+      node.fails = true;
+      node.duringBroadcast = () => node.connected = false;
+      node.onReconnect = () async => Result.failure(ErrorCodes.nodeConnectionError);
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      final delays = onion ? kSendBroadcastConfirmRetryDelaysForOnion : kSendBroadcastConfirmRetryDelays;
+      for (final delay in delays.take(delays.length - 1)) {
+        await tester.pump(delay);
+      }
+      expect(outcome, isNull, reason: 'confirmation keeps trying through every delay');
+      expect(viewModel.isConfirmingBroadcast, isTrue);
+      await tester.pump(delays.last);
+      expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
+      expect(node.lookups, delays.length + 1);
+      expect(node.broadcasts, 1, reason: 'confirmation must not resend');
+      expect(viewModel.isConfirmingBroadcast, isFalse);
+    });
+  }
+
+  testWidgets('a transaction found after the connection recovers is treated as sent', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    node.fails = true;
+    node.duringBroadcast = () => node.connected = false;
+    node.onReconnect = () async {
+      node.connected = true;
+      return Result.success(true);
+    };
+    node.onGetTransaction =
+        (txHash) async => node.connected ? Result.success('raw') : Result.failure(ErrorCodes.nodeConnectionError);
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(node.reconnects, 1);
+    await tester.pump(const Duration(seconds: 1));
+    expect(outcome?.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('confirmation waits while the app is in the background', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    node.fails = true;
+    node.duringBroadcast = viewModel.onAppPaused;
+    node.onGetTransaction = (txHash) async => Result.success('raw');
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(minutes: 1));
+    expect(node.lookups, 0, reason: 'no node traffic while the app is in the background');
+    expect(outcome, isNull);
+    expect(viewModel.stoppedInBackground, isFalse, reason: 'a requested send is never reported as stopped');
+    viewModel.onAppResumed();
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    expect(node.lookups, 1);
+  });
+
+  testWidgets('going to the background before the request stops the send', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    viewModel.onAppPaused();
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    expect(viewModel.stoppedInBackground, isTrue);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(node.broadcasts, 0, reason: 'a stopped send must not reach the node later');
+    viewModel.onAppResumed();
+    node.connected = true;
+    final retried = await viewModel.broadcast(inheritedTagIds: []);
+    expect(retried.isSuccess, isTrue, reason: 'the same transaction can be sent again after returning');
+    expect(viewModel.stoppedInBackground, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a send that becomes ready while the app is in the background is not requested', (tester) async {
+    await tester.runAsync(() => initialize());
+    Result<String>? outcome;
+    viewModel.onAppPaused();
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    expect(outcome?.isFailure, isTrue);
+    expect(viewModel.stoppedInBackground, isTrue);
+    expect(node.broadcasts, 0);
   });
 
   testWidgets('disposing the view model while waiting prevents a later broadcast', (tester) async {

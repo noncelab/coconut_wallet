@@ -34,6 +34,9 @@ class ErrorCodes {
   static AppError broadcastError = AppError('1302', t.errors.broadcast_error);
   static AppError chainMismatchError = AppError('1303', t.errors.chain_mismatch_error);
   static AppError untrustedCertificateError = AppError('1304', t.errors.untrusted_certificate_error);
+
+  /// 전송 요청 후 노드가 거래를 받았는지 끝내 확인하지 못함. 같은 거래를 다시 보내는 것은 안전하다.
+  static AppError broadcastUnconfirmed = AppError('1305', t.errors.broadcast_unconfirmed);
   static AppError broadcastErrorWithMessage(String message) => ErrorCodes.withMessage(broadcastError, message);
   static AppError invalidTransactionDraftId = AppError('1400', t.errors.transaction_draft.invalid_id);
   static AppError transactionDraftAlreadyExists = AppError(

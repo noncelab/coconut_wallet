@@ -76,6 +76,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   late bool _showBottomButton;
   late final AnimationController _broadcastLottieController;
   late final ScrollController _scrollController;
+  late final AppLifecycleListener _appLifecycleListener;
   final Completer<void> _broadcastLottieLoaded = Completer<void>();
   _BroadcastAnimationOutcome _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
   bool _isBroadcasting = false;
@@ -125,7 +126,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         if (!mounted) return;
         _restoreAfterBroadcastFailure();
         if (_viewModel.connectionWaitDeclined) return;
+        if (_viewModel.stoppedInBackground) {
+          showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_screen.background_stopped_title,
+            t.broadcasting_screen.background_stopped_message,
+          );
+          return;
+        }
         vibrateMedium();
+        if (result.error.code == ErrorCodes.broadcastUnconfirmed.code) {
+          showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_screen.unconfirmed_popup_title,
+            result.error.message,
+          );
+          return;
+        }
         String message = result.error.message;
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
           message = t.alert.error_send.non_final_taproot_child;
@@ -410,12 +429,19 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                                       ),
                                     ),
                                   ),
-                                  if (viewModel.isConnectionRecovering && !_isBroadcastCompletionPhase)
+                                  if ((viewModel.isConnectionRecovering || viewModel.isConfirmingBroadcast) &&
+                                      !_isBroadcastCompletionPhase)
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
                                       child: Text(
-                                        t.broadcasting_screen.connection_delay_message,
-                                        key: const ValueKey('connection-delay-notice'),
+                                        viewModel.isConfirmingBroadcast
+                                            ? t.broadcasting_screen.confirming_message
+                                            : t.broadcasting_screen.connection_delay_message,
+                                        key: ValueKey(
+                                          viewModel.isConfirmingBroadcast
+                                              ? 'broadcast-confirming-notice'
+                                              : 'connection-delay-notice',
+                                        ),
                                         textAlign: TextAlign.center,
                                         style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                                       ),
@@ -585,6 +611,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     _showBottomButton = !widget.animateHotWalletEntry;
     _broadcastLottieController = AnimationController(vsync: this);
     _scrollController = ScrollController();
+    // 요청 전 보내기는 백그라운드로 가면 멈추고, 요청 후 결과 확인은 앱이 돌아올 때까지 미룬다.
+    _appLifecycleListener = AppLifecycleListener(
+      onPause: () => _viewModel.onAppPaused(),
+      onResume: () => _viewModel.onAppResumed(),
+    );
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = BroadcastingViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
@@ -679,6 +710,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   @override
   void dispose() {
+    _appLifecycleListener.dispose();
     _broadcastLottieController.dispose();
     _scrollController.dispose();
     super.dispose();

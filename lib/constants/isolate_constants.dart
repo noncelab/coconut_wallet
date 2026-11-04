@@ -5,6 +5,11 @@ const Duration kIsolateResponseTimeout = Duration(seconds: 180);
 const Duration kIsolateSimpleResponseTimeout = Duration(seconds: 3);
 const Duration kIsolateSimpleResponseTimeoutForOnion = Duration(seconds: 75);
 
+/// 전송 RPC는 노드가 거래를 검증한 뒤 응답하므로 간단한 조회보다 오래 기다린다.
+/// 응답이 늦거나 끊겨도 거래 ID로 전송 여부를 다시 확인한다.
+const Duration kIsolateBroadcastResponseTimeout = Duration(seconds: 15);
+const Duration kIsolateBroadcastResponseTimeoutForOnion = Duration(seconds: 90);
+
 /// 0부터 전체 gap-limit 스캔 + 데이터 fetch를 수행하므로 이미 인덱싱된 구간만
 /// 스캔하는 kIsolateResponseTimeout보다 훨씬 길게 잡음.
 const Duration kIsolateResyncTimeout = Duration(minutes: 10);

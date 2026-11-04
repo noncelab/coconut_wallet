@@ -74,6 +74,16 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isConnectionRecovering => _isConnectionRecovering;
   bool get connectionWaitDeclined => _connectionWaitDeclined;
   bool _isBroadcastRequested = false;
+  bool _isConfirmingBroadcast = false;
+
+  /// 노드 요청의 응답이 실패해 거래 ID로 전송 여부를 확인하는 중인지. 결과를 모르므로 화면을 떠날 수 없다.
+  bool get isConfirmingBroadcast => _isConfirmingBroadcast;
+  bool _isInBackground = false;
+  Completer<void>? _foreground;
+  bool _stoppedInBackground = false;
+
+  /// 노드 요청 전에 앱이 백그라운드로 가서 이번 보내기를 멈췄는지.
+  bool get stoppedInBackground => _stoppedInBackground;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -128,6 +138,27 @@ class BroadcastingViewModel extends ChangeNotifier {
     _isSendCancelled = true;
     _stopConnectionPreparation();
     return true;
+  }
+
+  /// 앱이 백그라운드로 가면 부른다. 노드 요청 전이면 이번 보내기를 멈춘다. 같은 거래는 다시 보내도 안전하다.
+  /// 요청 후라면 결과 확인을 앱이 돌아올 때까지 미룬다.
+  void onAppPaused() {
+    if (_isInBackground) return;
+    _isInBackground = true;
+    _foreground = Completer<void>();
+    final stop = _connectionPreparationStop;
+    if (!_isBroadcastRequested && stop != null && !stop.isCompleted) {
+      Logger.log('[Send] 앱이 백그라운드로 전환되어 요청 전 보내기 중단');
+      _stoppedInBackground = true;
+      stop.complete();
+    }
+  }
+
+  void onAppResumed() {
+    if (!_isInBackground) return;
+    _isInBackground = false;
+    _foreground?.complete();
+    _foreground = null;
   }
 
   @override
@@ -209,6 +240,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _tagInheritanceFailed = false;
     _connectionWaitDeclined = false;
+    _stoppedInBackground = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final endpoint = _nodeProvider.connectionEndpointIdentity;
     final stop = Completer<void>();
@@ -236,6 +268,7 @@ class BroadcastingViewModel extends ChangeNotifier {
                   return extend;
                 },
       );
+      if (_stoppedInBackground) return Result.failure(ErrorCodes.nodeConnectionError);
       if (prepared.isFailure) return Result.failure(prepared.error);
       if (!prepared.value) return Result.failure(ErrorCodes.nodeConnectionError);
     } on TimeoutException {
@@ -257,12 +290,21 @@ class BroadcastingViewModel extends ChangeNotifier {
     // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
     // 이 검사와 요청 표시 사이에 await를 두지 않아야 취소와 전송이 엇갈리지 않는다.
     if (_isSendCancelled) return _cancelledSend();
+    if (_isInBackground) {
+      Logger.log('[Send] 앱이 백그라운드로 전환되어 요청 전 보내기 중단');
+      _stoppedInBackground = true;
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
     _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
-    final result = await _nodeProvider.broadcast(_signedTx!);
+    var result = await _nodeProvider.broadcast(_signedTx!);
     if (result.isFailure) {
-      _isBroadcastRequested = false;
-      return result;
+      // 응답이 실패해도 노드가 거래를 받았을 수 있다. 실패로 알리기 전에 거래 ID로 확인한다.
+      result = await _confirmAfterFailedRequest(result.error);
+      if (result.isFailure) {
+        _isBroadcastRequested = false;
+        return result;
+      }
     }
 
     try {
@@ -284,6 +326,74 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
     return result;
+  }
+
+  /// 요청 응답이 실패한 뒤 노드에 거래가 있는지 거래 ID로 확인한다.
+  /// - 거래가 있으면 성공으로 본다(응답만 늦었거나 끊긴 경우, 이미 받은 거래를 다시 보낸 경우).
+  /// - 노드와 연결된 상태에서 두 번 연속 거래가 없으면 전송되지 않은 것으로 보고 원래 실패를 돌려준다.
+  /// - 끝까지 확인하지 못하면 [ErrorCodes.broadcastUnconfirmed]를 돌려준다.
+  /// 앱이 백그라운드에 있으면 돌아올 때까지 확인을 미룬다.
+  Future<Result<String>> _confirmAfterFailedRequest(AppError requestError) async {
+    final txHash = _signedTx!.transactionHash;
+    final isOnion = isOnionHost(_nodeProvider.host);
+    final delays = isOnion ? kSendBroadcastConfirmRetryDelaysForOnion : kSendBroadcastConfirmRetryDelays;
+    // 연결 복구가 끝나지 않아도 확인이 멈추지 않게 한 번의 복구 대기에 상한을 둔다.
+    final recoveryLimit = isOnion ? kSendConnectionWaitLimitsForOnion.first : kSendConnectionWaitLimits.first;
+    Logger.log('[Send] 전송 응답 실패(${requestError.code}), 거래 ID로 전송 여부 확인: $txHash');
+    _setConfirmingBroadcast(true);
+    try {
+      var missingWhileConnected = 0;
+      for (var attempt = 0; ; attempt++) {
+        await _foreground?.future;
+        if (await _isTransactionOnNode(txHash)) {
+          Logger.log('[Send] 노드에서 거래 확인, 전송 성공으로 처리: $txHash');
+          return Result.success(txHash);
+        }
+        if (await _isNodeReachable()) {
+          missingWhileConnected++;
+          if (missingWhileConnected >= 2) {
+            Logger.log('[Send] 노드에 거래가 없어 전송 실패로 처리');
+            return Result.failure(requestError);
+          }
+        } else {
+          missingWhileConnected = 0;
+          try {
+            await _nodeProvider.ensureConnectedForBroadcast().timeout(recoveryLimit);
+          } catch (e) {
+            Logger.error('[Send] 전송 결과 확인 중 연결 복구 실패: $e');
+          }
+        }
+        if (attempt >= delays.length) break;
+        await Future<void>.delayed(delays[attempt]);
+      }
+      Logger.error('[Send] 전송 결과를 확인하지 못함: $txHash');
+      return Result.failure(ErrorCodes.broadcastUnconfirmed);
+    } finally {
+      _setConfirmingBroadcast(false);
+    }
+  }
+
+  Future<bool> _isTransactionOnNode(String txHash) async {
+    try {
+      return (await _nodeProvider.getTransaction(txHash)).isSuccess;
+    } catch (e) {
+      Logger.error('[Send] 거래 조회 실패: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _isNodeReachable() async {
+    try {
+      return (await _nodeProvider.getLatestBlock()).isSuccess;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _setConfirmingBroadcast(bool value) {
+    if (_isConfirmingBroadcast == value) return;
+    _isConfirmingBroadcast = value;
+    if (!_isSendCancelled) notifyListeners();
   }
 
   void _setConnectionRecovering(bool value) {

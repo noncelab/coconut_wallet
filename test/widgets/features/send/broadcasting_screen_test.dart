@@ -96,6 +96,14 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
     broadcasts++;
     return pending.future;
   }
+
+  bool hasTransaction = false;
+  int lookups = 0;
+  @override
+  Future<Result<String>> getTransaction(String txHash) async {
+    lookups++;
+    return hasTransaction && connected ? Result.success('raw') : Result.failure(ErrorCodes.nodeUnknown);
+  }
 }
 
 class _NavigationObserver extends NavigatorObserver {
@@ -413,6 +421,79 @@ void main() {
     expect(find.byType(BroadcastingScreen), findsOneWidget);
     await finish(tester);
     expect(navigated, [AppRouteNames.broadcastingComplete]);
+  });
+
+  Future<void> setLifecycle(WidgetTester tester, List<AppLifecycleState> states) async {
+    for (final state in states) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump();
+  }
+
+  testWidgets('a lost reply for a transaction the node has completes the send', (tester) async {
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.hasTransaction = true;
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var attempt = 0; navigated.isEmpty && attempt < 200; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(node.broadcasts, 1);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('an unconfirmable result explains that sending again is safe', (tester) async {
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.connected = false;
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    // The completer was created outside the fake clock; deliver its result on the real event loop.
+    for (
+      var attempt = 0;
+      attempt < 20 && find.byKey(const ValueKey('broadcast-confirming-notice')).evaluate().isEmpty;
+      attempt++
+    ) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(find.byKey(const ValueKey('broadcast-confirming-notice')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(BroadcastingScreen), findsOneWidget, reason: 'the screen stays while the result is unknown');
+    final title = find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.unconfirmed_popup_title));
+    for (var second = 0; second < 120 && title.evaluate().isEmpty; second++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(title, findsOneWidget);
+    expect(node.broadcasts, 1, reason: 'confirmation must not resend');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('going to the background while waiting stops the send and asks to send again', (tester) async {
+    await open(tester, count: 0, pushed: true);
+    await waitForConnectionDelay(tester);
+    await setLifecycle(tester, [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]);
+    node.readiness!.complete(Result.success(true));
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.broadcasts, 0, reason: 'a send stopped in the background must not reach the node');
+    await setLifecycle(tester, [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]);
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.background_stopped_title)),
+      findsOneWidget,
+    );
+    expect(find.byType(BroadcastingScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('going back after the broadcast request is sent keeps the screen until the result', (tester) async {
