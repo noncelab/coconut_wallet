@@ -182,7 +182,7 @@ class SingleButton extends StatelessWidget {
 
 /// 제목과 값을 한 줄에 둔다. 다 들어가면 원래 배치 그대로다(제목은 남는 폭, 값은 제 너비, 사이 8).
 /// 큰 글씨·좁은 화면에서 넘칠 때만, 제목 혼자 줄어 읽을 수 없게 되지 않도록 둘의 폭을 같은 비율로 줄인다.
-/// 자연 폭은 자식의 intrinsic 폭을 쓴다. Flutter가 캐시하고 글·글꼴이 바뀌면 지우므로 그대로인 재빌드에서는 다시 재지 않는다.
+/// 자연 폭은 레이아웃 때 잰다. 레이아웃은 제약·방향·글·글꼴이 바뀔 때만 다시 돌므로 그대로인 재빌드에서는 다시 재지 않는다.
 class _TitleValueRow extends MultiChildRenderObjectWidget {
   _TitleValueRow({required Widget title, required Widget value}) : super(children: [title, value]);
 
@@ -220,10 +220,8 @@ class _RenderTitleValueRow extends RenderBox
     if (child.parentData is! _TitleValueParentData) child.parentData = _TitleValueParentData();
   }
 
-  /// 제목 칸 폭과 값의 최대 폭.
-  (double, double) _widths(double maxWidth) {
-    final title = _title.getMaxIntrinsicWidth(double.infinity);
-    final value = _value.getMaxIntrinsicWidth(double.infinity);
+  /// 자연 폭으로 제목 칸 폭과 값의 최대 폭을 정한다.
+  (double, double) _split(double maxWidth, double title, double value) {
     if (!maxWidth.isFinite) return (title, value);
     final room = math.max(0.0, maxWidth - _gap);
     if (title + value <= room) return (room - value, value);
@@ -231,23 +229,60 @@ class _RenderTitleValueRow extends RenderBox
     return (titleWidth, room - titleWidth);
   }
 
-  Size _size(BoxConstraints constraints, ChildLayouter layoutChild) {
-    final (titleWidth, valueWidth) = _widths(constraints.maxWidth);
-    final title = layoutChild(
-      _title,
-      BoxConstraints(minWidth: titleWidth, maxWidth: titleWidth, maxHeight: constraints.maxHeight),
+  /// 제목·값에 줄 제약. [measure]로 한 줄 자연 크기를 잰다.
+  (BoxConstraints, BoxConstraints) _childConstraints(BoxConstraints constraints, ChildLayouter measure) {
+    final natural = BoxConstraints(maxHeight: constraints.maxHeight);
+    final (titleWidth, valueWidth) = _split(
+      constraints.maxWidth,
+      measure(_title, natural).width,
+      measure(_value, natural).width,
     );
-    final value = layoutChild(_value, BoxConstraints(maxWidth: valueWidth, maxHeight: constraints.maxHeight));
-    final width = constraints.maxWidth.isFinite ? constraints.maxWidth : titleWidth + _gap + value.width;
+    return (
+      BoxConstraints(minWidth: titleWidth, maxWidth: titleWidth, maxHeight: constraints.maxHeight),
+      BoxConstraints(maxWidth: valueWidth, maxHeight: constraints.maxHeight),
+    );
+  }
+
+  Size _sizeFor(BoxConstraints constraints, Size title, Size value) {
+    final width = constraints.maxWidth.isFinite ? constraints.maxWidth : title.width + _gap + value.width;
     return constraints.constrain(Size(width, math.max(title.height, value.height)));
   }
 
+  // dry layout·dry baseline·intrinsic은 자식 RenderParagraph의 intrinsic 캐시를 쓴다. Flutter 3.35에서는 늦게 로드된
+  // 글꼴 뒤에도 이 캐시가 갱신되지 않는다(원래 위젯도 같다). 실제 배치(performLayout)는 영향이 없다.
   @override
-  Size computeDryLayout(covariant BoxConstraints constraints) => _size(constraints, ChildLayoutHelper.dryLayoutChild);
+  Size computeDryLayout(covariant BoxConstraints constraints) {
+    final (titleConstraints, valueConstraints) = _childConstraints(constraints, ChildLayoutHelper.dryLayoutChild);
+    return _sizeFor(constraints, _title.getDryLayout(titleConstraints), _value.getDryLayout(valueConstraints));
+  }
+
+  @override
+  double? computeDryBaseline(covariant BoxConstraints constraints, TextBaseline baseline) {
+    final (titleConstraints, valueConstraints) = _childConstraints(constraints, ChildLayoutHelper.dryLayoutChild);
+    final title = _title.getDryLayout(titleConstraints);
+    final value = _value.getDryLayout(valueConstraints);
+    final height = _sizeFor(constraints, title, value).height;
+    double? highest;
+    for (final (child, childConstraints, childSize) in [
+      (_title, titleConstraints, title),
+      (_value, valueConstraints, value),
+    ]) {
+      final childBaseline = child.getDryBaseline(childConstraints, baseline);
+      if (childBaseline == null) continue;
+      final y = childBaseline + (height - childSize.height) / 2;
+      highest = highest == null ? y : math.min(highest, y);
+    }
+    return highest;
+  }
 
   @override
   void performLayout() {
-    size = _size(constraints, ChildLayoutHelper.layoutChild);
+    // 자연 폭은 intrinsic 값이 아니라 실제 레이아웃으로 잰다. Flutter 3.35의 RenderParagraph는 글꼴이 바뀌어도
+    // intrinsic 측정을 갱신하지 않는다. 레이아웃은 제약·방향·글·글꼴이 바뀔 때만 다시 돌므로 그대로인 재빌드에서는 재지 않는다.
+    final (titleConstraints, valueConstraints) = _childConstraints(constraints, ChildLayoutHelper.layoutChild);
+    _title.layout(titleConstraints, parentUsesSize: true);
+    _value.layout(valueConstraints, parentUsesSize: true);
+    size = _sizeFor(constraints, _title.size, _value.size);
     final ltr = _textDirection == TextDirection.ltr;
     _place(_title, ltr ? 0 : size.width - _title.size.width);
     _place(_value, ltr ? size.width - _value.size.width : 0);
@@ -265,15 +300,18 @@ class _RenderTitleValueRow extends RenderBox
   double computeMaxIntrinsicWidth(double height) =>
       _title.getMaxIntrinsicWidth(height) + _gap + _value.getMaxIntrinsicWidth(height);
 
+  (double, double) _intrinsicWidths(double width) =>
+      _split(width, _title.getMaxIntrinsicWidth(double.infinity), _value.getMaxIntrinsicWidth(double.infinity));
+
   @override
   double computeMinIntrinsicHeight(double width) {
-    final (titleWidth, valueWidth) = _widths(width);
+    final (titleWidth, valueWidth) = _intrinsicWidths(width);
     return math.max(_title.getMinIntrinsicHeight(titleWidth), _value.getMinIntrinsicHeight(valueWidth));
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
-    final (titleWidth, valueWidth) = _widths(width);
+    final (titleWidth, valueWidth) = _intrinsicWidths(width);
     return math.max(_title.getMaxIntrinsicHeight(titleWidth), _value.getMaxIntrinsicHeight(valueWidth));
   }
 
