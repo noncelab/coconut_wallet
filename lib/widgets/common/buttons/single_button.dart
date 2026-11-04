@@ -121,45 +121,47 @@ class SingleButton extends StatelessWidget {
   }
 
   Widget _buildButtonContent(BuildContext context) {
+    final resolvedTitleStyle =
+        titleStyle ?? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText);
+    final titleColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            FittedBox(fit: BoxFit.scaleDown, child: Text(title, style: resolvedTitleStyle)),
+            if (showNotificationDot)
+              Positioned(
+                top: -1,
+                right: -8,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
+                ),
+              ),
+          ],
+        ),
+        if (isVerticalSubtitle) ...{
+          SizedBox(height: betweenGap),
+          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
+        },
+      ],
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (leftElement != null) ...{Container(child: leftElement), CoconutLayout.spacing_400w},
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      title,
-                      style: titleStyle ?? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-                    ),
-                  ),
-                  if (showNotificationDot)
-                    Positioned(
-                      top: -1,
-                      right: -8,
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
-                      ),
-                    ),
-                ],
-              ),
-              if (isVerticalSubtitle) ...{
-                SizedBox(height: betweenGap),
-                FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
-              },
-            ],
-          ),
+          child:
+              subtitle != null && !isVerticalSubtitle
+                  ? LayoutBuilder(
+                    builder:
+                        (context, constraints) =>
+                            _titleAndValue(context, constraints.maxWidth, titleColumn, resolvedTitleStyle),
+                  )
+                  : titleColumn,
         ),
-        if (subtitle != null && !isVerticalSubtitle)
-          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
         if (rightElement != null) ...[
           rightElement!,
           if (showRightArrowWithRightElement) ...[CoconutLayout.spacing_200w, _rightArrow(context)],
@@ -167,6 +169,42 @@ class SingleButton extends StatelessWidget {
           _rightArrow(context),
       ],
     );
+  }
+
+  /// 제목과 값이 한 줄에 들어가면 원래 배치 그대로다(제목은 남는 폭, 값은 제 너비, 사이 8).
+  /// 큰 글씨·좁은 화면에서 넘칠 때만 제목 혼자 줄어들어 읽을 수 없게 되지 않도록 둘을 같은 비율로 줄인다.
+  Widget _titleAndValue(BuildContext context, double maxWidth, Widget titleColumn, TextStyle titleStyle) {
+    final valueStyle = _resolvedSubtitleStyle(context);
+    final value = FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: valueStyle));
+    final titleWidth = _naturalWidth(context, title, titleStyle);
+    final valueWidth = _naturalWidth(context, subtitle!, valueStyle);
+    final room = maxWidth - Sizes.size8;
+    if (titleWidth + valueWidth <= room) {
+      return Row(children: [Expanded(child: titleColumn), CoconutLayout.spacing_200w, value]);
+    }
+    return Row(
+      children: [
+        SizedBox(width: titleWidth * room / (titleWidth + valueWidth), child: titleColumn),
+        CoconutLayout.spacing_200w,
+        Expanded(child: value),
+      ],
+    );
+  }
+
+  /// Text가 FittedBox 안에서 한 줄로 그려질 때의 너비. Text와 같은 스타일 병합·글자 배율·굵은 글씨를 따른다.
+  static double _naturalWidth(BuildContext context, String text, TextStyle style) {
+    var effective = DefaultTextStyle.of(context).style.merge(style);
+    if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: effective),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 
   Widget _rightArrow(BuildContext context) =>
