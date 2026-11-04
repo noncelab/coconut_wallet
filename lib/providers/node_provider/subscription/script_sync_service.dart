@@ -480,6 +480,7 @@ class ScriptSyncService {
           dto.walletItem,
           dto.scriptStatus,
           now: receivedAt,
+          onCoSpentAddresses: (addresses) => _syncCoSpentAddressBalances(dto.walletItem, addresses),
         );
       } finally {
         _stateManager.addWalletFetchCompleted(dto.walletItem.id, 1);
@@ -490,12 +491,6 @@ class ScriptSyncService {
         fetchResult.txHashes,
       );
       await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
-
-      // 이번 이벤트가 트리거한 주소 외에 같은 트랜잭션으로 UTXO가 함께 소비된 주소가 있다면,
-      // 그 주소들 자신의 구독 이벤트가 실패/누락되어도 잔액이 stale 상태로 남지 않도록 동기화한다.
-      if (fetchResult.coSpentAddresses.isNotEmpty) {
-        await _syncCoSpentAddressBalances(dto.walletItem, fetchResult.coSpentAddresses);
-      }
 
       _failedScriptSyncs.remove((dto.walletItem.id, dto.scriptStatus.address));
     } catch (e, stackTrace) {
@@ -556,6 +551,7 @@ class ScriptSyncService {
     // 다시 읽지 않는다(잔액 단계는 fetchScriptBalanceBatch가 스스로 정리한다).
     var transactionOpen = false;
     var utxoOpen = false;
+    final completedScripts = <ScriptStatus>{};
     try {
       final now = DateTime.now();
       final totalStartTime = DateTime.now();
@@ -591,18 +587,24 @@ class ScriptSyncService {
       // 실패한 청크도 완료로 세야 거래 목록의 "업데이트 중"이 끝난다.
       const chunkSize = 20;
       AsyncError? chunkError;
+      final transactionResults = <ScriptStatus, FetchScriptTransactionResult>{};
       for (int i = 0; i < scriptStatuses.length; i += chunkSize) {
         final endIndex = (i + chunkSize < scriptStatuses.length) ? i + chunkSize : scriptStatuses.length;
         final batch = scriptStatuses.sublist(i, endIndex);
-        final transactionFutures = batch.map(
-          (status) =>
-              _transactionSyncService.fetchScriptTransaction(walletItem, status, inBatchProcess: true, now: now),
+        await Future.wait(
+          batch.map((status) async {
+            try {
+              transactionResults[status] = await _transactionSyncService.fetchScriptTransaction(
+                walletItem,
+                status,
+                inBatchProcess: true,
+                now: now,
+              );
+            } catch (e, stackTrace) {
+              chunkError ??= AsyncError(e, stackTrace);
+            }
+          }),
         );
-        try {
-          await Future.wait(transactionFutures);
-        } catch (e, stackTrace) {
-          chunkError ??= AsyncError(e, stackTrace);
-        }
         reportProgress(batch.length);
         _stateManager.addWalletFetchCompleted(walletItem.id, batch.length);
 
@@ -610,10 +612,18 @@ class ScriptSyncService {
           await Future.delayed(const Duration(milliseconds: 100));
         }
       }
-      if (chunkError != null) Error.throwWithStackTrace(chunkError.error, chunkError.stackTrace);
       transactionOpen = false;
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
-      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
+      // 다른 주소가 같은 거래를 먼저 처리 중이었어도, 실패한 거래에 의존하는 주소는 정리하지 않는다.
+      final readyScripts =
+          scriptStatuses.where((status) {
+            final result = transactionResults[status];
+            return result != null && _scriptCallbackService.areAllTransactionsCompleted(walletItem.id, result.txHashes);
+          }).toList();
+      if (readyScripts.length != scriptStatuses.length) {
+        chunkError ??= AsyncError(StateError('Incomplete transaction dependencies'), StackTrace.current);
+      }
+      await Future.wait(readyScripts.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
 
       final transactionEndTime = DateTime.now();
       final transactionDuration = transactionEndTime.difference(transactionStartTime);
@@ -628,7 +638,7 @@ class ScriptSyncService {
       final utxoStartTime = DateTime.now();
 
       final utxosApplied = await Future.wait(
-        scriptStatuses.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
+        readyScripts.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
       reportProgress(scriptStatuses.length);
       // listunspent를 반영하지 못한 주소가 있으면 아래 정리가 그 주소의 코인을 지울 근거가 없다.
@@ -641,18 +651,20 @@ class ScriptSyncService {
       // orphaned UTXO가 있으면 정리함
       await _utxoSyncService.cleanupOrphanedUtxos(
         walletItem,
-        reconciledAddresses: scriptStatuses.map((status) => status.address).toSet(),
+        reconciledAddresses: readyScripts.map((status) => status.address).toSet(),
       );
 
       await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);
 
-      for (final script in scriptStatuses) {
+      completedScripts.addAll(readyScripts);
+      for (final script in completedScripts) {
         _failedScriptSyncs.remove((walletItem.id, script.address));
       }
       _failedWalletSyncs.remove(walletItem.id);
 
       utxoOpen = false;
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+      if (chunkError != null) Error.throwWithStackTrace(chunkError!.error, chunkError!.stackTrace);
 
       final utxoEndTime = DateTime.now();
       final utxoDuration = utxoEndTime.difference(utxoStartTime);
@@ -672,7 +684,7 @@ class ScriptSyncService {
     } catch (e, stackTrace) {
       if (transactionOpen) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
       if (utxoOpen) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
-      for (final script in scriptStatuses) {
+      for (final script in scriptStatuses.where((script) => !completedScripts.contains(script))) {
         _failedScriptSyncs[(walletItem.id, script.address)] = script;
       }
       Logger.error('Failed to handle batch script status change: $e');

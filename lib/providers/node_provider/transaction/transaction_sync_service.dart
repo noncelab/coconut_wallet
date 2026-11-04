@@ -68,15 +68,21 @@ class TransactionSyncService {
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
+    Future<void> Function(Set<String>)? onCoSpentAddresses,
   }) async {
     // 1. 초기화 및 준비 단계
     _prepareTransactionFetch(walletItem.id, inBatchProcess);
     try {
-      return await _fetchScriptTransaction(walletItem, scriptStatus, now: now, inBatchProcess: inBatchProcess);
-    } catch (_) {
+      return await _fetchScriptTransaction(
+        walletItem,
+        scriptStatus,
+        now: now,
+        inBatchProcess: inBatchProcess,
+        onCoSpentAddresses: onCoSpentAddresses,
+      );
+    } finally {
       // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 거래를 다시 읽지 않는다.
       if (!inBatchProcess) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
-      rethrow;
     }
   }
 
@@ -85,6 +91,7 @@ class TransactionSyncService {
     ScriptStatus scriptStatus, {
     DateTime? now,
     required bool inBatchProcess,
+    Future<void> Function(Set<String>)? onCoSpentAddresses,
   }) async {
     final int walletId = walletItem.id;
 
@@ -98,7 +105,7 @@ class TransactionSyncService {
 
     // 트랜잭션 조회 결과가 없으면 종료
     if (txFetchResults.isEmpty) {
-      await _finalizeTransactionFetch(walletId, {}, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, {});
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletId, UpdateElement.utxo);
       }
@@ -116,53 +123,73 @@ class TransactionSyncService {
     final newTxHashes = processingStates.keys.toSet();
 
     if (newTxHashes.isEmpty) {
-      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, newTxHashes);
       return (txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(), coSpentAddresses: <String>{});
     }
 
     try {
+      // 거래별 실패를 모으되 성공한 거래의 예약·기록·컨펌은 먼저 마친다.
+      final errors = <AsyncError>[];
       // 3. 트랜잭션 상세 정보 조회
       final FetchedTransactionDetails fetchedTransactionDetails = await _fetchTransactionDetails(
         walletId,
         newTxHashes,
         txFetchResults,
         _electrumService,
+        errors,
       );
 
       // 4. 트랜잭션 레코드 생성 및 저장
-      final txRecords = await Future.wait(
-        fetchedTransactionDetails.fetchedTransactions.map((tx) async {
-          final hash = tx.transactionHash;
-          final height = fetchedTransactionDetails.txBlockHeightMap[hash];
-          final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[height];
-          final existing = _transactionRepository.getTransactionRecord(walletId, hash);
-          if (existing == null) {
-            return _transactionRecordService.createTransactionRecord(
-              walletId,
-              tx,
-              blockTimestamp: blockTimestamp,
-              now: now,
-            );
-          }
-          // 저장된 입출력/금액은 그대로 쓰고 이번 조회의 컨펌 정보만 기존 저장 경로로 넘긴다.
-          // 상세 조회에서 raw 검증과 입력 예약, 헤더 검증은 이미 완료했다.
-          return TransactionRecord(
-            hash,
-            blockTimestamp?.timestamp ?? now ?? DateTime.now(),
-            blockTimestamp?.height ?? 0,
-            existing.transactionType,
-            existing.memo,
-            existing.amount,
-            existing.fee,
-            existing.inputAddressList,
-            existing.outputAddressList,
-            existing.vSize,
-            existing.createdAt,
-            rbfHistoryList: existing.rbfHistoryList,
-            cpfpHistory: existing.cpfpHistory,
-          );
-        }),
-      );
+      List<TransactionRecord?> builtRecords;
+      try {
+        builtRecords =
+            await fetchedTransactionDetails.fetchedTransactions.map((tx) async {
+              final hash = tx.transactionHash;
+              final height = fetchedTransactionDetails.txBlockHeightMap[hash];
+              final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[height];
+              if (height != null && blockTimestamp == null) {
+                throw StateError('Missing block metadata for confirmed transaction $hash');
+              }
+              final existing = _transactionRepository.getTransactionRecord(walletId, hash);
+              if (existing == null) {
+                return _transactionRecordService.createTransactionRecord(
+                  walletId,
+                  tx,
+                  blockTimestamp: blockTimestamp,
+                  now: now,
+                );
+              }
+              // 저장된 입출력/금액은 그대로 쓰고 이번 조회의 컨펌 정보만 기존 저장 경로로 넘긴다.
+              // 상세 조회에서 raw 검증과 입력 예약, 헤더 검증은 이미 완료했다.
+              return TransactionRecord(
+                hash,
+                blockTimestamp?.timestamp ?? now ?? DateTime.now(),
+                blockTimestamp?.height ?? 0,
+                existing.transactionType,
+                existing.memo,
+                existing.amount,
+                existing.fee,
+                existing.inputAddressList,
+                existing.outputAddressList,
+                existing.vSize,
+                existing.createdAt,
+                rbfHistoryList: existing.rbfHistoryList,
+                cpfpHistory: existing.cpfpHistory,
+              );
+            }).wait;
+      } on ParallelWaitError<List<TransactionRecord?>, List<AsyncError?>> catch (e) {
+        builtRecords = e.values;
+        errors.add(e.errors.nonNulls.first);
+      }
+      final txRecords = builtRecords.nonNulls.toList();
+      final successfulHashes = txRecords.map((record) => record.transactionHash).toSet();
+      final successfulTransactions =
+          fetchedTransactionDetails.fetchedTransactions
+              .where((tx) => successfulHashes.contains(tx.transactionHash))
+              .toList();
+      if (successfulTransactions.isEmpty && errors.isNotEmpty) {
+        Error.throwWithStackTrace(errors.first.error, errors.first.stackTrace);
+      }
       final unconfirmedRecords = txRecords.where((record) => record.blockHeight <= 0).toList();
       if (unconfirmedRecords.isNotEmpty) {
         await _transactionRepository.addAllTransactions(walletId, unconfirmedRecords);
@@ -171,7 +198,7 @@ class TransactionSyncService {
       // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
       final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
         walletId,
-        fetchedTransactionDetails.fetchedTransactions,
+        successfulTransactions,
         unconfirmedFetchedTxHashes,
         confirmedFetchedTxHashes,
         triggeringAddress: scriptStatus.address,
@@ -184,7 +211,8 @@ class TransactionSyncService {
       // 7. 대체된 언컨펌 트랜잭션 삭제
       await _cleanupOrphanedUnconfirmedTransactions(
         walletId,
-        fetchedTransactionDetails.fetchedTransactions,
+        successfulTransactions,
+        unresolvedTxHashes: newTxHashes.difference(successfulHashes),
         preparedRecords: {for (final record in txRecords) record.transactionHash: record},
         confirmedTxHashes: confirmedFetchedTxHashes,
       );
@@ -195,7 +223,26 @@ class TransactionSyncService {
       }
 
       // 8. 마무리 단계
-      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess, processingStates: processingStates);
+      // 자식의 기록을 저장했어도 미확정 부모 기록이 없으면 CPFP 연결은 아직 끝나지 않았다.
+      final completedHashes =
+          successfulTransactions
+              .where(
+                (tx) =>
+                    !tx.inputs.any(
+                      (input) =>
+                          unconfirmedFetchedTxHashes.contains(input.transactionHash) &&
+                          _transactionRepository.getTransactionRecord(walletId, input.transactionHash) == null,
+                    ),
+              )
+              .map((tx) => tx.transactionHash)
+              .toSet();
+      if (completedHashes.length != successfulHashes.length) {
+        errors.add(AsyncError(StateError('Incomplete pending parent records'), StackTrace.current));
+      }
+      await _finalizeTransactionFetch(walletId, completedHashes, processingStates: processingStates);
+      // 일부 성공 뒤 실패하더라도 같이 소비된 주소의 잔액 갱신을 잃지 않는다.
+      if (rbfCpfpResult.coSpentAddresses.isNotEmpty) await onCoSpentAddresses?.call(rbfCpfpResult.coSpentAddresses);
+      if (errors.isNotEmpty) Error.throwWithStackTrace(errors.first.error, errors.first.stackTrace);
 
       return (
         txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(),
@@ -244,34 +291,34 @@ class TransactionSyncService {
     Set<String> newTxHashes,
     List<FetchTransactionResponse> allTxFetchResults,
     ElectrumService electrumService,
+    List<AsyncError> errors,
   ) async {
     List<Transaction?> fetched;
-    AsyncError? fetchError;
     try {
       fetched = await newTxHashes.map(fetchTransaction).wait;
     } on ParallelWaitError<List<Transaction?>, List<AsyncError?>> catch (e) {
       fetched = e.values;
-      fetchError = e.errors.nonNulls.first;
+      errors.add(e.errors.nonNulls.first);
     }
     for (final tx in fetched.nonNulls) {
       await _utxoRepository.reserveSpentInputs(walletId, tx);
     }
-    if (fetchError != null) Error.throwWithStackTrace(fetchError.error, fetchError.stackTrace);
-    final fetchedTransactions = fetched.cast<Transaction>();
+    final fetchedTransactions = fetched.nonNulls.toList();
+    final fetchedHashes = fetchedTransactions.map((tx) => tx.transactionHash).toSet();
 
-    final filteredTxFetchResults = allTxFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
+    final filteredTxFetchResults = allTxFetchResults.where((tx) => fetchedHashes.contains(tx.transactionHash)).toList();
 
     final txBlockHeightMap = Map<String, int>.fromEntries(
       filteredTxFetchResults.where((tx) => tx.height > 0).map((tx) => MapEntry(tx.transactionHash, tx.height)),
     );
 
-    final blockTimestampMap =
-        txBlockHeightMap.isEmpty
-            ? <int, BlockTimestamp>{}
-            : await electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
-
-    if (txBlockHeightMap.values.any((height) => !blockTimestampMap.containsKey(height))) {
-      throw StateError('Missing block metadata for confirmed transaction history');
+    var blockTimestampMap = <int, BlockTimestamp>{};
+    if (txBlockHeightMap.isNotEmpty) {
+      try {
+        blockTimestampMap = await electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
+      } catch (e, stackTrace) {
+        errors.add(AsyncError(e, stackTrace));
+      }
     }
 
     return (
@@ -418,12 +465,16 @@ class TransactionSyncService {
     List<Transaction> newTxs, {
     required Map<String, TransactionRecord> preparedRecords,
     required Set<String> confirmedTxHashes,
+    Set<String> unresolvedTxHashes = const {},
   }) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
     for (final localUnconfirmedTxRecord in unconfirmedTxs) {
-      if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) continue;
+      if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash) ||
+          unresolvedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) {
+        continue;
+      }
       Transaction? unconfirmedTx;
       try {
         unconfirmedTx = Transaction.parse(
@@ -477,13 +528,9 @@ class TransactionSyncService {
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
   Future<void> _finalizeTransactionFetch(
     int walletId,
-    Set<String> newTxHashes,
-    bool inBatchProcess, {
+    Set<String> newTxHashes, {
     Map<String, TransactionProcessingState>? processingStates,
   }) async {
-    if (!inBatchProcess) {
-      _stateManager.addWalletCompletedState(walletId, UpdateElement.transaction);
-    }
     if (newTxHashes.isNotEmpty) {
       await _scriptCallbackService.registerTransactionCompletion(
         walletId,

@@ -1,5 +1,8 @@
 // A batch fails only for its own work: an earlier balance failure elsewhere in the wallet must not abort it.
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import '../../../../mock/transaction_mock.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
@@ -92,9 +95,68 @@ void main() {
     );
 
     expect(historyRequests.toSet(), batch.map((s) => s.address).toSet());
-    verifyNever(electrum.getUnspentList(any, any));
+    verifyNever(electrum.getUnspentList(any, batch.first.address));
+    for (final script in batch.skip(1)) {
+      verify(electrum.getUnspentList(any, script.address)).called(1);
+    }
     final progress = ScriptSyncServiceMock.stateManager.fetchProgressByWallet[walletId]!;
     expect((progress.dispatched, progress.completed), (45, 45));
+  });
+
+  test('a failed shared transaction gates only dependent scripts and healthy addresses get their coins', () async {
+    final batch = scripts(0, 3);
+    final electrum = ScriptSyncServiceMock.electrumService;
+    final parent = TransactionMock.createMockTransaction(toAddress: wallet.walletBase.getAddress(999), amount: 10000);
+    final bad = TransactionMock.createMockTransaction(
+      toAddress: batch[0].address,
+      amount: 1000,
+      inputTransactionHash: parent.transactionHash,
+      change: (address: batch[1].address, amount: 8000),
+    );
+    final goodParent = TransactionMock.createMockTransaction(
+      toAddress: wallet.walletBase.getAddress(999),
+      amount: 11000,
+    );
+    final good = TransactionMock.createMockTransaction(
+      toAddress: batch[2].address,
+      amount: 9000,
+      inputTransactionHash: goodParent.transactionHash,
+    );
+    for (final script in batch) {
+      final tx = script == batch.last ? good : bad;
+      when(
+        electrum.getHistory(any, script.address),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 100, txHash: tx.transactionHash)]);
+    }
+    when(electrum.getTransaction(bad.transactionHash)).thenAnswer((_) async => bad.serialize());
+    when(electrum.getTransaction(good.transactionHash)).thenAnswer((_) async => good.serialize());
+    when(electrum.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, DateTime(2026))});
+    var failed = true;
+    when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((call) async {
+      if (failed && (call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
+        throw StateError('missing parent');
+      }
+      return [parent, goodParent];
+    });
+    when(
+      electrum.getUnspentList(any, batch.last.address),
+    ).thenAnswer((_) async => [ListUnspentRes(txHash: good.transactionHash, txPos: 0, value: 9000, height: 100)]);
+    await expectLater(sync.syncBatchScriptStatusList(walletItem: wallet, scriptStatuses: batch), throwsStateError);
+    verifyNever(electrum.getUnspentList(any, batch[0].address));
+    verifyNever(electrum.getUnspentList(any, batch[1].address));
+    verify(electrum.getUnspentList(any, batch.last.address)).called(1);
+    final records = ScriptSyncServiceMock.transactionRepository;
+    expect(records.getTransactionRecord(walletId, bad.transactionHash), isNull);
+    expect(records.getTransactionRecord(walletId, good.transactionHash)?.blockHeight, 100);
+    expect(ScriptSyncServiceMock.utxoRepository.getUtxoStateList(walletId).single.amount, 9000);
+    final progress = ScriptSyncServiceMock.stateManager.fetchProgressByWallet[walletId]!;
+    expect(progress.completed, progress.dispatched);
+    failed = false;
+    await sync.syncBatchScriptStatusList(walletItem: wallet, scriptStatuses: batch);
+    expect(records.getTransactionRecord(walletId, bad.transactionHash)?.blockHeight, 100);
+    for (final script in batch.take(2)) {
+      verify(electrum.getUnspentList(any, script.address)).called(1);
+    }
   });
 
   test('a balance failure on an address inside the batch still aborts it', () async {

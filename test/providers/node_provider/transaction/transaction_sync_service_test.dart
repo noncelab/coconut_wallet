@@ -406,6 +406,205 @@ void main() {
       );
     }
 
+    for (final failure in ['parent', 'parse', 'header']) {
+      for (final existing in [false, true]) {
+        test('[codex-pr2-mixed] healthy sibling saves despite $failure failure (existing=$existing)', () async {
+          await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+          await addressRepository.ensureAddressesExist(
+            walletItemBase: testWalletItem,
+            cursor: 0,
+            count: 2,
+            isChange: false,
+          );
+          final parent = TransactionMock.createMockTransaction(
+            toAddress: testWalletItem.walletBase.getAddress(1),
+            amount: 21000,
+          );
+          final good = TransactionMock.createMockTransaction(
+            toAddress: testAddress,
+            amount: 19000,
+            inputTransactionHash: parent.transactionHash,
+          );
+          final bad = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 7000);
+          final coSpent = <String>[];
+          realmManager.realm.write(
+            () => realmManager.realm.add(
+              UtxoMock.createUnspentRealmUtxo(
+                walletId: testWalletId,
+                address: testWalletItem.walletBase.getAddress(1),
+                transactionHash: parent.transactionHash,
+                amount: 21000,
+              ),
+            ),
+          );
+          if (existing) {
+            await transactionRepository.addAllTransactions(testWalletId, [
+              TransactionMock.createUnconfirmedTransactionRecord(transactionHash: good.transactionHash),
+            ]);
+          }
+          when(electrumService.getHistory(any, any)).thenAnswer(
+            (_) async => [
+              GetTxHistoryRes(height: 100, txHash: good.transactionHash),
+              GetTxHistoryRes(height: 101, txHash: bad.transactionHash),
+            ],
+          );
+          when(electrumService.getTransaction(good.transactionHash)).thenAnswer((_) async => good.serialize());
+          when(
+            electrumService.getTransaction(bad.transactionHash),
+          ).thenAnswer((_) async => failure == 'parse' ? '00' : bad.serialize());
+          when(electrumService.fetchBlocksByHeight(any)).thenAnswer(
+            (_) async => {100: BlockTimestamp(100, now), if (failure != 'header') 101: BlockTimestamp(101, now)},
+          );
+          when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+            call,
+          ) async {
+            if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
+              throw StateError('parent unavailable');
+            }
+            return [parent];
+          });
+          for (var attempt = 0; attempt < 4; attempt++) {
+            await expectLater(
+              transactionSyncService.fetchScriptTransaction(
+                testWalletItem,
+                mockScriptStatus,
+                onCoSpentAddresses: (addresses) async => coSpent.addAll(addresses),
+              ),
+              throwsA(anything),
+            );
+          }
+          expect(transactionRepository.getTransactionRecord(testWalletId, good.transactionHash)?.blockHeight, 100);
+          expect(transactionRepository.getTransactionRecord(testWalletId, bad.transactionHash), isNull);
+          expect(coSpent, [testWalletItem.walletBase.getAddress(1)]);
+          expect(scriptCallbackService.areAllTransactionsCompleted(testWalletId, [good.transactionHash]), isTrue);
+          expect(
+            scriptCallbackService.isTransactionProcessable(
+              txHashKey: '$testWalletId:${bad.transactionHash}',
+              isConfirmed: true,
+            ),
+            isTrue,
+          );
+          verify(stateManager.addWalletSyncState(testWalletId, UpdateElement.transaction)).called(4);
+          verify(stateManager.addWalletCompletedState(testWalletId, UpdateElement.transaction)).called(4);
+        });
+      }
+    }
+
+    test('a healthy CPFP child records its dependency despite a failed sibling', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      final parent = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 21000);
+      final child = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 19000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      final bad = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 7000);
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createUnconfirmedTransactionRecord(transactionHash: parent.transactionHash),
+      ]);
+      realmManager.realm.write(
+        () => realmManager.realm.add(
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testAddress,
+            transactionHash: parent.transactionHash,
+            amount: 21000,
+          ),
+        ),
+      );
+      when(electrumService.getHistory(any, any)).thenAnswer(
+        (_) async => [
+          GetTxHistoryRes(height: 0, txHash: child.transactionHash),
+          GetTxHistoryRes(height: 0, txHash: bad.transactionHash),
+        ],
+      );
+      for (final tx in [parent, child, bad]) {
+        when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+      }
+      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+        call,
+      ) async {
+        if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
+          throw StateError('parent unavailable');
+        }
+        return [parent];
+      });
+      await expectLater(
+        transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus),
+        throwsStateError,
+      );
+      expect(
+        transactionRepository.getCpfpHistory(testWalletId, child.transactionHash)?.parentTransactionHash,
+        parent.transactionHash,
+      );
+      expect(transactionRepository.getTransactionRecord(testWalletId, child.transactionHash), isNotNull);
+      expect(transactionRepository.getTransactionRecord(testWalletId, bad.transactionHash), isNull);
+    });
+
+    test('a saved child retries CPFP linking until its pending parent record is available', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      final funding = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 30000);
+      final parent = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 21000,
+        inputTransactionHash: funding.transactionHash,
+      );
+      final child = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 19000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      realmManager.realm.write(
+        () => realmManager.realm.add(
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: testWalletId,
+            address: testAddress,
+            transactionHash: parent.transactionHash,
+            amount: 21000,
+          ),
+        ),
+      );
+      when(electrumService.getHistory(any, any)).thenAnswer(
+        (_) async => [
+          GetTxHistoryRes(height: 0, txHash: child.transactionHash),
+          GetTxHistoryRes(height: 0, txHash: parent.transactionHash),
+        ],
+      );
+      for (final tx in [parent, child]) {
+        when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+      }
+      var failed = true;
+      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+        call,
+      ) async {
+        if ((call.positionalArguments.first as Transaction).transactionHash == parent.transactionHash) {
+          if (failed) throw StateError('parent unavailable');
+          return [funding];
+        }
+        return [parent];
+      });
+      await expectLater(
+        transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus),
+        throwsStateError,
+      );
+      expect(transactionRepository.getTransactionRecord(testWalletId, child.transactionHash), isNotNull);
+      expect(transactionRepository.getTransactionRecord(testWalletId, parent.transactionHash), isNull);
+      expect(scriptCallbackService.areAllTransactionsCompleted(testWalletId, [child.transactionHash]), isFalse);
+      failed = false;
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus);
+      expect(
+        transactionRepository.getCpfpHistory(testWalletId, child.transactionHash)?.parentTransactionHash,
+        parent.transactionHash,
+      );
+      expect(
+        scriptCallbackService.areAllTransactionsCompleted(testWalletId, [
+          child.transactionHash,
+          parent.transactionHash,
+        ]),
+        isTrue,
+      );
+    });
+
     group('mark-first: 조회가 실패해도 받아 온 거래가 쓴 코인은 먼저 예약한다', () {
       final coinAddress = testWalletItem.walletBase.getAddress(0);
       final funding = TransactionMock.createMockTransaction(toAddress: coinAddress, amount: 1000000);
@@ -443,6 +642,13 @@ void main() {
         when(electrumService.getTransaction(spend.transactionHash)).thenAnswer((_) async => spend.serialize());
         when(electrumService.getTransaction(unreachable)).thenThrow(StateError('timeout'));
 
+        when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+          _,
+        ) async {
+          expect(coinStatus(), 'outgoing', reason: 'reservation precedes parent loading');
+          return [funding];
+        });
+
         await expectLater(
           transactionSyncService.fetchScriptTransaction(
             testWalletItem,
@@ -454,7 +660,7 @@ void main() {
         );
 
         expect(coinStatus(), 'outgoing');
-        expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNull);
+        expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNotNull);
       });
 
       test('잔돈 없는 확정 sweep도 헤더를 받지 못한 채 실패하기 전에 입력을 예약한다', () async {
@@ -553,74 +759,89 @@ void main() {
       verifyNever(stateManager.addWalletCompletedState(any, any));
     });
 
-    test('RBF 트랜잭션을 감지하고 처리하는지 확인', () async {
-      // 이전 트랜잭션을 먼저 생성하고 해시를 얻음
-      final originalTx = TransactionMock.createMockTransaction(
-        toAddress: testWalletItem.walletBase.getAddress(0),
-        amount: 1000000,
-        inputTransactionHash: '1111111111111111111111111111111111111111111111111111111111111111',
-      );
-
-      // 대체될 트랜잭션
-      final prevTx = TransactionMock.createMockTransaction(
-        toAddress: testWalletItem.walletBase.getAddress(1),
-        amount: 950000,
-        inputTransactionHash: originalTx.transactionHash,
-      );
-
-      // RBF 트랜잭션 (현재 테스트 대상)
-      final rbfTx = TransactionMock.createMockTransaction(
-        toAddress: testWalletItem.walletBase.getAddress(1),
-        amount: 900000,
-        inputTransactionHash: originalTx.transactionHash,
-      );
-
-      // UTXO 상태 생성 - UtxoMock 클래스 사용
-      realmManager.realm.write(() {
-        final utxo = UtxoMock.createRbfableUtxo(
-          walletId: testWalletId,
-          address: testAddress,
+    for (final failedSibling in [false, true]) {
+      test('RBF 트랜잭션을 감지하고 처리하는지 확인 (failedSibling=$failedSibling)', () async {
+        // 이전 트랜잭션을 먼저 생성하고 해시를 얻음
+        final originalTx = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(0),
           amount: 1000000,
-          transactionHash: originalTx.transactionHash,
-          index: 0,
-          addressIndex: 0,
-          spentByTransactionHash: prevTx.transactionHash,
+          inputTransactionHash: '1111111111111111111111111111111111111111111111111111111111111111',
         );
-        realmManager.realm.add(utxo);
+
+        // 대체될 트랜잭션
+        final prevTx = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(1),
+          amount: 950000,
+          inputTransactionHash: originalTx.transactionHash,
+        );
+
+        // RBF 트랜잭션 (현재 테스트 대상)
+        final rbfTx = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(1),
+          amount: 900000,
+          inputTransactionHash: originalTx.transactionHash,
+        );
+
+        // UTXO 상태 생성 - UtxoMock 클래스 사용
+        realmManager.realm.write(() {
+          final utxo = UtxoMock.createRbfableUtxo(
+            walletId: testWalletId,
+            address: testAddress,
+            amount: 1000000,
+            transactionHash: originalTx.transactionHash,
+            index: 0,
+            addressIndex: 0,
+            spentByTransactionHash: prevTx.transactionHash,
+          );
+          realmManager.realm.add(utxo);
+        });
+
+        // 원본 트랜잭션 추가 - 명시적으로 transactionHash를 mockOriginalTxHash로 설정
+        await transactionRepository.addAllTransactions(testWalletId, [
+          TransactionMock.createUnconfirmedTransactionRecord(
+            transactionHash: prevTx.transactionHash, // 명시적으로 해시값 지정
+          ),
+        ]);
+
+        final bad = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 3000);
+        when(electrumService.getTransaction(bad.transactionHash)).thenAnswer((_) async => bad.serialize());
+        when(electrumService.getHistory(any, any)).thenAnswer(
+          (_) async => [
+            GetTxHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
+            if (failedSibling) GetTxHistoryRes(height: 0, txHash: bad.transactionHash),
+          ],
+        );
+        when(electrumService.getTransaction(rbfTx.transactionHash)).thenAnswer((_) async => rbfTx.serialize());
+        when(
+          electrumService.getTransaction(rbfTx.inputs[0].transactionHash),
+        ).thenAnswer((_) async => originalTx.serialize());
+        when(
+          electrumService.getTransaction(prevTx.inputs[0].transactionHash),
+        ).thenAnswer((_) async => originalTx.serialize());
+        when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+          call,
+        ) async {
+          if ((call.positionalArguments.first as Transaction).transactionHash == bad.transactionHash) {
+            throw StateError('parent unavailable');
+          }
+          return [originalTx];
+        });
+
+        final fetch = transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+        if (failedSibling) {
+          await expectLater(fetch, throwsStateError);
+        } else {
+          await fetch;
+        }
+
+        // RBF 내역이 저장되었는지 확인
+        final rbfHistories = transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
+
+        expect(rbfHistories.length, 2);
+        expect(rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
+        expect(rbfHistories.last.originalTransactionHash, prevTx.transactionHash);
       });
-
-      // 원본 트랜잭션 추가 - 명시적으로 transactionHash를 mockOriginalTxHash로 설정
-      await transactionRepository.addAllTransactions(testWalletId, [
-        TransactionMock.createUnconfirmedTransactionRecord(
-          transactionHash: prevTx.transactionHash, // 명시적으로 해시값 지정
-        ),
-      ]);
-
-      when(electrumService.getHistory(any, any)).thenAnswer(
-        (_) async => [
-          GetTxHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
-        ],
-      );
-      when(electrumService.getTransaction(rbfTx.transactionHash)).thenAnswer((_) async => rbfTx.serialize());
-      when(
-        electrumService.getTransaction(rbfTx.inputs[0].transactionHash),
-      ).thenAnswer((_) async => originalTx.serialize());
-      when(
-        electrumService.getTransaction(prevTx.inputs[0].transactionHash),
-      ).thenAnswer((_) async => originalTx.serialize());
-      when(
-        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
-      ).thenAnswer((_) async => [originalTx]);
-
-      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
-
-      // RBF 내역이 저장되었는지 확인
-      final rbfHistories = transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
-
-      expect(rbfHistories.length, 2);
-      expect(rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
-      expect(rbfHistories.last.originalTransactionHash, prevTx.transactionHash);
-    });
+    }
 
     test('outgoing RBF cleanup removes the immediate predecessor and keeps replacement outputs', () async {
       final recordingUtxoRepository = _RecordingUtxoRepository(realmManager);

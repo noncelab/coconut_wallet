@@ -640,6 +640,47 @@ void main() {
     expect(observed['spend_height'], 102, reason: 'the spend must stop showing as 보내는 중');
   }
 
+  test('[codex-pr2-mixed-real] real loader records healthy same-address sibling despite poisoned parent', () async {
+    final c = _Case();
+    await c.init();
+    final s = _Session.start(c.electrum);
+    expect(await s.subscribe(c.wallet), isTrue);
+    final parent = _tx([(c.faucet.transactionHash, 2)], [(_external, 200000)]);
+    final good = _tx([(c.faucet.transactionHash, 1)], [(c.input, 41000), (_external, 4958000)]);
+    final bad = _tx([(parent.transactionHash, 0)], [(c.input, 25000), (_external, 174000)]);
+    c.backend
+      ..put(parent, 101)
+      ..put(good, 102)
+      ..put(bad, 102);
+    c.backend.fault = (method, hash) => method == 'getTransaction' && hash == parent.transactionHash;
+    c.backend.notify(c.input);
+    await _drain(s);
+    for (var i = 0; i < 4; i++) {
+      s.retryClock.elapse();
+      await _drain(s);
+    }
+    final records = ScriptSyncServiceMock.transactionRepository;
+    final goodBefore = records.getTransactionRecord(_walletId, good.transactionHash);
+    final badBefore = records.getTransactionRecord(_walletId, bad.transactionHash);
+    c.backend.fault = (_, __) => false;
+    s.retryClock.elapse();
+    await _drain(s);
+    // ignore: avoid_print
+    print(
+      'CODEX_MIXED_REAL goodBefore=${goodBefore?.blockHeight} badBefore=${badBefore?.blockHeight} goodAfter=${records.getTransactionRecord(_walletId, good.transactionHash)?.blockHeight} badAfter=${records.getTransactionRecord(_walletId, bad.transactionHash)?.blockHeight}',
+    );
+    expect(
+      records.getTransactionRecord(_walletId, bad.transactionHash)?.blockHeight,
+      102,
+      reason: 'the failing sibling eventually recovers',
+    );
+    expect(
+      goodBefore?.blockHeight,
+      102,
+      reason: 'a healthy transaction must not wait for another transaction to recover',
+    );
+  });
+
   group('R1 stale 보내는 중 after confirmation', () {
     // (a) control
     for (final changeFirst in [false, true]) {
@@ -1386,7 +1427,7 @@ void main() {
       b
         ..put(sweep, 0)
         ..put(blocker, 0)
-        ..fault = ((m, k) => m == 'getTransaction' && k == blocker.transactionHash);
+        ..fault = ((m, k) => m == 'getTransaction' && k == c.funding.transactionHash);
       b.notify(c.input);
       await _drain(s);
       expect(c.coinState(), 'outgoing');
@@ -1418,8 +1459,8 @@ void main() {
       expect(afterHealthyListunspent, 'unspent', reason: 'a subsequent successful listunspent must recover the coin');
     });
 
-    // A sweep of X and Y is seen only through `input`'s push, and another new tx on `input` cannot be fetched, so
-    // the fetch reserves both inputs (mark-first) and fails before the sweep is recorded. The sweep then leaves the
+    // A sweep of X and Y is seen only through `input`'s push, but its funding parent cannot be fetched, so
+    // mark-first reserves both inputs before record construction fails. The sweep then leaves the
     // mempool. A later successful batch that does not include `neighbour` must not delete Y for good.
     for (final replaceIsolate in [false, true]) {
       final how = replaceIsolate ? 'after a reconnect (new isolate)' : 'by the bounded retry';
@@ -1432,7 +1473,7 @@ void main() {
         b
           ..put(sweep, 0)
           ..put(blocker, 0)
-          ..fault = ((m, k) => m == 'getTransaction' && k == blocker.transactionHash);
+          ..fault = ((m, k) => m == 'getTransaction' && k == c.funding.transactionHash);
         b.notify(c.input); // the neighbour's push is lost
         await _drain(s);
         final records = ScriptSyncServiceMock.transactionRepository;
