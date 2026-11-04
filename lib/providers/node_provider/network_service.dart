@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -119,14 +122,24 @@ class NetworkService {
     return RecommendedFee.truncateTo2Decimals(feeBtcPerKb * 100000);
   }
 
-  /// 트랜잭션을 브로드캐스트합니다.
-  Future<Result<String>> broadcast(Transaction signedTx) async {
+  /// 트랜잭션을 브로드캐스트합니다. 응답이 없거나 실패하면 같은 서버에 거래가 들어갔는지 확인합니다.
+  Future<Result<String>> broadcast(
+    Transaction signedTx, {
+    Duration replyTimeout = kBroadcastReplyTimeout,
+    Duration checkTimeout = kBroadcastCheckTimeout,
+  }) async {
     try {
-      final txHash = await _electrumService.broadcast(signedTx.serialize());
+      final txHash = await _electrumService.broadcast(signedTx.serialize()).timeout(replyTimeout);
 
       return Result.success(txHash);
     } catch (e) {
-      return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
+      // 응답을 못 받았거나 거절돼도 노드가 이미 받았을 수 있다. 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
+      final txHash = signedTx.transactionHash;
+      if (await _electrumService.isTransactionKnown(txHash, timeout: checkTimeout)) return Result.success(txHash);
+      // 서버가 답한 거절(또는 보내기 전 연결 없음)만 확정된 실패다. 응답 시간 초과·연결 끊김은 결과를 모르는 것이라
+      // 예전 메인 쪽 응답 시간 초과와 같은 오류로 알린다(같은 문구). 화면은 이 오류에서 같은 거래를 한 번 더 보낸다.
+      if (e is Map || e is String) return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
+      return Result.failure(ErrorCodes.nodeIsolateError);
     }
   }
 

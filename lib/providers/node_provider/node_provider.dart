@@ -687,8 +687,9 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.syncViewedAddresses(walletItem, addresses);
   }
 
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    final result = await _isolateManager.broadcast(signedTx);
+  /// [attempt]: 결과를 모르는 전송을 같은 거래로 다시 보낸 횟수. 느린 망일 가능성이 커서 매번 더 오래 기다린다.
+  Future<Result<String>> broadcast(Transaction signedTx, {int attempt = 0}) async {
+    final result = await _isolateManager.broadcast(signedTx, attempt: attempt);
     if (result.isFailure) {
       Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
     }

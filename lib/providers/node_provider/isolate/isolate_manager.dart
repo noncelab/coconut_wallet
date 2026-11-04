@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -544,8 +545,18 @@ class IsolateManager {
     return _send(IsolateControllerCommand.syncViewedAddresses, [walletItem, addresses]);
   }
 
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [signedTx]);
+  /// [attempt]: 결과를 모르는 전송을 같은 거래로 다시 보낸 횟수. 다시 보낼 때마다 기다림을 두 배로 늘린다.
+  Future<Result<String>> broadcast(Transaction signedTx, {int attempt = 0}) async {
+    // 응답이 늦거나 사라져도 노드가 받았을 수 있다. 응답 대기와 서버 확인이 끝날 때까지 기다린다.
+    final onion = _host.contains('.onion');
+    final scale = 1 << attempt;
+    final reply = (onion ? kElectrumResponseTimeout : kBroadcastReplyTimeout) * scale;
+    final check = (onion ? kBroadcastCheckTimeoutForOnion : kBroadcastCheckTimeout) * scale;
+    return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [
+      signedTx,
+      reply,
+      check,
+    ], timeout: reply + check + const Duration(seconds: 3));
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {

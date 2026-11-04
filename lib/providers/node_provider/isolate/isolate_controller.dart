@@ -78,7 +78,9 @@ class IsolateController {
           isolateToMainSendPort.send(await _walletResyncService.resyncWallet(walletItem));
           break;
         case IsolateControllerCommand.broadcast:
-          isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));
+          isolateToMainSendPort.send(
+            await _networkManager.broadcast(params[0], replyTimeout: params[1], checkTimeout: params[2]),
+          );
           break;
         case IsolateControllerCommand.getNetworkMinimumFeeRate:
           isolateToMainSendPort.send(await _networkManager.getNetworkMinimumFeeRate());

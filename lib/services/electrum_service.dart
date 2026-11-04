@@ -240,6 +240,21 @@ class ElectrumService {
     return response.result;
   }
 
+  /// 브로드캐스트 결과를 모를 때 서버가 이 거래를 이미 갖고 있는지 확인합니다. 확인하지 못하면 false입니다.
+  /// 보낸 직후의 txid를 제3자에게 알리지 않도록 외부 API로 대체하지 않고 같은 Electrum 서버에만 묻습니다.
+  Future<bool> isTransactionKnown(String txHash, {required Duration timeout}) async {
+    try {
+      final response = await _call(
+        _BlockchainTransactionGetReq(txHash),
+        (json, {int? id}) => ElectrumResponse(result: json as String),
+        timeout: timeout,
+      );
+      return Transaction.parse(response.result).transactionHash == txHash;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
     var receivedRpcError = false;
     try {

@@ -75,7 +75,7 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
   @override
-  Future<Result<String>> broadcast(Transaction transaction) {
+  Future<Result<String>> broadcast(Transaction transaction, {int attempt = 0}) {
     broadcasts++;
     return pending.future;
   }

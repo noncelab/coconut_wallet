@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:isolate';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_controller.dart';
@@ -44,6 +47,22 @@ class _State extends Fake implements IsolateStateManager {
 
 class _Network extends Fake implements NetworkService {}
 
+class _BroadcastNetwork extends Fake implements NetworkService {
+  Duration? replyTimeout;
+  Duration? checkTimeout;
+
+  @override
+  Future<Result<String>> broadcast(
+    Transaction signedTx, {
+    Duration replyTimeout = Duration.zero,
+    Duration checkTimeout = Duration.zero,
+  }) async {
+    this.replyTimeout = replyTimeout;
+    this.checkTimeout = checkTimeout;
+    return Result.success(signedTx.transactionHash);
+  }
+}
+
 class _Electrum extends Fake implements ElectrumService {}
 
 class _Records extends Fake implements TransactionRecordService {}
@@ -76,5 +95,31 @@ void main() {
     expect(subscriptions.subscribed, [1, 2, 3]);
     expect(result.isFailure, isTrue);
     expect(result.error.message, contains('wallet 1'));
+  });
+
+  test('broadcast forwards the reply and check limits that the main side waits for', () async {
+    final network = _BroadcastNetwork();
+    final controller = IsolateController(
+      _Subscriptions({}),
+      network,
+      _State(),
+      _Electrum(),
+      _Records(),
+      _Resync(),
+      _Realm(),
+    );
+    final port = ReceivePort();
+    addTearDown(port.close);
+    final fixture = jsonDecode(File('test/fixtures/signing/coldcard_raw.json').readAsStringSync()) as Map;
+    final tx = Transaction.parse(fixture['returnedPayload'] as String);
+
+    await controller.executeNetworkCommand(IsolateControllerCommand.broadcast, port.sendPort, [
+      tx,
+      const Duration(seconds: 8),
+      const Duration(seconds: 4),
+    ]);
+
+    expect((await port.first as Result<String>).value, tx.transactionHash);
+    expect((network.replyTimeout, network.checkTimeout), (const Duration(seconds: 8), const Duration(seconds: 4)));
   });
 }

@@ -49,6 +49,9 @@ class _NodeProvider extends Fake implements NodeProvider {
   bool connected = true;
   Exception? reconnectError;
   Exception? broadcastError;
+  final failures = <AppError>[];
+  final attempts = <int>[];
+  int reconnects = 0;
   FutureOr<void> Function()? duringBroadcast;
 
   @override
@@ -57,15 +60,18 @@ class _NodeProvider extends Fake implements NodeProvider {
 
   @override
   Future<Result<bool>> reconnect() async {
+    reconnects++;
     if (reconnectError != null) throw reconnectError!;
     return Result.failure(ErrorCodes.nodeConnectionError);
   }
 
   @override
-  Future<Result<String>> broadcast(Transaction signedTx) async {
+  Future<Result<String>> broadcast(Transaction signedTx, {int attempt = 0}) async {
     broadcasts++;
+    attempts.add(attempt);
     await duringBroadcast?.call();
     if (broadcastError != null) throw broadcastError!;
+    if (failures.isNotEmpty) return Result.failure(failures.removeAt(0));
     return fails ? Result.failure(ErrorCodes.broadcastError) : Result.success(returnedTxid ?? signedTx.transactionHash);
   }
 }
@@ -306,6 +312,71 @@ void main() {
     expect((await viewModel.broadcast(inheritedTagIds: [])).isFailure, isTrue);
     expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
     expect(repository.getUtxoState(1, inputId)!.spentByTransactionHash, isNull);
+  });
+
+  test('a broadcast the node never answered is sent again as the same transaction, then reserves', () async {
+    await initialize();
+    node.failures.add(ErrorCodes.nodeIsolateError);
+    expect((await viewModel.broadcast(inheritedTagIds: [])).value, viewModel.signedTx!.transactionHash);
+    expect((node.broadcasts, node.reconnects), (2, 0));
+    expect(node.attempts, [0, 1]);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('when the connection is gone after an unanswered broadcast, it reconnects before sending again', () async {
+    await initialize();
+    node.failures.add(ErrorCodes.nodeUnknown);
+    node.duringBroadcast = () => node.connected = false;
+    expect((await viewModel.broadcast(inheritedTagIds: [])).isSuccess, isTrue);
+    expect((node.broadcasts, node.reconnects), (2, 1));
+  });
+
+  test('a rejection from the server is not sent again', () async {
+    await initialize();
+    node.failures.add(ErrorCodes.broadcastError);
+    expect((await viewModel.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.broadcastError.code);
+    expect(node.broadcasts, 1);
+  });
+
+  test('still no answer: resends with growing waits, then keeps the unknown failure and reserves nothing', () async {
+    for (final retry in [ErrorCodes.nodeIsolateError, ErrorCodes.nodeConnectionError]) {
+      await initialize();
+      node
+        ..broadcasts = 0
+        ..attempts.clear()
+        ..failures.addAll([ErrorCodes.nodeIsolateError, retry, retry]);
+      expect((await viewModel.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.nodeIsolateError.code);
+      expect(node.attempts, [0, 1, 2], reason: retry.code);
+      expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+    }
+  });
+
+  test('a server rejection on a resend ends the resends with that rejection', () async {
+    await initialize();
+    node.failures.addAll([ErrorCodes.nodeIsolateError, ErrorCodes.broadcastError]);
+    expect((await viewModel.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.broadcastError.code);
+    expect(node.broadcasts, 2);
+  });
+
+  test('nothing is sent again after the user left the screen', () async {
+    await initialize();
+    // The screen's provider disposes its view model when the user leaves; this one is not torn down twice.
+    final leaving = BroadcastingViewModel(
+      sendInfo,
+      wallets,
+      tags,
+      true,
+      node,
+      transactions,
+      TransactionDraftRepository(manager),
+      repository,
+      null,
+    );
+    expect(await leaving.setTxInfo(), isNull);
+    node.failures.addAll([ErrorCodes.nodeIsolateError, ErrorCodes.nodeIsolateError]);
+    node.duringBroadcast = leaving.dispose;
+    expect((await leaving.broadcast(inheritedTagIds: [])).error.code, ErrorCodes.nodeIsolateError.code);
+    expect(node.broadcasts, 1);
   });
 
   test('output details preserve transaction indices with change at any position', () async {

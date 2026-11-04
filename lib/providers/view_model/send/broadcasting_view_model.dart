@@ -3,7 +3,9 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -60,6 +62,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<String> _tagSourceUtxoIds = [];
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
+  bool _isDisposed = false;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -177,7 +180,20 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    final result = await _nodeProvider.broadcast(signedTx);
+    var result = await _nodeProvider.broadcast(signedTx);
+    // 노드가 답하지 않아 보냈는지 모르는 채 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
+    // 같은 거래를 다시 보내는 것은 안전하므로(같은 txid), 화면을 떠나지 않은 동안 연결을 되살려 다시 보낸다.
+    for (
+      var attempt = 1;
+      attempt <= kBroadcastRetries && result.isFailure && _isUnknownOutcome(result.error) && !_isDisposed;
+      attempt++
+    ) {
+      await _restoreConnectionForRetry();
+      if (_isDisposed) break;
+      final retried = await _nodeProvider.broadcast(signedTx, attempt: attempt);
+      // 다시 보내지도 못했으면 첫 결과(모름)를 그대로 둔다. '연결 실패'로 보이면 안 나간 줄 안다.
+      if (retried.isSuccess || retried.error.code == ErrorCodes.broadcastError.code) result = retried;
+    }
     if (result.isFailure) return result;
 
     if (result.value.toLowerCase() == txid.toLowerCase()) {
@@ -206,6 +222,25 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     return result;
   }
+
+  Future<void> _restoreConnectionForRetry() async {
+    try {
+      if (await isElectrumServerConnected()) return;
+      await _nodeProvider.reconnect().timeout(kBroadcastReconnectWait);
+    } catch (e) {
+      Logger.error('Reconnect before resending the same transaction failed: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  /// 서버가 거절한 실패와 달리 노드가 답하지 않아 전송 여부를 모르는 실패(응답 시간 초과·연결 끊김).
+  static bool _isUnknownOutcome(AppError error) =>
+      error.code == ErrorCodes.nodeIsolateError.code || error.code == ErrorCodes.nodeUnknown.code;
 
   Future<bool> isElectrumServerConnected() async {
     try {

@@ -480,7 +480,7 @@ class _ProbeNode extends _UiNode {
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
   @override
-  Future<Result<String>> broadcast(Transaction tx) => NetworkService(c.electrum).broadcast(tx);
+  Future<Result<String>> broadcast(Transaction tx, {int attempt = 0}) => NetworkService(c.electrum).broadcast(tx);
 }
 
 class _ProbeWallets extends _UiWallets {
