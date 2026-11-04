@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -77,7 +78,10 @@ class TransactionRecordService {
   /// 트랜잭션의 입출력 상세 정보를 처리합니다.
   TransactionDetails processTransactionDetails(Transaction tx, List<Transaction> previousTxs, int walletId) {
     List<TransactionAddress> inputAddressList = [];
+    int selfInputCount = 0;
+    int selfOutputCount = 0;
     int fee = 0;
+    int amount = 0;
     final parentsByHash =
         previousTxs is PreviousTransactions
             ? previousTxs.byHash
@@ -97,6 +101,11 @@ class TransactionRecordService {
       inputAddressList.add(inputAddress);
 
       fee += inputAddress.amount;
+
+      if (_addressRepository.containsAddress(walletId, inputAddress.address)) {
+        selfInputCount++;
+        amount -= inputAddress.amount;
+      }
     }
 
     // 출력 처리
@@ -114,22 +123,44 @@ class TransactionRecordService {
       outputAddressList.add(outputAddress);
 
       fee -= outputAddress.amount;
+
+      if (_addressRepository.containsAddress(walletId, outputAddress.address)) {
+        selfOutputCount++;
+        amount += outputAddress.amount;
+      }
     }
 
-    // 금액과 유형은 내 주소 판정에 달려 있어, 주소가 늘면 저장된 입출력으로 같은 식을 다시 센다(AddressRepository).
-    final own = countOwnAmount(
-      inputAddressList,
-      outputAddressList,
-      (address) => _addressRepository.containsAddress(walletId, address),
+    // 트랜잭션 유형 결정
+    TransactionType txType = determineTransactionType(
+      selfInputCount,
+      selfOutputCount,
+      tx.inputs.length,
+      tx.outputs.length,
     );
 
     return TransactionDetails(
       inputAddressList: inputAddressList,
       outputAddressList: outputAddressList,
-      txType: own.type,
-      amount: own.amount,
+      txType: txType,
+      amount: amount,
       fee: fee,
     );
+  }
+
+  TransactionType determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
+    if (selfInputCount == 0) {
+      return TransactionType.received;
+    }
+
+    if (selfOutputCount < outputCount) {
+      return TransactionType.sent;
+    }
+
+    if (selfOutputCount == outputCount && selfInputCount == inputCount) {
+      return TransactionType.self;
+    }
+
+    return TransactionType.received;
   }
 
   /// 트랜잭션 레코드를 조회합니다.

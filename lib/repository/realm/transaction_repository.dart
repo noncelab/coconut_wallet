@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
@@ -14,6 +18,46 @@ import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:tuple/tuple.dart';
+import 'package:collection/collection.dart';
+
+/// 받기만 한 거래 기록(RECEIVED이고 저장된 입력에 내 주소가 없음)의 금액을 지금 아는 내 주소로 받은 출력의 합으로 올린다.
+/// 주소 창보다 먼저 처리된 거래(창에 걸친 대량 출금 등)는 그때 주소 표에 없던 내 출력이 빠져 있다.
+/// 예전 버전은 부모를 못 받은 입력을 빼고 저장했을 수 있어 입력으로 금액이나 유형을 추정하지 않는다.
+/// 유형·수수료·입출력·RBF/CPFP 내역은 그대로 두고, 내 주소는 늘기만 하므로 금액이 줄어드는 계산은 믿지 않는다.
+/// 쓰기 트랜잭션 안에서 불러야 한다. 내 주소 여부는 500개 기록씩 그 기록에 나온 주소만 조회한다. 바꾼 수를 돌려준다.
+int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction> records) {
+  var changed = 0;
+  for (final chunk in records.where((r) => r.transactionType == TransactionType.received.name).slices(500)) {
+    final decoded = <(RealmTransaction, List<String>, List<TransactionAddress>)>[];
+    for (final record in chunk) {
+      try {
+        decoded.add((
+          record,
+          [for (final e in record.inputAddressList) jsonToAddress(jsonDecode(e)).address],
+          [for (final e in record.outputAddressList) jsonToAddress(jsonDecode(e))],
+        ));
+      } catch (e) {
+        Logger.error('recountReceivedAmounts: skip an undecodable record - $e'); // 마이그레이션을 멈추지 않는다
+      }
+    }
+    final mentioned = {
+      for (final (_, inputs, outputs) in decoded) ...[...inputs, for (final output in outputs) output.address],
+    };
+    final own =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address IN $1', [
+          walletId,
+          mentioned.toList(),
+        ]).map((address) => address.address).toSet();
+    for (final (record, inputs, outputs) in decoded) {
+      if (inputs.any(own.contains)) continue;
+      final amount = outputs.fold(0, (sum, output) => own.contains(output.address) ? sum + output.amount : sum);
+      if (amount <= record.amount) continue;
+      record.amount = amount;
+      changed++;
+    }
+  }
+  return changed;
+}
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);

@@ -8,56 +8,18 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart' show restorableTombstones;
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:realm/realm.dart';
-
-const _recordsTouchingQuery =
-    r'walletId == $0 AND (ANY inputAddressList CONTAINS ANY $1 OR ANY outputAddressList CONTAINS ANY $1)';
-
-/// 저장된 거래 기록의 금액·유형을 지금 아는 내 주소로 다시 센다(저장된 입출력만 쓰고 네트워크는 쓰지 않는다).
-/// 주소 창보다 먼저 처리된 거래(창에 걸친 대량 출금 등)는 그때 몰랐던 내 주소 몫이 빠져 있다.
-/// [touching]이 있으면 그 주소가 들어간 기록만 본다. 쓰기 트랜잭션 안에서 불러야 하며 바꾼 기록 수를 돌려준다.
-/// 수수료·입출력·높이·RBF/CPFP 내역은 내 주소와 무관하므로 건드리지 않는다.
-int recountOwnAmounts(Realm realm, int walletId, {List<String>? touching}) {
-  final records =
-      (touching == null
-              ? realm.query<RealmTransaction>(r'walletId == $0', [walletId])
-              : realm.query<RealmTransaction>(_recordsTouchingQuery, [
-                walletId,
-                [for (final address in touching) '"$address"'],
-              ]))
-          .toList();
-  if (records.isEmpty) return 0;
-  final own = realm.query<RealmWalletAddress>(r'walletId == $0', [walletId]).map((a) => a.address).toSet();
-  List<TransactionAddress> decode(List<String> encoded) => [for (final e in encoded) jsonToAddress(jsonDecode(e))];
-  var changed = 0;
-  for (final record in records) {
-    final ({int amount, TransactionType type}) counted;
-    try {
-      counted = countOwnAmount(decode(record.inputAddressList), decode(record.outputAddressList), own.contains);
-    } catch (e) {
-      Logger.error('recountOwnAmounts: skip an undecodable record - $e'); // 마이그레이션을 멈추지 않는다
-      continue;
-    }
-    if (counted.amount == record.amount && counted.type.name == record.transactionType) continue;
-    record
-      ..amount = counted.amount
-      ..transactionType = counted.type.name;
-    changed++;
-  }
-  return changed;
-}
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -258,12 +220,14 @@ class AddressRepository extends BaseRepository {
     await _safelyAddAddresses(addressesToAdd);
     await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
 
-    // 새 주소가 이미 기록된 거래에 들어 있으면 그 기록만 다시 센다. 대개 해당 기록이 없어 조회 한 번으로 끝난다.
+    // 새 주소로 받은 출력이 이미 받기 기록에 있으면 그 기록만 다시 센다. 대개 해당 기록이 없어 조회 한 번으로 끝난다.
     final walletId = realmWalletBase.id;
-    final added = [for (final address in addressesToAdd) address.address];
-    final needles = [for (final address in added) '"$address"'];
-    if (realm.query<RealmTransaction>(_recordsTouchingQuery, [walletId, needles]).isNotEmpty) {
-      await realm.writeAsync(() => recountOwnAmounts(realm, walletId, touching: added));
+    final touched = realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionType == $1 AND ANY outputAddressList CONTAINS ANY $2',
+      [walletId, TransactionType.received.name, [for (final address in addressesToAdd) '"${address.address}"']],
+    );
+    if (touched.isNotEmpty) {
+      await realm.writeAsync(() => recountReceivedAmounts(realm, walletId, touched));
     }
   }
 

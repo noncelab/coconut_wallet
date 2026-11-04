@@ -1762,10 +1762,10 @@ void main() {
       expect(ok, isTrue);
       expect(stored().amount, 20000, reason: 'a warm start does not rescan stored records');
 
-      realm.write(() => recountOwnAmountsOfAllWallets(realm)); // the 10 -> 11 Realm migration
+      realm.write(() => recountReceivedAmountsOfAllWallets(realm)); // the 10 -> 11 Realm migration
       expect(stored().amount, 60000);
       expect(stored().transactionType, TransactionType.received.name);
-      expect(realm.write(() => recountOwnAmountsOfAllWallets(realm)), 0, reason: 'correct records are left alone');
+      expect(realm.write(() => recountReceivedAmountsOfAllWallets(realm)), 0, reason: 'correct records are left alone');
       await _drain(restarted);
     });
   });

@@ -169,6 +169,51 @@ void main() {
         expect(pendingLock.utxoId, 'locked-txid1');
       });
 
+      test('[10 -> 11] only receive-only records are recounted; legacy rows with missing inputs keep amount/type', () {
+        realmSetup(initialVersion: 10);
+        String entry(String address, int amount) => jsonEncode({'address': address, 'amount': amount});
+        RealmTransaction row(int id, String type, int amount, List<String> inputs, List<String> outputs) =>
+            RealmTransaction(id, 'tx$id', 1, DateTime.utc(2026), 100, type, amount, 1000, 141, DateTime.utc(2026),
+                inputAddressList: inputs, outputAddressList: outputs);
+        realm.write(() {
+          realm.add(RealmWalletBase(1, 0, 0, 'descriptor', 'w', 'singleSignature'));
+          for (final (index, address) in ['own0', 'own1'].indexed) {
+            realm.add(RealmWalletAddress(index, 1, address, index, false, 'm/0/$index', true, 0, 0, 0));
+          }
+          // Before 529254318 an unfetchable parent's input was dropped while the type used the raw input count.
+          realm.add(row(1, 'SENT', -31000, [], [entry('own0', 69000), entry('external', 30000)]));
+          realm.add(row(2, 'SELF', -1000, [], [entry('own0', 99000)]));
+          realm.add(row(3, 'RECEIVED', 99000, [entry('own0', 100000)], [entry('own0', 199000)]));
+          realm.add(row(4, 'RECEIVED', 5000000000, [], [entry('own0', 5000000000)])); // coinbase
+          // Recorded while own1 was outside the address window: only own0 was counted.
+          realm.add(row(5, 'RECEIVED', 20000, [entry('external', 50000)], [
+            entry('own0', 20000),
+            entry('own1', 20000),
+            entry('external', 9000),
+          ]));
+          realm.add(row(6, 'RECEIVED', 90000, [entry('external', 99000)], [entry('own0', 20000)])); // not lowered
+        });
+        realm.close();
+
+        realm = Realm(
+          Configuration.local(realmAllSchemas, schemaVersion: 11, migrationCallback: defaultMigration, path: testPath),
+        );
+
+        final rows = [
+          for (var id = 1; id <= 6; id++)
+            [realm.find<RealmTransaction>(id)!.transactionType, realm.find<RealmTransaction>(id)!.amount],
+        ];
+        expect(rows, [
+          ['SENT', -31000],
+          ['SELF', -1000],
+          ['RECEIVED', 99000],
+          ['RECEIVED', 5000000000],
+          ['RECEIVED', 40000],
+          ['RECEIVED', 90000],
+        ]);
+        expect(realm.all<RealmTransaction>().map((tx) => tx.fee), everyElement(1000));
+      });
+
       test("[0 -> kRealmVersion]", () {
         realmSetup(initialVersion: 0);
         migrationFrom0ToLatest(realm, kRealmVersion, testPath!);
