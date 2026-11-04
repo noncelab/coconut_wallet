@@ -1227,18 +1227,33 @@ void main() {
     expect(coinsVsServer(c), [699000, 699000]);
   });
 
+  // T2 (direct successor) and T4 (recorded spender of T1's input) provably conflict and go. T3's raw tx cannot be
+  // fetched and nothing records which outpoints it spent, so it stays as a hidden replaced record: the history and coins
+  // are still right, and later starts do no extra work for it.
   test('[codex-rbf] three bumps, original confirms with unclassified absence', () async {
     final (c, _, chain) = await bumpOwnSend(bumps: 3, classified: false);
+    final [t1, t2, t3, t4] = chain;
     for (final tx in chain.skip(1)) {
       c.backend.heights.remove(tx.transactionHash);
     }
-    c.backend.heights[chain.first.transactionHash] = 101;
+    c.backend.heights[t1.transactionHash] = 101;
     await c.reconnect();
+    final requests = <int>[];
+    for (var i = 0; i < 2; i++) {
+      final from = c.backend.calls.length;
+      await c.reconnect();
+      requests.add(c.backend.calls.skip(from).where((call) => !call.startsWith('subscribe:')).length);
+    }
     _report('codex-rbf-three-bumps', '-', {
       'replacement_records': chain.skip(1).map(hasRecord).toList(),
       'coins_vs_server': coinsVsServer(c),
+      'requests_per_start': requests,
     });
-    expect(chain.skip(1).where(hasRecord), isEmpty);
+    expect(history(), {c.funding.transactionHash: 100, t1.transactionHash: 101});
+    expect(changeCoin(t1), 'unspent');
+    expect([t2, t3, t4].map(hasRecord), [false, true, false]);
+    expect(coinsVsServer(c), [699000, 699000]);
+    expect(requests, [0, 0], reason: 'the retained hidden T3 must not trigger lookups on every start');
   });
 
   test('[codex-rbf] original confirms after the replacement gained a CPFP child', () async {
@@ -1365,4 +1380,282 @@ void main() {
       );
     },
   );
+
+  // Independent re-verification: construct real outpoints and let normal sync create replaceBy links.
+  Future<(_Case, SubscriptionService, Transaction, Transaction, Transaction)> switchInputChain(int secondAmount) async {
+    final (c, node) = await sendFromSyncedWallet();
+    c.backend.classifiedAbsence = false;
+    final second = _Case._tx(
+      [(c.faucet.transactionHash, 1)],
+      [(c.input, secondAmount), (_external, 4999000 - secondAmount)],
+    );
+    c.backend.put(second, 100);
+    await deliver(c, node, 'input-first');
+    final t1 = c.spend;
+    c.backend.heights[t1.transactionHash] = 0;
+    await deliver(c, node, 'input-first');
+    final t2 = _Case._tx(
+      [(c.funding.transactionHash, 0), (second.transactionHash, 0)],
+      [(_external, 300000), (c.change, 689000 + secondAmount)],
+    );
+    c.backend.heights.remove(t1.transactionHash);
+    c.backend.put(t2, 0);
+    await deliver(c, node, 'input-first');
+    final t3 = _Case._tx([(second.transactionHash, 0)], [(_external, 300000), (c.change, secondAmount - 321000)]);
+    c.backend.heights.remove(t2.transactionHash);
+    c.backend.put(t3, 0);
+    await deliver(c, node, 'input-first');
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    expect(
+      realm.find<RealmTransaction>(getRealmTransactionId(_walletId, t1.transactionHash))!.replaceByTransactionHash,
+      t2.transactionHash,
+    );
+    expect(
+      realm.find<RealmTransaction>(getRealmTransactionId(_walletId, t2.transactionHash))!.replaceByTransactionHash,
+      t3.transactionHash,
+    );
+    expect(
+      t1.inputs
+          .map((i) => '${i.transactionHash}:${i.index}')
+          .toSet()
+          .intersection(t3.inputs.map((i) => '${i.transactionHash}:${i.index}').toSet()),
+      isEmpty,
+    );
+    return (c, node, t1, t2, t3);
+  }
+
+  for (final sameAmount in [false, true]) {
+    for (final originalHeight in [0, 101]) {
+      test(
+        '[verify-rbf] disjoint successor same-address same-amount=$sameAmount original-height=$originalHeight',
+        () async {
+          final (c, _, t1, t2, t3) = await switchInputChain(sameAmount ? 1000000 : 900000);
+          c.backend.classifiedAbsence = true;
+          c.backend.heights[t1.transactionHash] = originalHeight;
+          await c.reconnect();
+          final first = {
+            't1_visible': history().containsKey(t1.transactionHash),
+            't2_record': hasRecord(t2),
+            't3_record': hasRecord(t3),
+            't1_change': changeCoin(t1),
+            't3_change': changeCoin(t3),
+            'coins_vs_server': coinsVsServer(c),
+          };
+          await c.reconnect();
+          _report('verify-rbf-disjoint', '$sameAmount/$originalHeight', {
+            'first': first,
+            'second': {
+              't1_visible': history().containsKey(t1.transactionHash),
+              't3_record': hasRecord(t3),
+              't3_change': changeCoin(t3),
+              'coins_vs_server': coinsVsServer(c),
+            },
+          });
+          expect(first['t1_visible'], isTrue, reason: 'T1 may coexist with disjoint T3');
+          expect(
+            first['t3_record'],
+            isTrue,
+            reason: 'different outpoints remain valid despite equal address and value',
+          );
+          expect(first['t2_record'], isFalse);
+          expect(first['t3_change'], 'incoming');
+          expect(first['coins_vs_server'], [sameAmount ? 1378000 : 1278000, sameAmount ? 1378000 : 1278000]);
+        },
+      );
+    }
+  }
+
+  test('[verify-rbf] disjoint confirmed successor must not block original healing', () async {
+    final (c, _, t1, t2, t3) = await switchInputChain(1000000);
+    c.backend.heights[t3.transactionHash] = 101;
+    await c.reconnect();
+    expect(
+      ScriptSyncServiceMock.transactionRepository.getTransactionRecord(_walletId, t3.transactionHash)!.blockHeight,
+      101,
+    );
+    c.backend.heights[t1.transactionHash] = 102;
+    await c.reconnect();
+    _report('verify-rbf-disjoint-confirmed', '-', {
+      't1_visible': history().containsKey(t1.transactionHash),
+      't2_record': hasRecord(t2),
+      't3_record': hasRecord(t3),
+      't1_change': changeCoin(t1),
+      'coins_vs_server': coinsVsServer(c),
+    });
+    expect(history().containsKey(t1.transactionHash), isTrue);
+    expect(hasRecord(t2), isFalse);
+    expect(hasRecord(t3), isTrue);
+    expect(coinsVsServer(c), [1378000, 1378000]);
+  });
+
+  for (final edges in ['both', 'spends-only', 'links-only']) {
+    test('[verify-rbf] losing child and grandchild tombstoned via $edges without absence proof', () async {
+      final (c, node, chain) = await bumpOwnSend(bumps: 1, classified: false);
+      final [t1, t2] = chain;
+      final child = _Case._tx([(t2.transactionHash, 1)], [(c.input, 680000)]);
+      c.backend.put(child, -1);
+      await deliver(c, node, 'input-first');
+      final grandchild = _Case._tx([(child.transactionHash, 0)], [(c.change, 670000)]);
+      c.backend.put(grandchild, -1);
+      await deliver(c, node, 'input-first');
+      final realm = ScriptSyncServiceMock.realmManager!.realm;
+      final txRepo = ScriptSyncServiceMock.transactionRepository;
+      expect([hasRecord(child), hasRecord(grandchild)], [true, true]);
+      expect(txRepo.getCpfpHistory(_walletId, t2.transactionHash), isNotNull);
+      expect(txRepo.getCpfpHistory(_walletId, child.transactionHash), isNotNull);
+      realm.write(() {
+        if (edges == 'spends-only') realm.deleteMany(realm.all<RealmCpfpHistory>());
+        if (edges == 'links-only') {
+          for (final coin in realm.all<RealmUtxo>()) {
+            if ([t2.transactionHash, child.transactionHash].contains(coin.transactionHash)) {
+              coin.spentByTransactionHash = null;
+            }
+          }
+        }
+      });
+      for (final tx in [t2, child, grandchild]) {
+        c.backend.heights.remove(tx.transactionHash);
+      }
+      c.backend.heights[t1.transactionHash] = 101;
+      await c.reconnect();
+      _report('verify-rbf-descendants', edges, {
+        'records': [t2, child, grandchild].map(hasRecord).toList(),
+        'coins_vs_server': coinsVsServer(c),
+        'cpfp_links': realm.all<RealmCpfpHistory>().length,
+      });
+      for (final tx in [t2, child, grandchild]) {
+        expect(hasRecord(tx), isFalse);
+        final index = tx == t2 ? 1 : 0;
+        expect(c.utxos.getUtxoState(_walletId, getUtxoId(tx.transactionHash, index)), isNull);
+        expect(
+          c.utxos.getUtxoState(_walletId, getUtxoId(tx.transactionHash, index), includeDeleted: true),
+          isNotNull,
+          reason: 'cleanup must retain tombstones',
+        );
+      }
+      expect(realm.all<RealmCpfpHistory>(), isEmpty);
+      expect(coinsVsServer(c), [699000, 699000]);
+    });
+  }
+
+  test('[verify-rbf] pending original stays hidden while a later conflicting successor exists', () async {
+    final (c, _, chain) = await bumpOwnSend(bumps: 2);
+    final [t1, t2, t3] = chain;
+    c.backend.heights[t1.transactionHash] = 0;
+    await c.reconnect();
+    _report('verify-rbf-pending-guard', '-', {
+      't1_visible': history().containsKey(t1.transactionHash),
+      't2_record': hasRecord(t2),
+      't3_record': hasRecord(t3),
+    });
+    expect(history().containsKey(t1.transactionHash), isFalse);
+    expect(hasRecord(t3), isTrue);
+    expect(changeCoin(t1), 'deleted');
+  });
+
+  // Claude re-verification: an external bump swaps T1's coin for another coin with the same address and amount.
+  // HEURISTIC PROBES. T1 spends A (input, 1,000,000). T2 bumps T1 adding B (input, 400,000). T3 bumps T2 through B and
+  // swaps A for C (input, cAmount): T3 does not conflict with T1. cAmount 1,000,000 gives C the address and amount of A.
+  Future<(_Case, SubscriptionService, Transaction, Transaction, Transaction)> swapBump({required int cAmount}) async {
+    final c = _Case();
+    await c.init();
+    final b = c.backend;
+    final fundC = _Case._tx([(c.faucet.transactionHash, 2)], [(c.input, cAmount), (_external, 4999000 - cAmount)]);
+    final fundB = _Case._tx([(c.faucet.transactionHash, 3)], [(c.input, 400000), (_external, 4599000)]);
+    b
+      ..put(fundC, 100)
+      ..put(fundB, 100);
+    final node = _startIsolate(c.electrum);
+    expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+    final t1 = c.spend;
+    final t2 = _Case._tx(
+      [(c.funding.transactionHash, 0), (fundB.transactionHash, 0)],
+      [(_external, 300000), (c.change, 1097000)],
+    );
+    final t3 = _Case._tx(
+      [(fundB.transactionHash, 0), (fundC.transactionHash, 0)],
+      [(_external, 300000), (c.change, 400000 + cAmount - 306000)],
+    );
+    Future<void> push() async {
+      b
+        ..notify(c.input)
+        ..notify(c.change);
+      await _drain(node);
+    }
+
+    b.heights[t1.transactionHash] = 0;
+    await push();
+    b.heights.remove(t1.transactionHash);
+    b.put(t2, 0);
+    await push();
+    b.heights.remove(t2.transactionHash);
+    b.put(t3, 0);
+    await push();
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    String? marker(Transaction tx) =>
+        realm.find<RealmTransaction>(getRealmTransactionId(_walletId, tx.transactionHash))?.replaceByTransactionHash;
+    expect(marker(t1), t2.transactionHash, reason: 'precondition: T2 replaced T1');
+    expect(marker(t2), t3.transactionHash, reason: 'precondition: T3 replaced T2');
+    return (c, node, t1, t2, t3);
+  }
+
+  for (final collide in [true, false]) {
+    for (final t3Confirms in [false, true]) {
+      final variant =
+          '${collide ? 'C has A\'s address+amount' : 'C differs'}, T3 ${t3Confirms ? 'confirms' : 'pending'}';
+      test('[probe-H] $variant: T1 wins, the non-conflicting T3 stays', () async {
+        final (c, node, t1, t2, t3) = await swapBump(cAmount: collide ? 1000000 : 900000);
+        final b = c.backend;
+        b.heights[t1.transactionHash] = 101;
+        b.heights[t3.transactionHash] = t3Confirms ? 101 : 0;
+        await deliver(c, node, 'input-first');
+        String s(Transaction tx) => tx.transactionHash.substring(0, 6);
+        Map<String, Object?> snap() => {
+          'history': history().map((k, v) => MapEntry(k.substring(0, 6), v)),
+          't1_shown': history().containsKey(t1.transactionHash),
+          't3_shown': history().containsKey(t3.transactionHash),
+          't2_record': hasRecord(t2),
+          't1_change': changeCoin(t1),
+          't3_change': changeCoin(t3),
+          'coins_vs_server': coinsVsServer(c),
+        };
+        final observed = <String, Object?>{'t1': s(t1), 't3': s(t3), 'after_sync': snap()};
+        await c.reconnect();
+        await c.reconnect();
+        observed['after_2_reconnects'] = snap();
+        _report('probe-H', variant, observed);
+        final end = observed['after_2_reconnects'] as Map;
+        expect((observed['after_sync'] as Map)['t3_shown'], isTrue, reason: 'T3 is valid and must not be dropped');
+        expect(end['t1_shown'], isTrue);
+        expect(end['t3_shown'], isTrue);
+        expect(end['t2_record'], isFalse);
+        expect((end['coins_vs_server'] as List)[0], (end['coins_vs_server'] as List)[1]);
+      });
+    }
+  }
+
+  // PROBE H4 (false negative): T3 truly conflicts with T1 but its stored inputs are unknown (empty, as old builds left).
+  test('[probe-H4] unclassified: a conflicting T3 whose stored inputs are empty is still dropped', () async {
+    final (c, node, chain) = await bumpOwnSend(bumps: 2, classified: false);
+    final [t1, t2, t3] = chain;
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    realm.write(
+      () =>
+          realm.find<RealmTransaction>(getRealmTransactionId(_walletId, t3.transactionHash))!.inputAddressList.clear(),
+    );
+    c.backend.heights.remove(t3.transactionHash);
+    c.backend.heights[t1.transactionHash] = 101;
+    await deliver(c, node, 'input-first');
+    await c.reconnect();
+    final observed = {
+      't1_shown': history().containsKey(t1.transactionHash),
+      't2_record': hasRecord(t2),
+      't3_record': hasRecord(t3),
+      't3_change': changeCoin(t3),
+      'coins_vs_server': coinsVsServer(c),
+    };
+    _report('probe-H4', '-', observed);
+    expect(observed['t3_record'], isFalse);
+    expect(observed['coins_vs_server'], [699000, 699000]);
+  });
 }

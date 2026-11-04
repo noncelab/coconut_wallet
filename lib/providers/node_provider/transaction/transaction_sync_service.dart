@@ -234,7 +234,12 @@ class TransactionSyncService {
       }
 
       // 7-1. 대체됐다고 표시한 원래 거래를 서버가 다시 보여 주면 내역과 코인을 되돌린다
-      await _restoreReplacedOriginals(walletId, originalTxHashes: successfulHashes, absentTxHashes: absentTxHashes);
+      await _restoreReplacedOriginals(
+        walletId,
+        transactionFetch,
+        transactions: successfulTransactions,
+        absentTxHashes: absentTxHashes,
+      );
 
       // 8. 마무리 단계
       // 자식의 기록을 저장했어도 미확정 부모 기록이 없으면 CPFP 연결은 아직 끝나지 않았다.
@@ -544,27 +549,98 @@ class TransactionSyncService {
   }
 
   /// 7-1. 대체됐다고 표시한 원래 거래가 이번 조회에 다시 보이면(컨펌됐거나, 대체 거래를 모르는 서버가 보여 줌) 내역에
-  /// 되돌리고, 그 거래와 같은 코인을 쓴 대체 거래와 자손의 기록·출력을 지운다
-  /// ([TransactionRepository.restoreReplacedTransactions]). 원래 거래의 출력은 삭제 표시를 그대로 두어, 이어지는
-  /// listunspent가 쓴 증거와 서버 잔액을 확인하는 되살리기([UtxoRepository.restoreListedUtxos])로만 돌아오게 한다.
+  /// 되돌리고, 같은 outpoint를 쓴 대체 거래와 자손의 기록·출력을 지운다([_lostReplacements]). [transactions]가 null이면
+  /// 컨펌됐는데도 표시가 남은 기록을 고르고 원본은 [transactionFetch]로 받는다. 원래 거래의 출력은 삭제 표시를 그대로
+  /// 두어, listunspent가 쓴 증거와 서버 잔액을 확인하는 되살리기([UtxoRepository.restoreListedUtxos])로만 돌아오게 한다.
   Future<void> _restoreReplacedOriginals(
-    int walletId, {
-    Set<String>? originalTxHashes,
+    int walletId,
+    TransactionFetchPass transactionFetch, {
+    List<Transaction>? transactions,
     Set<String> absentTxHashes = const {},
   }) async {
-    final invalid = await _transactionRepository.restoreReplacedTransactions(
+    final originals = _transactionRepository.getReplacedTransactions(
       walletId,
-      originalTxHashes: originalTxHashes,
-      absentTxHashes: absentTxHashes,
+      txHashes: transactions?.map((tx) => tx.transactionHash),
     );
-    if (invalid.isEmpty) return;
-    Logger.log('[$walletId] Restored replaced transaction(s), dropped ${invalid.length} invalid transaction(s)');
-    await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, invalid);
+    final restored = <String>{};
+    final invalid = <String>{};
+    for (final original in originals) {
+      final Transaction tx;
+      try {
+        tx =
+            transactions?.firstWhere((tx) => tx.transactionHash == original.hash) ??
+            await transactionFetch.fetch(original.hash);
+      } catch (e) {
+        Logger.log('[$walletId] Replaced transaction check deferred: $e');
+        continue; // 원래 거래의 입력을 모르면 이번에는 아무것도 바꾸지 않는다
+      }
+      final lost = await _lostReplacements(walletId, tx, original, transactionFetch, absentTxHashes);
+      if (lost == null) continue;
+      restored.add(original.hash);
+      invalid.addAll(lost);
+    }
+    if (restored.isEmpty) return;
+    final dropped = await _transactionRepository.restoreReplacedTransactions(walletId, restored, invalid);
+    Logger.log('[$walletId] Restored ${restored.length} replaced transaction(s), dropped ${dropped.length}');
+    await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, dropped);
+  }
+
+  /// [original]을 대체한 사슬에서 지울 거래. 겹침은 정확한 outpoint로만 판단한다: 바로 다음 대체 거래(RBF 감지 근거),
+  /// 컨펌된 원래 거래의 입력 코인에 기록된 사용 거래, 받아 온 원본의 입력. 서버가 없다고 답한 거래([absentTxHashes])도
+  /// 지운다. 겹치지 않는 거래와 확인하지 못한 거래는 그대로 둔다. 되돌릴 수 없으면 null: 겹치는 거래가 컨펌됐거나,
+  /// 미확정 원래 거래와 겹치는 거래가 서버에 남았거나 확인하지 못했다.
+  Future<Set<String>?> _lostReplacements(
+    int walletId,
+    Transaction tx,
+    ({String hash, String replacedBy, bool confirmed}) original,
+    TransactionFetchPass transactionFetch,
+    Set<String> absentTxHashes,
+  ) async {
+    final outpoints = {for (final input in tx.inputs) getUtxoId(input.transactionHash, input.index)};
+    final spenders =
+        original.confirmed
+            ? {
+              for (final id in outpoints)
+                _utxoRepository.getUtxoState(walletId, id, includeDeleted: true)?.spentByTransactionHash,
+            }
+            : const <String?>{};
+    final lost = <String>{};
+    final seen = {original.hash};
+    var direct = true;
+    for (String? next = original.replacedBy; next != null && seen.add(next); direct = false) {
+      final proven = direct || spenders.contains(next);
+      final link = _transactionRepository.getReplacementLink(walletId, next);
+      if (link == null) {
+        if (proven) lost.add(next); // 기록은 이미 지워졌고 출력만 남았을 수 있다
+        break;
+      }
+      final absent = absentTxHashes.contains(next);
+      bool? conflicts = proven ? true : null;
+      if (conflicts == null && !absent) {
+        try {
+          final replacement = await transactionFetch.fetch(next);
+          conflicts = replacement.inputs.any(
+            (input) => outpoints.contains(getUtxoId(input.transactionHash, input.index)),
+          );
+        } catch (e) {
+          Logger.log('[$walletId] Replacement check deferred: $e');
+        }
+      }
+      if (conflicts == true || (conflicts == null && absent)) {
+        if (link.confirmed || (!original.confirmed && !absent)) return null;
+        lost.add(next);
+      } else if (conflicts == null && !original.confirmed) {
+        return null;
+      }
+      next = link.replacedBy;
+    }
+    return lost;
   }
 
   /// 이전 버전이 컨펌된 원래 거래에 남긴 대체 표시를 지운다. 구독 때 지운 코인 재확인보다 먼저 불러, 그 거래의 잔돈이
   /// 되살릴 수 있는 코인으로 잡히게 한다.
-  Future<void> restoreConfirmedReplacedTransactions(int walletId) => _restoreReplacedOriginals(walletId);
+  Future<void> restoreConfirmedReplacedTransactions(int walletId) =>
+      _restoreReplacedOriginals(walletId, createFetchPass());
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
   Future<void> _finalizeTransactionFetch(
