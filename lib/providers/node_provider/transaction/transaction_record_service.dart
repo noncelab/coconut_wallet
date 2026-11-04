@@ -74,20 +74,15 @@ class TransactionRecordService {
     int selfOutputCount = 0;
     int fee = 0;
     int amount = 0;
+    final parentsByHash = {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
 
     // 입력 처리
     for (int i = 0; i < tx.inputs.length; i++) {
       final input = tx.inputs[i];
 
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
-      Transaction? previousTx;
-      try {
-        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-      } catch (_) {
-        continue;
-      }
-
-      if (input.index >= previousTx.outputs.length) {
+      final previousTx = parentsByHash[input.transactionHash];
+      if (previousTx == null || input.index >= previousTx.outputs.length) {
         continue;
       }
 

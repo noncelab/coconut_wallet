@@ -278,43 +278,16 @@ class ElectrumService {
       return [];
     }
 
-    Set<String> toFetchTransactionHashes = {};
-
-    final existingTxHashes = existingTxList?.map((tx) => tx.transactionHash).toSet() ?? {};
-
-    toFetchTransactionHashes =
-        transaction.inputs
-            .map((input) => input.transactionHash)
-            .where((hash) => !existingTxHashes.contains(hash))
-            .toSet();
-
-    var futures = toFetchTransactionHashes.map((transactionHash) async {
-      var txHex = '';
-      txHex = await getTransaction(transactionHash);
-
-      return Transaction.parse(txHex);
+    final parentsByHash = {for (final tx in existingTxList?.toSet() ?? <Transaction>{}) tx.transactionHash: tx};
+    final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
+    final futures = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).map((hash) async {
+      final tx = Transaction.parse(await getTransaction(hash));
+      return MapEntry(hash, tx);
     });
 
     try {
-      List<Transaction?> fetchedTransactionsNullable = await Future.wait(futures);
-      List<Transaction> fetchedPreviousTransactions = fetchedTransactionsNullable.whereType<Transaction>().toList();
-
-      if (existingTxList != null && existingTxList.isNotEmpty) {
-        fetchedPreviousTransactions.addAll(existingTxList);
-      }
-
-      List<Transaction> previousTransactions = [];
-
-      for (var input in transaction.inputs) {
-        final matchingTx =
-            fetchedPreviousTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
-
-        if (matchingTx.isNotEmpty) {
-          previousTransactions.add(matchingTx.first);
-        }
-      }
-
-      return previousTransactions;
+      parentsByHash.addEntries(await Future.wait(futures));
+      return requiredHashes.map((hash) => parentsByHash[hash]).whereType<Transaction>().toList();
     } catch (e) {
       return [];
     }
