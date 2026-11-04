@@ -505,35 +505,35 @@ void main() {
         );
       });
 
-      test('a recomputed target hash mismatch does not fail sync or release the claim for a retry loop', () async {
-        await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
-        final spend = spendOf(withChange: true);
-        const requested = '00000000000000000000000000000000000000000000000000000000000000ee';
-        when(
-          electrumService.getHistory(any, any),
-        ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: requested)]);
-        when(electrumService.getTransaction(requested)).thenAnswer((_) async => spend.serialize());
-        when(electrumService.getTransaction(spend.transactionHash)).thenAnswer((_) async => spend.serialize());
-        when(
-          electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
-        ).thenAnswer((_) async => [funding]);
-
-        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
-        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
-
-        final record = transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash)!;
-        expect(record.amount, -901000);
-        expect(record.fee, 1000);
-        expect(record.transactionType, TransactionType.sent);
-        expect(coinStatus(), 'outgoing');
-        // The lib hash is still the record key (pre-existing behavior); preserving raw script bytes belongs to lib.
-        expect(transactionRepository.getTransactionRecord(testWalletId, requested), isNull);
-        expect(
-          scriptCallbackService.isTransactionProcessable(txHashKey: '$testWalletId:$requested', isConfirmed: false),
-          isFalse,
-        );
-        verify(electrumService.getTransaction(requested)).called(1);
-      });
+      for (final height in [0, 100]) {
+        test('요청과 다른 거래 응답은 저장하지 않고 재시도한다 (height=$height)', () async {
+          final spend = spendOf(withChange: true);
+          const requested = '00000000000000000000000000000000000000000000000000000000000000ee';
+          when(
+            electrumService.getHistory(any, any),
+          ).thenAnswer((_) async => [GetTxHistoryRes(height: height, txHash: requested)]);
+          when(electrumService.getTransaction(requested)).thenAnswer((_) async => spend.serialize());
+          for (var attempt = 0; attempt < 2; attempt++) {
+            await expectLater(
+              transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now),
+              throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+            );
+            expect(
+              scriptCallbackService.isTransactionProcessable(
+                txHashKey: '$testWalletId:$requested',
+                isConfirmed: height > 0,
+              ),
+              isTrue,
+            );
+          }
+          expect(coinStatus(), 'unspent');
+          expect(transactionRepository.getTransactionRecord(testWalletId, requested), isNull);
+          expect(transactionRepository.getTransactionRecord(testWalletId, spend.transactionHash), isNull);
+          verify(electrumService.getTransaction(requested)).called(2);
+          verifyNever(electrumService.fetchBlocksByHeight(any));
+          verifyNever(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')));
+        });
+      }
     });
 
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {

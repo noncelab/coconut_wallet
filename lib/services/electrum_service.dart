@@ -286,6 +286,8 @@ class ElectrumService {
     final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
     final futures = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).map((hash) async {
       final tx = Transaction.parse(await getTransaction(hash));
+      final parsedHash = tx.transactionHash;
+      if (parsedHash != hash) throw StateError('Server returned parent $parsedHash for $hash');
       return MapEntry(hash, tx);
     });
 

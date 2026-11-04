@@ -97,15 +97,13 @@ void main() {
   }
 
   test('requested parent identity survives record construction and reuse without recomputing its hash', () async {
-    const requestedHash = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     final parent = parents.first;
+    final requestedHash = parent.transactionHash;
     final tx = Transaction.withInputsAndOutputs(
       [TransactionInput.forPayment(requestedHash, 0)],
       spending.outputs,
       AddressType.p2wpkh,
     );
-    // The requested outpoint identity is deliberately distinct from a re-serialized Transaction's identity.
-    // This tests identity propagation independently of the pinned library's script parser.
     final transport = ElectrumTransactionTransport((hash) {
       expect(hash, requestedHash);
       return parent.serialize();
@@ -126,6 +124,18 @@ void main() {
     expect(parent.hashReads, 0, reason: 'fetched parents already carry their requested txid');
     expect(() => loaded.clear(), throwsUnsupportedError);
     expect(() => loaded.byHash.clear(), throwsUnsupportedError);
+  });
+
+  test('a wrong parent response is rejected before constructing a record', () async {
+    final raw = {for (final parent in parents) parent.transactionHash: parent.serialize()};
+    final requested = raw.keys.first;
+    final transport = ElectrumTransactionTransport((hash) => hash == requested ? raw.values.last : raw[hash]!);
+    final records = TransactionRecordService(transport.service, _OwnedAddressRepository(owned));
+    await expectLater(
+      records.createTransactionRecord(1, spending),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', contains(requested))),
+    );
+    expect(transport.requestedHashes.length, parents.length);
   });
 
   test('a failed lookup drains already submitted parent futures before escaping', () async {
