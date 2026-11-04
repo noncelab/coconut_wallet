@@ -245,6 +245,35 @@ void main() {
     expect(completed(), isTrue, reason: 'Broadcast did not reach completion or a result dialog');
   }
 
+  testWidgets('slow connection displays inline notice and hides it once ready', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await open(tester, count: 0);
+    node.connected = false;
+    await tapSend(tester);
+    for (var frame = 0; frame < 30 && node.readinessRequests == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump();
+    expect(find.byKey(const ValueKey('connection-delay-notice')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 15));
+    await tester.pump();
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text(t.broadcasting_screen.connection_delay_message), findsOneWidget);
+    await tester.pump(const Duration(seconds: 15));
+    expect(find.byType(Dialog), findsNothing);
+    expect(node.readinessRequests, 1);
+    expect(node.broadcasts, 0);
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('connection-delay-notice')), findsNothing);
+    await finish(tester);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('going back while waiting for the connection cancels the send', (tester) async {
     await open(tester, count: 0, pushed: true);
     node.connected = false;

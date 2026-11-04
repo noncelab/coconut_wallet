@@ -23,6 +23,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/network_util.dart';
+import 'package:coconut_wallet/utils/progressive_connection_wait.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/foundation.dart';
@@ -65,6 +66,10 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
   bool _isSendCancelled = false;
+  bool _connectionWaitDeclined = false;
+  bool _isConnectionRecovering = false;
+  bool get isConnectionRecovering => _isConnectionRecovering;
+  bool get connectionWaitDeclined => _connectionWaitDeclined;
   bool _isBroadcastRequested = false;
   Transaction? _signedTx;
   int? _savedDraftId;
@@ -182,35 +187,40 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
-  Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
+  Future<Result<String>> broadcast({
+    required List<String> inheritedTagIds,
+    ConnectionWaitExtension? onConnectionWaitExtension,
+  }) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
       throw ArgumentError('Invalid inherited tag selection');
     }
     _tagInheritanceFailed = false;
+    _connectionWaitDeclined = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
-    Logger.log('[Send] 연결 확인 시작');
-    final isConnected = await isElectrumServerConnected();
-    Logger.log('[Send] 연결 확인 완료: $isConnected');
-
-    if (_isSendCancelled) return _cancelledSend();
-
-    if (!isConnected) {
-      Logger.log('[Send] 전송용 연결 준비 시작');
-      final isOnion = isOnionHost(_nodeProvider.host);
-      final timeout = isOnion ? kSendReconnectTimeoutForOnion : kSendReconnectTimeout;
-      try {
-        // Timeout stops only this send attempt. A retry joins the same recovery;
-        // completing recovery later must never broadcast this transaction automatically.
-        final recovery = await _nodeProvider.ensureConnectedForBroadcast().timeout(timeout);
-        if (recovery.isFailure) return Result.failure(recovery.error);
-        if (!recovery.value) return Result.failure(ErrorCodes.nodeConnectionError);
-      } on TimeoutException {
-        Logger.log('[Send] 재연결 대기 시간 초과: ${timeout.inSeconds}s (onion=$isOnion)');
-        return Result.failure(ErrorCodes.nodeConnectionError);
-      }
-      Logger.log('[Send] 전송용 연결 준비 완료');
+    final limits = isOnionHost(_nodeProvider.host) ? kSendConnectionWaitLimitsForOnion : kSendConnectionWaitLimits;
+    try {
+      final prepared = await waitForConnection(
+        _prepareConnectionForSend(),
+        limits: limits,
+        onExtend:
+            onConnectionWaitExtension == null
+                ? null
+                : (limit, finished) async {
+                  if (_isSendCancelled) return false;
+                  final extend = await onConnectionWaitExtension(limit, finished);
+                  _connectionWaitDeclined = !extend;
+                  return extend;
+                },
+      );
+      if (prepared.isFailure) return Result.failure(prepared.error);
+      if (!prepared.value) return Result.failure(ErrorCodes.nodeConnectionError);
+    } on TimeoutException {
+      Logger.log('[Send] 연결 준비 대기 종료');
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    } finally {
+      _setConnectionRecovering(false);
     }
 
     // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
@@ -243,6 +253,23 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
     return result;
+  }
+
+  void _setConnectionRecovering(bool value) {
+    if (_isConnectionRecovering == value) return;
+    _isConnectionRecovering = value;
+    if (!_isSendCancelled) notifyListeners();
+  }
+
+  Future<Result<bool>> _prepareConnectionForSend() async {
+    Logger.log('[Send] 연결 확인 시작');
+    final connected = await isElectrumServerConnected();
+    if (_isSendCancelled) return Result.failure(ErrorCodes.nodeConnectionError);
+    if (connected) return Result.success(true);
+    _setConnectionRecovering(true);
+    Logger.log('[Send] 전송용 연결 준비 시작');
+    // This future never broadcasts. Stopping the UI wait cannot cause a late send.
+    return _nodeProvider.ensureConnectedForBroadcast();
   }
 
   /// 화면을 떠나 취소된 보내기의 결과. 화면이 없으므로 사용자에게 표시되지 않는다.

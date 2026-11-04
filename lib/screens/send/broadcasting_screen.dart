@@ -113,13 +113,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
     try {
-      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      Result<String> result = await _viewModel.broadcast(
+        inheritedTagIds: inheritedTagIds,
+        onConnectionWaitExtension: _extendConnectionWait,
+      );
 
       if (result.isFailure) {
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
         await lottieAnimation;
         if (!mounted) return;
         _restoreAfterBroadcastFailure();
+        if (_viewModel.connectionWaitDeclined) return;
         vibrateMedium();
         String message = result.error.message;
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
@@ -194,6 +198,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       vibrateMedium();
     }
   }
+
+  Future<bool> _extendConnectionWait(Duration limit, Future<void> finished) async => mounted;
 
   Future<void> _prepareBroadcastAnimation() async {
     setState(() {
@@ -376,6 +382,16 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                                       ),
                                     ),
                                   ),
+                                  if (viewModel.isConnectionRecovering && !_isBroadcastCompletionPhase)
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
+                                      child: Text(
+                                        t.broadcasting_screen.connection_delay_message,
+                                        key: const ValueKey('connection-delay-notice'),
+                                        textAlign: TextAlign.center,
+                                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),

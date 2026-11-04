@@ -987,6 +987,7 @@ broadcasting_screen:
   title: "最終確認"
   description: "以下の詳細で送信する準備ができました"
   requesting: "送信をリクエスト中"
+  connection_delay_message: "ノードへの接続に時間がかかっています。\n取引はまだ送信されておらず、接続が完了すると自動的に送信します。"
   self_sending: "これは自分のウォレットへ送信するトランザクションです。"
   error_popup_title: "送信失敗"
   btn_submit: "送信"

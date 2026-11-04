@@ -285,7 +285,7 @@ void main() {
       Result<String>? outcome;
       viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
       await tester.pump();
-      final limit = onion ? 120 : 15;
+      final limit = onion ? 90 : 15;
       await tester.pump(Duration(seconds: limit - 1));
       expect(outcome, isNull);
       await tester.pump(const Duration(seconds: 1));
@@ -308,7 +308,7 @@ void main() {
       Result<String>? outcome;
       viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
       await tester.pump();
-      final limit = onion ? 100 : 10;
+      final limit = onion ? 10 : 3;
       await tester.pump(Duration(seconds: limit - 1));
       expect(node.reconnects, 0);
       await tester.pump(const Duration(seconds: 1));
@@ -322,6 +322,173 @@ void main() {
       expect(node.broadcasts, 1);
     });
   }
+
+  for (final onion in [false, true]) {
+    testWidgets('connection extensions use cumulative deadlines and share one recovery (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.connected = false;
+      node.host = onion ? 'node.onion' : 'node.example';
+      final recovery = Completer<Result<bool>>();
+      node.onReconnect = () => recovery.future;
+      final offers = <int>[];
+      Result<String>? outcome;
+      viewModel
+          .broadcast(
+            inheritedTagIds: [],
+            onConnectionWaitExtension: (limit, finished) async {
+              offers.add(limit.inSeconds);
+              return true;
+            },
+          )
+          .then((value) => outcome = value);
+      await tester.pump();
+      final limits = onion ? [90, 120, 180] : [15, 30, 60];
+      var elapsed = 0;
+      for (var stage = 0; stage < limits.length - 1; stage++) {
+        await tester.pump(Duration(seconds: limits[stage] - elapsed));
+        elapsed = limits[stage];
+        expect(offers, limits.sublist(1, stage + 2));
+        expect(outcome, isNull);
+      }
+      await tester.pump(Duration(seconds: limits.last - elapsed - 1));
+      expect(outcome, isNull);
+      await tester.pump(const Duration(seconds: 1));
+      expect(outcome?.isFailure, isTrue);
+      expect(node.reconnects, 1);
+      recovery.complete(Result.success(true));
+      await tester.pump();
+      expect(node.broadcasts, 0);
+    });
+  }
+
+  for (final onion in [false, true]) {
+    testWidgets('probe timeout immediately marks recovery as delayed (onion=$onion)', (tester) async {
+      await tester.runAsync(() => initialize());
+      node.host = onion ? 'node.onion' : 'node.example';
+      final probe = Completer<Result<BlockTimestamp>>();
+      final recovery = Completer<Result<bool>>();
+      node.onLatestBlock = () => probe.future;
+      node.onReconnect = () => recovery.future;
+      repository.onApply = () async => Result<void>.success(null);
+      Result<String>? outcome;
+      viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+      await tester.pump();
+      final probeSeconds = onion ? 10 : 3;
+      await tester.pump(Duration(seconds: probeSeconds - 1));
+      expect(viewModel.isConnectionRecovering, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+      expect(viewModel.isConnectionRecovering, isTrue);
+      expect(node.reconnects, 1);
+      expect(node.broadcasts, 0);
+      recovery.complete(Result.success(true));
+      await tester.pump();
+      expect(viewModel.isConnectionRecovering, isFalse);
+      expect(outcome?.isSuccess, isTrue);
+      expect(node.broadcasts, 1);
+      probe.complete(Result.failure(ErrorCodes.nodeConnectionError));
+      await tester.pump();
+    });
+  }
+
+  testWidgets('time spent deciding on an extension consumes the cumulative budget', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    final decision = Completer<bool>();
+    node.onReconnect = () => recovery.future;
+    final offers = <int>[];
+    Result<String>? outcome;
+    viewModel
+        .broadcast(
+          inheritedTagIds: [],
+          onConnectionWaitExtension: (limit, finished) {
+            offers.add(limit.inSeconds);
+            return offers.length == 1 ? decision.future : Future.value(false);
+          },
+        )
+        .then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    await tester.pump(const Duration(seconds: 10));
+    decision.complete(true);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 5));
+    expect(offers, [30, 60]);
+    expect(outcome?.isFailure, isTrue);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('final connection deadline also closes an unanswered prompt', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    bool promptClosed = false;
+    Result<String>? outcome;
+    viewModel
+        .broadcast(
+          inheritedTagIds: [],
+          onConnectionWaitExtension: (limit, finished) async {
+            await finished;
+            promptClosed = true;
+            return true;
+          },
+        )
+        .then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    await tester.pump(const Duration(seconds: 45));
+    expect(outcome?.isFailure, isTrue);
+    expect(promptClosed, isTrue);
+    recovery.completeError(StateError('late recovery error'));
+    await tester.pump();
+    expect(node.broadcasts, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('connection finishing while extension prompt is open proceeds once', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    repository.onApply = () async => Result<void>.success(null);
+    Result<String>? outcome;
+    viewModel
+        .broadcast(
+          inheritedTagIds: [],
+          onConnectionWaitExtension: (limit, finished) async {
+            await finished; // screen dismisses the prompt when the operation finishes
+            return true;
+          },
+        )
+        .then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(outcome?.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('declining extension prevents late transmission', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.connected = false;
+    final recovery = Completer<Result<bool>>();
+    node.onReconnect = () => recovery.future;
+    Result<String>? outcome;
+    viewModel
+        .broadcast(inheritedTagIds: [], onConnectionWaitExtension: (_, __) async => false)
+        .then((value) => outcome = value);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 15));
+    expect(outcome?.isFailure, isTrue);
+    expect(viewModel.connectionWaitDeclined, isTrue);
+    recovery.complete(Result.success(true));
+    await tester.pump();
+    expect(node.broadcasts, 0);
+  });
 
   testWidgets('cancelling while waiting for the connection prevents a later broadcast', (tester) async {
     await tester.runAsync(() => initialize());

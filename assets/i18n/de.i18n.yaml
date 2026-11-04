@@ -990,6 +990,7 @@ broadcasting_screen:
   title: "Endgültige Überprüfung"
   description: "Bereit zum Senden mit den folgenden Details"
   requesting: "Sendeanfrage läuft"
+  connection_delay_message: "Die Verbindung zum Node dauert länger.\nDie Transaktion wurde noch nicht gesendet und wird nach dem Verbindungsaufbau automatisch gesendet."
   self_sending: "Dies ist eine Transaktion, die an meine eigene Wallet gesendet wird."
   error_popup_title: "Senden fehlgeschlagen"
   btn_submit: "Senden"

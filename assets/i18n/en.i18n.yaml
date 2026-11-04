@@ -991,6 +991,7 @@ broadcasting_screen:
   title: "Final Review"
   description: "Ready to send using the details below"
   requesting: "Sending request"
+  connection_delay_message: "Connecting to the node is taking longer.\nThe transaction is pending submission and will be sent automatically when connected."
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"

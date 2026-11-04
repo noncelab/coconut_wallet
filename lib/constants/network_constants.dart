@@ -12,13 +12,17 @@ const Duration kElectrumPingInterval = Duration(seconds: 20);
 
 const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);
 
-/// Sending waits for recovery for a bounded time; the shared recovery continues.
-const Duration kSendReconnectTimeout = Duration(seconds: 15);
-const Duration kSendReconnectTimeoutForOnion = Duration(seconds: 120);
+/// Absolute connection-preparation deadlines, including the initial probe.
+const List<Duration> kSendConnectionWaitLimits = [Duration(seconds: 15), Duration(seconds: 30), Duration(seconds: 60)];
+const List<Duration> kSendConnectionWaitLimitsForOnion = [
+  Duration(seconds: 90),
+  Duration(seconds: 120),
+  Duration(seconds: 180),
+];
 
 /// Local post-send work must not indefinitely block the completion screen.
 const Duration kSendLocalProcessingTimeout = Duration(seconds: 5);
 
 /// Includes socket checks and isolate readiness before the connection probe.
-const Duration kSendConnectionCheckTimeout = Duration(seconds: 10);
-const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 100);
+const Duration kSendConnectionCheckTimeout = Duration(seconds: 3);
+const Duration kSendConnectionCheckTimeoutForOnion = Duration(seconds: 10);

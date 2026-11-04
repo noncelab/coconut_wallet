@@ -990,6 +990,7 @@ broadcasting_screen:
   title: "Revisión final"
   description: "Listo para enviar usando los detalles a continuación"
   requesting: "Solicitando envío"
+  connection_delay_message: "La conexión al nodo está tardando.\nLa transacción aún no se ha enviado y se enviará automáticamente al conectarse."
   self_sending: "Esta es una transacción enviada a mi propia billetera." 
   error_popup_title: "Envío fallido"
   btn_submit: "Enviar"
