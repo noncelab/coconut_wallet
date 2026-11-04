@@ -23,7 +23,7 @@ void main() {
     AddressType.p2wpkh,
   );
 
-  for (final (count, reused, timeoutMs) in [(1, 0, 5100), (30, 29, 5100), (60, 0, 11000), (600, 0, 60000)]) {
+  for (final (count, reused, timeoutMs) in [(1, 0, 5300), (30, 29, 5300), (60, 0, 23000), (600, 0, 60000)]) {
     testWidgets('parent timeout uses only missing parents and caps at 60 s ($count total, $reused reused)', (
       tester,
     ) async {
@@ -43,21 +43,26 @@ void main() {
     });
   }
 
-  test('[P5-slow-link] a serial 100 ms parent stream records on its first attempt', () async {
-    final previous = parents(60);
-    final raw = {for (final parent in previous) parent.transactionHash: parent.serialize()};
-    var position = 0;
-    final transport = ElectrumTransactionTransport(
-      (hash) => Future.delayed(Duration(milliseconds: 100 * ++position), () => raw[hash]!),
+  for (final delayMs in [100, 200]) {
+    test(
+      '[P5-slow-link][codex-r2-slow-link] a serial $delayMs ms parent stream records on its first attempt',
+      () async {
+        final previous = parents(60);
+        final raw = {for (final parent in previous) parent.transactionHash: parent.serialize()};
+        var position = 0;
+        final transport = ElectrumTransactionTransport(
+          (hash) => Future.delayed(Duration(milliseconds: delayMs * ++position), () => raw[hash]!),
+        );
+        final records = TransactionRecordService(transport.service, _OwnedAddress(owned));
+        final record = await records.createTransactionRecord(1, spend(previous));
+        expect(record.amount, 500);
+        expect(record.fee, 60 * 1000 + 59 * 60 ~/ 2 - 500);
+        expect(record.transactionType, TransactionType.received);
+        expect(record.inputAddressList.length, 60);
+        expect(transport.requestedHashes.length, 60, reason: 'no retry or re-fetch was needed');
+      },
     );
-    final records = TransactionRecordService(transport.service, _OwnedAddress(owned));
-    final record = await records.createTransactionRecord(1, spend(previous));
-    expect(record.amount, 500);
-    expect(record.fee, 60 * 1000 + 59 * 60 ~/ 2 - 500);
-    expect(record.transactionType, TransactionType.received);
-    expect(record.inputAddressList.length, 60);
-    expect(transport.requestedHashes.length, 60, reason: 'no retry or re-fetch was needed');
-  });
+  }
 }
 
 class _OwnedAddress extends Fake implements AddressRepository {

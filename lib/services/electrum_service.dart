@@ -290,7 +290,7 @@ class ElectrumService {
     final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
     final missingHashes = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).toList();
     // 부모 응답은 같은 소켓을 나눠 쓰므로 전송량에 여유를 주되 한 번의 대기는 60초로 제한한다.
-    final timeoutMs = 5000 + 100 * missingHashes.length;
+    final timeoutMs = 5000 + 300 * missingHashes.length;
     final timeout = Duration(milliseconds: timeoutMs > 60000 ? 60000 : timeoutMs);
     final futures = missingHashes.map((hash) async {
       final tx = Transaction.parse(await getTransaction(hash, timeout: timeout));
