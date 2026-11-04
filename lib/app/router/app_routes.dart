@@ -176,6 +176,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => UtxoSelectionScreen(
             selectedUtxoList: args.selectedUtxoList,
+            onSelectionReconciled: args.onSelectionReconciled,
             walletId: args.id,
             currentUnit: args.currentUnit,
           ),

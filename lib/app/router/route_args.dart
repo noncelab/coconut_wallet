@@ -220,7 +220,13 @@ class UtxoSelectionRouteArgs {
   final List<UtxoState> selectedUtxoList;
   final int id;
   final BitcoinUnit currentUnit;
-  const UtxoSelectionRouteArgs({required this.selectedUtxoList, required this.id, required this.currentUnit});
+  final void Function(List<UtxoState>)? onSelectionReconciled;
+  const UtxoSelectionRouteArgs({
+    required this.selectedUtxoList,
+    required this.id,
+    required this.currentUnit,
+    this.onSelectionReconciled,
+  });
 }
 
 class SendConfirmRouteArgs {

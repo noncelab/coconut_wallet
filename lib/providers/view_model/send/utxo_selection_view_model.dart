@@ -17,6 +17,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final PriceProvider _priceProvider;
   final PreferenceProvider _preferenceProvider;
+  final ValueChanged<List<UtxoState>>? _onSelectionReconciled;
   late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
   late final int _walletId;
@@ -54,8 +55,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     this._priceProvider,
     this._preferenceProvider,
     this._isNetworkOn,
-    this._walletId,
-  ) {
+    this._walletId, {
+    ValueChanged<List<UtxoState>>? onSelectionReconciled,
+  }) : _onSelectionReconciled = onSelectionReconciled {
     _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
     _priceProvider.addListener(_updateBitcoinPriceKrw);
   }
@@ -94,9 +96,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
               .whereType<UtxoState>()
               .toList();
       _selectedUtxoIdSet.addAll(_selectedUtxoList.map((utxo) => utxo.utxoId));
-      _initialSelectedUtxoList.addAll(selectedUtxoList);
+      _initialSelectedUtxoList.addAll(_selectedUtxoList);
       _cachedSelectedUtxoAmountSum = null;
       _isInitialized = true;
+      if (_selectedUtxoList.length != selectedUtxoList.length) {
+        _onSelectionReconciled?.call(List<UtxoState>.of(_selectedUtxoList));
+      }
       notifyListeners();
     } catch (e) {
       Logger.error(e);
@@ -262,6 +267,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   /// 선택 상태가 초기 상태와 다른지 확인
   bool get hasSelectionChanged {
+    if (_selectedUtxoList.isEmpty) return false;
     if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
       return true;
     }

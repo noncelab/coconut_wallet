@@ -21,6 +21,7 @@ import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_mod
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -108,7 +109,7 @@ void main() {
 
   for (final (feeBump, selectOther) in [(false, false), (false, true), (true, false), (true, true)]) {
     testWidgets(
-      '${feeBump ? "fee-bump extras route" : "send picker sheet"}: Done returns ${selectOther ? "eligible coin" : "empty selection"}',
+      '${feeBump ? "fee-bump extras route" : "send picker sheet"}: reconciles on open before ${selectOther ? "Done" : "back"}',
       (tester) async {
         final stale = _utxo(UtxoStatus.unspent, amount: 1000000);
         final eligible = _utxo(UtxoStatus.unspent, amount: 200000, hash: 'b' * 64);
@@ -138,6 +139,7 @@ void main() {
                                     AppRouteNames.utxoSelection,
                                     arguments: UtxoSelectionRouteArgs(
                                       selectedUtxoList: callerSelection,
+                                      onSelectionReconciled: (utxos) => callerSelection = utxos,
                                       id: 7,
                                       currentUnit: BitcoinUnit.sats,
                                     ),
@@ -152,6 +154,7 @@ void main() {
                                             walletId: 7,
                                             currentUnit: BitcoinUnit.sats,
                                             selectedUtxoList: callerSelection,
+                                            onSelectionReconciled: (utxos) => callerSelection = utxos,
                                           ),
                                         ),
                                   );
@@ -168,13 +171,20 @@ void main() {
         await tester.pumpAndSettle();
         final model = tester.element(find.byType(UtxoSelectionCard)).read<UtxoSelectionViewModel>();
         expect(model.selectedUtxoAmountSum, 0);
-        expect(model.hasSelectionChanged, isTrue, reason: 'removed-only selection must be returnable too');
+        expect(model.hasSelectionChanged, isFalse);
+        expect(tester.widget<FixedBottomButton>(find.byType(FixedBottomButton)).isActive, isFalse);
+        expect(callerSelection, isEmpty, reason: 'remove stale caller selection at open time, before Done or back');
         if (selectOther) {
           await tester.tap(find.byKey(ValueKey(eligible.utxoId)));
           await tester.pumpAndSettle();
           expect(model.selectedUtxoAmountSum, 200000);
         }
-        await tester.tap(find.text(t.done));
+        if (selectOther) {
+          expect(callerSelection, isEmpty, reason: 'new picker choices are committed only by Done');
+          await tester.tap(find.text(t.done));
+        } else {
+          Navigator.of(tester.element(find.byType(UtxoSelectionScreen))).pop();
+        }
         await tester.pumpAndSettle();
         expect(callerSelection.map((u) => u.utxoId), selectOther ? [eligible.utxoId] : isEmpty);
         expect(callerSelection.fold<int>(0, (sum, u) => sum + u.amount), selectOther ? 200000 : 0);

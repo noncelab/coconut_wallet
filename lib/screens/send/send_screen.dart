@@ -783,6 +783,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       childBuilder:
           (scrollController) => UtxoSelectionScreen(
             selectedUtxoList: _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
+            onSelectionReconciled: (utxos) {
+              if (mounted) _viewModel.setSelectedUtxoList(utxos);
+            },
             walletId: _viewModel.selectedWalletItem!.id,
             currentUnit: _viewModel.currentUnit,
             scrollController: scrollController,

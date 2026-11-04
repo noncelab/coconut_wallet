@@ -1013,7 +1013,7 @@ void main() {
       tags.dispose();
       price.dispose();
     });
-    expect(picker.hasSelectionChanged, isTrue);
+    expect(picker.hasSelectionChanged, isFalse);
     expect(picker.selectedUtxoList.map((u) => u.utxoId), [availableId]);
     expect(picker.selectedUtxoAmountSum, 800000);
     final preparer = RbfPreparer.fromPendingTx(

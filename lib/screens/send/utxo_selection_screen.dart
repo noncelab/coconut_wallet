@@ -47,6 +47,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
   final bool showSkipButton;
+  final ValueChanged<List<UtxoState>>? onSelectionReconciled;
 
   /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
   final int? minimumSelectableUtxoAmount;
@@ -59,6 +60,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.walletId,
     this.scrollController,
     this.showSkipButton = false,
+    this.onSelectionReconciled,
     this.minimumSelectableUtxoAmount,
     this.backgroundColor,
   });
@@ -250,6 +252,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
+        onSelectionReconciled: widget.onSelectionReconciled,
       )..minimumSelectableUtxoAmount = widget.minimumSelectableUtxoAmount;
 
       _scrollController.addListener(() {

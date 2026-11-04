@@ -1244,6 +1244,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             (scrollController) => FixedTextScale(
               child: UtxoSelectionScreen(
                 selectedUtxoList: viewModel.selectedUtxoList,
+                onSelectionReconciled: (utxos) {
+                  if (context.mounted) viewModel.setSelectedUtxoList(utxos);
+                },
                 walletId: widget.id,
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,

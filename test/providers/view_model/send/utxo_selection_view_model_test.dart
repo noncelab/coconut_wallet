@@ -73,7 +73,10 @@ void main() {
 
   const tag = UtxoTag(id: 'tag-1', walletId: _walletId, name: _tagName, colorIndex: 0);
 
-  UtxoSelectionViewModel createViewModel({int? minimumSelectableUtxoAmount}) {
+  UtxoSelectionViewModel createViewModel({
+    int? minimumSelectableUtxoAmount,
+    ValueChanged<List<UtxoState>>? onSelectionReconciled,
+  }) {
     final viewModel = UtxoSelectionViewModel(
       _WalletProvider([large, atMinimum, belowMinimum, locked, taggedLarge, taggedSmall, taggedLocked, outgoing]),
       _UtxoTagProvider({
@@ -85,6 +88,7 @@ void main() {
       _PreferenceProvider(),
       true,
       _walletId,
+      onSelectionReconciled: onSelectionReconciled,
     )..minimumSelectableUtxoAmount = minimumSelectableUtxoAmount;
     viewModel.initialize([]);
     return viewModel;
@@ -154,25 +158,48 @@ void main() {
   });
 
   group('개별 토글', () {
+    test('valid initial selections do not notify the caller and clearing them keeps Done disabled', () {
+      var reconciliations = 0;
+      final viewModel = createViewModel(onSelectionReconciled: (_) => reconciliations++);
+      viewModel.reload([large]);
+      expect(reconciliations, 0);
+      expect(viewModel.hasSelectionChanged, isFalse);
+      viewModel.deselectAllUtxo();
+      expect(viewModel.hasSelectionChanged, isFalse);
+      expect(reconciliations, 0, reason: 'initial reconciliation must not publish subsequent picker edits');
+      viewModel.dispose();
+    });
+
     test('fresh eligible rows replace stale initial objects and remove ineligible outpoints', () {
-      final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
+      List<UtxoState>? reconciled;
+      final viewModel = createViewModel(
+        minimumSelectableUtxoAmount: 1000,
+        onSelectionReconciled: (utxos) => reconciled = utxos,
+      );
       final staleLarge = _utxo(1, 999999);
       viewModel.reload([staleLarge, _utxo(8, 70000), locked, belowMinimum, _utxo(99, 90000)]);
       expect(viewModel.selectedUtxoList, [large]);
       expect(viewModel.selectedUtxoList.single, same(large));
       expect(viewModel.selectedUtxoAmountSum, 50000);
-      expect(viewModel.hasSelectionChanged, isTrue);
+      expect(viewModel.hasSelectionChanged, isFalse);
+      expect(reconciled, [large]);
+      expect(reconciled, isNot(same(viewModel.selectedUtxoList)));
+      viewModel.toggleUtxoSelection(atMinimum);
+      expect(reconciled, [large], reason: 'picker edits must not mutate caller state before Done');
       expectConsistent(viewModel);
       viewModel.dispose();
     });
 
-    test('removing the only ineligible initial selection enables Done to return empty', () {
-      final viewModel = createViewModel();
+    test('removing the only ineligible initial selection keeps Done disabled', () {
+      List<UtxoState>? reconciled;
+      final viewModel = createViewModel(onSelectionReconciled: (utxos) => reconciled = utxos);
+      expect(reconciled, isNull);
       viewModel.reload([_utxo(8, 70000)]);
       expect(viewModel.selectedUtxoList, isEmpty);
       expect(viewModel.selectedUtxoIdSet, isEmpty);
       expect(viewModel.selectedUtxoAmountSum, 0);
-      expect(viewModel.hasSelectionChanged, isTrue);
+      expect(viewModel.hasSelectionChanged, isFalse);
+      expect(reconciled, isEmpty);
       viewModel.dispose();
     });
 

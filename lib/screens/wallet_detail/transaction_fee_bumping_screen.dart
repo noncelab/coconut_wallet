@@ -938,6 +938,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   AppRouteNames.utxoSelection,
                   arguments: UtxoSelectionRouteArgs(
                     selectedUtxoList: viewModel.selectedUtxoList,
+                    onSelectionReconciled: (utxos) {
+                      if (mounted) viewModel.updateSelectedUtxos(utxos);
+                    },
                     id: widget.walletId,
                     currentUnit: viewModel.currentUnit,
                   ),
