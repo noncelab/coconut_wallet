@@ -298,13 +298,13 @@ class BroadcastingViewModel extends ChangeNotifier {
     _isBroadcastRequested = true;
     Logger.log('[Send] 브로드캐스팅 시작');
     var result = await _nodeProvider.broadcast(_signedTx!);
-    if (result.isFailure) {
-      // 응답이 실패해도 노드가 거래를 받았을 수 있다. 실패로 알리기 전에 거래 ID로 확인한다.
+    if (result.isFailure && !_isExplicitRejection(result.error)) {
+      // 응답을 받지 못했으면 노드가 거래를 받았을 수 있다. 실패로 알리기 전에 거래 ID로 확인한다.
       result = await _confirmAfterFailedRequest(result.error);
-      if (result.isFailure) {
-        _isBroadcastRequested = false;
-        return result;
-      }
+    }
+    if (result.isFailure) {
+      _isBroadcastRequested = false;
+      return result;
     }
 
     try {
@@ -328,10 +328,28 @@ class BroadcastingViewModel extends ChangeNotifier {
     return result;
   }
 
-  /// 요청 응답이 실패한 뒤 노드에 거래가 있는지 거래 ID로 확인한다.
-  /// - 거래가 있으면 성공으로 본다(응답만 늦었거나 끊긴 경우, 이미 받은 거래를 다시 보낸 경우).
-  /// - 노드와 연결된 상태에서 두 번 연속 거래가 없으면 전송되지 않은 것으로 보고 원래 실패를 돌려준다.
-  /// - 끝까지 확인하지 못하면 [ErrorCodes.broadcastUnconfirmed]를 돌려준다.
+  /// 노드가 거래를 받아 명시적으로 거절한 응답인지. 이때만 결과 확인 없이 실패로 확정한다.
+  /// 이미 받은 거래라는 거절은 사실상 전송된 것이므로 거래 ID 확인으로 넘긴다.
+  bool _isExplicitRejection(AppError error) {
+    if (error.code != ErrorCodes.broadcastError.code) return false;
+    final message = error.message.toLowerCase();
+    const alreadyKnown = [
+      'already in mempool',
+      'already-in-mempool',
+      'txn-already-known',
+      'already known',
+      'already in block chain',
+      'already in blockchain',
+      'outputs already in utxo set',
+    ];
+    return !alreadyKnown.any(message.contains);
+  }
+
+  /// 요청의 응답을 받지 못했거나 이미 받은 거래라는 응답이면, 노드에 거래가 있는지 거래 ID로 확인한다.
+  /// - 거래가 있으면 성공으로 본다.
+  /// - 끝까지 찾지 못하면 [ErrorCodes.broadcastUnconfirmed]를 돌려준다. 조회 실패와 '거래 없음'은 구분하지 않는다.
+  ///   노드가 거절했다는 응답 없이 실패를 확정하면, 이미 전송된 거래를 실패로 알려 새 거래를 만들게 할 수 있기 때문이다.
+  ///   같은 거래를 다시 보내는 것은 안전하므로 확인 불가 안내는 다시 보내기를 권한다.
   /// 앱이 백그라운드에 있으면 돌아올 때까지 확인을 미룬다.
   Future<Result<String>> _confirmAfterFailedRequest(AppError requestError) async {
     final txHash = _signedTx!.transactionHash;
@@ -342,21 +360,14 @@ class BroadcastingViewModel extends ChangeNotifier {
     Logger.log('[Send] 전송 응답 실패(${requestError.code}), 거래 ID로 전송 여부 확인: $txHash');
     _setConfirmingBroadcast(true);
     try {
-      var missingWhileConnected = 0;
       for (var attempt = 0; ; attempt++) {
         await _foreground?.future;
         if (await _isTransactionOnNode(txHash)) {
           Logger.log('[Send] 노드에서 거래 확인, 전송 성공으로 처리: $txHash');
           return Result.success(txHash);
         }
-        if (await _isNodeReachable()) {
-          missingWhileConnected++;
-          if (missingWhileConnected >= 2) {
-            Logger.log('[Send] 노드에 거래가 없어 전송 실패로 처리');
-            return Result.failure(requestError);
-          }
-        } else {
-          missingWhileConnected = 0;
+        // 연결 상태는 복구가 필요한지 판단하는 데만 쓴다. 전송 여부의 근거로 쓰지 않는다.
+        if (!await _isNodeReachable()) {
           try {
             await _nodeProvider.ensureConnectedForBroadcast().timeout(recoveryLimit);
           } catch (e) {

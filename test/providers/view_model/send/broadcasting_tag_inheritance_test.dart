@@ -70,6 +70,8 @@ class _NodeProvider extends Fake implements NodeProvider {
   Future<Result<BlockTimestamp>> Function()? onLatestBlock;
 
   bool fails = false;
+  // A node rejection by default; a lost reply (no answer from the node) when set to a connection error.
+  AppError failure = ErrorCodes.broadcastError;
   void Function()? duringBroadcast;
 
   @override
@@ -93,7 +95,7 @@ class _NodeProvider extends Fake implements NodeProvider {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
     duringBroadcast?.call();
-    return fails ? Result.failure(ErrorCodes.broadcastError) : Result.success(signedTx.transactionHash);
+    return fails ? Result.failure(failure) : Result.success(signedTx.transactionHash);
   }
 }
 
@@ -826,6 +828,7 @@ void main() {
     await tester.runAsync(() => initialize());
     repository.onApply = () async => Result<void>.success(null);
     node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
     node.onGetTransaction = (txHash) async => Result.success('raw');
     final outcome = await viewModel.broadcast(inheritedTagIds: []);
     expect(outcome.isSuccess, isTrue);
@@ -835,18 +838,63 @@ void main() {
     expect(viewModel.cancelPendingSend(), isFalse, reason: 'a confirmed send cannot be cancelled');
   });
 
-  testWidgets('a transaction missing from a reachable node reports the original failure', (tester) async {
+  testWidgets('a node rejection reports the failure without confirmation', (tester) async {
     await tester.runAsync(() => initialize());
     node.fails = true;
+    node.failure = ErrorCodes.broadcastErrorWithMessage('{code: -26, message: min relay fee not met}');
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(outcome.error.code, ErrorCodes.broadcastError.code);
+    expect(outcome.error.message, contains('min relay fee not met'));
+    expect(node.lookups, 0, reason: 'an explicit rejection needs no confirmation');
+    expect(viewModel.cancelPendingSend(), isTrue, reason: 'a rejected send can be retried or left');
+  });
+
+  testWidgets('an already-known rejection is confirmed by txid and treated as sent', (tester) async {
+    await tester.runAsync(() => initialize());
+    repository.onApply = () async => Result<void>.success(null);
+    node.fails = true;
+    node.failure = ErrorCodes.broadcastErrorWithMessage('{code: -27, message: Transaction already in block chain}');
+    node.onGetTransaction = (txHash) async => Result.success('raw');
+    final outcome = await viewModel.broadcast(inheritedTagIds: []);
+    expect(outcome.isSuccess, isTrue);
+    expect(node.lookups, 1);
+  });
+
+  testWidgets('failed lookups with a reachable node report an unknown result, not a failure', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
+    node.onGetTransaction = (txHash) async => Result.failure(ErrorCodes.nodeIsolateError);
     Result<String>? outcome;
     viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
     await tester.pump();
     expect(viewModel.isConfirmingBroadcast, isTrue);
     expect(viewModel.cancelPendingSend(), isFalse, reason: 'the result is unknown while confirming');
-    await tester.pump(const Duration(seconds: 1));
-    expect(outcome?.error.code, ErrorCodes.broadcastError.code);
-    expect(node.lookups, 2, reason: 'one miss could be a node still processing the request');
+    for (final delay in kSendBroadcastConfirmRetryDelays) {
+      await tester.pump(delay);
+    }
+    expect(
+      outcome?.error.code,
+      ErrorCodes.broadcastUnconfirmed.code,
+      reason: 'a lookup failure is not proof of absence',
+    );
+    expect(node.lookups, kSendBroadcastConfirmRetryDelays.length + 1);
+    expect(node.reconnects, 0, reason: 'a reachable node needs no recovery');
     expect(viewModel.isConfirmingBroadcast, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a transaction the node reports missing still ends as an unknown result', (tester) async {
+    await tester.runAsync(() => initialize());
+    node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
+    Result<String>? outcome;
+    viewModel.broadcast(inheritedTagIds: []).then((value) => outcome = value);
+    await tester.pump();
+    for (final delay in kSendBroadcastConfirmRetryDelays) {
+      await tester.pump(delay);
+    }
+    expect(outcome?.error.code, ErrorCodes.broadcastUnconfirmed.code);
     expect(node.broadcasts, 1);
   });
 
@@ -855,6 +903,7 @@ void main() {
       await tester.runAsync(() => initialize());
       node.host = onion ? 'node.onion' : 'node.example';
       node.fails = true;
+      node.failure = ErrorCodes.nodeIsolateError;
       node.duringBroadcast = () => node.connected = false;
       node.onReconnect = () async => Result.failure(ErrorCodes.nodeConnectionError);
       Result<String>? outcome;
@@ -878,6 +927,7 @@ void main() {
     await tester.runAsync(() => initialize());
     repository.onApply = () async => Result<void>.success(null);
     node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
     node.duringBroadcast = () => node.connected = false;
     node.onReconnect = () async {
       node.connected = true;
@@ -898,6 +948,7 @@ void main() {
     await tester.runAsync(() => initialize());
     repository.onApply = () async => Result<void>.success(null);
     node.fails = true;
+    node.failure = ErrorCodes.nodeIsolateError;
     node.duringBroadcast = viewModel.onAppPaused;
     node.onGetTransaction = (txHash) async => Result.success('raw');
     Result<String>? outcome;

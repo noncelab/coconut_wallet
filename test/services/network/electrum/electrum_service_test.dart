@@ -441,7 +441,14 @@ void main() {
         completer.complete({'id': id, 'error': 'Server error occurred'});
       });
 
-      expect(() => electrumClient.ping(), throwsA('Server error occurred'));
+      expect(
+        () => electrumClient.ping(),
+        throwsA(
+          isA<ElectrumServerError>()
+              .having((e) => e.error, 'error', 'Server error occurred')
+              .having((e) => e.toString(), 'message', 'Server error occurred'),
+        ),
+      );
     });
 
     test('should throw error when not connected to server', () async {

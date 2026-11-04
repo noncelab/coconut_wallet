@@ -125,8 +125,12 @@ class NetworkService {
       final txHash = await _electrumService.broadcast(signedTx.serialize());
 
       return Result.success(txHash);
-    } catch (e) {
+    } on ElectrumServerError catch (e) {
+      // 노드가 거래를 받아 명시적으로 거절했다.
       return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
+    } catch (e) {
+      // 연결 끊김·응답 시간 초과: 노드가 거래를 받았는지 알 수 없다.
+      return Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeConnectionError, e.toString()));
     }
   }
 

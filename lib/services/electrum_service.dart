@@ -97,7 +97,7 @@ class ElectrumService {
     Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
 
     if (res['error'] != null) {
-      throw res['error'];
+      throw ElectrumServerError(res['error']);
     }
     // Logger.log('[${DateTime.now()}]RES - $res');
     return fromJson(res['result'], id: requestId);
@@ -402,4 +402,15 @@ class ElectrumService {
   /// 직전 connect() 시도가 신뢰할 수 없는 인증서(HandshakeException) 때문에 실패했는지 여부
   bool get lastConnectionFailedDueToUntrustedCertificate =>
       _socketManager.lastConnectionFailedDueToUntrustedCertificate;
+}
+
+/// 서버가 요청을 받아 처리한 뒤 돌려준 JSON-RPC 오류. 연결 끊김·응답 시간 초과와 달리 서버의 명시적인 응답이다.
+/// 메시지는 서버가 보낸 오류를 그대로 쓴다.
+class ElectrumServerError implements Exception {
+  final Object error;
+
+  const ElectrumServerError(this.error);
+
+  @override
+  String toString() => error.toString();
 }
