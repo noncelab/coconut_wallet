@@ -43,9 +43,8 @@ void main() {
       HomeItemIds.allWalletStack,
       HomeItemIds.shortcut(FeatureIds.receive),
       HomeItemIds.shortcut(FeatureIds.send),
-      HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
-      HomeItemIds.shortcut(FeatureIds.hodlInsights),
       HomeItemIds.shortcut(FeatureIds.myWallets),
+      HomeItemIds.shortcut(FeatureIds.hodlInsights),
       HomeItemIds.recentTransactions,
     ]);
   });

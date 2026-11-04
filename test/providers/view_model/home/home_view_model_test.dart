@@ -160,7 +160,7 @@ void main() {
       addTearDown(reloaded.dispose);
       expect(reloaded.configuration, saved);
       expect(saved.columns, 8);
-      final shortcutIds = [FeatureIds.receive, FeatureIds.send, FeatureIds.utxoOrganizer, FeatureIds.hodlInsights];
+      final shortcutIds = [FeatureIds.receive, FeatureIds.send, FeatureIds.myWallets, FeatureIds.hodlInsights];
       for (final (index, featureId) in shortcutIds.indexed) {
         final shortcut = saved.items.singleWhere((item) => item.definitionId == HomeItemIds.shortcut(featureId));
         expect(shortcut.position, HomeGridPosition(2 + index % 2, 2 + index ~/ 2));
@@ -367,7 +367,7 @@ void main() {
           for (final item in projected.positionedConfiguration.items) item.definitionId: item.position,
         };
         expect(positions[HomeItemIds.allWalletStack], const HomeGridPosition(0, 2));
-        expect(positions[HomeItemIds.shortcut(FeatureIds.utxoOrganizer)], const HomeGridPosition(2, 3));
+        expect(positions[HomeItemIds.shortcut(FeatureIds.myWallets)], const HomeGridPosition(2, 3));
         expect(positions[HomeItemIds.recentTransactions], const HomeGridPosition(4, 2));
         expect(configuration.shortcutWalletContext, previous.shortcutWalletContext);
       }
