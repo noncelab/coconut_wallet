@@ -12,7 +12,9 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_serv
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -59,6 +61,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   void initState() {
     super.initState();
     _saveMigratedWalletIds();
+    healReceiveOnlyAmountsOnce(_realmManager.realm, SharedPrefsRepository()).catchError(
+      (Object e) => Logger.error('healReceiveOnlyAmountsOnce failed: ${e.runtimeType}'),
+    );
     BitBox02ConnectivityService.startMonitoring();
     TrezorConnectivityService.startMonitoring();
   }

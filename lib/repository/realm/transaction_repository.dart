@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
@@ -12,6 +13,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -57,6 +59,31 @@ int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction>
     }
   }
   return changed;
+}
+
+/// 모든 지갑의 받기 기록을 지금의 내 주소로 다시 센다(지갑별 RECEIVED만 차례로 읽는다). 바꾼 기록 수를 돌려준다.
+int recountReceivedAmountsOfAllWallets(Realm realm) {
+  var changed = 0;
+  for (final wallet in realm.all<RealmWalletBase>()) {
+    changed += recountReceivedAmounts(
+      realm,
+      wallet.id,
+      realm.query<RealmTransaction>(r'walletId == $0 AND transactionType == $1', [
+        wallet.id,
+        TransactionType.received.name,
+      ]),
+    );
+  }
+  return changed;
+}
+
+/// 이 수정 전 버전이 남긴 낮은 받기 금액을 앱 시작 때 한 번만 바로잡는다. 이후의 경우는 기록 저장과 주소 추가가 맡는다.
+/// 금액은 올리기만 하므로 중간에 끊겨 다시 돌아도 안전하고, 끝난 뒤에만 표시를 남긴다.
+Future<void> healReceiveOnlyAmountsOnce(Realm realm, SharedPrefsRepository prefs) async {
+  if (prefs.getBool(SharedPrefKeys.kHealedReceiveOnlyAmounts)) return;
+  final changed = await realm.writeAsync(() => recountReceivedAmountsOfAllWallets(realm));
+  await prefs.setBool(SharedPrefKeys.kHealedReceiveOnlyAmounts, true);
+  Logger.log('healReceiveOnlyAmountsOnce: $changed records');
 }
 
 class TransactionRepository extends BaseRepository {

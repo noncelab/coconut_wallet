@@ -48,7 +48,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_li
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/migration/migration.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
@@ -1762,7 +1761,7 @@ void main() {
       expect(ok, isTrue);
       expect(stored().amount, 20000, reason: 'a warm start does not rescan stored records');
 
-      realm.write(() => recountReceivedAmountsOfAllWallets(realm)); // the 10 -> 11 Realm migration
+      realm.write(() => recountReceivedAmountsOfAllWallets(realm)); // the one-time heal at app start
       expect(stored().amount, 60000);
       expect(stored().transactionType, TransactionType.received.name);
       expect(realm.write(() => recountReceivedAmountsOfAllWallets(realm)), 0, reason: 'correct records are left alone');

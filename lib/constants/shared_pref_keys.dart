@@ -117,6 +117,9 @@ class SharedPrefKeys {
   static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
       'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
 
+  // 주소 창보다 먼저 처리돼 낮게 저장된 받기 기록을 앱 시작 때 한 번 바로잡았는지(비밀번호 초기화 때 지울 필요 없음)
+  static const String kHealedReceiveOnlyAmounts = 'heal_receive_only_amounts_v1';
+
   /// 비밀번호 분실 시 초기화 대상
   /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
   /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.

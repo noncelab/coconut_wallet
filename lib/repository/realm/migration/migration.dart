@@ -2,12 +2,10 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
@@ -73,11 +71,6 @@ import 'package:realm/realm.dart';
 /// [addHotWalletBackupVerifiedAt] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 nullable backupVerifiedAt 필드 추가
 /// 2. 기존 백업 완료 지갑은 정확한 완료 시각을 알 수 없으므로 null 유지
-///
-/// [recountReceivedAmountsOfAllWallets] (10 -> 11)
-/// 1. 주소 창보다 먼저 처리돼 내 출력 몫이 빠진 받기 기록(RECEIVED, 입력에 내 주소 없음)의 금액을 저장된 출력으로 다시 센다.
-/// 2. 예전 버전은 입력을 빼고 저장했을 수 있어 입력으로 금액·유형을 추정하지 않는다. 보내기·자기 이체 기록은 그대로다.
-/// 3. 이후 새로 생기는 주소는 AddressRepository가 그 주소로 받은 기록만 다시 세므로, 전체를 보는 것은 이 한 번뿐이다.
 void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -100,27 +93,10 @@ void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWa
       scopeWalletSyncDataByWallet(migration);
       addHotWalletLifecycleState(migration.newRealm);
     }
-    if (oldVersion < 11) recountReceivedAmountsOfAllWallets(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
-}
-
-/// 모든 지갑의 받기 기록 금액을 지금의 내 주소로 다시 센다(지갑별 RECEIVED만 차례로 읽는다). 바꾼 기록 수를 돌려준다.
-int recountReceivedAmountsOfAllWallets(Realm realm) {
-  var changed = 0;
-  for (final wallet in realm.all<RealmWalletBase>()) {
-    changed += recountReceivedAmounts(
-      realm,
-      wallet.id,
-      realm.query<RealmTransaction>(r'walletId == $0 AND transactionType == $1', [
-        wallet.id,
-        TransactionType.received.name,
-      ]),
-    );
-  }
-  return changed;
 }
 
 void addHotWalletLifecycleState(Realm realm) {

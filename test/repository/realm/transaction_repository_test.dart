@@ -1,9 +1,13 @@
+import 'dart:convert';
+
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -12,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../mock/transaction_mock.dart';
 import '../../mock/wallet_mock.dart';
@@ -131,6 +136,50 @@ void main() {
       await transactionRepository.addAllTransactions(testWalletItem.id, [sent, mixed]);
       expect(transactionRepository.getTransactionRecord(testWalletItem.id, 'cd' * 32)!.amount, -31000);
       expect(transactionRepository.getTransactionRecord(testWalletItem.id, 'ef' * 32)!.amount, 99000);
+    });
+  });
+
+  group('앱 시작 때 한 번 받기 금액 바로잡기', () {
+    test('입력이 빠진 예전 기록은 그대로 두고 낮은 받기 기록만 올린 뒤, 다음 시작에는 다시 보지 않는다', () async {
+      SharedPreferences.setMockInitialValues({});
+      // ignore: deprecated_member_use_from_same_package
+      final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
+      final realm = realmManager.realm;
+      final walletId = testWalletItem.id;
+      String entry(String address, int amount) => jsonEncode({'address': address, 'amount': amount});
+      RealmTransaction row(int id, String type, int amount, List<String> inputs, List<String> outputs) =>
+          RealmTransaction(id, 'tx$id', walletId, DateTime.utc(2026), 100, type, amount, 1000, 141, DateTime.utc(2026),
+              inputAddressList: inputs, outputAddressList: outputs);
+      realm.write(() {
+        for (final (index, address) in ['own0', 'own1'].indexed) {
+          realm.add(RealmWalletAddress(index, walletId, address, index, false, 'm/0/$index', true, 0, 0, 0));
+        }
+        // 529254318 이전에는 부모를 못 받은 입력을 빼고 저장했고 유형은 원래 입력 수로 정했다.
+        realm.add(row(1, 'SENT', -31000, [], [entry('own0', 69000), entry('external', 30000)]));
+        realm.add(row(2, 'SELF', -1000, [], [entry('own0', 99000)]));
+        realm.add(row(3, 'RECEIVED', 99000, [entry('own0', 100000)], [entry('own0', 199000)]));
+        realm.add(row(4, 'RECEIVED', 5000000000, [], [entry('own0', 5000000000)])); // coinbase
+        // own1이 주소 창 밖일 때 기록돼 own0만 셌다.
+        realm.add(row(5, 'RECEIVED', 20000, [entry('external', 50000)], [
+          entry('own0', 20000),
+          entry('own1', 20000),
+          entry('external', 9000),
+        ]));
+        realm.add(row(6, 'RECEIVED', 90000, [entry('external', 99000)], [entry('own0', 20000)])); // 내리지 않는다
+      });
+
+      await healReceiveOnlyAmountsOnce(realm, prefs);
+
+      List<Object> rows() => [
+        for (var id = 1; id <= 6; id++) ...[realm.find<RealmTransaction>(id)!.transactionType, realm.find<RealmTransaction>(id)!.amount],
+      ];
+      expect(rows(), ['SENT', -31000, 'SELF', -1000, 'RECEIVED', 99000, 'RECEIVED', 5000000000, 'RECEIVED', 40000, 'RECEIVED', 90000]);
+      expect(realm.all<RealmTransaction>().map((tx) => tx.fee), everyElement(1000));
+      expect(prefs.getBool(SharedPrefKeys.kHealedReceiveOnlyAmounts), isTrue);
+
+      realm.write(() => realm.find<RealmTransaction>(5)!.amount = 20000);
+      await healReceiveOnlyAmountsOnce(realm, prefs);
+      expect(realm.find<RealmTransaction>(5)!.amount, 20000, reason: 'the full pass runs once, not on every start');
     });
   });
 
