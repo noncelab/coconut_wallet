@@ -186,20 +186,26 @@ void main() {
     }
   }
 
-  testWidgets('tapping the name field with the fold keyboard keeps it above the complete button', (tester) async {
-    walletProvider = _WalletProvider(_hotWallet());
-    await open(tester, logicalSize: const Size(841, 874));
-    final control = find.byKey(const Key('wallet-appearance-name-field'));
-    await tester.ensureVisible(control);
-    await tester.tap(control);
-    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-    await tester.pumpAndSettle();
+  for (final size in [const Size(841, 874), const Size(390, 844)]) {
+    testWidgets('tapping the name field with the keyboard keeps it and its counter readable $size', (tester) async {
+      walletProvider = _WalletProvider(_hotWallet());
+      await open(tester, logicalSize: size);
+      final control = find.byKey(const Key('wallet-appearance-name-field'));
+      await tester.ensureVisible(control);
+      await tester.tap(control);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
-    final button = find.ancestor(of: find.text(t.complete), matching: find.byType(ShrinkAnimationButton));
-    expect(tester.getRect(control).bottom, lessThanOrEqualTo(tester.getRect(button).top));
-    expect(find.byType(EditableText).hitTestable(), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      final button = find.ancestor(of: find.text(t.complete), matching: find.byType(ShrinkAnimationButton));
+      expect(tester.getRect(control).bottom, lessThanOrEqualTo(tester.getRect(button).top));
+      expect(find.byType(EditableText).hitTestable(), findsOneWidget);
+      // 완료 버튼 뒤 그라데이션은 키보드 위 약 159px에서 투명하고 80px에서 불투명해진다.
+      // 입력칸 아래 글자 수(중복 이름 안내와 같은 줄)는 3분의 1 이하로만 덮이는 130px 위에 있어야 읽힌다.
+      final counter = find.descendant(of: control, matching: find.textContaining('/20'));
+      expect(tester.getRect(counter).bottom, lessThanOrEqualTo(size.height - 300 - 130));
+    });
+  }
 
   for (final variant in [CoconutThemeVariant.dark, CoconutThemeVariant.coconutTheme]) {
     for (final scale in [1.0, 1.6, 2.0]) {

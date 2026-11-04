@@ -52,6 +52,8 @@ class _WalletAppearanceBody extends StatelessWidget {
   static const double _cardGap = 12;
   // 아래 '완료' 버튼이 가리는 높이만큼 내용과 입력칸 아래에 둔다.
   static const double _bottomButtonSpace = 120;
+  // 이름을 입력하는 동안 입력칸과 그 아래 안내 줄을 완료 버튼 뒤 그라데이션(약 160px) 위로 올린다.
+  static const double _nameFieldRevealSpace = 180;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +113,6 @@ class _WalletAppearanceBody extends StatelessWidget {
                 final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
                 return SingleChildScrollView(
                   primary: false,
-                  clipBehavior: Clip.none,
                   child: SizedBox(height: constraints.maxHeight + keyboardHeight, child: content),
                 );
               },
@@ -498,7 +499,7 @@ class _WalletTabState extends State<_WalletTab> {
             },
             isError: viewModel.isNameDuplicated,
             errorText: viewModel.isNameDuplicated ? t.wallet_info_screen.duplicated_name : '',
-            scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, _WalletAppearanceBody._bottomButtonSpace),
+            scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, _WalletAppearanceBody._nameFieldRevealSpace),
           ),
         if (viewModel.canEditPalette) ...[
           if (viewModel.canEditName) SizedBox(height: hasError ? 16 : 8),
