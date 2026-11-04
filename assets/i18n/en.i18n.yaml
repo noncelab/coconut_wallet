@@ -993,7 +993,7 @@ broadcasting_screen:
   requesting: "Sending request"
   connection_delay_message: "Connecting to the node is taking longer.\nThe transaction is pending submission and will be sent automatically when connected."
   confirming_message: "Checking the sending result.\nPlease wait until the check is complete."
-  confirming_delay_message_onion: "The Tor node is responding slowly, so checking the sending result is taking longer.\nIt may take up to about $minutes more minutes."
+  confirming_delay_message_onion: "The Tor node is responding slowly.\nIt may take up to about $minutes more minutes."
   unconfirmed_popup_title: "Sending Result Unknown"
   background_stopped_title: "Sending Stopped"
   background_stopped_message: "The app moved to the background, so the transaction was not sent.\nPlease send it again."

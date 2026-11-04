@@ -992,7 +992,7 @@ broadcasting_screen:
   requesting: "Solicitando envío"
   connection_delay_message: "La conexión al nodo está tardando.\nLa transacción aún no se ha enviado y se enviará automáticamente al conectarse."
   confirming_message: "Comprobando el resultado del envío.\nEspere hasta que termine la comprobación."
-  confirming_delay_message_onion: "El nodo Tor responde con lentitud, por lo que la comprobación del resultado del envío está tardando.\nPuede tardar hasta unos $minutes minutos más."
+  confirming_delay_message_onion: "El nodo Tor está respondiendo con lentitud.\nPuede tardar hasta unos $minutes minutos más."
   unconfirmed_popup_title: "Resultado del envío desconocido"
   background_stopped_title: "Envío detenido"
   background_stopped_message: "La aplicación pasó a segundo plano, por lo que la transacción no se envió.\nVuelva a enviarla."

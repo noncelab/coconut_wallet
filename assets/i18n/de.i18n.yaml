@@ -992,7 +992,7 @@ broadcasting_screen:
   requesting: "Sendeanfrage läuft"
   connection_delay_message: "Die Verbindung zum Node dauert länger.\nDie Transaktion wurde noch nicht gesendet und wird nach dem Verbindungsaufbau automatisch gesendet."
   confirming_message: "Das Sendeergebnis wird geprüft.\nBitte warten Sie, bis die Prüfung abgeschlossen ist."
-  confirming_delay_message_onion: "Der Tor-Node antwortet langsam, daher dauert die Prüfung des Sendeergebnisses länger.\nEs kann noch bis zu etwa $minutes Minuten dauern."
+  confirming_delay_message_onion: "Der Tor-Node antwortet langsam.\nEs kann noch bis zu etwa $minutes Minuten dauern."
   unconfirmed_popup_title: "Sendeergebnis unbekannt"
   background_stopped_title: "Senden gestoppt"
   background_stopped_message: "Die App wurde in den Hintergrund verschoben, daher wurde die Transaktion nicht gesendet.\nBitte senden Sie sie erneut."
