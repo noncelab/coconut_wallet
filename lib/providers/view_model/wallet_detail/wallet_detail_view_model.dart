@@ -187,7 +187,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
     final stopwatch = Stopwatch()..start();
     try {
-      await _nodeProvider.refreshWallets();
+      await _nodeProvider.refreshWallet(_wallet);
       if (_isDisposed) return;
       _transactionProvider.initTxList(_walletId);
       notifyListeners();
@@ -256,22 +256,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     _updateWalletSyncingState();
   }
 
-  bool _calculateIsWalletSyncing() {
-    if (_walletUpdateInfo?.balanceSnapshot != null && _nodeSyncState != NodeSyncState.failed) {
-      return _walletUpdateInfo!.isSyncQueued;
-    }
-    if (_nodeSyncState == NodeSyncState.completed || _nodeSyncState == NodeSyncState.failed) {
-      return false;
-    }
-
-    final walletUpdateInfo = _walletUpdateInfo;
-    if (walletUpdateInfo == null) {
-      return _nodeSyncState == NodeSyncState.init || _nodeSyncState == NodeSyncState.syncing;
-    }
-
-    return walletUpdateInfo.balance != WalletSyncState.completed ||
-        walletUpdateInfo.transaction != WalletSyncState.completed;
-  }
+  bool _calculateIsWalletSyncing() => calculateWalletSyncing(_walletUpdateInfo, _nodeSyncState);
 
   void _updateWalletSyncingState() {
     final isWalletSyncing = _calculateIsWalletSyncing();

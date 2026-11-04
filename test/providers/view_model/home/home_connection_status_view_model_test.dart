@@ -129,6 +129,15 @@ class _ControlledIsolate extends Mock implements IsolateManager {
   Result<bool> dormantResult = Result.success(true);
   final subscribeGates = <Completer<void>>[];
   bool holdNextSubscribe = false;
+  final subscribedWalletIds = <int>[];
+  Result<bool> subscribeWalletResult = Result.success(true);
+
+  @override
+  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
+    subscribedWalletIds.add(walletItem.id);
+    return subscribeWalletResult;
+  }
+
   Completer<Result<bool>>? _heldSubscribe;
 
   @override
@@ -959,6 +968,68 @@ void main() {
         expect(applied?.isSuccess, isTrue);
         expect(syncStates, isNot(contains(NodeSyncState.failed)));
         expect(connectionErrors, isNot(contains(true)));
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('연결이 정상이면 지갑 하나만 다시 구독하고 재연결하지 않는다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        final subscribed = isolate.subscribeCount;
+        final wallet = wallets.value.single;
+
+        bool? result;
+        unawaited(realNode.refreshWallet(wallet).then((value) => result = value));
+        for (var i = 0; i < 10 && result == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(result, isTrue);
+        expect(isolate.subscribedWalletIds, [wallet.id]);
+        expect(isolate.initializeCount, initialized, reason: '연결을 다시 맺지 않는다');
+        expect(isolate.subscribeCount, subscribed, reason: '모든 지갑을 다시 구독하지 않는다');
+        expect(isolate.dormantSyncedWalletIds, [wallet.id]);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('지갑 하나만 다시 구독하다 실패하면 전체 재연결로 넘어간다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        isolate.subscribeWalletResult = Result.failure(ErrorCodes.nodeConnectionError);
+
+        bool? result;
+        unawaited(realNode.refreshWallet(wallets.value.single).then((value) => result = value));
+        for (var i = 0; i < 20 && result == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(result, isTrue);
+        expect(isolate.initializeCount, initialized + 1);
+      } finally {
+        await stop(tester);
+      }
+    });
+
+    testWidgets('연결에 문제가 있으면 지갑 하나가 아니라 전체 재연결한다', (tester) async {
+      await startConnected(tester);
+      try {
+        final initialized = isolate.initializeCount;
+        isolate.states.add(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []));
+        await tester.pump();
+
+        bool? result;
+        unawaited(realNode.refreshWallet(wallets.value.single).then((value) => result = value));
+        for (var i = 0; i < 20 && result == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(isolate.subscribedWalletIds, isEmpty);
+        expect(isolate.initializeCount, initialized + 1);
       } finally {
         await stop(tester);
       }
