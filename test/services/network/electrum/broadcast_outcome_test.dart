@@ -129,9 +129,9 @@ void main() {
     }
   });
 
-  test('no connection sends nothing and stays an unknown outcome', () async {
+  test('no connection before sending sends nothing and fails as a connection error, not an unknown outcome', () async {
     final r = await send('reply', 'found', connected: false);
-    expect(r.result.error.code, ErrorCodes.nodeIsolateError.code);
+    expect(r.result.error.code, ErrorCodes.nodeConnectionError.code);
     expect(r.methods, isEmpty);
   });
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/network_constants.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -128,6 +129,10 @@ class NetworkService {
     Duration replyTimeout = kBroadcastReplyTimeout,
     Duration checkTimeout = kBroadcastCheckTimeout,
   }) async {
+    // 보내기 전에 연결이 없으면 요청은 노드에 가지 않았다. 결과 확인이나 다시 보내기 없이 연결 실패로 알린다.
+    if (_electrumService.connectionStatus != SocketConnectionStatus.connected) {
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
     var rejected = false;
     try {
       final txHash = await _electrumService.broadcast(
