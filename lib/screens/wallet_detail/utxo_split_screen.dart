@@ -27,6 +27,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -40,6 +41,7 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/features/utxo/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/loading/wallet_syncing_label.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
@@ -94,6 +96,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isMethodBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
   bool _shouldRevalidateOnBuild = false;
+  bool _isRestarting = false;
+  static const Duration _restartFadeDuration = Duration(milliseconds: 300);
 
   Color get _pickerDividerColor => context.coconutColors.inputBorderUnfocused;
 
@@ -154,6 +158,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             context.read<SendInfoProvider>(),
             context.read<UtxoTagProvider>(),
             () => _showUsePreviewConfirmDialog(context),
+            context.read<NodeProvider>(),
+            (restart) => _restartAfterUsedUtxoExcluded(context, restart),
           ),
       child: Builder(
         builder: (context) {
@@ -177,6 +183,38 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         },
       ),
     );
+  }
+
+  /// 알림을 먼저 띄우고 지금 화면을 지운 뒤 처음 들어왔을 때처럼 첫 단계부터 다시 시작
+  Future<void> _restartAfterUsedUtxoExcluded(BuildContext context, VoidCallback restart) async {
+    if (!context.mounted || _isRestarting) return;
+    CoconutToast.showToast(
+      context: context,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.triangleWarning,
+      text: t.send_screen.toast.draft_utxo_used,
+      level: CoconutToastLevel.warning,
+    );
+    setState(() => _isRestarting = true);
+    await Future.delayed(_restartFadeDuration);
+    if (!mounted) return;
+
+    restart();
+    _autoOpenUtxoPickerTimer?.cancel();
+    _autoOpenMethodPickerTimer?.cancel();
+    setState(() {
+      _displayedHeaderTitle = _pendingHeaderTitle = _lastObservedHeaderTitle = null;
+      _displayedMethod = _pendingMethod = _lastObservedMethod = null;
+      _isMethodBodyVisible = false;
+      _isHeaderFadingOut = false;
+      _headerAnimationNonce++;
+      _displayedPickerStep = _pendingPickerStep = _lastObservedPickerStep = null;
+      _visiblePickerSteps.clear();
+      _pickerAnimationNonce++;
+      _hasAutoOpenedUtxoPicker = false;
+      _hasAutoOpenedMethodPicker = false;
+      _isRestarting = false;
+    });
   }
 
   Future<bool> _showUsePreviewConfirmDialog(BuildContext context) async {
@@ -383,48 +421,55 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         builder: (context, isPreparingNextStep, child) {
           return LoadingOverlay(isLoading: isPreparingNextStep, child: child!);
         },
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        child: IgnorePointer(
+          ignoring: _isRestarting,
+          child: AnimatedOpacity(
+            opacity: _isRestarting ? 0 : 1,
+            duration: _restartFadeDuration,
+            child: Stack(
               children: [
-                _buildUnexpectedErrorTooltip(),
-                _buildExpectedResult(),
-                Selector<UtxoSplitViewModel, ({bool showSplitResultBox, int manualSplitItemsLength})>(
-                  selector:
-                      (_, vm) => (
-                        showSplitResultBox: vm.showSplitResultBox,
-                        manualSplitItemsLength: vm.manualSplitItems.length,
-                      ),
-                  builder: (context, data, _) {
-                    final showSplitResultBox = data.showSplitResultBox;
-                    final vm = context.read<UtxoSplitViewModel>();
-                    final focusNodes = [
-                      vm.amountFocusNode,
-                      vm.splitCountFocusNode,
-                      ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
-                    ];
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                  children: [
+                    _buildUnexpectedErrorTooltip(),
+                    _buildExpectedResult(),
+                    Selector<UtxoSplitViewModel, ({bool showSplitResultBox, int manualSplitItemsLength})>(
+                      selector:
+                          (_, vm) => (
+                            showSplitResultBox: vm.showSplitResultBox,
+                            manualSplitItemsLength: vm.manualSplitItems.length,
+                          ),
+                      builder: (context, data, _) {
+                        final showSplitResultBox = data.showSplitResultBox;
+                        final vm = context.read<UtxoSplitViewModel>();
+                        final focusNodes = [
+                          vm.amountFocusNode,
+                          vm.splitCountFocusNode,
+                          ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+                        ];
 
-                    return AnimatedBuilder(
-                      animation: Listenable.merge(focusNodes),
-                      builder: (context, _) {
-                        final isFocused = focusNodes.any((node) => node.hasFocus);
-                        final actuallyShowResultBox = showSplitResultBox && !isFocused;
-                        return SizedBox(height: actuallyShowResultBox ? 32 : 24);
+                        return AnimatedBuilder(
+                          animation: Listenable.merge(focusNodes),
+                          builder: (context, _) {
+                            final isFocused = focusNodes.any((node) => node.hasFocus);
+                            final actuallyShowResultBox = showSplitResultBox && !isFocused;
+                            return SizedBox(height: actuallyShowResultBox ? 32 : 24);
+                          },
+                        );
                       },
-                    );
-                  },
+                    ),
+                    FixedTextScale(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildHeaderTitle(), _buildVisibleOptionPickers(context)],
+                      ),
+                    ),
+                  ],
                 ),
-                FixedTextScale(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [_buildHeaderTitle(), _buildVisibleOptionPickers(context)],
-                  ),
-                ),
+                _buildApplyButton(context),
               ],
             ),
-            _buildApplyButton(context),
-          ],
+          ),
         ),
       ),
     );
@@ -579,6 +624,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         String unexpectedErrorMessage,
         double? feeRatio,
         bool showSkeletonResultBox,
+        bool isWalletSyncing,
       })
     >(
       selector:
@@ -589,6 +635,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             unexpectedErrorMessage: vm.unexpectedErrorMessage,
             feeRatio: vm.feeRatio,
             showSkeletonResultBox: vm.showSkeletonResultBox,
+            isWalletSyncing: vm.isWalletSyncing,
           ),
       builder: (context, data, _) {
         final showSplitResultBox = data.showSplitResultBox;
@@ -606,14 +653,16 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             child: FixedBottomButton(
               text: t.apply,
               subWidget:
-                  feeRatio != null && feeRatio >= 10
+                  data.isWalletSyncing
+                      ? const WalletSyncingLabel()
+                      : feeRatio != null && feeRatio >= 10
                       ? Text(
                         t.merge_utxos_screen.merge_cta_high_fee_ratio(ratio: feeRatio),
                         style: CoconutTypography.caption_10.setColor(context.coconutColors.warning),
                       )
                       : null,
               onButtonClicked: () async {
-                if (!isSplitValid) return;
+                if (!isSplitValid || data.isWalletSyncing) return;
                 FocusScope.of(context).unfocus();
 
                 final isSuccess = await viewModel.buildTxAndSaveForNext();
@@ -631,7 +680,13 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                   vibrateLightDouble();
                 }
               },
-              isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty && !showSkeletonResultBox,
+              isActive:
+                  isSplitValid &&
+                  !isPreparingNextStep &&
+                  finalErrorMessage.isEmpty &&
+                  !showSkeletonResultBox &&
+                  !data.isWalletSyncing &&
+                  !_isRestarting,
             ),
           ),
         );

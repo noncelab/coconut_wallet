@@ -4,17 +4,16 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -95,15 +94,18 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   final UtxoRepository _utxoRepository;
   final NodeProvider _nodeProvider;
 
-  StreamSubscription<WalletUpdateInfo>? _walletUpdateSubscription;
-  StreamSubscription<NodeSyncState>? _nodeSyncStateSubscription;
-  WalletUpdateInfo? _walletUpdateInfo;
-  late NodeSyncState _nodeSyncState;
-  bool _isWalletSyncing = false;
+  late final WalletSyncWatcher _walletSyncWatcher;
   bool _isDisposed = false;
 
   /// 선택한 지갑이 업데이트 중이면 UTXO 선택과 거래 생성을 기다림 (다른 지갑의 업데이트와는 무관)
-  bool get isWalletSyncing => _isWalletSyncing;
+  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
+
+  int _excludedUtxoNonce = 0;
+  SelectedUtxoExcludedStatus? _lastExcludedUtxoStatus;
+
+  /// 업데이트 후 직접 고른 UTXO가 빠질 때마다 증가
+  int get excludedUtxoNonce => _excludedUtxoNonce;
+  SelectedUtxoExcludedStatus? get lastExcludedUtxoStatus => _lastExcludedUtxoStatus;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
@@ -260,7 +262,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   bool _hasUnvalidatedInput = false;
 
   bool get isReadyToSend {
-    if (_isWalletSyncing) return false;
+    if (isWalletSyncing) return false;
     if (_hasUnvalidatedInput) return false;
     if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
       return false;
@@ -329,11 +331,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
     _currentUnit = _preferenceProvider.currentUnit;
-    _nodeSyncState = _nodeProvider.state.nodeSyncState;
-    _nodeSyncStateSubscription = _nodeProvider.syncStateStream.listen((nodeSyncState) {
-      _nodeSyncState = nodeSyncState;
-      _updateWalletSyncing();
-    });
+    _walletSyncWatcher = WalletSyncWatcher(_nodeProvider, _onWalletSyncChanged);
 
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
@@ -412,7 +410,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    _watchWalletSync(_selectedWalletItem!.id);
+    _walletSyncWatcher.watch(_selectedWalletItem!.id);
 
     _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
     _initBalances(_allUtxos);
@@ -423,21 +421,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     }
   }
 
-  void _watchWalletSync(int walletId) {
-    _walletUpdateSubscription?.cancel();
-    _walletUpdateInfo = _nodeProvider.state.registeredWallets[walletId];
-    _isWalletSyncing = calculateWalletSyncing(_walletUpdateInfo, _nodeSyncState);
-    _walletUpdateSubscription = _nodeProvider.getWalletStateStream(walletId).listen((walletUpdateInfo) {
-      _walletUpdateInfo = walletUpdateInfo;
-      _updateWalletSyncing();
-    });
-  }
-
-  void _updateWalletSyncing() {
+  void _onWalletSyncChanged(bool isSyncing) {
     if (_isDisposed) return;
-    final isSyncing = calculateWalletSyncing(_walletUpdateInfo, _nodeSyncState);
-    if (isSyncing == _isWalletSyncing) return;
-    _isWalletSyncing = isSyncing;
     if (!isSyncing) _reloadUtxos();
     notifyListeners();
   }
@@ -449,11 +434,15 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _allUtxos = _walletProvider.getUtxoList(wallet.id);
     _initBalances(_allUtxos);
     if (!_isUtxoSelectionAuto && _selectedUtxoList.isNotEmpty) {
-      final (validatedUtxoList, _) = _utxoRepository.getValidatedSelectedUtxoList(
+      final (validatedUtxoList, excludedStatus) = _utxoRepository.getValidatedSelectedUtxoList(
         wallet.id,
         _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
       );
       _selectedUtxoList = validatedUtxoList;
+      if (excludedStatus != null) {
+        _lastExcludedUtxoStatus = excludedStatus;
+        _excludedUtxoNonce++;
+      }
     }
     _buildTransaction();
   }
@@ -461,8 +450,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   @override
   void dispose() {
     _isDisposed = true;
-    _walletUpdateSubscription?.cancel();
-    _nodeSyncStateSubscription?.cancel();
+    _walletSyncWatcher.dispose();
     super.dispose();
   }
 

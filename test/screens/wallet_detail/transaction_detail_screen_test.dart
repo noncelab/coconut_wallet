@@ -1,5 +1,10 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:ui' as ui;
+import 'dart:io';
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -102,37 +107,76 @@ class _Addresses extends Fake implements AddressRepository {
   String getDerivationPath(int walletId, String address) => "m/84'/0'/0'/0/0";
 }
 
+/// 지갑별 업데이트 상태를 직접 바꿀 수 있는 노드
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  final _walletStates = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
+  Map<int, WalletUpdateInfo> _registered = {};
+
+  void setSyncing(int walletId, bool syncing) {
+    _registered = {
+      ..._registered,
+      walletId: WalletUpdateInfo(
+        walletId,
+        subscription: WalletSyncState.completed,
+        balance: WalletSyncState.completed,
+        transaction: WalletSyncState.completed,
+        utxo: WalletSyncState.completed,
+        isSyncQueued: syncing,
+        balanceSnapshot: 0,
+      ),
+    };
+    _walletStates.add(_registered);
+  }
+
+  @override
+  NodeProviderState get state =>
+      NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: _registered);
+  @override
+  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async =>
       Result.success(BlockTimestamp(974400, DateTime(2026, 11, 3)));
   @override
   Future<Result<String>> getTransaction(String txHash) async => Result.success(_txHex);
   @override
-  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => Stream.value(
-    WalletUpdateInfo(
-      walletId,
-      subscription: WalletSyncState.completed,
-      balance: WalletSyncState.completed,
-      transaction: WalletSyncState.completed,
-      utxo: WalletSyncState.completed,
-    ),
-  );
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) =>
+      _walletStates.stream.map((wallets) => wallets[walletId]).where((state) => state != null).cast<WalletUpdateInfo>();
 }
+
+const _captureDir = String.fromEnvironment('TX_DETAIL_CAPTURE_DIR');
 
 void main() {
   late TestRealmManager manager;
+  late _Node node;
+  late List<String?> pushedRoutes;
+  final boundaryKey = GlobalKey();
 
-  setUpAll(() {
+  setUpAll(() async {
     NetworkType.setNetworkType(NetworkType.mainnet);
     LocaleSettings.setLocaleSync(AppLocale.ko);
+    if (_captureDir.isNotEmpty) {
+      // 테스트에는 한글 대체 폰트가 없어 숫자 글꼴 자리도 Pretendard로 그림 (캡처 전용)
+      for (final family in ['Pretendard', 'SpaceGrotesk']) {
+        final loader = FontLoader(family);
+        for (final weight in ['Regular', 'Bold']) {
+          loader.addFont(
+            Future.value(ByteData.sublistView(File('assets/fonts/Pretendard-$weight.ttf').readAsBytesSync())),
+          );
+        }
+        await loader.load();
+      }
+    }
   });
   tearDownAll(() => NetworkType.setNetworkType(NetworkType.regtest));
-  setUp(() => manager = TestRealmManager());
+  setUp(() {
+    manager = TestRealmManager();
+    node = _Node();
+    pushedRoutes = [];
+  });
   tearDown(() => manager.dispose());
 
-  /// 이전 거래 없이 기록을 만들어 입력 목록이 빈 상태로 상세 화면을 열고 입출력 카드를 펼친다
-  Future<void> openWithoutInputs(WidgetTester tester, String hex) async {
+  /// 이전 거래 없이 기록을 만들어 입력 목록이 빈 상태로 상세 화면을 연다
+  Future<void> openDetail(WidgetTester tester, String hex, {int blockHeight = 974348}) async {
     _txHex = hex;
     final tx = Transaction.parse(hex);
     _myAddress = tx.outputs.map((output) => output.scriptPubKey.getAddress()).first;
@@ -150,7 +194,7 @@ void main() {
     _tx = TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
       timestamp: DateTime(2026, 11, 3),
-      blockHeight: 974348,
+      blockHeight: blockHeight,
       transactionType: details.txType,
       amount: details.amount,
       fee: details.fee,
@@ -160,6 +204,7 @@ void main() {
     );
     final tags = UtxoTagProvider(UtxoRepository(manager));
     addTearDown(tags.dispose);
+    tester.view.devicePixelRatio = 3;
     tester.view.physicalSize = const Size(1179, 2556);
     addTearDown(tester.view.reset);
 
@@ -172,36 +217,88 @@ void main() {
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<BlockExplorerProvider>(create: (_) => _Explorer()),
-          ChangeNotifierProvider<NodeProvider>(create: (_) => _Node()),
+          ChangeNotifierProvider<NodeProvider>.value(value: node),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<AddressRepository>.value(value: _Addresses()),
         ],
-        child: MaterialApp(
-          theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
-          home: TransactionDetailScreen(id: 1, txHash: tx.transactionHash),
+        child: RepaintBoundary(
+          key: boundaryKey,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+            home: TransactionDetailScreen(id: 1, txHash: tx.transactionHash),
+            onGenerateRoute: (settings) {
+              pushedRoutes.add(settings.name);
+              return MaterialPageRoute<void>(builder: (_) => const SizedBox());
+            },
+          ),
         ),
       ),
     );
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+  }
+
+  Future<void> expandInputOutput(WidgetTester tester) async {
     await tester.tap(find.text(t.transaction_detail_screen.input_output_detail_title));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
   }
 
+  Future<void> capture(WidgetTester tester, String name) async {
+    if (_captureDir.isEmpty) return;
+    await tester.runAsync(() async {
+      final boundary = boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final png = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+      await File('$_captureDir/$name.png').writeAsBytes(png.buffer.asUint8List());
+      image.dispose();
+    });
+  }
+
   testWidgets('segwit coinbase는 입력 경고 대신 채굴 보상 안내를 보여 준다', (tester) async {
-    await openWithoutInputs(tester, _segwitCoinbase);
+    await openDetail(tester, _segwitCoinbase);
+    await expandInputOutput(tester);
 
     expect(find.text(t.transaction_detail_screen.coinbase_input), findsOneWidget);
     expect(find.text(t.errors.empty_input), findsNothing);
   });
 
   testWidgets('이전 거래를 찾지 못한 일반 거래는 입력 경고를 그대로 보여 준다', (tester) async {
-    await openWithoutInputs(tester, _normalTransaction);
+    await openDetail(tester, _normalTransaction);
+    await expandInputOutput(tester);
 
     expect(find.text(t.errors.empty_input), findsOneWidget);
     expect(find.text(t.transaction_detail_screen.coinbase_input), findsNothing);
+  });
+
+  group('빨리 받기', () {
+    testWidgets('이 지갑이 업데이트 중이면 눌러도 수수료 올리기로 넘어가지 않고, 끝나면 넘어간다', (tester) async {
+      node.setSyncing(1, true);
+      await openDetail(tester, _normalTransaction, blockHeight: 0);
+      await capture(tester, 'quick_receive_syncing');
+
+      await tester.tap(find.text(t.quick_receive));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(pushedRoutes, isEmpty);
+
+      node.setSyncing(1, false);
+      await tester.pump(const Duration(milliseconds: 100));
+      await capture(tester, 'quick_receive_synced');
+      await tester.tap(find.text(t.quick_receive));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(pushedRoutes, [AppRouteNames.transactionFeeBumping]);
+    });
+
+    testWidgets('다른 지갑만 업데이트 중이면 막지 않는다', (tester) async {
+      node.setSyncing(2, true);
+      await openDetail(tester, _normalTransaction, blockHeight: 0);
+
+      await tester.tap(find.text(t.quick_receive));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(pushedRoutes, [AppRouteNames.transactionFeeBumping]);
+    });
   });
 }

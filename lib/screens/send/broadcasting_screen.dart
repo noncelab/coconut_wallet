@@ -121,7 +121,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         if (!mounted) return;
         _restoreAfterBroadcastFailure();
         vibrateMedium();
-        String message = result.error.message;
+        String message = BroadcastingViewModel.broadcastFailureMessage(result.error.message);
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
           message = t.alert.error_send.non_final_taproot_child;
         }
@@ -565,7 +565,22 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
       try {
         final excludedUtxoStatus = await _viewModel.setTxInfo();
-        if (excludedUtxoStatus != null && mounted) {
+        if (excludedUtxoStatus != null && mounted && !_viewModel.isFromSignedDraft) {
+          vibrateMedium();
+          showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_screen.dialog.send_unavailable,
+            excludedUtxoStatus == SelectedUtxoExcludedStatus.used
+                ? t.alert.error_send.used_utxo_included
+                : t.alert.error_send.locked_utxo_included,
+            barrierDismissible: false,
+            onTapButton: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          );
+        } else if (excludedUtxoStatus != null && mounted) {
           final message =
               excludedUtxoStatus == SelectedUtxoExcludedStatus.used
                   ? t.transaction_draft.dialog.transaction_already_used_utxo_included

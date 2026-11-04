@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
+import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -62,9 +63,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool get isSuspiciousDustTransaction =>
       _walletProvider.isTransactionSuspicious(_transactionList![_selectedTransactionIndex]);
 
+  late final WalletSyncWatcher _walletSyncWatcher;
+
+  /// 이 지갑이 업데이트 중이면 빨리 받기·빨리 보내기를 막음 (다른 지갑의 업데이트와는 무관)
+  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
+
   @override
   void dispose() {
     _disposed = true;
+    _walletSyncWatcher.dispose();
     super.dispose();
   }
 
@@ -79,6 +86,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._blockExplorerProvider,
   ) {
     setNeedsMfp();
+    _walletSyncWatcher = WalletSyncWatcher(_nodeProvider, (_) => safeNotifyListeners())..watch(_walletId);
     _initTransactionList();
   }
 

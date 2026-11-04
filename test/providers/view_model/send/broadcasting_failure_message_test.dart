@@ -31,8 +31,14 @@ void main() {
     expect(message, t.alert.error_send.insufficient_fee);
   });
 
+  test('입력이 이미 사용된 거부는 이미 사용된 비트코인 안내를 보여 준다', () {
+    for (final reason in ['bad-txns-inputs-missingorspent', 'txn-mempool-conflict']) {
+      expect(BroadcastingViewModel.broadcastFailureMessage(_rejected(reason)), t.alert.error_send.used_utxo_included);
+    }
+  });
+
   test('알 수 없는 거부 사유는 원문을 그대로 보여 준다', () {
-    final error = _rejected('bad-txns-inputs-missingorspent');
+    final error = _rejected('scriptpubkey');
 
     expect(BroadcastingViewModel.broadcastFailureMessage(error), error.toString());
   });

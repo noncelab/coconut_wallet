@@ -1860,6 +1860,8 @@ alert:
     insufficient_fee: "Por favor, intenta nuevamente aumentando la comisión."
     immature_coinbase: "Las recompensas de minería se pueden enviar después de 100 confirmaciones."
     immature_coinbase_remaining: "Las recompensas de minería se pueden enviar después de 100 confirmaciones.\nFaltan $count bloques."
+    used_utxo_included: "La transacción incluye bitcoin que ya se ha gastado.\nPor favor, vuelve a crear la transacción."
+    locked_utxo_included: "La transacción incluye bitcoin bloqueado.\nPor favor, intenta nuevamente desde el principio."
     non_final_taproot_child: "Por favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."

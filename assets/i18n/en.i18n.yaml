@@ -1860,6 +1860,8 @@ alert:
     insufficient_fee: "Please try again by\nincreasing the fee rate."
     immature_coinbase: "Mining rewards can be sent after 100 confirmations."
     immature_coinbase_remaining: "Mining rewards can be sent after 100 confirmations.\n$count more blocks to go."
+    used_utxo_included: "This transaction includes bitcoin that has already been spent.\nPlease create the transaction again."
+    locked_utxo_included: "This transaction includes locked bitcoin.\nPlease try again from the beginning."
     non_final_taproot_child: "Please check the child wallet's inheritance date and time."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."

@@ -167,6 +167,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
   late final SendViewModel _viewModel;
+  late int _lastExcludedUtxoNonce;
   Timer? _ownAddressCheckTimer;
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
@@ -227,6 +228,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.transactionDraftId,
       widget.selectedUtxoList,
     );
+    _lastExcludedUtxoNonce = _viewModel.excludedUtxoNonce;
+    _viewModel.addListener(_onUtxoExcludedBySync);
     if (widget.isMoveToVault && widget.receivingVaultWalletId != null) {
       final walletProvider = context.read<WalletProvider>();
       final vault = walletProvider.getWalletById(widget.receivingVaultWalletId!);
@@ -377,6 +380,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onUtxoExcludedBySync);
     WidgetsBinding.instance.removeObserver(this);
     _vaultInfoTimer?.cancel();
     _ownAddressCheckTimer?.cancel();
@@ -787,6 +791,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         Navigator.of(context).pop();
       },
     );
+  }
+
+  void _onUtxoExcludedBySync() {
+    final nonce = _viewModel.excludedUtxoNonce;
+    if (nonce == _lastExcludedUtxoNonce) return;
+    _lastExcludedUtxoNonce = nonce;
+    _showExcludedUtxoToast(_viewModel.lastExcludedUtxoStatus!);
   }
 
   /// 지갑 업데이트 중이면 끝난 뒤에 UTXO 선택 시트를 띄움

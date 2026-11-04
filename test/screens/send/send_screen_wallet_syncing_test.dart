@@ -93,12 +93,13 @@ class _Utxos extends Fake implements UtxoRepository {
   (List<UtxoState>, SelectedUtxoExcludedStatus?) getValidatedSelectedUtxoList(
     int walletId,
     List<String> selectedUtxoIds,
-  ) => (
-    (_utxosByWallet[walletId] ?? [])
-        .where((utxo) => selectedUtxoIds.contains(utxo.utxoId) && utxo.status == UtxoStatus.unspent)
-        .toList(),
-    null,
-  );
+  ) {
+    final valid =
+        (_utxosByWallet[walletId] ?? [])
+            .where((utxo) => selectedUtxoIds.contains(utxo.utxoId) && utxo.status == UtxoStatus.unspent)
+            .toList();
+    return (valid, valid.length < selectedUtxoIds.length ? SelectedUtxoExcludedStatus.used : null);
+  }
 }
 
 /// 지갑별 업데이트 상태를 직접 바꿀 수 있는 노드
@@ -169,7 +170,7 @@ void main() {
     node = _Node();
   });
 
-  Future<void> openSend(WidgetTester tester, int walletId) async {
+  Future<void> openSend(WidgetTester tester, int walletId, {List<UtxoState>? selectedUtxoList}) async {
     tester.view.devicePixelRatio = 2;
     tester.view.physicalSize = const Size(393 * 2, 852 * 2);
     addTearDown(tester.view.reset);
@@ -190,7 +191,11 @@ void main() {
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
-            home: SendScreen(walletId: walletId, sendEntryPoint: SendEntryPoint.walletDetail),
+            home: SendScreen(
+              walletId: walletId,
+              sendEntryPoint: SendEntryPoint.walletDetail,
+              selectedUtxoList: selectedUtxoList,
+            ),
           ),
         ),
       ),
@@ -242,5 +247,21 @@ void main() {
 
     expect(find.text(t.status_updating), findsNothing);
     expect(find.text(t.send_screen.utxo_auto_selection), findsOneWidget);
+  });
+
+  testWidgets('직접 고른 UTXO가 업데이트 중 사용되면 빼고 알린다', (tester) async {
+    node.setSyncing(1, true);
+    await openSend(tester, 1, selectedUtxoList: [_utxo('a', 50000000), _utxo('b', 30000000)]);
+
+    _utxosByWallet[1] = [_utxo('a', 50000000), _utxo('b', 30000000, status: UtxoStatus.outgoing)];
+    node.setSyncing(1, false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await capture(tester, 'send_used_utxo_excluded');
+
+    expect(find.text(t.send_screen.toast.draft_utxo_used), findsOneWidget);
+    for (var i = 0; i < 50; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   });
 }

@@ -1857,6 +1857,8 @@ alert:
     insufficient_fee: "手数料を増やして\n再度お試しください。"
     immature_coinbase: "マイニング報酬は100確認後に送金できます。"
     immature_coinbase_remaining: "マイニング報酬は100確認後に送金できます。\nあと$countブロックです。"
+    used_utxo_included: "すでに使用されたビットコインが含まれています。\n取引をもう一度作成してください。"
+    locked_utxo_included: "使用ロックされたビットコインが含まれています。\n最初からやり直してください。"
     non_final_taproot_child: "子ウォレットの相続日時を確認してください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"

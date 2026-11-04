@@ -462,6 +462,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   maintainState: true,
                   child: GestureDetector(
                     onTap: () async {
+                      if (_viewModel.isWalletSyncing) return;
                       if (!_viewModel.isNetworkOn) {
                         CoconutToast.showToast(
                           context: context,
@@ -513,9 +514,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                         style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType!
-                              ? context.coconutColors.sendingColor
-                              : context.coconutColors.receivingColor,
+                          (_viewModel.isSendType!
+                                  ? context.coconutColors.sendingColor
+                                  : context.coconutColors.receivingColor)
+                              .withValues(alpha: _viewModel.isWalletSyncing ? 0.4 : 1),
                         ),
                       ),
                     ),

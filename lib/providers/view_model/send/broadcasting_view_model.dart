@@ -37,6 +37,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   static String broadcastFailureMessage(Object error) {
     final reason = error.toString();
     if (reason.contains('min relay fee not met')) return t.alert.error_send.insufficient_fee;
+    if (reason.contains('missingorspent') || reason.contains('txn-mempool-conflict')) {
+      return t.alert.error_send.used_utxo_included;
+    }
     if (reason.contains('premature-spend-of-coinbase')) {
       final depth = RegExp(r'spend coinbase at depth (\d+)').firstMatch(reason)?.group(1);
       final remaining = depth == null ? 0 : kCoinbaseMaturity - int.parse(depth);
@@ -192,6 +195,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (result.isFailure) return result;
 
     try {
+      await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
+    } catch (e) {
+      Logger.error('Transaction sent, but marking inputs as outgoing failed: $e');
+    }
+
+    try {
       final applied = await _utxoRepository.applyInheritedTags(
         _walletId!,
         sourceUtxoIds: _tagSourceUtxoIds,
@@ -297,7 +306,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) =
-        isFromSignedDraft
+        isFromSignedDraft || feeBumpingType == null
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
 
