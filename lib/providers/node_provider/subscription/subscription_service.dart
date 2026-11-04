@@ -187,10 +187,14 @@ class SubscriptionService {
       fetchedScriptStatuses,
       walletItem.id,
     );
-    final failedAddresses = _scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address).toSet();
+    // 실패한 스크립트와, 받는 중에 정리된 코인을 서버 잔액이 아직 세는 주소는 상태가 같아도 다시 맞춘다.
+    final recheckAddresses = {
+      ..._scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address),
+      ..._addressRepository.getAddressesWithMissingCoins(walletItem.id),
+    };
     final updatedKeys = updatedScriptStatuses.map((s) => s.scriptPubKey).toSet();
     for (final script in fetchedScriptStatuses) {
-      if (failedAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
+      if (recheckAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
         updatedScriptStatuses.add(script);
       }
     }

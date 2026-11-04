@@ -396,15 +396,28 @@ class UtxoRepository extends BaseRepository {
               .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
               .toList();
 
+      // 받는 중에 정리됐을 뿐인 코인만 서버가 다시 알려 주면 되살린다. 쓴 코인은 spender와 함께 예약된 뒤 지워지고,
+      // 대체·누락된 거래는 기록이 지워지거나 대체로 표시되므로, 그런 코인은 지운 채로 둔다.
+      bool restorable(RealmUtxo row) =>
+          row.status == utxoStatusToString(UtxoStatus.incoming) &&
+          row.spentByTransactionHash == null &&
+          realm.query<RealmTransaction>(
+            r'walletId == $0 AND transactionHash == $1 AND replaceByTransactionHash == null',
+            [walletId, row.transactionHash],
+          ).isNotEmpty;
       await realm.writeAsync(() {
         realm.deleteMany(legacyUtxos);
         for (final toUpdateUtxo in toUpdateUtxos) {
           final existingUtxo = existingUtxoMap[getUtxoId(toUpdateUtxo.transactionHash, toUpdateUtxo.index)];
-          if (existingUtxo != null && !existingUtxo.isDeleted) {
-            existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
-            existingUtxo.timestamp = toUpdateUtxo.timestamp;
-            existingUtxo.status = toUpdateUtxo.status;
+          if (existingUtxo == null) continue;
+          if (existingUtxo.isDeleted) {
+            if (!restorable(existingUtxo)) continue;
+            existingUtxo.isDeleted = false;
+            existingUtxo.spentByTransactionHash = toUpdateUtxo.spentByTransactionHash;
           }
+          existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
+          existingUtxo.timestamp = toUpdateUtxo.timestamp;
+          existingUtxo.status = toUpdateUtxo.status;
         }
         realm.addAll<RealmUtxo>(newUtxos);
       });

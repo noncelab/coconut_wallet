@@ -639,6 +639,7 @@ class ScriptSyncService {
       utxoOpen = true;
       final utxoStartTime = DateTime.now();
 
+      final listedUtxoIds = <String>{};
       final utxosApplied = await Future.wait(
         scriptStatuses.map(
           (status) => _utxoSyncService.fetchScriptUtxo(
@@ -646,6 +647,7 @@ class ScriptSyncService {
             status,
             inBatchProcess: true,
             preserveOutgoing: !readyScripts.contains(status),
+            listedUtxoIds: listedUtxoIds,
           ),
         ),
       );
@@ -661,6 +663,7 @@ class ScriptSyncService {
       await _utxoSyncService.cleanupOrphanedUtxos(
         walletItem,
         reconciledAddresses: readyScripts.map((status) => status.address).toSet(),
+        listedUtxoIds: listedUtxoIds,
       );
 
       await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);

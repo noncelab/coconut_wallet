@@ -36,11 +36,13 @@ class UtxoSyncService {
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
   /// listunspent 결과를 저장까지 반영했으면 true. 조회·저장이 실패하면 아무것도 바꾸지 않고 false다.
+  /// [listedUtxoIds]를 주면 반영한 코인 ID를 담는다.
   Future<bool> fetchScriptUtxo(
     WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
     bool preserveOutgoing = false,
+    Set<String>? listedUtxoIds,
   }) async {
     try {
       // UTXO 목록 조회
@@ -53,6 +55,7 @@ class UtxoSyncService {
       }
 
       final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
+      if (applied) listedUtxoIds?.addAll(utxos.map((utxo) => utxo.utxoId));
 
       if (!inBatchProcess) await restorePendingUtxoLocks(walletItem.id);
       return applied;
@@ -231,12 +234,19 @@ class UtxoSyncService {
   /// orphaned UTXO를 정리합니다.
   /// [reconciledAddresses]를 주면, 거래와 listunspent를 모두 확인한 주소의 미확정 코인만 정리합니다.
   /// 기록 전에 예약만 된 코인(다른 주소 이벤트에서 조회가 실패한 거래)이 자기 주소 확인 없이 영구 삭제되지 않게 한다.
-  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {Set<String>? reconciledAddresses}) async {
+  /// [listedUtxoIds]는 같은 동기화의 listunspent가 돌려준 코인이다. 거래 내역을 읽은 뒤 도착해 기록이 아직 없어도
+  /// 서버에 있는 코인이므로 지우지 않는다.
+  Future<void> cleanupOrphanedUtxos(
+    WalletItemBase walletItem, {
+    Set<String>? reconciledAddresses,
+    Set<String> listedUtxoIds = const {},
+  }) async {
     final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
       if (reconciledAddresses != null && !reconciledAddresses.contains(utxo.to)) continue;
+      if (listedUtxoIds.contains(utxo.utxoId)) continue;
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
         if (tx == null || tx.blockHeight > 0) {

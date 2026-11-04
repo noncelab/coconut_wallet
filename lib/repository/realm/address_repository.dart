@@ -5,11 +5,13 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
+import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -658,6 +660,25 @@ class AddressRepository extends BaseRepository {
       [walletId, isChange, watchedAddresses.toList()],
     );
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
+  /// 받는 중에 정리된 코인(쓴 거래로 예약된 적 없음)이 있고, 서버 잔액이 남은 코인 합보다 큰 주소.
+  /// 상태가 저장된 값과 같아도 listunspent를 다시 받아야 그 코인을 되살릴 수 있다.
+  Set<String> getAddressesWithMissingCoins(int walletId) {
+    final removed = realm.query<RealmUtxo>(
+      r'walletId == $0 AND isDeleted == true AND status == $1 AND spentByTransactionHash == null',
+      [walletId, utxoStatusToString(UtxoStatus.incoming)],
+    );
+    return removed.map((utxo) => utxo.address).toSet().where((address) {
+      final stored =
+          realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+      final live = realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
+        walletId,
+        address,
+        utxoStatusToString(UtxoStatus.outgoing),
+      ]);
+      return stored != null && stored.total > live.fold<int>(0, (sum, utxo) => sum + utxo.amount);
+    }).toSet();
   }
 
   RealmResults<RealmTransaction> _pendingTransactions(int walletId) => realm.query<RealmTransaction>(

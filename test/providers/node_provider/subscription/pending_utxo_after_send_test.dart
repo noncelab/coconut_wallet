@@ -697,4 +697,82 @@ void main() {
       expect(c.coinState(), 'outgoing');
     });
   }
+
+  // HEAVY_GROW stress (Fold, regtest): a batch pays fresh receive addresses, then single payments reuse them. A single
+  // that reaches the mempool after the gap-extension batch read the address' history, but before that batch's
+  // listunspent, is listed with no record yet. The batch cleanup took it for an orphan, and the tombstone kept every
+  // later listunspent (confirmation, reconnect) from bringing the coin back. 76 coins went missing that way.
+  test('[heavy-reuse] a payment landing between a batch\'s history and listunspent stays in the coin list', () async {
+    final c = _Case();
+    await c.init();
+    final node = _startIsolate(c.electrum);
+    expect((await node.subscribeWallet(c.wallet)).isSuccess, isTrue);
+    final b = c.backend;
+    final fresh1 = c.wallet.walletBase.getAddress(1), fresh2 = c.wallet.walletBase.getAddress(2);
+    final batch = _Case._tx([(c.faucet.transactionHash, 1)], [(fresh1, 20000), (fresh2, 20000), (_external, 4959000)]);
+    final single = _Case._tx([(c.faucet.transactionHash, 2)], [(fresh2, 2780), (_external, 4996220)]);
+    String coin() => c.utxos.getUtxoState(_walletId, getUtxoId(single.transactionHash, 0))?.status.name ?? 'deleted';
+    b.put(batch, 0);
+    String? afterBatch;
+    b.fault = (method, key) {
+      final arrived = b.heights.containsKey(single.transactionHash);
+      if (method == 'listunspent' && key == fresh2 && !arrived) b.put(single, 0); // after the batch read the history
+      if (method == 'getBalance' && key == fresh2 && arrived) afterBatch ??= coin(); // fresh2's queued push starts
+      return false;
+    };
+    b
+      ..notify(fresh1) // extends the gap window: the batch syncs fresh1 and fresh2
+      ..notify(fresh2);
+    await _drain(node);
+    b.notify(fresh2); // the single's own push
+    await _drain(node);
+    final observed = <String, Object?>{'after_batch': afterBatch, 'after_own_push': coin()};
+    b.heights[batch.transactionHash] = 101;
+    b.heights[single.transactionHash] = 101;
+    b
+      ..notify(fresh1)
+      ..notify(fresh2);
+    await _drain(node);
+    observed['after_block'] = coin();
+    await c.reconnect();
+    observed['after_reconnect'] = coin();
+    _report('heavy-reuse', '-', observed);
+    expect(observed, {
+      'after_batch': 'incoming',
+      'after_own_push': 'incoming',
+      'after_block': 'unspent',
+      'after_reconnect': 'unspent',
+    });
+  });
+
+  // HEAVY_SYNC (restart after HEAVY_GROW): the tombstones are persisted and the addresses' statuses match the stored
+  // ones, so the startup sync never asks for those coins again. The next subscription must bring them back, once.
+  test('[heavy-reuse-heal] a coin removed while incoming comes back on the next subscription', () async {
+    final c = _Case();
+    await c.init();
+    final b = c.backend;
+    final single = _Case._tx([(c.faucet.transactionHash, 2)], [(c.input, 2780), (_external, 4996220)]);
+    final coin = getUtxoId(single.transactionHash, 0);
+    String coinState() => c.utxos.getUtxoState(_walletId, coin)?.status.name ?? 'deleted';
+    b.put(single, 101);
+    expect((await _startIsolate(c.electrum).subscribeWallet(c.wallet)).isSuccess, isTrue); // stores the statuses
+    expect(coinState(), 'unspent', reason: 'precondition: the coin was synced');
+    final realm = ScriptSyncServiceMock.realmManager!.realm;
+    realm.write(() {
+      realm.find<RealmUtxo>('$_walletId:$coin')!
+        ..isDeleted = true
+        ..status = 'incoming'
+        ..blockHeight = 0;
+    }); // what the batch cleanup left behind
+    var calls = b.calls.length;
+    await c.reconnect();
+    final healRequests = b.calls.skip(calls).where((call) => !call.startsWith('subscribe:')).toList();
+    final observed = <String, Object?>{'after_reconnect': coinState()};
+    calls = b.calls.length;
+    await c.reconnect();
+    observed['requests_after_heal'] = b.calls.skip(calls).where((call) => !call.startsWith('subscribe:')).length;
+    _report('heavy-reuse-heal', '-', observed);
+    expect(healRequests, contains('listunspent:${c.input}'));
+    expect(observed, {'after_reconnect': 'unspent', 'requests_after_heal': 0});
+  });
 }
