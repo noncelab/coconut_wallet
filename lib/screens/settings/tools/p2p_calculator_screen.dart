@@ -1154,15 +1154,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 가격은 글자 배율 1.2로 고정이고 통화 버튼은 배율을 따른다. 좁은 화면에서 큰 글씨면 한 줄에 다 들어가지 않으므로
-        // 그때만 가격 쪽을 줄인다. 들어가면 배율 1이라 기존과 같다.
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: _buildCurrentPriceWidget(isVisible),
-          ),
-        ),
+        // 좁은 화면에서 큰 글씨면 가격 묶음과 통화 버튼이 한 줄에 다 들어가지 않는다.
+        // 가격 묶음은 남는 폭만 쓰고, 그 안에서 가격 줄과 거래소 표시가 각각 넘칠 때만 줄인다(줄바꿈 없음). 들어가면 기존과 같다.
+        Flexible(child: _buildCurrentPriceWidget(isVisible)),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
@@ -1200,20 +1194,25 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         children: [
           MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-            child: Row(
-              children: [
-                Text(
-                  '${t.utility.p2p_calculator.one_btc} = ',
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-                Text(
-                  _viewModel.formattedOneBtcPrice,
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-              ],
+            // 가격 줄은 글자 배율 1.2로 고정이라 넘칠 때만 줄인다. 거래소 표시도 한 줄 그대로 두고 넘칠 때만 줄인다.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Text(
+                    '${t.utility.p2p_calculator.one_btc} = ',
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                  Text(
+                    _viewModel.formattedOneBtcPrice,
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                ],
+              ),
             ),
           ),
-          _buildExchangePriceLabel(),
+          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: _buildExchangePriceLabel()),
         ],
       ),
     );
