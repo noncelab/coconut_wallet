@@ -60,7 +60,7 @@ class TransactionSyncService {
     this._utxoRepository,
     this._scriptCallbackService,
   ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
-      _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService);
+      _cpfpService = CpfpService(_transactionRepository, _utxoRepository);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<FetchScriptTransactionResult> fetchScriptTransaction(
