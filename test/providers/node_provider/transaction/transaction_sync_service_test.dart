@@ -355,6 +355,136 @@ void main() {
       expect(transactionRepository.getTransactionRecord(testWalletId, fresh.transactionHash)!.blockHeight, 100);
     });
 
+    test('a later batch chunk asks again before deleting a record whose earlier lookup was absent', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 2,
+        isChange: false,
+      );
+      final old = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 9000);
+      final parent = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(999),
+        amount: 11000,
+      );
+      final fresh = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(1),
+        amount: 10000,
+        inputTransactionHash: parent.transactionHash,
+      );
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: old.transactionHash,
+          amount: 9000,
+          fee: 1000,
+        ),
+      ]);
+      final secondScript = ScriptStatusMock.createMockScriptStatus(testWalletItem, 1);
+      when(electrumService.getHistory(any, any)).thenAnswer(
+        (call) async => [
+          call.positionalArguments[1] == mockScriptStatus.address
+              ? GetTxHistoryRes(height: 0, txHash: old.transactionHash)
+              : GetTxHistoryRes(height: 100, txHash: fresh.transactionHash),
+        ],
+      );
+      var recovered = false;
+      var oldRequests = 0;
+      when(electrumService.getTransaction(old.transactionHash)).thenAnswer((_) async {
+        oldRequests++;
+        if (!recovered) throw TransactionNotFound(old.transactionHash);
+        return old.serialize();
+      });
+      when(electrumService.getTransaction(fresh.transactionHash)).thenAnswer((_) async => fresh.serialize());
+      when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {100: BlockTimestamp(100, now)});
+      when(
+        electrumService.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
+      ).thenAnswer((_) async => [parent]);
+
+      // Sequential chunks of one batch share a pass; the server recovers between them.
+      final pass = transactionSyncService.createFetchPass();
+      await expectLater(
+        transactionSyncService.fetchScriptTransaction(
+          testWalletItem,
+          mockScriptStatus,
+          inBatchProcess: true,
+          transactionFetch: pass,
+        ),
+        throwsA(isA<TransactionNotFound>()),
+      );
+      recovered = true;
+      await transactionSyncService.fetchScriptTransaction(
+        testWalletItem,
+        secondScript,
+        inBatchProcess: true,
+        now: now,
+        transactionFetch: pass,
+      );
+
+      expect(oldRequests, 2, reason: 'the earlier absence is not evidence for this cleanup');
+      expect(transactionRepository.getTransactionRecord(testWalletId, old.transactionHash), isNotNull);
+      expect(transactionRepository.getTransactionRecord(testWalletId, fresh.transactionHash)?.amount, 10000);
+    });
+
+    for (final later in ['absent', 'present']) {
+      test('one timed-out lookup cannot hide a replaced incoming transaction from cleanup (later: $later)', () async {
+        final funding = TransactionMock.createMockTransaction(
+          toAddress: WalletMock.createMultiSigWalletItem().walletBase.getAddress(0),
+          amount: 100000,
+        );
+        // P pays this wallet and is replaced by T, which spends the same input with a higher fee.
+        final p = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 99900,
+          inputTransactionHash: funding.transactionHash,
+        );
+        final t = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 80000,
+          inputTransactionHash: funding.transactionHash,
+        );
+        await transactionRepository.addAllTransactions(testWalletId, [
+          TransactionMock.createMockTransactionRecord(
+            transactionHash: p.transactionHash,
+            blockHeight: 0,
+            transactionType: TransactionType.received,
+            amount: 99900,
+            fee: 100,
+          ),
+        ]);
+        await utxoRepository.addAllUtxos(testWalletId, [
+          UtxoMock.createIncomingUtxo(transactionHash: p.transactionHash),
+        ]);
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: t.transactionHash)]);
+        when(electrumService.getTransaction(t.transactionHash)).thenAnswer((_) async => t.serialize());
+        var pLookups = 0;
+        when(electrumService.getTransaction(p.transactionHash)).thenAnswer((_) async {
+          if (++pLookups == 1) throw TimeoutException('first lookup of the replaced transaction');
+          if (later == 'absent') throw TransactionNotFound(p.transactionHash);
+          return p.serialize();
+        });
+        when(
+          electrumService.getPreviousTransactions(
+            any,
+            existingTxList: anyNamed('existingTxList'),
+            transactionFetch: anyNamed('transactionFetch'),
+          ),
+        ).thenAnswer((_) async => [funding]);
+
+        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+        expect(pLookups, 2, reason: 'RBF detection deferred on the timeout, so cleanup asks again');
+        expect(transactionRepository.getTransactionRecord(testWalletId, p.transactionHash), isNull);
+        expect(transactionRepository.getTransactionRecord(testWalletId, t.transactionHash), isNotNull);
+      });
+    }
+
     test('a record for the same hash in another wallet cannot bypass parent validation', () async {
       final tx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 10000);
       realmManager.realm.write(() {

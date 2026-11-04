@@ -632,15 +632,4 @@ class TransactionSyncService {
       rethrow;
     }
   }
-
-  /// 서버(또는 대체 조회)가 요청과 다른 거래를 주면 실패로 처리합니다.
-  Future<Transaction> fetchTransaction(String txHash) async {
-    final txHex = await _electrumService.getTransaction(txHash);
-    final transaction = Transaction.parse(txHex);
-    final parsedHash = transaction.transactionHash;
-    if (parsedHash != txHash) {
-      throw StateError('Server returned a different transaction');
-    }
-    return transaction;
-  }
 }
