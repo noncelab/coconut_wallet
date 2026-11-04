@@ -5,9 +5,59 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 
 void main() {
   tearDown(AppGuard.enablePrivacyScreen);
+
+  for (final initial in [AppLifecycleState.resumed, AppLifecycleState.paused]) {
+    testWidgets('AppGuard forwards initial $initial and pause/resume through its lifecycle listener', (tester) async {
+      const channel = MethodChannel('screencapture_method');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (_) async => null);
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      AppGuard.disablePrivacyScreen();
+      tester.binding.handleAppLifecycleStateChanged(initial);
+      // A paused binding does not schedule normal frames; mount explicitly to exercise initState in that state.
+      tester.binding.scheduleForcedFrame();
+      final node = _LifecycleNode();
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<NodeProvider>.value(value: node),
+            ChangeNotifierProvider<PriceProvider>.value(value: _Price()),
+            ChangeNotifierProvider<AuthProvider>.value(value: _Auth()),
+            ChangeNotifierProvider<WalletProvider>.value(value: _Wallets()),
+            ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity()),
+          ],
+          child: const MaterialApp(home: AppGuard(child: SizedBox())),
+        ),
+      );
+      expect(node.lifecycleStates, [initial], reason: 'mounting while paused must immediately suspend node retries');
+      final transitions = [
+        if (initial == AppLifecycleState.resumed) ...[
+          AppLifecycleState.inactive,
+          AppLifecycleState.hidden,
+          AppLifecycleState.paused,
+        ],
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ];
+      for (final state in transitions) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+        await tester.pump();
+      }
+      expect(node.lifecycleStates, [initial, ...transitions]);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   test('작업 중에만 화면 보호를 끄고 완료 후 이전 활성 상태로 복원한다', () async {
     AppGuard.enablePrivacyScreen();
@@ -136,7 +186,7 @@ class _ClosedNode extends Fake implements NodeProvider {
 }
 
 /// 연결이 열려 있는 NodeProvider
-class _OpenNode extends Fake implements NodeProvider {
+class _OpenNode extends Fake with ChangeNotifier implements NodeProvider {
   _OpenNode(this._nodeSyncState);
 
   final NodeSyncState _nodeSyncState;
@@ -168,4 +218,35 @@ class _OpenNode extends Fake implements NodeProvider {
     calls.add('reconnect');
     return Result.success(true);
   }
+}
+
+class _LifecycleNode extends _OpenNode {
+  _LifecycleNode() : super(NodeSyncState.completed);
+  final lifecycleStates = <AppLifecycleState>[];
+  @override
+  void setAppLifecycleState(AppLifecycleState state) => lifecycleStates.add(state);
+}
+
+class _Price extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  void initWebSocketService({bool force = false}) {}
+  @override
+  void disposeWebSocketService() {}
+}
+
+class _Auth extends Fake with ChangeNotifier implements AuthProvider {
+  @override
+  Future<void> checkDeviceBiometrics() async {}
+}
+
+class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
+  @override
+  List<WalletItemBase> get walletItemList => [];
+}
+
+class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
+  @override
+  Future<void> refreshConnectivity() async {}
+  @override
+  bool get isInternetOn => true;
 }
