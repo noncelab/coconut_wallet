@@ -116,6 +116,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       Result<String> result = await _viewModel.broadcast(
         inheritedTagIds: inheritedTagIds,
         onConnectionWaitExtension: _extendConnectionWait,
+        beforeRequest: _waitForBackGestureToEnd,
       );
 
       if (result.isFailure) {
@@ -201,6 +202,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   Future<bool> _extendConnectionWait(Duration limit, Future<void> finished) async => mounted;
 
+  /// 연결 지연 중 시작한 iOS 뒤로 가기 제스처가 끝날 때까지 노드 요청을 미룬다.
+  /// 제스처로 화면이 닫히면 그 사이 보내기가 취소되고, 손을 놓아 화면이 남으면 그대로 보낸다.
+  Future<void> _waitForBackGestureToEnd() async {
+    if (!mounted) return;
+    final gestureInProgress = Navigator.of(context).userGestureInProgressNotifier;
+    if (!gestureInProgress.value) return;
+    final ended = Completer<void>();
+    void onChanged() {
+      if (!gestureInProgress.value && !ended.isCompleted) ended.complete();
+    }
+
+    gestureInProgress.addListener(onChanged);
+    try {
+      await ended.future;
+    } finally {
+      gestureInProgress.removeListener(onChanged);
+    }
+  }
+
   Future<void> _prepareBroadcastAnimation() async {
     setState(() {
       _isBroadcasting = true;
@@ -265,31 +285,39 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      // 보내는 중에는 바로 닫지 않고, 아직 노드에 요청하기 전일 때만 보내기를 취소하고 닫는다.
-      canPop: !_isBroadcasting,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          if (_viewModel.cancelPendingSend()) Navigator.of(context).pop();
-          return;
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
+      create: (_) => _viewModel,
+      update: (_, connectivityProvider, walletProvider, viewModel) {
+        if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
         }
-        if (_viewModel.isFromSignedDraft) {
-          _viewModel.clearSendInfo();
-        }
-      },
-      child: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
-        create: (_) => _viewModel,
-        update: (_, connectivityProvider, walletProvider, viewModel) {
-          if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
-            viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
-          }
 
-          return viewModel;
-        },
-        child: Consumer<BroadcastingViewModel>(
-          builder: (context, viewModel, child) {
-            final appBar = CoconutAppBar.build(title: t.broadcasting_screen.title, context: context);
-            return Stack(
+        return viewModel;
+      },
+      child: Consumer<BroadcastingViewModel>(
+        builder: (context, viewModel, child) {
+          // 연결이 늦어져 노드 요청 전에 기다리는 동안에는 iOS 제스처와 앱바로도 보내기를 취소하고 나갈 수 있다.
+          final canLeaveWhileWaiting = _isBroadcasting && viewModel.isConnectionRecovering;
+          final showAppBar = (_showEntryChrome && !_isBroadcasting) || canLeaveWhileWaiting;
+          final appBar = CoconutAppBar.build(
+            title: t.broadcasting_screen.title,
+            context: context,
+            onBackPressed: () => Navigator.of(context).maybePop(),
+          );
+          return PopScope(
+            // 보내는 중에는 바로 닫지 않고, 아직 노드에 요청하기 전일 때만 보내기를 취소하고 닫는다.
+            canPop: !_isBroadcasting || canLeaveWhileWaiting,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop) {
+                if (_viewModel.cancelPendingSend()) Navigator.of(context).pop();
+                return;
+              }
+              _viewModel.cancelPendingSend();
+              if (_viewModel.isFromSignedDraft) {
+                _viewModel.clearSendInfo();
+              }
+            },
+            child: Stack(
               children: [
                 Scaffold(
                   floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -297,9 +325,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                   appBar: PreferredSize(
                     preferredSize: appBar.preferredSize,
                     child: AnimatedOpacity(
-                      opacity: _showEntryChrome && !_isBroadcasting ? 1 : 0,
+                      opacity: showAppBar ? 1 : 0,
                       duration: const Duration(milliseconds: 280),
-                      child: IgnorePointer(ignoring: !_showEntryChrome || _isBroadcasting, child: appBar),
+                      child: IgnorePointer(ignoring: !showAppBar, child: appBar),
                     ),
                   ),
                   body: SafeArea(
@@ -450,9 +478,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                 ),
                 if (_isOverlayLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

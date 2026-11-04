@@ -30,6 +30,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/features/send/tag_inheritance_dialog.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -139,7 +140,13 @@ void main() {
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2, bool slowCleanup = false, bool pushed = false}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    int count = 2,
+    bool slowCleanup = false,
+    bool pushed = false,
+    bool cupertino = false,
+  }) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -209,8 +216,10 @@ void main() {
     );
     if (pushed) {
       // Opened from another screen so a back gesture has somewhere to return to.
+      // A CupertinoPageRoute carries the iOS edge swipe back gesture.
+      Widget screen(BuildContext _) => const LoaderOverlay(child: BroadcastingScreen());
       navigatorKey.currentState!.push(
-        MaterialPageRoute<void>(builder: (_) => const LoaderOverlay(child: BroadcastingScreen())),
+        cupertino ? CupertinoPageRoute<void>(builder: screen) : MaterialPageRoute<void>(builder: screen),
       );
       await tester.pump();
       navigated.clear();
@@ -310,14 +319,98 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('going back after the broadcast request is sent keeps the screen until the result', (tester) async {
+  Future<void> waitForConnectionDelay(WidgetTester tester) async {
+    node.connected = false;
+    await tapSend(tester);
+    for (var frame = 0; frame < 30 && node.readinessRequests == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.readinessRequests, 1);
+    await tester.pump();
+    expect(find.byKey(const ValueKey('connection-delay-notice')), findsOneWidget);
+  }
+
+  Future<void> waitForScreenExit(WidgetTester tester) async {
+    for (var frame = 0; frame < 30 && find.byType(BroadcastingScreen).evaluate().isNotEmpty; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(BroadcastingScreen), findsNothing);
+  }
+
+  testWidgets('iOS edge swipe while the connection is delayed cancels the send', (tester) async {
+    await open(tester, count: 0, pushed: true, cupertino: true);
+    await waitForConnectionDelay(tester);
+    await tester.dragFrom(const Offset(5, 300), const Offset(500, 0));
+    await waitForScreenExit(tester);
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    expect(node.broadcasts, 0, reason: 'a send the user left must never reach the node');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app bar back while the connection is delayed cancels the send', (tester) async {
     await open(tester, count: 0, pushed: true);
+    await waitForConnectionDelay(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(IconButton)).hitTestable().first);
+    await waitForScreenExit(tester);
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    expect(node.broadcasts, 0, reason: 'a send the user left must never reach the node');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a swipe that leaves after the connection recovers mid-gesture does not send', (tester) async {
+    await open(tester, count: 0, pushed: true, cupertino: true);
+    await waitForConnectionDelay(tester);
+    final gesture = await tester.startGesture(const Offset(5, 300));
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(100, 0));
+    await tester.pump();
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(node.broadcasts, 0, reason: 'the request waits while the back gesture is undecided');
+    await gesture.moveBy(const Offset(400, 0));
+    await gesture.up();
+    await waitForScreenExit(tester);
+    await tester.pump(const Duration(seconds: 3));
+    expect(node.broadcasts, 0, reason: 'a send the user left must never reach the node');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a swipe released back after the connection recovers mid-gesture sends once', (tester) async {
+    await open(tester, count: 0, pushed: true, cupertino: true);
+    await waitForConnectionDelay(tester);
+    final gesture = await tester.startGesture(const Offset(5, 300));
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(100, 0));
+    await tester.pump();
+    node.readiness!.complete(Result.success(true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(node.broadcasts, 0, reason: 'the request waits while the back gesture is undecided');
+    await gesture.moveBy(const Offset(-115, 0));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(BroadcastingScreen), findsOneWidget);
+    await finish(tester);
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+  });
+
+  testWidgets('going back after the broadcast request is sent keeps the screen until the result', (tester) async {
+    await open(tester, count: 0, pushed: true, cupertino: true);
     await tapSend(tester);
     for (var frame = 0; frame < 30 && node.broadcasts == 0; frame++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(node.broadcasts, 1);
     await tester.binding.handlePopRoute();
+    await tester.dragFrom(const Offset(5, 300), const Offset(500, 0));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(BroadcastingScreen), findsOneWidget, reason: 'the sent request cannot be cancelled');
     await finish(tester);

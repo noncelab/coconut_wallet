@@ -198,6 +198,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   Future<Result<String>> broadcast({
     required List<String> inheritedTagIds,
     ConnectionWaitExtension? onConnectionWaitExtension,
+    Future<void> Function()? beforeRequest,
   }) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
@@ -242,6 +243,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (!identical(endpoint, _nodeProvider.connectionEndpointIdentity) || _nodeProvider.isServerChanging) {
       return Result.failure(ErrorCodes.nodeConnectionError);
     }
+    if (_isSendCancelled) return _cancelledSend();
+    // 화면이 요청 직전에 끝내야 할 일(예: 진행 중인 뒤로 가기 제스처)을 기다린다.
+    if (beforeRequest != null) await beforeRequest();
     // 사용자가 떠난 보내기는 연결이 늦게 준비돼도 전송하지 않는다.
     // 이 검사와 요청 표시 사이에 await를 두지 않아야 취소와 전송이 엇갈리지 않는다.
     if (_isSendCancelled) return _cancelledSend();
