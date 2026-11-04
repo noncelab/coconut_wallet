@@ -25,7 +25,51 @@ int _normalizeTagColorIndex(int colorIndex) {
 }
 
 class UtxoRepository extends BaseRepository {
-  UtxoRepository(super._realmManager);
+  UtxoRepository(super._realmManager, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+
+  final DateTime Function() _clock;
+  final _broadcastReservations = <String, ({String txid, DateTime expiresAt})>{};
+  DateTime? _nextReservationExpiry;
+
+  /// UI 저장소에서만 사용한다. 동기화 저장소와 Realm에는 예약을 전달하지 않는다.
+  void reserveBroadcastInputs(lib.Transaction transaction, String txid) {
+    final now = _clock();
+    _pruneBroadcastReservations(now);
+    final reservation = (txid: txid, expiresAt: now.add(const Duration(minutes: 30)));
+    if (_nextReservationExpiry == null || reservation.expiresAt.isBefore(_nextReservationExpiry!)) {
+      _nextReservationExpiry = reservation.expiresAt;
+    }
+    for (final input in transaction.inputs) {
+      _broadcastReservations['${input.transactionHash}:${input.index}'] = reservation;
+    }
+  }
+
+  void _pruneBroadcastReservations([DateTime? now]) {
+    if (_broadcastReservations.isEmpty) return;
+    final cutoff = now ?? _clock();
+    // 가장 이른 만료 전에는 단건 조회마다 예약 전체를 다시 순회하지 않는다.
+    if (_nextReservationExpiry?.isAfter(cutoff) ?? false) return;
+    _broadcastReservations.removeWhere((_, reservation) => !reservation.expiresAt.isAfter(cutoff));
+    _nextReservationExpiry = _broadcastReservations.values.fold<DateTime?>(
+      null,
+      (earliest, reservation) =>
+          earliest == null || reservation.expiresAt.isBefore(earliest) ? reservation.expiresAt : earliest,
+    );
+  }
+
+  UtxoState _readUtxo(RealmUtxo row) {
+    final utxo = mapRealmToUtxoState(row);
+    if (_broadcastReservations.isNotEmpty &&
+        !row.isDeleted &&
+        (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.incoming)) {
+      final reservation = _broadcastReservations['${utxo.transactionHash}:${utxo.index}'];
+      if (reservation != null) {
+        utxo.status = UtxoStatus.outgoing;
+        utxo.spentByTransactionHash = reservation.txid;
+      }
+    }
+    return utxo;
+  }
 
   /// walletId로 RealmUtxoTag 목록을 쿼리하는 내부 메서드
   RealmResults<RealmUtxoTag> _queryUtxoTags(int walletId) {
@@ -393,24 +437,31 @@ class UtxoRepository extends BaseRepository {
   }
 
   List<UtxoState> getUtxoStateList(int walletId) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND isDeleted == false', [walletId]);
-    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+    return realmUtxos.map(_readUtxo).toList();
   }
 
   // 특정 상태의 UTXO 목록만 조회
   List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final statusStr = utxoStatusToString(status);
-    final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND status == $1 AND isDeleted == false', [
+    final statuses =
+        status == UtxoStatus.outgoing && _broadcastReservations.isNotEmpty
+            ? [statusStr, utxoStatusToString(UtxoStatus.unspent), utxoStatusToString(UtxoStatus.incoming)]
+            : [statusStr];
+    final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND status IN $1 AND isDeleted == false', [
       walletId,
-      statusStr,
+      statuses,
     ]);
-    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+    return realmUtxos.map(_readUtxo).where((utxo) => utxo.status == status).toList();
   }
 
   /// 특정 UTXO 조회
   UtxoState? getUtxoState(int walletId, String utxoId, {bool includeDeleted = false}) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final realmUtxo =
         realm.query<RealmUtxo>(
@@ -422,7 +473,7 @@ class UtxoRepository extends BaseRepository {
       return null;
     }
 
-    return mapRealmToUtxoState(realmUtxo);
+    return _readUtxo(realmUtxo);
   }
 
   Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {

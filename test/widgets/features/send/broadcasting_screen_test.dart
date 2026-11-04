@@ -10,6 +10,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -35,6 +36,7 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 import '../../../repository/realm/test_realm_manager.dart';
+import '../../../mock/utxo_mock.dart';
 
 const _hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 final _source = getUtxoId(_hash, 0);
@@ -140,6 +142,9 @@ void main() {
           ..setTxWaitingForSign(psbt.serialize())
           ..setSignedResult(signed.serialize());
     manager.realm.write(() {
+      manager.realm.add(
+        UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _hash),
+      );
       for (var i = 0; i < count; i++) {
         manager.realm.add(RealmUtxoTag('tag-$i', 1, 'tag-$i', i, DateTime(2026), utxoIdList: [_source]));
       }
@@ -217,6 +222,8 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pump(const Duration(milliseconds: 300));
     expect(node.broadcasts, 0);
+    expect(repository.getUtxoState(1, _source)!.status, UtxoStatus.unspent);
+    expect(repository.getUtxoState(1, _source)!.spentByTransactionHash, isNull);
     expect(tagIds(_source), ['tag-0', 'tag-1']);
     expect(tagIds(target), isEmpty);
     await tapSend(tester);
@@ -249,6 +256,8 @@ void main() {
     expect(tagIds(_source), isEmpty);
     expect(tagIds(target), isEmpty);
     expect(repository.getUtxoTags(1).value, hasLength(2));
+    expect(repository.getUtxoState(1, _source)!.status, UtxoStatus.outgoing);
+    expect(manager.realm.find<RealmUtxo>(getRealmUtxoId(1, _hash, 0))!.status, 'unspent');
     expect(navigated, [AppRouteNames.broadcastingComplete]);
   });
 

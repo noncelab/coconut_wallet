@@ -111,12 +111,13 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (!_isInitDone) throw StateError('Transaction is not ready');
     if (_inheritanceTags != null) return _inheritanceTags!;
 
+    final transactionHash = _signedTx!.transactionHash;
     final sourceIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toSet();
     final replacedHashes = <String>{};
     for (final sourceId in sourceIds) {
       final input = _utxoRepository.getUtxoState(_walletId!, sourceId);
       final spentBy = input?.spentByTransactionHash;
-      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == _signedTx!.transactionHash) continue;
+      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == transactionHash) continue;
       final previous = _txProvider.getTransactionRecord(_walletId!, spentBy);
       if (previous != null && previous.blockHeight < 1) replacedHashes.add(spentBy);
     }
@@ -167,20 +168,29 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
       throw ArgumentError('Invalid inherited tag selection');
     }
+    final walletId = _walletId!;
+    final signedTx = _signedTx!;
+    final txid = signedTx.transactionHash;
     _tagInheritanceFailed = false;
-    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
+    Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    final result = await _nodeProvider.broadcast(_signedTx!);
+    final result = await _nodeProvider.broadcast(signedTx);
     if (result.isFailure) return result;
+
+    if (result.value == txid) {
+      _utxoRepository.reserveBroadcastInputs(signedTx, txid);
+    } else {
+      Logger.error('Broadcast txid mismatch; input reservation skipped');
+    }
 
     try {
       final applied = await _utxoRepository.applyInheritedTags(
-        _walletId!,
+        walletId,
         sourceUtxoIds: _tagSourceUtxoIds,
-        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(_signedTx!.transactionHash, index)).toList(),
+        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(txid, index)).toList(),
         tagIds: selectedIds.toList(),
       );
       if (applied.isFailure) throw applied.error;
