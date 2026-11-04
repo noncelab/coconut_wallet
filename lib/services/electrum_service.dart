@@ -257,9 +257,14 @@ class ElectrumService {
       );
       return Transaction.parse(response.result).transactionHash == txHash ? true : null;
     } catch (e) {
-      // 바쁨·내부 오류 같은 다른 서버 오류는 거래가 없다는 뜻이 아니다.
+      // 거래가 없다는 답만 없음으로 본다. 바쁨·내부 오류·'Method not found' 같은 다른 서버 오류는 모름이다.
       final text = e.toString().toLowerCase();
-      final notFound = text.contains('no such mempool') || text.contains('not found');
+      final notFound = [
+        'no such mempool',
+        'transaction not found',
+        'tx not found',
+        'missing transaction',
+      ].any(text.contains);
       return serverAnswered && notFound ? false : null;
     }
   }

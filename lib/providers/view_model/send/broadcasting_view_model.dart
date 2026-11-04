@@ -178,9 +178,10 @@ class BroadcastingViewModel extends ChangeNotifier {
     // 전체 대기 상한은 송금 시작(연결 확인 포함)부터 잰다.
     final waiting = Stopwatch()..start();
     Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
-    final isConnected = await isElectrumServerConnected();
-    if (!isConnected) {
-      await _nodeProvider.reconnect();
+    if (!await isElectrumServerConnected()) {
+      // 지갑 구독까지는 기다리지 않는다(전체 상한). 재연결은 뒤에서 계속되고, 재연결 오류는 예전처럼 그대로 알린다.
+      await _nodeProvider.reconnect().timeout(kBroadcastReconnectWait, onTimeout: () => Result.success(false));
+      await isElectrumServerConnected();
     }
     var result = await _nodeProvider.broadcast(signedTx);
     // 노드가 답하지 않아 보냈는지 모르는 채 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
