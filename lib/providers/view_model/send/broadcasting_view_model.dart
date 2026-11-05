@@ -248,11 +248,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       return result;
     }
 
-    try {
-      await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
-    } catch (e) {
-      Logger.error('Transaction sent, but marking inputs as outgoing failed: $e');
-    }
+    await _markInputsAsOutgoing();
 
     try {
       final applied = await _utxoRepository.applyInheritedTags(
@@ -281,14 +277,35 @@ class BroadcastingViewModel extends ChangeNotifier {
     final unknown = Result<String>.failure(
       AppError(ErrorCodes.nodeIsolateError.code, t.broadcasting_screen.dialog.result_unknown),
     );
+    var expired = false;
     Future<Result<String>> confirm() async {
-      if (!await _waitForConnection()) return unknown;
+      if (!await _waitForConnection() || expired) return unknown;
       if ((await _nodeProvider.getTransaction(txid)).isSuccess) return Result.success(txid);
+      if (expired || _isDisposed) return unknown;
       final resent = await _nodeProvider.broadcast(_signedTx!);
       return resent.isFailure && _isUnknownOutcome(resent.error) ? unknown : resent;
     }
 
-    return confirm().timeout(limit, onTimeout: () => unknown);
+    final attempt = confirm();
+    // 확인 제한 시간이 지난 뒤에야 성공이 확인된 거래의 입력 표시
+    attempt.then((late) async {
+      if (expired && late.isSuccess) await _markInputsAsOutgoing();
+    }).ignore();
+    return attempt.timeout(
+      limit,
+      onTimeout: () {
+        expired = true;
+        return unknown;
+      },
+    );
+  }
+
+  Future<void> _markInputsAsOutgoing() async {
+    try {
+      await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
+    } catch (e) {
+      Logger.error('Transaction sent, but marking inputs as outgoing failed: $e');
+    }
   }
 
   Future<bool> _waitForConnection() async =>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
@@ -125,6 +127,9 @@ class NetworkService {
       final txHash = await _electrumService.broadcast(signedTx.serialize());
 
       return Result.success(txHash);
+    } on TimeoutException catch (e) {
+      // 응답 시간 초과는 노드가 받았는지 모르는 실패 (노드 거절과 구분)
+      return Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeUnknown, e.toString()));
     } catch (e) {
       return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
     }

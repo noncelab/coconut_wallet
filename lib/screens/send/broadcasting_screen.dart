@@ -107,11 +107,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
       return;
     }
     _isPreparingBroadcast = true;
+    _isAwaitingBroadcast = true;
     if (_scrollController.hasClients && _scrollController.offset > 0) {
       await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
     }
     if (!mounted) return;
-    _isAwaitingBroadcast = true;
     await _prepareBroadcastAnimation();
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
@@ -284,7 +284,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
           (context, child) => PopScope(
             canPop: !_viewModel.isBroadcastDispatched,
             onPopInvokedWithResult: (didPop, result) {
-              if (didPop && _viewModel.isFromSignedDraft) {
+              if (!didPop) return;
+              _viewModel.cancelPendingBroadcast();
+              if (_viewModel.isFromSignedDraft) {
                 _viewModel.clearSendInfo();
               }
             },

@@ -73,11 +73,13 @@ class _NodeProvider extends Fake implements NodeProvider {
   int lookups = 0;
   bool transactionFound = false;
   Completer<void>? lookingUp;
+  Completer<void>? resending;
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
     duringBroadcast?.call();
+    if (broadcasts > 1) await resending?.future;
     if (broadcastErrors.isNotEmpty) {
       final error = broadcastErrors.removeAt(0);
       return error == null ? Result.success(signedTx.transactionHash) : Result.failure(error);
@@ -512,6 +514,41 @@ void main() {
     expect(node.lookups, 0);
     expect(viewModel.isBroadcastResultUnknown, isFalse);
     expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a confirmation that ran past the limit never resends afterwards', (tester) async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.lookingUp = Completer<void>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 15));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    node.lookingUp!.complete();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result, isNotNull);
+    expect(node.lookups, 1);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a resend that succeeds after the limit still marks the inputs as outgoing', (tester) async {
+    node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
+    node.resending = Completer<void>();
+    await tester.runAsync(() => initialize());
+
+    viewModel.broadcast(inheritedTagIds: const []).ignore();
+    await tester.pump(const Duration(seconds: 15));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    expect(node.broadcasts, 2);
+    node.resending!.complete();
+    for (var i = 0; i < 20 && repository.getUtxoState(1, inputId)!.status != UtxoStatus.outgoing; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
   });
 
   testWidgets('checking an unanswered broadcast gives up after 15 seconds', (tester) async {

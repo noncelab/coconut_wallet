@@ -12,6 +12,6 @@ const Duration kElectrumPingInterval = Duration(seconds: 20);
 
 const Duration kNodeRefreshWaitTimeout = Duration(seconds: 30);
 
-/// 브로트캐스팅 전 서버 연결 대기 상한
+/// 브로드캐스팅 전 서버 연결 대기 제한 시간
 const Duration kBroadcastConnectionWaitTimeout = Duration(seconds: 15);
 const Duration kBroadcastConnectionWaitTimeoutForOnion = Duration(seconds: 120);
