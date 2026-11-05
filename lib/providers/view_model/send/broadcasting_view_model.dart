@@ -220,6 +220,9 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     _tagInheritanceFailed = false;
     _isBroadcastResultUnknown = false;
+    final unsignedDraftId = _sendInfoProvider.unsignedDraftId;
+    final signedDraftId = _signedDraftId ?? _savedDraftId;
+    Future<void> finish() => _finishSentBroadcast(selectedIds, unsignedDraftId, signedDraftId);
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final connectionWaitLimit =
         _nodeProvider.host.contains('.onion')
@@ -239,7 +242,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
     var result = await _nodeProvider.broadcast(_signedTx!);
     if (result.isFailure && _isUnknownOutcome(result.error)) {
-      result = await _confirmUnansweredBroadcast(connectionWaitLimit);
+      result = await _confirmUnansweredBroadcast(connectionWaitLimit, onLateSuccess: finish);
       _isBroadcastResultUnknown = result.isFailure && _isUnknownOutcome(result.error);
     }
     if (result.isFailure) {
@@ -248,6 +251,12 @@ class BroadcastingViewModel extends ChangeNotifier {
       return result;
     }
 
+    await finish();
+    return result;
+  }
+
+  /// 노드가 받은 거래의 후처리: 입력 표시, 태그 상속, 관련 임시저장 삭제
+  Future<void> _finishSentBroadcast(Set<String> selectedIds, int? unsignedDraftId, int? signedDraftId) async {
     await _markInputsAsOutgoing();
 
     try {
@@ -264,7 +273,8 @@ class BroadcastingViewModel extends ChangeNotifier {
       _tagInheritanceFailed = true;
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
-    return result;
+
+    await _deleteDrafts(unsignedDraftId, signedDraftId);
   }
 
   /// 노드가 거절한 실패와 달리 응답을 받지 못해 전송 여부를 모르는 실패
@@ -272,7 +282,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       error.code == ErrorCodes.nodeIsolateError.code || error.code == ErrorCodes.nodeUnknown.code;
 
   /// 노드에 들어갔는지 조회하고, 없으면 같은 거래를 한 번 더 보냄 (같은 txid라 중복 전송 없음)
-  Future<Result<String>> _confirmUnansweredBroadcast(Duration limit) {
+  Future<Result<String>> _confirmUnansweredBroadcast(Duration limit, {required Future<void> Function() onLateSuccess}) {
     final txid = _signedTx!.transactionHash;
     final unknown = Result<String>.failure(
       AppError(ErrorCodes.nodeIsolateError.code, t.broadcasting_screen.dialog.result_unknown),
@@ -287,9 +297,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
 
     final attempt = confirm();
-    // 확인 제한 시간이 지난 뒤에야 성공이 확인된 거래의 입력 표시
+    // 확인 제한 시간이 지난 뒤에야 성공이 확인된 거래의 후처리
     attempt.then((late) async {
-      if (expired && late.isSuccess) await _markInputsAsOutgoing();
+      if (expired && late.isSuccess) await onLateSuccess();
     }).ignore();
     return attempt.timeout(
       limit,
@@ -624,26 +634,21 @@ class BroadcastingViewModel extends ChangeNotifier {
     return result;
   }
 
-  /// 브로드캐스트 성공 후 관련 draft 삭제
-  /// - _sendInfoProvider.unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션 삭제
-  /// - _signedDraftId: 화면 매개변수로 받은 서명 완료 트랜잭션 삭제 (불러오기)
-  /// - _savedDraftId: 이 화면에서 임시 저장한 서명 완료 트랜잭션 삭제
-  /// (_signedDraftId와 _savedDraftId는 동시에 존재하지 않음)
-  Future<void> deleteDraftsIfNeeded() async {
-    // 서명 전 트랜잭션 삭제
-    if (_sendInfoProvider.unsignedDraftId != null) {
+  /// 브로드캐스트 성공 후 관련 draft 삭제 (송금 시작 시점의 ID 사용)
+  /// - unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션
+  /// - signedDraftId: 화면 매개변수로 받았거나(_signedDraftId) 이 화면에서 임시 저장한(_savedDraftId) 서명 완료 트랜잭션
+  Future<void> _deleteDrafts(int? unsignedDraftId, int? signedDraftId) async {
+    if (unsignedDraftId != null) {
       try {
-        await _txDraftRepository.deleteOne(_sendInfoProvider.unsignedDraftId!);
+        await _txDraftRepository.deleteOne(unsignedDraftId);
       } catch (e) {
         Logger.error('Failed to delete unsigned draft: $e');
       }
     }
 
-    // 서명 완료 트랜잭션 삭제 (_signedDraftId와 _savedDraftId는 상호 배타적)
-    final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
-    if (signedDraftIdToDelete != null) {
+    if (signedDraftId != null) {
       try {
-        await _txDraftRepository.deleteOne(signedDraftIdToDelete);
+        await _txDraftRepository.deleteOne(signedDraftId);
       } catch (e) {
         Logger.error('Failed to delete signed draft: $e');
       }

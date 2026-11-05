@@ -154,11 +154,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
       }
 
       if (result.isSuccess) {
-        try {
-          await _viewModel.deleteDraftsIfNeeded();
-        } catch (e) {
-          Logger.error('Transaction sent, but draft cleanup failed: $e');
-        }
         if (!mounted) return;
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.succeeded;
         await lottieAnimation;

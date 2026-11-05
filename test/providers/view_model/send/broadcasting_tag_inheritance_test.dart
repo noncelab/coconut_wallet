@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -113,6 +115,7 @@ void main() {
   late SingleSignatureVault vault;
   late BroadcastingViewModel viewModel;
   late UtxoTagProvider tags;
+  late SendInfoProvider sendInfo;
 
   setUpAll(() {
     NetworkType.setNetworkType(NetworkType.testnet);
@@ -163,7 +166,7 @@ void main() {
       // Some signers retain input derivation but omit optional output metadata.
       signed.psbtMap['outputs'][0].clear();
     }
-    final sendInfo =
+    sendInfo =
         SendInfoProvider()
           ..setWalletId(1)
           ..setFeeBumpingType(feeBumpingType)
@@ -533,22 +536,39 @@ void main() {
     expect(node.broadcasts, 1);
   });
 
-  testWidgets('a resend that succeeds after the limit still marks the inputs as outgoing', (tester) async {
+  testWidgets('a resend that succeeds after the limit still finishes inputs, tags and drafts', (tester) async {
+    addTag('savings', inputId);
     node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
     node.resending = Completer<void>();
     await tester.runAsync(() => initialize());
+    final drafts = TransactionDraftRepository(manager);
+    final draft = await tester.runAsync(
+      () => drafts.saveUnsignedDraft(
+        walletId: 1,
+        feeRate: 1,
+        isMaxMode: false,
+        isFeeSubtractedFromSendAmount: false,
+        recipients: [RecipientDraft(address: vault.getAddress(10), amount: 1000000)],
+        bitcoinUnit: BitcoinUnit.btc,
+      ),
+    );
+    sendInfo.setUnsignedDraftId(draft!.value.id);
 
-    viewModel.broadcast(inheritedTagIds: const []).ignore();
+    viewModel.broadcast(inheritedTagIds: ['savings']).ignore();
     await tester.pump(const Duration(seconds: 15));
     expect(viewModel.isBroadcastResultUnknown, isTrue);
     expect(node.broadcasts, 2);
+    viewModel.dispose();
+    sendInfo.clear();
     node.resending!.complete();
-    for (var i = 0; i < 20 && repository.getUtxoState(1, inputId)!.status != UtxoStatus.outgoing; i++) {
+    for (var i = 0; i < 40 && drafts.getAllUnsignedDrafts().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 50));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     }
 
     expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+    expect(tagIds(targetId()), ['savings']);
+    expect(drafts.getAllUnsignedDrafts(), isEmpty);
   });
 
   testWidgets('checking an unanswered broadcast gives up after 15 seconds', (tester) async {
