@@ -222,7 +222,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     _isBroadcastResultUnknown = false;
     final unsignedDraftId = _sendInfoProvider.unsignedDraftId;
     final signedDraftId = _signedDraftId ?? _savedDraftId;
-    Future<void> finish() => _finishSentBroadcast(selectedIds, unsignedDraftId, signedDraftId);
+    Future<void> finalize() => _finalizeAcceptedTransaction(selectedIds, unsignedDraftId, signedDraftId);
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final connectionWaitLimit =
         _nodeProvider.host.contains('.onion')
@@ -242,7 +242,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
     var result = await _nodeProvider.broadcast(_signedTx!);
     if (result.isFailure && _isUnknownOutcome(result.error)) {
-      result = await _confirmUnansweredBroadcast(connectionWaitLimit, onLateSuccess: finish);
+      result = await _confirmUnansweredBroadcast(connectionWaitLimit, onLateSuccess: finalize);
       _isBroadcastResultUnknown = result.isFailure && _isUnknownOutcome(result.error);
     }
     if (result.isFailure) {
@@ -251,12 +251,12 @@ class BroadcastingViewModel extends ChangeNotifier {
       return result;
     }
 
-    await finish();
+    await finalize();
     return result;
   }
 
   /// 노드가 받은 거래의 후처리: 입력 표시, 태그 상속, 관련 임시저장 삭제
-  Future<void> _finishSentBroadcast(Set<String> selectedIds, int? unsignedDraftId, int? signedDraftId) async {
+  Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId, int? signedDraftId) async {
     await _markInputsAsOutgoing();
 
     try {
