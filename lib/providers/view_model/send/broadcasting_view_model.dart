@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/consensus_constants.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -78,6 +81,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<String> _tagSourceUtxoIds = [];
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
+  bool _isBroadcastDispatched = false;
+  bool _isDisposed = false;
+  Completer<void>? _pendingBroadcastCancel;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -124,6 +130,16 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   bool get tagInheritanceFailed => _tagInheritanceFailed;
+
+  /// 노드에 거래를 넘긴 뒤 (결과를 기다리는 중이거나 성공)
+  bool get isBroadcastDispatched => _isBroadcastDispatched;
+
+  /// 노드에 넘기기 전인 송금 취소 (이미 넘긴 거래는 되돌릴 수 없음)
+  void cancelPendingBroadcast() {
+    if (_isBroadcastDispatched) return;
+    final cancel = _pendingBroadcastCancel ??= Completer<void>();
+    if (!cancel.isCompleted) cancel.complete();
+  }
 
   List<UtxoTag> prepareTagInheritance() {
     if (!_isInitDone) throw StateError('Transaction is not ready');
@@ -179,20 +195,49 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
-  Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
+  ///
+  /// 노드에 넘기기 전에 [cancelPendingBroadcast]로 취소되면 `null`
+  Future<Result<String>?> broadcast({required List<String> inheritedTagIds}) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
       throw ArgumentError('Invalid inherited tag selection');
     }
+    final cancel = _pendingBroadcastCancel ??= Completer<void>();
+    try {
+      return await _broadcast(selectedIds, cancel);
+    } finally {
+      if (identical(_pendingBroadcastCancel, cancel)) _pendingBroadcastCancel = null;
+    }
+  }
+
+  Future<Result<String>?> _broadcast(Set<String> selectedIds, Completer<void> cancel) async {
+    Future<T?> unlessCancelled<T>(Future<T> work) => Future.any<T?>([work, cancel.future.then<T?>((_) => null)]);
+
     _tagInheritanceFailed = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
-    final isConnected = await isElectrumServerConnected();
-    if (!isConnected) {
-      await _nodeProvider.reconnect();
+    final connectionWaitLimit =
+        _nodeProvider.host.contains('.onion')
+            ? kBroadcastConnectionWaitTimeoutForOnion
+            : kBroadcastConnectionWaitTimeout;
+    final isConnected = await unlessCancelled(
+      _waitForConnection().timeout(connectionWaitLimit, onTimeout: () => false),
+    );
+    if (cancel.isCompleted) return null;
+    if (isConnected != true) {
+      return Result.failure(
+        AppError(ErrorCodes.nodeConnectionError.code, t.broadcasting_screen.dialog.not_sent_no_connection),
+      );
     }
+
+    _isBroadcastDispatched = true;
+    notifyListeners();
     final result = await _nodeProvider.broadcast(_signedTx!);
-    if (result.isFailure) return result;
+    if (result.isFailure) {
+      _isBroadcastDispatched = false;
+      if (!_isDisposed) notifyListeners();
+      return result;
+    }
 
     try {
       await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
@@ -216,6 +261,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     return result;
   }
+
+  Future<bool> _waitForConnection() async =>
+      await isElectrumServerConnected() || await _nodeProvider.reconnectWithoutWaitingForSync();
 
   Future<bool> isElectrumServerConnected() async {
     try {
@@ -560,6 +608,14 @@ class BroadcastingViewModel extends ChangeNotifier {
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     assert(signedDraftIdToDelete != null);
     await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
+  }
+
+  @override
+  void dispose() {
+    if (_isDisposed) return;
+    cancelPendingBroadcast();
+    _isDisposed = true;
+    super.dispose();
   }
 
   // ignore: unused_element

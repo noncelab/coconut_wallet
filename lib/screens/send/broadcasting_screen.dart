@@ -67,7 +67,8 @@ class BroadcastingScreen extends StatefulWidget {
 
 enum _BroadcastAnimationOutcome { pending, succeeded, failed }
 
-class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTickerProviderStateMixin {
+class _BroadcastingScreenState extends State<BroadcastingScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
   late bool _showEntryChrome;
@@ -80,6 +81,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   _BroadcastAnimationOutcome _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
   bool _isBroadcasting = false;
   bool _isPreparingBroadcast = false;
+  bool _isAwaitingBroadcast = false;
   bool _showBroadcastLottie = false;
   bool _isBroadcastCompletionPhase = false;
   bool _isOverlayLoading = false;
@@ -109,11 +111,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
     }
     if (!mounted) return;
+    _isAwaitingBroadcast = true;
     await _prepareBroadcastAnimation();
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
     try {
-      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      final Result<String>? result;
+      try {
+        result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      } finally {
+        _isAwaitingBroadcast = false;
+      }
+
+      if (result == null) {
+        _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
+        await lottieAnimation;
+        if (!mounted) return;
+        _restoreAfterBroadcastFailure();
+        return;
+      }
 
       if (result.isFailure) {
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
@@ -260,12 +276,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop && _viewModel.isFromSignedDraft) {
-          _viewModel.clearSendInfo();
-        }
-      },
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder:
+          (context, child) => PopScope(
+            canPop: !_viewModel.isBroadcastDispatched,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop && _viewModel.isFromSignedDraft) {
+                _viewModel.clearSendInfo();
+              }
+            },
+            child: child!,
+          ),
       child: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
         create: (_) => _viewModel,
         update: (_, connectivityProvider, walletProvider, viewModel) {
@@ -534,6 +556,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     _showTransactionFlow = !widget.animateHotWalletEntry;
     _showOutputDetail = !widget.animateHotWalletEntry;
     _showBottomButton = !widget.animateHotWalletEntry;
+    WidgetsBinding.instance.addObserver(this);
     _broadcastLottieController = AnimationController(vsync: this);
     _scrollController = ScrollController();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
@@ -644,7 +667,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_isAwaitingBroadcast && (state == AppLifecycleState.hidden || state == AppLifecycleState.paused)) {
+      _viewModel.cancelPendingBroadcast();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _broadcastLottieController.dispose();
     _scrollController.dispose();
     super.dispose();

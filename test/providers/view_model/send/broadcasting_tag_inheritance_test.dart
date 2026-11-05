@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -44,11 +46,27 @@ class _WalletProvider extends Fake implements WalletProvider {
 
 class _NodeProvider extends Fake implements NodeProvider {
   int broadcasts = 0;
+  int reconnects = 0;
   bool fails = false;
+  bool connected = true;
+  Completer<bool>? reconnecting;
   void Function()? duringBroadcast;
 
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  String host = 'localhost';
+
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+
+  @override
+  Future<Result<bool>> reconnect() => throw StateError('broadcast must not wait for wallet subscription');
+
+  @override
+  Future<bool> reconnectWithoutWaitingForSync() {
+    reconnects++;
+    return reconnecting?.future ?? Future.value(true);
+  }
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
@@ -230,7 +248,7 @@ void main() {
 
     final result = await viewModel.broadcast(inheritedTagIds: ['savings']);
 
-    expect(result.isSuccess, isTrue);
+    expect(result!.isSuccess, isTrue);
     expect(tagIds(targetId()), ['savings']);
     expect(tagIds(inputId), isEmpty);
     expect(tagIds('another-utxo'), ['unrelated']);
@@ -253,14 +271,14 @@ void main() {
     await initialize();
     viewModel.prepareTagInheritance();
     node.fails = true;
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isFailure, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isFailure, isTrue);
     expect(tagIds(inputId), ['savings']);
     expect(tagIds(targetId()), isEmpty);
 
     manager.realm.write(() => manager.realm.find<RealmUtxoTag>('savings')!.utxoIdList.clear());
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), ['savings']);
     node.fails = false;
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isSuccess, isTrue);
     expect(tagIds(targetId()), ['savings']);
     expect(node.broadcasts, 2);
   });
@@ -281,10 +299,147 @@ void main() {
 
     final result = await viewModel.broadcast(inheritedTagIds: const []);
 
-    expect(result.isSuccess, isTrue);
+    expect(result!.isSuccess, isTrue);
+    expect(node.reconnects, 0);
     final input = repository.getUtxoState(1, inputId)!;
     expect(input.status, UtxoStatus.outgoing);
     expect(input.spentByTransactionHash, viewModel.signedTx!.transactionHash);
+  });
+
+  test('disconnected broadcast waits only for the connection, not wallet subscription', () async {
+    node.connected = false;
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(node.reconnects, 1);
+    expect(node.broadcasts, 1);
+  });
+
+  test('leaving the screen while reconnecting never sends the transaction', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    viewModel.dispose();
+    node.reconnecting!.complete(true);
+
+    expect(await pending, isNull);
+    expect(node.broadcasts, 0);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a reconnect that fails reports a connection error without sending', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>()..complete(false);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result.error.message),
+      t.broadcasting_screen.dialog.not_sent_no_connection,
+    );
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('waiting for the connection gives up after 15 seconds without sending', (tester) async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 14));
+    expect(result, isNull);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.not_sent_no_connection,
+    );
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('a Tor connection waits up to 120 seconds without sending', (tester) async {
+    node.host = 'example.onion';
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 119));
+    expect(result, isNull);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(node.broadcasts, 0);
+  });
+
+  test('going to the background while reconnecting stops waiting and never sends', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    viewModel.cancelPendingBroadcast();
+
+    expect(await pending, isNull);
+    expect(node.broadcasts, 0);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a cancel requested before the broadcast starts is honored, then cleared for the next send', () async {
+    await initialize();
+
+    viewModel.cancelPendingBroadcast();
+    expect(await viewModel.broadcast(inheritedTagIds: const []), isNull);
+    expect(node.broadcasts, 0);
+
+    expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  test('a cancel after the transaction is handed to the node does not change the result', () async {
+    await initialize();
+    node.duringBroadcast = viewModel.cancelPendingBroadcast;
+
+    expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('transaction is marked as dispatched only once it is handed to the node', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+    bool? dispatchedDuringBroadcast;
+    node.duringBroadcast = () => dispatchedDuringBroadcast = viewModel.isBroadcastDispatched;
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    expect(viewModel.isBroadcastDispatched, isFalse);
+    node.reconnecting!.complete(true);
+    await pending;
+
+    expect(dispatchedDuringBroadcast, isTrue);
+    expect(viewModel.isBroadcastDispatched, isTrue);
+  });
+
+  test('failed broadcast is no longer dispatched so the user can leave', () async {
+    node.fails = true;
+    await initialize();
+
+    await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(viewModel.isBroadcastDispatched, isFalse);
   });
 
   test('failed broadcast leaves the input spendable', () async {
@@ -410,7 +565,7 @@ void main() {
     await initializeTransaction(secondBump, feeBumpingType: FeeBumpingType.rbf);
     const expectedTags = ['savings', 'reviewed', 'salary'];
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), unorderedEquals(expectedTags));
-    expect((await viewModel.broadcast(inheritedTagIds: expectedTags)).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: expectedTags))!.isSuccess, isTrue);
     final secondBumpHash = viewModel.signedTx!.transactionHash;
     expect(tagIds(getUtxoId(secondBumpHash, 0)), isEmpty);
     for (final index in [1, 2]) {
@@ -484,7 +639,7 @@ void main() {
     node.duringBroadcast = () {
       manager.realm.write(() => manager.realm.delete(manager.realm.find<RealmUtxoTag>('savings')!));
     };
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isSuccess, isTrue);
     expect(viewModel.tagInheritanceFailed, isTrue);
     expect(node.broadcasts, 1);
   });

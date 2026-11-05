@@ -999,6 +999,7 @@ broadcasting_screen:
   dialog:
     send_unavailable: "Unable to Send"
     tag_apply_failed: "The transaction was sent, but tags could not be applied. Check the tags in your UTXO list."
+    not_sent_no_connection: "Failed to connect to the node. Please try again in a moment."
 send_address_screen:
   text1: "Scan QR or\npaste the copied address"
   text2: "Please scan the address QR code"

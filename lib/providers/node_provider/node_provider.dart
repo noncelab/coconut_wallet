@@ -734,7 +734,21 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 호출마다 새로 연결하고 시작한 재연결만 [_reconnecting]에 기록 (새로고침이 대기)
-  Future<Result<bool>> reconnect() {
+  Future<Result<bool>> reconnect() => _startReconnect();
+
+  /// 서버 연결까지만 대기하고 지갑 구독·동기화는 이어서 진행 (브로드캐스팅처럼 연결만 필요한 경우)
+  Future<bool> reconnectWithoutWaitingForSync() async {
+    final wasConnecting = _isInitializing || _isClosing;
+    await _waitUntilConnectionIdle();
+    if (wasConnecting && isConnected) return true;
+    final connected = Completer<bool>();
+    _startReconnect(connected: connected).whenComplete(() {
+      if (!connected.isCompleted) connected.complete(false);
+    }).ignore();
+    return connected.future;
+  }
+
+  Future<Result<bool>> _startReconnect({Completer<bool>? connected}) {
     if (_isDisposed) return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
@@ -749,7 +763,7 @@ class NodeProvider extends ChangeNotifier {
       return Future.value(Result.failure(ErrorCodes.nodeConnectionError));
     }
 
-    final started = _reconnect(++_latestReconnectId);
+    final started = _reconnect(++_latestReconnectId, connected);
     _reconnecting = started;
     started.whenComplete(() {
       if (identical(_reconnecting, started)) _reconnecting = null;
@@ -757,7 +771,7 @@ class NodeProvider extends ChangeNotifier {
     return started;
   }
 
-  Future<Result<bool>> _reconnect(int reconnectId) async {
+  Future<Result<bool>> _reconnect(int reconnectId, Completer<bool>? connected) async {
     // 더 새로운 재연결에 밀려났으면 상태·연결 오류·분석 이벤트를 건드리지 않고 종료
     bool superseded() => _isDisposed || reconnectId != _latestReconnectId;
     try {
@@ -769,6 +783,7 @@ class NodeProvider extends ChangeNotifier {
       await initialize();
       if (superseded()) return Result.failure(ErrorCodes.nodeConnectionError);
       _setConnectionError(false);
+      connected?.complete(isInitialized);
 
       final walletLoadState = _walletLoadStateNotifier.value;
       final walletItems = _walletItemListNotifier.value;
