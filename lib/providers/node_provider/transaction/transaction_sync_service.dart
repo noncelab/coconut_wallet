@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
@@ -13,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -58,7 +61,10 @@ class TransactionSyncService {
     this._utxoRepository,
     this._scriptCallbackService,
   ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
-      _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService);
+      _cpfpService = CpfpService(_transactionRepository, _utxoRepository);
+
+  /// The caller owns this pass; batches share it across scripts, never across sync calls.
+  TransactionFetchPass createFetchPass() => TransactionFetchPass(_electrumService.getTransaction);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<FetchScriptTransactionResult> fetchScriptTransaction(
@@ -66,11 +72,35 @@ class TransactionSyncService {
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
+    Future<void> Function(Set<String>)? onCoSpentAddresses,
+    TransactionFetchPass? transactionFetch,
+  }) async {
+    // 1. 초기화 및 준비 단계
+    _prepareTransactionFetch(walletItem.id, inBatchProcess);
+    try {
+      return await _fetchScriptTransaction(
+        walletItem,
+        scriptStatus,
+        now: now,
+        inBatchProcess: inBatchProcess,
+        onCoSpentAddresses: onCoSpentAddresses,
+        transactionFetch: transactionFetch ?? createFetchPass(),
+      );
+    } finally {
+      // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 거래를 다시 읽지 않는다.
+      if (!inBatchProcess) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+    }
+  }
+
+  Future<FetchScriptTransactionResult> _fetchScriptTransaction(
+    WalletItemBase walletItem,
+    ScriptStatus scriptStatus, {
+    DateTime? now,
+    required bool inBatchProcess,
+    Future<void> Function(Set<String>)? onCoSpentAddresses,
+    required TransactionFetchPass transactionFetch,
   }) async {
     final int walletId = walletItem.id;
-
-    // 1. 초기화 및 준비 단계
-    _prepareTransactionFetch(walletId, inBatchProcess);
 
     // walletId의 트랜잭션 조회
     final knownTransactionHashes = _transactionRepository.getConfirmedTransactionHashSet(walletId);
@@ -82,7 +112,7 @@ class TransactionSyncService {
 
     // 트랜잭션 조회 결과가 없으면 종료
     if (txFetchResults.isEmpty) {
-      await _finalizeTransactionFetch(walletId, {}, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, {});
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletId, UpdateElement.utxo);
       }
@@ -100,24 +130,75 @@ class TransactionSyncService {
     final newTxHashes = processingStates.keys.toSet();
 
     if (newTxHashes.isEmpty) {
-      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, newTxHashes);
       return (txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(), coSpentAddresses: <String>{});
     }
 
     try {
+      // 거래별 실패를 모으되 성공한 거래의 예약·기록·컨펌은 먼저 마친다.
+      final errors = <AsyncError>[];
       // 3. 트랜잭션 상세 정보 조회
       final FetchedTransactionDetails fetchedTransactionDetails = await _fetchTransactionDetails(
+        walletId,
         newTxHashes,
         txFetchResults,
         _electrumService,
+        errors,
+        transactionFetch,
       );
 
       // 4. 트랜잭션 레코드 생성 및 저장
-      final List<TransactionRecord> txRecords = await _transactionRecordService.createTransactionRecords(
-        walletId,
-        fetchedTransactionDetails,
-        now: now,
-      );
+      List<TransactionRecord?> builtRecords;
+      try {
+        builtRecords =
+            await fetchedTransactionDetails.fetchedTransactions.map((tx) async {
+              final hash = tx.transactionHash;
+              final height = fetchedTransactionDetails.txBlockHeightMap[hash];
+              final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[height];
+              if (height != null && blockTimestamp == null) {
+                throw StateError('Missing block metadata for confirmed transaction');
+              }
+              final existing = _transactionRepository.getTransactionRecord(walletId, hash);
+              if (existing == null) {
+                return _transactionRecordService.createTransactionRecord(
+                  walletId,
+                  tx,
+                  blockTimestamp: blockTimestamp,
+                  now: now,
+                  transactionFetch: transactionFetch,
+                );
+              }
+              // 저장된 입출력/금액은 그대로 쓰고 이번 조회의 컨펌 정보만 기존 저장 경로로 넘긴다.
+              // 상세 조회에서 raw 검증과 입력 예약, 헤더 검증은 이미 완료했다.
+              return TransactionRecord(
+                hash,
+                blockTimestamp?.timestamp ?? now ?? DateTime.now(),
+                blockTimestamp?.height ?? 0,
+                existing.transactionType,
+                existing.memo,
+                existing.amount,
+                existing.fee,
+                existing.inputAddressList,
+                existing.outputAddressList,
+                existing.vSize,
+                existing.createdAt,
+                rbfHistoryList: existing.rbfHistoryList,
+                cpfpHistory: existing.cpfpHistory,
+              );
+            }).wait;
+      } on ParallelWaitError<List<TransactionRecord?>, List<AsyncError?>> catch (e) {
+        builtRecords = e.values;
+        errors.add(e.errors.nonNulls.first);
+      }
+      final txRecords = builtRecords.nonNulls.toList();
+      final successfulHashes = txRecords.map((record) => record.transactionHash).toSet();
+      final successfulTransactions =
+          fetchedTransactionDetails.fetchedTransactions
+              .where((tx) => successfulHashes.contains(tx.transactionHash))
+              .toList();
+      if (successfulTransactions.isEmpty && errors.isNotEmpty) {
+        Error.throwWithStackTrace(errors.first.error, errors.first.stackTrace);
+      }
       final unconfirmedRecords = txRecords.where((record) => record.blockHeight <= 0).toList();
       if (unconfirmedRecords.isNotEmpty) {
         await _transactionRepository.addAllTransactions(walletId, unconfirmedRecords);
@@ -126,22 +207,25 @@ class TransactionSyncService {
       // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
       final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
         walletId,
-        fetchedTransactionDetails.fetchedTransactions,
+        successfulTransactions,
         unconfirmedFetchedTxHashes,
         confirmedFetchedTxHashes,
         triggeringAddress: scriptStatus.address,
         inBatchProcess: inBatchProcess,
+        transactionFetch: transactionFetch,
       );
 
       // 6. RBF/CPFP 히스토리 저장
       await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
 
       // 7. 대체된 언컨펌 트랜잭션 삭제
-      await _cleanupOrphanedUnconfirmedTransactions(
+      final absentTxHashes = await _cleanupOrphanedUnconfirmedTransactions(
         walletId,
-        fetchedTransactionDetails.fetchedTransactions,
+        successfulTransactions,
+        unresolvedTxHashes: newTxHashes.difference(successfulHashes),
         preparedRecords: {for (final record in txRecords) record.transactionHash: record},
         confirmedTxHashes: confirmedFetchedTxHashes,
+        transactionFetch: transactionFetch,
       );
 
       final confirmedRecords = txRecords.where((record) => record.blockHeight > 0).toList();
@@ -149,8 +233,35 @@ class TransactionSyncService {
         await _transactionRepository.addAllTransactions(walletId, confirmedRecords);
       }
 
+      // 7-1. 대체됐다고 표시한 원래 거래를 서버가 다시 보여 주면 내역과 코인을 되돌린다
+      await _restoreReplacedOriginals(
+        walletId,
+        transactionFetch,
+        transactions: successfulTransactions,
+        absentTxHashes: absentTxHashes,
+      );
+
       // 8. 마무리 단계
-      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess, processingStates: processingStates);
+      // 자식의 기록을 저장했어도 미확정 부모 기록이 없으면 CPFP 연결은 아직 끝나지 않았다.
+      final completedHashes =
+          successfulTransactions
+              .where(
+                (tx) =>
+                    !tx.inputs.any(
+                      (input) =>
+                          unconfirmedFetchedTxHashes.contains(input.transactionHash) &&
+                          _transactionRepository.getTransactionRecord(walletId, input.transactionHash) == null,
+                    ),
+              )
+              .map((tx) => tx.transactionHash)
+              .toSet();
+      if (completedHashes.length != successfulHashes.length) {
+        errors.add(AsyncError(StateError('Incomplete pending parent records'), StackTrace.current));
+      }
+      await _finalizeTransactionFetch(walletId, completedHashes, processingStates: processingStates);
+      // 일부 성공 뒤 실패하더라도 같이 소비된 주소의 잔액 갱신을 잃지 않는다.
+      if (rbfCpfpResult.coSpentAddresses.isNotEmpty) await onCoSpentAddresses?.call(rbfCpfpResult.coSpentAddresses);
+      if (errors.isNotEmpty) Error.throwWithStackTrace(errors.first.error, errors.first.stackTrace);
 
       return (
         txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(),
@@ -192,27 +303,43 @@ class TransactionSyncService {
   }
 
   /// 3. 트랜잭션 상세 정보 조회
+  /// 원본 트랜잭션을 먼저 받아 그 입력을 예약(outgoing)한 뒤에야 실패를 던진다.
+  /// 같은 조회의 다른 거래나 블록 헤더가 실패해도, 이미 받은 거래가 쓴 코인은 다시 선택되지 않는다.
   Future<FetchedTransactionDetails> _fetchTransactionDetails(
+    int walletId,
     Set<String> newTxHashes,
     List<FetchTransactionResponse> allTxFetchResults,
     ElectrumService electrumService,
+    List<AsyncError> errors,
+    TransactionFetchPass transactionFetch,
   ) async {
-    final filteredTxFetchResults = allTxFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
+    List<Transaction?> fetched;
+    try {
+      fetched = await newTxHashes.map(transactionFetch.fetch).wait;
+    } on ParallelWaitError<List<Transaction?>, List<AsyncError?>> catch (e) {
+      fetched = e.values;
+      errors.add(e.errors.nonNulls.first);
+    }
+    for (final tx in fetched.nonNulls) {
+      await _utxoRepository.reserveSpentInputs(walletId, tx);
+    }
+    final fetchedTransactions = fetched.nonNulls.toList();
+    final fetchedHashes = fetchedTransactions.map((tx) => tx.transactionHash).toSet();
+
+    final filteredTxFetchResults = allTxFetchResults.where((tx) => fetchedHashes.contains(tx.transactionHash)).toList();
 
     final txBlockHeightMap = Map<String, int>.fromEntries(
       filteredTxFetchResults.where((tx) => tx.height > 0).map((tx) => MapEntry(tx.transactionHash, tx.height)),
     );
 
-    final blockTimestampMap =
-        txBlockHeightMap.isEmpty
-            ? <int, BlockTimestamp>{}
-            : await electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
-
-    if (txBlockHeightMap.values.any((height) => !blockTimestampMap.containsKey(height))) {
-      throw StateError('Missing block metadata for confirmed transaction history');
+    var blockTimestampMap = <int, BlockTimestamp>{};
+    if (txBlockHeightMap.isNotEmpty) {
+      try {
+        blockTimestampMap = await electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
+      } catch (e, stackTrace) {
+        errors.add(AsyncError(e, stackTrace));
+      }
     }
-
-    final fetchedTransactions = await fetchTransactions(newTxHashes);
 
     return (
       fetchedTransactions: fetchedTransactions,
@@ -229,6 +356,7 @@ class TransactionSyncService {
     Set<String> confirmedFetchedTxHashes, {
     required String triggeringAddress,
     bool inBatchProcess = false,
+    required TransactionFetchPass transactionFetch,
   }) async {
     Map<String, RbfInfo> outgoingingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
     Set<String> replacedTxHashSetByIncomingRbf = {};
@@ -251,6 +379,7 @@ class TransactionSyncService {
           walletId,
           fetchedTx,
           confirmedTxHashes: confirmedFetchedTxHashes,
+          transactionFetch: transactionFetch,
         );
         if (replacedTxHashByIncomingRbf != null) {
           replacedTxHashSetByIncomingRbf.add(replacedTxHashByIncomingRbf);
@@ -352,27 +481,34 @@ class TransactionSyncService {
     }
   }
 
-  /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupOrphanedUnconfirmedTransactions(
+  /// 7. 대체된 언컨펌 트랜잭션 삭제. 서버에 없다고 확인했거나 대체된 것으로 본 거래 해시를 돌려준다
+  /// (대체 표시가 남은 기록은 지우지 않으므로 7-1이 이 결과로 판단한다).
+  Future<Set<String>> _cleanupOrphanedUnconfirmedTransactions(
     int walletId,
     List<Transaction> newTxs, {
     required Map<String, TransactionRecord> preparedRecords,
     required Set<String> confirmedTxHashes,
+    Set<String> unresolvedTxHashes = const {},
+    required TransactionFetchPass transactionFetch,
   }) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
     for (final localUnconfirmedTxRecord in unconfirmedTxs) {
-      if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) continue;
+      if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash) ||
+          unresolvedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) {
+        continue;
+      }
       Transaction? unconfirmedTx;
       try {
-        unconfirmedTx = Transaction.parse(
-          await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash),
-        );
-      } catch (e) {
-        // 언컨펌 트랜잭션을 다시 조회해서 실패한 경우 대체된 것으로 간주
+        unconfirmedTx = await transactionFetch.fetch(localUnconfirmedTxRecord.transactionHash);
+      } on TransactionNotFound {
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
+        continue;
+      } catch (e) {
+        // 부재를 확인하지 못한 거래는 유지하고, 다른 거래의 컨펌 처리는 계속한다.
+        Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} lookup deferred: $e');
         continue;
       }
 
@@ -409,18 +545,109 @@ class TransactionSyncService {
         Logger.log('[$walletId] Deleted orphaned unconfirmed transactions: $toDeleteTxs');
       }
     }
+    return toDeleteTxs.toSet();
   }
+
+  /// 7-1. 대체됐다고 표시한 원래 거래가 이번 조회에 다시 보이면(컨펌됐거나, 대체 거래를 모르는 서버가 보여 줌) 내역에
+  /// 되돌리고, 같은 outpoint를 쓴 대체 거래와 자손의 기록·출력을 지운다([_lostReplacements]). [transactions]가 null이면
+  /// 컨펌됐는데도 표시가 남은 기록을 고르고 원본은 [transactionFetch]로 받는다. 원래 거래의 출력은 삭제 표시를 그대로
+  /// 두어, listunspent가 쓴 증거와 서버 잔액을 확인하는 되살리기([UtxoRepository.restoreListedUtxos])로만 돌아오게 한다.
+  Future<void> _restoreReplacedOriginals(
+    int walletId,
+    TransactionFetchPass transactionFetch, {
+    List<Transaction>? transactions,
+    Set<String> absentTxHashes = const {},
+  }) async {
+    final originals = _transactionRepository.getReplacedTransactions(
+      walletId,
+      txHashes: transactions?.map((tx) => tx.transactionHash),
+    );
+    final restored = <String>{};
+    final invalid = <String>{};
+    for (final original in originals) {
+      final Transaction tx;
+      try {
+        tx =
+            transactions?.firstWhere((tx) => tx.transactionHash == original.hash) ??
+            await transactionFetch.fetch(original.hash);
+      } catch (e) {
+        Logger.log('[$walletId] Replaced transaction check deferred: $e');
+        continue; // 원래 거래의 입력을 모르면 이번에는 아무것도 바꾸지 않는다
+      }
+      final lost = await _lostReplacements(walletId, tx, original, transactionFetch, absentTxHashes);
+      if (lost == null) continue;
+      restored.add(original.hash);
+      invalid.addAll(lost);
+    }
+    if (restored.isEmpty) return;
+    final dropped = await _transactionRepository.restoreReplacedTransactions(walletId, restored, invalid);
+    Logger.log('[$walletId] Restored ${restored.length} replaced transaction(s), dropped ${dropped.length}');
+    await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, dropped);
+  }
+
+  /// [original]을 대체한 사슬에서 지울 거래. 겹침은 정확한 outpoint로만 판단한다: 바로 다음 대체 거래(RBF 감지 근거),
+  /// 컨펌된 원래 거래의 입력 코인에 기록된 사용 거래, 받아 온 원본의 입력. 서버가 없다고 답한 거래([absentTxHashes])도
+  /// 지운다. 겹치지 않는 거래와 확인하지 못한 거래는 그대로 둔다. 되돌릴 수 없으면 null: 겹치는 거래가 컨펌됐거나,
+  /// 미확정 원래 거래와 겹치는 거래가 서버에 남았거나 확인하지 못했다.
+  Future<Set<String>?> _lostReplacements(
+    int walletId,
+    Transaction tx,
+    ({String hash, String replacedBy, bool confirmed}) original,
+    TransactionFetchPass transactionFetch,
+    Set<String> absentTxHashes,
+  ) async {
+    final outpoints = {for (final input in tx.inputs) getUtxoId(input.transactionHash, input.index)};
+    final spenders =
+        original.confirmed
+            ? {
+              for (final id in outpoints)
+                _utxoRepository.getUtxoState(walletId, id, includeDeleted: true)?.spentByTransactionHash,
+            }
+            : const <String?>{};
+    final lost = <String>{};
+    final seen = {original.hash};
+    var direct = true;
+    for (String? next = original.replacedBy; next != null && seen.add(next); direct = false) {
+      final proven = direct || spenders.contains(next);
+      final link = _transactionRepository.getReplacementLink(walletId, next);
+      if (link == null) {
+        if (proven) lost.add(next); // 기록은 이미 지워졌고 출력만 남았을 수 있다
+        break;
+      }
+      final absent = absentTxHashes.contains(next);
+      bool? conflicts = proven ? true : null;
+      if (conflicts == null && !absent) {
+        try {
+          final replacement = await transactionFetch.fetch(next);
+          conflicts = replacement.inputs.any(
+            (input) => outpoints.contains(getUtxoId(input.transactionHash, input.index)),
+          );
+        } catch (e) {
+          Logger.log('[$walletId] Replacement check deferred: $e');
+        }
+      }
+      if (conflicts == true || (conflicts == null && absent)) {
+        if (link.confirmed || (!original.confirmed && !absent)) return null;
+        lost.add(next);
+      } else if (conflicts == null && !original.confirmed) {
+        return null;
+      }
+      next = link.replacedBy;
+    }
+    return lost;
+  }
+
+  /// 이전 버전이 컨펌된 원래 거래에 남긴 대체 표시를 지운다. 구독 때 지운 코인 재확인보다 먼저 불러, 그 거래의 잔돈이
+  /// 되살릴 수 있는 코인으로 잡히게 한다.
+  Future<void> restoreConfirmedReplacedTransactions(int walletId) =>
+      _restoreReplacedOriginals(walletId, createFetchPass());
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
   Future<void> _finalizeTransactionFetch(
     int walletId,
-    Set<String> newTxHashes,
-    bool inBatchProcess, {
+    Set<String> newTxHashes, {
     Map<String, TransactionProcessingState>? processingStates,
   }) async {
-    if (!inBatchProcess) {
-      _stateManager.addWalletCompletedState(walletId, UpdateElement.transaction);
-    }
     if (newTxHashes.isNotEmpty) {
       await _scriptCallbackService.registerTransactionCompletion(
         walletId,
@@ -463,15 +690,5 @@ class TransactionSyncService {
       Logger.error('Failed to get fetch transaction responses: $e');
       rethrow;
     }
-  }
-
-  /// 일렉트럼으로 부터 트랜잭션 목록을 가져옵니다.
-  Future<List<Transaction>> fetchTransactions(Set<String> transactionHashes) {
-    return Future.wait(
-      transactionHashes.map((txHash) async {
-        final txHex = await _electrumService.getTransaction(txHash);
-        return Transaction.parse(txHex);
-      }),
-    );
   }
 }

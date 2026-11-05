@@ -8,9 +8,12 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 class TransactionRecordService {
   final ElectrumService _electrumService;
@@ -48,10 +51,15 @@ class TransactionRecordService {
     BlockTimestamp? blockTimestamp,
     List<Transaction> previousTxs = const [],
     DateTime? now,
+    TransactionFetchPass? transactionFetch,
   }) async {
     now ??= DateTime.now();
 
-    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    final prevTxs = await _electrumService.getPreviousTransactions(
+      tx,
+      existingTxList: previousTxs,
+      transactionFetch: transactionFetch,
+    );
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
     return TransactionRecord.fromTransactions(
@@ -74,21 +82,19 @@ class TransactionRecordService {
     int selfOutputCount = 0;
     int fee = 0;
     int amount = 0;
+    final parentsByHash =
+        previousTxs is PreviousTransactions
+            ? previousTxs.byHash
+            : {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
 
     // 입력 처리
-    for (int i = 0; i < tx.inputs.length; i++) {
-      final input = tx.inputs[i];
-
+    final isCoinbase = TransactionUtil.isCoinbaseTransaction(tx);
+    final inputs = isCoinbase ? <TransactionInput>[] : tx.inputs;
+    for (final input in inputs) {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
-      Transaction? previousTx;
-      try {
-        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-      } catch (_) {
-        continue;
-      }
-
-      if (input.index >= previousTx.outputs.length) {
-        continue;
+      final previousTx = parentsByHash[input.transactionHash];
+      if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
+        throw StateError('Missing previous output');
       }
 
       final previousOutput = previousTx.outputs[input.index];
@@ -124,6 +130,8 @@ class TransactionRecordService {
         amount += outputAddress.amount;
       }
     }
+    // coinbase(채굴 보상)는 입력이 없어 수수료가 없다. 출력 합만 빼면 음수가 되므로 0으로 둔다.
+    if (isCoinbase) fee = 0;
 
     // 트랜잭션 유형 결정
     TransactionType txType = determineTransactionType(
@@ -164,6 +172,7 @@ class TransactionRecordService {
     try {
       final txRaw = await _electrumService.getTransaction(txHash);
       final tx = Transaction.parse(txRaw);
+      if (tx.transactionHash != txHash) throw StateError('Server returned a different transaction');
       final previousTxs = await _electrumService.getPreviousTransactions(tx);
       final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
       final blockTimestamp = await getTxHeight(

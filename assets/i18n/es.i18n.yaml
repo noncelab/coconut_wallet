@@ -61,6 +61,7 @@ home_screen_settings: "Configuración de inicio"
 home_connection_status:
   electrum_connection_failed: "Sin conexión a Electrum"
   electrum_connection_restored: "Conectado a Electrum"
+  update_completed: "Actualizado"
 tx_list: "Transacciones"
 utxo_list: "Lista UTXO"
 wallet_id: "ID de billetera"
@@ -371,12 +372,16 @@ home_widgets:
   hot_wallet_stack: "Billeteras calientes"
   all_wallet_stack: "Todas las billeteras"
   empty_all_wallets: "Aún no hay billeteras"
+  empty_watch_only_wallets: "No hay billeteras de solo lectura"
+  empty_hot_wallets: "No hay billeteras calientes"
   add_wallet: "Añadir billetera"
   bitcoin_balance_trend: "Tendencia del saldo en bitcoin"
   bitcoin_balance_by_fiat: "Saldo en bitcoin"
   fiat_price_trend: "Tendencia del precio en fiat"
   fiat_values: "Valores fiat"
   balance_by_wallet: "Saldo por billetera"
+  wallet_list: "Lista de billeteras"
+  wallet_list_show_all(count): "Ver las $count billeteras"
   recent_transactions: "Transacciones recientes"
   transaction_activity: "Análisis de transacciones por período"
   savings_goal: "Meta de ahorro"
@@ -418,6 +423,8 @@ home_presets:
   hide_balances_description: "No muestra saldos reales ni valores fiat en Inicio"
   statistics_name: "Resumen de ahorros"
   statistics_description: "Consulta la evolución del saldo, tu meta de ahorro y el estado de los UTXO de un vistazo"
+  classic_name: "Coconut Clásico"
+  classic_description: "Coloca los widgets como en la pantalla de inicio clásica de Coconut"
   apply: "Aplicar a Inicio"
   applied: "Se aplicó el ajuste predefinido «$name»"
   undo: "Deshacer"
@@ -877,83 +884,18 @@ wallet_connect_screen:
     ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
     loading_wallet_info: "Cargando información de la cartera"
       
-# lib/screens/wallet_list
-wallet_list:
-  balance_history_detail:
-    period_summary: "Resumen del período"
-    gesture_guide_title: "Explora el gráfico"
-    gesture_guide_pan: "Desliza a izquierda o derecha para desplazarte en el tiempo."
-    gesture_guide_zoom: "Desliza arriba o abajo, o amplía y reduce con dos dedos para ajustar el intervalo: 1 semana, 1 mes, 3 meses y más."
-    balance_label: "Saldo"
-    transactions_label: "Transacciones"
-    flow_count: "${count} tx"
-    flow_summary: "${count} tx · ${amount}"
-    no_transactions_at_date: "No hay transacciones en la fecha seleccionada"
-    transactions_at_date: "Transacciones de la fecha seleccionada"
-    wallets_at_date: "Carteras en este momento"
-    no_wallets: "No hay carteras para mostrar en este momento"
-    changed_wallets_only: "Solo carteras con cambios"
-    transaction_count(cardinal):
-      one: "${n} transacción"
-      other: "${n} transacciones"
-  header:
-    total_amount: "Saldo total"
-    balance_history: "Cambio de saldo"
-    bitcoin_price: "Cotización de BTC"
-    converted_amount: "Importe convertido"
-    than_yesterday: "Desde ayer"
-    than_a_week_ago: "Hace 7 días"
-    than_a_month_ago: "Hace 30 días"
-    tooltip:
-      title: "Detalles del precio"
-      price_source(source): "Precio de 1 BTC: $source"
-      fiat_price_source(fiat, source): "Precio en $fiat: $source"
-      closing_time: "El precio diario cierra a las 00:00 UTC."
-      yesterday_basis: "Desde ayer: Último precio de cierre"
-      week_basis: "Desde hace una semana: Cierre de hace 7 días"
-      month_basis: "Desde hace un mes: Cierre de hace 30 días"
-      historical_price_unavailable: "bitFlyer no ofrece velas diarias oficiales, por lo que no se muestran cambios en JPY."
-  menu:
-    edit_order: "Editar orden"
-    display_settings: "Ajustes de visualización"
-  wallet_count: "$count Elementos"
-  empty_watch_only: "No hay billeteras de solo lectura"
-  empty_hot_wallet: "No hay billeteras calientes"
-  favorite_watch_only_limit: "Puedes añadir hasta 5 billeteras de solo lectura a favoritos"
-  favorite_hot_wallet_limit: "Puedes añadir hasta 5 billeteras calientes a favoritos"
-  primary_wallet: "Cartera Principal"
-  exclude_from_total_amount: "Excluido del Total"
-  home_balance: "Saldo en la Pantalla Principal"
-  excluded_balance: "Saldo Excluido"
-  settings:
-    title: "Configuración de esta billetera"
-    primary_wallet: "Establecer como Cartera Principal"
-    primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal"
-    primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración"
-    exclude_from_total_amount: "Excluir del Total"
-    exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal"
-  edit:
-    order: "Editar orden"
-    order_description: "para cambiar el orden de las carteras."
-    tab_order_description: "para cambiar el orden de las pestañas."
-    delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
-    finish: "Finalizar Edición"
-    unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
-  bottom_sheet:
-    tab_display_settings: "Configuración de visualización de pestañas"
-    wallet_list_settings: "Lista de billeteras"
-    home_screen_settings: "Pantalla de inicio"
-    show_watch_only_tab: "Mostrar pestaña de billeteras de solo lectura"
-    show_watch_only_tab_description: "Muestra la pestaña de billeteras de solo lectura en la pantalla de inicio"
-    show_hot_wallet_tab: "Mostrar pestaña de billeteras calientes"
-    show_hot_wallet_tab_description: "Muestra la pestaña de billeteras calientes en la pantalla de inicio"
-    show_fiat_price: "Mostrar saldo en moneda fiduciaria"
-    show_fiat_price_description: "Muestra el saldo en moneda fiduciaria en esta pantalla"
-    show_bitcoin_price: "Mostrar información del precio de 1 BTC"
-    show_bitcoin_price_description: "Muestra el precio de 1 BTC y sus cambios en el tiempo"
-    show_balance_chart: "Mostrar gráfico del saldo"
-    show_balance_chart_description: "Muestra los cambios del saldo total de todas las billeteras"
-    visible: "Visible"
+# lib/screens/home/wallet_balance_history_screen.dart
+wallet_balance_history_screen:
+  title: "Cambio de saldo"
+  period_summary: "Resumen del período"
+  gesture_guide_title: "Explora el gráfico"
+  gesture_guide_pan: "Desliza a izquierda o derecha para desplazarte en el tiempo."
+  gesture_guide_zoom: "Desliza arriba o abajo, o amplía y reduce con dos dedos para ajustar el intervalo: 1 semana, 1 mes, 3 meses y más."
+  balance_label: "Saldo"
+  transactions_label: "Transacciones"
+  flow_count: "${count} tx"
+  flow_summary: "${count} tx · ${amount}"
+  no_wallets: "No hay carteras para mostrar en este momento"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -1101,13 +1043,17 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
   error_title: "Error al firmar"
   wrong_wallet_title: "Billetera incorrecta conectada"
-  device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."
+  device_mismatch: "El BitBox02 conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con BitBox02"
     connect_other_bitbox02: "Conectar otro BitBox02"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 trezor_sign_screen:
@@ -1128,13 +1074,18 @@ trezor_sign_screen:
     title: "Firmado"
     description: "La transacción ha sido firmada por Trezor."
   error_title: "Error al firmar"
+  wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada pertenece a '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con Trezor"
     connect_other_trezor: "Conectar otro Trezor"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 signed_psbt_scanner_screen:
@@ -1316,9 +1267,7 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "Saldo total"
   tag_apply: "Aplicar etiqueta"
-  utxo_select_required: "Por favor, seleccione primero el UTXO."
   utxo_tag_updated: "Las etiquetas de UTXO se actualizaron."
-  utxo_tag_no_changes: "No se cambió ninguna etiqueta."
   send_locked_utxo: "No se pueden enviar UTXO bloqueados para uso."
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
@@ -1328,6 +1277,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "Ver detalles de entrada/salida"
+  coinbase_input: "Es bitcoin recién minado como recompensa de bloque, por eso no tiene entradas."
   confirmation: "$height ($count confirmaciones)"
   time_ago:
     just_now: Ahora mismo
@@ -1628,6 +1578,8 @@ split_utxo_screen:
   question_split_evenly: "¿En cuántas partes?"
   label_split_method: "Criterio de división"
   label_selected_utxo: "UTXO seleccionado"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Comisión estimada"
   add_new_amount: "Añadir monto"
   and_more_tags: "y ${count} más"
@@ -1639,6 +1591,7 @@ split_utxo_screen:
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
+  tx_too_large_error: "La transacción es demasiado grande. Selecciona menos UTXO o divide en menos partes"
   method_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
@@ -1652,9 +1605,10 @@ split_utxo_screen:
     fee: "Comisión"
     above_is_expected: "El resultado anterior es una estimación."
   big_tx_confirm:
-    create: "Crear"
-    preview: "Vista previa"
-    description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
+    title: "Transacción grande"
+    create: "Crear ahora"
+    preview: "Ver estimación"
+    description: "Crearla puede tardar un poco. Revisa primero el resultado estimado."
 
 label_management_screen:
   title: "Notas"
@@ -1904,6 +1858,10 @@ alert:
     insufficient_balance: "Saldo insuficiente"
     minimum_amount: "Puedes enviar al menos $amount"
     insufficient_fee: "Por favor, intenta nuevamente aumentando la comisión."
+    immature_coinbase: "Las recompensas de minería se pueden enviar después de 100 confirmaciones."
+    immature_coinbase_remaining: "Las recompensas de minería se pueden enviar después de 100 confirmaciones.\nFaltan $count bloques."
+    used_utxo_included: "La transacción incluye bitcoin que ya se ha gastado.\nPor favor, vuelve a crear la transacción."
+    locked_utxo_included: "La transacción incluye bitcoin bloqueado.\nPor favor, intenta nuevamente desde el principio."
     non_final_taproot_child: "Por favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
@@ -2175,3 +2133,6 @@ wallet_card_detail_screen:
   wallet_card: "Tarjeta de cartera"
   show_balance_trend: "Ver evolución del saldo"
   chart_date_format: "d/M"
+
+wallet_selection_carousel: "Ver de una en una"
+wallet_selection_grid: "Ver juntas"

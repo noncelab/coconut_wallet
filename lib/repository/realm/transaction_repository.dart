@@ -1,19 +1,104 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:tuple/tuple.dart';
+import 'package:collection/collection.dart';
+
+/// 받기만 한 거래 기록(RECEIVED이고 저장된 입력에 내 주소가 없음)의 금액을 지금 아는 내 주소로 받은 출력의 합으로 올린다.
+/// 주소 창보다 먼저 처리된 거래(창에 걸친 대량 출금 등)는 그때 주소 표에 없던 내 출력이 빠져 있다.
+/// 예전 버전은 부모를 못 받은 입력을 빼고 저장했을 수 있어 입력으로 금액이나 유형을 추정하지 않는다.
+/// 유형·수수료·입출력·RBF/CPFP 내역은 그대로 두고, 내 주소는 늘기만 하므로 금액이 줄어드는 계산은 믿지 않는다.
+/// 쓰기 트랜잭션 안에서 불러야 한다. 내 주소 여부는 500개 기록씩 그 기록에 나온 주소만 조회한다. 바꾼 수를 돌려준다.
+int recountReceivedAmounts(Realm realm, int walletId, Iterable<RealmTransaction> records) {
+  var changed = 0;
+  for (final chunk in records.where((r) => r.transactionType == TransactionType.received.name).slices(500)) {
+    final decoded = <(RealmTransaction, List<String>, List<TransactionAddress>)>[];
+    for (final record in chunk) {
+      try {
+        decoded.add((
+          record,
+          [for (final e in record.inputAddressList) jsonToAddress(jsonDecode(e)).address],
+          [for (final e in record.outputAddressList) jsonToAddress(jsonDecode(e))],
+        ));
+      } catch (e) {
+        Logger.error('recountReceivedAmounts: skip an undecodable record - $e'); // 마이그레이션을 멈추지 않는다
+      }
+    }
+    final mentioned = {
+      for (final (_, inputs, outputs) in decoded) ...[...inputs, for (final output in outputs) output.address],
+    };
+    // 색인된 address로 먼저 좁힌다. walletId를 앞에 두면 지갑의 주소 수만큼 훑는다(2만 주소에서 1.95 -> 0.25ms).
+    final own =
+        realm.query<RealmWalletAddress>(r'address IN $0 AND walletId == $1', [
+          mentioned.toList(),
+          walletId,
+        ]).map((address) => address.address).toSet();
+    for (final (record, inputs, outputs) in decoded) {
+      if (inputs.any(own.contains)) continue;
+      final amount = outputs.fold(0, (sum, output) => own.contains(output.address) ? sum + output.amount : sum);
+      if (amount == 0 || amount <= record.amount) continue;
+      record.amount = amount;
+      changed++;
+    }
+  }
+  return changed;
+}
+
+/// 이 수정 전 버전이 남긴 낮은 받기 금액을 앱 시작 때 한 번만 바로잡는다. 이후의 경우는 기록 저장과 주소 추가가 맡는다.
+/// UI isolate에서 돌므로 고정 스냅샷의 기록 표를 200개씩 걸으며 그 안의 받기 기록만 따로 쓰고, 사이마다 이벤트 루프에
+/// 양보한다. 쿼리 하나로 모으면 첫 평가와 한 번의 쓰기가 기록 수만큼 화면을 멈춘다(2만 기록 367ms).
+/// 스냅샷에서 id를 읽어 그사이 다른 isolate가 기록을 더하거나 지워도 건너뛰지 않는다(새 기록은 저장할 때 맞춰진다).
+/// 금액은 올리기만 하므로 중간에 끊겨 다시 돌아도 같고, 모두 끝난 뒤에만 표시를 남긴다.
+Future<void> healReceiveOnlyAmountsOnce(Realm realm, SharedPrefsRepository prefs) async {
+  if (prefs.getBool(SharedPrefKeys.kHealedReceiveOnlyAmounts)) return;
+  final snapshot = realm.freeze();
+  var changed = 0;
+  try {
+    final records = snapshot.all<RealmTransaction>();
+    for (var start = 0; start < records.length; start += 200) {
+      final received = <int, List<int>>{}; // walletId -> 기록 id
+      for (var i = start; i < start + 200 && i < records.length; i++) {
+        final record = records[i];
+        if (record.transactionType == TransactionType.received.name) (received[record.walletId] ??= []).add(record.id);
+      }
+      if (received.isNotEmpty) {
+        changed += await realm.writeAsync(() {
+          var count = 0;
+          for (final MapEntry(key: walletId, value: ids) in received.entries) {
+            count += recountReceivedAmounts(realm, walletId, [
+              for (final id in ids)
+                if (realm.find<RealmTransaction>(id) case final record?) record,
+            ]);
+          }
+          return count;
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+    }
+  } finally {
+    snapshot.close();
+  }
+  await prefs.setBool(SharedPrefKeys.kHealedReceiveOnlyAmounts, true);
+  Logger.log('healReceiveOnlyAmountsOnce: $changed records');
+}
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
@@ -259,6 +344,10 @@ class TransactionRepository extends BaseRepository {
         existingTx.blockHeight = newTx.blockHeight;
         existingTx.timestamp = newTx.timestamp;
       }
+
+      // 금액은 주소 표를 보고 계산했으므로, 계산과 저장 사이에 다른 isolate가 주소를 더했으면 낮게 남는다.
+      // 같은 쓰기 안에서 지금의 주소로 받기 기록을 맞춘다. 저장된 기록을 다시 넘긴 경우(확정 시 재사용)도 같다.
+      recountReceivedAmounts(realm, walletId, [...newTxsToAdd, ...existingTxMap.values.where((tx) => tx.isValid)]);
     });
   }
 
@@ -476,6 +565,113 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
+  /// 대체 표시가 남은 원래 거래. [txHashes]가 null이면 컨펌됐는데도 표시가 남은 기록(이전 버전이 남긴 상태)을 고른다.
+  List<({String hash, String replacedBy, bool confirmed})> getReplacedTransactions(
+    int walletId, {
+    Iterable<String>? txHashes,
+  }) => [
+    for (final tx
+        in txHashes == null
+            ? realm.query<RealmTransaction>(
+              r'walletId == $0 AND blockHeight > 0 AND replaceByTransactionHash != null',
+              [walletId],
+            )
+            // 색인된 transactionHash 조건을 먼저 두어야 큰 지갑에서도 조회가 짧다.
+            : realm.query<RealmTransaction>(
+              r'transactionHash IN $1 AND walletId == $0 AND replaceByTransactionHash != null',
+              [walletId, txHashes.toList()],
+            ))
+      (hash: tx.transactionHash, replacedBy: tx.replaceByTransactionHash!, confirmed: tx.blockHeight > 0),
+  ];
+
+  /// 대체 사슬의 한 기록. 기록이 없으면 null.
+  ({String? replacedBy, bool confirmed})? getReplacementLink(int walletId, String txHash) {
+    final tx = realm.find<RealmTransaction>(getRealmTransactionId(walletId, txHash));
+    return tx == null ? null : (replacedBy: tx.replaceByTransactionHash, confirmed: tx.blockHeight > 0);
+  }
+
+  /// [restoredTxHashes]의 대체 표시를 지우고, 무효 거래 [invalidTxHashes]와 그 출력을 쓴 자손(CPFP 자식 등)의 미확정
+  /// 기록, CPFP 연결, RBF 내역을 지운다. 출력을 지울 거래 해시(컨펌된 기록 제외)를 돌려준다.
+  Future<Set<String>> restoreReplacedTransactions(
+    int walletId,
+    Set<String> restoredTxHashes,
+    Set<String> invalidTxHashes,
+  ) async {
+    final invalid = {...invalidTxHashes};
+    // 무효가 된 거래의 출력을 쓴 거래도 무효다. 기록된 사용과 CPFP 연결로 따라간다.
+    for (var frontier = {...invalid}; frontier.isNotEmpty; invalid.addAll(frontier)) {
+      final args = [walletId, frontier.toList()];
+      frontier = {
+        for (final utxo in realm.query<RealmUtxo>(
+          r'walletId == $0 AND transactionHash IN $1 AND spentByTransactionHash != null',
+          args,
+        ))
+          utxo.spentByTransactionHash!,
+        for (final link in realm.query<RealmCpfpHistory>(r'walletId == $0 AND parentTransactionHash IN $1', args))
+          link.childTransactionHash,
+      }.difference(invalid);
+    }
+    final invalidHashes = invalid.toList();
+    final confirmed = {
+      for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight > 0', [
+        walletId,
+        invalidHashes,
+      ]))
+        tx.transactionHash,
+    };
+    final restored =
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+          walletId,
+          restoredTxHashes.toList(),
+        ]).toList();
+    await realm.writeAsync(() {
+      for (final tx in restored) {
+        tx.replaceByTransactionHash = null;
+      }
+      realm.deleteMany(
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1 AND blockHeight <= 0', [
+          walletId,
+          invalidHashes,
+        ]),
+      );
+      realm.deleteMany(
+        realm.query<RealmCpfpHistory>(
+          r'walletId == $0 AND (parentTransactionHash IN $1 OR childTransactionHash IN $1)',
+          [walletId, invalidHashes],
+        ),
+      );
+      realm.deleteMany(
+        realm.query<RealmRbfHistory>(r'walletId == $0 AND (originalTransactionHash IN $1 OR transactionHash IN $2)', [
+          walletId,
+          restoredTxHashes.toList(),
+          invalidHashes,
+        ]),
+      );
+    });
+    return invalid.difference(confirmed);
+  }
+
+  /// [address]의 코인을 썼을 수 있는 거래: 입력에 이 주소가 있는 저장된 기록(대체된 기록 제외), 그리고 서버 내역
+  /// [historyHashes] 중 기록이 없거나 입력을 모르는(빈 입력 목록) 거래. 입력이 다 있는 기록은 이 주소를 안 쓴다.
+  Set<String> getPossibleSpendersFrom(int walletId, String address, Iterable<String> historyHashes) {
+    final recordedHasInputs = {
+      for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+        walletId,
+        historyHashes.toList(),
+      ]))
+        tx.transactionHash: tx.inputAddressList.isNotEmpty,
+    };
+    return {
+      for (final tx in realm.query<RealmTransaction>(
+        r'walletId == $0 AND replaceByTransactionHash == null AND ANY inputAddressList CONTAINS $1',
+        [walletId, jsonEncode(address)],
+      ))
+        tx.transactionHash,
+      for (final hash in historyHashes)
+        if (recordedHasInputs[hash] != true) hash,
+    };
+  }
+
   Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
     final realmTransactions =
         realm
@@ -531,7 +727,10 @@ class TransactionRepository extends BaseRepository {
 
     await realm.writeAsync(() {
       realm.delete(realmTransaction);
-      realm.add(mapTransactionToRealmTransaction(updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
+      final replaced = realm.add(
+        mapTransactionToRealmTransaction(updatedTx, walletId, getRealmTransactionId(walletId, txHash)),
+      );
+      recountReceivedAmounts(realm, walletId, [replaced]); // 새로 계산한 기록도 저장 시점의 주소로 맞춘다
       Logger.log('[TransactionRepository] updateTransactionRecord: $txHash');
     });
   }

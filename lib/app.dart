@@ -12,7 +12,9 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_serv
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -33,6 +35,9 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
+
+  /// iOS 지역 설정. 기본 통화를 정할 때 쓴다. AppBootstrap에서 읽으며, iOS가 아니거나 읽지 못하면 null이다.
+  static String? kIosRegionCode;
 
   const CoconutWalletApp({super.key});
 
@@ -56,6 +61,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   void initState() {
     super.initState();
     _saveMigratedWalletIds();
+    healReceiveOnlyAmountsOnce(_realmManager.realm, SharedPrefsRepository()).catchError(
+      (Object e) => Logger.error('healReceiveOnlyAmountsOnce failed: ${e.runtimeType}'),
+    );
     BitBox02ConnectivityService.startMonitoring();
     TrezorConnectivityService.startMonitoring();
   }
@@ -116,6 +124,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
         isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        iosRegionCode: CoconutWalletApp.kIosRegionCode,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(

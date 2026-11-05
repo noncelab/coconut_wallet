@@ -85,25 +85,18 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
   }
 
-  UtxoStatus _setUtxoStateToggled() {
-    if (_utxo.status == UtxoStatus.locked) {
-      return UtxoStatus.unspent;
-    } else if (_utxo.status == UtxoStatus.unspent) {
-      return UtxoStatus.locked;
-    }
-    return _utxo.status;
-  }
-
   Future<bool> toggleUtxoLockStatus() async {
     try {
       await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.utxoId);
+      final updatedUtxo = _walletProvider.getUtxoState(_walletId, _utxoId);
+      if (updatedUtxo == null) return false;
+      _utxo = updatedUtxo;
     } catch (e) {
       Logger.error('❌ toggleUtxoLockStatus error: $e');
       return false;
     }
 
-    _utxo.status = _setUtxoStateToggled();
-    notifyListeners();
+    _safeNotifyListeners();
     return true;
   }
 

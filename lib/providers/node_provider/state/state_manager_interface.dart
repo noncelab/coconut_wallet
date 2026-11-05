@@ -34,4 +34,8 @@ abstract class StateManagerInterface {
 
   /// 지갑의 트랜잭션 fetch 요청이 몇 건 완료됐는지 보고
   void addWalletFetchCompleted(int walletId, int count);
+
+  /// 자동 재시도 작업이 도는 동안([retrying]) 이 지갑의 진행으로 전체(홈 연결) 상태를 바꾸지 않는다.
+  /// 지갑 상태(잔액·거래·UTXO의 진행과 완료)는 그대로 알려 저장된 거래가 화면에 반영된다.
+  void setWalletRetrying(int walletId, bool retrying);
 }

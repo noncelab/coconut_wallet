@@ -1,3 +1,9 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToolTip;
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -23,6 +29,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/send_screen.dart';
+import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/send/vault_receiving_address_field.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_view_model.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -54,9 +62,10 @@ class _CountingWallet extends SingleSignatureWallet {
 }
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
-  _Wallets(this.wallet, this.vault);
+  _Wallets(this.wallet, this.vault, {this.utxoRepository});
   final WalletItemBase wallet;
   final SingleSignatureVault vault;
+  final UtxoRepository? utxoRepository;
 
   WalletAddress _address(int index, bool change) => WalletAddress(
     vault.getAddress(index, isChange: change),
@@ -90,7 +99,7 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
     bool showOnlyUnusedAddresses,
   ) async => List.generate(3, (index) => _address(index, false));
   @override
-  List<UtxoState> getUtxoList(int walletId) => const [];
+  List<UtxoState> getUtxoList(int walletId) => utxoRepository?.getUtxoStateList(walletId) ?? const [];
   @override
   List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) => const [];
 }
@@ -110,6 +119,15 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   bool get hasSeenAddRecipientCard => true;
   @override
   UtxoOrder get utxoSortOrder => UtxoOrder.byAmountDesc;
+}
+
+class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  @override
+  NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
+  @override
+  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
+  @override
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
 }
 
 class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
@@ -149,6 +167,7 @@ void main() {
     bool verifyInputCompletion = false,
     bool verifyUriCompletion = false,
     bool verifyLoadingOverlay = false,
+    bool verifyInitialSelectionReconciled = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
@@ -169,6 +188,24 @@ void main() {
             ]
             : null;
     final repository = UtxoRepository(manager);
+    if (verifyInitialSelectionReconciled) {
+      manager.realm.write(
+        () => manager.realm.add(
+          UtxoMock.createUnspentRealmUtxo(
+            walletId: 1,
+            address: vault.getAddress(0),
+            transactionHash: 'a' * 64,
+            amount: 100000,
+          ),
+        ),
+      );
+      final accepted = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment('a' * 64, 0)],
+        [TransactionOutput.forPayment(99000, vault.getAddress(5))],
+        AddressType.p2wpkh,
+      );
+      repository.reserveBroadcastInputs(accepted, accepted.transactionHash);
+    }
     final tags = UtxoTagProvider(repository);
     addTearDown(tags.dispose);
     final pushes = _Pushes();
@@ -176,9 +213,13 @@ void main() {
       MultiProvider(
         providers: [
           Provider<SendInfoProvider>.value(value: SendInfoProvider()),
-          ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets(wallet, vault)),
+          ChangeNotifierProvider<WalletProvider>(
+            create:
+                (_) => _Wallets(wallet, vault, utxoRepository: verifyInitialSelectionReconciled ? repository : null),
+          ),
           ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences(manualMode)),
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
+          ChangeNotifierProvider<NodeProvider>(create: (_) => _Node()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: repository),
@@ -213,6 +254,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800)); // the sheet opens 500 ms after entry
     await tester.pump(const Duration(milliseconds: 500));
     final opened = pushes.names.contains(AnalyticsScreenNames.sendSelectUtxoSheet);
+    if (verifyInitialSelectionReconciled) {
+      final vm = tester.element(find.byType(PageView).first).read<SendViewModel>();
+      expect(vm.selectedUtxoAmountSum, 100000);
+      await tester.tap(find.textContaining(t.send_screen.n_utxos(count: 1)).first);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final picker = find.byType(UtxoSelectionScreen);
+      expect(picker, findsOneWidget);
+      expect(vm.selectedUtxoList, isEmpty, reason: 'the real send caller must reconcile before the picker closes');
+      expect(vm.selectedUtxoAmountSum, 0);
+      expect(
+        tester
+            .widget<FixedBottomButton>(find.descendant(of: picker, matching: find.byType(FixedBottomButton)))
+            .isActive,
+        isFalse,
+      );
+      Navigator.of(tester.element(picker)).pop();
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(vm.selectedUtxoList, isEmpty);
+      expect(vm.selectedUtxoAmountSum, 0);
+      expect(tester.takeException(), isNull);
+    }
     if (verifyLoadingOverlay) {
       final sendContext = tester.element(find.byType(SendScreen));
       expect(OverlayControllerWidget.of(sendContext), isNotNull);
@@ -225,6 +291,24 @@ void main() {
       expect(tester.takeException(), isNull);
     }
     if (vaultEntry) {
+      final vaultInfo = find.text(
+        TextUtils.preventLineBreakInsideWords(t.send_screen.vault_transfer_description),
+        findRichText: true,
+      );
+      final vaultChipLabel = find.descendant(
+        of: find.byKey(const Key('send-vault-info-chip')),
+        matching: find.text(t.wallet_detail_screen.move_to_vault),
+      );
+      expect(vaultInfo, findsNothing);
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsOneWidget);
+      final bubble = tester.getRect(find.byType(CoconutToolTip));
+      expect(bubble.width, lessThanOrEqualTo(280));
+      expect(bubble.right, moreOrLessEquals(tester.getRect(find.byKey(const Key('send-vault-info-chip'))).right));
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsNothing);
       final fieldFinder = find.byType(VaultReceivingAddressField);
       final field = tester.widget<VaultReceivingAddressField>(fieldFinder);
       expect(field.address, vault.getAddress(0));
@@ -374,6 +458,15 @@ void main() {
 
   testWidgets('manual UTXO selection entered with chosen UTXOs does not open the sheet again', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: true, withSelectedUtxos: true), isFalse);
+  });
+
+  testWidgets('opening then backing out of the picker clears reserved inputs in the real send model', (tester) async {
+    await opensUtxoSelectionSheetOnEntry(
+      tester,
+      manualMode: true,
+      withSelectedUtxos: true,
+      verifyInitialSelectionReconciled: true,
+    );
   });
 
   testWidgets('completed max-send and amount inputs rebuild, while edits invalidate the previous result', (

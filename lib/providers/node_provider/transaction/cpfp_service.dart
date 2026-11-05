@@ -5,18 +5,16 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
-typedef CpfpInfo = ({String parentTransactionHash, double originalFee, List<Transaction> previousTransactions});
+typedef CpfpInfo = ({String parentTransactionHash, double originalFee});
 
 /// CPFP(Child-Pays-For-Parent) 트랜잭션 처리를 담당하는 클래스
 class CpfpService {
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
-  final ElectrumService _electrumService;
 
-  CpfpService(this._transactionRepository, this._utxoRepository, this._electrumService);
+  CpfpService(this._transactionRepository, this._utxoRepository);
 
   /// 기존 CPFP 내역이 있는지 확인
   bool hasExistingCpfpHistory(int walletId, String txHash) {
@@ -56,8 +54,7 @@ class CpfpService {
     }
 
     if (isCpfp && parentTxHash != null) {
-      final prevTxs = await _electrumService.getPreviousTransactions(tx);
-      return (parentTransactionHash: parentTxHash, originalFee: originalFee, previousTransactions: prevTxs);
+      return (parentTransactionHash: parentTxHash, originalFee: originalFee);
     }
 
     return null;

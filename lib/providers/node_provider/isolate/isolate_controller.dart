@@ -30,6 +30,8 @@ class IsolateController {
     this._realmManager,
   );
 
+  void setRetrySuspended(bool suspended) => _subscriptionService.setRetrySuspended(suspended);
+
   Future<void> executeNetworkCommand(
     IsolateControllerCommand messageType,
     SendPort isolateToMainSendPort,
@@ -47,15 +49,14 @@ class IsolateController {
           // 동기화 중 state 업데이트
           _isolateStateManager.setNodeSyncStateToSyncing();
 
+          // 한 지갑이 실패해도 나머지 지갑은 구독·동기화하고, 결과로는 첫 실패를 보낸다.
+          Result<bool>? firstFailure;
           for (var walletItem in walletItems) {
             final result = await _subscriptionService.subscribeWallet(walletItem);
-            if (result.isFailure) {
-              isolateToMainSendPort.send(result);
-              return;
-            }
+            if (result.isFailure) firstFailure ??= result;
           }
 
-          isolateToMainSendPort.send(Result.success(true));
+          isolateToMainSendPort.send(firstFailure ?? Result.success(true));
           break;
         case IsolateControllerCommand.subscribeWallet:
           final walletItem = params[0];
@@ -77,7 +78,9 @@ class IsolateController {
           isolateToMainSendPort.send(await _walletResyncService.resyncWallet(walletItem));
           break;
         case IsolateControllerCommand.broadcast:
-          isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));
+          isolateToMainSendPort.send(
+            await _networkManager.broadcast(params[0], replyTimeout: params[1], checkTimeout: params[2]),
+          );
           break;
         case IsolateControllerCommand.getNetworkMinimumFeeRate:
           isolateToMainSendPort.send(await _networkManager.getNetworkMinimumFeeRate());

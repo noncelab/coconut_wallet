@@ -2,8 +2,11 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -32,6 +35,23 @@ class InvalidTransactionException implements Exception {
 }
 
 class BroadcastingViewModel extends ChangeNotifier {
+  /// 전송 실패 사유를 사용자 안내 문구로 변환 (모르는 사유는 원문 그대로)
+  static String broadcastFailureMessage(Object error) {
+    final reason = error.toString();
+    if (reason.contains('min relay fee not met')) return t.alert.error_send.insufficient_fee;
+    if (reason.contains('missingorspent') || reason.contains('txn-mempool-conflict')) {
+      return t.alert.error_send.used_utxo_included;
+    }
+    if (reason.contains('premature-spend-of-coinbase')) {
+      final depth = RegExp(r'spend coinbase at depth (\d+)').firstMatch(reason)?.group(1);
+      final remaining = depth == null ? 0 : kCoinbaseMaturity - int.parse(depth);
+      return remaining > 0
+          ? t.alert.error_send.immature_coinbase_remaining(count: remaining)
+          : t.alert.error_send.immature_coinbase;
+    }
+    return reason;
+  }
+
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late final UtxoTagProvider _tagProvider;
@@ -60,6 +80,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<String> _tagSourceUtxoIds = [];
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
+  bool _isDisposed = false;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -111,12 +132,13 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (!_isInitDone) throw StateError('Transaction is not ready');
     if (_inheritanceTags != null) return _inheritanceTags!;
 
+    final transactionHash = _signedTx!.transactionHash;
     final sourceIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toSet();
     final replacedHashes = <String>{};
     for (final sourceId in sourceIds) {
       final input = _utxoRepository.getUtxoState(_walletId!, sourceId);
       final spentBy = input?.spentByTransactionHash;
-      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == _signedTx!.transactionHash) continue;
+      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == transactionHash) continue;
       final previous = _txProvider.getTransactionRecord(_walletId!, spentBy);
       if (previous != null && previous.blockHeight < 1) replacedHashes.add(spentBy);
     }
@@ -167,20 +189,52 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
       throw ArgumentError('Invalid inherited tag selection');
     }
+    final walletId = _walletId!;
+    final signedTx = _signedTx!;
+    final txid = signedTx.transactionHash;
     _tagInheritanceFailed = false;
-    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
-    final isConnected = await isElectrumServerConnected();
-    if (!isConnected) {
-      await _nodeProvider.reconnect();
+    // 전체 대기 상한은 송금 시작(연결 확인 포함)부터 잰다.
+    final waiting = Stopwatch()..start();
+    Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
+    if (!await isElectrumServerConnected()) {
+      // 지갑 구독까지는 기다리지 않는다(전체 상한). 재연결은 뒤에서 계속되고, 재연결 오류는 예전처럼 그대로 알린다.
+      await _nodeProvider.reconnect().timeout(kBroadcastReconnectWait, onTimeout: () => Result.success(false));
+      await isElectrumServerConnected();
     }
-    final result = await _nodeProvider.broadcast(_signedTx!);
+    var result = await _nodeProvider.broadcast(signedTx);
+    // 노드가 답하지 않아 보냈는지 모르는 채 실패로 보이면 사용자가 새 거래로 다시 보내 두 번 나간다.
+    // 같은 거래를 다시 보내는 것은 안전하므로(같은 txid), 화면을 떠나지 않은 동안 연결을 되살려 다시 보낸다.
+    for (
+      var attempt = 1;
+      attempt <= kBroadcastRetries && result.isFailure && _isUnknownOutcome(result.error) && !_isDisposed;
+      attempt++
+    ) {
+      // 다시 보내기까지 더해 전체 상한(일반 120초, Tor 720초)을 넘길 수 있으면 더 보내지 않는다.
+      final onion = _nodeProvider.host.contains('.onion');
+      if (!canResendWithinLimit(elapsed: waiting.elapsed, onion: onion, attempt: attempt)) break;
+      await _restoreConnectionForRetry();
+      if (_isDisposed) break;
+      final retried = await _nodeProvider.broadcast(signedTx, attempt: attempt);
+      // 다시 보내지도 못했으면 첫 결과(모름)를 그대로 둔다. '연결 실패'로 보이면 안 나간 줄 안다.
+      if (retried.isSuccess || retried.error.code == ErrorCodes.broadcastError.code) result = retried;
+    }
     if (result.isFailure) return result;
+
+    if (result.value.toLowerCase() == txid.toLowerCase()) {
+      try {
+        _utxoRepository.reserveBroadcastInputs(signedTx, txid);
+      } catch (_) {
+        Logger.error('Transaction accepted, but input reservation failed');
+      }
+    } else {
+      Logger.error('Broadcast txid mismatch; input reservation skipped');
+    }
 
     try {
       final applied = await _utxoRepository.applyInheritedTags(
-        _walletId!,
+        walletId,
         sourceUtxoIds: _tagSourceUtxoIds,
-        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(_signedTx!.transactionHash, index)).toList(),
+        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(txid, index)).toList(),
         tagIds: selectedIds.toList(),
       );
       if (applied.isFailure) throw applied.error;
@@ -192,6 +246,28 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     return result;
   }
+
+  Future<void> _restoreConnectionForRetry() async {
+    try {
+      // 연결 확인을 기다리는 사이 화면을 떠났으면 다른 화면이 쓰는 연결을 끊지 않는다.
+      if (await isElectrumServerConnected() || _isDisposed) return;
+      await _nodeProvider.reconnect().timeout(kBroadcastReconnectWait);
+    } catch (e) {
+      Logger.error('Reconnect before resending the same transaction failed: $e');
+    }
+    // 재연결이 늦어도 새 isolate가 준비될 때까지 여기서 기다려, 화면을 떠났는지 다시 확인한 직후 바로 보내게 한다.
+    if (!_isDisposed) await isElectrumServerConnected();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  /// 서버가 거절한 실패와 달리 노드가 답하지 않아 전송 여부를 모르는 실패(응답 시간 초과·연결 끊김).
+  static bool _isUnknownOutcome(AppError error) =>
+      error.code == ErrorCodes.nodeIsolateError.code || error.code == ErrorCodes.nodeUnknown.code;
 
   Future<bool> isElectrumServerConnected() async {
     try {
@@ -282,11 +358,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) =
-        isFromSignedDraft
+        isFromSignedDraft || feeBumpingType == null
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
-
-    //_debugPrintSendInfoProvider();
 
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
@@ -536,19 +610,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     assert(signedDraftIdToDelete != null);
     await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
-  }
-
-  // ignore: unused_element
-  void _debugPrintSendInfoProvider() {
-    debugPrint('------- sendInfoProvider ------');
-    debugPrint('walletId: $_walletId');
-    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
-    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
-    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
-    debugPrint('walletId: ${_sendInfoProvider.walletId}');
-    debugPrint('walletBase: $_walletBase');
-    debugPrint('walletAddressType: ${_walletBase!.addressType}');
-    debugPrint('-------------------------------');
   }
 }
 

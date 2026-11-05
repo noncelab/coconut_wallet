@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import '../../../mock/electrum_transaction_transport.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -59,6 +62,77 @@ void main() {
     realmManager.reset();
     realmManager.dispose();
   });
+
+  for (final failedFirst in [true, false]) {
+    test('[P3-outgoing] a failed send does not discard healthy outgoing coins (failedFirst=$failedFirst)', () async {
+      await addressRepository.ensureAddressesInit(walletItemBase: testWalletItem);
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 2,
+        isChange: false,
+      );
+      final foreign = testWalletItem.walletBase.getAddress(9999);
+      final fundA = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(0),
+        amount: 50000,
+      );
+      final fundB = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(1),
+        amount: 60000,
+      );
+      final sendA = TransactionMock.createMockTransaction(
+        toAddress: foreign,
+        amount: 40000,
+        inputTransactionHash: fundA.transactionHash,
+      );
+      final sendB = TransactionMock.createMockTransaction(
+        toAddress: foreign,
+        amount: 50000,
+        inputTransactionHash: fundB.transactionHash,
+      );
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createMockTransactionRecord(
+          transactionHash: sendA.transactionHash,
+          blockHeight: 0,
+          createdAt: DateTime(2026, 1, failedFirst ? 2 : 1),
+        ),
+        TransactionMock.createMockTransactionRecord(
+          transactionHash: sendB.transactionHash,
+          blockHeight: 0,
+          createdAt: DateTime(2026, 1, failedFirst ? 1 : 2),
+        ),
+      ]);
+      final raw = {
+        sendA.transactionHash: sendA.serialize(),
+        sendB.transactionHash: sendB.serialize(),
+        fundB.transactionHash: fundB.serialize(),
+      };
+      final transport = ElectrumTransactionTransport((hash) {
+        final hex = raw[hash];
+        if (hex == null) throw TimeoutException('slow link'); // fundA never arrives
+        return hex;
+      });
+      final utxoSync = UtxoSyncService(
+        transport.service,
+        stateManager,
+        utxoRepository,
+        transactionRepository,
+        addressRepository,
+      );
+
+      await utxoSync.createOutgoingUtxos(testWalletItem);
+
+      final coinA = utxoRepository.getUtxoState(testWalletId, getUtxoId(fundA.transactionHash, 0));
+      final coinB = utxoRepository.getUtxoState(testWalletId, getUtxoId(fundB.transactionHash, 0));
+      // ignore: avoid_print
+      print('[P3-outgoing] sendA coin=${coinA?.status.name} sendB coin=${coinB?.status.name}');
+      expect(coinA, isNull);
+      expect(coinB?.spentByTransactionHash, sendB.transactionHash);
+      expect(coinB?.amount, 60000);
+      expect(coinB?.status.name, 'outgoing', reason: 'sendB has all parents; 7e6cffa9 created its outgoing coin');
+    });
+  }
 
   group('cleanupOrphanedUtxos 테스트', () {
     test('컨펌된 트랜잭션에 연결된 outgoing UTXO가 정리되는지 확인', () async {
@@ -181,6 +255,40 @@ void main() {
       expect(remainingUtxos.where((u) => u.utxoId == outgoingUtxo.utxoId).isEmpty, isTrue);
     });
 
+    test('배치 정리는 거래와 listunspent를 확인한 주소의 outgoing UTXO만 처리한다', () async {
+      const String unrecordedTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+      const String confirmedTxHash = '0000000000000000000000000000000000000000000000000000000000000123';
+      await transactionRepository.addAllTransactions(testWalletId, [
+        TransactionMock.createConfirmedTransactionRecord(transactionHash: confirmedTxHash, blockHeight: 100),
+      ]);
+      UtxoState outgoing(int index, String spender) => UtxoState(
+        transactionHash: '000000000000000000000000000000000000000000000000000000000000000$index',
+        index: 0,
+        amount: 500000,
+        derivationPath: "m/84'/0'/0'/0/$index",
+        blockHeight: 100,
+        to: testWalletItem.walletBase.getAddress(index),
+        timestamp: DateTime.now(),
+        status: UtxoStatus.outgoing,
+        spentByTransactionHash: spender,
+      );
+      final reconciled = outgoing(1, unrecordedTxHash);
+      final notReconciled = outgoing(2, unrecordedTxHash);
+      final spentByConfirmed = outgoing(3, confirmedTxHash);
+      await utxoRepository.addAllUtxos(testWalletId, [reconciled, notReconciled, spentByConfirmed]);
+
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, reconciledAddresses: {reconciled.to});
+
+      final remaining = utxoRepository.getUtxoStateList(testWalletId).map((u) => u.utxoId).toSet();
+      expect(remaining.contains(reconciled.utxoId), isFalse);
+      expect(remaining.contains(notReconciled.utxoId), isTrue, reason: 'its own address has not been synced yet');
+      expect(remaining.contains(spentByConfirmed.utxoId), isTrue, reason: 'batch cleanup excludes this address too');
+
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, reconciledAddresses: {spentByConfirmed.to});
+      expect(utxoRepository.getUtxoState(testWalletId, spentByConfirmed.utxoId), isNull);
+      expect(utxoRepository.getUtxoState(testWalletId, notReconciled.utxoId), isNotNull);
+    });
+
     test('존재하지 않는 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {
       // Given: 존재하지 않는 트랜잭션에 연결된 incoming UTXO 생성
       const String nonExistentTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
@@ -293,6 +401,27 @@ void main() {
     });
   });
 
+  group('fetchScriptUtxo 테스트', () {
+    test('listunspent 조회가 실패하면 아무것도 바꾸지 않고 반영하지 못했다고 알린다(빈 목록으로 보지 않는다)', () async {
+      final scriptStatus = ScriptStatus(
+        derivationPath: "m/84'/0'/0'/0/0",
+        address: testWalletItem.walletBase.getAddress(0),
+        index: 0,
+        isChange: false,
+        scriptPubKey: 'receive_script_pub_key',
+        status: 'receive_status_hash',
+        timestamp: DateTime.now(),
+      );
+      when(electrumService.getUnspentList(any, any)).thenThrow(StateError('listunspent timeout'));
+
+      expect(await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus), isNull);
+      expect(await utxoSyncService.fetchScriptUtxo(testWalletItem, scriptStatus, inBatchProcess: true), isFalse);
+
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => <ListUnspentRes>[]);
+      expect(await utxoSyncService.fetchScriptUtxo(testWalletItem, scriptStatus, inBatchProcess: true), isTrue);
+    });
+  });
+
   group('fetchUtxoStateList 테스트', () {
     test('같은 트랜잭션의 다른 output이 잠겨 있어도 잠근 적 없는 output은 unspent로 유지되는지 확인', () async {
       // Given: 하나의 트랜잭션이 지갑 소유 output을 2개 생성 (수신 output index 0, 잔돈 output index 1)
@@ -334,7 +463,7 @@ void main() {
       });
 
       // When: 잔돈 주소에 대해 UTXO 상태를 재계산
-      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, changeScriptStatus);
+      final result = (await utxoSyncService.fetchUtxoStateList(testWalletItem, changeScriptStatus))!;
 
       // Then: 잔돈 UTXO는 locked로 전파되지 않고 unspent 상태를 유지해야 함
       expect(result.length, 1);
@@ -364,7 +493,7 @@ void main() {
       });
 
       // When
-      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus);
+      final result = (await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus))!;
 
       // Then: 예외로 인해 빈 리스트가 아니라, UTXO가 그대로(타임스탬프만 대체돼서) 반환돼야 함
       expect(result.length, 1);

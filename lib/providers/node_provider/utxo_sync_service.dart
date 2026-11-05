@@ -6,6 +6,8 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -33,25 +35,77 @@ class UtxoSyncService {
 
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
-  Future<void> fetchScriptUtxo(
+  /// listunspent 결과를 저장까지 반영했으면 true. 조회·저장이 실패하면 아무것도 바꾸지 않고 false다.
+  /// [listedUtxoIds]를 주면 반영한 코인 ID를 담는다.
+  Future<bool> fetchScriptUtxo(
     WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
+    bool preserveOutgoing = false,
+    Set<String>? listedUtxoIds,
+    TransactionFetchPass? transactionFetch,
   }) async {
-    // UTXO 목록 조회
-    final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
+    try {
+      // UTXO 목록 조회
+      final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
+      if (utxos != null && preserveOutgoing) {
+        // 거래 조회가 덜 끝난 주소도 새 코인을 반영하되, 지연된 listunspent로 입력 예약을 풀지 않는다.
+        final reserved =
+            _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.outgoing).map((u) => u.utxoId).toSet();
+        utxos.removeWhere((utxo) => reserved.contains(utxo.utxoId));
+      }
 
-    await _utxoRepository.addAllUtxos(walletItem.id, utxos);
+      final applied = utxos != null && (await _utxoRepository.addAllUtxos(walletItem.id, utxos)).isSuccess;
+      if (applied) {
+        listedUtxoIds?.addAll(utxos.map((utxo) => utxo.utxoId));
+        await _restoreListedUtxos(walletItem, scriptStatus.address, utxos, transactionFetch);
+      }
 
-    if (!inBatchProcess) {
-      await restorePendingUtxoLocks(walletItem.id);
-      // UTXO 업데이트 완료 state 업데이트
-      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+      if (!inBatchProcess) await restorePendingUtxoLocks(walletItem.id);
+      return applied;
+    } finally {
+      // UTXO 업데이트 완료 state 업데이트. 실패해도 완료로 세야 진행 카운터가 남지 않는다.
+      if (!inBatchProcess) _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     }
   }
 
-  /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
+  /// 되살릴 지운 코인이 다시 나열되면, 그 코인을 쓴 거래가 이미 있는지 정확한 outpoint로 확인한 뒤 되살린다.
+  /// 이 주소의 코인을 썼을 수 있는 거래를 모두 받아 보고 쓴 코인에는 증거를 남긴다(이 수정 전에 처리돼 표시가 없는
+  /// 사용도 막는다). 이번에 받은 거래가 쓴 코인은 그 거래 기록을 아직 저장하지 못했어도(예: 블록 헤더 실패) 되살리지
+  /// 않는다. 서버가 모른다고 분명히 답한 거래는 건너뛰고, 그 밖의 이유로 받지 못하면 이번에는 되살리지 않는다.
+  Future<void> _restoreListedUtxos(
+    WalletItemBase walletItem,
+    String address,
+    List<UtxoState> listed,
+    TransactionFetchPass? transactionFetch,
+  ) async {
+    final walletId = walletItem.id;
+    if (!_utxoRepository.hasRestorableListedUtxos(walletId, address, listed)) return;
+    try {
+      final history = await _electrumService.getHistory(walletItem.walletBase.addressType, address);
+      final fetch = transactionFetch ?? TransactionFetchPass(_electrumService.getTransaction);
+      final spenders = _transactionRepository.getPossibleSpendersFrom(walletId, address, history.map((h) => h.txHash));
+      final spentNow = <String>{};
+      for (final hash in spenders) {
+        final Transaction spender;
+        try {
+          spender = await fetch.fetch(hash);
+        } on TransactionNotFound {
+          // 서버에 없는 거래(누락된 우리 송금 등)는 아무 코인도 쓰지 않는다. 확정 기록만은 이미 확인된 사용이라 믿지 않는다.
+          if ((_transactionRepository.getTransactionRecord(walletId, hash)?.blockHeight ?? 0) > 0) rethrow;
+          continue;
+        }
+        await _utxoRepository.markRemovedInputsSpent(walletId, spender);
+        spentNow.addAll(spender.inputs.map((input) => getUtxoId(input.transactionHash, input.index)));
+      }
+      await _utxoRepository.restoreListedUtxos(walletId, address, listed, spentNow: spentNow);
+    } catch (e) {
+      Logger.error('UtxoSyncService: could not check spends before restoring a removed coin: $e');
+    }
+  }
+
+  /// 스크립트에 대한 UTXO 목록을 가져옵니다. 조회가 실패하면 null(빈 목록과 다르다: 서버에 묻지 못했다).
+  Future<List<UtxoState>?> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
       final unspentResList = await _electrumService.getUnspentList(
         walletItem.walletBase.addressType,
@@ -104,7 +158,7 @@ class UtxoSyncService {
     } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
-      return [];
+      return null;
     }
   }
 
@@ -123,7 +177,7 @@ class UtxoSyncService {
 
   /// 언컨펌 출금 트랜잭션에 대한 UTXO를 생성합니다.
   /// 지갑 추가 시 기존 UTXO가 조회되지 않는 경우를 대비하여 필요한 UTXO를 추가합니다.
-  Future<void> createOutgoingUtxos(WalletItemBase walletItem) async {
+  Future<void> createOutgoingUtxos(WalletItemBase walletItem, {TransactionFetchPass? transactionFetch}) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
       final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
@@ -143,56 +197,68 @@ class UtxoSyncService {
 
       // 3. 각 트랜잭션에 대해 트랜잭션 상세 정보 조회
       for (final txRecord in sentTransactions) {
-        final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
-        final transaction = Transaction.parse(txHex);
+        try {
+          final transaction =
+              transactionFetch == null
+                  ? Transaction.parse(await _electrumService.getTransaction(txRecord.transactionHash))
+                  : await transactionFetch.fetch(txRecord.transactionHash);
 
-        // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
-        final previousTxs = await _electrumService.getPreviousTransactions(transaction);
-
-        if (previousTxs.isEmpty) {
-          continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
-        }
-
-        // 5. 트랜잭션 입력 분석하여 내 지갑의 UTXO인지 확인
-        for (int i = 0; i < transaction.inputs.length; i++) {
-          final input = transaction.inputs[i];
-          final utxoId = getUtxoId(input.transactionHash, input.index);
-
-          if (existingUtxoIds.contains(utxoId)) {
-            continue;
-          }
-
-          Transaction? previousTx;
-          try {
-            previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-          } catch (_) {
-            continue;
-          }
-
-          if (input.index >= previousTx.outputs.length) {
-            continue;
-          }
-
-          final previousOutput = previousTx.outputs[input.index];
-          final address = previousOutput.scriptPubKey.getAddress();
-
-          if (!_addressRepository.containsAddress(walletItem.id, address)) {
-            continue;
-          }
-
-          final newUtxo = UtxoState(
-            transactionHash: input.transactionHash,
-            index: input.index,
-            amount: previousOutput.amount,
-            derivationPath: _addressRepository.getDerivationPath(walletItem.id, address),
-            blockHeight: 0,
-            to: address,
-            status: UtxoStatus.outgoing,
-            spentByTransactionHash: transaction.transactionHash,
-            // 언컨펌 상태이므로 블록 높이나 타임스탬프 값 대신 createdAt 값 사용
-            timestamp: txRecord.createdAt,
+          // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
+          final previousTxs = await _electrumService.getPreviousTransactions(
+            transaction,
+            transactionFetch: transactionFetch,
           );
-          newUtxoList.add(newUtxo);
+
+          if (previousTxs.isEmpty) {
+            continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
+          }
+
+          // 5. 트랜잭션 입력 분석하여 내 지갑의 UTXO인지 확인
+          for (int i = 0; i < transaction.inputs.length; i++) {
+            final input = transaction.inputs[i];
+            final utxoId = getUtxoId(input.transactionHash, input.index);
+
+            if (existingUtxoIds.contains(utxoId)) {
+              continue;
+            }
+
+            Transaction? previousTx;
+            try {
+              previousTx =
+                  previousTxs is PreviousTransactions
+                      ? previousTxs.byHash[input.transactionHash]
+                      : previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+            } catch (_) {
+              continue;
+            }
+
+            if (previousTx == null || input.index < 0 || input.index >= previousTx.outputs.length) {
+              continue;
+            }
+
+            final previousOutput = previousTx.outputs[input.index];
+            final address = previousOutput.scriptPubKey.getAddress();
+
+            if (!_addressRepository.containsAddress(walletItem.id, address)) {
+              continue;
+            }
+
+            final newUtxo = UtxoState(
+              transactionHash: input.transactionHash,
+              index: input.index,
+              amount: previousOutput.amount,
+              derivationPath: _addressRepository.getDerivationPath(walletItem.id, address),
+              blockHeight: 0,
+              to: address,
+              status: UtxoStatus.outgoing,
+              spentByTransactionHash: transaction.transactionHash,
+              // 언컨펌 상태이므로 블록 높이나 타임스탬프 값 대신 createdAt 값 사용
+              timestamp: txRecord.createdAt,
+            );
+            newUtxoList.add(newUtxo);
+          }
+        } catch (e, stackTrace) {
+          Logger.error('Failed to restore outgoing UTXOs for ${txRecord.transactionHash}: $e\n$stackTrace');
         }
       }
 
@@ -205,11 +271,21 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
+  /// [reconciledAddresses]를 주면, 거래와 listunspent를 모두 확인한 주소의 미확정 코인만 정리합니다.
+  /// 기록 전에 예약만 된 코인(다른 주소 이벤트에서 조회가 실패한 거래)이 자기 주소 확인 없이 영구 삭제되지 않게 한다.
+  /// [listedUtxoIds]는 같은 동기화의 listunspent가 돌려준 코인이다. 거래 내역을 읽은 뒤 도착해 기록이 아직 없어도
+  /// 서버에 있는 코인이므로 지우지 않는다.
+  Future<void> cleanupOrphanedUtxos(
+    WalletItemBase walletItem, {
+    Set<String>? reconciledAddresses,
+    Set<String> listedUtxoIds = const {},
+  }) async {
     final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
+      if (reconciledAddresses != null && !reconciledAddresses.contains(utxo.to)) continue;
+      if (listedUtxoIds.contains(utxo.utxoId)) continue;
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
         if (tx == null || tx.blockHeight > 0) {

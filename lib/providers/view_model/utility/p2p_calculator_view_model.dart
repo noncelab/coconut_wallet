@@ -354,6 +354,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
       );
 
+      // USD·EUR는 바이낸스 시세 전용 주소(Market Data Only URLs)를 쓴다. api.binance.com은 미국에서 HTTP 451로 막힌다.
+      // https://developers.binance.com/docs/binance-spot-api-docs/faqs/market_data_only
       switch (fiatCode) {
         case FiatCode.KRW:
           final response = await dio.get('https://api.upbit.com/v1/ticker?markets=KRW-BTC');
@@ -364,7 +366,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           return null;
 
         case FiatCode.USD:
-          final response = await dio.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+          final response = await dio.get('https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT');
           if (response.statusCode == 200) {
             final priceStr = response.data['price'];
             final price = double.tryParse(priceStr?.toString() ?? '');
@@ -381,7 +383,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           return null;
 
         case FiatCode.EUR:
-          final response = await dio.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCEUR');
+          final response = await dio.get('https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCEUR');
           if (response.statusCode == 200) {
             final priceStr = response.data['price'];
             final price = double.tryParse(priceStr?.toString() ?? '');

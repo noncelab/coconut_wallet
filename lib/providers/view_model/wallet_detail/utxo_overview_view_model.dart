@@ -9,6 +9,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -55,7 +56,7 @@ class UtxoOverviewViewModel extends ChangeNotifier {
   bool _isUtxoListLoadComplete = false;
   bool _isRefreshing = false;
   bool _isDisposed = false;
-  String _activeUtxoTagName = t.all;
+  UtxoFilter _activeUtxoFilter = UtxoFilter.all;
   late UtxoOrder _activeUtxoOrder;
 
   // Tag Data
@@ -86,7 +87,7 @@ class UtxoOverviewViewModel extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
 
   UtxoOrder get activeUtxoOrder => _activeUtxoOrder;
-  String get activeUtxoTagName => _activeUtxoTagName;
+  UtxoFilter get activeUtxoFilter => _activeUtxoFilter;
   UtxoTagProvider get tagProvider => _tagProvider;
   List<UtxoState> get utxoList => _utxoList;
   List<UtxoTag> get utxoTagList => _utxoTagList;
@@ -94,7 +95,6 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
   WalletType get walletType => _walletListBaseItem.walletType;
-  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   String get utxoDataKey => utxoList
       .map((utxo) => '${utxo.utxoId}:${utxo.status.name}:${utxo.amount}:${utxo.tags?.map((tag) => tag.id).join(',')}')
@@ -181,8 +181,8 @@ class UtxoOverviewViewModel extends ChangeNotifier {
     _tagProvider.resetUtxoTagsUpdateState();
   }
 
-  void setActiveUtxoTagName(String value) {
-    _activeUtxoTagName = value;
+  void setActiveUtxoFilter(UtxoFilter value) {
+    _activeUtxoFilter = value;
     for (var utxo in _confirmedUtxoList) {
       _utxoTagMap[utxo.utxoId] = _getCachedTagsForUtxo(utxo.utxoId);
     }
@@ -207,28 +207,16 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
   void clearUtxoList() {
     _selectedUtxoList = [];
+    selectedUtxoIds.clear();
     _cachedSelectedUtxoAmountSum = 0;
     notifyListeners();
   }
 
   void _updateFilteredUtxoList() {
-    if (_activeUtxoTagName == t.all) {
-      // 모든 UTXO 표시
-      _filteredUtxoList = List<UtxoState>.from(_confirmedUtxoList);
-    } else if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
-      // 잠금된 UTXO만 표시
-      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isLocked).toList();
-    } else if (_activeUtxoTagName == t.change) {
-      // 체인지 UTXO만 표시
-      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isChange).toList();
-    } else {
-      // 태그 기반 필터링
-      _filteredUtxoList =
-          _confirmedUtxoList.where((utxo) {
-            final tags = _utxoTagMap[utxo.utxoId];
-            return tags != null && tags.any((tag) => tag.name == _activeUtxoTagName);
-          }).toList();
-    }
+    _filteredUtxoList =
+        _confirmedUtxoList
+            .where((utxo) => _activeUtxoFilter.matches(utxo, tags: _utxoTagMap[utxo.utxoId] ?? []))
+            .toList();
     notifyListeners();
   }
 
@@ -337,8 +325,9 @@ class UtxoOverviewViewModel extends ChangeNotifier {
     return DateTimeUtil.formatTimestamp(tx.timestamp);
   }
 
+  /// 동기화가 실패해 UTXO 상태가 대기·동기화 중으로 남아 있어도 새로고침(DB 재조회와 필요 시 재연결)은 막지 않는다.
   Future<void> refresh() async {
-    if (_isRefreshing || isSyncing) return;
+    if (_isRefreshing) return;
 
     _isRefreshing = true;
     notifyListeners();
@@ -428,41 +417,21 @@ class UtxoOverviewViewModel extends ChangeNotifier {
       // DB에서 한번에 상태 업데이트
       await _walletProvider.updateUtxoStatus(_walletId, utxoIds, status);
 
-      // 메모리 리스트도 일괄 업데이트
-      for (final utxo in _utxoList) {
-        if (utxoIds.contains(utxo.utxoId)) {
-          utxo.status = status;
-        }
-      }
-
-      // affected 목록
-      final affectedUtxos = _utxoList.where((u) => utxoIds.contains(u.utxoId)).toList();
-
-      // selected 리스트 갱신
-      if (status == UtxoStatus.locked) {
-        if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
-          _selectedUtxoList = affectedUtxos;
-        } else {
-          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
-        }
-      } else if (status == UtxoStatus.unspent) {
-        if (_activeUtxoTagName != t.utxo_detail_screen.utxo_locked) {
-          _selectedUtxoList
-            ..removeWhere((u) => utxoIds.contains(u.utxoId))
-            ..addAll(affectedUtxos);
-        } else {
-          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
-        }
-      }
-
-      // confirmed 리스트 갱신
-      _confirmedUtxoList
+      final selectedIds = {...selectedUtxoIds, ..._selectedUtxoList.map((utxo) => utxo.utxoId)};
+      // 잠금 변경 뒤에도 전송 예약이 반영된 상태로 화면과 선택 목록을 다시 구성한다.
+      _initUtxoAndTags();
+      _confirmedUtxoList =
+          _utxoList.where((utxo) => utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked).toList();
+      _utxoTagMap.clear();
+      _initUtxoTagMap();
+      _selectedUtxoList =
+          _confirmedUtxoList
+              .where((utxo) => selectedIds.contains(utxo.utxoId) && _activeUtxoFilter.matches(utxo, tags: utxo.tags))
+              .toList();
+      selectedUtxoIds
         ..clear()
-        ..addAll(
-          _walletProvider
-              .getUtxoList(_walletId)
-              .where((u) => u.status == UtxoStatus.unspent || u.status == UtxoStatus.locked),
-        );
+        ..addAll(_selectedUtxoList.map((utxo) => utxo.utxoId));
+      _cachedSelectedUtxoAmountSum = null;
 
       // 정렬 + 필터링
       _sortConfirmedUtxoList(_activeUtxoOrder);
@@ -470,8 +439,8 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
       // UI 갱신
       notifyListeners();
-    } catch (e) {
-      debugPrint('UTXO 상태 업데이트 실패: $e');
+    } catch (_) {
+      Logger.error('UTXO 상태 업데이트 실패');
       rethrow;
     }
   }

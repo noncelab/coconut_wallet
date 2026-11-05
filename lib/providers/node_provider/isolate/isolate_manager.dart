@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -18,6 +19,10 @@ import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
+/// isolate를 띄운다. [onExit]는 isolate가 끝날 때 알림을 받을 포트로, 띄우면서 함께 걸어야 한다([Isolate.spawn]의 onExit).
+typedef SpawnIsolate =
+    Future<Isolate> Function(void Function(SpawnIsolateDto) entryPoint, SpawnIsolateDto data, SendPort onExit);
+
 class IsolateManager {
   Isolate? _isolate;
   SendPort? _mainToIsolateSendPort;
@@ -28,6 +33,13 @@ class IsolateManager {
   bool _receivePortListening = false;
   bool _isInitializing = false;
   String _host = '';
+  bool _retrySuspended = false;
+
+  void setRetrySuspended(bool suspended) {
+    if (_retrySuspended == suspended) return;
+    _retrySuspended = suspended;
+    _mainToIsolateSendPort?.send([IsolateControllerSignal.retrySuspended, suspended]);
+  }
 
   bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
@@ -40,11 +52,23 @@ class IsolateManager {
   }
 
   final Set<ReceivePort> _activeReceivePorts = {};
-  final Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto) _spawnIsolate;
+  final SpawnIsolate _spawnIsolate;
+
+  /// 작업 isolate가 닫기·재시작이 아닌 이유(처리되지 않은 오류 등)로 끝났을 때 부른다.
+  void Function()? onUnexpectedExit;
+
+  /// 닫기·재시작 때마다 올려서, 그때 끝낸 isolate의 종료 알림은 무시한다.
+  int _isolateGeneration = 0;
+  ReceivePort? _exitPort;
 
   /// [spawnIsolate]는 테스트가 isolate 준비 시점을 정할 때만 넘긴다(기본값 [Isolate.spawn]).
-  IsolateManager({Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto)? spawnIsolate})
-    : _spawnIsolate = spawnIsolate ?? Isolate.spawn<SpawnIsolateDto>;
+  IsolateManager({SpawnIsolate? spawnIsolate}) : _spawnIsolate = spawnIsolate ?? _spawnWithExitPort;
+
+  static Future<Isolate> _spawnWithExitPort(
+    void Function(SpawnIsolateDto) entryPoint,
+    SpawnIsolateDto data,
+    SendPort onExit,
+  ) => Isolate.spawn<SpawnIsolateDto>(entryPoint, data, onExit: onExit);
 
   void _createReceivePort() {
     if (_mainFromIsolateReceivePort != null) {
@@ -100,7 +124,9 @@ class IsolateManager {
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
       final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType, pinnedCertFingerprint);
 
-      _isolate = await _spawnIsolate(_isolateEntry, data);
+      // 종료 알림은 띄우면서 함께 건다(띄운 뒤에 걸면 그 사이에 끝난 isolate를 놓친다).
+      final exitPort = _openExitPort(_isolateGeneration);
+      _isolate = await _spawnIsolate(_isolateEntry, data, exitPort.sendPort);
       _setUpReceivePortListener();
 
       final timeout = _getTimeout();
@@ -130,7 +156,40 @@ class IsolateManager {
     return _host.contains('.onion') ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
   }
 
+  /// 작업 isolate가 스스로 끝나면(닫기·재시작이 아닌 경우) 응답을 기다리던 명령을 바로 실패시키고, 실행 중이던
+  /// isolate였으면 [onUnexpectedExit]로 알린다. 그러지 않으면 명령은 시간 초과(재동기화는 10분)까지 기다리고 연결도
+  /// 죽은 채 남는다. 초기화 중에 끝나면 [initialize]가 실패로 끝난다(기존 초기화 실패 처리로 다시 시도).
+  /// 송금 명령의 실패는 결과를 모름으로 다뤄진다(BroadcastingViewModel이 다시 연결해 같은 거래를 다시 보냄).
+  ReceivePort _openExitPort(int generation) {
+    final exitPort = _exitPort = ReceivePort('isolateExit');
+    exitPort.listen((_) {
+      exitPort.close();
+      if (generation != _isolateGeneration) return; // 닫기·재시작으로 끝낸 isolate
+      if (identical(_exitPort, exitPort)) _exitPort = null;
+      final wasRunning = isInitialized;
+      Logger.error('IsolateManager: isolate exited unexpectedly');
+      _isolate = null;
+      _mainToIsolateSendPort = null;
+      final ready = _isolateReady;
+      if (ready != null && !ready.isCompleted) {
+        ready.complete(AsyncError(Exception('Isolate exited before initialization completed'), StackTrace.current));
+      }
+      for (final port in _activeReceivePorts.toList()) {
+        port.sendPort.send(Result<bool>.failure(ErrorCodes.nodeIsolateError));
+      }
+      if (wasRunning) onUnexpectedExit?.call();
+    });
+    return exitPort;
+  }
+
+  void _stopWatchingExit() {
+    _isolateGeneration++;
+    _exitPort?.close();
+    _exitPort = null;
+  }
+
   Future<void> _forceCleanup() async {
+    _stopWatchingExit();
     try {
       // 기존 isolate 즉시 종료
       if (_isolate != null) {
@@ -225,6 +284,8 @@ class IsolateManager {
       case IsolateManagerCommand.initializationCompleted:
         if (params is SendPort) {
           _mainToIsolateSendPort = params;
+          // 초기화 중 들어온 pause도 첫 구독 명령보다 먼저 전달한다. 재연결해도 현재 생명주기를 유지한다.
+          if (_retrySuspended) params.send([IsolateControllerSignal.retrySuspended, true]);
 
           // scheduleMicrotask를 사용하여 메시지 처리 완료 후 초기화 완료 신호 전송
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
@@ -308,6 +369,10 @@ class IsolateManager {
 
       isolateFromMainReceivePort.listen(
         (message) async {
+          if (message case [IsolateControllerSignal.retrySuspended, bool suspended]) {
+            isolateController.setRetrySuspended(suspended);
+            return;
+          }
           if (message is List && message.length == 3) {
             IsolateControllerCommand messageType = message[0];
             SendPort isolateToMainSendPort = message[1];
@@ -356,8 +421,11 @@ class IsolateManager {
       case IsolateControllerCommand.shutdown:
         return kIsolateGracefulShutdownTimeout;
 
-      // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
+      // 송금: 응답 대기와 서버 확인까지 기다린다(broadcast()는 시도마다 늘린 값을 직접 넘긴다).
       case IsolateControllerCommand.broadcast:
+        return broadcastLimits(onion: _host.contains('.onion'), attempt: 0).command;
+
+      // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
       case IsolateControllerCommand.getNetworkMinimumFeeRate:
       case IsolateControllerCommand.getLatestBlock:
       case IsolateControllerCommand.getTransaction:
@@ -531,8 +599,31 @@ class IsolateManager {
     return _send(IsolateControllerCommand.syncViewedAddresses, [walletItem, addresses]);
   }
 
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [signedTx]);
+  /// [attempt]: 결과를 모르는 전송을 같은 거래로 다시 보낸 횟수. 다시 보낼 때마다 기다림을 두 배로 늘린다.
+  /// 송금 명령에 넘기는 값(서명된 거래, 응답 대기, 서버 확인 대기)과 메인 쪽이 결과를 기다리는 시간.
+  /// 메인 쪽이 3초 만에 끊으면 노드가 받은 송금도 실패로 보여 다시 보내게 된다(테스트로 고정).
+  static ({List<Object> params, Duration timeout}) broadcastCommand(
+    Transaction signedTx, {
+    required bool onion,
+    required int attempt,
+  }) {
+    final limits = broadcastLimits(onion: onion, attempt: attempt);
+    return (params: [signedTx, limits.reply, limits.check], timeout: limits.command);
+  }
+
+  Future<Result<String>> broadcast(Transaction signedTx, {int attempt = 0}) async {
+    // 응답이 늦거나 사라져도 노드가 받았을 수 있다. 응답 대기와 서버 확인이 끝날 때까지 기다린다.
+    final command = broadcastCommand(signedTx, onion: _host.contains('.onion'), attempt: attempt);
+    final result = await _sendWithSocketCheck<String>(
+      IsolateControllerCommand.broadcast,
+      command.params,
+      timeout: command.timeout,
+    );
+    // isolate에서 만든 오류 문구는 isolate 기본 언어(한국어)라 메인 쪽 오류로 다시 만든다.
+    if (result.isFailure && result.error.code == ErrorCodes.nodeIsolateError.code) {
+      return Result.failure(ErrorCodes.nodeIsolateError);
+    }
+    return result;
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {
@@ -574,6 +665,7 @@ class IsolateManager {
   /// isolate 연결만 종료하는 메서드
   Future<void> closeIsolate() async {
     Logger.log('IsolateManager: Closing isolate');
+    _stopWatchingExit();
 
     try {
       // isolate가 Realm을 정상적으로 닫고 스스로 종료할 짧은 기회를 준다.

@@ -1,9 +1,16 @@
+import 'dart:io';
+
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:realm/realm.dart' hide Transaction;
 
 import '../../mock/transaction_mock.dart';
 import '../../mock/utxo_mock.dart';
@@ -148,6 +155,28 @@ void main() {
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
+      test('늦은 listunspent로 되돌려진 코인은 같은 거래를 다시 처리하면 다시 outgoing이 된다', () async {
+        final mockTx = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 900000);
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createMockUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: mockTx.inputs[0].transactionHash,
+              index: mockTx.inputs[0].index,
+              blockHeight: 100,
+              status: UtxoStatus.unspent, // addAllUtxos overwrote the status but kept the spender
+              spentByTransactionHash: mockTx.transactionHash,
+            ),
+          );
+        });
+
+        await utxoRepository.markUtxoAsOutgoing(testWalletId, mockTx);
+
+        final utxoId = getUtxoId(mockTx.inputs[0].transactionHash, mockTx.inputs[0].index);
+        expect(utxoRepository.getUtxoState(testWalletId, utxoId)!.status, UtxoStatus.outgoing);
+      });
+
       test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () async {
         // Given
         final mockTx = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 1000000);
@@ -180,6 +209,202 @@ void main() {
         expect(updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
       });
     });
+
+    group('reserveSpentInputs 테스트', () {
+      const staleSpender = '00000000000000000000000000000000000000000000000000000000000000aa';
+      final spend = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 900000);
+      final input = spend.inputs.single;
+      final utxoId = getUtxoId(input.transactionHash, input.index);
+
+      void addCoin({required int walletId, required UtxoStatus status, String? spentBy}) {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createMockUtxo(
+              walletId: walletId,
+              address: testAddress,
+              transactionHash: input.transactionHash,
+              index: input.index,
+              blockHeight: status == UtxoStatus.incoming ? 0 : 100,
+              status: status,
+              spentByTransactionHash: spentBy,
+            ),
+          );
+        });
+      }
+
+      void addRecord(String txHash, {int blockHeight = 0, String? replacedBy}) {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            RealmTransaction(
+              txHash.hashCode,
+              txHash,
+              testWalletId,
+              DateTime.now(),
+              blockHeight,
+              'sent',
+              -100000,
+              1000,
+              141,
+              DateTime.now(),
+              replaceByTransactionHash: replacedBy,
+            ),
+          );
+        });
+      }
+
+      UtxoState? coin([int walletId = testWalletId]) => utxoRepository.getUtxoState(walletId, utxoId);
+
+      test('unspent 코인은 outgoing이 되고 spender는 이 거래가 된다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, spend.transactionHash);
+      });
+
+      test('이미 outgoing인 코인은 RBF 감지를 위해 이전 spender를 유지한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.outgoing, spentBy: staleSpender);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.spentByTransactionHash, staleSpender);
+      });
+
+      test('되돌려진 코인의 이전 spender가 아직 미확정 기록이면 유지하고 outgoing으로 예약한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent, spentBy: staleSpender);
+        addRecord(staleSpender);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, staleSpender);
+      });
+
+      for (final (label, blockHeight, replacedBy) in [
+        ('기록이 없으면', null, null),
+        ('대체된 기록이면', 0, 'replacement'),
+        ('확정된 기록이면', 100, null),
+      ]) {
+        test('되돌려진 코인의 이전 spender가 $label 이 거래로 바꾼다', () async {
+          addCoin(walletId: testWalletId, status: UtxoStatus.unspent, spentBy: staleSpender);
+          if (blockHeight != null) addRecord(staleSpender, blockHeight: blockHeight, replacedBy: replacedBy);
+          await utxoRepository.reserveSpentInputs(testWalletId, spend);
+          expect(coin()!.status, UtxoStatus.outgoing);
+          expect(coin()!.spentByTransactionHash, spend.transactionHash);
+        });
+      }
+
+      test('미확정 받는 코인(CPFP 자식이 쓰는 incoming)도 예약한다', () async {
+        addCoin(walletId: testWalletId, status: UtxoStatus.incoming);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin()!.spentByTransactionHash, spend.transactionHash);
+      });
+
+      test('같은 outpoint를 가진 다른 지갑의 코인은 건드리지 않는다', () async {
+        const twinWalletId = 2;
+        addCoin(walletId: testWalletId, status: UtxoStatus.unspent);
+        addCoin(walletId: twinWalletId, status: UtxoStatus.unspent);
+        await utxoRepository.reserveSpentInputs(testWalletId, spend);
+        expect(coin()!.status, UtxoStatus.outgoing);
+        expect(coin(twinWalletId)!.status, UtxoStatus.unspent);
+      });
+
+      test('여러 입력을 함께 예약하고, 지워진 코인은 되살리지 않는다', () async {
+        final threeInputs = Transaction.withInputsAndOutputs(
+          [
+            for (final index in [0, 1, 2]) TransactionInput.forPayment(input.transactionHash, index),
+          ],
+          [TransactionOutput.forPayment(1000, toAddress)],
+          AddressType.p2wpkh,
+        );
+        realmManager.realm.write(() {
+          for (final index in [0, 1, 2]) {
+            final utxo = UtxoMock.createMockUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: input.transactionHash,
+              index: index,
+              blockHeight: 100,
+            );
+            utxo.isDeleted = index == 1;
+            realmManager.realm.add(utxo);
+          }
+        });
+
+        await utxoRepository.reserveSpentInputs(testWalletId, threeInputs);
+
+        RealmUtxo row(int index) =>
+            realmManager.realm.find<RealmUtxo>(getRealmUtxoId(testWalletId, input.transactionHash, index))!;
+        expect([row(0).status, row(2).status], everyElement(utxoStatusToString(UtxoStatus.outgoing)));
+        expect(row(1).isDeleted, isTrue);
+        expect(row(1).status, utxoStatusToString(UtxoStatus.unspent));
+        expect(row(1).spentByTransactionHash, threeInputs.transactionHash, reason: 'spend evidence on the tombstone');
+      });
+    });
+
+    for (final balanceCountsThem in [true, false]) {
+      test('listunspent는 받는 중에 정리됐을 뿐인 코인만, 서버 잔액이 셀 때 되살린다 (잔액이 셈: $balanceCountsThem)', () async {
+        const recorded = '0000000000000000000000000000000000000000000000000000000000000041';
+        const dropped = '0000000000000000000000000000000000000000000000000000000000000042';
+        const replaced = '0000000000000000000000000000000000000000000000000000000000000043';
+        const spender = '0000000000000000000000000000000000000000000000000000000000000044';
+        const droppedSpender = '0000000000000000000000000000000000000000000000000000000000000045';
+        final tombstones = {
+          'removed while incoming': (recorded, 0, UtxoStatus.incoming, null),
+          'its spender dropped from the records': (recorded, 1, UtxoStatus.incoming, droppedSpender),
+          'spent: reserved, then deleted': (recorded, 2, UtxoStatus.outgoing, spender),
+          'spent while already removed (spend evidence)': (recorded, 3, UtxoStatus.incoming, spender),
+          'creating tx dropped or replaced by the sender': (dropped, 0, UtxoStatus.incoming, null),
+          'creating tx replaced by our own fee bump': (replaced, 0, UtxoStatus.incoming, null),
+        };
+        realmManager.realm.write(() {
+          for (final (hash, replacedBy) in [(recorded, null), (spender, null), (replaced, spender)]) {
+            realmManager.realm.add(
+              RealmTransaction(
+                hash.hashCode,
+                hash,
+                testWalletId,
+                DateTime.now(),
+                replacedBy == null ? 100 : 0,
+                'received',
+                20000,
+                1000,
+                141,
+                DateTime.now(),
+                replaceByTransactionHash: replacedBy,
+              ),
+            );
+          }
+          // get_balance of this sync: the two coins that are really unspent, or (stale list) not even those.
+          realmManager.realm.add(
+            RealmWalletAddress(1, testWalletId, testAddress, 0, false, "m/84'/1'/0'/0/0", true, 0, 0, 0)
+              ..total = balanceCountsThem ? 2000000 : 1000000,
+          );
+          for (final (hash, index, status, spentBy) in tombstones.values) {
+            realmManager.realm.add(
+              UtxoMock.createMockUtxo(
+                walletId: testWalletId,
+                address: testAddress,
+                transactionHash: hash,
+                index: index,
+                status: status,
+                spentByTransactionHash: spentBy,
+              )..isDeleted = true,
+            );
+          }
+        });
+
+        await utxoRepository.restoreListedUtxos(testWalletId, testAddress, [
+          for (final (hash, index, _, _) in tombstones.values)
+            UtxoMock.createMockUtxoState(transactionHash: hash, index: index, address: testAddress, blockHeight: 100),
+        ]);
+
+        final restorable = {'removed while incoming', 'its spender dropped from the records'};
+        expect(
+          {
+            for (final MapEntry(:key, value: (hash, index, _, _)) in tombstones.entries)
+              key: !realmManager.realm.find<RealmUtxo>(getRealmUtxoId(testWalletId, hash, index))!.isDeleted,
+          },
+          {for (final key in tombstones.keys) key: balanceCountsThem && restorable.contains(key)},
+        );
+      });
+    }
 
     group('snapshotLockedUtxoIds / restoreLockedUtxos 테스트', () {
       test('도메인 UTXO id 목록으로 여러 UTXO를 잠근다', () async {
@@ -350,4 +575,56 @@ void main() {
       });
     });
   });
+
+  // Codex review v2 (S2): the restore decides inside its write. Another writer may record a spend or lower the balance
+  // while the restore waits for the write lock.
+  for (final mutation in ['spend', 'balance']) {
+    test('restoreListedUtxos rechecks inside the write after waiting for another writer ($mutation)', () async {
+      final directory = Directory.systemTemp.createTempSync('restore-race-');
+      final path = '${directory.path}/race.realm';
+      final realm = Realm(Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, path: path));
+      final other = Realm(Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, path: path));
+      addTearDown(() {
+        other.close();
+        realm.close();
+        Realm.deleteRealm(path);
+        directory.deleteSync(recursive: true);
+      });
+      const creator = '0000000000000000000000000000000000000000000000000000000000000051';
+      const spender = '0000000000000000000000000000000000000000000000000000000000000052';
+      final coinId = getRealmUtxoId(1, creator, 0);
+      RealmTransaction record(int id, String hash) =>
+          RealmTransaction(id, hash, 1, DateTime.utc(2026), 100, 'received', 1000, 0, 141, DateTime.utc(2026));
+      realm.write(() {
+        realm.add(RealmWalletAddress(1, 1, 'own', 0, false, 'm', true, 1000, 0, 1000));
+        realm.add(record(1, creator));
+        realm.add(
+          RealmUtxo(coinId, 1, 'own', 1000, DateTime.utc(2026), creator, 0, 'm', 0, 'incoming', isDeleted: true),
+        );
+      });
+      other.refresh();
+      final blocker = other.beginWrite();
+      final restore = UtxoRepository(RealmManager.withRealm(realm)).restoreListedUtxos(1, 'own', [
+        UtxoState(
+          transactionHash: creator,
+          index: 0,
+          amount: 1000,
+          derivationPath: 'm',
+          blockHeight: 100,
+          to: 'own',
+          timestamp: DateTime.utc(2026),
+        ),
+      ]);
+      if (mutation == 'spend') {
+        other.add(record(2, spender));
+        other.find<RealmUtxo>(coinId)!.spentByTransactionHash = spender;
+      } else {
+        other.find<RealmWalletAddress>(1)!.total = 0;
+      }
+      blocker.commit();
+      await restore;
+      realm.refresh();
+      expect(realm.find<RealmUtxo>(coinId)!.isDeleted, isTrue);
+    });
+  }
 }

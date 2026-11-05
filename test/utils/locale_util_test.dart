@@ -1,5 +1,8 @@
+import 'dart:ui' show Locale;
+
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,6 +112,39 @@ void main() {
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(-110000000), 8), '-1.1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(-10000000), 8), '-0.1');
       });
+    });
+
+    group('defaultFiatForLocale', () {
+      final cases = [
+        // 지역이 있으면 지역으로 정한다.
+        (const Locale('ko', 'KR'), FiatCode.KRW),
+        (const Locale('en', 'KR'), FiatCode.KRW),
+        (const Locale('ja', 'JP'), FiatCode.JPY),
+        (const Locale('de', 'DE'), FiatCode.EUR),
+        (const Locale('en', 'BG'), FiatCode.EUR), // 2026-01-01 유로존 가입
+        (const Locale('sv', 'AX'), FiatCode.EUR), // EU 회원국 영토, 코드가 따로 있다
+        (const Locale('fr', 'RE'), FiatCode.EUR), // 프랑스 최외곽 지역
+        (const Locale('es', 'IC'), FiatCode.EUR), // 카나리아 제도
+        (const Locale('fr', 'MC'), FiatCode.EUR), // EU 밖, 통화 협정
+        (const Locale('fr', 'BL'), FiatCode.EUR), // EU 밖, 프랑스 해외 영토
+        (const Locale('sq', 'XK'), FiatCode.EUR), // EU 밖, 협정 없이 사용
+        (const Locale('de', 'CH'), FiatCode.USD), // 유로를 쓰지 않는다
+        (const Locale('da', 'DK'), FiatCode.USD), // EU 회원국이지만 유로를 쓰지 않는다
+        (const Locale('en', 'IN'), FiatCode.USD),
+        (const Locale('en', 'US'), FiatCode.USD),
+        (const Locale('ko', 'US'), FiatCode.USD), // 언어보다 지역이 먼저다
+        // 지역이 없으면 언어로 정한다.
+        (const Locale('ko'), FiatCode.KRW),
+        (const Locale('ja'), FiatCode.JPY),
+        (const Locale('de'), FiatCode.EUR),
+        (const Locale('en'), FiatCode.USD),
+        (const Locale('es'), FiatCode.USD),
+      ];
+      for (final (locale, expected) in cases) {
+        test('$locale → ${expected.code}', () {
+          expect(defaultFiatForLocale(locale), expected);
+        });
+      }
     });
   });
 }

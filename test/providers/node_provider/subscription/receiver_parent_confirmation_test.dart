@@ -230,9 +230,13 @@ void main() {
         if (hash == grandchild.transactionHash) return grandchild.serialize();
         return funding.serialize();
       });
-      when(electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
-        invocation,
-      ) async {
+      when(
+        electrum.getPreviousTransactions(
+          any,
+          existingTxList: anyNamed('existingTxList'),
+          transactionFetch: anyNamed('transactionFetch'),
+        ),
+      ).thenAnswer((invocation) async {
         final tx = invocation.positionalArguments[0] as Transaction;
         if (tx.transactionHash == grandchild.transactionHash) return [child];
         return tx.transactionHash == child.transactionHash ? [parent] : [funding];
@@ -338,8 +342,21 @@ void main() {
         });
         expect(addresses.isAddressActive(wallet.id, receive.address), isFalse);
         expect(addresses.isAddressDormant(wallet.id, receive.address), isTrue);
+        final outpoint = getUtxoId(parent.transactionHash, 0);
+        expect(failingUtxos.getUtxoState(wallet.id, outpoint)?.status, UtxoStatus.outgoing);
         expect(
           addresses.getActiveUsedAddresses(wallet.id, false).map((row) => row.address),
+          isNot(contains(receive.address)),
+          reason: 'UI address queries keep the balance/pending-record rule.',
+        );
+        expect(
+          addresses.getActiveUsedAddresses(wallet.id, false, includeUnreconciledUtxos: true).map((row) => row.address),
+          contains(receive.address),
+          reason: 'A replaced record does not remove the remaining coin that a new isolate must reconcile.',
+        );
+        await failingUtxos.deleteUtxoList(wallet.id, [outpoint]);
+        expect(
+          addresses.getActiveUsedAddresses(wallet.id, false, includeUnreconciledUtxos: true).map((row) => row.address),
           isNot(contains(receive.address)),
         );
         return;

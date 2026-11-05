@@ -8,26 +8,40 @@ import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_s
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
+import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
+import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 
 part 'model/request/electrum_request_types.dart';
 
+/// An Electrum RPC error response was followed by an HTTP 404 from the fallback.
+class TransactionNotFound implements Exception {
+  final String transactionHash;
+
+  TransactionNotFound(this.transactionHash);
+
+  @override
+  String toString() => 'Transaction not found';
+}
+
 class ElectrumService {
   // static final ElectrumClient _instance = ElectrumClient._();
   int _idCounter = 0;
   SocketManager _socketManager;
   Timer? _pingTimer;
+  MempoolApi Function() _createMempoolApi = MempoolApi.new;
 
   int get reqId => _idCounter;
 
   ElectrumService._() : _socketManager = SocketManager();
 
-  factory ElectrumService({SocketManager? socketManager}) {
+  factory ElectrumService({SocketManager? socketManager, MempoolApi Function()? mempoolApiFactory}) {
     ElectrumService instance = ElectrumService._();
     instance._socketManager = socketManager ?? SocketManager();
+    instance._createMempoolApi = mempoolApiFactory ?? MempoolApi.new;
 
     return instance;
   }
@@ -82,6 +96,7 @@ class ElectrumService {
     _ElectrumRequest request,
     ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson, {
     Duration? timeout,
+    void Function()? onRpcError,
   }) async {
     if (connectionStatus != SocketConnectionStatus.connected) {
       throw 'Can not connect to the server. Please connect and try again.';
@@ -94,13 +109,18 @@ class ElectrumService {
     final completer = Completer<Map>();
     _socketManager.setCompleter(requestId, completer);
 
-    Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
+    try {
+      Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
 
-    if (res['error'] != null) {
-      throw res['error'];
+      if (res['error'] != null) {
+        onRpcError?.call();
+        throw res['error'];
+      }
+      // Logger.log('[${DateTime.now()}]RES - $res');
+      return fromJson(res['result'], id: requestId);
+    } finally {
+      _socketManager.removeCompleter(requestId);
     }
-    // Logger.log('[${DateTime.now()}]RES - $res');
-    return fromJson(res['result'], id: requestId);
   }
 
   Future<String> ping() async {
@@ -212,41 +232,79 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<String> broadcast(String rawTransaction) async {
+  /// [timeout]: 응답을 기다리는 시간(기본 [kElectrumResponseTimeout]). [onRpcError]: 서버가 오류로 답했을 때 불린다.
+  Future<String> broadcast(String rawTransaction, {Duration? timeout, void Function()? onRpcError}) async {
     var response = await _call(
       _BroadcastReq(rawTransaction),
       (json, {int? id}) => ElectrumResponse(result: json as String),
+      timeout: timeout,
+      onRpcError: onRpcError,
     );
 
     return response.result;
   }
 
-  Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
+  /// 브로드캐스트 결과를 모를 때 서버가 이 거래를 갖고 있는지 묻습니다.
+  /// true: 갖고 있음, false: 서버가 '그런 거래 없음'이라고 답함, null: 모름(시간 초과·연결 끊김·잘못된 응답·다른 서버 오류).
+  /// 보낸 직후의 txid를 제3자에게 알리지 않도록 외부 API로 대체하지 않고 같은 Electrum 서버에만 묻습니다.
+  Future<bool?> lookUpTransaction(String txHash, {required Duration timeout}) async {
+    var serverAnswered = false;
     try {
-      var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
-        // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
-        if (json is Map) {
-          return ElectrumResponse(result: jsonEncode(json));
-        }
-        return ElectrumResponse(result: json as String);
-      }, timeout: timeout);
+      final response = await _call(
+        _BlockchainTransactionGetReq(txHash),
+        (json, {int? id}) => ElectrumResponse(result: json as String),
+        timeout: timeout,
+        onRpcError: () => serverAnswered = true,
+      );
+      return Transaction.parse(response.result).transactionHash == txHash ? true : null;
+    } catch (e) {
+      // 거래가 없다는 답만 없음으로 본다. 바쁨·내부 오류·'Method not found' 같은 다른 서버 오류는 모름이다.
+      final text = e.toString().toLowerCase();
+      final notFound = [
+        'no such mempool',
+        'transaction not found',
+        'tx not found',
+        'missing transaction',
+      ].any(text.contains);
+      return serverAnswered && notFound ? false : null;
+    }
+  }
+
+  Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
+    var receivedRpcError = false;
+    try {
+      var response = await _call(
+        _BlockchainTransactionGetReq(txHash, verbose: verbose),
+        (json, {int? id}) {
+          // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
+          if (json is Map) {
+            return ElectrumResponse(result: jsonEncode(json));
+          }
+          return ElectrumResponse(result: json as String);
+        },
+        timeout: timeout,
+        onRpcError: () => receivedRpcError = true,
+      );
       return response.result;
     } catch (e) {
+      final mempoolApi = _createMempoolApi();
       try {
-        final mempoolApi = MempoolApi();
-        final txHex = await mempoolApi.fetchTxHex(txHash);
-        mempoolApi.close();
-        return txHex;
-      } catch (mempoolError) {
+        return await mempoolApi.fetchTxHex(txHash);
+      } on MempoolHttpNotFound {
+        if (receivedRpcError) throw TransactionNotFound(txHash);
+        // A fallback 404 cannot establish absence after a timeout or transport failure.
         rethrow;
+      } finally {
+        mempoolApi.close();
       }
     }
   }
 
-  /// 이전 트랜잭션을 조회합니다.
+  /// 모든 입력의 부모와 출력 인덱스가 검증된 경우에만 반환합니다. 실패는 스크립트 재시도로 전파합니다.
   Future<List<Transaction>> getPreviousTransactions(
     Transaction transaction, {
     List<Transaction>? existingTxList,
+    TransactionFetchPass? transactionFetch,
   }) async {
     if (transaction.inputs.isEmpty) {
       return [];
@@ -256,46 +314,35 @@ class ElectrumService {
       return [];
     }
 
-    Set<String> toFetchTransactionHashes = {};
-
-    final existingTxHashes = existingTxList?.map((tx) => tx.transactionHash).toSet() ?? {};
-
-    toFetchTransactionHashes =
-        transaction.inputs
-            .map((input) => input.transactionHash)
-            .where((hash) => !existingTxHashes.contains(hash))
-            .toSet();
-
-    var futures = toFetchTransactionHashes.map((transactionHash) async {
-      var txHex = '';
-      txHex = await getTransaction(transactionHash);
-
-      return Transaction.parse(txHex);
+    final parentsByHash =
+        existingTxList is PreviousTransactions
+            ? Map<String, Transaction>.of(existingTxList.byHash)
+            : {for (final tx in existingTxList?.toSet() ?? <Transaction>{}) tx.transactionHash: tx};
+    final requiredHashes = transaction.inputs.map((input) => input.transactionHash).toSet();
+    final missingHashes = requiredHashes.where((hash) => !parentsByHash.containsKey(hash)).toList();
+    // 부모 응답은 같은 소켓을 나눠 쓰므로 전송량에 여유를 주되 한 번의 대기는 60초로 제한한다.
+    final timeoutMs = 5000 + 300 * missingHashes.length;
+    final timeout = Duration(milliseconds: timeoutMs > 60000 ? 60000 : timeoutMs);
+    final futures = missingHashes.map((hash) async {
+      final tx =
+          transactionFetch == null
+              ? Transaction.parse(await getTransaction(hash, timeout: timeout))
+              : await transactionFetch.fetch(hash, timeout: timeout);
+      final parsedHash = tx.transactionHash;
+      if (parsedHash != hash) throw StateError('Server returned a different parent transaction');
+      return MapEntry(hash, tx);
     });
 
-    try {
-      List<Transaction?> fetchedTransactionsNullable = await Future.wait(futures);
-      List<Transaction> fetchedPreviousTransactions = fetchedTransactionsNullable.whereType<Transaction>().toList();
-
-      if (existingTxList != null && existingTxList.isNotEmpty) {
-        fetchedPreviousTransactions.addAll(existingTxList);
+    // eagerError=false: 실패해도 이미 시작한 요청을 모두 회수한 뒤 오류를 전달한다.
+    parentsByHash.addEntries(await Future.wait(futures));
+    for (final input in transaction.inputs) {
+      final parent = parentsByHash[input.transactionHash];
+      if (parent == null || input.index < 0 || input.index >= parent.outputs.length) {
+        throw StateError('Missing previous output');
       }
-
-      List<Transaction> previousTransactions = [];
-
-      for (var input in transaction.inputs) {
-        final matchingTx =
-            fetchedPreviousTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
-
-        if (matchingTx.isNotEmpty) {
-          previousTransactions.add(matchingTx.first);
-        }
-      }
-
-      return previousTransactions;
-    } catch (e) {
-      return [];
     }
+    parentsByHash.removeWhere((hash, _) => !requiredHashes.contains(hash));
+    return PreviousTransactions(parentsByHash);
   }
 
   Future<List<List<num>>> getMempoolFeeHistogram() async {

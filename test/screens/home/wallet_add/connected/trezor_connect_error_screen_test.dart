@@ -201,7 +201,7 @@ void main() {
         'PEER_REMOVED_PAIRING' => t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.description,
         _ => t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code_dialog,
       };
-      expect(find.text(expected), findsOneWidget);
+      expect(_textIgnoringWordJoiners(expected), findsOneWidget);
       if (code == 'PEER_REMOVED_PAIRING') {
         expect(
           find.text('3. ${t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step3}', findRichText: true),
@@ -211,10 +211,13 @@ void main() {
       expect(find.textContaining(secret), findsNothing);
       expect(tester.takeException(), isNull);
       if (code == 'PAIRING_CODE_WRONG') {
-        expect(find.text(t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code), findsOneWidget);
+        expect(
+          _textIgnoringWordJoiners(t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code),
+          findsOneWidget,
+        );
         await tester.tap(find.text(t.OK));
         await tester.pumpAndSettle();
-        expect(find.text(expected), findsNothing);
+        expect(_textIgnoringWordJoiners(expected), findsNothing);
         expect(find.text(_connectLabel(TrezorTransport.ble)), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.textContaining(secret), findsNothing);
@@ -226,3 +229,8 @@ void main() {
     });
   }
 }
+
+// 디자인 시스템 CoconutPopup(0.11.5)은 한국어 단어 안에 줄바꿈 방지 문자(U+2060)를 넣는다.
+Finder _textIgnoringWordJoiners(String text) => find.byWidgetPredicate(
+  (widget) => widget is Text && (widget.data ?? widget.textSpan?.toPlainText())?.replaceAll('\u2060', '') == text,
+);

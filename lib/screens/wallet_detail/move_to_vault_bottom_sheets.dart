@@ -1,7 +1,5 @@
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -17,6 +15,7 @@ import 'package:coconut_wallet/widgets/common/text/icon_title_description.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -149,13 +148,7 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
 class ShowVaultSelectWalletBottomSheet extends StatefulWidget {
   final int walletId;
   final List<WalletItemBase> watchOnlyWallets;
-  final ScrollController? scrollController;
-  const ShowVaultSelectWalletBottomSheet({
-    super.key,
-    required this.walletId,
-    required this.watchOnlyWallets,
-    this.scrollController,
-  });
+  const ShowVaultSelectWalletBottomSheet({super.key, required this.walletId, required this.watchOnlyWallets});
 
   @override
   State<ShowVaultSelectWalletBottomSheet> createState() => _ShowVaultSelectWalletBottomSheetState();
@@ -222,89 +215,17 @@ class _ShowVaultSelectWalletBottomSheetState extends State<ShowVaultSelectWallet
 
   @override
   Widget build(BuildContext context) {
-    final preferences = context.watch<PreferenceProvider>();
-    final walletProvider = context.watch<WalletProvider>();
-    final availableWallets =
-        widget.watchOnlyWallets
-            .where((wallet) => !wallet.hasLocalKey && walletProvider.walletItemList.any((item) => item.id == wallet.id))
-            .toList();
-    final wallets = [
-      for (final id in preferences.walletOrder) ...availableWallets.where((wallet) => wallet.id == id),
-      ...availableWallets.where((wallet) => !preferences.walletOrder.contains(wallet.id)),
-    ];
-    final list = SingleChildScrollView(
-      controller: widget.scrollController,
-      physics: const ClampingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var index = 0; index < wallets.length; index++)
-            Padding(
-              padding: EdgeInsets.only(bottom: index == wallets.length - 1 ? 0 : 8),
-              child: WalletItemCard(
-                key: ValueKey(wallets[index].id),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                walletItem: wallets[index],
-                animatedBalanceData: AnimatedBalanceData(
-                  walletProvider.getWalletBalance(wallets[index].id).total,
-                  walletProvider.getWalletBalance(wallets[index].id).total,
-                ),
-                currentUnit: preferences.currentUnit,
-                isLastItem: index == wallets.length - 1,
-                isStarVisible: false,
-                shrinkContentOnly: true,
-                backgroundColor: context.coconutColors.homeSurface,
-                pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
-                pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
-                watchedAddressCount: walletProvider.getWatchedAddressCount(wallets[index].id),
-                rightWidget: SvgPicture.asset(
-                  CommonNavigationIconPath.arrowRight,
-                  width: 6,
-                  height: 10,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-                ),
-                onPressed: () => _selectWallet(wallets[index].id),
-              ),
-            ),
-        ],
-      ),
-    );
-    if (widget.scrollController == null) return list;
-
-    return SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Center(
-                    child: Text(
-                      t.wallet_detail_screen.vault_select_receiving_wallet,
-                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.close_rounded, size: 24, color: context.coconutColors.iconPrimary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: list)),
-          const SizedBox(height: 16),
-        ],
-      ),
+    final walletIds = context.read<WalletProvider>().walletItemList.map((wallet) => wallet.id).toSet();
+    return SelectWalletBottomSheet(
+      walletId: -1,
+      title: t.wallet_detail_screen.vault_select_receiving_wallet,
+      currentUnit: context.read<PreferenceProvider>().currentUnit,
+      showOnlyMfpWallets: false,
+      candidateWalletIds: [
+        for (final wallet in widget.watchOnlyWallets)
+          if (!wallet.hasLocalKey && walletIds.contains(wallet.id)) wallet.id,
+      ],
+      onWalletChanged: _selectWallet,
     );
   }
 }

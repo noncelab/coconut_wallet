@@ -25,6 +25,7 @@ import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dar
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -185,6 +186,27 @@ void main() {
     }
   }
 
+  for (final size in [const Size(841, 874), const Size(390, 844)]) {
+    testWidgets('tapping the name field with the keyboard keeps it and its counter readable $size', (tester) async {
+      walletProvider = _WalletProvider(_hotWallet());
+      await open(tester, logicalSize: size);
+      final control = find.byKey(const Key('wallet-appearance-name-field'));
+      await tester.ensureVisible(control);
+      await tester.tap(control);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final button = find.ancestor(of: find.text(t.complete), matching: find.byType(ShrinkAnimationButton));
+      expect(tester.getRect(control).bottom, lessThanOrEqualTo(tester.getRect(button).top));
+      expect(find.byType(EditableText).hitTestable(), findsOneWidget);
+      // 완료 버튼 뒤 그라데이션은 키보드 위 약 159px에서 투명하고 80px에서 불투명해진다.
+      // 입력칸 아래 글자 수(중복 이름 안내와 같은 줄)는 3분의 1 이하로만 덮이는 130px 위에 있어야 읽힌다.
+      final counter = find.descendant(of: control, matching: find.textContaining('/20'));
+      expect(tester.getRect(counter).bottom, lessThanOrEqualTo(size.height - 300 - 130));
+    });
+  }
+
   for (final variant in [CoconutThemeVariant.dark, CoconutThemeVariant.coconutTheme]) {
     for (final scale in [1.0, 1.6, 2.0]) {
       testWidgets('fold keyboard keeps editing and completion reachable ${variant.name} $scale', (tester) async {
@@ -221,7 +243,8 @@ void main() {
         tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
         await tester.pumpAndSettle();
         final lastIcon = find.byKey(const Key('wallet-appearance-icon-${CustomWalletIcons.totalCount - 1}'));
-        await Scrollable.ensureVisible(tester.element(lastIcon), alignment: 0.5);
+        // 원래 레이아웃(81de8fa88)은 폴드에서 아래 편집 영역이 좁아 가운데가 버튼 뒤에 온다. 위쪽에 맞춰 닿는지 본다.
+        await Scrollable.ensureVisible(tester.element(lastIcon));
         await tester.pumpAndSettle();
         expect(tester.getBottomLeft(lastIcon).dy, lessThan(tester.getTopLeft(find.text(t.complete)).dy));
         expect(lastIcon.hitTestable(), findsOneWidget);

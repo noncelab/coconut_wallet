@@ -93,7 +93,11 @@ void main() {
           when(electrum.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
           when(electrum.getTransaction(funding.transactionHash)).thenAnswer((_) async => funding.serialize());
           when(
-            electrum.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+            electrum.getPreviousTransactions(
+              any,
+              existingTxList: anyNamed('existingTxList'),
+              transactionFetch: anyNamed('transactionFetch'),
+            ),
           ).thenAnswer((_) async => [funding]);
           when(electrum.getHistory(any, any)).thenAnswer(
             (call) async =>
@@ -175,7 +179,9 @@ void main() {
             final first = wallet.walletBase.getAddress(0);
             var failing = true;
             final electrum = ScriptSyncServiceMock.electrumService;
-            when(electrum.unsubscribeScript(any, any)).thenAnswer((_) async => true);
+            when(
+              electrum.unsubscribeScriptForWallet(any, any, walletId: anyNamed('walletId')),
+            ).thenAnswer((_) async => true);
             when(electrum.getBalance(any, any)).thenAnswer((call) async {
               if (failing && failedStage == 'balance') {
                 failing = false;

@@ -89,6 +89,8 @@ class WalletResyncService {
 
         // 안 지우면 이미 처리된 걸로 기억된 확정 트랜잭션은 재스캔해도 DB에 다시 안 쓰인다.
         _scriptCallbackService.clearWalletState(walletId);
+        // 지우기 전에 잡힌 자동 재시도가 초기화된 지갑에 다시 쓰지 않게 버린다.
+        _subscriptionService.cancelRetry(walletId);
 
         await _addressRepository.ensureAddressesExist(
           walletItemBase: walletItem,
@@ -115,6 +117,8 @@ class WalletResyncService {
       );
 
       if (subscribeResult.isFailure) {
+        // 자동 재시도는 이 재동기화의 스캔 하한(min used index)을 모르므로, 실패는 재동기화 화면에서 다시 시도한다.
+        _subscriptionService.cancelRetry(walletId);
         _isolateStateManager.setWalletResyncPhase(
           walletId,
           ResyncPhase.failed,

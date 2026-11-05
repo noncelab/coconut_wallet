@@ -24,8 +24,83 @@ int _normalizeTagColorIndex(int colorIndex) {
   return WalletVisualStyleUtil.normalizePaletteIndex(colorIndex);
 }
 
+/// [removed] 중 받는 중에 정리됐을 뿐이라 서버가 다시 알려 주면 되살릴 수 있는 코인만 고른다.
+/// incoming으로 지워졌고, 만든 거래가 기록돼 있고 대체되지 않았으며, 이 코인을 쓴 거래가 기록에 없어야 한다
+/// (쓴 거래가 누락돼 기록에서 사라지면 그 증거도 사라진다). 쓴 코인과 대체·누락된 거래의 코인은 지운 채로 둔다.
+List<RealmUtxo> restorableTombstones(Realm realm, int walletId, Iterable<RealmUtxo> removed) {
+  final incoming = utxoStatusToString(UtxoStatus.incoming);
+  final rows = removed.where((row) => row.isDeleted && row.status == incoming).toList();
+  if (rows.isEmpty) return const [];
+  final hashes = {
+    for (final row in rows) ...[
+      row.transactionHash,
+      if (row.spentByTransactionHash != null) row.spentByTransactionHash!,
+    ],
+  };
+  final replacedByHash = {
+    for (final tx in realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      hashes.toList(),
+    ]))
+      tx.transactionHash: tx.replaceByTransactionHash != null,
+  };
+  return rows
+      .where(
+        (row) =>
+            replacedByHash[row.transactionHash] == false && !replacedByHash.containsKey(row.spentByTransactionHash),
+      )
+      .toList();
+}
+
 class UtxoRepository extends BaseRepository {
-  UtxoRepository(super._realmManager);
+  UtxoRepository(super._realmManager, {Duration Function()? clock}) {
+    final stopwatch = Stopwatch()..start();
+    _clock = clock ?? () => stopwatch.elapsed;
+  }
+
+  late final Duration Function() _clock;
+  final _broadcastReservations = <String, ({String txid, Duration expiresAt})>{};
+  Duration? _nextReservationExpiry;
+
+  /// UI 저장소에서만 사용한다. 동기화 저장소와 Realm에는 예약을 전달하지 않는다.
+  void reserveBroadcastInputs(lib.Transaction transaction, String txid) {
+    final now = _clock();
+    _pruneBroadcastReservations(now);
+    final reservation = (txid: txid, expiresAt: now + const Duration(minutes: 30));
+    if (_nextReservationExpiry == null || reservation.expiresAt < _nextReservationExpiry!) {
+      _nextReservationExpiry = reservation.expiresAt;
+    }
+    for (final input in transaction.inputs) {
+      _broadcastReservations['${input.transactionHash}:${input.index}'] = reservation;
+    }
+  }
+
+  void _pruneBroadcastReservations([Duration? now]) {
+    if (_broadcastReservations.isEmpty) return;
+    final cutoff = now ?? _clock();
+    // 가장 이른 만료 전에는 단건 조회마다 예약 전체를 다시 순회하지 않는다.
+    if (_nextReservationExpiry != null && _nextReservationExpiry! > cutoff) return;
+    _broadcastReservations.removeWhere((_, reservation) => reservation.expiresAt <= cutoff);
+    _nextReservationExpiry = _broadcastReservations.values.fold<Duration?>(
+      null,
+      (earliest, reservation) =>
+          earliest == null || reservation.expiresAt < earliest ? reservation.expiresAt : earliest,
+    );
+  }
+
+  UtxoState _readUtxo(RealmUtxo row) {
+    final utxo = mapRealmToUtxoState(row);
+    if (_broadcastReservations.isNotEmpty &&
+        !row.isDeleted &&
+        (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.incoming)) {
+      final reservation = _broadcastReservations['${utxo.transactionHash}:${utxo.index}'];
+      if (reservation != null) {
+        utxo.status = UtxoStatus.outgoing;
+        utxo.spentByTransactionHash = reservation.txid;
+      }
+    }
+    return utxo;
+  }
 
   /// walletId로 RealmUtxoTag 목록을 쿼리하는 내부 메서드
   RealmResults<RealmUtxoTag> _queryUtxoTags(int walletId) {
@@ -366,38 +441,128 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  // UTXO 상태를 "출금 중(outgoing)"으로 표시
-  Future<void> _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) async {
-    final utxoToMark = realm.find<RealmUtxo>('$walletId:$utxoId');
+  RealmResults<RealmUtxo> _listedTombstones(int walletId, String address, List<UtxoState> listed) =>
+      realm.query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == true AND id IN $2', [
+        walletId,
+        address,
+        [for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index)],
+      ]);
 
-    if (utxoToMark == null) return;
-    if (utxoToMark.isDeleted) return;
+  /// [listed] 중 되살릴 수 있는 지운 코인([restorableTombstones])이 있는지.
+  bool hasRestorableListedUtxos(int walletId, String address, List<UtxoState> listed) {
+    realm.refresh();
+    return restorableTombstones(realm, walletId, _listedTombstones(walletId, address, listed)).isNotEmpty;
+  }
 
+  /// [address]의 listunspent가 다시 돌려준 코인 중 받는 중에 정리됐을 뿐인 코인([restorableTombstones])을 되살린다.
+  /// 같은 동기화에서 먼저 받은 이 주소의 서버 잔액이 남은 코인과 함께 모두 셀 때만 한꺼번에 되살린다. 늦은 응답이
+  /// 이미 쓰인 코인을 되돌려 잔액보다 많은 코인을 보이게 하지 않는다. 태그는 지울 때 떼어졌으므로 돌아오지 않는다.
+  /// 판단은 쓰기 안에서 한다. 잠금을 기다리는 동안 다른 쓰기가 spender를 남기거나 잔액을 낮췄을 수 있다.
+  /// [spentNow]는 이번 동기화에서 받은 거래가 쓴 코인(outpoint)이다. 그 거래 기록이 아직 없어도 되살리지 않는다.
+  Future<void> restoreListedUtxos(
+    int walletId,
+    String address,
+    List<UtxoState> listed, {
+    Set<String> spentNow = const {},
+  }) async {
+    if (!hasRestorableListedUtxos(walletId, address, listed)) return;
+    final listedById = {for (final utxo in listed) getRealmUtxoId(walletId, utxo.transactionHash, utxo.index): utxo};
     await realm.writeAsync(() {
-      utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
-      utxoToMark.spentByTransactionHash = pendingTxHash;
+      final rows =
+          restorableTombstones(
+            realm,
+            walletId,
+            _listedTombstones(walletId, address, listed),
+          ).where((row) => !spentNow.contains(getUtxoId(row.transactionHash, row.index))).toList();
+      final total =
+          realm
+              .query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address])
+              .firstOrNull
+              ?.total ??
+          0;
+      final live = realm
+          .query<RealmUtxo>(r'walletId == $0 AND address == $1 AND isDeleted == false AND status != $2', [
+            walletId,
+            address,
+            utxoStatusToString(UtxoStatus.outgoing),
+          ])
+          .fold<int>(0, (sum, utxo) => sum + utxo.amount);
+      if (rows.isEmpty || live + rows.fold<int>(0, (sum, row) => sum + row.amount) > total) return;
+      for (final row in rows) {
+        final utxo = listedById[row.id]!;
+        row
+          ..isDeleted = false
+          ..blockHeight = utxo.blockHeight
+          ..timestamp = utxo.timestamp
+          ..status = utxoStatusToString(utxo.status);
+      }
+    });
+  }
+
+  /// [transaction]이 쓴 이미 지운 코인에 사용 증거(spender)만 남긴다. 살아 있는 코인은 건드리지 않는다.
+  Future<void> markRemovedInputsSpent(int walletId, lib.Transaction transaction) =>
+      _markInputsOutgoing(walletId, transaction, (_) => null);
+
+  /// [transaction]이 쓴 이 지갑의 코인을 한 번의 쓰기로 "출금 중(outgoing)"으로 표시한다.
+  /// [spenderOf]가 행마다 새 spender를 돌려주고, null이면 그 행은 건드리지 않는다. 쓰기 안에서 다시 확인한다.
+  Future<void> _markInputsOutgoing(
+    int walletId,
+    lib.Transaction transaction,
+    String? Function(RealmUtxo utxo) spenderOf,
+  ) async {
+    final txHash = transaction.transactionHash;
+    final ids = transaction.inputs.map((input) => '$walletId:${getUtxoId(input.transactionHash, input.index)}');
+    String? spenderToWrite(String id) {
+      final utxo = realm.find<RealmUtxo>(id);
+      return utxo == null || utxo.isDeleted ? null : spenderOf(utxo);
+    }
+
+    // 이미 지운 코인은 되살리지 않되, 이 거래가 썼다는 증거를 남겨 늦은 listunspent가 되살리지 못하게 한다.
+    RealmUtxo? unmarkedTombstone(String id) {
+      final utxo = realm.find<RealmUtxo>(id);
+      return utxo != null && utxo.isDeleted && utxo.spentByTransactionHash != txHash ? utxo : null;
+    }
+
+    realm.refresh();
+    if (ids.every((id) => spenderToWrite(id) == null && unmarkedTombstone(id) == null)) return;
+    await realm.writeAsync(() {
+      for (final id in ids) {
+        unmarkedTombstone(id)?.spentByTransactionHash = txHash;
+        final spender = spenderToWrite(id);
+        if (spender == null) continue;
+        final utxo = realm.find<RealmUtxo>(id)!;
+        utxo.status = utxoStatusToString(UtxoStatus.outgoing);
+        utxo.spentByTransactionHash = spender;
+      }
     });
   }
 
   List<UtxoState> getUtxoStateList(int walletId) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND isDeleted == false', [walletId]);
-    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+    return realmUtxos.map(_readUtxo).toList();
   }
 
   // 특정 상태의 UTXO 목록만 조회
   List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final statusStr = utxoStatusToString(status);
-    final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND status == $1 AND isDeleted == false', [
+    final statuses =
+        status == UtxoStatus.outgoing && _broadcastReservations.isNotEmpty
+            ? [statusStr, utxoStatusToString(UtxoStatus.unspent), utxoStatusToString(UtxoStatus.incoming)]
+            : [statusStr];
+    final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND status IN $1 AND isDeleted == false', [
       walletId,
-      statusStr,
+      statuses,
     ]);
-    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+    return realmUtxos.map(_readUtxo).where((utxo) => utxo.status == status).toList();
   }
 
   /// 특정 UTXO 조회
   UtxoState? getUtxoState(int walletId, String utxoId, {bool includeDeleted = false}) {
+    _pruneBroadcastReservations();
     realm.refresh();
     final realmUtxo =
         realm.query<RealmUtxo>(
@@ -409,7 +574,7 @@ class UtxoRepository extends BaseRepository {
       return null;
     }
 
-    return mapRealmToUtxoState(realmUtxo);
+    return _readUtxo(realmUtxo);
   }
 
   Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {
@@ -562,25 +727,35 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) async {
-    /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
-    for (var input in transaction.inputs) {
-      // UTXO 소유 지갑 ID 찾기
-      final utxoId = getUtxoId(input.transactionHash, input.index);
-      final utxo = getUtxoState(walletId, utxoId);
+  /// 트랜잭션에 사용된 UTXO를 outgoing으로 표시하고 spender를 이 거래로 바꿉니다(RBF 감지 뒤에 호출).
+  /// 늦은 listunspent가 spender는 남긴 채 unspent로 되돌린 코인은 같은 거래를 다시 처리할 때 다시 표시합니다.
+  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {
+    final txHash = transaction.transactionHash;
+    final outgoing = utxoStatusToString(UtxoStatus.outgoing);
+    return _markInputsOutgoing(
+      walletId,
+      transaction,
+      (utxo) => utxo.spentByTransactionHash == txHash && utxo.status == outgoing ? null : txHash,
+    );
+  }
 
-      // UTXO가 자기 자신을 참조하지 않는지 확인
-      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
-        continue;
-      }
-
-      if (utxo == null) {
-        continue;
-      }
-
-      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
-      await _markUtxoAsOutgoing(walletId, utxoId, transaction.transactionHash);
-    }
+  /// 거래 기록을 만들기 전에, 받아 온 거래가 쓴 코인을 outgoing으로 예약합니다.
+  /// RBF 감지가 이전 spender를 볼 수 있도록 이미 outgoing인 코인은 그대로 두고, 되돌려진 코인의
+  /// 이전 spender도 아직 대체되지 않은 미확정 기록이 있으면 남겨 둡니다.
+  Future<void> reserveSpentInputs(int walletId, lib.Transaction transaction) {
+    final txHash = transaction.transactionHash;
+    return _markInputsOutgoing(walletId, transaction, (utxo) {
+      if (utxo.status == utxoStatusToString(UtxoStatus.outgoing)) return null;
+      final staleSpender = utxo.spentByTransactionHash;
+      final keepStaleSpender =
+          staleSpender != null &&
+          staleSpender != txHash &&
+          realm.query<RealmTransaction>(
+            r'walletId == $0 AND transactionHash == $1 AND blockHeight <= 0 AND replaceByTransactionHash == null',
+            [walletId, staleSpender],
+          ).isNotEmpty;
+      return keepStaleSpender ? staleSpender : txHash;
+    });
   }
 
   Future<void> deleteUtxosByTransaction(int walletId, lib.Transaction transaction) async {

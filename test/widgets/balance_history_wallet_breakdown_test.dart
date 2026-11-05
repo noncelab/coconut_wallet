@@ -98,7 +98,7 @@ void main() {
     await show(tester, [100], singleWallet: true, withTransactions: false);
     await tester.pumpAndSettle();
     for (final label in [t.home_widgets.sent, t.home_widgets.received]) {
-      final summary = t.wallet_list.balance_history_detail.flow_count(count: 0);
+      final summary = t.wallet_balance_history_screen.flow_count(count: 0);
       expect(find.text('$label $summary'), findsOneWidget);
     }
     expect(tester.takeException(), isNull);

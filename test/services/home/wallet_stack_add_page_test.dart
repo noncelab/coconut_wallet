@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
+import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -65,6 +68,7 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
 }
 
 const _boundaryKey = Key('capture-home-stack');
+const _detailKey = Key('wallet-detail');
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -91,6 +95,7 @@ Future<void> _pump(
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(variant: dark ? CoconutThemeVariant.dark : CoconutThemeVariant.light),
+        routes: {AppRouteNames.walletDetail: (_) => const Scaffold(key: _detailKey)},
         builder:
             (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
@@ -159,7 +164,7 @@ void main() {
     await icons.load();
   });
 
-  testWidgets('swiping back from add opens the real wallet list with its original identity', (tester) async {
+  testWidgets('swiping back from add opens the real wallet detail with its original identity', (tester) async {
     await _pump(tester, count: 3);
     final homePager = _pager(tester);
     homePager.controller!.jumpToPage(3);
@@ -169,15 +174,32 @@ void main() {
     expect(homePager.controller!.page, 2);
     await tester.tap(find.byType(PageView));
     await tester.pumpAndSettle();
-    final list = tester.widget<WalletStackListScreen>(find.byType(WalletStackListScreen));
-    expect(list.initialWalletId, 3);
-    expect(list.heroTagOf, isNotNull);
+    final args = ModalRoute.of(tester.element(find.byKey(_detailKey)))!.settings.arguments as WalletDetailRouteArgs;
+    expect(args.id, 3);
+    expect(args.walletIds, [1, 2, 3]);
     expect(find.byType(WalletAddDialog), findsNothing);
-    Navigator.of(tester.element(find.byType(WalletStackListScreen))).pop();
+    Navigator.of(tester.element(find.byKey(_detailKey))).pop();
     await tester.pumpAndSettle();
     expect(homePager.controller!.page, 2);
     expect(tester.widget<WalletCard>(find.byType(WalletCard)).wallet.id, 3);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a visible stack hands the wallet list its front wallet, a covered stack does not', (tester) async {
+    await _pump(tester, count: 3);
+    _pager(tester).controller!.jumpToPage(1);
+    await tester.pumpAndSettle();
+
+    final request = WalletStackView.visibleRequest(HomeItemIds.allWalletStack);
+    expect(request?.front.id, 2);
+    expect(request?.stackRect(), tester.getRect(find.byType(WalletStackView)));
+    expect(WalletStackView.visibleRequest(HomeItemIds.hotWalletStack), isNull);
+
+    Navigator.of(
+      tester.element(find.byType(WalletStackView)),
+    ).push(MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+    await tester.pumpAndSettle();
+    expect(WalletStackView.visibleRequest(HomeItemIds.allWalletStack), isNull);
   });
 
   testWidgets('reordering while on add keeps the add page after cancellation', (tester) async {
@@ -285,24 +307,55 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('many wallets keep the trailing indicator within the small stack', (tester) async {
-    await _pump(tester, count: 30);
-    final pager = _pager(tester);
-    expect(pager.childrenDelegate.estimatedChildCount, 31);
-    pager.controller!.jumpToPage(30);
-    await tester.pumpAndSettle();
-    expect(find.byType(WalletCard), findsNothing);
-    final indicator = find.byKey(const Key('all_wallet_stack-indicator'));
-    final dots = find.descendant(of: indicator, matching: find.byType(AnimatedContainer));
-    expect(dots, findsNWidgets(31));
-    final bounds = tester.getRect(find.byType(PageView));
-    for (final dot in dots.evaluate()) {
-      final rect = tester.getRect(find.byWidget(dot.widget));
-      expect(rect.left, greaterThanOrEqualTo(bounds.left));
-      expect(rect.right, lessThanOrEqualTo(bounds.right));
-    }
-    expect(tester.takeException(), isNull);
-  });
+  for (final span in [HomeSpan.small, HomeSpan.wide]) {
+    testWidgets('many wallets keep the selected indicator within the ${span.toJson()} stack', (tester) async {
+      await _pump(tester, count: 30, span: span);
+      final pager = _pager(tester);
+      expect(pager.childrenDelegate.estimatedChildCount, 31);
+      final indicator = find.byKey(const Key('all_wallet_stack-indicator'));
+      final window = find.byKey(const Key('all_wallet_stack-indicator-window'));
+      final bounds = tester.getRect(find.byType(PageView));
+      for (final page in [0, 15, 30]) {
+        pager.controller!.jumpToPage(page);
+        await tester.tap(find.byKey(const Key('all_wallet_stack-indicator-scrubber')));
+        await tester.pumpAndSettle();
+        expect(tester.widget<AnimatedOpacity>(indicator).opacity, 1);
+        final windowBounds = tester.getRect(window);
+        expect(windowBounds.left, greaterThanOrEqualTo(bounds.left));
+        expect(windowBounds.right, lessThanOrEqualTo(bounds.right));
+        // Extra slots are animation guards; only painted markers must fit the window.
+        final visible = find
+            .descendant(of: window, matching: find.byType(Opacity))
+            .evaluate()
+            .where((element) => (element.widget as Opacity).opacity > 0);
+        expect(visible, hasLength(5));
+        final selected = find.byKey(ValueKey('all_wallet_stack-indicator-dot-$page'));
+        expect(selected, findsOneWidget, reason: 'the indicator window must follow the selected page');
+        expect(tester.getSize(selected).width, 12);
+        for (final marker in visible) {
+          final dot = find.descendant(of: find.byWidget(marker.widget), matching: find.byType(AnimatedContainer));
+          final rect = tester.getRect(dot);
+          expect(rect.left, greaterThanOrEqualTo(windowBounds.left));
+          expect(rect.right, lessThanOrEqualTo(windowBounds.right));
+        }
+        final selectedBounds = tester.getRect(selected);
+        expect(selectedBounds.width, greaterThan(0));
+        expect(selectedBounds.left, greaterThanOrEqualTo(windowBounds.left));
+        expect(selectedBounds.right, lessThanOrEqualTo(windowBounds.right));
+        expect(
+          find.descendant(
+            of: indicator,
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Semantics && widget.properties.value == '${page + 1}/31',
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(find.byType(WalletCard), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final kind in WalletStackKind.values) {
     for (final span in [HomeSpan.small, HomeSpan.wide]) {

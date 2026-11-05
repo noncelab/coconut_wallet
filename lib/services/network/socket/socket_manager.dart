@@ -55,6 +55,16 @@ class SocketManager {
     _completerMap[id] = completer;
   }
 
+  void removeCompleter(int id) => _completerMap.remove(id);
+
+  void _failPendingRequests() {
+    final pending = _completerMap.values.toList();
+    _completerMap.clear();
+    for (final completer in pending) {
+      if (!completer.isCompleted) completer.completeError(const SocketException('Socket connection closed'));
+    }
+  }
+
   void setSubscriptionCallback(String scriptReverseHash, Function(String, String?) callback) {
     (_scriptSubscribeCallbacks[scriptReverseHash] ??= {})[0] = callback;
   }
@@ -144,8 +154,9 @@ class SocketManager {
   }
 
   Future<void> disconnect() async {
-    await _socket?.close();
     _connectionStatus = SocketConnectionStatus.terminated;
+    _failPendingRequests();
+    await _socket?.close();
   }
 
   void _onData(Uint8List data) {
@@ -166,6 +177,7 @@ class SocketManager {
   /// blackhole 상태 등 외부에서 감지한 경우도 포함) 연결 상태를 갱신 + 리스너에 알린다.
   void markConnectionLost() {
     _connectionStatus = SocketConnectionStatus.terminated;
+    _failPendingRequests();
     onConnectionLost?.call();
   }
 
@@ -279,13 +291,9 @@ class SocketManager {
       final id = jsonObject['id'];
       final method = jsonObject['method'];
 
-      if (id != null && _completerMap.containsKey(id)) {
-        if (!_completerMap[id]!.isCompleted) {
-          _completerMap[id]!.complete(jsonObject);
-        } else {
-          Logger.log('이미 완료된 Completer (ID: $id)에 결과를 전달하려고 시도했습니다.');
-        }
-        _completerMap.remove(id);
+      if (id != null) {
+        final completer = _completerMap.remove(id);
+        if (completer != null && !completer.isCompleted) completer.complete(jsonObject);
       } else if (method == 'blockchain.scripthash.subscribe') {
         if (jsonObject['params'] != null && jsonObject['params'].length >= 2) {
           final scriptReversedHash = jsonObject['params'][0];
@@ -299,8 +307,6 @@ class SocketManager {
         } else {
           Logger.log('유효하지 않은 구독 이벤트: $jsonObject');
         }
-      } else if (id != null) {
-        Logger.log('ID: $id에 대한 처리기가 없습니다: $jsonObject');
       }
     } catch (e) {
       Logger.log('JSON 객체 처리 중 오류 발생: $e, 객체: $jsonObject');
