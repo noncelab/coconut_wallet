@@ -23,10 +23,13 @@ class _Spawn {
   final ready = Completer<void>();
   final exited = ReceivePort();
 
-  Future<Isolate> call(void Function(SpawnIsolateDto) entryPoint, SpawnIsolateDto data) async {
+  Future<Isolate> call(void Function(SpawnIsolateDto) entryPoint, SpawnIsolateDto data, SendPort onExit) async {
     requested.complete(data);
     await ready.future;
-    return Isolate.spawn(_idle, null, onExit: exited.sendPort);
+    // _idle은 스스로 끝나지 않으므로 띄운 뒤에 걸어도 종료 알림을 놓치지 않는다.
+    final isolate = await Isolate.spawn(_idle, null, onExit: exited.sendPort);
+    isolate.addOnExitListener(onExit);
+    return isolate;
   }
 }
 
@@ -202,7 +205,9 @@ void main() {
     addTearDown(cancelled.exited.close);
     addTearDown(connected.exited.close);
     addTearDown(isolateSide.close);
-    final manager = IsolateManager(spawnIsolate: (entryPoint, data) => spawns.removeAt(0).call(entryPoint, data));
+    final manager = IsolateManager(
+      spawnIsolate: (entryPoint, data, onExit) => spawns.removeAt(0).call(entryPoint, data, onExit),
+    );
 
     final first = initialize(manager);
     await cancelled.requested.future;

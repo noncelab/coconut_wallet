@@ -19,6 +19,10 @@ import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
+/// isolate를 띄운다. [onExit]는 isolate가 끝날 때 알림을 받을 포트로, 띄우면서 함께 걸어야 한다([Isolate.spawn]의 onExit).
+typedef SpawnIsolate =
+    Future<Isolate> Function(void Function(SpawnIsolateDto) entryPoint, SpawnIsolateDto data, SendPort onExit);
+
 class IsolateManager {
   Isolate? _isolate;
   SendPort? _mainToIsolateSendPort;
@@ -48,11 +52,23 @@ class IsolateManager {
   }
 
   final Set<ReceivePort> _activeReceivePorts = {};
-  final Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto) _spawnIsolate;
+  final SpawnIsolate _spawnIsolate;
+
+  /// 작업 isolate가 닫기·재시작이 아닌 이유(처리되지 않은 오류 등)로 끝났을 때 부른다.
+  void Function()? onUnexpectedExit;
+
+  /// 닫기·재시작 때마다 올려서, 그때 끝낸 isolate의 종료 알림은 무시한다.
+  int _isolateGeneration = 0;
+  ReceivePort? _exitPort;
 
   /// [spawnIsolate]는 테스트가 isolate 준비 시점을 정할 때만 넘긴다(기본값 [Isolate.spawn]).
-  IsolateManager({Future<Isolate> Function(void Function(SpawnIsolateDto), SpawnIsolateDto)? spawnIsolate})
-    : _spawnIsolate = spawnIsolate ?? Isolate.spawn<SpawnIsolateDto>;
+  IsolateManager({SpawnIsolate? spawnIsolate}) : _spawnIsolate = spawnIsolate ?? _spawnWithExitPort;
+
+  static Future<Isolate> _spawnWithExitPort(
+    void Function(SpawnIsolateDto) entryPoint,
+    SpawnIsolateDto data,
+    SendPort onExit,
+  ) => Isolate.spawn<SpawnIsolateDto>(entryPoint, data, onExit: onExit);
 
   void _createReceivePort() {
     if (_mainFromIsolateReceivePort != null) {
@@ -108,7 +124,9 @@ class IsolateManager {
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
       final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType, pinnedCertFingerprint);
 
-      _isolate = await _spawnIsolate(_isolateEntry, data);
+      // 종료 알림은 띄우면서 함께 건다(띄운 뒤에 걸면 그 사이에 끝난 isolate를 놓친다).
+      final exitPort = _openExitPort(_isolateGeneration);
+      _isolate = await _spawnIsolate(_isolateEntry, data, exitPort.sendPort);
       _setUpReceivePortListener();
 
       final timeout = _getTimeout();
@@ -138,7 +156,40 @@ class IsolateManager {
     return _host.contains('.onion') ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
   }
 
+  /// 작업 isolate가 스스로 끝나면(닫기·재시작이 아닌 경우) 응답을 기다리던 명령을 바로 실패시키고, 실행 중이던
+  /// isolate였으면 [onUnexpectedExit]로 알린다. 그러지 않으면 명령은 시간 초과(재동기화는 10분)까지 기다리고 연결도
+  /// 죽은 채 남는다. 초기화 중에 끝나면 [initialize]가 실패로 끝난다(기존 초기화 실패 처리로 다시 시도).
+  /// 송금 명령의 실패는 결과를 모름으로 다뤄진다(BroadcastingViewModel이 다시 연결해 같은 거래를 다시 보냄).
+  ReceivePort _openExitPort(int generation) {
+    final exitPort = _exitPort = ReceivePort('isolateExit');
+    exitPort.listen((_) {
+      exitPort.close();
+      if (generation != _isolateGeneration) return; // 닫기·재시작으로 끝낸 isolate
+      if (identical(_exitPort, exitPort)) _exitPort = null;
+      final wasRunning = isInitialized;
+      Logger.error('IsolateManager: isolate exited unexpectedly');
+      _isolate = null;
+      _mainToIsolateSendPort = null;
+      final ready = _isolateReady;
+      if (ready != null && !ready.isCompleted) {
+        ready.complete(AsyncError(Exception('Isolate exited before initialization completed'), StackTrace.current));
+      }
+      for (final port in _activeReceivePorts.toList()) {
+        port.sendPort.send(Result<bool>.failure(ErrorCodes.nodeIsolateError));
+      }
+      if (wasRunning) onUnexpectedExit?.call();
+    });
+    return exitPort;
+  }
+
+  void _stopWatchingExit() {
+    _isolateGeneration++;
+    _exitPort?.close();
+    _exitPort = null;
+  }
+
   Future<void> _forceCleanup() async {
+    _stopWatchingExit();
     try {
       // 기존 isolate 즉시 종료
       if (_isolate != null) {
@@ -614,6 +665,7 @@ class IsolateManager {
   /// isolate 연결만 종료하는 메서드
   Future<void> closeIsolate() async {
     Logger.log('IsolateManager: Closing isolate');
+    _stopWatchingExit();
 
     try {
       // isolate가 Realm을 정상적으로 닫고 스스로 종료할 짧은 기회를 준다.

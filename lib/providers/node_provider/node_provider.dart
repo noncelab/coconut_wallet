@@ -74,6 +74,10 @@ class NodeProvider extends ChangeNotifier {
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
   Timer? _blockUpdateTimer;
   int _failedReconnects = 0; // 블록 확인이 성공하면 0으로 돌아간다
+  bool _isolateExited = false; // 작업 isolate가 스스로 끝남. 다시 연결하면 false
+  int _isolateExitCount = 0; // 10분 안에 연달아 끝난 횟수(다시 띄우는 간격을 늘림)
+  DateTime? _lastIsolateExitAt;
+  Timer? _isolateRecoveryTimer;
   ValueNotifier<BlockTimestamp?> get currentBlockNotifier => _currentBlockNotifier;
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
@@ -187,6 +191,7 @@ class NodeProvider extends ChangeNotifier {
   /// AppGuard가 이어서 재연결하면 그 재연결이 결과에 맞는 타이머로 바꾼다.
   void resumeBlockUpdates() {
     _failedReconnects = 0;
+    if (_isolateExited && _isolateRecoveryTimer == null) _scheduleIsolateRecovery();
     if (_reconnecting != null || _isInitializing || _isClosing) return;
     _blockUpdateTimer?.cancel();
     _blockUpdateTimer = null;
@@ -270,7 +275,9 @@ class NodeProvider extends ChangeNotifier {
           nodeSyncState == NodeSyncState.init ||
           nodeSyncState == NodeSyncState.syncing ||
           (_stateManager?.hasRetryingWallets ?? false);
-      if (_connectivityProvider.isInternetOn && !isBootstrapping) {
+      // 작업 isolate가 죽었으면 여기서 다시 연결하지 않는다(죽은 isolate라 확인이 바로 실패해 연달아 다시 띄우게 됨).
+      // 그때는 [_scheduleIsolateRecovery]의 예약만 다시 띄운다.
+      if (_connectivityProvider.isInternetOn && !isBootstrapping && !_isolateExited) {
         unawaited(reconnect());
       }
     }
@@ -317,10 +324,40 @@ class NodeProvider extends ChangeNotifier {
     _knownWalletIds = _walletItemListNotifier.value.map((wallet) => wallet.id).toSet();
     _isWalletLoaded = _walletLoadStateNotifier.value == WalletLoadState.loadCompleted;
     _connectivityProvider.addListener(_onConnectivityChanged);
+    _isolateManager.onUnexpectedExit = _onIsolateExited;
     _walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.addListener(_onWalletItemListChanged);
 
     _checkInitialNetworkState();
+  }
+
+  /// 작업 isolate가 예기치 않게 끝나면 연결 오류로 표시하고 다시 띄우기를 예약한다. 재시도·동기화 중이어도 다시 띄운다
+  /// (그 작업은 다시 끝나지 않는다). 블록 확인이 아니라 예약으로만 다시 띄워서, 띄우자마자 죽는 경우에도 몰리지 않는다.
+  void _onIsolateExited() {
+    if (_isDisposed) return;
+    final now = DateTime.now();
+    final lastExit = _lastIsolateExitAt;
+    if (lastExit == null || now.difference(lastExit) > const Duration(minutes: 10)) _isolateExitCount = 0;
+    _lastIsolateExitAt = now;
+    _isolateExitCount++;
+    _isolateExited = true;
+    _setConnectionError(true);
+    _scheduleIsolateRecovery();
+  }
+
+  /// 죽은 isolate를 다시 띄우는 유일한 자동 경로. 연달아 죽으면 10·20·40·80·160초, 최대 5분으로 늘리고 ±20% 흔든다.
+  /// 백그라운드면 띄우지 않고, 복귀 때 [resumeBlockUpdates]가 다시 예약한다(당겨서 새로고침은 바로 다시 띄운다).
+  void _scheduleIsolateRecovery() {
+    _isolateRecoveryTimer?.cancel();
+    final seconds = min(10 << min(max(_isolateExitCount - 1, 0), 5), 300);
+    _isolateRecoveryTimer = Timer(
+      Duration(milliseconds: (seconds * 1000 * (0.8 + 0.4 * Random().nextDouble())).round()),
+      () {
+        _isolateRecoveryTimer = null;
+        if (_isDisposed || !_isolateExited || _isInBackground) return;
+        unawaited(reconnectWhenIdle());
+      },
+    );
   }
 
   void _setConnectionError(bool value) {
@@ -513,6 +550,11 @@ class NodeProvider extends ChangeNotifier {
     if (_isDisposed) return;
     _isInitializing = true;
     _isPendingInitialization = false;
+    // 새 isolate를 띄우므로(재연결·네트워크 복구·서버 변경 어느 경로든) 죽은 isolate 표시와 다시 띄우기 예약을 지운다.
+    // 표시를 남겨 두면 이 초기화가 실패했을 때 블록 확인의 재연결이 계속 막힌다. 새 isolate가 또 죽으면 다시 표시된다.
+    _isolateExited = false;
+    _isolateRecoveryTimer?.cancel();
+    _isolateRecoveryTimer = null;
     _setConnectionError(false); // 초기화 시작 시 에러 상태 리셋
 
     try {
@@ -772,7 +814,9 @@ class NodeProvider extends ChangeNotifier {
     var reconnecting = _reconnecting;
     if (reconnecting == null) {
       if (_isClosing) return false;
-      if (!_isInitializing && state.nodeSyncState != NodeSyncState.syncing) reconnecting = reconnect();
+      if (!_isInitializing && (state.nodeSyncState != NodeSyncState.syncing || _isolateExited)) {
+        reconnecting = reconnect();
+      }
     }
     // 기다리는 사이 서버 변경 등으로 새 재연결이 시작되면 그것까지 대기
     while (reconnecting != null) {
@@ -1136,6 +1180,7 @@ class NodeProvider extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _isolateRecoveryTimer?.cancel();
     final idle = _connectionIdle;
     _connectionIdle = null;
     idle?.complete();

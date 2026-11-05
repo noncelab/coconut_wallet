@@ -81,6 +81,9 @@ class _Isolate extends Fake implements IsolateManager {
   Duration closeDelay = Duration.zero; // IsolateManager.closeIsolate waits for the isolate's graceful-shutdown ack
 
   @override
+  void Function()? onUnexpectedExit;
+
+  @override
   Stream<IsolateStateMessage> get stateStream => stateController.stream;
 
   @override
