@@ -80,6 +80,10 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
       connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
   @override
   Future<bool> reconnectWithoutWaitingForSync() => reconnecting?.future ?? Future.value(true);
+  Completer<Result<String>>? lookup;
+  @override
+  Future<Result<String>> getTransaction(String txHash) =>
+      lookup?.future ?? Future.value(Result.failure(ErrorCodes.nodeUnknown));
   @override
   Future<Result<String>> broadcast(Transaction transaction) {
     broadcasts++;
@@ -369,6 +373,35 @@ void main() {
 
     expect(node.broadcasts, 0);
     expect(find.text(t.broadcasting_screen.btn_submit), findsOneWidget);
+  });
+
+  testWidgets('a late confirmation after the unknown-result notice moves to the completion screen', (tester) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.result_unknown_title)),
+      findsOneWidget,
+    );
+    expect(navigated, isEmpty);
+
+    node.lookup!.complete(Result.success(transactionHash));
+    for (var attempt = 0; navigated.isEmpty && attempt < 100; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(node.broadcasts, 1);
   });
 
   testWidgets('a node rejection for spent inputs shows the friendly message instead of the raw reason', (tester) async {

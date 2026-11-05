@@ -139,6 +139,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// 마지막 송금이 노드에 들어갔는지 끝내 확인하지 못함
   bool get isBroadcastResultUnknown => _isBroadcastResultUnknown;
 
+  /// 노드가 받은 것으로 확인된 거래 (결과 확인 필요 안내 뒤 늦게 확인된 경우 포함)
+  bool get isTransactionAccepted => _isTransactionAccepted;
+
   /// 노드에 넘기기 전인 송금 취소 (이미 넘긴 거래는 되돌릴 수 없음)
   void cancelPendingBroadcast() {
     if (_isBroadcastDispatched) return;
@@ -276,6 +279,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
 
     await _deleteDrafts(unsignedDraftId, _signedDraftId ?? _savedDraftId);
+    if (!_isDisposed) notifyListeners();
   }
 
   /// 노드가 거절한 실패와 달리 응답을 받지 못해 전송 여부를 모르는 실패

@@ -82,6 +82,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
   bool _isBroadcasting = false;
   bool _isPreparingBroadcast = false;
   bool _isAwaitingBroadcast = false;
+  bool _hasLeftForComplete = false;
   bool _showBroadcastLottie = false;
   bool _isBroadcastCompletionPhase = false;
   bool _isOverlayLoading = false;
@@ -136,6 +137,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
         await lottieAnimation;
         if (!mounted) return;
         _restoreAfterBroadcastFailure();
+        if (_viewModel.isTransactionAccepted) {
+          _onLateAcceptance();
+          return;
+        }
         vibrateMedium();
         String message = BroadcastingViewModel.broadcastFailureMessage(result.error.message);
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
@@ -167,29 +172,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
           );
           if (!mounted) return;
         }
-        Navigator.of(context).pushAndRemoveUntil(
-          PageRouteBuilder<void>(
-            settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
-            transitionDuration: const Duration(milliseconds: 280),
-            reverseTransitionDuration: const Duration(milliseconds: 200),
-            pageBuilder:
-                (_, animation, secondaryAnimation) => BroadcastingCompleteScreen(
-                  id: _viewModel.walletId!,
-                  txHash: _viewModel.signedTx!.transactionHash,
-                  animateEntry: true,
-                ),
-            transitionsBuilder:
-                (_, animation, secondaryAnimation, child) => FadeTransition(
-                  opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-                  child: child,
-                ),
-          ),
-          switch (_viewModel.sendEntryPoint) {
-            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
-            SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
-            SendEntryPoint.home || null => (route) => route.isFirst,
-          },
-        );
+        _goToBroadcastingComplete();
       }
     } catch (e) {
       Logger.error(">>>>> broadcast error: $e");
@@ -207,6 +190,30 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
       );
       vibrateMedium();
     }
+  }
+
+  void _goToBroadcastingComplete() {
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder<void>(
+        settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder:
+            (_, animation, secondaryAnimation) => BroadcastingCompleteScreen(
+              id: _viewModel.walletId!,
+              txHash: _viewModel.signedTx!.transactionHash,
+              animateEntry: true,
+            ),
+        transitionsBuilder:
+            (_, animation, secondaryAnimation, child) =>
+                FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
+      ),
+      switch (_viewModel.sendEntryPoint) {
+        SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
+        SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
+        SendEntryPoint.home || null => (route) => route.isFirst,
+      },
+    );
   }
 
   Future<void> _prepareBroadcastAnimation() async {
@@ -412,8 +419,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
                                   );
                                   return;
                                 }
+                                if (viewModel.isTransactionAccepted) {
+                                  _goToBroadcastingComplete();
+                                  return;
+                                }
                                 try {
                                   final result = await viewModel.saveTransactionDraft();
+                                  if (!mounted || viewModel.isTransactionAccepted) return;
                                   if (result.isSuccess) {
                                     _showTransactionDraftSavedDialog();
                                   } else {
@@ -569,7 +581,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
       Provider.of<TransactionDraftRepository>(context, listen: false),
       Provider.of<UtxoRepository>(context, listen: false),
       widget.signedTransactionDraftId,
-    );
+    )..addListener(_onLateAcceptance);
 
     WidgetsBinding.instance.addPostFrameCallback((duration) async {
       if (widget.animateHotWalletEntry) {
@@ -663,6 +675,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
 
       _setOverlayLoading(false);
     });
+  }
+
+  void _onLateAcceptance() {
+    if (!mounted || _isBroadcasting || _hasLeftForComplete || !_viewModel.isTransactionAccepted) return;
+    _hasLeftForComplete = true;
+    _goToBroadcastingComplete();
   }
 
   @override
