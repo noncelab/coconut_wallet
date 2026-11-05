@@ -23,6 +23,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/transaction_mock.dart';
@@ -570,6 +571,54 @@ void main() {
     expect(tagIds(targetId()), ['savings']);
     expect(drafts.getAllUnsignedDrafts(), isEmpty);
   });
+
+  Future<void> prepareSignedDraftSave() async {
+    FlutterSecureStorage.setMockInitialValues(<String, String>{});
+    sendInfo
+      ..setTransaction(viewModel.signedTx!)
+      ..setFeeRate(1)
+      ..setIsMaxMode(false);
+  }
+
+  int signedDraftCount() => manager.realm.all<RealmTransactionDraft>().length;
+
+  for (final saveFirst in [true, false]) {
+    testWidgets(
+      'a draft saved after the result was unknown is removed once the late success lands (saveFirst=$saveFirst)',
+      (tester) async {
+        node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
+        node.resending = Completer<void>();
+        await tester.runAsync(() => initialize());
+        await prepareSignedDraftSave();
+
+        viewModel.broadcast(inheritedTagIds: const []).ignore();
+        await tester.pump(const Duration(seconds: 15));
+        expect(viewModel.isBroadcastResultUnknown, isTrue);
+
+        Future<void> settle() async {
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+          }
+        }
+
+        if (saveFirst) {
+          expect((await tester.runAsync(viewModel.saveTransactionDraft))!.isSuccess, isTrue);
+          expect(signedDraftCount(), 1);
+          node.resending!.complete();
+          await settle();
+        } else {
+          node.resending!.complete();
+          await settle();
+          expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+          expect((await tester.runAsync(viewModel.saveTransactionDraft))!.isSuccess, isTrue);
+          await settle();
+        }
+
+        expect(signedDraftCount(), 0);
+      },
+    );
+  }
 
   testWidgets('checking an unanswered broadcast gives up after 15 seconds', (tester) async {
     node.broadcastErrors.add(ErrorCodes.nodeIsolateError);

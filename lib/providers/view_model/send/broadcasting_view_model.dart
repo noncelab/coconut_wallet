@@ -83,6 +83,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool _tagInheritanceFailed = false;
   bool _isBroadcastDispatched = false;
   bool _isBroadcastResultUnknown = false;
+  bool _isTransactionAccepted = false;
   bool _isDisposed = false;
   Completer<void>? _pendingBroadcastCancel;
   Transaction? _signedTx;
@@ -221,8 +222,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     _tagInheritanceFailed = false;
     _isBroadcastResultUnknown = false;
     final unsignedDraftId = _sendInfoProvider.unsignedDraftId;
-    final signedDraftId = _signedDraftId ?? _savedDraftId;
-    Future<void> finalize() => _finalizeAcceptedTransaction(selectedIds, unsignedDraftId, signedDraftId);
+    Future<void> finalize() => _finalizeAcceptedTransaction(selectedIds, unsignedDraftId);
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final connectionWaitLimit =
         _nodeProvider.host.contains('.onion')
@@ -256,7 +256,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   /// 노드가 받은 거래의 후처리: 입력 표시, 태그 상속, 관련 임시저장 삭제
-  Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId, int? signedDraftId) async {
+  Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId) async {
+    _isTransactionAccepted = true;
     await _markInputsAsOutgoing();
 
     try {
@@ -274,7 +275,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
 
-    await _deleteDrafts(unsignedDraftId, signedDraftId);
+    await _deleteDrafts(unsignedDraftId, _signedDraftId ?? _savedDraftId);
   }
 
   /// 노드가 거절한 실패와 달리 응답을 받지 못해 전송 여부를 모르는 실패
@@ -629,13 +630,15 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     if (result.isSuccess) {
       _savedDraftId = result.value.id;
+      // 저장이 끝나기 전에 노드가 받은 것으로 확인된 거래의 임시저장
+      if (_isTransactionAccepted) await _deleteDrafts(null, _savedDraftId);
     }
 
     return result;
   }
 
-  /// 브로드캐스트 성공 후 관련 draft 삭제 (송금 시작 시점의 ID 사용)
-  /// - unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션
+  /// 브로드캐스트 성공 후 관련 draft 삭제
+  /// - unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션 (송금 시작 시점의 ID)
   /// - signedDraftId: 화면 매개변수로 받았거나(_signedDraftId) 이 화면에서 임시 저장한(_savedDraftId) 서명 완료 트랜잭션
   Future<void> _deleteDrafts(int? unsignedDraftId, int? signedDraftId) async {
     if (unsignedDraftId != null) {
