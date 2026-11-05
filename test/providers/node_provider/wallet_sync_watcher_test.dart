@@ -103,6 +103,70 @@ void main() {
     expect(changes, [true, false]);
   });
 
+  /// 동기화가 끝난 지갑 (전체 상태 완료)
+  Future<void> syncedWallet(int walletId) async {
+    node.manager.initWalletUpdateStatus(walletId);
+    node.manager.setWalletSyncQueueState(walletId, false, 80000000);
+    await settle();
+  }
+
+  int reloads() => changes.where((isSyncing) => !isSyncing).length;
+
+  test('평소 동기화가 실패로 끝나 전체 상태가 실패로 바뀌어도 한 번만 다시 맞춘다', () async {
+    await syncedWallet(1);
+    expect(node.state.nodeSyncState, NodeSyncState.completed);
+    watcher.watch(1);
+    node.manager.setWalletSyncQueueState(1, true, 80000000);
+    await settle();
+    node.manager.setWalletSyncQueueState(1, false, null);
+    await settle();
+    expect(node.state.nodeSyncState, NodeSyncState.failed);
+    expect(changes, [true, false]);
+  });
+
+  test('다른 지갑이 실패 중일 때 평소 동기화가 성공으로 끝나도 한 번만 다시 맞춘다', () async {
+    await failedWallet(2);
+    await syncedWallet(1);
+    watcher.watch(1);
+    node.manager.setWalletSyncQueueState(1, true, 80000000);
+    await settle();
+    node.manager.setWalletSyncQueueState(1, false, 50000000);
+    await settle();
+    expect(node.state.nodeSyncState, NodeSyncState.failed);
+    expect(reloads(), 1);
+    expect(changes.last, isFalse);
+  });
+
+  test('재시도 뒤에 붙은 푸시까지 실패로 끝나도 큐가 끝날 때 한 번만 다시 맞춘다', () async {
+    await failedWallet(1);
+    watcher.watch(1);
+    await startRetry();
+    node.manager.setWalletRetrying(1, false); // 재시도 작업의 finally, 큐는 뒤에 붙은 푸시로 계속 돈다
+    await settle();
+    node.manager.initWalletUpdateStatus(1); // 푸시 작업의 진행
+    node.manager.addWalletSyncState(1, UpdateElement.balance);
+    await settle();
+    node.manager.setWalletSyncQueueState(1, false, null);
+    await settle();
+    expect(reloads(), 1);
+    expect(changes.last, isFalse);
+  });
+
+  test('재시도 도중 다른 지갑 때문에 한 번 다시 맞췄어도, 재시도가 끝나면 마지막으로 또 맞춘다', () async {
+    await failedWallet(2);
+    await failedWallet(1);
+    watcher.watch(1);
+    await startRetry();
+    // 다른 지갑의 동기화가 돌다 실패하면 전체 상태가 동기화 중 → 실패로 바뀌어 대기가 켜졌다 꺼진다(재시도 도중)
+    node.manager.setWalletSyncQueueState(2, true, 80000000);
+    await settle();
+    node.manager.setWalletSyncQueueState(2, false, null);
+    await settle();
+    expect(changes, [true, false]);
+    await finishRetry(success: false);
+    expect(changes, [true, false, false], reason: '재시도가 끝난 뒤의 코인으로 다시 맞춘다');
+  });
+
   test('재시도 중 연결이 닫혀 끝 알림이 오지 않아도 대기에 묶이지 않는다', () async {
     await failedWallet(1);
     watcher.watch(1);
