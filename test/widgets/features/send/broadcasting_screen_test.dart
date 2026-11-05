@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:typed_data';
@@ -402,6 +403,67 @@ void main() {
 
     expect(navigated, [AppRouteNames.broadcastingComplete]);
     expect(node.broadcasts, 1);
+  });
+
+  testWidgets('tapping save while a late confirmation is being finished opens the completion screen once', (
+    tester,
+  ) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    await tester.tap(find.text(t.OK));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    node.lookup!.complete(Result.success(transactionHash));
+    await tester.pump();
+    await tester.tap(find.text(t.transaction_draft.save));
+    for (var attempt = 0; attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(manager.realm.all<RealmTransactionDraft>(), isEmpty);
+  });
+
+  testWidgets('a late confirmation arriving while leaving with system back does not open the completion screen', (
+    tester,
+  ) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    await tester.tap(find.text(t.OK));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 50));
+    node.lookup!.complete(Result.success(transactionHash));
+    for (var attempt = 0; attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, isNot(contains(AppRouteNames.broadcastingComplete)));
+    expect(find.byType(BroadcastingScreen), findsNothing);
+    expect(repository.getUtxoState(1, getUtxoId(_hash, 0))!.status, UtxoStatus.outgoing);
   });
 
   testWidgets('a node rejection for spent inputs shows the friendly message instead of the raw reason', (tester) async {
