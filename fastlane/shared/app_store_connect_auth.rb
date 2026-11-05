@@ -13,7 +13,8 @@ module AppStoreConnectAuth
       FastlaneCore::UI.user_error!("ios/fastlane/.env에 #{missing.join(', ')} 값이 필요합니다.")
     end
 
-    key_path = File.expand_path(ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"])
+    # .env 값 끝의 공백·CR이 경로에 섞이면 있는 파일도 못 찾으므로 앞뒤 공백을 지웁니다.
+    key_path = File.expand_path(ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"].strip)
     FastlaneCore::UI.user_error!("API 키 파일이 없습니다: #{key_path}") unless File.file?(key_path)
     if (File.stat(key_path).mode & 0o077) != 0
       FastlaneCore::UI.user_error!("API 키 파일 권한이 넓습니다. chmod 600 #{key_path}")
