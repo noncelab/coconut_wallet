@@ -82,6 +82,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
   bool _isBroadcastDispatched = false;
+  bool _isBroadcastResultUnknown = false;
   bool _isDisposed = false;
   Completer<void>? _pendingBroadcastCancel;
   Transaction? _signedTx;
@@ -133,6 +134,9 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   /// 노드에 거래를 넘긴 뒤 (결과를 기다리는 중이거나 성공)
   bool get isBroadcastDispatched => _isBroadcastDispatched;
+
+  /// 마지막 송금이 노드에 들어갔는지 끝내 확인하지 못함
+  bool get isBroadcastResultUnknown => _isBroadcastResultUnknown;
 
   /// 노드에 넘기기 전인 송금 취소 (이미 넘긴 거래는 되돌릴 수 없음)
   void cancelPendingBroadcast() {
@@ -215,6 +219,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     Future<T?> unlessCancelled<T>(Future<T> work) => Future.any<T?>([work, cancel.future.then<T?>((_) => null)]);
 
     _tagInheritanceFailed = false;
+    _isBroadcastResultUnknown = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final connectionWaitLimit =
         _nodeProvider.host.contains('.onion')
@@ -232,7 +237,11 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     _isBroadcastDispatched = true;
     notifyListeners();
-    final result = await _nodeProvider.broadcast(_signedTx!);
+    var result = await _nodeProvider.broadcast(_signedTx!);
+    if (result.isFailure && _isUnknownOutcome(result.error)) {
+      result = await _confirmUnansweredBroadcast(connectionWaitLimit);
+      _isBroadcastResultUnknown = result.isFailure && _isUnknownOutcome(result.error);
+    }
     if (result.isFailure) {
       _isBroadcastDispatched = false;
       if (!_isDisposed) notifyListeners();
@@ -260,6 +269,26 @@ class BroadcastingViewModel extends ChangeNotifier {
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
     return result;
+  }
+
+  /// 노드가 거절한 실패와 달리 응답을 받지 못해 전송 여부를 모르는 실패
+  static bool _isUnknownOutcome(AppError error) =>
+      error.code == ErrorCodes.nodeIsolateError.code || error.code == ErrorCodes.nodeUnknown.code;
+
+  /// 노드에 들어갔는지 조회하고, 없으면 같은 거래를 한 번 더 보냄 (같은 txid라 중복 전송 없음)
+  Future<Result<String>> _confirmUnansweredBroadcast(Duration limit) {
+    final txid = _signedTx!.transactionHash;
+    final unknown = Result<String>.failure(
+      AppError(ErrorCodes.nodeIsolateError.code, t.broadcasting_screen.dialog.result_unknown),
+    );
+    Future<Result<String>> confirm() async {
+      if (!await _waitForConnection()) return unknown;
+      if ((await _nodeProvider.getTransaction(txid)).isSuccess) return Result.success(txid);
+      final resent = await _nodeProvider.broadcast(_signedTx!);
+      return resent.isFailure && _isUnknownOutcome(resent.error) ? unknown : resent;
+    }
+
+    return confirm().timeout(limit, onTimeout: () => unknown);
   }
 
   Future<bool> _waitForConnection() async =>

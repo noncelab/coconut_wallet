@@ -997,6 +997,8 @@ broadcasting_screen:
     send_unavailable: "전송 불가"
     tag_apply_failed: "전송은 완료되었지만 태그를 적용하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
     not_sent_no_connection: "노드 연결에 실패했어요. 잠시 후 다시 시도해 주세요."
+    result_unknown_title: "전송 결과 확인 필요"
+    result_unknown: "전송 결과를 확인하지 못했어요. 같은 거래라 다시 보내도 두 번 나가지 않아요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"

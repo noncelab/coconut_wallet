@@ -145,7 +145,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
         showInfoDialog(
           context,
           context.read<PreferenceProvider>().language,
-          t.broadcasting_screen.error_popup_title,
+          _viewModel.isBroadcastResultUnknown
+              ? t.broadcasting_screen.dialog.result_unknown_title
+              : t.broadcasting_screen.error_popup_title,
           message,
         );
         return;

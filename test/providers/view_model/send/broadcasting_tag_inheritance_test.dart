@@ -68,11 +68,28 @@ class _NodeProvider extends Fake implements NodeProvider {
     return reconnecting?.future ?? Future.value(true);
   }
 
+  /// 앞에서부터 차례로 쓰는 전송 결과 (비면 [fails]를 따름)
+  final List<AppError?> broadcastErrors = [];
+  int lookups = 0;
+  bool transactionFound = false;
+  Completer<void>? lookingUp;
+
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
     duringBroadcast?.call();
+    if (broadcastErrors.isNotEmpty) {
+      final error = broadcastErrors.removeAt(0);
+      return error == null ? Result.success(signedTx.transactionHash) : Result.failure(error);
+    }
     return fails ? Result.failure(ErrorCodes.broadcastError) : Result.success(signedTx.transactionHash);
+  }
+
+  @override
+  Future<Result<String>> getTransaction(String txHash) async {
+    lookups++;
+    await lookingUp?.future;
+    return transactionFound ? Result.success('raw') : Result.failure(ErrorCodes.nodeUnknown);
   }
 }
 
@@ -440,6 +457,80 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: const []);
 
     expect(viewModel.isBroadcastDispatched, isFalse);
+  });
+
+  test('an unanswered broadcast that reached the node is reported as sent', () async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.transactionFound = true;
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(result.value, viewModel.signedTx!.transactionHash);
+    expect(node.lookups, 1);
+    expect(viewModel.isBroadcastResultUnknown, isFalse);
+    expect(node.broadcasts, 1);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('an unanswered broadcast not found on the node is sent once more as the same transaction', () async {
+    node.broadcastErrors.addAll([ErrorCodes.nodeUnknown, null]);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(node.lookups, 1);
+    expect(node.broadcasts, 2);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('a broadcast whose result stays unknown asks the user to send the same transaction again', () async {
+    node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, ErrorCodes.nodeIsolateError]);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.result_unknown,
+    );
+    expect(node.broadcasts, 2);
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    expect(viewModel.isBroadcastDispatched, isFalse);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a node rejection is reported as is without checking or resending', () async {
+    node.broadcastErrors.add(ErrorCodes.broadcastError);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.error.code, ErrorCodes.broadcastError.code);
+    expect(node.lookups, 0);
+    expect(viewModel.isBroadcastResultUnknown, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('checking an unanswered broadcast gives up after 15 seconds', (tester) async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.lookingUp = Completer<void>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 14));
+    expect(result, isNull);
+    expect(viewModel.isBroadcastDispatched, isTrue);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.result_unknown,
+    );
+    expect(node.broadcasts, 1);
   });
 
   test('failed broadcast leaves the input spendable', () async {

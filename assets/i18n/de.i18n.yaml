@@ -999,6 +999,8 @@ broadcasting_screen:
     send_unavailable: "Senden nicht möglich"
     tag_apply_failed: "Die Transaktion wurde gesendet, aber die Tags konnten nicht angewendet werden. Prüfe die Tags in deiner UTXO-Liste."
     not_sent_no_connection: "Verbindung zum Node fehlgeschlagen. Bitte versuche es gleich noch einmal."
+    result_unknown_title: "Sendestatus prüfen"
+    result_unknown: "Wir konnten nicht bestätigen, ob die Transaktion gesendet wurde. Es ist dieselbe Transaktion, ein erneutes Senden sendet sie nicht doppelt."
 send_address_screen:
   text1: "QR scannen oder\nkopierte Adresse einfügen"
   text2: "Bitte scannen Sie den Adress-QR-Code"

@@ -996,6 +996,8 @@ broadcasting_screen:
     send_unavailable: "送信不可"
     tag_apply_failed: "送信は完了しましたが、タグを適用できませんでした。UTXO一覧でタグを確認してください。"
     not_sent_no_connection: "ノードへの接続に失敗しました。しばらくしてからもう一度お試しください。"
+    result_unknown_title: "送信結果の確認が必要"
+    result_unknown: "送信結果を確認できませんでした。同じトランザクションなので、もう一度送信しても二重に送信されません。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"
