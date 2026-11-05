@@ -49,7 +49,6 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: Material(
         color: colors.background,
-        elevation: overlapsContent && progress > 0.95 ? 1 : 0,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -113,6 +112,27 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
             Positioned(left: 0, right: 0, bottom: 0, child: bottomBar),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -24,
+              height: 24,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: shrinkOffset > maxExtent - minExtent && !isOverviewSelected ? 1 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [colors.background, colors.background.withValues(alpha: 0)],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

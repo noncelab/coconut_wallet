@@ -33,7 +33,6 @@ class WalletDetailRouteArgs {
   final int id;
   final bool focusRecentTransactions;
   final String? focusedTransactionHash;
-  final String entryPoint;
 
   /// 지갑 상세의 카드 휠에 놓을 지갑과 순서. 없으면 전체 지갑.
   final List<int>? walletIds;
@@ -42,7 +41,6 @@ class WalletDetailRouteArgs {
   final void Function(int walletId)? onFocusChanged;
   const WalletDetailRouteArgs({
     required this.id,
-    required this.entryPoint,
     this.walletIds,
     this.onFocusChanged,
     this.focusRecentTransactions = false,
@@ -117,18 +115,6 @@ class SendRouteArgs {
   });
 }
 
-class UtxoMergeRouteArgs {
-  final int id;
-  final bool isActive;
-  const UtxoMergeRouteArgs({required this.id, required this.isActive});
-}
-
-class UtxoSplitRouteArgs {
-  final int id;
-  final bool isActive;
-  const UtxoSplitRouteArgs({required this.id, required this.isActive});
-}
-
 class UtxoTagCrudRouteArgs {
   final int id;
   const UtxoTagCrudRouteArgs({required this.id});
@@ -152,7 +138,6 @@ class WalletAddScannerRouteArgs {
 class WalletInfoRouteArgs {
   final int id;
   final WalletType walletType;
-  final String entryPoint;
   final bool? showMfpInput;
   final bool? highlightMnemonicBackup;
   final bool? showTargetSetting;
@@ -160,7 +145,6 @@ class WalletInfoRouteArgs {
   const WalletInfoRouteArgs({
     required this.id,
     required this.walletType,
-    required this.entryPoint,
     this.showMfpInput,
     this.highlightMnemonicBackup,
     this.showTargetSetting,
@@ -242,11 +226,6 @@ class UtxoSelectionRouteArgs {
 class SendConfirmRouteArgs {
   final BitcoinUnit? currentUnit;
   const SendConfirmRouteArgs({this.currentUnit});
-}
-
-class UtxoListRouteArgs {
-  final int id;
-  const UtxoListRouteArgs({required this.id});
 }
 
 class UtxoOverviewRouteArgs {

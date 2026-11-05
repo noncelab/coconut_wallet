@@ -32,7 +32,9 @@ class WebSocketService {
         return 'wss://api.upbit.com/websocket/v1';
       case ExchangeType.binance:
         final symbol = _symbol?.toLowerCase() ?? 'btcusdt';
-        return 'wss://stream.binance.com:9443/ws/$symbol@ticker';
+        // 바이낸스 시세 전용 주소(Market Data Only URLs). stream.binance.com은 미국에서 HTTP 451로 막힌다.
+        // https://developers.binance.com/docs/binance-spot-api-docs/faqs/market_data_only
+        return 'wss://data-stream.binance.vision/ws/$symbol@ticker';
       case ExchangeType.bitflyer:
         return 'wss://ws.lightstream.bitflyer.com/json-rpc';
     }

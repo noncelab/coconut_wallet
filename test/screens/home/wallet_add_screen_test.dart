@@ -98,7 +98,7 @@ void main() {
 
     WalletAddActions.finishWithWalletDetail(
       tester.element(find.text(AppRouteNames.walletAddScanner)),
-      const WalletDetailRouteArgs(id: 1, entryPoint: 'test'),
+      const WalletDetailRouteArgs(id: 1),
     );
     await tester.pumpAndSettle();
     expect(find.text(AppRouteNames.walletDetail), findsOneWidget);

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_security_banner.dart';
 import 'package:coconut_wallet/screens/wallet_detail/move_to_vault_bottom_sheets.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -49,6 +50,7 @@ import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_syn
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -56,16 +58,14 @@ import 'package:provider/provider.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
-  final String entryPoint;
 
-  const WalletDetailScreen({super.key, required this.id, required this.entryPoint});
+  const WalletDetailScreen({super.key, required this.id});
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
 }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProviderStateMixin {
-  static const _nextWarningDelay = Duration(milliseconds: 400);
   late final WalletDetailViewModel _viewModel;
   final ValueNotifier<bool> _bottomActionButtonsExpandedNotifier = ValueNotifier<bool>(true);
   bool? _pendingBottomActionButtonsExpanded;
@@ -158,8 +158,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         const SizedBox(height: 20),
                         for (final child in [
                           _buildBalanceHeader(),
+                          ListenableBuilder(listenable: _viewModel, builder: (context, _) => _buildSecurityWarning()),
                           CoconutLayout.spacing_500h,
-                          _buildSecurityWarning(),
                           _buildTargetCard(),
                           CoconutLayout.spacing_500h,
                           _buildRecentTransactions(),
@@ -223,11 +223,22 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             _logAction(WalletDetailAction.walletInfo);
             _openWalletInfo();
           },
-          icon: SvgPicture.asset(
-            FeatureSettingsIconPath.settings,
-            width: 24,
-            height: 24,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+          icon: ListenableBuilder(
+            listenable: _viewModel,
+            builder:
+                (context, _) => WalletSettingsBackupBadge(
+                  visible:
+                      _viewModel.getSecurityWarningType(
+                        isAppLockEnabled: context.watch<AuthProvider>().isAuthEnabled,
+                      ) ==
+                      WalletDetailSecurityWarningType.unbackedHotWallet,
+                  child: SvgPicture.asset(
+                    FeatureSettingsIconPath.settings,
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                  ),
+                ),
           ),
         ),
         const SizedBox(width: 8),
@@ -268,47 +279,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
 
   Widget _buildSecurityWarning() {
     final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
-    return Consumer<WalletDetailViewModel>(
-      builder: (context, viewModel, _) {
-        final warningType = viewModel.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
-        if (warningType == null) return const SizedBox.shrink();
-
-        final isMnemonicWarning = warningType == WalletDetailSecurityWarningType.unbackedHotWallet;
-        final iconColor =
-            isMnemonicWarning ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: HomeAlertCard.security(
-            key: ValueKey(warningType),
-            type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
-            showDelay:
-                viewModel.shouldUseShortWarningDelay(warningType) ? _nextWarningDelay : const Duration(seconds: 1),
-            title:
-                isMnemonicWarning
-                    ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-                    : t.wallet_home_screen.app_lock_warning.title,
-            description:
-                isMnemonicWarning
-                    ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
-                    : t.wallet_home_screen.app_lock_warning.description,
-            onTap: isMnemonicWarning ? _onBackupBannerTapped : _openAppLockSettings,
-            onClosed:
-                () => viewModel.dismissSecurityWarning(
-                  warningType,
-                  showNextWarning:
-                      isMnemonicWarning &&
-                      !isAppLockEnabled &&
-                      viewModel.canShowSecurityWarning(WalletDetailSecurityWarningType.appLock),
-                ),
-            icon: SvgPicture.asset(
-              isMnemonicWarning ? CommonStateIconPath.triangleWarning : CommonStateIconPath.shieldWarning,
-              width: 20,
-              height: 20,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-            ),
-          ),
-        );
+    final detail = _viewModel;
+    final warning = detail.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
+    return WalletSecurityBanner(
+      warning: warning,
+      walletId: detail.walletId,
+      onTap:
+          warning == WalletDetailSecurityWarningType.unbackedHotWallet ? _onBackupBannerTapped : _openAppLockSettings,
+      onClosed: () {
+        if (warning == null) return;
+        detail.dismissSecurityWarning(warning);
       },
     );
   }
@@ -709,16 +689,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
     final destination = resolveMoveToVaultDestination(_viewModel.balance, watchOnlyWallets.length);
     if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
-      final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
+      final receivingVaultWalletId = await SelectWalletBottomSheet.show<int>(
         context: context,
         screenName: AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
-        heightRatio: 0.5,
-        childBuilder:
-            (scrollController) => ShowVaultSelectWalletBottomSheet(
-              walletId: widget.id,
-              watchOnlyWallets: watchOnlyWallets,
-              scrollController: scrollController,
-            ),
+        child: ShowVaultSelectWalletBottomSheet(walletId: widget.id, watchOnlyWallets: watchOnlyWallets),
       );
       if (!mounted || receivingVaultWalletId == null) return;
       _openSendToVault(receivingVaultWalletId);
@@ -806,11 +780,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
   }
 
   void _openTransactionList() {
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.transactionList,
-      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: widget.entryPoint),
-    );
+    Navigator.pushNamed(context, AppRouteNames.transactionList, arguments: WalletDetailRouteArgs(id: widget.id));
   }
 
   Future<void> _openWalletInfo({bool showTargetSetting = false}) async {
@@ -820,7 +790,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
       arguments: WalletInfoRouteArgs(
         id: widget.id,
         walletType: _viewModel.wallet.walletType,
-        entryPoint: widget.entryPoint,
         showTargetSetting: showTargetSetting,
       ),
     );
@@ -834,7 +803,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
       arguments: WalletInfoRouteArgs(
         id: widget.id,
         walletType: _viewModel.wallet.walletType,
-        entryPoint: widget.entryPoint,
         highlightMnemonicBackup: true,
       ),
     );

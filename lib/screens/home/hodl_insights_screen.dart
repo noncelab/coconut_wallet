@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    show CoconutLayout, CoconutTypography, CoconutToast, CoconutToastLevel;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
@@ -30,6 +32,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 /// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서
 /// 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
+  static const routeName = '/hodl-insights';
   static const transitionDuration = Duration(milliseconds: 480);
 
   /// 홈 위젯에서 열면 해당 인사이트 카드로 날아오며 바뀐다.
@@ -39,7 +42,8 @@ class HodlInsightsScreen extends StatefulWidget {
   const HodlInsightsScreen({super.key, this.heroTag, this.heroSection});
 
   /// 홈 위젯이나 모든 기능에서 연다.
-  /// 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
+  /// 저장한 지갑 선택을 복원한다. 저장 전에는 진입 위젯의 지갑 범위를 사용한다.
+  /// 기간은 진입 위젯의 설정으로 시작한다.
   static Future<void> open(
     BuildContext context, {
     List<int>? walletIds,
@@ -55,12 +59,13 @@ class HodlInsightsScreen extends StatefulWidget {
             data,
             initialSection: section,
             walletIds: walletIds,
+            selectionRepository: SharedPrefsRepository(),
             balancePeriod: balancePeriod,
             activityPeriod: activityPeriod,
           ),
       child: HodlInsightsScreen(heroTag: heroTag, heroSection: section),
     );
-    const settings = RouteSettings(name: '/hodl-insights');
+    const settings = RouteSettings(name: routeName);
     if (heroTag == null) {
       return Navigator.of(context).push(CupertinoPageRoute(settings: settings, builder: page));
     }
@@ -161,6 +166,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   }
 
   Future<void> _openSettings(BuildContext context, HodlInsightsViewModel viewModel) async {
+    if (viewModel.isSavingWalletSelection) return;
     final settings = await WidgetConfigureSheet.openSettings(
       context,
       title: t.hodl_insights.settings_title,
@@ -173,9 +179,11 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
       wallets: viewModel.data.wallets,
       initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
     );
-    if (settings == null) return;
-    viewModel.setWalletIds(settings.walletIds);
-    viewModel.data.refresh();
+    if (settings == null || !mounted) return;
+    final saved = await viewModel.saveWalletSelection(settings.walletIds);
+    if (!saved && context.mounted) {
+      CoconutToast.showToast(context: context, text: t.errors.storage_write_error, level: CoconutToastLevel.warning);
+    }
   }
 
   @override

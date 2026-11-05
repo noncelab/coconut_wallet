@@ -41,7 +41,7 @@ class UnsignedPsbtSummaryCard extends StatelessWidget {
         ),
         CoconutLayout.spacing_300h,
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.coconutColors.surface,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
@@ -65,12 +65,13 @@ class UnsignedPsbtSummaryCard extends StatelessWidget {
                 _buildDetailRow(
                   context,
                   sendLabel,
-                  currentUnit.isPrefixSymbol ? '${currentUnit.symbol} --' : '-- ${currentUnit.symbol}',
+                  currentUnit.isPrefixSymbol ? '${currentUnit.symbol} -' : '- ${currentUnit.symbol}',
                 ),
+                CoconutLayout.spacing_300h,
                 _buildDetailRow(
                   context,
                   feeLabel,
-                  currentUnit.isPrefixSymbol ? '${currentUnit.symbol} --' : '-- ${currentUnit.symbol}',
+                  currentUnit.isPrefixSymbol ? '${currentUnit.symbol} -' : '- ${currentUnit.symbol}',
                 ),
               ],
             ],

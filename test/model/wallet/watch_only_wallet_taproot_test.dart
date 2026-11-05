@@ -8,6 +8,67 @@ import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('coconut_lib 1.1.5 exported inheritance QR configuration is supported', () {
+    const parent =
+        'tpubDDaw9b1Dv3NBfk4rsVdJ6gPLoXrVRHhzTGHLzqYQrr1aQ8y1wvhAjZrGziTifWEAGso75sDNTwUozf2aZDVMPwQGecHHHXwRyuLWSk6BvB9';
+    const child =
+        'tpubDDa4Jsxcnams3Nijs1QqciRAVzofLZfvGzLDhoN1j9e6nDmKBuWieycjXdbyK94hmCi9EpG7u3n6jFdZyvvnE9JsPSw5r5uq7C7rCcye2p2';
+    const miniscript = "and_v(v:after(1792646340),pk([6213D91E/86'/1'/0']$child/<0;1>/*))";
+    const descriptor = "tr([A3B2EB70/86'/1'/0']$parent/<0;1>/*,$miniscript)#sw6gz2pc";
+    final wallet = WatchOnlyWallet.fromJson({
+      'name': 'sk>ab',
+      'colorIndex': 0,
+      'iconIndex': 0,
+      'descriptor': descriptor,
+      'keyPathSeedInfos': [parent],
+      'scriptPathSeedInfos': [
+        {
+          'miniscript': miniscript,
+          'extendedPublicKeys': [child],
+        },
+      ],
+      'createdAt': '2026-10-22T14:20:19.014235',
+    });
+    final parsed = Descriptor.parse(wallet.descriptor);
+    expect(wallet.isTaproot, isTrue);
+    expect(parsed.totalSigner, 1);
+    expect(parsed.miniscriptList, [miniscript]);
+    expect(wallet.keyPathSeedInfos, hasLength(1));
+    expect(wallet.scriptPathSeedInfos, hasLength(1));
+    expect(parsed.getDerivationPath(0).split('/')[1], "86'");
+    final policy = InheritancePolicy.fromMiniscript(parsed.miniscriptList.single) as InheritancePolicy;
+    expect(policy.locktime, 1792646340);
+    expect(policy.beneficiaryKeyStore.masterFingerprint.toUpperCase(), '6213D91E');
+    expect(wallet.isSupportedTaprootConfiguration, isTrue);
+
+    for (final entry
+        in <String, bool>{
+          miniscript: true,
+          miniscript.replaceFirst("6213D91E/86'", '6213D91E/86h'): true,
+          miniscript.replaceFirst("6213D91E/86'", "6213D91E/84'"): false,
+          miniscript.replaceFirst("6213D91E/86'", '6213D91E/86'): false,
+          "and_v(v:pk([6213D91E/86'/1'/0']$child/<0;1>/*),after(1792646340))": false,
+          "and_v(v:pk([6213D91E/86'/1'/0']$child/<0;1>/*),older(1792646340))": false,
+          "and_v(after_drop(1792646340),pk([6213D91E/86'/1'/0']$child/<0;1>/*))": false,
+          "and_v(v:pk([6213D91E/84'/1'/0']$child/<0;1>/*),after(1792646340))": false,
+        }.entries) {
+      final variantDescriptor =
+          Descriptor.parse("tr([A3B2EB70/86'/1'/0']$parent/<0;1>/*,${entry.key})", ignoreChecksum: true).serialize();
+      final variant = WatchOnlyWallet.fromJson({
+        'name': 'Purpose validation',
+        'descriptor': variantDescriptor,
+        'keyPathSeedInfos': [parent],
+        'scriptPathSeedInfos': [
+          {
+            'miniscript': entry.key,
+            'extendedPublicKeys': [child],
+          },
+        ],
+      });
+      expect(variant.isSupportedTaprootConfiguration, entry.value, reason: entry.key);
+    }
+  });
+
   // 탭루트 상속 지갑
   const parentTaprootXpub =
       "tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN";
@@ -27,7 +88,78 @@ void main() {
   const singlesigDescriptor =
       "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
 
+  for (final parentCount in [1, 2]) {
+    for (final capability in ['parent', 'beneficiary', 'both']) {
+      test('1.1.5 QR: $parentCount parents, $capability capability preserves addresses', () {
+        const miniscript = "and_v(v:after(1792646340),pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*))";
+        final internalKey =
+            parentCount == 1
+                ? "[9B1441E4/86'/1'/0']$parentTaprootXpub/<0;1>/*"
+                : "musig([57450F41/86'/1'/0']$cosigner1TaprootXpub/<0;1>/*,[F82D58DD/86'/1'/0']$cosigner2TaprootXpub/<0;1>/*)";
+        final descriptor = Descriptor.parse('tr($internalKey,$miniscript)', ignoreChecksum: true).serialize();
+        final wallet = WatchOnlyWallet.fromJson({
+          'name': 'New inheritance',
+          'descriptor': descriptor,
+          'keyPathSeedInfos':
+              capability == 'beneficiary' ? <String>[] : [parentCount == 1 ? parentTaprootXpub : cosigner1TaprootXpub],
+          'scriptPathSeedInfos':
+              capability == 'parent'
+                  ? <Map<String, dynamic>>[]
+                  : [
+                    {
+                      'miniscript': miniscript,
+                      'extendedPublicKeys': [childTaprootXpub],
+                    },
+                  ],
+        });
+        expect(wallet.isSupportedTaprootConfiguration, isTrue);
+        expect(Descriptor.parse(wallet.descriptor).totalSigner, parentCount);
+        final restored = WatchOnlyWallet.fromJson(jsonDecode(wallet.toJson()) as Map<String, dynamic>);
+        expect(restored.isSupportedTaprootConfiguration, isTrue);
+        expect(restored.keyPathSeedInfos, wallet.keyPathSeedInfos);
+        expect(
+          restored.scriptPathSeedInfos!.map((info) => info.toJson()),
+          wallet.scriptPathSeedInfos!.map((info) => info.toJson()),
+        );
+        final originalWallet = TaprootWallet.fromDescriptor(descriptor);
+        final restoredWallet = TaprootWallet.fromDescriptor(restored.descriptor);
+        for (final isChange in [false, true]) {
+          for (final index in [0, 1, 19]) {
+            expect(
+              restoredWallet.getAddress(index, isChange: isChange),
+              originalWallet.getAddress(index, isChange: isChange),
+            );
+          }
+        }
+      });
+    }
+  }
+
   group('Taproot older to after migration', () {
+    test('중첩 트리 구조를 유지하고 재실행 시 변경하지 않는다', () {
+      const untouchedLeaf = "pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*)";
+      const tree = '{$inheritanceMiniscript,{$untouchedLeaf,$inheritanceMiniscript}}';
+      final result = TaprootOlderToAfterMigration.migrate(
+        descriptor: "tr([9B1441E4/86'/1'/0']$parentTaprootXpub/<0;1>/*,$tree)",
+        scriptPathSeedInfos: [
+          TaprootScriptPathSeedInfo(miniscript: inheritanceMiniscript, extendedPublicKeys: [childTaprootXpub]),
+        ],
+      );
+      expect(Descriptor.parse(result.descriptor).treeExpression, tree.replaceAll('older(', 'after('));
+      expect(Descriptor.parse(result.descriptor).miniscriptList, [
+        inheritanceMiniscript.replaceFirst('older(', 'after('),
+        untouchedLeaf,
+        inheritanceMiniscript.replaceFirst('older(', 'after('),
+      ]);
+      final repeated = TaprootOlderToAfterMigration.migrate(
+        descriptor: result.descriptor,
+        scriptPathSeedInfos: result.scriptPathSeedInfos,
+      );
+      expect(repeated.hasChanges, isFalse);
+      expect(repeated.descriptor, result.descriptor);
+      expect(repeated.scriptPathSeedInfos.single.miniscript, result.scriptPathSeedInfos.single.miniscript);
+    });
+
     test('older를 after로 변환하고 descriptor checksum을 재생성한다', () {
       final result = TaprootOlderToAfterMigration.migrate(
         descriptor: oneParentDescriptor,
@@ -262,7 +394,7 @@ void main() {
       expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
-    test('oneParentDescriptor: after miniscript는 지원됨', () {
+    test('oneParentDescriptor: 구버전 after miniscript는 지원되지 않음', () {
       final descriptorBody = oneParentDescriptor.split('#').first.replaceFirst('older(', 'after(');
       final json = {
         'name': 'Valid After',
@@ -278,7 +410,7 @@ void main() {
         ],
       };
       final wallet = WatchOnlyWallet.fromJson(json);
-      expect(wallet.isSupportedTaprootConfiguration, true);
+      expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
     test('twoParentDescriptor: older miniscript는 지원되지 않음', () {

@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // Usage
-// wallet_list_screen.dart
 // broadcast_complete_screen.dart (app_reveiw_service.dart가 호출)
 class UserExperienceSurveyBottomSheet extends StatelessWidget {
   final bool isFirst;

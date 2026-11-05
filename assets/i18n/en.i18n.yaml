@@ -60,6 +60,7 @@ home_screen_settings: "Home Settings"
 home_connection_status:
   electrum_connection_failed: "Can't connect to Electrum"
   electrum_connection_restored: "Electrum connected"
+  update_completed: "Updated"
 tx_list: "Transactions"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
@@ -370,12 +371,16 @@ home_widgets:
   hot_wallet_stack: "Hot Wallets"
   all_wallet_stack: "All Wallets"
   empty_all_wallets: "No wallets yet"
+  empty_watch_only_wallets: "No watch-only wallets"
+  empty_hot_wallets: "No hot wallets"
   add_wallet: "Add Wallet"
   bitcoin_balance_trend: "Bitcoin Balance Trend"
   bitcoin_balance_by_fiat: "Bitcoin Balance"
   fiat_price_trend: "Fiat Price Trend"
   fiat_values: "Fiat Values"
   balance_by_wallet: "Balance by Wallet"
+  wallet_list: "Wallet List"
+  wallet_list_show_all(count): "View all $count wallets"
   recent_transactions: "Recent Transactions"
   transaction_activity: "Transaction Analysis by Period"
   savings_goal: "Savings Goal"
@@ -417,6 +422,8 @@ home_presets:
   hide_balances_description: "Do not show actual balances or fiat value on Home"
   statistics_name: "Savings Overview"
   statistics_description: "Track your balance trend, savings goal, and UTXO status at a glance"
+  classic_name: "Coconut Classic"
+  classic_description: "Arrange widgets like the classic Coconut home screen"
   apply: "Apply to Home"
   applied: "Applied the '$name' preset"
   undo: "Undo"
@@ -748,83 +755,18 @@ wallet_add_scanner_screen:
     mfp_skip: "Skip"
     back_scan: "Go back to QR scan"
   
-# lib/screens/wallet_list
-wallet_list:
-  balance_history_detail:
-    period_summary: "Period summary"
-    gesture_guide_title: "Explore the graph"
-    gesture_guide_pan: "Swipe left or right to move through time."
-    gesture_guide_zoom: "Swipe up or down, or pinch to zoom, to adjust the range: 1 week, 1 month, 3 months, and more."
-    balance_label: "Balance"
-    transactions_label: "Transactions"
-    flow_count: "${count} tx"
-    flow_summary: "${count} tx · ${amount}"
-    no_transactions_at_date: "No transactions on the selected date"
-    transactions_at_date: "Transactions on selected date"
-    wallets_at_date: "Wallets at this point"
-    no_wallets: "No wallets to show at this point"
-    changed_wallets_only: "Show changed wallets only"
-    transaction_count(cardinal):
-      one: "${n} transaction"
-      other: "${n} transactions"
-  header:
-    total_amount: "Total balance"
-    balance_history: "Balance change"
-    bitcoin_price: "BTC price"
-    converted_amount: "Converted Amount"
-    than_yesterday: "Since yesterday"
-    than_a_week_ago: "Since a week ago"
-    than_a_month_ago: "Since a month ago"
-    tooltip:
-      title: "Price details"
-      price_source(source): "1 BTC price: $source"
-      fiat_price_source(fiat, source): "$fiat price: $source"
-      closing_time: "Daily prices close at 00:00 UTC."
-      yesterday_basis: "Since yesterday: Latest closing price"
-      week_basis: "Since a week ago: Closing price 7 days ago"
-      month_basis: "Since a month ago: Closing price 30 days ago"
-      historical_price_unavailable: "bitFlyer does not provide official daily candles, so JPY changes are not shown."
-  menu:
-    edit_order: "Edit Order"
-    display_settings: "Display Settings"
-  wallet_count: "$count Items"
-  empty_watch_only: "No watch-only wallets"
-  empty_hot_wallet: "No hot wallets"
-  favorite_watch_only_limit: "You can add up to 5 watch-only wallets to favorites"
-  favorite_hot_wallet_limit: "You can add up to 5 hot wallets to favorites"
-  primary_wallet: "Primary Wallet"
-  exclude_from_total_amount: "Excluded from Home Total"
-  home_balance: "Home Balance"
-  excluded_balance: "Excluded Balance"
-  settings:
-    title: "Wallet Settings"
-    primary_wallet: "Set as Primary Wallet"
-    primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen"
-    primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting"
-    exclude_from_total_amount: "Exclude from Total"
-    exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen"
-  edit:
-    order: "Edit Order"
-    order_description: "to change the order of wallets."
-    tab_order_description: "to change the order of tabs."
-    delete_description: "Swipe left on a wallet to delete it."
-    finish: "Finish Editing"
-    unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
-  bottom_sheet:
-    tab_display_settings: "Tab Display Settings"
-    wallet_list_settings: "Wallet List"
-    home_screen_settings: "Home Screen"
-    show_watch_only_tab: "Show Watch-only Wallet Tab"
-    show_watch_only_tab_description: "Show the watch-only wallet tab on the home screen"
-    show_hot_wallet_tab: "Show Hot Wallet Tab"
-    show_hot_wallet_tab_description: "Show the hot wallet tab on the home screen"
-    show_fiat_price: "Show Fiat Balance"
-    show_fiat_price_description: "Display the fiat balance on this screen"
-    show_bitcoin_price: "Show 1 BTC Price Information"
-    show_bitcoin_price_description: "Display the 1 BTC price and changes over time"
-    show_balance_chart: "Show Balance Change Chart"
-    show_balance_chart_description: "Display changes in the total balance across all wallets"
-    visible: "Visible"
+# lib/screens/home/wallet_balance_history_screen.dart
+wallet_balance_history_screen:
+  title: "Balance change"
+  period_summary: "Period summary"
+  gesture_guide_title: "Explore the graph"
+  gesture_guide_pan: "Swipe left or right to move through time."
+  gesture_guide_zoom: "Swipe up or down, or pinch to zoom, to adjust the range: 1 week, 1 month, 3 months, and more."
+  balance_label: "Balance"
+  transactions_label: "Transactions"
+  flow_count: "${count} tx"
+  flow_summary: "${count} tx · ${amount}"
+  no_wallets: "No wallets to show at this point"
 
 wallet_connect_screen:
   guide_bitbox02:
@@ -1102,7 +1044,7 @@ bitbox02_sign_screen:
     description: "Transaction has been signed by BitBox02."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
-  device_mismatch: "The connected BitBox doesn't match the wallet you're trying to sign with."
+  device_mismatch: "The connected BitBox02 doesn't match this wallet."
   device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
   fingerprint_compare:
     expected: "Expected"
@@ -1134,7 +1076,7 @@ trezor_sign_screen:
     description: "Transaction has been signed by Trezor."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
-  device_mismatch: "The connected Trezor doesn't match the wallet you're trying to sign with."
+  device_mismatch: "The connected Trezor doesn't match this wallet."
   device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
   fingerprint_compare:
     expected: "Expected"
@@ -1325,9 +1267,7 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "Total Balance"
   tag_apply: "Apply tag"
-  utxo_select_required: "Please select a UTXO first."
   utxo_tag_updated: "UTXO tags have been updated."
-  utxo_tag_no_changes: "No tags were changed."
   send_locked_utxo: "Locked UTXOs cannot be sent."
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
@@ -1337,6 +1277,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "View Input/Output Details"
+  coinbase_input: "This is newly mined bitcoin from a block reward, so it has no inputs."
   confirmation: "$height ($count confirmations)"
   time_ago:
     just_now: just now
@@ -1637,6 +1578,8 @@ split_utxo_screen:
   question_split_evenly: "Into how many parts?"
   label_split_method: "Split Method"
   label_selected_utxo: "Selected UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Estimated Fee"
   add_new_amount: "Add amount"
   and_more_tags: "and ${count} more"
@@ -1648,6 +1591,7 @@ split_utxo_screen:
     manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting will create a small amount (dust)"
+  tx_too_large_error: "The transaction is too large. Select fewer UTXOs or split into fewer outputs"
   method_bottom_sheet:
     title: "Select Split Method"
     split_by_amount: "Split by fixed amount"
@@ -1661,9 +1605,10 @@ split_utxo_screen:
     fee: "Fee"
     above_is_expected: "The result above is an estimate"
   big_tx_confirm:
-    create: "Create"
-    preview: "Preview"
-    description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
+    title: "Large Transaction"
+    create: "Create Now"
+    preview: "Preview Result"
+    description: "Creating it may take some time. Preview the result first."
 
 label_management_screen:
   title: "Notes"
@@ -1913,6 +1858,10 @@ alert:
     insufficient_balance: "Insufficient balance"
     minimum_amount: "You can send at least $amount"
     insufficient_fee: "Please try again by\nincreasing the fee rate."
+    immature_coinbase: "Mining rewards can be sent after 100 confirmations."
+    immature_coinbase_remaining: "Mining rewards can be sent after 100 confirmations.\n$count more blocks to go."
+    used_utxo_included: "This transaction includes bitcoin that has already been spent.\nPlease create the transaction again."
+    locked_utxo_included: "This transaction includes locked bitcoin.\nPlease try again from the beginning."
     non_final_taproot_child: "Please check the child wallet's inheritance date and time."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
@@ -2184,3 +2133,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet Card"
   show_balance_trend: "View balance trend"
   chart_date_format: "MMM d"
+
+wallet_selection_carousel: "View one at a time"
+wallet_selection_grid: "View together"

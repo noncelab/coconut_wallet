@@ -842,7 +842,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         children: [
           SvgPicture.asset(
             CommonStateIconPath.triangleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Expanded(

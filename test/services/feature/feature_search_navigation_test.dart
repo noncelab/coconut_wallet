@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -485,7 +486,12 @@ void main() {
     await searchTap(tester, t.feature_sub_labels.wallet_add_hot_restore, FeatureIds.walletAddHot);
     expect(auth.passcodeChecks, 1);
     expect(routes, isEmpty);
-    expect(find.text(t.wallet_home_screen.hot_wallet_add.device_passcode_required.title), findsOneWidget);
+    expect(
+      find.text(
+        TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_add.device_passcode_required.title),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('state-incompatible settings are filtered before selecting the match', (tester) async {

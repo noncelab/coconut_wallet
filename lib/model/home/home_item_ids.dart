@@ -10,6 +10,7 @@ class HomeItemIds {
   static const fiatPriceTrend = 'fiat_price_trend_2x2';
   static const fiatValues = 'fiat_values_2x2';
   static const balanceByWallet = 'balance_by_wallet_4x2';
+  static const walletList = 'wallet_list_4x2';
   static const recentTransactions = 'recent_transactions_4x2';
   static const transactionActivity = 'transaction_activity_4x2';
   static const savingsGoal = 'savings_goal_2x2';

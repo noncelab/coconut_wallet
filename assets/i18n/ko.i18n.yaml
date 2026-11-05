@@ -60,6 +60,7 @@ home_screen_settings: "홈 화면 설정"
 home_connection_status:
   electrum_connection_failed: "일렉트럼 연결 실패"
   electrum_connection_restored: "일렉트럼 연결됨"
+  update_completed: "업데이트 완료"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
 wallet_id: "지갑 ID"
@@ -370,12 +371,16 @@ home_widgets:
   hot_wallet_stack: "핫월렛"
   all_wallet_stack: "모든 지갑"
   empty_all_wallets: "아직 지갑이 없어요"
+  empty_watch_only_wallets: "보기 전용 지갑이 없어요"
+  empty_hot_wallets: "핫월렛이 없어요"
   add_wallet: "지갑 추가"
   bitcoin_balance_trend: "비트코인 잔액 추이"
   bitcoin_balance_by_fiat: "비트코인 잔액"
   fiat_price_trend: "법정화폐 가격 추이"
   fiat_values: "법정화폐 시세"
   balance_by_wallet: "지갑별 잔액"
+  wallet_list: "지갑 목록"
+  wallet_list_show_all(count): "지갑 ${count}개 모두 보기"
   recent_transactions: "최근 거래"
   transaction_activity: "기간별 거래 분석"
   savings_goal: "목표 수량"
@@ -417,6 +422,8 @@ home_presets:
   hide_balances_description: "잔액이나 법정화폐 금액을 보여 주지 않아요"
   statistics_name: "저축 현황"
   statistics_description: "잔액 추이와 저축 목표, UTXO 현황을 함께 봐요"
+  classic_name: "코코넛 클래식"
+  classic_description: "예전 코코넛 홈 구성대로 위젯을 배치해요"
   apply: "홈에 적용"
   applied: "'$name' 프리셋을 적용했어요"
   undo: "되돌리기"
@@ -519,7 +526,7 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   unbacked_hot_wallet_warning:
-    title: "니모닉이 백업되지 않았어요"
+    title: "니모닉을 백업해주세요"
     description: "지금 백업하지 않으면 비트코인을 영원히 잃을 수 있어요"
   app_lock_warning:
     title: "앱 비밀번호를 설정해 주세요"
@@ -876,83 +883,18 @@ wallet_connect_screen:
     ble_off: "기기 블루투스를 켜주세요."
     loading_wallet_info: "지갑 정보 가져오는 중"
     
-# lib/screens/wallet_list
-wallet_list:
-  balance_history_detail:
-    period_summary: "기간별 요약"
-    gesture_guide_title: "그래프를 움직여 보세요"
-    gesture_guide_pan: "좌우로 움직여 보는 기간을 이동해요."
-    gesture_guide_zoom: "위아래로 움직이거나 두 손가락으로 확대·축소해 1주·1개월·3개월 등의 범위를 조절해요."
-    balance_label: "잔액"
-    transactions_label: "트랜잭션"
-    flow_count: "${count}회"
-    flow_summary: "${count}회 · ${amount}"
-    no_transactions_at_date: "선택한 날짜에 거래 내역이 없어요"
-    transactions_at_date: "이 시점의 거래 내역"
-    wallets_at_date: "이 시점의 지갑"
-    no_wallets: "이 시점에 표시할 지갑이 없어요"
-    changed_wallets_only: "변동이 있는 지갑만 보기"
-    transaction_count(cardinal):
-      one: "거래 ${n}건"
-      other: "거래 ${n}건"
-  header:
-    total_amount: "총 잔액"
-    balance_history: "잔액 변화"
-    bitcoin_price: "BTC 시세"
-    converted_amount: "환산 금액"
-    than_yesterday: "어제보다"
-    than_a_week_ago: "일주일 전보다"
-    than_a_month_ago: "한 달 전보다"
-    tooltip:
-      title: "가격 기준"
-      price_source(source): "1 BTC 가격: $source"
-      fiat_price_source(fiat, source): "$fiat 가격: $source"
-      closing_time: "매일 오전 9시(KST)에 마감된 가격을 기준으로 해요."
-      yesterday_basis: "어제보다: 최근 마감 가격"
-      week_basis: "일주일 전보다: 7일 전 마감 가격"
-      month_basis: "한 달 전보다: 30일 전 마감 가격"
-      historical_price_unavailable: "bitFlyer는 공식 일봉을 제공하지 않아 JPY 변화율은 표시하지 않아요."
-  menu:
-    edit_order: "순서 편집"
-    display_settings: "표시 설정"
-  wallet_count: "$count개"
-  empty_watch_only: "보기 전용 지갑이 없어요"
-  empty_hot_wallet: "핫월렛이 없어요"
-  favorite_watch_only_limit: "보기 전용 지갑은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
-  favorite_hot_wallet_limit: "핫월렛은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
-  primary_wallet: "대표 지갑"
-  exclude_from_total_amount: "홈 화면 총액에서 제외"
-  home_balance: "홈 화면 총액"
-  excluded_balance: "제외 총액"
-  settings:
-    title: "지갑 설정"
-    primary_wallet: "대표 지갑 설정"
-    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요"
-    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요"
-    exclude_from_total_amount: "총액에서 제외"
-    exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요"
-  edit:
-    order: "순서 편집"
-    order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
-    tab_order_description: "을 눌러 탭 순서를 변경할 수 있어요."
-    delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
-    finish: "편집 종료"
-    unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
-  bottom_sheet:
-    tab_display_settings: "탭 표시 설정"
-    wallet_list_settings: "지갑 목록"
-    home_screen_settings: "홈 화면"
-    show_watch_only_tab: "보기 전용 지갑 탭 표시"
-    show_watch_only_tab_description: "홈 화면에 보기 전용 지갑 탭을 표시해요"
-    show_hot_wallet_tab: "핫월렛 탭 표시"
-    show_hot_wallet_tab_description: "홈 화면에 핫월렛 탭을 표시해요"
-    show_fiat_price: "법정 화폐 잔액 표시"
-    show_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시해요"
-    show_bitcoin_price: "1 BTC 가격 정보 표시"
-    show_bitcoin_price_description: "1 BTC 가격과 기간별 변화율을 표시해요"
-    show_balance_chart: "보유 수량 변화 그래프 표시"
-    show_balance_chart_description: "전체 지갑의 보유 수량 변화를 표시해요"
-    visible: "표시 중"
+# lib/screens/home/wallet_balance_history_screen.dart
+wallet_balance_history_screen:
+  title: "잔액 변화"
+  period_summary: "기간별 요약"
+  gesture_guide_title: "그래프를 움직여 보세요"
+  gesture_guide_pan: "좌우로 움직여 보는 기간을 이동해요."
+  gesture_guide_zoom: "위아래로 움직이거나 두 손가락으로 확대·축소해 1주·1개월·3개월 등의 범위를 조절해요."
+  balance_label: "잔액"
+  transactions_label: "트랜잭션"
+  flow_count: "${count}회"
+  flow_summary: "${count}회 · ${amount}"
+  no_wallets: "이 시점에 표시할 지갑이 없어요"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -981,7 +923,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
-  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도 기기에서 관리하고, 잔액은 앱에서 확인할 수 있어요."
+  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도로 관리하고, 잔액은 앱에서 확인할 수 있어요."
   utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
   n_utxos(param=count):
@@ -1099,10 +1041,10 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
   error_title: "서명 실패"
   wrong_wallet_title: "잘못된 지갑이 연결됨"
-  device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
+  device_mismatch: "연결된 BitBox02가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1134,7 +1076,7 @@ trezor_sign_screen:
   device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1328,9 +1270,7 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "총 잔액"
   tag_apply: "태그 적용"
-  utxo_select_required: "UTXO를 먼저 선택해 주세요."
   utxo_tag_updated: "UTXO 태그가 업데이트되었어요."
-  utxo_tag_no_changes: "변경된 태그가 없어요."
   send_locked_utxo: "사용 잠금된 UTXO는 보낼 수 없어요."
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "잠금 해제"
@@ -1340,6 +1280,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "입출력 상세 보기"
+  coinbase_input: "채굴 보상으로 새로 발행된 비트코인이라 입력이 없어요."
   confirmation: "$height ($count승인)"
   time_ago:
     just_now: 방금 전
@@ -1489,7 +1430,7 @@ wallet_info_screen:
     disconnected: "연결 안 됨"
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
-    disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
+    disconnect_confirm_description: "현재 연결된 기기를 해제할게요.\n다음 서명 시 다시 연결이 필요해요."
 wallet_resync_screen:
   title: "지갑 재동기화"
   exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"
@@ -1643,6 +1584,8 @@ split_utxo_screen:
   question_split_evenly: "몇 개로 나눌까요?"
   label_split_method: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}개"
   label_estimated_fee: "예상 수수료"
   add_new_amount: "금액 추가하기"
   and_more_tags: "외 ${count}개"
@@ -1654,6 +1597,7 @@ split_utxo_screen:
     manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
   dust_error: "나누면 작은 금액(dust)이 생겨요"
+  tx_too_large_error: "트랜잭션이 너무 커서 만들 수 없어요. UTXO나 나눌 개수를 줄여주세요"
   method_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
@@ -1667,9 +1611,10 @@ split_utxo_screen:
     fee: "수수료"
     above_is_expected: "위 결과는 예상값이에요."
   big_tx_confirm:
-    create: "생성하기"
-    preview: "예상 보기"
-    description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
+    title: "대용량 트랜잭션"
+    create: "바로 생성"
+    preview: "예상 결과 보기"
+    description: "생성하는 데 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인해 보세요."
 
 label_management_screen:
   title: "메모 관리"
@@ -1919,6 +1864,10 @@ alert:
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$amount부터 전송할 수 있어요"
     insufficient_fee: "수수료율을 높여서\n다시 시도해주세요."
+    immature_coinbase: "채굴 보상은 100승인이 지나야 보낼 수 있어요."
+    immature_coinbase_remaining: "채굴 보상은 100승인이 지나야 보낼 수 있어요.\n$count블록 남았어요."
+    used_utxo_included: "이미 사용된 비트코인이 포함되어 있어요.\n거래를 다시 만들어 주세요."
+    locked_utxo_included: "사용 잠금된 비트코인이 포함되어 있어요.\n처음부터 다시 시도해 주세요."
     non_final_taproot_child: "자식 지갑의 상속 일시를 확인하세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
@@ -2190,3 +2139,6 @@ wallet_card_detail_screen:
   wallet_card: "지갑 카드"
   show_balance_trend: "잔액 변화 보기"
   chart_date_format: "M월 d일"
+
+wallet_selection_carousel: "한 장씩 보기"
+wallet_selection_grid: "모아 보기"

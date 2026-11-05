@@ -32,7 +32,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -463,6 +462,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   maintainState: true,
                   child: GestureDetector(
                     onTap: () async {
+                      if (_viewModel.isFeeBumpingBlocked(tx)) return;
                       if (!_viewModel.isNetworkOn) {
                         CoconutToast.showToast(
                           context: context,
@@ -491,7 +491,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           arguments: WalletInfoRouteArgs(
                             id: widget.id,
                             walletType: _viewModel.walletType,
-                            entryPoint: kEntryPointWalletHome,
                             showMfpInput: true,
                           ),
                         );
@@ -515,9 +514,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                         style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType!
-                              ? context.coconutColors.sendingColor
-                              : context.coconutColors.receivingColor,
+                          (_viewModel.isSendType!
+                                  ? context.coconutColors.sendingColor
+                                  : context.coconutColors.receivingColor)
+                              .withValues(alpha: _viewModel.isFeeBumpingBlocked(tx) ? 0.4 : 1),
                         ),
                       ),
                     ),
@@ -593,6 +593,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               key: ValueKey(viewModel.getTransactionKey(viewModel.previousTransactionIndex)),
               transaction: viewModel.transactionList![viewModel.previousTransactionIndex],
               isSameAddress: viewModel.isSameAddress,
+              isCoinbase: viewModel.isCoinbase,
               currentUnit: _currentUnit,
               isOutputNavigable:
                   (address, outputIndex) => _isOutputNavigable(
@@ -621,6 +622,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             key: ValueKey(viewModel.getTransactionKey(viewModel.selectedTransactionIndex)),
             transaction: viewModel.transactionList![viewModel.selectedTransactionIndex],
             isSameAddress: viewModel.isSameAddress,
+            isCoinbase: viewModel.isCoinbase,
             currentUnit: _currentUnit,
             isOutputNavigable:
                 (address, outputIndex) => _isOutputNavigable(
