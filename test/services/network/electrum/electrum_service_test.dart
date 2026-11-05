@@ -464,9 +464,13 @@ void main() {
 
     test('fails when the server returns a different transaction for a parent', () async {
       served[segwitHash] = legacyParent;
-      final tx = child([(legacyHash, 0), (segwitHash, 1)]);
+      // 출력 인덱스 0은 바뀐 부모에도 있어서, 출력 누락이 아니라 해시 검사로만 실패한다.
+      final tx = child([(legacyHash, 0), (segwitHash, 0)]);
 
-      await expectLater(electrumClient.getPreviousTransactions(tx), throwsA(isA<StateError>()));
+      await expectLater(
+        electrumClient.getPreviousTransactions(tx),
+        throwsA(isA<StateError>().having((e) => e.message, 'message', contains('different parent'))),
+      );
     });
 
     test('does not fetch anything for a coinbase transaction', () async {
