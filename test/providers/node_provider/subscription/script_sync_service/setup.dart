@@ -74,13 +74,9 @@ class _ScriptSyncTestSetup {
       ];
     });
 
-    when(
-      electrumService.getPreviousTransactions(
-        any,
-        existingTxList: anyNamed('existingTxList'),
-        transactionFetch: anyNamed('transactionFetch'),
-      ),
-    ).thenAnswer((invocation) async {
+    when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+      invocation,
+    ) async {
       final transaction = invocation.positionalArguments[0] as Transaction;
       final txHash = transaction.transactionHash;
 
@@ -127,13 +123,9 @@ class _ScriptSyncTestSetup {
     });
 
     // 모든 트랜잭션에 대한 모킹 - transactionHash로 매칭
-    when(
-      electrumService.getPreviousTransactions(
-        any,
-        existingTxList: anyNamed('existingTxList'),
-        transactionFetch: anyNamed('transactionFetch'),
-      ),
-    ).thenAnswer((invocation) async {
+    when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).thenAnswer((
+      invocation,
+    ) async {
       final transaction = invocation.positionalArguments[0] as Transaction;
       final txHash = transaction.transactionHash;
 

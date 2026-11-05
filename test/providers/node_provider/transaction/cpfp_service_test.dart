@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
@@ -8,7 +9,9 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../mock/transaction_mock.dart';
@@ -16,13 +19,16 @@ import '../../../mock/utxo_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 import '../../../services/shared_prefs_service_test.mocks.dart';
+import 'rbf_service_test.mocks.dart';
 
+@GenerateMocks([ElectrumService])
 void main() {
   group('CpfpService', () {
     TestRealmManager? realmManager;
     late TransactionRepository transactionRepository;
     late WalletRepository walletRepository;
     late UtxoRepository utxoRepository;
+    late MockElectrumService electrumService;
     late CpfpService cpfpService;
 
     const int walletId = 1;
@@ -44,14 +50,14 @@ void main() {
         realmManager!.dispose();
         realmManager = await setupTestRealmManager();
       }
-      // ignore: deprecated_member_use_from_same_package
       final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
       when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenReturn(walletItem.id);
       when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, walletItem.id + 1)).thenAnswer((_) async => true);
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
-      cpfpService = CpfpService(transactionRepository, utxoRepository);
+      electrumService = MockElectrumService();
+      cpfpService = CpfpService(transactionRepository, utxoRepository, electrumService);
       walletRepository.addSinglesigWallet(
         WatchOnlyWallet(
           walletItem.name,
@@ -100,7 +106,7 @@ void main() {
     });
 
     group('detectCpfpTransaction', () {
-      test('CPFP metadata comes from stored records without fetching parents', () async {
+      test('CPFP 트랜잭션 감지 성공', () async {
         // Given
         final utxo = UtxoMock.createOutgoingUtxo(
           walletId: walletId,
@@ -113,6 +119,7 @@ void main() {
           fee: 1000,
         );
         await transactionRepository.addAllTransactions(walletId, [parentTxRecord]);
+        when(electrumService.getPreviousTransactions(childTx)).thenAnswer((_) async => [parentTx]);
 
         // When
         final result = await cpfpService.detectCpfpTransaction(walletId, childTx);
@@ -121,6 +128,7 @@ void main() {
         expect(result, isNotNull);
         expect(result?.parentTransactionHash, parentTx.transactionHash);
         expect(result?.originalFee, parentTxRecord.feeRate);
+        expect(result?.previousTransactions, isA<List<Transaction>>());
       });
 
       test('이미 CPFP 내역이 있는 경우 null 반환', () async {

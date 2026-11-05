@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -43,8 +42,9 @@ import 'package:tuple/tuple.dart';
 
 class TransactionListScreen extends StatefulWidget {
   final int id;
+  final String entryPoint;
 
-  const TransactionListScreen({super.key, required this.id});
+  const TransactionListScreen({super.key, required this.id, required this.entryPoint});
 
   @override
   State<TransactionListScreen> createState() => _TransactionListScreenState();
@@ -189,7 +189,26 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     ),
                   ),
 
-                  TransactionListSyncingIndicator(isSyncing: isWalletSyncing),
+                  if (isWalletSyncing)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: InlineLoadingIndicator(
+                            padding: EdgeInsets.zero,
+                            color: context.coconutColors.primary,
+                            radius: 8,
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
+                        Text(
+                          t.status_updating,
+                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -302,8 +321,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
-      // 실패 상태에서 당겨도 그대로 끝나지 않게, 다른 화면처럼 재연결을 시작한다.
-      _viewModel.reconnectIfNeeded().ignore();
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
@@ -337,70 +354,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       level: CoconutToastLevel.info,
     );
   }
-}
-
-/// 거래 목록 라벨 옆 '업데이트 중'. WalletRefreshIndicator와 같은 타이밍으로 페이드 인하고, 동기화가 끝나면 300ms 더
-/// 보였다가 페이드 아웃한다. 그 사이 다시 시작되면 깜빡이지 않고 그대로 보인다. 보이는 동안은 WalletRefreshIndicator처럼
-/// 폭을 다 차지해서, 페이드 중에도 옆의 거래 개수 위에 겹쳐 그려지지 않는다.
-@visibleForTesting
-class TransactionListSyncingIndicator extends StatefulWidget {
-  const TransactionListSyncingIndicator({super.key, required this.isSyncing});
-
-  final bool isSyncing;
-
-  @override
-  State<TransactionListSyncingIndicator> createState() => _TransactionListSyncingIndicatorState();
-}
-
-class _TransactionListSyncingIndicatorState extends State<TransactionListSyncingIndicator> {
-  Timer? _hideTimer;
-  late bool _isVisible;
-
-  @override
-  void initState() {
-    super.initState();
-    _isVisible = widget.isSyncing;
-  }
-
-  @override
-  void didUpdateWidget(covariant TransactionListSyncingIndicator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isSyncing == widget.isSyncing) return;
-    _hideTimer?.cancel();
-    if (widget.isSyncing) {
-      _isVisible = true;
-    } else {
-      _hideTimer = Timer(const Duration(milliseconds: 300), () {
-        if (mounted) setState(() => _isVisible = false);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _hideTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-    tween: Tween(begin: 0, end: _isVisible ? 1 : 0),
-    duration: const Duration(milliseconds: 350),
-    curve: Curves.easeInOut,
-    builder: (context, value, child) => value == 0 ? const SizedBox.shrink() : Opacity(opacity: value, child: child),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 14,
-          height: 14,
-          child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.primary, radius: 8),
-        ),
-        CoconutLayout.spacing_100w,
-        Text(t.status_updating, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary)),
-      ],
-    ),
-  );
 }
 
 class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {

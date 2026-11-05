@@ -232,16 +232,12 @@ class FakeAddressRepository extends Fake implements AddressRepository {
 
   (int, int) usedIndexesResult = (-1, -1);
   Map<bool, List<WalletAddress>> activeUsedAddressesResult = const {};
-  final List<bool> includeUnreconciledUtxosCalls = [];
 
   @override
   (int, int) getUsedIndexes(int walletId) => usedIndexesResult;
 
   @override
-  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange, {bool includeUnreconciledUtxos = false}) {
-    includeUnreconciledUtxosCalls.add(includeUnreconciledUtxos);
-    return activeUsedAddressesResult[isChange] ?? [];
-  }
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) => activeUsedAddressesResult[isChange] ?? [];
 }
 
 WalletAddress _activeUsedAddress(int index, bool isChange) =>
@@ -1445,10 +1441,7 @@ void main() {
       final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
       final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
-      addressRepository.includeUnreconciledUtxosCalls.clear();
       expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit + 1);
-      expect(provider.getActiveUsedAddresses(walletId, false).map((a) => a.index), [50]);
-      expect(addressRepository.includeUnreconciledUtxosCalls, [false, false, false]);
 
       provider.dispose();
     });

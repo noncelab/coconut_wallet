@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_carousel_indicator.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -18,20 +17,14 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-/// 스택에서 지갑 상세나 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
-/// 열린 화면에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다. [stackRect]는 스택의 화면 좌표다.
+/// 스택을 눌러 지갑 목록을 열 때 넘기는 값. 목록의 카드는 [heroTagOf]로 스택 카드와 이어지고,
+/// 목록에서 지갑을 넘기면 [showWallet]으로 스택도 그 지갑을 맨 앞에 둔다.
 class WalletStackOpenRequest {
   final WalletItemBase front;
   final Object Function(int walletId) heroTagOf;
   final void Function(int walletId) showWallet;
-  final Rect? Function() stackRect;
 
-  const WalletStackOpenRequest({
-    required this.front,
-    required this.heroTagOf,
-    required this.showWallet,
-    required this.stackRect,
-  });
+  const WalletStackOpenRequest({required this.front, required this.heroTagOf, required this.showWallet});
 }
 
 /// 지갑 카드가 포개진 위젯. 왼쪽으로 넘기면 앞 카드는 작아지며 왼쪽으로 물러나고, 다음 카드는 오른쪽에서 커지며 들어온다.
@@ -74,27 +67,22 @@ class WalletStackView extends StatefulWidget {
     this.onAddPressed,
   });
 
-  /// 지금 화면에 보이는 [keyPrefix] 스택을 펼칠 때 넘길 값. 보이는 스택이 없으면 null
-  static WalletStackOpenRequest? visibleRequest(String keyPrefix) {
-    for (final state in _WalletStackViewState._mounted) {
-      if (state.widget.keyPrefix == keyPrefix && state._isVisible) return state._request();
-    }
-    return null;
-  }
-
   @override
   State<WalletStackView> createState() => _WalletStackViewState();
 }
 
 class _WalletStackViewState extends State<WalletStackView> {
-  static final Set<_WalletStackViewState> _mounted = {};
-
   static const _indicatorHideDelay = Duration(milliseconds: 800);
 
   final PageController _controller = PageController();
   bool _indicatorVisible = false;
   double? _indicatorDragDistance;
+  Offset? _indicatorPointerDown;
+  Timer? _indicatorRepeat;
+  int _indicatorDragDirection = 0;
+  bool _indicatorAutoMode = false;
   static const _indicatorPageDistance = 18.0;
+  static const _indicatorRepeatInterval = Duration(milliseconds: 500);
   Timer? _hideIndicator;
   Timer? _cardRepeat;
   double? _cardDragDistance;
@@ -104,16 +92,10 @@ class _WalletStackViewState extends State<WalletStackView> {
   int get _pageCount => widget.wallets.length + (widget.onAddPressed == null ? 0 : 1);
 
   @override
-  void initState() {
-    super.initState();
-    _mounted.add(this);
-  }
-
-  @override
   void dispose() {
-    _mounted.remove(this);
     _hideIndicator?.cancel();
     _cardRepeat?.cancel();
+    _indicatorRepeat?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -192,6 +174,187 @@ class _WalletStackViewState extends State<WalletStackView> {
     _scheduleIndicatorHide();
   }
 
+  void _startIndicatorDrag(DragStartDetails details) {
+    if (!_controller.hasClients) return;
+    _indicatorRepeat?.cancel();
+    _indicatorDragDistance = 0;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+    _showIndicator();
+    _controller.jumpToPage(_page.round().clamp(0, _pageCount - 1));
+    // 제스처 인식에 쓰인 첫 이동도 포함해, 한 번 민 뒤 멈춰도 반복을 시작한다.
+    if (_pageCount > 5 && _indicatorPointerDown != null) {
+      final direction = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+      _moveIndicator((details.globalPosition.dx - _indicatorPointerDown!.dx) * direction);
+    }
+  }
+
+  void _updateIndicatorDrag(DragUpdateDetails details) {
+    final direction = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+    _moveIndicator((details.primaryDelta ?? 0) * direction);
+  }
+
+  bool get _canRepeatIndicator {
+    if (!_controller.hasClients || _pageCount <= 5) return false;
+    final current = _page.round();
+    return current >= 2 && current <= _pageCount - 3;
+  }
+
+  void _stopIndicatorRepeat() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorDragDirection = 0;
+  }
+
+  void _repeatIndicator(int direction) {
+    _stopIndicatorRepeat();
+    if (!_indicatorAutoMode && !_canRepeatIndicator) return;
+    // 같은 드래그에서 시작한 자동 전환은 양 끝 두 페이지에 들어가도 유지한다.
+    _indicatorAutoMode = true;
+    _indicatorDragDirection = direction;
+    _indicatorDragDistance = 0;
+    if ((direction < 0 && _page <= 0) || (direction > 0 && _page >= _pageCount - 1)) return;
+    _indicatorRepeat = Timer.periodic(_indicatorRepeatInterval, (_) {
+      if (!mounted || _indicatorDragDistance == null || !_controller.hasClients || _pageCount <= 5) {
+        _stopIndicatorRepeat();
+        return;
+      }
+      _stepIndicator(_indicatorDragDirection);
+      if ((_indicatorDragDirection < 0 && _page <= 0) || (_indicatorDragDirection > 0 && _page >= _pageCount - 1)) {
+        _indicatorDragDistance = 0;
+        _stopIndicatorRepeat();
+      }
+    });
+  }
+
+  void _moveIndicator(double movement) {
+    if (_indicatorDragDistance == null || !_controller.hasClients || movement == 0) return;
+    if (_indicatorAutoMode || _canRepeatIndicator) {
+      _indicatorAutoMode = true;
+      // 자동 전환 중에는 같은 방향으로 더 끌어도 페이지를 건너뛰지 않는다.
+      if (movement.sign == _indicatorDragDirection) {
+        _indicatorDragDistance = 0;
+        return;
+      }
+      _indicatorDragDistance = _indicatorDragDistance! + movement;
+      if (_indicatorDragDistance!.abs() < _indicatorPageDistance) return;
+      final direction = _indicatorDragDistance!.sign.toInt();
+      _indicatorDragDistance = 0;
+      _stepIndicator(direction);
+      _repeatIndicator(direction);
+      return;
+    }
+
+    // 양 끝 두 페이지는 손가락 이동량만큼만 전환한다.
+    _stopIndicatorRepeat();
+    _indicatorDragDistance = _indicatorDragDistance! + movement;
+    final steps = (_indicatorDragDistance! / _indicatorPageDistance).truncate();
+    if (steps != 0) {
+      _indicatorDragDistance = _indicatorDragDistance! - steps * _indicatorPageDistance;
+      final current = _page.round();
+      final target = (current + steps).clamp(0, _pageCount - 1);
+      for (var page = current; page != target;) {
+        page += steps.sign;
+        _stepIndicator(steps.sign);
+        if (_canRepeatIndicator) {
+          _repeatIndicator(steps.sign);
+          break;
+        }
+      }
+    }
+    if ((_page <= 0 && _indicatorDragDistance! < 0) || (_page >= _pageCount - 1 && _indicatorDragDistance! > 0)) {
+      _indicatorDragDistance = 0;
+    }
+  }
+
+  void _stepIndicator(int direction) {
+    if (!_controller.hasClients || _pageCount < 2) return;
+    final current = _page.round().clamp(0, _pageCount - 1);
+    final next = (current + direction).clamp(0, _pageCount - 1);
+    if (current == next) return;
+    _controller.jumpToPage(next);
+    vibrateExtraLight();
+  }
+
+  void _endIndicatorDrag() {
+    _indicatorRepeat?.cancel();
+    _indicatorRepeat = null;
+    _indicatorPointerDown = null;
+    _indicatorDragDistance = null;
+    _indicatorDragDirection = 0;
+    _indicatorAutoMode = false;
+    _scheduleIndicatorHide();
+  }
+
+  Widget _indicator(BuildContext context) {
+    final colors = context.coconutColors;
+    final slotWidth = _pageCount > 5 ? 14.0 : 16.0;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final current = _page.round().clamp(0, _pageCount - 1);
+        final visibleCount = math.min(_pageCount, 5);
+        final first = (current - 2).clamp(0, _pageCount - visibleCount).toDouble();
+        final width = visibleCount * slotWidth;
+        final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+        return Semantics(
+          value: '${current + 1}/$_pageCount',
+          child: SizedBox(
+            key: Key('${widget.keyPrefix}-indicator-window'),
+            width: width,
+            height: 5,
+            child: ClipRect(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: first, end: first),
+                duration: Duration(milliseconds: reduceMotion ? 0 : 300),
+                // 선택 표시가 먼저 바뀐 뒤 양 끝의 점이 사라지고 나타나며 한 칸 이동한다.
+                curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
+                builder: (context, position, _) {
+                  final start = math.max(0, position.floor() - 1);
+                  final end = math.min(_pageCount, position.ceil() + visibleCount + 1);
+                  double visibility(int index) =>
+                      (math.min((index - position + 0.5) * slotWidth, width - (index - position + 0.5) * slotWidth) /
+                              (slotWidth / 2))
+                          .clamp(0.0, 1.0);
+                  return Stack(
+                    children: [
+                      for (var i = start; i < end; i++)
+                        Positioned(
+                          key: ValueKey('${widget.keyPrefix}-indicator-slot-$i'),
+                          left: (i - position) * slotWidth,
+                          width: slotWidth,
+                          top: 0,
+                          bottom: 0,
+                          child: Opacity(
+                            opacity: visibility(i),
+                            child: Transform.scale(
+                              scale: visibility(i),
+                              child: Center(
+                                child: AnimatedContainer(
+                                  key: ValueKey('${widget.keyPrefix}-indicator-dot-$i'),
+                                  duration: Duration(milliseconds: reduceMotion ? 0 : 150),
+                                  width: i == current ? 12 : 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: i == current ? colors.pageIndicatorActive : colors.pageIndicatorInactive,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   double get _page {
     final position = _controller.hasClients ? _controller.position : null;
     if (position == null || !position.hasContentDimensions || !position.hasPixels) return 0;
@@ -205,28 +368,6 @@ class _WalletStackViewState extends State<WalletStackView> {
     if (index >= 0 && _controller.hasClients && _page.round() != index) _controller.jumpToPage(index);
   }
 
-  Rect? _stackRect() {
-    final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize || !box.attached) return null;
-    return box.localToGlobal(Offset.zero) & box.size;
-  }
-
-  bool get _isVisible {
-    if (!mounted || widget.wallets.isEmpty || !(ModalRoute.of(context)?.isCurrent ?? true)) return false;
-    if (!TickerMode.of(context)) return false;
-    return _stackRect()?.overlaps(Offset.zero & MediaQuery.sizeOf(context)) ?? false;
-  }
-
-  WalletStackOpenRequest _request() {
-    final index = _page.round().clamp(0, widget.wallets.length - 1);
-    return WalletStackOpenRequest(
-      front: widget.wallets[index],
-      heroTagOf: _heroTagOf,
-      showWallet: _showWallet,
-      stackRect: _stackRect,
-    );
-  }
-
   void _onTap() {
     if (widget.onAddPressed != null && _page.round() >= widget.wallets.length) {
       widget.onAddPressed!();
@@ -237,7 +378,8 @@ class _WalletStackViewState extends State<WalletStackView> {
       widget.onPressed?.call();
       return;
     }
-    onOpen(_request());
+    final index = _page.round().clamp(0, widget.wallets.length - 1);
+    onOpen(WalletStackOpenRequest(front: widget.wallets[index], heroTagOf: _heroTagOf, showWallet: _showWallet));
   }
 
   Widget _card(WalletItemBase wallet) {
@@ -254,13 +396,43 @@ class _WalletStackViewState extends State<WalletStackView> {
   }
 
   Widget _emptyCard(BuildContext context, {bool addPage = false}) {
+    final colors = context.coconutColors;
     final actionText = widget.emptyActionText;
-    return WalletEmptyCard(
+    return HomeWidgetCard(
       key: Key('${widget.keyPrefix}-${addPage ? 'add' : 'empty'}'),
-      emptyText: widget.emptyText,
-      actionText: actionText,
-      actionKey: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
       onPressed: addPage ? null : widget.onEmptyPressed ?? widget.onPressed,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (actionText != null) ...[
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
+                child: Center(
+                  child: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 12,
+                    height: 12,
+                    colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text(
+              actionText ?? widget.emptyText,
+              key: actionText == null ? null : Key('${widget.keyPrefix}-empty-action'),
+              textAlign: TextAlign.center,
+              style:
+                  actionText == null
+                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
+                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -350,22 +522,29 @@ class _WalletStackViewState extends State<WalletStackView> {
                     right: 0,
                     bottom: 0,
                     height: 32,
-                    child: AnimatedOpacity(
-                      key: Key('${widget.keyPrefix}-indicator'),
-                      opacity: _indicatorVisible ? 1 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: WalletCarouselIndicator(
-                        controller: _controller,
-                        count: _pageCount,
-                        keyPrefix: widget.keyPrefix,
-                        onInteraction: (dragging) {
-                          _indicatorDragDistance = dragging ? 0 : null;
-                          if (dragging) {
-                            _showIndicator();
-                          } else {
-                            _scheduleIndicatorHide();
-                          }
-                        },
+                    child: GestureDetector(
+                      key: Key('${widget.keyPrefix}-indicator-scrubber'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        _showIndicator();
+                        _scheduleIndicatorHide();
+                      },
+                      onHorizontalDragDown: (details) => _indicatorPointerDown = details.globalPosition,
+                      onHorizontalDragStart: _startIndicatorDrag,
+                      onHorizontalDragUpdate: _updateIndicatorDrag,
+                      onHorizontalDragEnd: (_) => _endIndicatorDrag(),
+                      onHorizontalDragCancel: _endIndicatorDrag,
+                      child: AnimatedOpacity(
+                        key: Key('${widget.keyPrefix}-indicator'),
+                        opacity: _indicatorVisible ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: FittedBox(fit: BoxFit.scaleDown, child: _indicator(context)),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -373,67 +552,6 @@ class _WalletStackViewState extends State<WalletStackView> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// 지갑이 없을 때의 카드. [actionText]가 있으면 [emptyText] 대신 + 아이콘과 추가 문구를 보여 준다.
-class WalletEmptyCard extends StatelessWidget {
-  final String emptyText;
-  final String? actionText;
-  final Key? actionKey;
-  final VoidCallback? onPressed;
-
-  const WalletEmptyCard({super.key, required this.emptyText, this.actionText, this.actionKey, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final actionText = this.actionText;
-    return HomeWidgetCard(
-      onPressed: onPressed,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (actionText != null) ...[const WalletAddIcon(), const SizedBox(height: 8)],
-            Text(
-              actionText ?? emptyText,
-              key: actionKey,
-              textAlign: TextAlign.center,
-              style:
-                  actionText == null
-                      ? CoconutTypography.body3_12.copyWith(color: colors.secondaryText)
-                      : CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 지갑 추가를 나타내는 원 안의 + 아이콘
-class WalletAddIcon extends StatelessWidget {
-  final double size;
-
-  const WalletAddIcon({super.key, this.size = 28});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: colors.surfaceMuted, shape: BoxShape.circle),
-      child: Center(
-        child: SvgPicture.asset(
-          CommonActionIconPath.plus,
-          width: size * 3 / 7,
-          height: size * 3 / 7,
-          colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
-        ),
       ),
     );
   }

@@ -31,10 +31,10 @@ import 'package:coconut_wallet/screens/home/home_fake_balance_search.dart';
 import 'package:coconut_wallet/screens/home/home_item_configure_sheets.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:coconut_wallet/services/home/home_grid_geometry.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -60,9 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final LayerLink _addWalletButtonLink = LayerLink();
   final GlobalKey<HomeCubePagerState> _pagerKey = GlobalKey();
   final GlobalKey<HomeItemsViewState> _itemsKey = GlobalKey();
-
-  /// 홈 격자가 마지막으로 배치된 열 수. 설정 시트는 저장할 때 이 값을 읽는다.
-  late int _columns;
 
   /// All Features 말풍선이 보이는 동안 홈을 살짝 밀어 보인다. 처음엔 곧바로, 그다음엔 [_peekInterval]마다,
   /// 앱을 켤 때마다 최대 [_peekLimit]번. 사용자가 홈을 만지고 있으면 그 차례는 건너뛴다.
@@ -165,17 +162,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<int?> _pickWallet(BuildContext context, List<int> candidateWalletIds) {
-    return SelectWalletBottomSheet.show<int>(
+    return CommonBottomSheets.showDraggableBottomSheet<int>(
       context: context,
       screenName: AnalyticsScreenNames.homeShortcutSelectWalletSheet,
-      child: SelectWalletBottomSheet(
-        showOnlyMfpWallets: false,
-
-        currentUnit: context.read<PreferenceProvider>().currentUnit,
-        walletId: -1,
-        candidateWalletIds: candidateWalletIds,
-        onWalletChanged: (id) => Navigator.pop(context, id),
-      ),
+      childBuilder:
+          (scrollController) => SelectWalletBottomSheet(
+            showOnlyMfpWallets: false,
+            scrollController: scrollController,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            walletId: -1,
+            candidateWalletIds: candidateWalletIds,
+            onWalletChanged: (id) => Navigator.pop(context, id),
+          ),
     );
   }
 
@@ -190,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final before = _viewModel.configuration;
     final presetApplied = await Navigator.of(context).push<HomePresetApplied>(
       CupertinoPageRoute(
-        settings: const RouteSettings(name: HomeEditScreen.routeName),
+        settings: const RouteSettings(name: '/home-edit'),
         builder:
             (_) => MultiProvider(
               providers: [
@@ -223,8 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         LongPressedMenuItem(
           title: isShortcut ? t.home_menu.configure_shortcut : t.home_menu.configure_widget,
           iconPath: CommonActionIconPath.command,
-          onSelected:
-              () => HomeItemConfigureSheets.configure(context, _viewModel, definition, item, columns: () => _columns),
+          onSelected: () => HomeItemConfigureSheets.configure(context, _viewModel, definition, item),
         ),
       LongPressedMenuItem(
         title: t.home_menu.edit_home_screen,
@@ -275,11 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ChangeNotifierProvider.value(value: _widgetsViewModel),
         ChangeNotifierProvider(
           create:
-              (context) => HomeConnectionStatusViewModel(
-                context.read<ConnectivityProvider>(),
-                context.read<NodeProvider>(),
-                context.read<WalletProvider>().walletItemListNotifier,
-              ),
+              (context) =>
+                  HomeConnectionStatusViewModel(context.read<ConnectivityProvider>(), context.read<NodeProvider>()),
         ),
       ],
       child: CupertinoPageScaffold(
@@ -388,34 +382,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeScroll(BuildContext context) {
     return CustomScrollView(
-      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       slivers: [
         Builder(builder: _buildAppBar),
-        Builder(builder: _buildRefreshControl),
-        SliverSafeArea(
-          top: false,
-          bottom: false,
-          sliver: SliverPadding(
-            padding: const EdgeInsets.all(16 - _gridBadgeInset),
-            sliver: SliverLayoutBuilder(
-              builder: (context, constraints) {
-                final columns = HomeGridGeometry.columnsForWidth(constraints.crossAxisExtent - _gridBadgeInset * 2);
-                _columns = columns;
-                return SliverToBoxAdapter(
+        SliverPadding(
+          padding: const EdgeInsets.all(16 - _gridBadgeInset),
+          sliver: SliverLayoutBuilder(
+            builder:
+                (context, constraints) => SliverToBoxAdapter(
                   child: Consumer<HomeViewModel>(
                     builder:
                         (context, viewModel, _) => HomeItemsView(
                           key: _itemsKey,
                           configuration: viewModel.configuration,
                           registry: viewModel.registry,
-                          onMoveToCell: (id, position) => viewModel.moveToCell(id, position, columns: columns),
-                          onInsertBefore: (id, beforeId) => viewModel.insertBefore(id, beforeId, columns: columns),
+                          onMoveToCell: viewModel.moveToCell,
+                          onInsertBefore: viewModel.insertBefore,
                           menuItemsOf: (item) => _menuItemsOf(context, item),
                           isArranging: viewModel.isArranging,
                           onRemove: _remove,
                           onArrangeStart: viewModel.startArranging,
                           onArrangeDone: _finishArranging,
-                          onResize: (item, span) => viewModel.resizeItem(item.id, span, columns: columns),
+                          onResize: (item, span) => viewModel.resizeItem(item.id, span),
                           badgeInset: _gridBadgeInset,
                           wrapDragFeedback:
                               (child) => MultiProvider(
@@ -434,24 +421,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                   ),
-                );
-              },
-            ),
+                ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildRefreshControl(BuildContext context) {
-    if (context.select<HomeViewModel, bool>((viewModel) => viewModel.isArranging)) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-    return CupertinoSliverRefreshControl(
-      onRefresh: context.read<HomeConnectionStatusViewModel>().refresh,
-      refreshTriggerPullDistance: 80,
-      refreshIndicatorExtent: 0,
-      builder: (_, _, _, _, _) => const SizedBox.shrink(),
     );
   }
 
@@ -462,7 +435,6 @@ class _HomeScreenState extends State<HomeScreen> {
       networkStatus: status.networkStatus,
       showReconnected: status.showElectrumReconnected,
       isSyncing: status.isSyncing,
-      showUpdateCompleted: status.showUpdateCompleted,
       isArranging: arranging,
       addWalletButtonLink: _addWalletButtonLink,
       onArrangeDone: _finishArranging,

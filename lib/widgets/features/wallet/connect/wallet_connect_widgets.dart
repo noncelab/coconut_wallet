@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/widgets/features/wallet/connect/wallet_connect_loading_indicator.dart';
 import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
@@ -81,7 +80,7 @@ class WalletConnectErrorCard extends StatelessWidget {
         children: [
           SvgPicture.asset(
             CommonStateIconPath.circleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),
@@ -214,14 +213,18 @@ class WalletConnectProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const WalletConnectLoadingIndicator(),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
+          ),
           CoconutLayout.spacing_200h,
           Text(
             title,
-            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
             textAlign: TextAlign.center,
           ),
           CoconutLayout.spacing_400h,
@@ -346,7 +349,7 @@ class WalletConnectMismatchCard extends StatelessWidget {
         children: [
           SvgPicture.asset(
             CommonStateIconPath.triangleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),

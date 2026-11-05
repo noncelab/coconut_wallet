@@ -383,7 +383,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
   void _showSegmentTooltip(bool isReceiving, {int retriesLeft = _kSegmentTooltipMaxRetries}) {
     final preferenceProvider = context.read<PreferenceProvider>();
     final hasSeenToday =
-        isReceiving ? preferenceProvider.hasSeenReceivingTooltip() : preferenceProvider.hasSeenChangeTooltip();
+        isReceiving
+            ? preferenceProvider.hasSeenReceivingTooltipToday()
+            : preferenceProvider.hasSeenChangeTooltipToday();
     if (hasSeenToday) {
       return;
     }
@@ -409,9 +411,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
     });
 
     if (isReceiving) {
-      preferenceProvider.markReceivingTooltipShown();
+      preferenceProvider.markReceivingTooltipShownToday();
     } else {
-      preferenceProvider.markChangeTooltipShown();
+      preferenceProvider.markChangeTooltipShownToday();
     }
 
     _segmentTooltipTimer?.cancel();

@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -105,10 +104,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.stop_restore_title)),
-      findsOneWidget,
-    );
+    expect(find.text(t.wallet_home_screen.hot_wallet_restore.stop_restore_title), findsOneWidget);
     await tester.tap(find.text(t.no));
     await tester.pumpAndSettle();
     expect(find.byType(HotWalletRestoreScreen), findsOneWidget);
@@ -163,10 +159,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pump();
     expect(find.byType(HotWalletRestoreScreen), findsOneWidget);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.stop_restore_title)),
-      findsNothing,
-    );
+    expect(find.text(t.wallet_home_screen.hot_wallet_restore.stop_restore_title), findsNothing);
     final hideCallsAfterFirstSubmission = hideCallCount;
     final duplicateSubmission = button.onButtonClicked() as Future<void>;
     await duplicateSubmission;
@@ -178,15 +171,8 @@ void main() {
 
     firstHideGate.complete();
     await tester.pumpAndSettle();
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.restore_failed)),
-      findsOneWidget,
-    );
-    Navigator.of(
-      tester.element(
-        find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.restore_failed)),
-      ),
-    ).pop();
+    expect(find.text(t.wallet_home_screen.hot_wallet_restore.restore_failed), findsOneWidget);
+    Navigator.of(tester.element(find.text(t.wallet_home_screen.hot_wallet_restore.restore_failed))).pop();
     await tester.pumpAndSettle();
     await firstSubmission;
 
@@ -203,11 +189,7 @@ void main() {
         tester.widget<FixedBottomButton>(find.byType(FixedBottomButton)).onButtonClicked() as Future<void>;
     await tester.pumpAndSettle();
     expect(hideCallCount, greaterThan(hideCallsAfterFirstSubmission));
-    Navigator.of(
-      tester.element(
-        find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.restore_failed)),
-      ),
-    ).pop();
+    Navigator.of(tester.element(find.text(t.wallet_home_screen.hot_wallet_restore.restore_failed))).pop();
     await tester.pumpAndSettle();
     await nextSubmission;
   });

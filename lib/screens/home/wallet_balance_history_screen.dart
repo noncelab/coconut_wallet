@@ -55,8 +55,6 @@ Widget walletBalanceHistoryFlight(
 }
 
 class WalletBalanceHistoryScreen extends StatefulWidget {
-  static const routeName = '/wallet-balance-history';
-
   final HodlInsightsViewModel viewModel;
 
   /// 호들 인사이트 잔액 카드에서 열면 그 카드 높이. 그래프 카드가 같은 자리, 같은 크기로 이어진다.
@@ -67,7 +65,7 @@ class WalletBalanceHistoryScreen extends StatefulWidget {
   static Future<void> open(BuildContext context, HodlInsightsViewModel viewModel, {double? cardHeight}) =>
       Navigator.of(context).push<void>(
         PageRouteBuilder<void>(
-          settings: const RouteSettings(name: routeName),
+          settings: const RouteSettings(name: '/wallet-balance-history'),
           opaque: false,
           transitionDuration: const Duration(milliseconds: 450),
           reverseTransitionDuration: const Duration(milliseconds: 400),
@@ -253,7 +251,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
     final dates = _dates;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(context: context, title: t.wallet_balance_history_screen.title),
+      appBar: CoconutAppBar.build(context: context, title: t.wallet_list.header.balance_history),
       body: SafeArea(
         top: false,
         bottom: false,
@@ -582,7 +580,7 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
             runSpacing: 4,
             children: [
               Text(
-                t.wallet_balance_history_screen.period_summary,
+                t.wallet_list.balance_history_detail.period_summary,
                 style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.primaryText),
               ),
               if (_selected != null && _walletIds?.length != 1)
@@ -808,18 +806,18 @@ class _BalanceHistoryGestureGuide extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              t.wallet_balance_history_screen.gesture_guide_title,
+                              t.wallet_list.balance_history_detail.gesture_guide_title,
                               style: CoconutTypography.body2_14_Bold.copyWith(color: colors.guideBubblePrimaryText),
                             ),
                             const SizedBox(height: 10),
                             instruction(
                               CommonNavigationIconPath.arrowLeftRight,
-                              t.wallet_balance_history_screen.gesture_guide_pan,
+                              t.wallet_list.balance_history_detail.gesture_guide_pan,
                             ),
                             const SizedBox(height: 10),
                             instruction(
                               CommonNavigationIconPath.arrowUpDown,
-                              t.wallet_balance_history_screen.gesture_guide_zoom,
+                              t.wallet_list.balance_history_detail.gesture_guide_zoom,
                             ),
                           ],
                         ),

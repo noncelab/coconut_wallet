@@ -7,20 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeConnectionStatusIndicator extends StatelessWidget {
-  static const _iconSize = 16.0;
-  static const _textOpticalOffsetY = -0.7;
-
   final NetworkStatus networkStatus;
   final bool showReconnected;
   final bool isSyncing;
-  final bool showUpdateCompleted;
 
   const HomeConnectionStatusIndicator({
     super.key,
     required this.networkStatus,
     required this.showReconnected,
     required this.isSyncing,
-    this.showUpdateCompleted = false,
   });
 
   static String errorMessage(NetworkStatus networkStatus) {
@@ -42,7 +37,11 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       child = _row(
         context,
         key: 'error',
-        leading: _icon(FeatureConnectivityIconPath.cloudDisconnected, colors.dangerText),
+        leading: SvgPicture.asset(
+          FeatureConnectivityIconPath.cloudDisconnected,
+          width: 16,
+          colorFilter: ColorFilter.mode(colors.dangerText, BlendMode.srcIn),
+        ),
         message: errorMessage(networkStatus),
         color: colors.dangerText,
       );
@@ -50,7 +49,11 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       child = _row(
         context,
         key: 'reconnected',
-        leading: _icon(CommonFormIconPath.circleCheck, colors.success),
+        leading: SvgPicture.asset(
+          CommonFormIconPath.circleCheck,
+          width: 16,
+          colorFilter: ColorFilter.mode(colors.success, BlendMode.srcIn),
+        ),
         message: t.home_connection_status.electrum_connection_restored,
         color: colors.success,
       );
@@ -58,29 +61,13 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       child = _row(
         context,
         key: 'syncing',
-        leading: SizedBox.square(
-          dimension: _iconSize,
-          child: Center(
-            child: SizedBox.square(
-              dimension: _iconSize * 20 / 24,
-              child: CircularProgressIndicator(
-                strokeWidth: _iconSize * 2 / 24,
-                strokeAlign: CircularProgressIndicator.strokeAlignInside,
-                color: colors.secondaryText,
-              ),
-            ),
-          ),
+        leading: SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: colors.secondaryText),
         ),
         message: t.status_updating,
         color: colors.secondaryTextStrong,
-      );
-    } else if (showUpdateCompleted) {
-      child = _row(
-        context,
-        key: 'update-completed',
-        leading: _icon(CommonFormIconPath.circleCheck, colors.success),
-        message: t.home_connection_status.update_completed,
-        color: colors.success,
       );
     } else {
       child = const SizedBox.shrink(key: ValueKey('empty'));
@@ -110,37 +97,15 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         leading,
-        CoconutLayout.spacing_100w,
+        CoconutLayout.spacing_150w,
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Transform.translate(
-              offset: const Offset(0, _textOpticalOffsetY),
-              child: Text(
-                message,
-                maxLines: 1,
-                style: CoconutTypography.body3_12_Bold.copyWith(
-                  color: color,
-                  leadingDistribution: TextLeadingDistribution.even,
-                ),
-              ),
-            ),
+            child: Text(message, maxLines: 1, style: CoconutTypography.body3_12_Bold.copyWith(color: color)),
           ),
         ),
       ],
     );
   }
-
-  Widget _icon(String path, Color color) => SizedBox.square(
-    dimension: _iconSize,
-    child: Center(
-      child: SvgPicture.asset(
-        path,
-        width: _iconSize,
-        height: _iconSize,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      ),
-    ),
-  );
 }

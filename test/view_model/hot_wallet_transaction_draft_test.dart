@@ -1,8 +1,5 @@
 import 'dart:ui';
 
-import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -70,15 +67,6 @@ class _Tags extends Fake implements UtxoTagProvider {}
 
 class _Node extends Fake implements NodeProvider {}
 
-class _SendNode extends Fake implements NodeProvider {
-  @override
-  NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
-  @override
-  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
-  @override
-  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
-}
-
 class _Transactions extends Fake implements TransactionProvider {}
 
 class _SendViewModel extends SendViewModel {
@@ -90,7 +78,6 @@ class _SendViewModel extends SendViewModel {
         _Preferences(),
         drafts,
         _Utxos(),
-        _SendNode(),
         true,
         (_) {},
         (_) {},

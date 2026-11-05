@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -10,14 +9,12 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Connectivity extends ChangeNotifier implements ConnectivityProvider {
@@ -78,10 +75,6 @@ class _Isolate extends Fake implements IsolateManager {
   Future<Result<BlockTimestamp>> Function()? onBlock;
   int initializationCount = 0;
   int blockRequestCount = 0;
-  Duration closeDelay = Duration.zero; // IsolateManager.closeIsolate waits for the isolate's graceful-shutdown ack
-
-  @override
-  void Function()? onUnexpectedExit;
 
   @override
   Stream<IsolateStateMessage> get stateStream => stateController.stream;
@@ -121,7 +114,6 @@ class _Isolate extends Fake implements IsolateManager {
 
   @override
   Future<void> closeIsolate() async {
-    if (closeDelay > Duration.zero) await Future<void>.delayed(closeDelay);
     initialized = false;
   }
 }
@@ -207,18 +199,6 @@ void main() {
     ]);
     expect(isolate.individualSubscriptions, isEmpty);
     expect(analytics.addResults, isEmpty);
-  });
-
-  // AppGuard closes the connection when the app is paused with a failed sync; on resume it must reconnect.
-  test('after a closed connection, reconnect() subscribes the wallets again but initialize() alone does not', () async {
-    await loadExistingWallets();
-    await provider!.closeConnection();
-    await provider!.initialize(); // what AppGuard called on resume before
-    expect(isolate.bulkSubscriptions, hasLength(1), reason: 'only the startup subscription: the wallets stay idle');
-
-    await provider!.closeConnection();
-    expect((await provider!.reconnect()).isSuccess, isTrue); // what AppGuard calls now
-    expect(isolate.bulkSubscriptions, hasLength(2));
   });
 
   test('already-loaded wallets are subscribed when the provider is created later', () async {
@@ -495,265 +475,6 @@ void main() {
     expect(analytics.events, hasLength(recordedEvents));
     expect(isolate.initializationCount, 2);
     expect(isolate.blockRequestCount, blockRequests);
-  });
-
-  for (final initializationFails in [false, true]) {
-    final failure = initializationFails ? 'initialization' : 'wallet subscription';
-    testWidgets('a reconnect whose $failure fails keeps probing and reconnects again', (tester) async {
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2)); // the initial sync starts the block timer after 1 s
-      isolate.onBlock = () async => Result.failure(ErrorCodes.nodeConnectionError); // the server stays unreachable
-      if (initializationFails) {
-        isolate.onInitialize = () async => throw StateError('server unreachable');
-      } else {
-        isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError);
-      }
-
-      final result = await provider!.reconnect();
-      final initializations = isolate.initializationCount;
-      await tester.pump(const Duration(seconds: 13)); // first probe after 10 s ±20%
-
-      expect(result.isFailure, isTrue);
-      expect(isolate.initializationCount, greaterThan(initializations), reason: 'nothing else would ever retry');
-      expect(tester.takeException(), isNull);
-      await provider!.closeConnection();
-      provider!.dispose();
-      provider = null;
-      await tester.pump();
-    });
-  }
-
-  // Review round 1 (Codex outage probe): during an outage the reconnects back off instead of every 10 s.
-  group('reconnect backoff during an outage', () {
-    late bool serverUp;
-
-    /// A synced provider whose server then refuses connections. A block request succeeds only on a live isolate of a
-    /// reachable server. Returns the initialization count after the first failed reconnect.
-    Future<int> startOutage(WidgetTester tester) async {
-      serverUp = true;
-      isolate.onInitialize = () async {
-        if (!serverUp) throw StateError('server refuses connection');
-      };
-      isolate.onBlock =
-          () async =>
-              serverUp && isolate.initialized
-                  ? Result.success(BlockTimestamp(2, DateTime(2026)))
-                  : Result.failure(ErrorCodes.nodeConnectionError);
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      serverUp = false;
-      expect((await provider!.reconnect()).isFailure, isTrue);
-      return isolate.initializationCount;
-    }
-
-    Future<void> close(WidgetTester tester) async {
-      isolate.closeDelay = Duration.zero; // a fake-time delay awaited outside pump() would never end
-      await provider!.closeConnection();
-      provider!.dispose();
-      provider = null;
-      await tester.pump();
-    }
-
-    testWidgets('delays double from 10 s to a 5 min cap with ±20% jitter', (tester) async {
-      final start = await startOutage(tester);
-      var elapsed = 0;
-      // Reconnect k happens after 10, 20, 40, 80, 160, 300 s (each ±20%), so these windows hold for any jitter.
-      final expected = {7: 0, 13: 1, 23: 1, 37: 2, 55: 2, 85: 3, 119: 3, 181: 4, 247: 4, 373: 5, 487: 5, 733: 6};
-      final observed = <int, int>{};
-      for (final second in expected.keys) {
-        await tester.pump(Duration(seconds: second - elapsed));
-        elapsed = second;
-        observed[second] = isolate.initializationCount - start;
-      }
-      expect(observed, expected);
-      await close(tester);
-    });
-
-    testWidgets('failed block probes preserve an active retry only until that retry settles', (tester) async {
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletSyncQueueState, [1, false, 0]));
-      await tester.pump();
-      expect(provider!.state.nodeSyncState, NodeSyncState.completed);
-      final initializations = isolate.initializationCount;
-      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletRetrying, [1, true]));
-      await tester.pump();
-      isolate.onBlock = () async => Result.failure(ErrorCodes.nodeConnectionError);
-      final requests = isolate.blockRequestCount;
-      await tester.pump(const Duration(seconds: 10));
-      await tester.pump(const Duration(seconds: 10));
-      expect(isolate.blockRequestCount, greaterThan(requests), reason: 'the probe really failed during retry');
-      expect(isolate.initializationCount, initializations, reason: 'do not tear down the retry on a saturated socket');
-      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletRetrying, [1, false]));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 10));
-      expect(
-        isolate.initializationCount,
-        greaterThan(initializations),
-        reason: 'no reconnect grace after the retry ends',
-      );
-      await close(tester);
-    });
-
-    testWidgets('a healthy connection resets the backoff', (tester) async {
-      final start = await startOutage(tester);
-      await tester.pump(const Duration(seconds: 37)); // two more failed reconnects; the next waits 40 s ±20%
-      expect(isolate.initializationCount - start, 2);
-      serverUp = true;
-      await tester.pump(const Duration(seconds: 49));
-      expect(isolate.initializationCount - start, 3, reason: 'the pending probe reconnected successfully');
-      expect(provider!.hasConnectionError, isFalse);
-
-      serverUp = false;
-      expect((await provider!.reconnect()).isFailure, isTrue);
-      final afterSecondOutage = isolate.initializationCount;
-      await tester.pump(const Duration(seconds: 13));
-      expect(isolate.initializationCount - afterSecondOutage, 1, reason: 'the delay starts over at 10 s');
-      await close(tester);
-    });
-
-    testWidgets('no probe runs while the app is in the background', (tester) async {
-      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
-      final start = await startOutage(tester); // a probe is pending
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump(const Duration(minutes: 10));
-      expect(isolate.initializationCount, start, reason: 'the pending probe fires in the background and stops');
-
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      expect((await provider!.reconnect()).isFailure, isTrue); // AppGuard reconnects on resume
-      final afterResume = isolate.initializationCount;
-      await tester.pump(const Duration(seconds: 25)); // the second failure in a row waits 20 s ±20%
-      expect(isolate.initializationCount - afterResume, 1, reason: 'probing resumes in the foreground');
-      await close(tester);
-    });
-
-    // Review round 2 (Codex): a reconnect probe that fires in the background is gone. A resume that does not reconnect
-    // (healthy flags, e.g. a silent retry recovered the wallet meanwhile) must bring polling back, with one timer.
-    testWidgets('a healthy resume restores block polling that a background probe consumed', (tester) async {
-      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
-      isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError); // arms a reconnect probe
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      isolate.stateController.add(IsolateStateMessage(IsolateStateMethod.setWalletSyncQueueState, [1, false, 0]));
-      await tester.pump(); // the isolate's retry recovered the wallet
-      expect([provider!.state.nodeSyncState, provider!.hasConnectionError], [NodeSyncState.completed, false]);
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump(const Duration(seconds: 13)); // the probe fires in the background and stops
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      final requests = isolate.blockRequestCount;
-      await AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none);
-      await tester.pump(const Duration(seconds: 25));
-      expect(isolate.blockRequestCount - requests, 2, reason: 'one timer, every 10 s');
-      await close(tester);
-    });
-
-    // Review round 2 (Claude A): the server answers block probes during a slow re-subscription, then drops the session.
-    // A probe that succeeds mid-reconnect must not reset the backoff, and a probe that starts a reconnect must not leave
-    // a periodic timer on the closing connection (it would probe, and reset, during the next subscription).
-    testWidgets('a slow subscription that fails after successful probes still backs off', (tester) async {
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      isolate.closeDelay = const Duration(milliseconds: 50);
-      var sessionAlive = true;
-      isolate.onInitialize = () async => sessionAlive = true;
-      isolate.onBulkSubscribe = (_) async {
-        await Future<void>.delayed(const Duration(seconds: 15)); // a heavy re-subscription
-        sessionAlive = false; // then the server drops the session
-        return Result.failure(ErrorCodes.nodeConnectionError);
-      };
-      isolate.onBlock =
-          () async =>
-              sessionAlive && isolate.initialized
-                  ? Result.success(BlockTimestamp(2, DateTime(2026)))
-                  : Result.failure(ErrorCodes.nodeConnectionError);
-      final start = isolate.initializationCount;
-      final blocks = isolate.blockRequestCount;
-      provider!.reconnect().ignore();
-      for (var second = 0; second < 600; second += 5) {
-        await tester.pump(const Duration(seconds: 5));
-      }
-      final reconnects = isolate.initializationCount - start;
-      // Reconnects at about 0, 25, 60, 115, 210 and 385 s (10, 20, 40, 80, 160 s after each 15 s subscription).
-      expect(reconnects, inInclusiveRange(5, 7), reason: 'not every ~25 s (24 times without the fix)');
-      expect(isolate.blockRequestCount - blocks, lessThanOrEqualTo(reconnects), reason: 'one probe per reconnect');
-      isolate.onBulkSubscribe = null;
-      await tester.pump(const Duration(seconds: 20)); // let an in-flight 15 s subscription end before closing
-      await close(tester);
-    });
-
-    // Review round 2 (Claude E): a resume that lands while the pause's closeConnection() still waits for the isolate to
-    // shut down skipped its reconnect (reconnect() returns early while closing), and nothing reconnected afterwards.
-    testWidgets("a resume during the pause's close reconnects once the close ends", (tester) async {
-      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
-      await startOutage(tester); // failed: AppGuard closes the connection when the app is paused
-      isolate.closeDelay = const Duration(seconds: 1);
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      provider!.closeConnection().ignore(); // AppGuard._handleNodeProviderDisconnect
-      await tester.pump(const Duration(milliseconds: 100));
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      serverUp = true;
-      final beforeResume = isolate.initializationCount;
-      AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none).ignore(); // the close is still running
-      await tester.pump(const Duration(seconds: 2));
-      expect(isolate.initializationCount - beforeResume, 1, reason: 'reconnected after the close ended');
-      expect(provider!.isConnected, isTrue);
-      await close(tester);
-    });
-
-    // Review round 2 (Claude D): after a long outage the next automatic attempt could be minutes away. A resume starts
-    // the backoff over, so a failed resume reconnect is retried after 10 s.
-    testWidgets('a resume starts the reconnect backoff over', (tester) async {
-      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
-      final start = await startOutage(tester);
-      await tester.pump(const Duration(seconds: 85)); // three more failed reconnects; the next would wait 80 s ±20%
-      expect(isolate.initializationCount - start, 3);
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      final beforeResume = isolate.initializationCount;
-      await AppGuard.reconnectNodeOnResume(provider!, ResumeConnectionCheck.none); // reconnects at once and fails
-      await tester.pump(const Duration(seconds: 13));
-      expect(
-        isolate.initializationCount - beforeResume,
-        2,
-        reason: 'the resume reconnect, then a probe 10 s ±20% later',
-      );
-      await close(tester);
-    });
-
-    testWidgets('a probe that completes after the app was paused does not start polling in the background', (
-      tester,
-    ) async {
-      addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
-      isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError);
-      createProvider();
-      wallets.value = [_Wallet(1)];
-      load.value = WalletLoadState.loadCompleted;
-      await tester.pump();
-      final block = Completer<Result<BlockTimestamp>>();
-      isolate.onBlock = () => block.future;
-      await tester.pump(const Duration(seconds: 13)); // the reconnect probe sends its block request in the foreground
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      block.complete(Result.success(BlockTimestamp(2, DateTime(2026))));
-      await tester.pump();
-      final atPause = isolate.blockRequestCount;
-      await tester.pump(const Duration(seconds: 40));
-      expect(isolate.blockRequestCount, atPause, reason: 'nothing polls while paused');
-      await close(tester);
-    });
   });
 
   for (final crossErrorZone in [false, true]) {

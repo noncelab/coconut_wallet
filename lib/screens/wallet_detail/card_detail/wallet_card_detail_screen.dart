@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_security_banner.dart';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -39,6 +38,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/utxo_summary_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -55,7 +55,6 @@ import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -63,6 +62,7 @@ import 'package:provider/provider.dart';
 /// 지갑 상세 화면. 위쪽 카드 휠로 지갑을 넘기고, 가운데 카드의 배경이 화면 전체에 펼쳐진다.
 class WalletCardDetailScreen extends StatefulWidget {
   final int id;
+  final String entryPoint;
   final bool focusRecentTransactions;
   final String? focusedTransactionHash;
 
@@ -78,6 +78,7 @@ class WalletCardDetailScreen extends StatefulWidget {
   const WalletCardDetailScreen({
     super.key,
     required this.id,
+    required this.entryPoint,
     this.walletIds,
     this.onFocusChanged,
     this.focusRecentTransactions = false,
@@ -89,6 +90,7 @@ class WalletCardDetailScreen extends StatefulWidget {
 }
 
 class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with SingleTickerProviderStateMixin {
+  static const _nextWarningDelay = Duration(milliseconds: 400);
   static const _horizontalPadding = 16.0;
 
   late final WalletCardDetailViewModel _viewModel;
@@ -99,7 +101,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   Animation<double>? _arrivalAnimation;
   bool _recentFocusStarted = false;
   final ValueNotifier<double> _collapseProgress = ValueNotifier(0);
-  final ValueNotifier<bool> _carouselMoving = ValueNotifier(false);
   final ValueNotifier<double> _pagePosition = ValueNotifier(0);
 
   @override
@@ -190,7 +191,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     _scrollController.dispose();
     _collapseProgress.dispose();
     _pagePosition.dispose();
-    _carouselMoving.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -299,19 +299,12 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
           key: const Key('wallet-detail-action-details'),
           width: CoconutAppBarActionButton.actionWidth,
           onPressed: _openWalletInfo,
-          icon: WalletSettingsBackupBadge(
-            visible:
-                viewModel.detail.getSecurityWarningType(
-                  isAppLockEnabled: context.watch<AuthProvider>().isAuthEnabled,
-                ) ==
-                WalletDetailSecurityWarningType.unbackedHotWallet,
-            child: SvgPicture.asset(
-              FeatureSettingsIconPath.settings,
-              width: 24,
-              height: 24,
-              semanticsLabel: t.wallet_card_detail_screen.details,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-            ),
+          icon: SvgPicture.asset(
+            FeatureSettingsIconPath.settings,
+            width: 24,
+            height: 24,
+            semanticsLabel: t.wallet_card_detail_screen.details,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
         const SizedBox(width: 4),
@@ -331,24 +324,17 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
               if (!viewModel.detail.isWalletSyncing)
-                CupertinoSliverRefreshControl(
-                  onRefresh: viewModel.refresh,
-                  builder: (_, _, _, _, _) => const SizedBox.shrink(),
-                ),
+                _onBackground(CupertinoSliverRefreshControl(onRefresh: viewModel.refresh)),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: WalletDetailCardCarousel(
                   wallets: wallets,
-                  footerBuilder:
-                      (context, wallet, onHeightChanged) =>
-                          _buildSecurityWarning(viewModel.detail, onHeightChanged: onHeightChanged),
                   initialIndex: viewModel.focusedIndex,
                   onFocusChanged: (wallet) {
                     vibrateExtraLight();
                     viewModel.focusWallet(wallet.id);
                     widget.onFocusChanged?.call(wallet.id);
                   },
-                  onScrollActivityChanged: (moving) => _carouselMoving.value = moving,
                   onPageScrolled: (page) => _pagePosition.value = page,
                   cardBuilder: (context, wallet, isFocused) => _buildCard(viewModel, wallet, isFocused),
                 ),
@@ -359,69 +345,10 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AnimatedSize(
-                        clipBehavior: Clip.none,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOutCubic,
-                        alignment: Alignment.topCenter,
-                        child: IgnorePointer(
-                          ignoring:
-                              !viewModel.focusedWallet.hasLocalKey || viewModel.balanceOf(viewModel.focusedWallet) <= 0,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
-                            switchInCurve: Curves.easeInOut,
-                            switchOutCurve: Curves.easeInOut,
-                            layoutBuilder:
-                                (current, previous) => Stack(
-                                  alignment: Alignment.center,
-                                  clipBehavior: Clip.none,
-                                  children: [...previous, if (current != null) current],
-                                ),
-                            transitionBuilder:
-                                (child, animation) => FadeTransition(
-                                  opacity: animation,
-                                  child: ScaleTransition(scale: animation, child: child),
-                                ),
-                            child:
-                                viewModel.focusedWallet.hasLocalKey && viewModel.balanceOf(viewModel.focusedWallet) > 0
-                                    ? KeyedSubtree(
-                                      key: const Key('wallet-detail-vault-visible'),
-                                      child: _buildMoveToVault(context),
-                                    )
-                                    : const SizedBox.shrink(key: Key('wallet-detail-vault-hidden')),
-                          ),
-                        ),
-                      ),
+                      if (viewModel.focusedWallet.hasLocalKey && viewModel.balanceOf(viewModel.focusedWallet) > 0)
+                        _buildMoveToVault(context),
                       const SizedBox(height: 20),
-                      Column(
-                        key: _recentTransactionsKey,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _sectionHeader(
-                            context,
-                            key: const Key('wallet-detail-transactions-header'),
-                            title: t.wallet_detail_screen.recent_transactions,
-                            onMore: _openTransactionList,
-                            moreEnabled: viewModel.recentTransactions.isNotEmpty,
-                          ),
-                          SizedBox(
-                            height: 216,
-                            child: _lifted(
-                              RecentTransactionsView(
-                                transactions: viewModel.recentTransactions,
-                                amountText: viewModel.amountText,
-                                now: DateTime.now(),
-                                showWalletName: false,
-                                onTransactionSelected: _openTransaction,
-                                highlightedTxHash: _focusedTransactionHash,
-                                highlightAnimation: _recentHighlightController,
-                              ),
-                              radius: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                      _buildSecurityWarning(viewModel.detail),
                       _sectionHeader(
                         context,
                         key: const Key('wallet-detail-utxo-header'),
@@ -446,6 +373,34 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                           ),
                         ),
                         radius: 20,
+                      ),
+                      const SizedBox(height: 28),
+                      Column(
+                        key: _recentTransactionsKey,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionHeader(
+                            context,
+                            key: const Key('wallet-detail-transactions-header'),
+                            title: t.wallet_detail_screen.recent_transactions,
+                            onMore: _openTransactionList,
+                            moreEnabled: viewModel.recentTransactions.isNotEmpty,
+                          ),
+                          SizedBox(
+                            height: 216,
+                            child: _lifted(
+                              RecentTransactionsView(
+                                transactions: viewModel.recentTransactions,
+                                amountText: viewModel.amountText,
+                                now: DateTime.now(),
+                                onTransactionSelected: _openTransaction,
+                                highlightedTxHash: _focusedTransactionHash,
+                                highlightAnimation: _recentHighlightController,
+                              ),
+                              radius: 20,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
                     ],
@@ -508,7 +463,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     return Material(
       key: const Key('wallet-detail-chart-card'),
       color: colors.homeSurface,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(28),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
@@ -630,7 +585,6 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     return WalletDetailCard(
       key: ValueKey('wallet-detail-card-${wallet.id}'),
       wallet: wallet,
-      borderRadius: BorderRadius.zero,
       appearance: viewModel.appearanceOf(wallet),
       balance: viewModel.balanceOf(wallet),
       unit: viewModel.unit,
@@ -752,7 +706,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   Widget _buildMoveToVault(BuildContext context) {
     final colors = context.coconutColors;
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 12),
+      padding: const EdgeInsets.only(top: 4),
       child: Center(
         child: _lifted(
           radius: 100,
@@ -795,26 +749,45 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     );
   }
 
-  Widget _buildSecurityWarning(WalletDetailViewModel detail, {ValueChanged<double>? onHeightChanged}) {
+  Widget _buildSecurityWarning(WalletDetailViewModel detail) {
     final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
-    final warning = detail.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
-    return ValueListenableBuilder<bool>(
-      valueListenable: _carouselMoving,
-      builder:
-          (context, moving, _) => WalletSecurityBanner(
-            warning: warning,
-            walletId: detail.walletId,
-            moving: moving,
-            onHeightChanged: onHeightChanged,
-            onTap:
-                warning == WalletDetailSecurityWarningType.unbackedHotWallet
-                    ? _onBackupBannerTapped
-                    : _openAppLockSettings,
-            onClosed: () {
-              if (warning == null) return;
-              detail.dismissSecurityWarning(warning);
-            },
-          ),
+    final warningType = detail.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
+    if (warningType == null) return const SizedBox.shrink();
+    final isMnemonicWarning = warningType == WalletDetailSecurityWarningType.unbackedHotWallet;
+    final iconColor =
+        isMnemonicWarning ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: HomeAlertCard.security(
+        topSpacing: 8,
+        reserveSpaceOnShow: widget.focusRecentTransactions,
+        key: ValueKey(('wallet-detail-warning', detail.walletId, warningType)),
+        type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
+        showDelay: detail.shouldUseShortWarningDelay(warningType) ? _nextWarningDelay : const Duration(seconds: 1),
+        title:
+            isMnemonicWarning
+                ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                : t.wallet_home_screen.app_lock_warning.title,
+        description:
+            isMnemonicWarning
+                ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                : t.wallet_home_screen.app_lock_warning.description,
+        onTap: isMnemonicWarning ? _onBackupBannerTapped : _openAppLockSettings,
+        onClosed:
+            () => detail.dismissSecurityWarning(
+              warningType,
+              showNextWarning:
+                  isMnemonicWarning &&
+                  !isAppLockEnabled &&
+                  detail.canShowSecurityWarning(WalletDetailSecurityWarningType.appLock),
+            ),
+        icon: SvgPicture.asset(
+          isMnemonicWarning ? CommonStateIconPath.triangleWarning : CommonStateIconPath.shieldWarning,
+          width: 20,
+          height: 20,
+          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        ),
+      ),
     );
   }
 
@@ -857,7 +830,11 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   void _openTransactionList() {
     _logAction(WalletDetailAction.txMore);
-    Navigator.pushNamed(context, AppRouteNames.transactionList, arguments: WalletDetailRouteArgs(id: _walletId));
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.transactionList,
+      arguments: WalletDetailRouteArgs(id: _walletId, entryPoint: widget.entryPoint),
+    );
   }
 
   Future<void> _openWalletInfo({bool showTargetSetting = false, bool highlightMnemonicBackup = false}) async {
@@ -867,6 +844,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       WalletInfoRouteArgs(
         id: _walletId,
         walletType: _viewModel.focusedWallet.walletType,
+        entryPoint: widget.entryPoint,
         showTargetSetting: showTargetSetting,
         highlightMnemonicBackup: highlightMnemonicBackup,
       ),
@@ -904,10 +882,16 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
     final destination = resolveMoveToVaultDestination(_detail.balance, watchOnlyWallets.length);
     if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
-      final receivingVaultWalletId = await SelectWalletBottomSheet.show<int>(
+      final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
         context: context,
         screenName: AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
-        child: ShowVaultSelectWalletBottomSheet(walletId: walletId, watchOnlyWallets: watchOnlyWallets),
+        heightRatio: 0.5,
+        childBuilder:
+            (scrollController) => ShowVaultSelectWalletBottomSheet(
+              walletId: walletId,
+              watchOnlyWallets: watchOnlyWallets,
+              scrollController: scrollController,
+            ),
       );
       if (!mounted || receivingVaultWalletId == null) return;
       _logAction(WalletDetailAction.send);

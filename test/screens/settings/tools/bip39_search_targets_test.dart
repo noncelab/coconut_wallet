@@ -29,8 +29,7 @@ void main() {
       await tester.pump();
       final clear = find.descendant(of: field, matching: find.byType(CupertinoButton));
       final clearRect = tester.getRect(clear);
-      // 2ea3ec08d(doey)에서 지우기 버튼을 24로 줄인 디자인을 따른다. 입력칸 안에 온전히 있어야 한다.
-      expect(clearRect.size, const Size(24, 24));
+      expect(clearRect.size, const Size(44, 44));
       expect(tester.getRect(field).contains(clearRect.topLeft), isTrue);
       expect(tester.getRect(field).contains(clearRect.bottomRight - const Offset(0.1, 0.1)), isTrue);
       await tester.tapAt(clearRect.topLeft + const Offset(1, 1));

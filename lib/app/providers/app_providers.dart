@@ -35,7 +35,6 @@ List<SingleChildWidget> buildAppProviders({
   required bool isMainFlow,
   required bool isFirebaseAnalyticsUsed,
   required NetworkType networkType,
-  String? iosRegionCode,
 }) {
   return [
     ChangeNotifierProvider(create: (_) => VisibilityProvider()),
@@ -65,7 +64,6 @@ List<SingleChildWidget> buildAppProviders({
             context.read<ElectrumServerProvider>(),
             context.read<BlockExplorerProvider>(),
             featureSettingsProvider: context.read<FeatureSettingsProvider>(),
-            iosRegionCode: iosRegionCode,
           ),
     ),
     ChangeNotifierProvider<PriceProvider>(

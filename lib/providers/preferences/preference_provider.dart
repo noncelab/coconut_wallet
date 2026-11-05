@@ -1,12 +1,9 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
-import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -134,6 +131,21 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 구간별 색상 테마
   late UtxoTierTheme _utxoTierTheme;
   UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
+  // 지갑 목록 화면 - 법정화폐 표시 여부
+  late bool _isWalletListFiatHidden;
+  bool get isWalletListFiatVisible => !_isWalletListFiatHidden;
+
+  // 지갑 목록 화면 - 1 BTC 가격 정보 표시 여부
+  late bool _isWalletListBitcoinPriceHidden;
+  bool get isWalletListBitcoinPriceVisible => !_isWalletListBitcoinPriceHidden;
+
+  // 지갑 목록 화면 - 총 보유 수량 변화 그래프 표시 여부
+  late bool _isWalletListBalanceChartHidden;
+  bool get isWalletListBalanceChartVisible => !_isWalletListBalanceChartHidden;
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
+  late List<FiatCode> _walletListVisibleFiats;
+  List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
   /// 테마 variant
   late CoconutThemeVariant _themeVariant;
@@ -155,29 +167,18 @@ class PreferenceProvider extends ChangeNotifier {
 
   bool get isCcosRuntimeReady => _isCcosRuntimeReady;
 
-  /// [iosRegionCode]는 AppBootstrap이 읽은 iOS 지역 설정이다.
-  /// [systemLocale]·[timeZoneName]은 테스트에서 기기 값을 고정할 때만 넘긴다. 없으면 기기 값을 쓴다.
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
-    String? iosRegionCode,
-    Locale? systemLocale,
-    String? timeZoneName,
   }) : _featureSettingsProvider = featureSettingsProvider {
     _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
     _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
 
+    // 통화 설정 초기화
+    _initializeFiat();
     _initializeLanguageFromSystem();
-    // 통화 설정 초기화. 앱 언어(_language)를 쓰므로 언어 초기화 뒤에 둔다.
-    _selectedFiat = resolveInitialFiat(
-      _sharedPrefs,
-      iosRegionCode: iosRegionCode,
-      systemLocale: systemLocale ?? PlatformDispatcher.instance.locale,
-      appLanguage: _language,
-      timeZoneName: timeZoneName ?? DateTime.now().timeZoneName,
-    );
     _initializeNumberFormatFromLocale();
 
     _electrumServerProvider.addListener(notifyListeners);
@@ -212,83 +213,24 @@ class PreferenceProvider extends ChangeNotifier {
     _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
+    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _isWalletListBitcoinPriceHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBitcoinPriceHidden);
+    _isWalletListBalanceChartHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBalanceChartHidden);
+    _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
     _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
 
     Future<void>.microtask(loadCcosRuntimeState);
   }
 
-  /// 앱 시작 때 쓸 통화를 정하고, 새로 정한 값은 저장한다. [appLanguage]는 언어 초기화를 마친 앱 언어 설정값이다.
-  /// 지역은 iOS 지역 설정([iosRegionCode]), 없으면 첫 번째 선호 locale([systemLocale])의 지역을 쓴다.
-  /// - 저장된 통화가 없으면(새 설치) 기기 지역, 지역이 없으면 앱 언어로 기본 통화를 정해 저장한다.
-  /// - 예전 기본값 KRW가 저장된 기존 사용자는 지역이 KR이 아니고 앱 언어도 ko가 아닐 때만 같은 기준으로 바로잡는다.
-  ///   KRW가 아닌 저장값은 건드리지 않고, 확인 플래그를 남겨 설치당 한 번만 확인한다.
-  ///   통화를 새로 저장할 때는 저장이 확인된 뒤에 플래그를 남긴다([_saveFiatThenMarkChecked]).
-  /// - [timeZoneName]이 KST(대한민국·북한)면 지역·언어와 관계없이 새 설치는 KRW로 정하고, 저장된 KRW도 바로잡지 않는다.
-  ///   DateTime.timeZoneName은 Android·iOS 모두 localtime_r()의 tm_zone, 곧 기기 tz 데이터베이스의 약어다
-  ///   (dart-lang/sdk 3.9.2 runtime/vm/os_android.cc·os_macos.cc의 OS::GetTimeZoneName).
-  ///   IANA tzdata에서 KST는 Asia/Seoul·Asia/Pyongyang만 쓰고, 같은 UTC+9인 Asia/Tokyo는 JST, 나머지는 WIT나 +09다.
-  /// - 통화 선택이 생기기 전 버전(mainnet 0.0.12·regtest 3.1.6 이하)에서 지갑을 추가·삭제한 설치는 통화가 저장돼 있지 않지만
-  ///   그때 쓰던 KRW가 저장된 것으로 보고 위 보정 규칙을 적용한다. 그 버전들은 지갑을 추가·삭제할 때만 WALLET_COUNT를 남겼고,
-  ///   지금은 PreferenceProvider 뒤에 만들어지는 WalletProvider만 남기므로 새 설치에서는 이 시점에 없다.
-  @visibleForTesting
-  static FiatCode resolveInitialFiat(
-    SharedPrefsRepository prefs, {
-    String? iosRegionCode,
-    required Locale systemLocale,
-    required String appLanguage,
-    required String timeZoneName,
-  }) {
-    final isKoreaTimeZone = timeZoneName == 'KST';
-    final region = iosRegionCode == null || iosRegionCode.isEmpty ? systemLocale.countryCode : iosRegionCode;
-    final storedCode = prefs.getString(SharedPrefKeys.kSelectedFiat);
-    final isPreFiatInstall = storedCode.isEmpty && prefs.isContainsKey(SharedPrefKeys.kWalletCount);
-    final savedCode = isPreFiatInstall ? FiatCode.KRW.code : storedCode;
-    final isRegionCheckPending = !prefs.getBool(SharedPrefKeys.kHasCheckedRegionDefaultFiat);
-
-    final isLegacyKrwDefault =
-        isRegionCheckPending &&
-        savedCode == FiatCode.KRW.code &&
-        !isKoreaTimeZone &&
-        region?.toUpperCase() != 'KR' &&
-        appLanguage != AppLanguage.ko.code;
-    if (savedCode.isNotEmpty && !isLegacyKrwDefault) {
-      final saved = FiatCode.values.firstWhere((fiat) => fiat.code == savedCode, orElse: () => FiatCode.KRW);
-      if (isPreFiatInstall) {
-        unawaited(_saveFiatThenMarkChecked(prefs, saved));
-      } else if (isRegionCheckPending) {
-        unawaited(_markRegionChecked(prefs));
-      }
-      return saved;
-    }
-
-    // 지역은 기기 설정을, 지역이 없을 때 쓰는 언어는 앱 언어 설정을 따른다.
-    final fiat = isKoreaTimeZone ? FiatCode.KRW : defaultFiatForLocale(Locale(appLanguage, region));
-    unawaited(_saveFiatThenMarkChecked(prefs, fiat));
-    return fiat;
-  }
-
-  /// 통화를 먼저 저장하고, 기기 저장소가 저장을 확인했을 때(true)만 확인 플래그를 남긴다.
-  /// 저장이 거절(false)되거나 실패하거나 그 사이에 앱이 꺼지면 플래그가 없으므로, 다음 실행에서 같은 확인을 다시 하고 결과는 같다.
-  static Future<void> _saveFiatThenMarkChecked(SharedPrefsRepository prefs, FiatCode fiat) async {
-    try {
-      if (await prefs.setStringAndConfirm(SharedPrefKeys.kSelectedFiat, fiat.code)) {
-        await _markRegionChecked(prefs);
-      } else {
-        Logger.error('PreferenceProvider: 기기 저장소가 통화 저장을 거절해 확인 플래그를 남기지 않음');
-      }
-    } catch (e) {
-      Logger.error('PreferenceProvider: 통화 저장 실패: $e');
-    }
-  }
-
-  static Future<void> _markRegionChecked(SharedPrefsRepository prefs) async {
-    try {
-      if (!await prefs.setBoolAndConfirm(SharedPrefKeys.kHasCheckedRegionDefaultFiat, true)) {
-        Logger.error('PreferenceProvider: 기기 저장소가 확인 플래그 저장을 거절함');
-      }
-    } catch (e) {
-      Logger.error('PreferenceProvider: 확인 플래그 저장 실패: $e');
+  /// 통화 설정 초기화
+  void _initializeFiat() {
+    final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
+    if (fiatCode.isNotEmpty) {
+      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
+    } else {
+      _selectedFiat = FiatCode.KRW;
+      _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
     }
   }
 
@@ -501,14 +443,35 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁 재노출 주기
+  /// 실기기 정식 빌드는 하루(자정 기준)에 한 번만 노출
+  /// 디버그 빌드는 반복 테스트가 어려우므로 훨씬 짧게(1분) 잡는다.
+  static const Duration _kDebugTooltipCycle = Duration(minutes: 1);
+
   /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁을 이미 봤는지 여부
-  bool hasSeenReceivingTooltip() => _sharedPrefs.getString(SharedPrefKeys.kReceivingTooltipLastShownDate).isNotEmpty;
-  bool hasSeenChangeTooltip() => _sharedPrefs.getString(SharedPrefKeys.kChangeTooltipLastShownDate).isNotEmpty;
+  /// (정식 빌드: 오늘 자정 기준, 디버그 빌드: 최근 [_kDebugTooltipCycle] 이내)
+  bool hasSeenReceivingTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
+  bool hasSeenChangeTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kChangeTooltipLastShownDate);
 
-  Future<void> markReceivingTooltipShown() => _markTooltipShown(SharedPrefKeys.kReceivingTooltipLastShownDate);
-  Future<void> markChangeTooltipShown() => _markTooltipShown(SharedPrefKeys.kChangeTooltipLastShownDate);
+  Future<void> markReceivingTooltipShownToday() =>
+      _markTooltipShownToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
+  Future<void> markChangeTooltipShownToday() => _markTooltipShownToday(SharedPrefKeys.kChangeTooltipLastShownDate);
 
-  Future<void> _markTooltipShown(String key) {
+  bool _hasSeenTooltipToday(String key) {
+    final lastShownDateString = _sharedPrefs.getString(key);
+    if (lastShownDateString.isEmpty) return false;
+
+    final lastShownDate = DateTime.parse(lastShownDateString);
+    final now = DateTime.now();
+
+    if (kDebugMode) {
+      return now.difference(lastShownDate) < _kDebugTooltipCycle;
+    }
+
+    return lastShownDate.year == now.year && lastShownDate.month == now.month && lastShownDate.day == now.day;
+  }
+
+  Future<void> _markTooltipShownToday(String key) {
     return _sharedPrefs.setString(key, DateTime.now().toIso8601String());
   }
 
@@ -527,9 +490,12 @@ class PreferenceProvider extends ChangeNotifier {
   /// 통화 변경
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
-    // 직접 고른 통화는 지역 보정이 다시 바꾸지 않도록, 저장이 확인되면 확인 플래그도 남긴다.
-    // 앞서 플래그 저장이 실패했어도 여기서 남긴다.
-    await _saveFiatThenMarkChecked(_sharedPrefs, fiatCode);
+    await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
+    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletListVisibleFiats,
+      _walletListVisibleFiats.map((f) => f.code).join(','),
+    );
     notifyListeners();
   }
 
@@ -650,6 +616,13 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 총 잔액에서 제외할 지갑 설정
+  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
+    _excludedFromTotalBalanceWalletIds = ids;
+    await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    notifyListeners();
+  }
+
   /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
@@ -762,6 +735,37 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 지갑 목록 화면 법정화폐 표시 설정
+  Future<void> setWalletListFiatVisible(bool isVisible) async {
+    _isWalletListFiatHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 1 BTC 가격 정보 표시 설정
+  Future<void> setWalletListBitcoinPriceVisible(bool isVisible) async {
+    _isWalletListBitcoinPriceHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBitcoinPriceHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 총 보유 수량 변화 그래프 표시 설정
+  Future<void> setWalletListBalanceChartVisible(bool isVisible) async {
+    _isWalletListBalanceChartHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBalanceChartHidden, !isVisible);
+    notifyListeners();
+  }
+
+  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
+  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
+
+  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
+    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
+  };
+
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
     return CoconutThemeVariant.values.firstWhere((e) => e.name == stored, orElse: () => CoconutThemeVariant.dark);
@@ -861,6 +865,40 @@ class PreferenceProvider extends ChangeNotifier {
   }) async {
     await markCcosFeaturePurchased(featureId, source: source);
     await activateCcosFeature(featureId);
+  }
+
+  List<FiatCode> _loadWalletListVisibleFiats() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
+    if (stored == null) {
+      return [_selectedFiat];
+    }
+
+    final visibleFiats =
+        stored
+            .split(',')
+            .where((code) => code.isNotEmpty)
+            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
+            .whereType<FiatCode>()
+            .toList();
+
+    if (visibleFiats.isEmpty && stored.isNotEmpty) {
+      return [_selectedFiat];
+    }
+
+    return _sortWalletListVisibleFiats(visibleFiats);
+  }
+
+  List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
+    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
+    return order.where((f) => fiats.contains(f)).toList();
+  }
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
+  Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
+    final sorted = _sortWalletListVisibleFiats(fiats);
+    _walletListVisibleFiats = sorted;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
+    notifyListeners();
   }
 
   @override

@@ -3,7 +3,6 @@ import 'dart:math' show pi;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
@@ -790,12 +789,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                           ),
                         ),
                       )
-                      : Text(
-                        _keepWords(widget.title),
-                        semanticsLabel: widget.title,
-                        style: titleStyle,
-                        textAlign: widget.centerTitle ? TextAlign.center : null,
-                      ),
+                      : Text(widget.title, style: titleStyle, textAlign: widget.centerTitle ? TextAlign.center : null),
             ),
             Container(
               alignment: Alignment.topCenter,
@@ -804,7 +798,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
               child:
                   widget.descriptionSpan != null
                       ? RichText(
-                        text: TextSpan(style: descriptionStyle, children: [_keepWordsInSpan(widget.descriptionSpan!)]),
+                        text: TextSpan(style: descriptionStyle, children: [widget.descriptionSpan!]),
                         textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
                         textScaler:
                             widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context),
@@ -825,8 +819,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                         ),
                       )
                       : Text(
-                        _keepWords(widget.description),
-                        semanticsLabel: widget.description,
+                        widget.description,
                         textAlign: widget.centerDescription ? TextAlign.center : null,
                         style: descriptionStyle,
                       ),
@@ -857,8 +850,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                         onTapCancel: () => setState(() => _isCheckboxTextPressing = false),
                         onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
                         child: Text(
-                          _keepWords(widget.checkboxText!),
-                          semanticsLabel: widget.checkboxText,
+                          widget.checkboxText!,
                           style: checkboxTextStyle.setColor(
                             _isCheckboxTextPressing ? checkboxTextPressingColor : checkboxTextColor,
                           ),
@@ -942,12 +934,6 @@ class _CoconutPopupState extends State<CoconutPopup> {
       ),
     );
   }
-
-  bool get _isKorean => widget.languageCode == 'kr' || widget.languageCode == 'ko';
-
-  String _keepWords(String text) => _isKorean ? TextUtils.preventLineBreakInsideWords(text) : text;
-
-  InlineSpan _keepWordsInSpan(InlineSpan span) => _isKorean ? TextUtils.preventLineBreakInsideWordsInSpan(span) : span;
 
   String _getLeftButtonText() {
     switch (widget.languageCode) {

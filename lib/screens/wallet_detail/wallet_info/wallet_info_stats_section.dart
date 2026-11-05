@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -34,6 +33,8 @@ class WalletInfoStatsSection extends StatelessWidget {
     this.targetSats,
     required this.onEditTargetTap,
   });
+
+  static const int _maxBtcSats = 2100000000000000; // 21M BTC
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +96,7 @@ class WalletInfoStatsSection extends StatelessWidget {
               balanceSats: balanceSats,
               currentUnit: currentUnit,
               targetSats: targetSats,
-              maxSats: kMaxSupplySats,
+              maxSats: _maxBtcSats,
               transparentBackground: true,
             ),
           ),

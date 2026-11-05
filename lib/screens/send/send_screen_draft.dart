@@ -41,20 +41,6 @@ extension _SendScreenDraft on _SendScreenState {
     }
   }
 
-  void _showExcludedUtxoToast(SelectedUtxoExcludedStatus excludedUtxoStatus) {
-    final toastMessage =
-        excludedUtxoStatus == SelectedUtxoExcludedStatus.used
-            ? t.send_screen.toast.draft_utxo_used
-            : t.send_screen.toast.draft_utxo_locked;
-    CoconutToast.showToast(
-      context: context,
-      isVisibleIcon: true,
-      iconPath: CommonStateIconPath.triangleWarning,
-      text: toastMessage,
-      level: CoconutToastLevel.warning,
-    );
-  }
-
   Future<void> _onDraftSelected(int draftId) async {
     SelectedUtxoExcludedStatus? excludedUtxoStatus;
     try {
@@ -71,7 +57,17 @@ extension _SendScreenDraft on _SendScreenState {
 
     // 사용불가 UTXO가 제외된 경우 토스트 알림 표시
     if (excludedUtxoStatus != null) {
-      _showExcludedUtxoToast(excludedUtxoStatus);
+      final toastMessage =
+          excludedUtxoStatus == SelectedUtxoExcludedStatus.used
+              ? t.send_screen.toast.draft_utxo_used
+              : t.send_screen.toast.draft_utxo_locked;
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        text: toastMessage,
+        level: CoconutToastLevel.warning,
+      );
     }
 
     // recipientList와 _addressControllerList 동기화

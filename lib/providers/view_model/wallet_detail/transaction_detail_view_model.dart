@@ -7,7 +7,6 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
-import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -40,9 +39,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
   List<TransactionRecord>? _transactionList;
   List<FeeHistory> _feeBumpingHistoryList = [];
   bool _isFetchingFromMempool = false;
-  bool _isCoinbase = false;
-  bool _isCheckingCoinbase = false;
-  bool _coinbaseChecked = false;
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
@@ -55,7 +51,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   bool _disposed = false;
   bool get isDisposed => _disposed;
-  bool get isCoinbase => _isCoinbase;
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) =>
       _blockExplorerProvider.explorerUrlFor(pathType, value);
@@ -63,18 +58,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool get isSuspiciousDustTransaction =>
       _walletProvider.isTransactionSuspicious(_transactionList![_selectedTransactionIndex]);
 
-  late final WalletSyncWatcher _walletSyncWatcher;
-
-  /// 이 지갑이 업데이트 중이면 빨리 받기·빨리 보내기를 막음 (다른 지갑의 업데이트와는 무관)
-  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
-
-  /// 입력을 모르는 기록(이전 거래 조회 실패)은 수수료·유형이 틀릴 수 있어 멤풀 보정 전까지 막음
-  bool isFeeBumpingBlocked(TransactionRecord tx) => isWalletSyncing || (tx.inputAddressList.isEmpty && !_isCoinbase);
-
   @override
   void dispose() {
     _disposed = true;
-    _walletSyncWatcher.dispose();
     super.dispose();
   }
 
@@ -89,7 +75,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._blockExplorerProvider,
   ) {
     setNeedsMfp();
-    _walletSyncWatcher = WalletSyncWatcher(_nodeProvider, (_) => safeNotifyListeners())..watch(_walletId);
     _initTransactionList();
   }
 
@@ -205,13 +190,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (updatedTx == null) return;
 
       TransactionRecord currentTx = transactionList!.first;
-      if (updatedTx.blockHeight != currentTx.blockHeight ||
-          updatedTx.transactionHash != currentTx.transactionHash ||
-          updatedTx.transactionType != currentTx.transactionType ||
-          updatedTx.inputAddressList.length != currentTx.inputAddressList.length) {
+      if (updatedTx.blockHeight != currentTx.blockHeight || updatedTx.transactionHash != currentTx.transactionHash) {
+        _initTransactionList();
         _setPreviousTransactionIndex(0);
         _setSelectedTransactionIndex(0);
-        _initTransactionList();
       }
     }
     safeNotifyListeners();
@@ -248,11 +230,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
     // DB에 저장된 트랜잭션에 input 주소 정보가 없는 경우
     // 멤풀 API를 통해 트랜잭션 조회
     if (currentTransaction.inputAddressList.isEmpty && !_isFetchingFromMempool) {
-      _checkCoinbase();
       _fetchTransactionFromMempoolAndUpdate();
       _transactionList = [currentTransaction];
       _syncFeeHistoryList();
-      _syncTransactionStatus();
       safeNotifyListeners();
       return;
     }
@@ -330,7 +310,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('✅ Transaction Initialization Complete');
     debugPrint('====================================================================');
     _syncFeeHistoryList();
-    _syncTransactionStatus();
     safeNotifyListeners();
   }
 
@@ -355,38 +334,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// 목록을 다시 만들 때마다 선택된 기록으로 상태를 다시 정함
-  void _syncTransactionStatus() {
-    final transactionList = _transactionList;
-    if (transactionList == null || transactionList.isEmpty) return;
-    final index = _selectedTransactionIndex.clamp(0, transactionList.length - 1);
-    _transactionStatus = TransactionUtil.getStatus(transactionList[index]);
-    _setSendType(_transactionStatus);
-  }
-
   void _setSendType(TransactionStatus? status) {
     _isSendType =
         status == TransactionStatus.sending ||
         status == TransactionStatus.selfsending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.sent;
-  }
-
-  /// 입력이 없는 거래는 원본 거래로 coinbase 여부 판별 (조회 실패 시 다음 갱신 때 다시 시도)
-  Future<void> _checkCoinbase() async {
-    if (_coinbaseChecked || _isCheckingCoinbase) return;
-    _isCheckingCoinbase = true;
-    try {
-      final result = await _nodeProvider.getTransaction(_txHash);
-      if (_disposed || result.isFailure) return;
-      _isCoinbase = TransactionUtil.isCoinbaseTransaction(Transaction.parse(result.value));
-      _coinbaseChecked = true;
-      if (_isCoinbase) safeNotifyListeners();
-    } catch (e) {
-      Logger.error('[_checkCoinbase] Failed to check coinbase: $_txHash, error=$e');
-    } finally {
-      _isCheckingCoinbase = false;
-    }
   }
 
   Future<void> _fetchTransactionFromMempoolAndUpdate() async {
@@ -511,16 +464,17 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (updatedTxResult.isSuccess) {
       Logger.log('onRefresh: getTransactionRecord success');
       await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
+      _initTransactionList();
       _setPreviousTransactionIndex(0);
       _setSelectedTransactionIndex(0);
-      _initTransactionList();
+      safeNotifyListeners();
     } else {
       Logger.error(
         'onRefresh: getTransactionRecord failed - error: ${updatedTxResult.error}, falling back to mempool API',
       );
+      await _fetchTransactionFromMempoolAndUpdate();
       _setPreviousTransactionIndex(0);
       _setSelectedTransactionIndex(0);
-      await _fetchTransactionFromMempoolAndUpdate();
       safeNotifyListeners();
     }
 

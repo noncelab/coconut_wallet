@@ -50,86 +50,66 @@ class _WalletAppearanceBody extends StatelessWidget {
 
   static const double _horizontalPadding = 16;
   static const double _cardGap = 12;
-  // 아래 '완료' 버튼이 가리는 높이만큼 내용과 입력칸 아래에 둔다.
-  static const double _bottomButtonSpace = 120;
-  // 이름을 입력하는 동안 입력칸과 그 아래 안내 줄을 완료 버튼 뒤 그라데이션(약 160px) 위로 올린다.
-  static const double _nameFieldRevealSpace = 180;
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<WalletAppearanceViewModel>();
     final colors = context.coconutColors;
-    final content = Column(
-      children: [
-        _preview(context, viewModel),
-        CoconutLayout.spacing_300h,
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (final size in WalletCardSize.values)
-              SpanSizeOption(
-                key: Key('wallet-appearance-size-${size.name}'),
-                columns: size == WalletCardSize.wide ? 4 : 2,
-                rows: 2,
-                isSelected: viewModel.previewSize == size,
-                onTap: () => viewModel.selectPreviewSize(size),
-              ),
-          ],
-        ),
-        CoconutLayout.spacing_400h,
-        _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
-        Expanded(
-          child: SingleChildScrollView(
-            key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
-            padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, _bottomButtonSpace),
-            child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
-          ),
-        ),
-      ],
-    );
     return PopScope(
       canPop: !viewModel.isSaving,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) viewModel.discard();
       },
-      child: _KeyboardInsetScope(
-        child: Scaffold(
-          backgroundColor: colors.background,
-          appBar: CoconutAppBar.build(
-            context: context,
-            onBackPressed: () {
-              if (!viewModel.isSaving) Navigator.maybePop(context);
-            },
-          ),
-          body: Stack(
-            children: [
-              // 키보드가 열리면 열리기 전 배치를 그대로 두고 화면을 스크롤한다.
-              // 넓은 화면(폴드, 큰 글씨)에서 고정된 위쪽 영역이 이름 입력칸을 0 높이로 누르지 않게 한다.
-              // 키보드가 닫혀 있으면 스크롤할 거리가 0이라 화면과 동작은 기존과 같다(접근성 트리에 스크롤 경계만 하나 더해진다).
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // 키보드 높이는 Scaffold가 쓰는 값과 같게 Scaffold 위에서 읽어 둔 것을 쓴다(_KeyboardInsetScope).
-                  // 키보드가 움직이는 동안 이 builder만 다시 돌고, content는 같은 인스턴스라 다시 만들지 않는다.
-                  final keyboardHeight = _KeyboardInset.of(context);
-                  return SingleChildScrollView(
-                    primary: false,
-                    child: SizedBox(height: constraints.maxHeight + keyboardHeight, child: content),
-                  );
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: CoconutAppBar.build(
+          context: context,
+          onBackPressed: () {
+            if (!viewModel.isSaving) Navigator.maybePop(context);
+          },
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                _preview(context, viewModel),
+                CoconutLayout.spacing_300h,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final size in WalletCardSize.values)
+                      SpanSizeOption(
+                        key: Key('wallet-appearance-size-${size.name}'),
+                        columns: size == WalletCardSize.wide ? 4 : 2,
+                        rows: 2,
+                        isSelected: viewModel.previewSize == size,
+                        onTap: () => viewModel.selectPreviewSize(size),
+                      ),
+                  ],
+                ),
+                CoconutLayout.spacing_400h,
+                _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+                    padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
+                    child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                  ),
+                ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: FixedBottomButton(
+                text: t.complete,
+                isActive: viewModel.canSave,
+                onButtonClicked: () async {
+                  await viewModel.save();
+                  if (context.mounted) Navigator.pop(context);
                 },
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FixedBottomButton(
-                  text: t.complete,
-                  isActive: viewModel.canSave,
-                  onButtonClicked: () async {
-                    await viewModel.save();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -159,28 +139,6 @@ class _WalletAppearanceBody extends StatelessWidget {
     );
     return Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: card));
   }
-}
-
-/// Scaffold는 body의 MediaQuery에서 키보드 높이를 지운다. 그 높이를 Scaffold 위에서 읽어 아래로 넘긴다.
-/// 키보드가 움직일 때 이 위젯만 다시 빌드되고, child(Scaffold)는 같은 인스턴스라 다시 만들지 않는다.
-class _KeyboardInsetScope extends StatelessWidget {
-  const _KeyboardInsetScope({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => _KeyboardInset(bottom: MediaQuery.viewInsetsOf(context).bottom, child: child);
-}
-
-class _KeyboardInset extends InheritedWidget {
-  const _KeyboardInset({required this.bottom, required super.child});
-
-  final double bottom;
-
-  static double of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_KeyboardInset>()!.bottom;
-
-  @override
-  bool updateShouldNotify(_KeyboardInset oldWidget) => bottom != oldWidget.bottom;
 }
 
 class _WallpaperTabBar extends StatelessWidget {
@@ -522,7 +480,6 @@ class _WalletTabState extends State<_WalletTab> {
             },
             isError: viewModel.isNameDuplicated,
             errorText: viewModel.isNameDuplicated ? t.wallet_info_screen.duplicated_name : '',
-            scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, _WalletAppearanceBody._nameFieldRevealSpace),
           ),
         if (viewModel.canEditPalette) ...[
           if (viewModel.canEditName) SizedBox(height: hasError ? 16 : 8),

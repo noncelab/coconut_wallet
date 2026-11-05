@@ -1,4 +1,3 @@
-import 'dart:ui' show lerpDouble;
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
@@ -24,9 +23,6 @@ class WalletDetailCardCarousel extends StatefulWidget {
 
   /// 넘기는 중인 페이지 위치(예: 1.3은 두 번째와 세 번째 카드 사이).
   final ValueChanged<double>? onPageScrolled;
-  final ValueChanged<bool>? onScrollActivityChanged;
-  final Widget Function(BuildContext context, WalletItemBase wallet, ValueChanged<double> onHeightChanged)?
-  footerBuilder;
   final Widget Function(BuildContext context, WalletItemBase wallet, bool isFocused) cardBuilder;
 
   const WalletDetailCardCarousel({
@@ -36,8 +32,6 @@ class WalletDetailCardCarousel extends StatefulWidget {
     required this.onFocusChanged,
     required this.cardBuilder,
     this.onPageScrolled,
-    this.onScrollActivityChanged,
-    this.footerBuilder,
   });
 
   /// 카드 폭은 화면 폭의 [widthFraction], 높이는 폭의 [aspect] 배 또는 확대된 내용의 높이.
@@ -99,12 +93,6 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
 
   PageController? _controller;
   late int _focused = widget.initialIndex;
-  double _footerHeight = 0;
-
-  BorderRadius _containerRadius(int index) {
-    final footer = index == _focused ? (_footerHeight / 40).clamp(0.0, 1.0) : 0.0;
-    return BorderRadius.vertical(top: const Radius.circular(28), bottom: Radius.circular(lerpDouble(28, 16, footer)!));
-  }
 
   @override
   void didChangeDependencies() {
@@ -135,74 +123,36 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   @override
   Widget build(BuildContext context) {
     final cardWidth = MediaQuery.sizeOf(context).width * WalletDetailCardCarousel.widthFraction;
-    final cardHeight = WalletDetailCardCarousel.heightFor(context);
     return SizedBox(
-      height: cardHeight + 16 + _footerHeight,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification.depth != 0 || notification.metrics.axis != Axis.horizontal) return false;
-          if (notification is ScrollStartNotification) widget.onScrollActivityChanged?.call(true);
-          if (notification is ScrollEndNotification) widget.onScrollActivityChanged?.call(false);
-          return false;
+      height: WalletDetailCardCarousel.heightFor(context) + 16,
+      child: PageView.builder(
+        key: const Key('wallet-detail-carousel'),
+        controller: _controller,
+        clipBehavior: Clip.none,
+        itemCount: widget.wallets.length,
+        onPageChanged: (index) {
+          _focused = index;
+          widget.onFocusChanged(widget.wallets[index]);
         },
-        child: PageView.builder(
-          key: const Key('wallet-detail-carousel'),
-          controller: _controller,
-          clipBehavior: Clip.none,
-          itemCount: widget.wallets.length,
-          onPageChanged: (index) {
-            _focused = index;
-            widget.onFocusChanged(widget.wallets[index]);
-          },
-          itemBuilder:
-              (context, index) => AnimatedBuilder(
-                animation: _controller!,
-                builder: (context, child) {
-                  final distance = (_page - index).clamp(-1.5, 1.5);
-                  final shrink = 1 - (1 - _neighborScale) * math.min(distance.abs(), 1.0);
-                  return Transform.translate(
-                    offset: Offset(distance * cardWidth * (1 - shrink) / 2, 0),
-                    child: Transform.rotate(
-                      angle: -distance * _tilt,
-                      child: Transform.scale(scale: shrink, child: child),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: _gap / 2, vertical: 8),
-                  child: OverflowBox(
-                    alignment: Alignment.topCenter,
-                    minHeight: 0,
-                    maxHeight: double.infinity,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: _containerRadius(index),
-                        boxShadow: WalletCard.elevationOf(context),
-                      ),
-                      child: ClipRRect(
-                        key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
-                        borderRadius: _containerRadius(index),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              height: cardHeight,
-                              child: widget.cardBuilder(context, widget.wallets[index], index == _focused),
-                            ),
-                            if (widget.footerBuilder != null && index == _focused)
-                              widget.footerBuilder!(context, widget.wallets[index], (height) {
-                                if (mounted && index == _focused && _footerHeight != height) {
-                                  setState(() => _footerHeight = height);
-                                }
-                              }),
-                          ],
-                        ),
-                      ),
-                    ),
+        itemBuilder:
+            (context, index) => AnimatedBuilder(
+              animation: _controller!,
+              builder: (context, child) {
+                final distance = (_page - index).clamp(-1.5, 1.5);
+                final shrink = 1 - (1 - _neighborScale) * math.min(distance.abs(), 1.0);
+                return Transform.translate(
+                  offset: Offset(distance * cardWidth * (1 - shrink) / 2, 0),
+                  child: Transform.rotate(
+                    angle: -distance * _tilt,
+                    child: Transform.scale(scale: shrink, child: child),
                   ),
-                ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _gap / 2, vertical: 8),
+                child: widget.cardBuilder(context, widget.wallets[index], index == _focused),
               ),
-        ),
+            ),
       ),
     );
   }
@@ -219,7 +169,6 @@ class WalletDetailCard extends StatelessWidget {
   final BitcoinUnit unit;
   final VoidCallback? onBalanceTap;
   final List<WalletDetailCardAction> actions;
-  final BorderRadius borderRadius;
 
   const WalletDetailCard({
     super.key,
@@ -229,7 +178,6 @@ class WalletDetailCard extends StatelessWidget {
     required this.unit,
     required this.actions,
     this.onBalanceTap,
-    this.borderRadius = const BorderRadius.all(Radius.circular(28)),
   });
 
   @override
@@ -238,7 +186,7 @@ class WalletDetailCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.homeSurface,
-        borderRadius: borderRadius,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: WalletCard.elevationOf(context),
       ),
       child: Padding(
@@ -358,7 +306,7 @@ class WalletDetailCardAction {
       ),
     WalletDetailCardAction(
       key: const Key('wallet-detail-action-chart'),
-      label: t.wallet_balance_history_screen.title,
+      label: t.wallet_list.header.balance_history,
       iconPath: FeatureWidgetIconPath.chart,
       onPressed: onChart,
     ),

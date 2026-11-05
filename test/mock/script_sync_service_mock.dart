@@ -61,7 +61,6 @@ class ScriptSyncServiceMock {
       utxoSyncService,
       addressRepository,
       scriptCallbackService,
-      retryDelays: const [], // 자동 재시도 없음: 테스트가 기대하지 않은 타이머가 다음 테스트로 넘어가지 않게 한다.
     );
   }
 

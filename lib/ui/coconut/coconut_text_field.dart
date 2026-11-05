@@ -85,9 +85,6 @@ class CoconutTextField extends StatefulWidget {
   final bool showScrollFades;
   final VoidCallback? onEditingComplete;
   final EdgeInsets? padding;
-
-  /// 포커스될 때 입력칸 둘레로 확보할 여백. 아래 고정 버튼에 가리지 않게 하려면 bottom을 키운다.
-  final EdgeInsets scrollPadding;
   final Color? activeColor;
   final Color? cursorColor;
   final Color? placeholderColor;
@@ -151,7 +148,6 @@ class CoconutTextField extends StatefulWidget {
     this.onEditingComplete,
     this.readOnly = false,
     this.padding,
-    this.scrollPadding = const EdgeInsets.all(20.0),
     this.activeColor,
     this.cursorColor,
     this.placeholderColor,
@@ -672,7 +668,6 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   },
                   child: CupertinoTextField(
                     focusNode: widget.focusNode,
-                    scrollPadding: widget.scrollPadding,
                     controller: _inputController,
                     onTap: widget.onTap,
                     scrollController: widget.scrollController,

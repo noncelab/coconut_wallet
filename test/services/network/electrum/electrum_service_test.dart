@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/model/response/previous_transactions.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -401,99 +399,6 @@ void main() {
     await electrumClient.close();
 
     verify(mockSocketManager.disconnect()).called(1);
-  });
-
-  group('getPreviousTransactions', () {
-    const legacyParent =
-        '0100000001d06050454abde3bdd947312b9f54439acb097608a47b0b36a23d76820a3a4044000000006a4730440220360e6c5348a85270a3b14b84780ad56cd189bd12848b125c488a678f5e0d95be022011e51cfd849e5d005fc5352885a954c756f6073de633545f6045c4ad96ac9be0012102742148dd2f73733ce36202798298e8294b42b5aabf1ba87a9bb9b0167abfb8dfffffffff01277c5d000000000016001424b3e9491f3eadd9862389d98480acf89bdab07800000000';
-    const segwitParent =
-        '02000000000101a463a7a78daffa1bdb1248121adb14b94f70a1fabffc81637f4049c3d65cc69f00000000000000008002e803000000000000160014b247a00acc1cc2c0b4be0d3c38d866f9c08d244a051f000000000000160014d32c7c4dbb9457cff124c786bac87a9a706c5b3a02483045022100c2ce833d29b2bc4048e54fb5a9cb5131f31fe1254d4510339f3bfa2b6c3fe8120220576e45c680b2ab2fa184cf2b6caf7a165b1d5fc61cc165073017104011bfdc42012103324172078ccc5a19cf6db18b0c4bbd135b9d86131d6666bbd494c9474b3eb52600000000';
-    late String legacyHash;
-    late String segwitHash;
-    late Map<String, String> served;
-    late List<String> requested;
-
-    String spend(String hash, int index) =>
-        '${List.generate(32, (i) => hash.substring(62 - i * 2, 64 - i * 2)).join()}'
-        '${index.toRadixString(16).padLeft(2, '0')}00000000ffffffff';
-
-    Transaction child(List<(String, int)> inputs) => Transaction.parse(
-      '01000000'
-      '${inputs.length.toRadixString(16).padLeft(2, '0')}'
-      '${inputs.map((input) => spend(input.$1, input.$2)).join()}'
-      '01e803000000000000160014${'11' * 20}'
-      '00000000',
-    );
-
-    setUp(() async {
-      NetworkType.setNetworkType(NetworkType.regtest);
-      legacyHash = Transaction.parse(legacyParent).transactionHash;
-      segwitHash = Transaction.parse(segwitParent).transactionHash;
-      served = {legacyHash: legacyParent, segwitHash: segwitParent};
-      requested = [];
-      final pendingHashes = <int, String>{};
-      await electrumClient.connect('localhost', 50001, ssl: false);
-      when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-      when(mockSocketManager.send(any)).thenAnswer((invocation) async {
-        final Map<String, dynamic> request = jsonDecode(invocation.positionalArguments[0]);
-        final hash = (request['params'] as List).first as String;
-        requested.add(hash);
-        pendingHashes[request['id'] as int] = hash;
-      });
-      when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
-        final id = invocation.positionalArguments[0] as int;
-        (invocation.positionalArguments[1] as Completer).complete({'id': id, 'result': served[pendingHashes[id]]});
-      });
-    });
-
-    test('returns each input parent once, keyed by the requested hash, fetching each parent once', () async {
-      final tx = child([(legacyHash, 0), (segwitHash, 1), (legacyHash, 0)]);
-
-      final previous = await electrumClient.getPreviousTransactions(tx);
-
-      expect((previous as PreviousTransactions).byHash.keys, unorderedEquals([legacyHash, segwitHash]));
-      expect(requested..sort(), [legacyHash, segwitHash]..sort());
-    });
-
-    test('fails instead of returning a partial list when one parent cannot be parsed', () async {
-      served[segwitHash] = 'zz';
-      final tx = child([(legacyHash, 0), (segwitHash, 1)]);
-
-      await expectLater(electrumClient.getPreviousTransactions(tx), throwsA(anything));
-    });
-
-    test('fails when the server returns a different transaction for a parent', () async {
-      served[segwitHash] = legacyParent;
-      // 출력 인덱스 0은 바뀐 부모에도 있어서, 출력 누락이 아니라 해시 검사로만 실패한다.
-      final tx = child([(legacyHash, 0), (segwitHash, 0)]);
-
-      await expectLater(
-        electrumClient.getPreviousTransactions(tx),
-        throwsA(isA<StateError>().having((e) => e.message, 'message', contains('different parent'))),
-      );
-    });
-
-    test('does not fetch anything for a coinbase transaction', () async {
-      const genesisCoinbase =
-          '01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000';
-
-      final previous = await electrumClient.getPreviousTransactions(Transaction.parse(genesisCoinbase));
-
-      expect(previous, isEmpty);
-      expect(requested, isEmpty);
-    });
-
-    test('uses transactions from existingTxList without fetching them', () async {
-      final tx = child([(legacyHash, 0), (segwitHash, 1)]);
-
-      final previous = await electrumClient.getPreviousTransactions(
-        tx,
-        existingTxList: [Transaction.parse(segwitParent)],
-      );
-
-      expect(previous.map((prev) => prev.transactionHash), unorderedEquals([legacyHash, segwitHash]));
-      expect(requested, [legacyHash]);
-    });
   });
 
   group('GetTxHistoryRes Set', () {

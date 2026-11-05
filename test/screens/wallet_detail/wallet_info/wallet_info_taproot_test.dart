@@ -106,7 +106,9 @@ void main() {
         child: MaterialApp(
           theme: buildCoconutThemeData(),
           scrollBehavior: const CupertinoScrollBehavior(),
-          home: const LoaderOverlay(child: WalletInfoScreen(id: 1, walletType: WalletType.taproot)),
+          home: const LoaderOverlay(
+            child: WalletInfoScreen(id: 1, walletType: WalletType.taproot, entryPoint: '/wallet-home'),
+          ),
         ),
       ),
     );

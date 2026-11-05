@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
@@ -169,12 +168,12 @@ void main() {
       expect(row.getSemanticsData().hasAction(SemanticsAction.dismiss), isTrue);
       tester.binding.renderViews.single.owner!.semanticsOwner!.performAction(row.id, SemanticsAction.dismiss);
       await tester.pumpAndSettle();
-      expect(find.text(TextUtils.preventLineBreakInsideWords(t.ccos.intro_screen.delete_popup_title)), findsOneWidget);
+      expect(find.text(t.ccos.intro_screen.delete_popup_title), findsOneWidget);
       expect(preferences.changes, 0);
       expect(preferences.deactivations, 0);
       await tester.tap(find.text(t.cancel));
       await tester.pumpAndSettle();
-      expect(find.text(TextUtils.preventLineBreakInsideWords(t.ccos.intro_screen.delete_popup_title)), findsNothing);
+      expect(find.text(t.ccos.intro_screen.delete_popup_title), findsNothing);
       expect(preferences.themeVariant, CoconutThemeVariant.coconutTheme);
       expect(preferences.hasCcos, isTrue);
       expect(preferences.changes, 0);

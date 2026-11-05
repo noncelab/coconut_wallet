@@ -1,5 +1,3 @@
-import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -12,6 +10,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_usb_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -31,10 +30,6 @@ class TrezorUsbConnectScreen extends StatefulWidget {
   final String? walletName;
   final String? walletFingerprint;
   final bool resumeFromExistingSession;
-  final HardwareWalletConnectMode? mode;
-
-  HardwareWalletConnectMode get connectionMode =>
-      mode ?? (psbtBase64 == null ? HardwareWalletConnectMode.addWallet : HardwareWalletConnectMode.sign);
 
   const TrezorUsbConnectScreen({
     super.key,
@@ -43,10 +38,7 @@ class TrezorUsbConnectScreen extends StatefulWidget {
     this.walletName,
     this.walletFingerprint,
     this.resumeFromExistingSession = false,
-    this.mode,
-  }) : assert(mode != HardwareWalletConnectMode.reconnect || (walletId != null && psbtBase64 == null)),
-       assert(mode != HardwareWalletConnectMode.sign || (walletId != null && psbtBase64 != null)),
-       assert(mode != HardwareWalletConnectMode.addWallet || psbtBase64 == null);
+  });
 
   @override
   State<TrezorUsbConnectScreen> createState() => _TrezorUsbConnectScreenState();
@@ -166,7 +158,10 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       if (!mounted || result == null) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
-        WalletAddActions.finishWithWalletDetail(context, WalletDetailRouteArgs(id: result.walletId!));
+        WalletAddActions.finishWithWalletDetail(
+          context,
+          WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
+        );
         return;
       }
       showWalletSyncResultErrorDialog(context, result, context.read<WalletProvider>());
@@ -418,8 +413,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
 
   Widget _buildSuccessCard(TrezorUsbConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
-    final isMismatch =
-        (widget.connectionMode != HardwareWalletConnectMode.addWallet) && hasXpub && _isWalletMismatch(vm);
+    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
 
     if (isMismatch) {
       final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
@@ -455,15 +449,11 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   }
 
   bool _isWalletMismatch(TrezorUsbConnectViewModel vm) {
-    final isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
+    final isSignFlow = widget.psbtBase64 != null;
     final isPaired = vm.step == TrezorUsbConnectStep.connected;
     final hasXpub = vm.xpub.isNotEmpty;
     if (!isSignFlow || !isPaired || !hasXpub) return false;
 
-    if (widget.connectionMode == HardwareWalletConnectMode.reconnect) {
-      final target = context.read<WalletProvider>().getWalletById(widget.walletId!);
-      return target is! SinglesigWalletItem || target.extendedPublicKey != vm.xpub;
-    }
     final wp = context.read<WalletProvider>();
     final matchedName = wp.findWalletNameByXpub(vm.xpub);
     return matchedName == null || matchedName != (widget.walletName ?? '');
@@ -475,7 +465,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     final bool isRetry = vm.step == TrezorUsbConnectStep.error;
     final bool isPaired = vm.step == TrezorUsbConnectStep.connected;
     final bool hasXpub = vm.xpub.isNotEmpty;
-    final bool isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
+    final bool isSignFlow = widget.psbtBase64 != null;
     final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
@@ -499,9 +489,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
             vm.step != TrezorUsbConnectStep.pairing &&
             !_isAddingWallet,
       );
-    } else if (widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired) {
-      buttonText = t.complete;
-      onPressed = () => Navigator.pop(context, true);
     } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
       onPressed = _startSigning;
@@ -526,7 +513,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       onButtonClicked: onPressed,
       text: buttonText,
       isActive:
-          !(widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired && !hasXpub) &&
           vm.step != TrezorUsbConnectStep.connecting &&
           vm.step != TrezorUsbConnectStep.pinEntry &&
           vm.step != TrezorUsbConnectStep.passphraseUseQuestion &&

@@ -21,26 +21,21 @@ class BalanceSyncService {
 
   int getWalletBalance(int walletId) => _walletRepository.getWalletBalance(walletId)?.total ?? 0;
 
-  /// [addresses]를 주면 그 주소들의 실패만 본다.
-  bool hasBalanceFetchFailures(int walletId, {Set<String>? addresses}) =>
-      _failedBalanceFetches.any((entry) => entry.$1 == walletId && (addresses == null || addresses.contains(entry.$2)));
+  bool hasBalanceFetchFailures(int walletId) => _failedBalanceFetches.any((entry) => entry.$1 == walletId);
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
-    try {
-      await syncAddressBalance(
-        walletItem,
-        address: scriptStatus.address,
-        index: scriptStatus.index,
-        isChange: scriptStatus.isChange,
-      );
-    } finally {
-      // 실패해도 완료로 센다. 진행 카운터가 남으면 뒤의 성공이 완료를 알리지 못해 화면이 저장된 데이터를 다시 읽지 않는다.
-      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
-    }
+    await syncAddressBalance(
+      walletItem,
+      address: scriptStatus.address,
+      index: scriptStatus.index,
+      isChange: scriptStatus.isChange,
+    );
+
+    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
   }
 
   /// 주소의 잔액을 Electrum에서 조회해 지갑 총 잔액에 반영합니다.
@@ -72,34 +67,6 @@ class BalanceSyncService {
       _failedBalanceFetches.add((walletItem.id, address));
       rethrow;
     }
-  }
-
-  /// 이전에 잔액 조회가 실패한 이 지갑의 주소(휴면·조회 화면·함께 소비된 주소 포함)를 다시 조회합니다.
-  /// 다시 실패한 주소는 실패로 남습니다.
-  Future<void> retryFailedBalances(WalletItemBase walletItem) async {
-    final walletId = walletItem.id;
-    final scripts = <ScriptStatus>[];
-    for (final (failedWalletId, address) in _failedBalanceFetches.toList()) {
-      if (failedWalletId != walletId) continue;
-      final location = _addressRepository.getIndexAndIsChange(walletId, address);
-      if (location == null) {
-        _failedBalanceFetches.remove((walletId, address));
-        continue;
-      }
-      scripts.add(
-        ScriptStatus(
-          derivationPath: _addressRepository.getDerivationPath(walletId, address),
-          address: address,
-          index: location.index,
-          isChange: location.isChange,
-          scriptPubKey: '',
-          status: null,
-          timestamp: DateTime.now(),
-        ),
-      );
-    }
-    if (scripts.isEmpty) return;
-    await fetchScriptBalanceBatch(walletItem, scripts);
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.

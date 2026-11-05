@@ -288,6 +288,7 @@ void main() {
             child: WalletInfoScreen(
               id: 1,
               walletType: WalletType.singleSignature,
+              entryPoint: '/wallet-home',
               showTargetSetting: focus == null,
               initialTarget: focus,
             ),

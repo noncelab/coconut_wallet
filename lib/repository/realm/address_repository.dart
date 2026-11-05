@@ -3,22 +3,16 @@ import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/address.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
-import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart' show restorableTombstones;
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:realm/realm.dart';
 
 class AddressRepository extends BaseRepository {
@@ -39,9 +33,8 @@ class AddressRepository extends BaseRepository {
     int cursor,
     int count,
     bool isChange,
-    bool showOnlyUnusedAddresses, {
-    bool Function()? shouldStopGenerating,
-  }) async {
+    bool showOnlyUnusedAddresses,
+  ) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
     final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
 
@@ -76,7 +69,6 @@ class AddressRepository extends BaseRepository {
       startIndex: startIndex,
       count: remainingCount,
       isChange: isChange,
-      shouldStopGenerating: shouldStopGenerating,
     );
 
     return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
@@ -219,18 +211,6 @@ class AddressRepository extends BaseRepository {
 
     await _safelyAddAddresses(addressesToAdd);
     await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
-
-    // 새 주소로 받은 출력이 이미 받기 기록에 있으면 그 기록만 다시 센다. 대개 해당 기록이 없어 조회 한 번으로 끝난다.
-    // 출력 항목은 addressToJson 순서대로 '{"address":"<주소>",...}'로 저장돼 접두어로 찾는다. UI isolate의
-    // 주소 더 보기에서도 불리므로 부분 문자열 검색(5천 기록·20주소 5.2ms)보다 싼 접두어 비교(1.8ms)를 쓴다.
-    final walletId = realmWalletBase.id;
-    final touched = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionType == $1 AND ANY outputAddressList BEGINSWITH ANY $2',
-      [walletId, TransactionType.received.name, [for (final address in addressesToAdd) '{"address":"${address.address}"']],
-    );
-    if (touched.isNotEmpty) {
-      await realm.writeAsync(() => recountReceivedAmounts(realm, walletId, touched));
-    }
   }
 
   /// 안전하게 주소를 추가하는 헬퍼 메서드
@@ -288,14 +268,10 @@ class AddressRepository extends BaseRepository {
     required int startIndex,
     required int count,
     required bool isChange,
-    bool Function()? shouldStopGenerating,
   }) async {
     final List<WalletAddress> addresses = [];
 
     for (int i = 0; i < count; i++) {
-      if (shouldStopGenerating?.call() == true) {
-        throw const TaskCancelledException();
-      }
       await Future.delayed(Duration.zero);
       final address = generateAddress(wallet, startIndex + i, isChange);
       addresses.add(address);
@@ -655,59 +631,19 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  /// 사용된 주소 중 잔액 또는 미확정 거래가 남아있는 주소 목록을 조회합니다.
-  /// 노드 isolate의 구독 복구에 한해 정리되지 않은 UTXO 주소도 포함합니다.
-  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange, {bool includeUnreconciledUtxos = false}) {
-    final watchedAddresses = <String>{};
-    if (includeUnreconciledUtxos) {
-      // 잔액만 먼저 0이 된 뒤 거래 조회가 실패했어도, 다음 isolate가 남은 코인을 다시 확인한다.
-      watchedAddresses.addAll(
-        realm.query<RealmUtxo>(r'walletId == $0 AND isDeleted == false', [walletId]).map((utxo) => utxo.address),
-      );
-    }
+  /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    final pendingAddresses = <String>{};
     for (final tx in _pendingTransactions(walletId)) {
       for (final encoded in [...tx.inputAddressList, ...tx.outputAddressList]) {
-        watchedAddresses.add(jsonDecode(encoded)['address'] as String);
+        pendingAddresses.add(jsonDecode(encoded)['address'] as String);
       }
     }
     final realmWalletAddresses = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0 OR address IN $2) SORT(index ASC)',
-      [walletId, isChange, watchedAddresses.toList()],
+      [walletId, isChange, pendingAddresses.toList()],
     );
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
-  }
-
-  /// 되살릴 수 있는 지운 코인([restorableTombstones], 되살리기와 같은 규칙)이 있고 저장된 서버 잔액이 남은 코인 합보다
-  /// 큰 주소. 상태가 저장된 값과 같아도 listunspent를 다시 받아야 그 코인을 되살릴 수 있다.
-  /// 되살릴 수 없는 지운 코인은 고르지 않으므로, 되살리고 나면 다음 구독은 아무 주소도 더하지 않는다.
-  /// 잔액이 있는 주소, 그 주소의 지운 코인, 만든·쓴 거래 기록, 남은 코인 합을 각각 한 번의 쿼리로 읽는다.
-  /// 알려진 한계: 저장된 잔액이 실제보다 낮게 남은 주소는 다시 묻지 않는다(잔액 조회가 실패하면 상태를 저장하지 않아
-  /// 다음 구독이 그 주소를 다시 맞추므로 정상 흐름에서는 생기지 않는다).
-  Set<String> getAddressesWithMissingCoins(int walletId) {
-    final totals = {
-      for (final address in realm.query<RealmWalletAddress>(r'walletId == $0 AND total > 0', [walletId]))
-        address.address: address.total,
-    };
-    if (totals.isEmpty) return {};
-    final removed = realm.query<RealmUtxo>(r'walletId == $0 AND isDeleted == true AND status == $1 AND address IN $2', [
-      walletId,
-      utxoStatusToString(UtxoStatus.incoming),
-      totals.keys.toList(),
-    ]);
-    if (removed.isEmpty) return {};
-    final candidates = restorableTombstones(realm, walletId, removed).map((utxo) => utxo.address).toSet();
-    if (candidates.isEmpty) return {};
-    final live = <String, int>{};
-    for (final utxo in realm.query<RealmUtxo>(
-      r'walletId == $0 AND isDeleted == false AND status != $1 AND address IN $2',
-      [walletId, utxoStatusToString(UtxoStatus.outgoing), candidates.toList()],
-    )) {
-      live[utxo.address] = (live[utxo.address] ?? 0) + utxo.amount;
-    }
-    return {
-      for (final address in candidates)
-        if (totals[address]! > (live[address] ?? 0)) address,
-    };
   }
 
   RealmResults<RealmTransaction> _pendingTransactions(int walletId) => realm.query<RealmTransaction>(

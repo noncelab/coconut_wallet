@@ -1,10 +1,3 @@
-import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
-import 'dart:io';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
@@ -59,7 +52,6 @@ import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
-import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/multisig_setup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_setup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/taproot_spend_type_bottom_sheet.dart';
@@ -70,9 +62,13 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
+const String kEntryPointWalletList = AppRouteNames.walletList;
+const String kEntryPointWalletHome = '/wallet-home';
+
 class WalletInfoScreen extends StatefulWidget {
   final int id;
   final WalletType walletType;
+  final String entryPoint;
   final bool showMfpInput;
   final bool highlightMnemonicBackup;
   final bool showTargetSetting;
@@ -81,6 +77,7 @@ class WalletInfoScreen extends StatefulWidget {
     super.key,
     required this.id,
     required this.walletType,
+    required this.entryPoint,
     this.showMfpInput = false,
     this.highlightMnemonicBackup = false,
     this.showTargetSetting = false,
@@ -374,8 +371,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   ),
               ]),
             _section(t.wallet_info_screen.section_details, _buildDetailRows(context, viewModel)),
-            if (viewModel.isBitBox02Wallet || viewModel.isTrezorWallet)
-              _section(t.wallet_info_screen.connected_hardware_wallet.title, _buildHardwareWalletRows(viewModel)),
             _section(t.wallet_info_screen.section_data, [
               _walletInfoMenu(
                 title: t.wallet_info_screen.target_quantity,
@@ -580,57 +575,21 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
         ),
       ],
-    ];
-  }
-
-  Future<void> _reconnectHardwareWallet(WalletInfoViewModel viewModel, {required bool trezor}) async {
-    var usb = false;
-    if (trezor && Platform.isAndroid) {
-      final choice = await TrezorTransportSelectScreen.showSelectionSheet(context);
-      if (!mounted || choice == null) return;
-      usb = choice == TrezorTransport.usb;
-    }
-    if (!mounted) return;
-    final Widget screen;
-    if (!trezor) {
-      screen = BitBox02ConnectScreen(
-        importSource: WalletImportSource.bitbox02,
-        walletId: widget.id,
-        mode: HardwareWalletConnectMode.reconnect,
-        walletName: viewModel.walletName,
-        walletFingerprint: viewModel.walletFingerprint,
-      );
-    } else if (usb) {
-      screen = TrezorUsbConnectScreen(
-        walletId: widget.id,
-        mode: HardwareWalletConnectMode.reconnect,
-        walletName: viewModel.walletName,
-        walletFingerprint: viewModel.walletFingerprint,
-      );
-    } else {
-      screen = TrezorBleConnectScreen(
-        walletId: widget.id,
-        mode: HardwareWalletConnectMode.reconnect,
-        walletName: viewModel.walletName,
-        walletFingerprint: viewModel.walletFingerprint,
-      );
-    }
-    await Navigator.push(context, MaterialPageRoute<bool>(builder: (_) => screen));
-  }
-
-  List<Widget> _buildHardwareWalletRows(WalletInfoViewModel viewModel) {
-    return [
       if (viewModel.isBitBox02Wallet)
-        BitBox02Section(
-          walletFingerprint: viewModel.walletFingerprint,
-          onDisconnect: () async => viewModel.disconnectBitBox02(),
-          onReconnect: () => _reconnectHardwareWallet(viewModel, trezor: false),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          child: BitBox02Section(
+            walletFingerprint: viewModel.walletFingerprint,
+            onDisconnect: () async => viewModel.disconnectBitBox02(),
+          ),
         ),
       if (viewModel.isTrezorWallet)
-        TrezorSection(
-          walletFingerprint: viewModel.walletFingerprint,
-          onDisconnect: () async => viewModel.disconnectTrezor(),
-          onReconnect: () => _reconnectHardwareWallet(viewModel, trezor: true),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          child: TrezorSection(
+            walletFingerprint: viewModel.walletFingerprint,
+            onDisconnect: () async => viewModel.disconnectTrezor(),
+          ),
         ),
     ];
   }
@@ -921,9 +880,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       _setOverlayLoading(false);
 
       if (mounted) {
-        navigator.popUntil(
-          (route) => route.isFirst || (route.settings.name?.endsWith(WalletStackListScreen.routeNameSuffix) ?? false),
-        );
+        if (widget.entryPoint == kEntryPointWalletHome) {
+          navigator.pushNamedAndRemoveUntil('/', (route) => false);
+        } else {
+          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
+        }
       }
     } catch (e) {
       debugPrint('Delete wallet failed: $e');

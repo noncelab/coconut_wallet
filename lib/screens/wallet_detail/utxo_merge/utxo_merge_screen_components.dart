@@ -36,7 +36,6 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
         3 +
         (confirmSubWidget != null ? confirmSubWidgetHeight : 0);
     final contentBottomInset = buttonAreaHeight + keyboardInset + 2;
-    const gradientExtent = 40.0;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
@@ -60,7 +59,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                       children: tabs.map((tab) => Text(tab.label)).toList(),
                     ),
                   ),
-                  SizedBox(height: tabs[selectedTabIndex].topSpacing),
+                  CoconutLayout.spacing_400h,
                   Expanded(
                     child:
                         scrollController == null
@@ -89,10 +88,9 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
               right: 0,
               bottom: keyboardInset,
               child: SizedBox(
-                height: buttonAreaHeight + gradientExtent,
+                height: buttonAreaHeight,
                 child: FixedBottomButton(
-                  showSurroundings: true,
-                  surroundingsColor: context.coconutColors.surfaceBottomSheet,
+                  showSurroundings: false,
                   isVisibleAboveKeyboard: false,
                   bottomPadding: buttonBottomSpacing,
                   subWidget: confirmSubWidget,

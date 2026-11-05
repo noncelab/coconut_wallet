@@ -6,7 +6,6 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/transaction_fetch_pass.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 typedef RbfInfo =
@@ -101,7 +100,6 @@ class RbfService {
     int walletId,
     Transaction tx, {
     Set<String> confirmedTxHashes = const {},
-    TransactionFetchPass? transactionFetch,
   }) async {
     List<UtxoState> unconfirmedUtxoList =
         _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.isPending).toList();
@@ -123,10 +121,7 @@ class RbfService {
 
       try {
         // 기존 트랜잭션 조회
-        final oldTx =
-            transactionFetch == null
-                ? Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash))
-                : await transactionFetch.fetch(utxo.transactionHash);
+        final oldTx = Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
 
         // 서버가 요청한 해시와 다른 트랜잭션을 반환했는지 확인
         if (oldTx.transactionHash != utxo.transactionHash) {
@@ -149,11 +144,10 @@ class RbfService {
             return oldTx.transactionHash;
           }
         }
-      } on TransactionNotFound {
-        return utxo.transactionHash;
       } catch (e) {
-        // 일시적인 조회/파싱 실패만으로 기존 거래와 CPFP 자식을 삭제하지 않는다.
-        Logger.log('트랜잭션 ${utxo.transactionHash} 확인 보류: $e');
+        // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
+        Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
+        return utxo.transactionHash;
       }
     }
 

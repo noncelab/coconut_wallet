@@ -22,7 +22,6 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -47,10 +46,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
   final bool showSkipButton;
-  final ValueChanged<List<UtxoState>>? onSelectionReconciled;
-
-  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
-  final int? minimumSelectableUtxoAmount;
+  final bool isSplitMode;
   final Color? backgroundColor;
 
   const UtxoSelectionScreen({
@@ -60,8 +56,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.walletId,
     this.scrollController,
     this.showSkipButton = false,
-    this.onSelectionReconciled,
-    this.minimumSelectableUtxoAmount,
+    this.isSplitMode = false,
     this.backgroundColor,
   });
 
@@ -92,6 +87,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     Color resolvedBackgroundColor = widget.backgroundColor ?? context.coconutColors.background;
+    String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
@@ -116,8 +112,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     appBar: CoconutAppBar.build(
                       backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
-                        t.utxo_selection_screen.title,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                        titleText,
+                        style: (widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14)
+                            .setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -157,21 +154,55 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                   ),
                                 ),
                               ),
-                              SelectedUtxoAmountHeader(
-                                orderDropdownButtonKey: _orderDropdownButtonKey,
-                                orderText: _viewModel.utxoOrder.text,
-                                selectedUtxoCount: viewModel.selectedUtxoList.length,
-                                selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
-                                currentUnit: widget.currentUnit,
-                                onSelectAll: _selectAll,
-                                onUnselectAll: _deselectAll,
-                                onToggleOrderDropdown: () {
-                                  setState(() {
-                                    _isOrderDropdownVisible = !_isOrderDropdownVisible;
-                                  });
-                                },
-                                backgroundColor: resolvedBackgroundColor,
-                              ),
+                              if (!widget.isSplitMode)
+                                SelectedUtxoAmountHeader(
+                                  orderDropdownButtonKey: _orderDropdownButtonKey,
+                                  orderText: _viewModel.utxoOrder.text,
+                                  selectedUtxoCount: viewModel.selectedUtxoList.length,
+                                  selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
+                                  currentUnit: widget.currentUnit,
+                                  onSelectAll: _selectAll,
+                                  onUnselectAll: _deselectAll,
+                                  onToggleOrderDropdown: () {
+                                    setState(() {
+                                      _isOrderDropdownVisible = !_isOrderDropdownVisible;
+                                    });
+                                  },
+                                  backgroundColor: resolvedBackgroundColor,
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 16.0, bottom: 12.0, top: 4.0),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: GestureDetector(
+                                      key: _orderDropdownButtonKey,
+                                      onTap: () {
+                                        setState(() {
+                                          _isOrderDropdownVisible = !_isOrderDropdownVisible;
+                                        });
+                                      },
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _viewModel.utxoOrder.text,
+                                            style: CoconutTypography.caption_10.setColor(
+                                              context.coconutColors.secondaryTextStrong,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.keyboard_arrow_down,
+                                            color: context.coconutColors.secondaryText,
+                                            size: 16,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               _buildUtxoTagList(viewModel),
                               Expanded(
                                 child:
@@ -252,8 +283,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-        onSelectionReconciled: widget.onSelectionReconciled,
-      )..minimumSelectableUtxoAmount = widget.minimumSelectableUtxoAmount;
+      )..isSplitMode = widget.isSplitMode;
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -264,6 +294,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           _viewModel.initialize(widget.selectedUtxoList);
+          if (widget.isSplitMode) {
+            _viewModel.changeUtxoOrder(UtxoOrder.byAmountDesc);
+          }
         }
 
         _updateOrderDropdownButtonPosition();
@@ -321,7 +354,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   void _selectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.selectTaggedUtxo();
+    _viewModel.selectTaggedUtxo(_viewModel.selectedUtxoTagName);
   }
 
   void _deselectAll() {
@@ -384,10 +417,12 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       child: Container(
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
-          tags: viewModel.utxoTagList,
+          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
           showDefaultTags: false,
-          selectedFilter: viewModel.selectedUtxoFilter,
-          onSelectedFilter: viewModel.setSelectedUtxoFilter,
+          selectedName: viewModel.selectedUtxoTagName,
+          onSelectedTag: (tagName) {
+            viewModel.setSelectedUtxoTagName(tagName);
+          },
         ),
       ),
     );
@@ -395,7 +430,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildEmptyState(UtxoSelectionViewModel viewModel) {
     final copy = t.utxo_selection_screen;
-    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoFilter != UtxoFilter.all;
+    final hasFilter = viewModel.confirmedUtxoList.isNotEmpty && viewModel.selectedUtxoTagName != t.all;
     final hasError = viewModel.hasLoadError;
     return Center(
       child: SingleChildScrollView(
@@ -454,7 +489,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 if (hasError) {
                   viewModel.initialize(widget.selectedUtxoList);
                 } else if (hasFilter) {
-                  viewModel.setSelectedUtxoFilter(UtxoFilter.all);
+                  viewModel.setSelectedUtxoTagName(t.all);
                 } else {
                   await Navigator.of(
                     context,
@@ -475,7 +510,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     if (filteredUtxoList.isEmpty) return _buildEmptyState(viewModel);
 
     return ListView.separated(
-      key: ValueKey(viewModel.selectedUtxoFilter),
+      key: ValueKey(viewModel.selectedUtxoTagName),
       controller: _scrollController,
       padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
@@ -496,14 +531,14 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           );
         }
 
-        final bool isDisabledByMinAmount = viewModel.isBelowMinimumSelectableAmount(utxo);
+        final bool isDisabledForSplit = widget.isSplitMode && utxo.amount < 1000;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: IgnorePointer(
-            ignoring: isDisabledByMinAmount,
+            ignoring: isDisabledForSplit,
             child: Opacity(
-              opacity: isDisabledByMinAmount ? 0.4 : 1.0,
+              opacity: isDisabledForSplit ? 0.4 : 1.0,
               child: UtxoSelectionCard(
                 key: ValueKey(utxo.utxoId),
                 currentUnit: widget.currentUnit,

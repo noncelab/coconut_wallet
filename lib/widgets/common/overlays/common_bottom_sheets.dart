@@ -361,9 +361,12 @@ class CommonBottomSheets {
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo((draggableController.size + delta).clamp(0.0, 1.0));
+                            draggableController.jumpTo(draggableController.size + delta);
                           },
                           onVerticalDragEnd: (details) {
+                            handleDrag();
+                          },
+                          onVerticalDragCancel: () {
                             handleDrag();
                           },
                           child: Container(
@@ -387,9 +390,12 @@ class CommonBottomSheets {
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo((draggableController.size + delta).clamp(0.0, 1.0));
+                            draggableController.jumpTo(draggableController.size + delta);
                           },
                           onVerticalDragEnd: (details) {
+                            handleDrag();
+                          },
+                          onVerticalDragCancel: () {
                             handleDrag();
                           },
                           child: CoconutAppBar.build(
@@ -419,12 +425,7 @@ class CommonBottomSheets {
                           padding: EdgeInsets.only(
                             bottom: adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0,
                           ),
-                          child: _SheetDragForwarder(
-                            controller: draggableController,
-                            minChildSize: minChildSize,
-                            maxChildSize: maxChildSize,
-                            child: childBuilder(scrollController),
-                          ),
+                          child: childBuilder(scrollController),
                         ),
                       ),
                     ],
@@ -572,7 +573,6 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
   final VoidCallback? onTap;
   final bool isDisabled;
   final bool reserveCheckIconSpace;
-  final double verticalPadding;
 
   const SelectableBottomSheetTextItem({
     super.key,
@@ -581,7 +581,6 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
     this.onTap,
     this.isDisabled = false,
     this.reserveCheckIconSpace = false,
-    this.verticalPadding = 16,
   });
 
   @override
@@ -591,19 +590,14 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
 class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTextItem> {
   bool _isPressed = false;
 
-  void _setPressed(bool isPressed) {
-    if (!mounted) return;
-    setState(() => _isPressed = isPressed);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Opacity(
       opacity: widget.isDisabled ? 0.5 : 1.0,
       child: Listener(
-        onPointerDown: (_) => _setPressed(true),
-        onPointerUp: (_) => _setPressed(false),
-        onPointerCancel: (_) => _setPressed(false),
+        onPointerDown: (_) => setState(() => _isPressed = true),
+        onPointerUp: (_) => setState(() => _isPressed = false),
+        onPointerCancel: (_) => setState(() => _isPressed = false),
         behavior: HitTestBehavior.opaque,
         child: ShrinkAnimationButton(
           onPressed: () {
@@ -618,7 +612,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: widget.verticalPadding, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
                 Expanded(
@@ -664,8 +658,6 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   final bool showConfirmButton;
   final bool allowConfirmWhenSelectionUnchanged;
   final ValueChanged<T?>? onSelectionChanged;
-  final double horizontalPadding;
-  final double listBottomPadding;
 
   const SelectableBottomSheetBody({
     super.key,
@@ -680,8 +672,6 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
     this.showConfirmButton = true,
     this.allowConfirmWhenSelectionUnchanged = false,
     this.onSelectionChanged,
-    this.horizontalPadding = Sizes.size16,
-    this.listBottomPadding = Sizes.size16,
   });
 
   @override
@@ -728,13 +718,13 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
             Positioned.fill(
               bottom: buttonAreaHeight,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
                 child: ListView.builder(
                   controller: widget.scrollController,
                   shrinkWrap: false,
                   primary: widget.scrollController == null,
                   physics: const ClampingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: widget.listBottomPadding),
+                  padding: const EdgeInsets.only(bottom: Sizes.size16),
                   itemCount: widget.items.length,
                   itemBuilder: (context, index) {
                     final item = widget.items[index];
@@ -786,62 +776,6 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
           ],
         ),
       ),
-    );
-  }
-}
-
-/// [CommonBottomSheets.showDraggableBottomSheet]의 스크롤되지 않는 영역(헤더 등)에서
-/// 시작된 수직 드래그를 시트 크기 변경으로 전달한다.
-/// 자식 중 스크롤 가능한 영역의 드래그 recognizer가 gesture arena에서 우선권을 가지므로,
-/// 이 GestureDetector는 드래그를 받는 자식이 없는 영역에서만 동작한다.
-class _SheetDragForwarder extends StatefulWidget {
-  const _SheetDragForwarder({
-    required this.controller,
-    required this.minChildSize,
-    required this.maxChildSize,
-    required this.child,
-  });
-
-  final DraggableScrollableController controller;
-  final double minChildSize;
-  final double maxChildSize;
-  final Widget child;
-
-  @override
-  State<_SheetDragForwarder> createState() => _SheetDragForwarderState();
-}
-
-class _SheetDragForwarderState extends State<_SheetDragForwarder> {
-  bool _isAnimating = false;
-
-  void _handleDragEnd() {
-    if (_isAnimating || !widget.controller.isAttached) return;
-
-    final extent = widget.controller.size;
-    final target =
-        (extent - widget.minChildSize).abs() < (extent - widget.maxChildSize).abs()
-            ? widget.minChildSize + 0.01
-            : widget.maxChildSize;
-
-    _isAnimating = true;
-    widget.controller.animateTo(target, duration: const Duration(milliseconds: 50), curve: Curves.easeOut).whenComplete(
-      () {
-        _isAnimating = false;
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragUpdate: (details) {
-        if (!widget.controller.isAttached) return;
-        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-        widget.controller.jumpTo((widget.controller.size + delta).clamp(0.0, 1.0));
-      },
-      onVerticalDragEnd: (_) => _handleDragEnd(),
-      child: widget.child,
     );
   }
 }

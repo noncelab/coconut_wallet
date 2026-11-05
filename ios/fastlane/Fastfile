@@ -18,7 +18,6 @@ default_platform(:ios)
 
 require_relative "../../fastlane/shared/pubspec_helper"
 require_relative "../../fastlane/shared/util_helper"
-require_relative "../../fastlane/shared/app_store_connect_auth"
 
 # ⬇️ Fastfile 파일 위치(__dir__) 기준으로 루트 계산
 ROOT_DIR = File.expand_path(File.join(__dir__, "..", ".."))
@@ -37,7 +36,6 @@ platform :ios do
     skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
     skip_bridge = UtilHelper.truthy?(opts[:skip_bridge] || ENV["SKIP_BRIDGE"])
     UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}, skip_bridge=#{skip_bridge}")
-    api_key_options = AppStoreConnectAuth.api_key_options!
 
     # 1) 버전 읽기
     marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
@@ -71,7 +69,6 @@ platform :ios do
       ipa_path = Dir[File.join(ROOT_DIR, "build/ios/ipa/*.ipa")].max_by { |f| File.mtime(f) }
       UI.user_error!("IPA not found!") unless ipa_path
 
-      app_store_connect_api_key(**api_key_options)
       pilot(
         ipa: ipa_path,
         skip_waiting_for_build_processing: false
@@ -105,7 +102,6 @@ platform :ios do
     skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
     skip_bridge = UtilHelper.truthy?(opts[:skip_bridge] || ENV["SKIP_BRIDGE"])
     UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}, skip_bridge=#{skip_bridge}")
-    api_key_options = AppStoreConnectAuth.api_key_options!
 
     marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
     new_build = old_build + 1
@@ -136,7 +132,6 @@ platform :ios do
       ipa_path = Dir[File.join(ROOT_DIR, "build/ios/ipa/*.ipa")].max_by { |f| File.mtime(f) }
       UI.user_error!("IPA not found!") unless ipa_path
 
-      app_store_connect_api_key(**api_key_options)
       pilot(
         ipa: ipa_path,
         skip_waiting_for_build_processing: false

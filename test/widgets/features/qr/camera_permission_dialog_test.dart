@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -41,11 +40,8 @@ void main() {
 
       await tester.tap(find.text('Open scanner'));
       await tester.pumpAndSettle();
-      expect(find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.title)), findsOneWidget);
-      expect(
-        find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.need_camera_permission)),
-        findsOneWidget,
-      );
+      expect(find.text(t.coconut_qr_scanner.camera_error.title), findsOneWidget);
+      expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsOneWidget);
       expect(find.text(t.go_to_settings), findsOneWidget);
       expect(completed, isFalse);
 
@@ -57,7 +53,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(completed, isTrue);
-      expect(find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.title)), findsNothing);
+      expect(find.text(t.coconut_qr_scanner.camera_error.title), findsNothing);
       expect(find.text('Open scanner'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

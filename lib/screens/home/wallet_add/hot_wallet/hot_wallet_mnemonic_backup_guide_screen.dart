@@ -13,6 +13,7 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
@@ -207,7 +208,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       const lottieHeight = 96.0;
-                      final lottieTop = (constraints.maxHeight - lottieHeight) * 0.06;
+                      final lottieTop = (constraints.maxHeight - lottieHeight) * 0.14;
                       return SingleChildScrollView(
                         controller: _preparationScrollController,
                         physics: const ClampingScrollPhysics(),
@@ -231,7 +232,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                                 ),
                               ),
                             ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 30),
 
                             _SequentialEntry(
                               visible: _isPreparationTitleVisible,
@@ -246,9 +247,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                             _SequentialEntry(
                               visible: _isPreparationDescriptionVisible,
                               child: Text(
-                                LocaleSettings.currentLocale == AppLocale.ko
-                                    ? TextUtils.preventLineBreakInsideWords(strings.backup_preparation_description)
-                                    : strings.backup_preparation_description,
+                                strings.backup_preparation_description,
                                 textAlign: TextAlign.center,
                                 style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                               ),
@@ -532,7 +531,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: WalletDetailRouteArgs(id: widget.walletId),
+      arguments: WalletDetailRouteArgs(id: widget.walletId, entryPoint: kEntryPointWalletHome),
     );
   }
 }

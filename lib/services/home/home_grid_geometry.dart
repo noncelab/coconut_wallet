@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' show Offset, Rect, Size;
 
 import 'package:coconut_wallet/model/home/home_item.dart';
@@ -7,15 +6,8 @@ import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 class HomeGridGeometry {
   final double cellExtent;
   final double gap;
-  final int columns;
 
-  const HomeGridGeometry({required this.cellExtent, required this.gap, this.columns = HomeGridLayout.columns});
-
-  static int columnsForWidth(double availableWidth) {
-    if (!availableWidth.isFinite) return HomeGridLayout.columns;
-    final count = ((availableWidth + 12) / 92).floor();
-    return math.max(HomeGridLayout.columns, count - count % 2);
-  }
+  const HomeGridGeometry({required this.cellExtent, required this.gap});
 
   static double extent(int units, double cellExtent, double gap) => units * cellExtent + (units - 1) * gap;
 
@@ -29,19 +21,15 @@ class HomeGridGeometry {
 
   HomeGridPosition snap(Offset local, HomeSpan span) {
     final rawColumn = local.dx / _pitch;
-    final maxColumn = columns - span.width;
+    final maxColumn = HomeGridLayout.columns - span.width;
     final column = rawColumn.round().clamp(0, maxColumn);
     final row = (local.dy / _pitch).round();
     return HomeGridPosition(column, row < 0 ? 0 : row);
   }
 
   HomeGridPosition dropPosition(HomeGridLayout layout, HomeItem dragged, Offset local) {
-    final snapped = HomeGridGeometry(
-      cellExtent: cellExtent,
-      gap: gap,
-      columns: layout.columnCount,
-    ).snap(local, dragged.span);
-    if (layout.columnCount != HomeGridLayout.columns || dragged.span != HomeSpan.wide) return snapped;
+    final snapped = snap(local, dragged.span);
+    if (dragged.span != HomeSpan.wide) return snapped;
     final others = layout.configuration.items.where((item) => item.id != dragged.id).toList();
     if (layout.wideDropKeepsSnappedRow(others, snapped.row)) return snapped;
     final preview = local & sizeOf(dragged.span);
@@ -57,8 +45,6 @@ class HomeGridGeometry {
           preview.bottom >= rect.top;
       if (touches && (touchedRow == null || position.row < touchedRow)) touchedRow = position.row;
     }
-    return touchedRow == null
-        ? snapped
-        : HomeGridLayout.anchorForSpan(HomeGridPosition(0, touchedRow), dragged.span, columns: layout.columnCount);
+    return touchedRow == null ? snapped : HomeGridLayout.anchorForSpan(HomeGridPosition(0, touchedRow), dragged.span);
   }
 }

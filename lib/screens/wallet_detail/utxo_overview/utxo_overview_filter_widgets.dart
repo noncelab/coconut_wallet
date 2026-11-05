@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:flutter/material.dart';
@@ -21,45 +20,20 @@ class UtxoListFilterHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeFilter = viewModel.activeUtxoFilter;
+    final activeTagName = viewModel.activeUtxoTagName;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         children: [
           Expanded(
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 16, right: 24),
-                  child: Stack(
-                    children: [
-                      _buildChipRow(activeFilter, foreground: false),
-                      IgnorePointer(child: _buildChipRow(activeFilter, foreground: true)),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: 24,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            context.coconutColors.background.withValues(alpha: 0),
-                            context.coconutColors.background,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Stack(
+                children: [
+                  _buildChipRow(activeTagName, foreground: false),
+                  IgnorePointer(child: _buildChipRow(activeTagName, foreground: true)),
+                ],
+              ),
             ),
           ),
           CoconutLayout.spacing_200w,
@@ -82,35 +56,25 @@ class UtxoListFilterHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildChipRow(UtxoFilter activeFilter, {required bool foreground}) {
-    final filters = <({UtxoFilter filter, String text, int count})>[
-      (filter: UtxoFilter.all, text: t.all, count: viewModel.utxoList.length),
-      (
-        filter: UtxoFilter.locked,
-        text: t.utxo_detail_screen.utxo_locked,
-        count: viewModel.utxoList.where((utxo) => utxo.isLocked).length,
-      ),
-      (filter: UtxoFilter.change, text: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
-      for (final tag in viewModel.utxoTagList)
-        (
-          filter: UtxoFilter.tag(tag.id),
-          text: '#${tag.name}',
-          count: viewModel.utxoList.where((utxo) => utxo.tags?.any((e) => e.id == tag.id) ?? false).length,
-        ),
+  Widget _buildChipRow(String activeTagName, {required bool foreground}) {
+    final filters = <({String label, int count})>[
+      (label: t.all, count: viewModel.utxoList.length),
+      (label: t.utxo_detail_screen.utxo_locked, count: viewModel.utxoList.where((utxo) => utxo.isLocked).length),
+      (label: t.change, count: viewModel.utxoList.where((utxo) => utxo.isChange).length),
     ];
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final (index, item) in filters.indexed) ...[
+        for (final (index, filter) in filters.indexed) ...[
           if (index > 0) CoconutLayout.spacing_100w,
           Opacity(
-            opacity: (item.filter == activeFilter) == foreground ? 1 : 0,
+            opacity: (filter.label == activeTagName) == foreground ? 1 : 0,
             child: AnimatedUtxoFilterChip(
-              label: item.text,
-              count: item.count,
-              isSelected: item.filter == activeFilter,
-              onTap: () => viewModel.setActiveUtxoFilter(item.filter),
+              label: filter.label,
+              count: filter.count,
+              isSelected: filter.label == activeTagName,
+              onTap: () => viewModel.setActiveUtxoTagName(filter.label),
             ),
           ),
         ],
@@ -210,7 +174,7 @@ class AnimatedUtxoFilterChip extends StatelessWidget {
         labelColor: isSelected ? colors.chipSelectedText : colors.chipUnselectedText,
         labelSize: 12,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minWidth: 48,
+        minWidth: 0,
         isSelected: isSelected ? true : null,
         borderWidth: 0,
         selectedBorderWidth: 0,

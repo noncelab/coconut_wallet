@@ -46,7 +46,6 @@ class SubscriptionService {
     _scriptSyncService.subscribeWallet = _subscribeWalletGuarded;
     _scriptSyncService.unsubscribeAddress = unsubscribeAddress;
     _scriptSyncService.subscribeAddress = subscribeAddress;
-    _scriptSyncService.isConnected = () => _electrumService.connectionStatus == SocketConnectionStatus.connected;
   }
 
   /// 지갑의 스크립트 구독 (외부 진입점)
@@ -61,8 +60,6 @@ class SubscriptionService {
     int? minReceiveUsedIndex,
     int? minChangeUsedIndex,
   }) {
-    // 삭제된 지갑(ID는 다시 쓰이지 않는다): 삭제 전에 받은 목록으로 도는 일괄 구독이 늦게 닿아도 다시 구독하지 않는다.
-    if (_scriptSyncService.isWalletRemoved(walletItem.id)) return Future.value(Result.success(true));
     return _scriptSyncService.runQueued(
       walletItem.id,
       () => _subscribeWalletGuarded(
@@ -71,15 +68,8 @@ class SubscriptionService {
         minReceiveUsedIndex: minReceiveUsedIndex,
         minChangeUsedIndex: minChangeUsedIndex,
       ),
-      retryWallet: walletItem,
-      ownsSubscription: true,
     );
   }
-
-  /// 예약된 자동 재시도를 버린다(지갑 재동기화).
-  void cancelRetry(int walletId) => _scriptSyncService.cancelRetry(walletId);
-
-  void setRetrySuspended(bool suspended) => _scriptSyncService.setRetrySuspended(suspended);
 
   /// 지갑별 큐를 공유해서 [task] (subscribeWallet/스크립트 상태 처리)를 실행한다.
   /// 재동기화처럼 subscribeWallet을 거치지 않고 직접 Realm을 쓰는 작업이, 백그라운드에서 도는
@@ -93,7 +83,7 @@ class SubscriptionService {
     return _scriptSyncService.runQueued(walletItem.id, () async {
       await _scriptSyncService.syncDormantAddresses(walletItem);
       return Result.success(true);
-    }, retryWallet: walletItem);
+    });
   }
 
   /// 화면에서 실제로 보고 있는 주소들의 잔액을 온디맨드로 확인한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
@@ -102,7 +92,7 @@ class SubscriptionService {
     return _scriptSyncService.runQueued(walletItem.id, () async {
       final discovered = await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
       return Result.success(discovered);
-    }, retryWallet: walletItem);
+    });
   }
 
   /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
@@ -187,16 +177,10 @@ class SubscriptionService {
       fetchedScriptStatuses,
       walletItem.id,
     );
-    // 컨펌됐는데도 대체 표시가 남은 거래(이전 버전)를 먼저 되돌려, 그 잔돈 주소가 아래 재확인에 잡히게 한다.
-    await _scriptSyncService.restoreConfirmedReplacedTransactions(walletItem.id);
-    // 실패한 스크립트와, 받는 중에 정리된 코인을 서버 잔액이 아직 세는 주소는 상태가 같아도 다시 맞춘다.
-    final recheckAddresses = {
-      ..._scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address),
-      ..._addressRepository.getAddressesWithMissingCoins(walletItem.id),
-    };
+    final failedAddresses = _scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address).toSet();
     final updatedKeys = updatedScriptStatuses.map((s) => s.scriptPubKey).toSet();
     for (final script in fetchedScriptStatuses) {
-      if (recheckAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
+      if (failedAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
         updatedScriptStatuses.add(script);
       }
     }
@@ -224,14 +208,8 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
-    // 삭제 표시부터 한다. 이미 돌고 있는 재시도·동기화가 늦게 받은 구독 응답은 콜백을 다시 떼고 멈춘다.
-    _scriptSyncService.removeWallet(walletItem.id);
-    try {
-      await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
-    } finally {
-      // 지갑 콜백은 해제 요청 전에 지워지므로, 요청이 실패해도 캐시를 남기지 않는다.
-      walletItem.subscribedScriptMap.clear();
-    }
+    await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
+    walletItem.subscribedScriptMap.clear();
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
     return Result.success(true);
   }
@@ -244,15 +222,8 @@ class SubscriptionService {
       return;
     }
 
-    // 지갑 콜백은 해제 요청 전에 지워지므로 캐시도 먼저 지운다. 요청이 실패해도 "구독 중" 캐시만
-    // 남아 다음 구독이 실제 구독(요청과 콜백)을 건너뛰는 일이 없게 한다.
+    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
     walletItem.subscribedScriptMap.remove(script);
-    // 같은 주소를 가진 다른 지갑(예: 같은 지갑의 보기 전용 사본)의 구독은 남긴다.
-    await _electrumService.unsubscribeScriptForWallet(
-      walletItem.walletBase.addressType,
-      address,
-      walletId: walletItem.id,
-    );
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
 
@@ -281,11 +252,7 @@ class SubscriptionService {
       return _scanAndSubscribeRange(walletItem, isChange, 0, minKnownUsedIndex ?? -1, scriptStatusController);
     }
 
-    final activeAddresses = _addressRepository.getActiveUsedAddresses(
-      walletItem.id,
-      isChange,
-      includeUnreconciledUtxos: true,
-    );
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
     final activeAddressSet = activeAddresses.map((address) => address.address).toSet();
     final activeResults = await Future.wait([
       ...activeAddresses.map(
@@ -306,11 +273,7 @@ class SubscriptionService {
       lastUsedIndex,
       scriptStatusController,
     );
-    // 재연결 때 메인 isolate가 보내는 지갑의 사용 인덱스는 앱을 켤 때 읽은 값이라, 그 뒤 새로 쓴 주소가 위의 사용 주소에도
-    // 아래 범위에도 들어간다. 같은 스크립트가 두 번 들어가면 두 번 동기화되고, 스크립트 상태 저장이 같은 키를 두 번 넣다가
-    // 실패해 구독 전체가 실패한다(통신 오류 없이).
-    final listed = scriptStatuses.map((status) => status.address).toSet();
-    scriptStatuses.addAll(scanResult.scriptStatuses.where((status) => listed.add(status.address)));
+    scriptStatuses.addAll(scanResult.scriptStatuses);
 
     return (scriptStatuses: scriptStatuses, lastUsedIndex: scanResult.lastUsedIndex);
   }
@@ -452,15 +415,6 @@ class SubscriptionService {
       walletId: walletItem.id,
       onUpdate: onUpdate,
     );
-    // 응답을 기다리는 사이 지갑이 삭제됐으면 방금 붙은 콜백을 떼고 이 작업(재시도·동기화)을 멈춘다.
-    if (_scriptSyncService.isWalletRemoved(walletItem.id)) {
-      await _electrumService.unsubscribeScriptForWallet(
-        walletItem.walletBase.addressType,
-        address,
-        walletId: walletItem.id,
-      );
-      throw StateError('Wallet ${walletItem.id} was removed while subscribing');
-    }
 
     scriptStatus.status = status;
     scriptStatus.timestamp = DateTime.now();
@@ -510,11 +464,7 @@ class SubscriptionService {
   Future<void> _unsubscribeScript(WalletItemBase walletItem, bool isChange) async {
     final lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
 
-    final activeAddresses = _addressRepository.getActiveUsedAddresses(
-      walletItem.id,
-      isChange,
-      includeUnreconciledUtxos: true,
-    );
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
     final gapWindowAddresses =
         ElectrumUtil.prepareAddressesMap(
           walletItem.walletBase,
@@ -527,11 +477,7 @@ class SubscriptionService {
 
     await Future.wait(
       addressesToUnsubscribe.map((address) {
-        return _electrumService.unsubscribeScriptForWallet(
-          walletItem.walletBase.addressType,
-          address,
-          walletId: walletItem.id,
-        );
+        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
       }),
     );
   }

@@ -11,18 +11,12 @@ Future<void> _pump(
   NetworkStatus status = NetworkStatus.online,
   bool reconnected = false,
   bool syncing = false,
-  bool updated = false,
 }) {
   return tester.pumpWidget(
     MaterialApp(
       theme: buildCoconutThemeData(),
       home: Scaffold(
-        body: HomeConnectionStatusIndicator(
-          networkStatus: status,
-          showReconnected: reconnected,
-          isSyncing: syncing,
-          showUpdateCompleted: updated,
-        ),
+        body: HomeConnectionStatusIndicator(networkStatus: status, showReconnected: reconnected, isSyncing: syncing),
       ),
     ),
   );
@@ -60,34 +54,6 @@ void main() {
     await _pump(tester, reconnected: true);
 
     expect(find.text(t.home_connection_status.electrum_connection_restored), findsOneWidget);
-  });
-
-  testWidgets('after a pulled refresh the update-completed label is shown', (tester) async {
-    await _pump(tester, updated: true);
-
-    expect(find.text(t.home_connection_status.update_completed), findsOneWidget);
-    expect(find.text(t.home_connection_status.electrum_connection_restored), findsNothing);
-  });
-
-  testWidgets('every state draws its icon in the same box and starts its text at the same place', (tester) async {
-    final states = <String, Future<void> Function()>{
-      t.status_updating: () => _pump(tester, syncing: true),
-      t.home_connection_status.update_completed: () => _pump(tester, updated: true),
-      t.home_connection_status.electrum_connection_restored: () => _pump(tester, reconnected: true),
-      t.home_connection_status.electrum_connection_failed: () => _pump(tester, status: NetworkStatus.connectionFailed),
-    };
-    double? textLeft;
-    for (final MapEntry(key: text, value: pump) in states.entries) {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      final row = find.ancestor(of: find.text(text), matching: find.byType(Row)).first;
-      final leading = tester.widget<Row>(row).children.first;
-      expect(tester.getSize(find.byWidget(leading)), const Size(16, 16), reason: text);
-      final left = tester.getTopLeft(find.text(text)).dx;
-      textLeft ??= left;
-      expect(left, closeTo(textLeft, 0.01), reason: text);
-    }
   });
 
   testWidgets('recovery keeps its left edge while the previous message fades out', (tester) async {

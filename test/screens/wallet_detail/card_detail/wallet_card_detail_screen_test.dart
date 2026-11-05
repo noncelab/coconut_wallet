@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_card_carousel.dart';
 import 'dart:async';
 import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
@@ -40,7 +39,7 @@ import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_security_banner.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -56,7 +55,6 @@ import '../../../mock/transaction_mock.dart';
 import '../../../mock/utxo_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
-import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   final List<WalletItemBase> wallets;
@@ -107,8 +105,6 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   Stream<NodeSyncState> get syncStateStream => const Stream.empty();
   @override
   final ValueNotifier<BlockTimestamp?> currentBlockNotifier = ValueNotifier(null);
-  @override
-  Future<bool> refreshWallet(WalletItemBase walletItem) async => true;
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
@@ -208,6 +204,7 @@ void main() {
               ),
           home: WalletCardDetailScreen(
             id: id,
+            entryPoint: '/wallet-list',
             focusRecentTransactions: focusRecentTransactions,
             focusedTransactionHash: focusedTransactionHash,
           ),
@@ -291,7 +288,6 @@ void main() {
     expect(find.byKey(const Key('wallet-detail-utxo-header')), findsOneWidget);
     expect(find.byKey(const Key('wallet-detail-transactions-header')), findsOneWidget);
     expect(find.byKey(const Key('wallet-detail-move-to-vault')), findsNothing);
-    expect(tester.widget<RecentTransactionsView>(find.byType(RecentTransactionsView)).showWalletName, isFalse);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('wallet-detail-card-1')),
@@ -345,7 +341,7 @@ void main() {
     final history = tester.widget<WalletBalanceHistoryScreen>(find.byType(WalletBalanceHistoryScreen));
     expect(find.byKey(const ValueKey('balance-history-wallet-all')), findsNothing);
     expect(find.byKey(const ValueKey('balance-history-wallet-1')), findsNothing);
-    expect(find.text(t.wallet_balance_history_screen.period_summary), findsOneWidget);
+    expect(find.text(t.wallet_list.balance_history_detail.period_summary), findsOneWidget);
     expect(history.viewModel.walletIds, [2]);
     expect(history.viewModel.balancePeriod, HomeWidgetPeriod.week);
     expect(find.byKey(const Key('balance-history-wallet-chips')), findsNothing);
@@ -447,15 +443,12 @@ void main() {
       ];
       await pump(tester, size: const Size(390, 800), focusRecentTransactions: true, focusedTransactionHash: 'selected');
       final scroll = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
-      await tester.pump(const Duration(milliseconds: 250));
-      await tester.pump(); // Apply the measured, expanded card height before automatic scrolling.
-      await tester.pump(const Duration(milliseconds: 249));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 499));
       expect(scroll.offset, 0);
       final initialExtent = scroll.position.maxScrollExtent;
       if (unbacked) {
-        expect(find.byKey(const Key('wallet-security-banner')), findsOneWidget);
-        expect(find.byKey(const Key('wallet-settings-backup-dot')), findsOneWidget);
+        expect(find.byType(HomeAlertCard), findsOneWidget);
+        expect(tester.widget<HomeAlertCard>(find.byType(HomeAlertCard)).reserveSpaceOnShow, isTrue);
       }
       var highlighted = false;
       var peaks = 0;
@@ -490,103 +483,6 @@ void main() {
               as BoxDecoration;
       expect(decoration.color!.a, 0);
       expect(find.byKey(const Key('wallet-detail-transactions-highlight')), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-  }
-
-  for (final nextNeedsBackup in [false, true]) {
-    testWidgets('security strip hides throughout carousel movement and returns after settling: $nextNeedsBackup', (
-      tester,
-    ) async {
-      for (var index = 0; index < (nextNeedsBackup ? 2 : 1); index++) {
-        final wallet = walletProvider.wallets[index];
-        walletProvider.wallets[index] = SinglesigWalletItem(
-          id: wallet.id,
-          name: wallet.name,
-          descriptor: wallet.descriptor,
-          colorIndex: wallet.colorIndex,
-          iconIndex: wallet.iconIndex,
-          hotWalletMetadata: HotWalletMetadata(
-            walletId: wallet.id,
-            secureStorageKey: 'test',
-            masterFingerprint: '12345678',
-            derivationPath: 'test',
-            accountIndex: 0,
-            backupVerified: false,
-            enterPassphraseWhenSigning: false,
-            createdAt: DateTime.now(),
-          ),
-        );
-      }
-      await pump(tester);
-      // The viewport must track the card in this frame, rather than clipping one frame behind.
-      for (var frame = 0; frame < 6; frame++) {
-        await tester.pump(const Duration(milliseconds: 16));
-        final container = find.byKey(const ValueKey('wallet-detail-card-container-1'));
-        final carousel = find.byKey(const Key('wallet-detail-carousel'));
-        expect(tester.getSize(carousel).height, closeTo(tester.getSize(container).height + 16, 0.1));
-      }
-      await tester.pumpAndSettle();
-      final strip = find.byKey(const Key('wallet-security-banner'));
-      expect(find.descendant(of: find.byKey(const Key('wallet-detail-carousel')), matching: strip), findsOneWidget);
-      final banner = find.byType(WalletSecurityBanner);
-      final sizeTransition = find.descendant(of: banner, matching: find.byType(SizeTransition));
-      double progress() => tester.widget<SizeTransition>(sizeTransition).sizeFactor.value;
-      expect(progress(), 1);
-      expect(tester.getSize(strip).height, 40);
-      final card = find.byKey(const ValueKey('wallet-detail-card-1'));
-      expect(tester.widget<WalletDetailCard>(card).borderRadius.bottomLeft, Radius.zero);
-      final container = find.byKey(const ValueKey('wallet-detail-card-container-1'));
-      expect(
-        tester.widget<ClipRRect>(container).borderRadius,
-        const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(16)),
-      );
-      expect(find.descendant(of: container, matching: strip), findsOneWidget);
-      expect(find.descendant(of: container, matching: card), findsOneWidget);
-      expect(tester.getSize(container).height, closeTo(tester.getSize(card).height + 40, 0.1));
-      expect(tester.getTopLeft(strip).dy, closeTo(tester.getBottomLeft(card).dy, 0.1));
-      final top = tester.getTopLeft(strip).dy;
-      final colors = tester.element(banner).coconutColors;
-      expect(tester.widget<Material>(strip).color, colors.appLockWarningBackground);
-      expect(find.byKey(const Key('wallet-settings-backup-dot')), findsOneWidget);
-      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('wallet-detail-carousel'))));
-      await gesture.moveBy(const Offset(-30, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(progress(), 0);
-      // Even after the focused wallet changes, a held drag must keep the strip hidden.
-      await gesture.moveBy(const Offset(-240, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(progress(), 0);
-      expect(find.byKey(const Key('wallet-settings-backup-dot')), nextNeedsBackup ? findsOneWidget : findsNothing);
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(progress(), nextNeedsBackup ? 1 : 0);
-      if (nextNeedsBackup) {
-        expect(tester.getTopLeft(strip).dy, top);
-        // A canceled swipe must restore this same wallet after snapping back.
-        final canceled = await tester.startGesture(tester.getCenter(find.byKey(const Key('wallet-detail-carousel'))));
-        await canceled.moveBy(const Offset(30, 0));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        await canceled.up();
-        await tester.pumpAndSettle();
-        await tester.pump(const Duration(milliseconds: 220));
-        await tester.pumpAndSettle();
-        expect(progress(), 1);
-        await tester.tap(find.byKey(const Key('wallet-security-banner-close')));
-        await tester.pumpAndSettle();
-        expect(progress(), 0);
-        expect(find.byKey(const Key('wallet-settings-backup-dot')), findsNothing);
-        final restoredCard = find.byKey(const ValueKey('wallet-detail-card-2'));
-        final restoredContainer = find.byKey(const ValueKey('wallet-detail-card-container-2'));
-        expect(
-          tester.widget<ClipRRect>(restoredContainer).borderRadius,
-          const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(28)),
-        );
-        expect(tester.getSize(restoredContainer).height, closeTo(tester.getSize(restoredCard).height, 0.1));
-      }
       expect(tester.takeException(), isNull);
     });
   }

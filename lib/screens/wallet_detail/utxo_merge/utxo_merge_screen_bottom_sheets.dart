@@ -199,7 +199,6 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   tabs: [
                     _BottomSheetTab(
                       label: t.merge_utxos_screen.amount_range_bottomsheet.recommendation_range,
-                      topSpacing: 0,
                       child: _buildAmountRangeRecommendationTab(
                         scrollController: scrollController,
                         selectedRecommendedRange: selectedRecommendedRange,
@@ -456,7 +455,6 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   tabs: [
                     _BottomSheetTab(
                       label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
-                      topSpacing: 0,
                       child: _buildReceiveAddressOwnedTab(
                         scrollController: scrollController,
                         addresses: _viewModel.nextReceiveAddressesOfAllWallets,
@@ -540,8 +538,6 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       items: addresses,
       showSurroundings: false,
       showConfirmButton: false,
-      horizontalPadding: 4,
-      listBottomPadding: 40,
       initiallySelectedId: selectedAddress,
       getItemId: (item) => item.address,
       confirmText: t.done,
@@ -550,30 +546,23 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         onSelectionChanged(selected?.address);
       },
       itemBuilder: (context, item, isSelected, onTap) {
-        return Column(
-          children: [
-            SelectableBottomSheetTextItem(
-              isSelected: isSelected,
-              onTap: onTap,
-              reserveCheckIconSpace: true,
-              verticalPadding: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.address,
-                    style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
-                  ),
-                  Text(
-                    '${item.walletName} • ${item.derivationPath}',
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                  ),
-                ],
+        return SelectableBottomSheetTextItem(
+          isSelected: isSelected,
+          onTap: onTap,
+          reserveCheckIconSpace: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.address,
+                style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
               ),
-            ),
-            if (!identical(item, addresses.last))
-              Divider(height: 4, thickness: 1, indent: 16, endIndent: 16, color: context.coconutColors.divider),
-          ],
+              Text(
+                '${item.walletName} • ${item.derivationPath}',
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -644,8 +633,6 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       items: UtxoMergeViewModel.recommendedAmountRangeItems,
       showSurroundings: false,
       showConfirmButton: false,
-      horizontalPadding: 0,
-      listBottomPadding: 40,
       initiallySelectedId: selectedRecommendedRange,
       getItemId: (item) => item,
       confirmText: t.done,

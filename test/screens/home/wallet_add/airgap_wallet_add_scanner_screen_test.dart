@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -260,10 +259,7 @@ void main() {
       final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
       harness.camera.startError = MobileScannerErrorCode.permissionDenied;
       await harness.mount(tester, pushScanner: true);
-      expect(
-        find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.need_camera_permission)),
-        findsOneWidget,
-      );
+      expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsOneWidget);
       await harness.capture(tester, 'denied-${cancel ? 'cancel' : 'barrier'}-dialog');
       if (cancel) {
         await tester.tap(find.text(t.cancel));
@@ -407,10 +403,7 @@ void main() {
     final harness = _Harness();
     harness.camera.startError = MobileScannerErrorCode.permissionDenied;
     await harness.mount(tester, pushScanner: true);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.need_camera_permission)),
-      findsOneWidget,
-    );
+    expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsOneWidget);
     harness.navigatorKey.currentState!.removeRoute(ModalRoute.of(harness.screenContext)!);
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.cancel));
@@ -425,10 +418,7 @@ void main() {
     final harness = _Harness()..clipboardRead = () async => {'text': publicTestKey};
     harness.camera.startError = MobileScannerErrorCode.genericError;
     await harness.mount(tester, pushScanner: true);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.coconut_qr_scanner.camera_error.need_camera_permission)),
-      findsNothing,
-    );
+    expect(find.text(t.coconut_qr_scanner.camera_error.need_camera_permission), findsNothing);
     await harness.paste(tester);
     await tester.tap(find.text(t.wallet_add_scanner_screen.paste.mfp_skip));
     await tester.pumpAndSettle();

@@ -1,8 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
-import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -17,15 +17,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final PriceProvider _priceProvider;
   final PreferenceProvider _preferenceProvider;
-  final ValueChanged<List<UtxoState>>? _onSelectionReconciled;
   late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
   late final int _walletId;
   bool _isInitialized = false;
   bool _hasLoadError = false;
-
-  /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
-  int? minimumSelectableUtxoAmount;
+  bool isSplitMode = false;
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -40,7 +37,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   ];
 
   List<UtxoTag> _utxoTagList = [];
-  UtxoFilter selectedUtxoFilter = UtxoFilter.all; // 선택된 태그, default: 전체
+  String selectedUtxoTagName = t.all; // 선택된 태그, default: 전체
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
 
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
@@ -55,9 +52,8 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     this._priceProvider,
     this._preferenceProvider,
     this._isNetworkOn,
-    this._walletId, {
-    ValueChanged<List<UtxoState>>? onSelectionReconciled,
-  }) : _onSelectionReconciled = onSelectionReconciled {
+    this._walletId,
+  ) {
     _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
     _priceProvider.addListener(_updateBitcoinPriceKrw);
   }
@@ -87,21 +83,11 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
-      final eligibleById = {for (final utxo in _confirmedUtxoList.where(_isSelectable)) utxo.utxoId: utxo};
-      _selectedUtxoList =
-          selectedUtxoList
-              .map((utxo) => utxo.utxoId)
-              .toSet()
-              .map((id) => eligibleById[id])
-              .whereType<UtxoState>()
-              .toList();
-      _selectedUtxoIdSet.addAll(_selectedUtxoList.map((utxo) => utxo.utxoId));
-      _initialSelectedUtxoList.addAll(_selectedUtxoList);
+      _selectedUtxoList = List.from(selectedUtxoList);
+      _selectedUtxoIdSet.addAll(selectedUtxoList.map((utxo) => utxo.utxoId));
+      _initialSelectedUtxoList.addAll(selectedUtxoList);
       _cachedSelectedUtxoAmountSum = null;
       _isInitialized = true;
-      if (_selectedUtxoList.length != selectedUtxoList.length) {
-        _onSelectionReconciled?.call(List<UtxoState>.of(_selectedUtxoList));
-      }
       notifyListeners();
     } catch (e) {
       Logger.error(e);
@@ -156,20 +142,15 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void selectAllUtxo() {
     // locked 상태가 아닌 UTXO만 선택
-    setSelectedUtxoList(confirmedUtxoList.where(_isSelectable).toList());
+    setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
   }
-
-  bool isBelowMinimumSelectableAmount(UtxoState utxo) =>
-      minimumSelectableUtxoAmount != null && utxo.amount < minimumSelectableUtxoAmount!;
-
-  bool _isSelectable(UtxoState utxo) => utxo.status == UtxoStatus.unspent && !isBelowMinimumSelectableAmount(utxo);
 
   void deselectAllUtxo() {
     _clearUtxoList();
   }
 
-  void selectTaggedUtxo() {
-    setSelectedUtxoList(filteredUtxoList.where(_isSelectable).toList());
+  void selectTaggedUtxo(String selectedTagName) {
+    setSelectedUtxoList(filteredUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
   }
 
   void deselectTaggedUtxo() {
@@ -185,29 +166,50 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedUtxoFilter(UtxoFilter value) {
-    selectedUtxoFilter = value;
+  void setSelectedUtxoTagName(String value) {
+    selectedUtxoTagName = value;
     _updateFilteredUtxoList();
     notifyListeners();
   }
 
   void _updateFilteredUtxoList() {
-    filteredUtxoList
-      ..clear()
-      ..addAll(
-        confirmedUtxoList.where((utxo) => selectedUtxoFilter.matches(utxo, tags: _utxoTagMap[utxo.utxoId] ?? [])),
-      );
+    filteredUtxoList.clear();
+
+    // '전체' 또는 공백이면 모든 UTXO 포함
+    if (selectedUtxoTagName == t.all) {
+      filteredUtxoList.addAll(confirmedUtxoList);
+      return;
+    }
+
+    // 선택된 태그 이름과 일치하는 UTXO만 필터링
+    for (final utxo in confirmedUtxoList) {
+      final tags = _utxoTagMap[utxo.utxoId];
+      if (tags != null && tags.any((tag) => tag.name == selectedUtxoTagName)) {
+        filteredUtxoList.add(utxo);
+      }
+    }
   }
 
   void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
 
-    if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
-      _selectedUtxoList.remove(utxo);
-      _selectedUtxoIdSet.remove(utxo.utxoId);
+    if (isSplitMode) {
+      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
+        _selectedUtxoList.removeWhere((e) => e.utxoId == utxo.utxoId);
+        _selectedUtxoIdSet.remove(utxo.utxoId);
+      } else {
+        _clearUtxoList();
+        _selectedUtxoList.add(utxo);
+        _selectedUtxoIdSet.add(utxo.utxoId);
+      }
     } else {
-      _selectedUtxoList.add(utxo);
-      _selectedUtxoIdSet.add(utxo.utxoId);
+      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
+        _selectedUtxoList.remove(utxo);
+        _selectedUtxoIdSet.remove(utxo.utxoId);
+      } else {
+        _selectedUtxoList.add(utxo);
+        _selectedUtxoIdSet.add(utxo.utxoId);
+      }
     }
     notifyListeners();
   }
@@ -267,7 +269,11 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   /// 선택 상태가 초기 상태와 다른지 확인
   bool get hasSelectionChanged {
-    if (_selectedUtxoList.isEmpty) return false;
+    // 선택된 UTXO가 하나도 없으면 비활성화
+    if (_selectedUtxoList.isEmpty) {
+      return false;
+    }
+
     if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
       return true;
     }

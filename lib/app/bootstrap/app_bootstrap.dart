@@ -17,7 +17,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-import 'platform_channels.dart';
 import 'system_ui_bootstrap.dart';
 
 class AppBootstrap {
@@ -35,21 +34,6 @@ class AppBootstrap {
     await deleteLegacyDebugLog();
     applyPersistedLocale();
     setupPluralResolvers();
-    CoconutWalletApp.kIosRegionCode = await _loadIosRegionCode();
-  }
-
-  /// iOS 지역 설정(설정 > 일반 > 언어 및 지역 > 지역). 언어 목록과 따로 고르므로 Flutter locale의 지역과 다를 수 있어
-  /// 기본 통화를 정할 때 먼저 쓴다. iOS가 아니거나, 300ms 안에 답이 없거나, 읽지 못하면 null이다.
-  static Future<String?> _loadIosRegionCode() async {
-    if (!Platform.isIOS) return null;
-    try {
-      return await const MethodChannel(
-        methodChannelOS,
-      ).invokeMethod<String>('getRegionCode').timeout(const Duration(milliseconds: 300));
-    } catch (e) {
-      Logger.error('AppBootstrap: iOS region read failed: ${e.runtimeType}');
-      return null;
-    }
   }
 
   /// 로그 뷰어와 함께 없앤 디버그 로그(`debug_log.txt`)가 업데이트한 기기에 남아 있으면 지운다.

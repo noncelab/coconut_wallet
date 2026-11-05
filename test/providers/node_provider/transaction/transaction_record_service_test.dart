@@ -79,30 +79,6 @@ void main() {
   });
 
   group('getTransactionRecord 테스트', () {
-    test('[P7-detail-refresh-substitute] rejects a different raw before building a refreshed record', () async {
-      final address = testWalletItem.walletBase.getAddress(0);
-      final parent = TransactionMock.createMockTransaction(toAddress: address, amount: 10000);
-      final requested = TransactionMock.createMockTransaction(
-        toAddress: address,
-        amount: 9000,
-        inputTransactionHash: parent.transactionHash,
-      );
-      final substitute = TransactionMock.createMockTransaction(
-        toAddress: address,
-        amount: 8000,
-        inputTransactionHash: parent.transactionHash,
-      );
-      when(electrumService.getTransaction(requested.transactionHash)).thenAnswer((_) async => substitute.serialize());
-      when(electrumService.getPreviousTransactions(any)).thenAnswer((_) async => [parent]);
-      when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
-
-      final result = await transactionRecordService.getTransactionRecord(testWalletItem, requested.transactionHash);
-
-      expect(result.isFailure, isTrue, reason: 'onRefresh only saves a successful refreshed record');
-      verifyNever(electrumService.getPreviousTransactions(any));
-      verifyNever(electrumService.getHistory(any, any));
-    });
-
     test('컨펌 트랜잭션을 올바르게 조회하는지 확인', () async {
       // Given
       final testAddress = testWalletItem.walletBase.getAddress(0);
@@ -231,60 +207,6 @@ void main() {
       verify(electrumService.getTransaction(tx.transactionHash)).called(1);
       verify(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).called(1);
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
-    });
-  });
-
-  group('이전 거래 일부 누락', () {
-    late Transaction prevA;
-    late Transaction prevB;
-    late Transaction spendTx;
-
-    setUp(() {
-      final testAddress = testWalletItem.walletBase.getAddress(0);
-      final externalAddress = testExternalWalletItem.walletBase.getAddress(0);
-      prevA = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 60000);
-      prevB = TransactionMock.createMockTransaction(
-        toAddress: testAddress,
-        amount: 40000,
-        inputTransactionHash: prevA.transactionHash,
-      );
-      spendTx = Transaction.withInputsAndOutputs(
-        [TransactionInput.forPayment(prevA.transactionHash, 0), TransactionInput.forPayment(prevB.transactionHash, 0)],
-        [TransactionOutput.forPayment(99000, externalAddress)],
-        AddressType.p2wpkh,
-      );
-    });
-
-    test('모든 이전 거래가 있으면 입력과 수수료를 그대로 기록한다', () {
-      final details = transactionRecordService.processTransactionDetails(spendTx, [prevA, prevB], testWalletId);
-
-      expect(details.inputAddressList, hasLength(2));
-      expect(details.fee, 1000);
-      expect(details.amount, -100000);
-    });
-
-    test('이전 거래가 하나라도 빠지면 기록을 만들지 않고 실패해 동기화가 다시 시도한다', () {
-      expect(
-        () => transactionRecordService.processTransactionDetails(spendTx, [prevA], testWalletId),
-        throwsA(isA<StateError>()),
-        reason: '입력 없이 저장하면 보낸 거래가 받기로 남고 확정돼도 고쳐지지 않는다',
-      );
-    });
-
-    test('coinbase는 이전 거래 없이 받기로 기록하고 수수료는 0이다', () {
-      final testAddress = testWalletItem.walletBase.getAddress(0);
-      final coinbase = TransactionMock.createMockTransaction(
-        toAddress: testAddress,
-        amount: 312500000,
-        isCoinbase: true,
-      );
-
-      final details = transactionRecordService.processTransactionDetails(coinbase, const [], testWalletId);
-
-      expect(details.inputAddressList, isEmpty);
-      expect(details.txType, TransactionType.received);
-      expect(details.amount, 312500000);
-      expect(details.fee, 0, reason: '출력 합만 뺀 음수 수수료를 저장하지 않는다');
     });
   });
 }

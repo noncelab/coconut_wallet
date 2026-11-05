@@ -31,53 +31,6 @@ class SharedPrefsRepository {
     _isInitialized = true;
   }
 
-  ({bool saved, List<int>? ids}) _readHodlInsightsWalletSelection() {
-    final encoded = getStringOrNull(SharedPrefKeys.kHodlInsightsWalletIds);
-    if (encoded == null) return (saved: false, ids: null);
-    try {
-      final decoded = jsonDecode(encoded);
-      if (decoded == null) return (saved: true, ids: null);
-      if (decoded is List && decoded.every((id) => id is int)) {
-        return (saved: true, ids: decoded.cast<int>());
-      }
-    } on FormatException {
-      return (saved: false, ids: null);
-    }
-    return (saved: false, ids: null);
-  }
-
-  /// 저장된 null(모든 지갑)과 저장값 없음·잘못된 저장값을 구분한다.
-  bool get hasSavedHodlInsightsWalletSelection => _readHodlInsightsWalletSelection().saved;
-
-  /// 저장 전에는 진입 위젯의 범위를 사용하고, 저장된 null은 명시적인 '모든 지갑'이다.
-  List<int>? getHodlInsightsWalletIds({List<int>? fallback}) {
-    final selection = _readHodlInsightsWalletSelection();
-    return selection.saved ? selection.ids : fallback;
-  }
-
-  Future<void> setHodlInsightsWalletIds(List<int>? walletIds) async {
-    try {
-      if (!await _sharedPrefs.setString(SharedPrefKeys.kHodlInsightsWalletIds, jsonEncode(walletIds))) {
-        throw StateError('Failed to save insights wallet selection');
-      }
-    } catch (_) {
-      // setString updates the in-memory cache before the platform confirms persistence.
-      await _sharedPrefs.reload();
-      rethrow;
-    }
-  }
-
-  Future<void> setSelectWalletGridView(bool grid) async {
-    try {
-      if (!await _sharedPrefs.setBool(SharedPrefKeys.kSelectWalletGridView, grid)) {
-        throw StateError('Failed to save wallet selection layout');
-      }
-    } catch (_) {
-      await _sharedPrefs.reload();
-      rethrow;
-    }
-  }
-
   /// Common--------------------------------------------------------------------
   Future clearSharedPref() async {
     await _sharedPrefs.clear();
@@ -99,9 +52,6 @@ class SharedPrefsRepository {
     await _sharedPrefs.setBool(key, value);
   }
 
-  /// [setBool]과 같지만, 기기 저장소가 저장을 확인했는지(true) 거절했는지(false)를 돌려준다.
-  Future<bool> setBoolAndConfirm(String key, bool value) => _sharedPrefs.setBool(key, value);
-
   int getInt(String key) {
     return _sharedPrefs.getInt(key) ?? 0;
   }
@@ -121,9 +71,6 @@ class SharedPrefsRepository {
   Future setString(String key, String value) async {
     await _sharedPrefs.setString(key, value);
   }
-
-  /// [setString]과 같지만, 기기 저장소가 저장을 확인했는지(true) 거절했는지(false)를 돌려준다.
-  Future<bool> setStringAndConfirm(String key, String value) => _sharedPrefs.setString(key, value);
 
   String? getStringOrNull(String key) {
     return _sharedPrefs.getString(key);

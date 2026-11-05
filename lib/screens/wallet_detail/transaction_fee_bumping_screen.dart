@@ -842,7 +842,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         children: [
           SvgPicture.asset(
             CommonStateIconPath.triangleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.dangerText, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -938,9 +938,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   AppRouteNames.utxoSelection,
                   arguments: UtxoSelectionRouteArgs(
                     selectedUtxoList: viewModel.selectedUtxoList,
-                    onSelectionReconciled: (utxos) {
-                      if (mounted) viewModel.updateSelectedUtxos(utxos);
-                    },
                     id: widget.walletId,
                     currentUnit: viewModel.currentUnit,
                   ),

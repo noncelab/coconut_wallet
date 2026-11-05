@@ -58,9 +58,8 @@ void main() {
       final buttons = find.byType(CupertinoButton);
       expect(buttons, findsNWidgets(2));
       final clearButton = buttons.first;
-      // 2ea3ec08d(doey)에서 지우기 24, 스캔 20으로 줄인 디자인을 따른다.
-      expect(tester.getSize(clearButton), const Size(24, 24));
-      expect(tester.getSize(buttons.last), const Size(20, 20));
+      expect(tester.getSize(clearButton), const Size(44, 44));
+      expect(tester.getSize(buttons.last), const Size(44, 44));
       expect(find.bySemanticsLabel('Clear'), findsOneWidget);
       final clearSemantics = tester.getSemantics(find.bySemanticsLabel('Clear')).getSemanticsData();
       expect(clearSemantics.label, 'Clear');
@@ -68,7 +67,7 @@ void main() {
       expect(clearSemantics.hasAction(SemanticsAction.tap), isTrue);
       final clearSvg = tester.widget<SvgPicture>(find.descendant(of: clearButton, matching: find.byType(SvgPicture)));
       expect(clearSvg.colorFilter, ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn));
-      expect(clearSvg.width, 16);
+      expect(clearSvg.width, 14);
       await tester.tapAt(tester.getTopLeft(clearButton) + const Offset(3, 3));
       await tester.pump();
       expect(clears, 1);
@@ -145,9 +144,8 @@ void main() {
     final buttons = find.byType(CupertinoButton);
     final clearRect = tester.getRect(buttons.first);
     final scanRect = tester.getRect(buttons.last);
-    // 2ea3ec08d(doey)에서 지우기 24, 스캔 20으로 줄인 디자인을 따른다. 두 영역은 겹치지 않아야 한다.
-    expect(clearRect.size, const Size(24, 24));
-    expect(scanRect.size, const Size(20, 20));
+    expect(clearRect.size, const Size(44, 44));
+    expect(scanRect.size, const Size(44, 44));
     expect(clearRect.right, lessThanOrEqualTo(scanRect.left));
     await tester.tapAt(scanRect.bottomRight - const Offset(1, 1));
     expect(scans, 1);

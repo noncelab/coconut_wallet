@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -228,11 +227,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('hot-wallet-create-button-target')));
     await tester.pumpAndSettle();
 
-    expect(find.text(TextUtils.preventLineBreakInsideWords(t.alert.error_occurs)), findsOneWidget);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_create.creation_failed)),
-      findsOneWidget,
-    );
+    expect(find.text(t.alert.error_occurs), findsOneWidget);
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.creation_failed), findsOneWidget);
   });
 
   testWidgets('백업 화면에 wallet ID, descriptor, 니모닉, passphrase를 전달한다', (tester) async {
@@ -281,10 +277,7 @@ void main() {
     expect(viewModel.createCallCount, 1);
     expect(viewModel.committed, isTrue);
     expect(find.byType(HotWalletCreateScreen), findsOneWidget);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_create.creation_failed)),
-      findsOneWidget,
-    );
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.creation_failed), findsOneWidget);
   });
 
   testWidgets('패스프레이즈 저장은 기본 OFF이며 상태에 따라 안내 문구가 변경된다', (tester) async {

@@ -14,7 +14,6 @@ import 'package:mockito/mockito.dart';
 import '../../../../mock/script_sync_service_mock.dart';
 import '../../../../mock/script_status_mock.dart';
 import '../../../../mock/wallet_mock.dart';
-import '../../../../mock/transaction_mock.dart';
 import '../../../../services/shared_prefs_service_test.mocks.dart';
 
 /// 실제 사용자 리포트 기반 버그 재현 시나리오:
@@ -42,7 +41,6 @@ void main() {
       // Given: 지갑을 생성하고, receive(index0)/change(index0) 두 주소가 각각 UTXO를 보유한 상태를 구성한다.
       final wallet = WalletMock.createSingleSigWalletItem(id: walletId, name: 'sweep_wallet');
 
-      // ignore: deprecated_member_use_from_same_package
       final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
       when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenAnswer((_) => wallet.id);
       when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, wallet.id + 1)).thenAnswer((_) async => true);
@@ -64,10 +62,8 @@ void main() {
       final addressChange = wallet.walletBase.getAddress(0, isChange: true);
       final externalAddress = wallet.walletBase.getAddress(5);
 
-      final receiveTx = TransactionMock.createMockTransaction(toAddress: addressReceive, amount: receiveAmount);
-      final changeTx = TransactionMock.createMockTransaction(toAddress: addressChange, amount: changeAmount);
-      final receiveTxHash = receiveTx.transactionHash;
-      final changeTxHash = changeTx.transactionHash;
+      final receiveTxHash = List.filled(64, '1').join();
+      final changeTxHash = List.filled(64, '2').join();
 
       // 기존 UTXO 2개 시딩 (receive, change 각각 1개씩)
       await ScriptSyncServiceMock.utxoRepository.addAllUtxos(wallet.id, [
@@ -137,12 +133,8 @@ void main() {
       when(electrumService.getUnspentList(any, addressChange)).thenAnswer((_) async => []);
 
       when(
-        electrumService.getPreviousTransactions(
-          any,
-          existingTxList: anyNamed('existingTxList'),
-          transactionFetch: anyNamed('transactionFetch'),
-        ),
-      ).thenAnswer((_) async => [receiveTx, changeTx]);
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => []);
 
       // receive 주소의 구독 이벤트에서는 잔액 조회가 실패(네트워크 타임아웃 등)하고,
       // 이후 change 주소 이벤트가 트리거하는 co-spent 잔액 동기화에서는 성공한다.

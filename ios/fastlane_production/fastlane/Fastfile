@@ -5,7 +5,6 @@ default_platform(:ios)
 require "shellwords"
 require_relative "../../../fastlane/shared/pubspec_helper"
 require_relative "../../../fastlane/shared/util_helper"
-require_relative "../../../fastlane/shared/app_store_connect_auth"
 require_relative "../../../fastlane/production/release_helper"
 
 ROOT_DIR = File.expand_path("../../..", __dir__)
@@ -20,7 +19,10 @@ def prepare_ios_production(flavor:, opts:)
   skip_clean = UtilHelper.truthy?(opts[:skip_clean] || ENV["SKIP_CLEAN"])
   skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
 
-  api_key_options = AppStoreConnectAuth.api_key_options!
+  apple_id_username = (opts[:username] || ENV["FASTLANE_USER"]).to_s.strip
+  apple_id_username = UI.input("Apple ID Username: ").to_s.strip if apple_id_username.empty?
+  UI.user_error!("Apple ID username cannot be empty.") if apple_id_username.empty?
+  ENV["FASTLANE_USER"] = apple_id_username
 
   marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
   new_build = old_build + 1
@@ -56,10 +58,11 @@ def prepare_ios_production(flavor:, opts:)
     ipa_path = Dir[File.join(ROOT_DIR, "build", "ios", "ipa", "*.ipa")].max_by { |path| File.mtime(path) }
     UI.user_error!("IPA not found for #{flavor}.") unless ipa_path
 
-    app_store_connect_api_key(**api_key_options)
     upload_to_app_store(
       ipa: ipa_path,
       app_identifier: IOS_APP_IDENTIFIERS.fetch(flavor),
+      username: apple_id_username,
+      team_id: ENV["APP_STORE_CONNECT_TEAM_ID"],
       app_version: marketing,
       metadata_path: metadata_path,
       app_review_attachment_file: review_attachment,

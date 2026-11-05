@@ -1,20 +1,5 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 
-/// 지갑 하나가 업데이트 중인지 판단 (지갑 상세·보내기 화면 공통 기준)
-bool calculateWalletSyncing(WalletUpdateInfo? walletUpdateInfo, NodeSyncState nodeSyncState) {
-  if (walletUpdateInfo?.balanceSnapshot != null && nodeSyncState != NodeSyncState.failed) {
-    return walletUpdateInfo!.isSyncQueued;
-  }
-  if (nodeSyncState == NodeSyncState.completed || nodeSyncState == NodeSyncState.failed) {
-    return false;
-  }
-  if (walletUpdateInfo == null) {
-    return nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing;
-  }
-  return walletUpdateInfo.balance != WalletSyncState.completed ||
-      walletUpdateInfo.transaction != WalletSyncState.completed;
-}
-
 /// 갱신된 데이터 정보를 담는 클래스
 class WalletUpdateInfo {
   final int walletId;

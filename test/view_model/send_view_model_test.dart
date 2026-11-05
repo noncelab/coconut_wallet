@@ -2,10 +2,6 @@ import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart';
 
-import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/node/node_provider_state.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -69,15 +65,6 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   void removeListener(VoidCallback listener) {}
 }
 
-class _SendNode extends Fake implements NodeProvider {
-  @override
-  NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
-  @override
-  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
-  @override
-  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
-}
-
 class FakeTransactionDraftRepository extends Fake implements TransactionDraftRepository {}
 
 class FakeUtxoRepository extends Fake implements UtxoRepository {}
@@ -92,7 +79,6 @@ void main() {
       FakePreferenceProvider(unit: unit),
       FakeTransactionDraftRepository(),
       FakeUtxoRepository(),
-      _SendNode(),
       true,
       (_) {},
       (_) {},

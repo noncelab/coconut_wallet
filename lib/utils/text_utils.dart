@@ -1,5 +1,3 @@
-import 'package:flutter/painting.dart';
-
 class TextUtils {
   /// 공백으로 구분된 각 단어 내부에 Unicode Word Joiner를 삽입합니다.
   ///
@@ -7,22 +5,6 @@ class TextUtils {
   /// 끊기지 않고 공백 위치에서만 줄바꿈되도록 할 때 사용합니다.
   static String preventLineBreakInsideWords(String text) {
     return text.split(' ').map((word) => word.runes.map(String.fromCharCode).join('\u2060')).join(' ');
-  }
-
-  static InlineSpan preventLineBreakInsideWordsInSpan(InlineSpan span) {
-    if (span is! TextSpan) return span;
-    return TextSpan(
-      text: span.text == null ? null : preventLineBreakInsideWords(span.text!),
-      children: span.children?.map(preventLineBreakInsideWordsInSpan).toList(),
-      style: span.style,
-      recognizer: span.recognizer,
-      mouseCursor: span.mouseCursor,
-      onEnter: span.onEnter,
-      onExit: span.onExit,
-      semanticsLabel: span.semanticsLabel ?? span.text,
-      locale: span.locale,
-      spellOut: span.spellOut,
-    );
   }
 
   static String ellipsisIfLonger(String text, {int maxLength = 10}) {

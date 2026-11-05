@@ -26,6 +26,7 @@ class WalletItemCard extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final Color? pressedOverlayColor;
   final double? pressedOverlayOpacity;
+  final bool? isExcludeFromTotalBalance;
   final bool shouldWarnUnbackedHotWallet;
   final bool isEditMode;
   final bool isFavorite;
@@ -55,6 +56,7 @@ class WalletItemCard extends StatelessWidget {
     this.pressedOverlayColor,
     this.pressedOverlayOpacity,
     this.shouldWarnUnbackedHotWallet = false,
+    this.isExcludeFromTotalBalance,
     this.isEditMode = false,
     this.isFavorite = false,
     this.isStarVisible = true,
@@ -122,6 +124,10 @@ class WalletItemCard extends StatelessWidget {
     List<Color>? iconGradientColors,
     int? index,
   }) {
+    final walletDescriptionParts = <String>[
+      walletItem.name,
+      if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
+    ];
     final hasStarButton = isStarVisible && onTapStar != null;
 
     final row = Row(
@@ -244,7 +250,7 @@ class WalletItemCard extends StatelessWidget {
                     ),
               if (placeTrailingBelow)
                 Text(
-                  walletItem.name,
+                  walletDescriptionParts.join(' • '),
                   style: CoconutTypography.body3_12.setColor(
                     shouldWarnUnbackedHotWallet == true
                         ? context.coconutColors.danger
@@ -259,7 +265,7 @@ class WalletItemCard extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          walletItem.name,
+                          walletDescriptionParts.join(' • '),
                           style: CoconutTypography.body3_12.setColor(
                             shouldWarnUnbackedHotWallet == true
                                 ? context.coconutColors.danger
