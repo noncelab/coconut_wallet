@@ -88,7 +88,8 @@ class TransactionRecordService {
             : {for (final parent in previousTxs.toSet()) parent.transactionHash: parent};
 
     // 입력 처리
-    final inputs = TransactionUtil.isCoinbaseTransaction(tx) ? <TransactionInput>[] : tx.inputs;
+    final isCoinbase = TransactionUtil.isCoinbaseTransaction(tx);
+    final inputs = isCoinbase ? <TransactionInput>[] : tx.inputs;
     for (final input in inputs) {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       final previousTx = parentsByHash[input.transactionHash];
@@ -129,6 +130,8 @@ class TransactionRecordService {
         amount += outputAddress.amount;
       }
     }
+    // coinbase(채굴 보상)는 입력이 없어 수수료가 없다. 출력 합만 빼면 음수가 되므로 0으로 둔다.
+    if (isCoinbase) fee = 0;
 
     // 트랜잭션 유형 결정
     TransactionType txType = determineTransactionType(

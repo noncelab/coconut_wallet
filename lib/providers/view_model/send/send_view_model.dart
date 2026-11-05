@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -10,6 +12,8 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -88,13 +92,27 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
   final UtxoRepository _utxoRepository;
+  final NodeProvider _nodeProvider;
+
+  late final WalletSyncWatcher _walletSyncWatcher;
+  bool _isDisposed = false;
+
+  /// 선택한 지갑이 업데이트 중이면 UTXO 선택과 거래 생성을 기다림 (다른 지갑의 업데이트와는 무관)
+  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
+
+  int _excludedUtxoNonce = 0;
+  SelectedUtxoExcludedStatus? _lastExcludedUtxoStatus;
+
+  /// 업데이트 후 직접 고른 UTXO가 빠질 때마다 증가
+  int get excludedUtxoNonce => _excludedUtxoNonce;
+  SelectedUtxoExcludedStatus? get lastExcludedUtxoStatus => _lastExcludedUtxoStatus;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
   final Function(String) _onFeeRateTextUpdate;
   final Function(int) _onRecipientPageDeleted;
 
-  late final List<UtxoState> _allUtxos; // unspent, outgoing, incoming, locked 다 포함
+  late List<UtxoState> _allUtxos; // unspent, outgoing, incoming, locked 다 포함
 
   bool _isMaxMode = false;
   bool get isMaxMode => _isMaxMode;
@@ -244,6 +262,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   bool _hasUnvalidatedInput = false;
 
   bool get isReadyToSend {
+    if (isWalletSyncing) return false;
     if (_hasUnvalidatedInput) return false;
     if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
       return false;
@@ -299,6 +318,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     this._preferenceProvider,
     this._transactionDraftRepository,
     this._utxoRepository,
+    this._nodeProvider,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -311,6 +331,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
     _currentUnit = _preferenceProvider.currentUnit;
+    _walletSyncWatcher = WalletSyncWatcher(_nodeProvider, _onWalletSyncChanged);
 
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
@@ -389,6 +410,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
+    _walletSyncWatcher.watch(_selectedWalletItem!.id);
 
     _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
     _initBalances(_allUtxos);
@@ -397,6 +419,39 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (_selectedWalletItem is TaprootWalletItem) {
       _taprootSpendType = (_selectedWalletItem! as TaprootWalletItem).defaultSpendType;
     }
+  }
+
+  void _onWalletSyncChanged(bool isSyncing) {
+    if (_isDisposed) return;
+    if (!isSyncing) _reloadUtxos();
+    notifyListeners();
+  }
+
+  /// 업데이트가 끝난 UTXO 상태로 잔액과 선택을 다시 맞추고 거래를 다시 만듦
+  void _reloadUtxos() {
+    final wallet = _selectedWalletItem;
+    if (wallet == null) return;
+    _allUtxos = _walletProvider.getUtxoList(wallet.id);
+    _initBalances(_allUtxos);
+    if (!_isUtxoSelectionAuto && _selectedUtxoList.isNotEmpty) {
+      final (validatedUtxoList, excludedStatus) = _utxoRepository.getValidatedSelectedUtxoList(
+        wallet.id,
+        _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      );
+      _selectedUtxoList = validatedUtxoList;
+      if (excludedStatus != null) {
+        _lastExcludedUtxoStatus = excludedStatus;
+        _excludedUtxoNonce++;
+      }
+    }
+    _buildTransaction();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _walletSyncWatcher.dispose();
+    super.dispose();
   }
 
   void setIsUtxoSelectionAuto(bool value) {

@@ -21,6 +21,7 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   final walletEvents = StreamController<WalletUpdateInfo>.broadcast();
   Completer<void>? refreshing;
   int refreshCount = 0;
+  final refreshedWalletIds = <int>[];
 
   @override
   NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
@@ -32,7 +33,8 @@ class _Node extends Fake with ChangeNotifier implements NodeProvider {
   Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => walletEvents.stream;
 
   @override
-  Future<bool> refreshWallets() async {
+  Future<bool> refreshWallet(WalletItemBase walletItem) async {
+    refreshedWalletIds.add(walletItem.id);
     refreshCount++;
     await refreshing?.future;
     return true;
@@ -79,6 +81,7 @@ void main() {
 
     final refresh = detail.refresh();
     expect(node.refreshCount, 1);
+    expect(node.refreshedWalletIds, [1], reason: '전체가 아니라 이 지갑만 새로고침한다');
     expect(detail.isRefreshing, isTrue);
     expect(transactions.loadCount, loadedBeforeRefresh);
 

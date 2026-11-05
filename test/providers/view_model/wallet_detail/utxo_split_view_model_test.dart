@@ -17,10 +17,12 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
+import '../../../mock/wallet_sync_node_provider_mock.dart';
 
 class _PreferenceProvider extends Fake implements PreferenceProvider {
   @override
@@ -137,8 +139,14 @@ void main() {
 
   UtxoTag createTag(String id) => UtxoTag(id: id, walletId: wallet.id, name: 'tag-$id', colorIndex: 0);
 
-  UtxoSplitViewModel createViewModel({UsePreviewConfirmPrompt? prompt}) {
-    final viewModel = UtxoSplitViewModel(
+  UtxoSplitViewModel createViewModel({
+    UsePreviewConfirmPrompt? prompt,
+    WalletSyncNodeProviderMock? node,
+    UsedUtxoExcludedHandler? onUsedUtxoExcluded,
+    VoidCallback? onWalletSynced,
+  }) {
+    late final UtxoSplitViewModel viewModel;
+    viewModel = UtxoSplitViewModel(
       wallet.id,
       _PreferenceProvider(),
       _WalletProvider(wallet),
@@ -147,6 +155,9 @@ void main() {
       SendInfoProvider(),
       tagProvider,
       prompt ?? () async => false,
+      node ?? WalletSyncNodeProviderMock(),
+      onUsedUtxoExcluded ?? (restart) => restart(),
+      onWalletSynced ?? () => viewModel.revalidateSelectedUtxo(),
     );
     viewModel.feeRateController.text = '1';
     createdViewModels.add(viewModel);
@@ -325,29 +336,45 @@ void main() {
   });
 
   group('다른 화면에서 돌아왔을 때 선택한 UTXO 다시 확인', () {
-    test('두 번째 UTXO가 소비되면 그 UTXO만 빠지고 나머지 선택은 유지된다', () {
+    test('고른 UTXO 중 하나라도 보내는 중이 되면 알린 뒤 첫 단계부터 다시 시작한다', () {
       final utxoA = createUtxo(100000, index: 0);
       final utxoB = createUtxo(100000, index: 1);
       final utxoC = createUtxo(100000, index: 2);
-      final viewModel = createViewModel();
+      var excludedCount = 0;
+      final viewModel = createViewModel(
+        onUsedUtxoExcluded: (restart) {
+          excludedCount++;
+          restart();
+        },
+      );
       viewModel.setSelectedUtxoList([utxoA, utxoB, utxoC]);
+      viewModel.setSplitMethod(SplitMethod.evenly);
       utxoRepository.utxos = [utxoA, createUtxo(100000, index: 1, status: UtxoStatus.outgoing), utxoC];
 
       viewModel.revalidateSelectedUtxo();
 
-      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId, utxoC.utxoId]);
+      expect(excludedCount, 1);
+      expect(viewModel.selectedUtxoList, isEmpty);
+      expect(viewModel.selectedMethod, isNull);
     });
 
-    test('지갑에서 사라진 UTXO는 빠진다', () {
+    test('지갑에서 사라진 UTXO가 있어도 알린 뒤 첫 단계부터 다시 시작한다', () {
       final utxoA = createUtxo(100000, index: 0);
       final utxoB = createUtxo(100000, index: 1);
-      final viewModel = createViewModel();
+      var excludedCount = 0;
+      final viewModel = createViewModel(
+        onUsedUtxoExcluded: (restart) {
+          excludedCount++;
+          restart();
+        },
+      );
       viewModel.setSelectedUtxoList([utxoA, utxoB]);
       utxoRepository.utxos = [utxoA];
 
       viewModel.revalidateSelectedUtxo();
 
-      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId]);
+      expect(excludedCount, 1);
+      expect(viewModel.selectedUtxoList, isEmpty);
     });
 
     test('블록 높이가 바뀐 UTXO는 최신 상태로 바뀌고 다중 선택은 유지된다', () {
@@ -378,21 +405,6 @@ void main() {
       expect(viewModel.selectedUtxoList, same(selectedBefore));
       expect(viewModel.selectedMethod, SplitMethod.evenly);
       expect(viewModel.splitCountController.text, '3');
-    });
-
-    test('남은 UTXO 합계가 20000 sats 미만이면 나누기 방법이 해제된다', () {
-      final utxoA = createUtxo(10000, index: 0);
-      final utxoB = createUtxo(100000, index: 1);
-      final viewModel = createViewModel();
-      viewModel.setSelectedUtxoList([utxoA, utxoB]);
-      viewModel.setSplitMethod(SplitMethod.evenly);
-      utxoRepository.utxos = [utxoA, createUtxo(100000, index: 1, status: UtxoStatus.outgoing)];
-
-      viewModel.revalidateSelectedUtxo();
-
-      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxoA.utxoId]);
-      expect(viewModel.hasSelectedUtxoAmountError, isTrue);
-      expect(viewModel.selectedMethod, isNull);
     });
   });
 
@@ -435,6 +447,73 @@ void main() {
       expect(viewModel.splitResult, isNull);
       expect(viewModel.showSkeletonResultBox, isFalse);
       expect(addressRepository.callCount, 0);
+    });
+  });
+
+  group('지갑 업데이트', () {
+    test('업데이트가 끝나면 그 사이 사용된 선택 UTXO를 빼고 알린다', () async {
+      final utxo = createUtxo(100000);
+      utxoRepository.utxos = [utxo];
+      final node = WalletSyncNodeProviderMock()..setSyncing(wallet.id, true);
+      VoidCallback? restart;
+      final viewModel = createViewModel(node: node, onUsedUtxoExcluded: (callback) => restart = callback);
+      viewModel.setSelectedUtxoList([utxo]);
+      viewModel.setSplitMethod(SplitMethod.evenly);
+      expect(viewModel.isWalletSyncing, isTrue);
+
+      utxoRepository.utxos = [createUtxo(100000, status: UtxoStatus.outgoing)];
+      node.setSyncing(wallet.id, false);
+      await Future.delayed(Duration.zero);
+
+      expect(viewModel.isWalletSyncing, isFalse);
+      expect(restart, isNotNull);
+      expect(viewModel.selectedUtxoList, hasLength(1), reason: '화면이 알림을 띄우고 지울 때까지 그대로 둔다');
+
+      restart!();
+
+      expect(viewModel.selectedUtxoList, isEmpty);
+      expect(viewModel.selectedMethod, isNull);
+    });
+
+    test('선택한 UTXO가 그대로면 업데이트가 끝나도 알리지 않는다', () async {
+      final utxo = createUtxo(100000);
+      utxoRepository.utxos = [utxo];
+      final node = WalletSyncNodeProviderMock()..setSyncing(wallet.id, true);
+      var excludedCount = 0;
+      final viewModel = createViewModel(node: node, onUsedUtxoExcluded: (_) => excludedCount++);
+      viewModel.setSelectedUtxoList([utxo]);
+
+      node.setSyncing(wallet.id, false);
+      await Future.delayed(Duration.zero);
+
+      expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [utxo.utxoId]);
+      expect(excludedCount, 0);
+    });
+
+    test('다른 지갑이 업데이트 중이어도 이 지갑은 기다리지 않는다', () async {
+      final node =
+          WalletSyncNodeProviderMock()
+            ..setSyncing(wallet.id, false)
+            ..setSyncing(wallet.id + 1, true);
+      final viewModel = createViewModel(node: node);
+
+      expect(viewModel.isWalletSyncing, isFalse);
+    });
+
+    test('업데이트가 끝나면 화면에 알리기만 하고 직접 다시 확인하지 않는다', () async {
+      final utxo = createUtxo(100000);
+      utxoRepository.utxos = [utxo];
+      final node = WalletSyncNodeProviderMock()..setSyncing(wallet.id, true);
+      var syncedCount = 0;
+      final viewModel = createViewModel(node: node, onWalletSynced: () => syncedCount++);
+      viewModel.setSelectedUtxoList([utxo]);
+
+      utxoRepository.utxos = [createUtxo(100000, status: UtxoStatus.outgoing)];
+      node.setSyncing(wallet.id, false);
+      await Future.delayed(Duration.zero);
+
+      expect(syncedCount, 1);
+      expect(viewModel.selectedUtxoList, hasLength(1), reason: '보이지 않는 탭이면 화면이 다시 보일 때 확인한다');
     });
   });
 }

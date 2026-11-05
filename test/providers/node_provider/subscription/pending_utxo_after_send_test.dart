@@ -47,6 +47,7 @@ import 'package:mockito/mockito.dart';
 import '../../../mock/electrum_transaction_transport.dart';
 import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
+import '../../../mock/wallet_sync_node_provider_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../transaction/rbf_service_test.mocks.dart';
 
@@ -632,6 +633,7 @@ void main() {
         _Preferences(),
         _Drafts(),
         c.utxos,
+        WalletSyncNodeProviderMock(),
         true,
         (_) {},
         (_) {},

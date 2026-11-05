@@ -13,6 +13,15 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionUtil {
+  /// 거래 해시로 찾는 맵 (같은 객체는 한 번만 해시, 해시가 같으면 앞의 거래 유지)
+  static Map<String, Transaction> indexByHash(Iterable<Transaction> transactions) {
+    final byHash = <String, Transaction>{};
+    for (final tx in Set<Transaction>.identity()..addAll(transactions)) {
+      byHash.putIfAbsent(tx.transactionHash, () => tx);
+    }
+    return byHash;
+  }
+
   static TransactionStatus? getStatus(TransactionRecord tx) {
     if (tx.transactionType == TransactionType.received) {
       if (tx.blockHeight == 0) {

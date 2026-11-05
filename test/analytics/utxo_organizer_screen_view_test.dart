@@ -30,6 +30,8 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 import '../repository/realm/test_realm_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import '../mock/wallet_sync_node_provider_mock.dart';
 
 class _Analytics extends AnalyticsService {
   _Analytics() : super(null, false);
@@ -136,6 +138,7 @@ void main() {
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: utxos),
           Provider<AddressRepository>.value(value: _Addresses(wallets)),
+          ChangeNotifierProvider<NodeProvider>(create: (_) => WalletSyncNodeProviderMock()),
         ],
         child: MaterialApp(
           navigatorKey: navigator,
@@ -234,6 +237,7 @@ void main() {
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: utxos),
           Provider<AddressRepository>.value(value: _Addresses(wallets)),
+          ChangeNotifierProvider<NodeProvider>(create: (_) => WalletSyncNodeProviderMock()),
         ],
         child: MaterialApp(
           navigatorKey: navigator,

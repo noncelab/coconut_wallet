@@ -78,6 +78,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../mock/electrum_transaction_transport.dart';
 import '../../../mock/manual_timers.dart';
 import '../../../mock/script_sync_service_mock.dart';
+import '../../../mock/wallet_sync_node_provider_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../transaction/rbf_service_test.mocks.dart';
 
@@ -530,6 +531,7 @@ class _ProbeSend extends SendViewModel {
         prefs,
         TransactionDraftRepository(ScriptSyncServiceMock.realmManager!),
         wallets.utxos,
+        WalletSyncNodeProviderMock(),
         true,
         (_) {},
         (_) {},
@@ -548,7 +550,7 @@ class _ProbeSend extends SendViewModel {
 
 class _ProbeMerge extends UtxoMergeViewModel {
   _ProbeMerge(UtxoRepository utxos, UtxoTagProvider tags, WalletProvider wallets)
-    : super(_walletId, utxos, tags, SendInfoProvider(), wallets);
+    : super(_walletId, utxos, tags, SendInfoProvider(), wallets, WalletSyncNodeProviderMock(), () {});
   @override
   Future<bool> fetchRecommendedFees({
     required String currentFeeRateText,
@@ -567,6 +569,9 @@ class _ProbeSplit extends UtxoSplitViewModel {
         SendInfoProvider(),
         tags,
         () async => false,
+        WalletSyncNodeProviderMock(),
+        (restart) => restart(), // 화면이 '이미 사용됨' 안내 후 처음부터 다시 시작하는 흐름
+        () {},
       );
   @override
   Future<bool> fetchRecommendedFees({

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
@@ -8,8 +9,6 @@ import 'package:flutter/foundation.dart';
 
 /// 위젯 설정 시트. [initial]이 null이면 새로 추가하는 위젯이다.
 class WidgetConfigureViewModel extends ChangeNotifier {
-  static const maxFakeBalanceBtc = 21000000;
-
   final HomeWidgetSettingsSpec spec;
   final List<WalletItemBase> wallets;
   final PreferenceProvider _preferenceProvider;
@@ -76,7 +75,7 @@ class WidgetConfigureViewModel extends ChangeNotifier {
 
   bool get fakeBalanceActive => _fakeBalanceActive;
   int? get fakeBalance => _fakeBalance;
-  bool get fakeBalanceExceedsSupply => (_fakeBalance ?? 0) > maxFakeBalanceBtc * 100000000;
+  bool get fakeBalanceExceedsSupply => (_fakeBalance ?? 0) > kMaxSupplySats;
 
   void selectAllWallets() {
     _allWallets = true;
@@ -128,7 +127,7 @@ class WidgetConfigureViewModel extends ChangeNotifier {
 
   int? targetOf(int walletId) => _targets[walletId];
 
-  bool targetExceedsSupply(int walletId) => (_targets[walletId] ?? 0) > maxFakeBalanceBtc * 100000000;
+  bool targetExceedsSupply(int walletId) => (_targets[walletId] ?? 0) > kMaxSupplySats;
 
   /// 0이나 빈 값은 목표 없음으로 본다.
   void setTarget(int walletId, int? sats) {

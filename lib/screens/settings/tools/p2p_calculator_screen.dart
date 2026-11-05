@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
@@ -61,7 +62,6 @@ class P2PCalculatorScreen extends StatefulWidget {
 
 class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerProviderStateMixin {
   static const double _maxBtc = 21000000;
-  static const int _maxSats = 2100000000000000; // 21M BTC
   static const double _offlineBottomCardSwapThreshold = 0.4;
   final GlobalKey _shareButtonKey = GlobalKey();
 
@@ -300,11 +300,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     inputText: _formatLocaleDecimalText(sanitized),
                   ) ??
                   0;
-      if (!_resultIsFiat) amount = amount.clamp(0, _maxSats).toInt();
+      if (!_resultIsFiat) amount = amount.clamp(0, kMaxSupplySats).toInt();
       final inverse = _viewModel.calculateInputFromResult(amount);
       if (inverse == null) return;
-      if (_resultIsFiat && inverse > _maxSats) {
-        amount = _viewModel.calculateFiatFromSats(_maxSats);
+      if (_resultIsFiat && inverse > kMaxSupplySats) {
+        amount = _viewModel.calculateFiatFromSats(kMaxSupplySats);
       }
       _viewModel.setResultAmount(amount);
       _updateControllerWithResult(_viewModel.inputAmount!);
@@ -410,8 +410,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         ) ??
         0;
 
-    if (sats > _maxSats) {
-      sats = _maxSats;
+    if (sats > kMaxSupplySats) {
+      sats = kMaxSupplySats;
       btcText = _maxBtc.toInt().toString();
     }
 
@@ -441,8 +441,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _processSatsInput(String sanitized) {
     var sats = sanitized.toIntSafe() ?? 0;
 
-    if (sats > _maxSats) {
-      sats = _maxSats;
+    if (sats > kMaxSupplySats) {
+      sats = kMaxSupplySats;
     }
 
     _viewModel.setInputAmount(sats);
@@ -1876,7 +1876,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               inputText: _formatLocaleDecimalText(value),
             ) ??
             0;
-        final nextSats = (currentSats + addSats).clamp(0, _maxSats).toInt();
+        final nextSats = (currentSats + addSats).clamp(0, kMaxSupplySats).toInt();
         _handleAmountInputChanged(BalanceFormatUtil.formatSatoshiToBtcInputText(nextSats));
       }
     }

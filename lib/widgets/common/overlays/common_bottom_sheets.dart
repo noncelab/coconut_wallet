@@ -572,6 +572,7 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
   final VoidCallback? onTap;
   final bool isDisabled;
   final bool reserveCheckIconSpace;
+  final double verticalPadding;
 
   const SelectableBottomSheetTextItem({
     super.key,
@@ -580,6 +581,7 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
     this.onTap,
     this.isDisabled = false,
     this.reserveCheckIconSpace = false,
+    this.verticalPadding = 16,
   });
 
   @override
@@ -589,14 +591,19 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
 class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTextItem> {
   bool _isPressed = false;
 
+  void _setPressed(bool isPressed) {
+    if (!mounted) return;
+    setState(() => _isPressed = isPressed);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Opacity(
       opacity: widget.isDisabled ? 0.5 : 1.0,
       child: Listener(
-        onPointerDown: (_) => setState(() => _isPressed = true),
-        onPointerUp: (_) => setState(() => _isPressed = false),
-        onPointerCancel: (_) => setState(() => _isPressed = false),
+        onPointerDown: (_) => _setPressed(true),
+        onPointerUp: (_) => _setPressed(false),
+        onPointerCancel: (_) => _setPressed(false),
         behavior: HitTestBehavior.opaque,
         child: ShrinkAnimationButton(
           onPressed: () {
@@ -611,7 +618,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            padding: EdgeInsets.symmetric(vertical: widget.verticalPadding, horizontal: 16),
             child: Row(
               children: [
                 Expanded(
@@ -657,6 +664,8 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   final bool showConfirmButton;
   final bool allowConfirmWhenSelectionUnchanged;
   final ValueChanged<T?>? onSelectionChanged;
+  final double horizontalPadding;
+  final double listBottomPadding;
 
   const SelectableBottomSheetBody({
     super.key,
@@ -671,6 +680,8 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
     this.showConfirmButton = true,
     this.allowConfirmWhenSelectionUnchanged = false,
     this.onSelectionChanged,
+    this.horizontalPadding = Sizes.size16,
+    this.listBottomPadding = Sizes.size16,
   });
 
   @override
@@ -717,13 +728,13 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
             Positioned.fill(
               bottom: buttonAreaHeight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
                 child: ListView.builder(
                   controller: widget.scrollController,
                   shrinkWrap: false,
                   primary: widget.scrollController == null,
                   physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: Sizes.size16),
+                  padding: EdgeInsets.only(bottom: widget.listBottomPadding),
                   itemCount: widget.items.length,
                   itemBuilder: (context, index) {
                     final item = widget.items[index];

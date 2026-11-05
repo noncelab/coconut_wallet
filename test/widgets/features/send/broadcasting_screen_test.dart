@@ -35,8 +35,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
-import '../../../repository/realm/test_realm_manager.dart';
 import '../../../mock/utxo_mock.dart';
+import '../../../repository/realm/test_realm_manager.dart';
 
 const _hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 final _source = getUtxoId(_hash, 0);
@@ -114,7 +114,7 @@ void main() {
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2}) async {
+  Future<void> open(WidgetTester tester, {int count = 2, bool seedInput = true}) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -142,9 +142,11 @@ void main() {
           ..setTxWaitingForSign(psbt.serialize())
           ..setSignedResult(signed.serialize());
     manager.realm.write(() {
-      manager.realm.add(
-        UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _hash),
-      );
+      if (seedInput) {
+        manager.realm.add(
+          UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _hash),
+        );
+      }
       for (var i = 0; i < count; i++) {
         manager.realm.add(RealmUtxoTag('tag-$i', 1, 'tag-$i', i, DateTime(2026), utxoIdList: [_source]));
       }
@@ -184,6 +186,17 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
   }
+
+  testWidgets('an input that is no longer spendable shows send unavailable and never broadcasts', (tester) async {
+    await open(tester, seedInput: false);
+
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.send_unavailable)),
+      findsOneWidget,
+    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.alert.error_send.used_utxo_included)), findsOneWidget);
+    expect(node.broadcasts, 0);
+  });
 
   Future<void> tapSend(WidgetTester tester) async {
     await tester.tap(find.text(t.broadcasting_screen.btn_submit));
@@ -301,5 +314,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(navigated, [AppRouteNames.broadcastingComplete]);
     expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a node rejection for spent inputs shows the friendly message instead of the raw reason', (tester) async {
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(
+      Result.failure(
+        ErrorCodes.broadcastErrorWithMessage(
+          {
+            'code': 1,
+            'message': 'the transaction was rejected by network rules.\n\nbad-txns-inputs-missingorspent\n[0200...]',
+          }.toString(),
+        ),
+      ),
+    );
+    final friendly = find.text(TextUtils.preventLineBreakInsideWords(t.alert.error_send.used_utxo_included));
+    for (var attempt = 0; friendly.evaluate().isEmpty && attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+
+    expect(friendly, findsOneWidget);
+    expect(find.textContaining('missingorspent'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

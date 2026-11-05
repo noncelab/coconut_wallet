@@ -10,6 +10,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -23,6 +25,9 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
 
 typedef UsePreviewConfirmPrompt = Future<bool> Function();
+
+/// 고른 UTXO가 이미 사용됐을 때 화면이 알림을 띄운 뒤 [restart]로 첫 단계부터 다시 시작
+typedef UsedUtxoExcludedHandler = void Function(VoidCallback restart);
 
 enum SplitErrorType { none, feeExceedsAmount, dust }
 
@@ -52,6 +57,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final SendInfoProvider _sendInfoProvider;
   final UtxoTagProvider _utxoTagProvider;
   final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
+  final UsedUtxoExcludedHandler _onUsedUtxoExcluded;
+  final VoidCallback _onWalletSynced;
+  late final WalletSyncWatcher _walletSyncWatcher;
+
+  /// 이 지갑이 업데이트 중이면 나누기를 기다림 (다른 지갑의 업데이트와는 무관)
+  bool get isWalletSyncing => _walletSyncWatcher.isSyncing;
 
   // State
   List<UtxoState> _selectedUtxoList = [];
@@ -168,7 +179,11 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._sendInfoProvider,
     this._utxoTagProvider,
     this._showUsePreviewConfirmPrompt,
+    NodeProvider nodeProvider,
+    this._onUsedUtxoExcluded,
+    this._onWalletSynced,
   ) {
+    _walletSyncWatcher = WalletSyncWatcher(nodeProvider, _onWalletSyncChanged)..watch(walletId);
     amountController.addListener(() {
       if (_lastAmountText != amountController.text) {
         _lastAmountText = amountController.text;
@@ -579,10 +594,12 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     final latestById = {for (final utxo in _utxoRepository.getUtxoStateList(walletId)) utxo.utxoId: utxo};
     final revalidated = <UtxoState>[];
     var hasChanged = false;
+    var hasUsed = false;
     for (final selected in _selectedUtxoList) {
       final latest = latestById[selected.utxoId];
       if (latest == null || latest.status != UtxoStatus.unspent) {
         hasChanged = true;
+        hasUsed = true;
         continue;
       }
       if (latest.amount != selected.amount || latest.to != selected.to || latest.blockHeight != selected.blockHeight) {
@@ -594,8 +611,22 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     ++_buildRequestId;
     _cancelActiveBuild();
+    if (hasUsed) {
+      _onUsedUtxoExcluded(() {
+        if (_isDisposed) return;
+        _clearResult();
+        setSelectedUtxoList([]);
+      });
+      return;
+    }
     _clearResult();
     setSelectedUtxoList(revalidated);
+  }
+
+  void _onWalletSyncChanged(bool isSyncing) {
+    if (_isDisposed) return;
+    notifyListeners();
+    if (!isSyncing) _onWalletSynced();
   }
 
   void setSplitMethod(SplitMethod method) {
@@ -936,6 +967,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   @override
   void dispose() {
     _isDisposed = true;
+    _walletSyncWatcher.dispose();
     _cancelActiveBuild();
     amountController.dispose();
     amountFocusNode.dispose();
