@@ -68,48 +68,53 @@ class _WalletAppearanceBody extends StatelessWidget {
             if (!viewModel.isSaving) Navigator.maybePop(context);
           },
         ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                _preview(context, viewModel),
-                CoconutLayout.spacing_300h,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final size in WalletCardSize.values)
-                      SpanSizeOption(
-                        key: Key('wallet-appearance-size-${size.name}'),
-                        columns: size == WalletCardSize.wide ? 4 : 2,
-                        rows: 2,
-                        isSelected: viewModel.previewSize == size,
-                        onTap: () => viewModel.selectPreviewSize(size),
-                      ),
-                  ],
-                ),
-                CoconutLayout.spacing_400h,
-                _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
-                    padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
-                    child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _preview(context, viewModel),
+                  CoconutLayout.spacing_300h,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (final size in WalletCardSize.values)
+                        SpanSizeOption(
+                          key: Key('wallet-appearance-size-${size.name}'),
+                          columns: size == WalletCardSize.wide ? 4 : 2,
+                          rows: 2,
+                          isSelected: viewModel.previewSize == size,
+                          onTap: () => viewModel.selectPreviewSize(size),
+                        ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FixedBottomButton(
-                text: t.complete,
-                isActive: viewModel.canSave,
-                onButtonClicked: () async {
-                  await viewModel.save();
-                  if (context.mounted) Navigator.pop(context);
-                },
+                  CoconutLayout.spacing_400h,
+                  _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+                      padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
+                      child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: FixedBottomButton(
+                  text: t.complete,
+                  isVisibleAboveKeyboard: false,
+                  isActive: viewModel.canSave,
+                  onButtonClicked: () async {
+                    await viewModel.save();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -120,21 +125,28 @@ class _WalletAppearanceBody extends StatelessWidget {
     final side = (width - _cardGap) / 2;
     final isWide = viewModel.previewSize == WalletCardSize.wide;
     final size = Size(isWide ? width : side, side);
+    final previewScale = MediaQuery.viewInsetsOf(context).bottom > 0 ? 0.6 : 1.0;
     final photo = viewModel.photo;
     final card = AnimatedContainer(
       key: const Key('wallet-appearance-preview'),
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
-      width: size.width,
-      height: size.height,
+      width: size.width * previewScale,
+      height: size.height * previewScale,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), boxShadow: WalletCard.elevationOf(context)),
-      child: WalletCard(
-        wallet: viewModel.wallet,
-        appearance: viewModel.appearance,
-        size: viewModel.previewSize,
-        displayName: viewModel.name.trim().isEmpty ? null : viewModel.name.trim(),
-        balanceDisplay: viewModel.balanceText,
-        backgroundPhoto: photo == null ? null : viewModel.photoFileOf(photo),
+      child: FittedBox(
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: WalletCard(
+            wallet: viewModel.wallet,
+            appearance: viewModel.appearance,
+            size: viewModel.previewSize,
+            displayName: viewModel.name.trim().isEmpty ? null : viewModel.name.trim(),
+            balanceDisplay: viewModel.balanceText,
+            backgroundPhoto: photo == null ? null : viewModel.photoFileOf(photo),
+          ),
+        ),
       ),
     );
     return Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: card));
