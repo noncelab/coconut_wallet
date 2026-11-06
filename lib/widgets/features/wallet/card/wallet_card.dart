@@ -58,6 +58,7 @@ class WalletCard extends StatelessWidget {
   final String? secondaryText;
   final Widget? statusBadge;
   final VoidCallback? onPressed;
+  final Border? border;
 
   /// [appearance]의 배경이 사진일 때 그 파일. [WalletAppearanceProvider.photoFileFor]로 구한다.
   final File? backgroundPhoto;
@@ -80,6 +81,7 @@ class WalletCard extends StatelessWidget {
     this.secondaryText,
     this.statusBadge,
     this.onPressed,
+    this.border,
     this.backgroundPhoto,
     this.showBackground = true,
     this.displayName,
@@ -134,13 +136,23 @@ class WalletCard extends StatelessWidget {
     );
     content = WalletContentTheme(background: background, child: content);
     final hasBackground = showBackground && appearance.background != null;
-    Widget withBackground(Widget child) =>
-        hasBackground
-            ? Stack(
-              fit: StackFit.expand,
-              children: [WalletCardBackground(background: appearance.background, photoFile: backgroundPhoto), child],
-            )
-            : child;
+    Widget withBackground(Widget child) {
+      final content =
+          hasBackground
+              ? Stack(
+                fit: StackFit.expand,
+                children: [WalletCardBackground(background: appearance.background, photoFile: backgroundPhoto), child],
+              )
+              : child;
+      return border == null
+          ? content
+          : DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: border),
+            child: content,
+          );
+    }
+
     if (onPressed == null) {
       return DecoratedBox(
         decoration: BoxDecoration(
