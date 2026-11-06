@@ -17,10 +17,12 @@ import 'package:coconut_wallet/screens/ccos/coconut_open_store_scene_viewport.da
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -961,7 +963,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     final isApplied =
         isAdded && listing.linkedVariant != null && preferenceProvider.themeVariant == listing.linkedVariant;
 
-    return Scaffold(
+    final photoScreen = Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
@@ -1161,6 +1163,16 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
           ),
         ],
       ),
+    );
+    // These photos have a pale status-bar background in every app theme.
+    // Preserve the app's other system-bar values and restore them on route pop.
+    final theme = Theme.of(context);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: buildSystemBarStyle(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        brightness: theme.brightness,
+      ).copyWith(statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
+      child: photoScreen,
     );
   }
 }
