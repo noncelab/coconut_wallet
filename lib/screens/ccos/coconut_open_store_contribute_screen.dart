@@ -9,6 +9,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_scene_viewport.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -67,66 +68,69 @@ class ContributeSceneBody extends StatelessWidget {
         final starts = typingStartMs(lines);
         final ctaStart = ctaStartMs(lines);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: height * 0.08),
-            _ContributeTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[0] - _entranceSpanMs,
-              entranceEndMs: starts[0],
-              typingStartMs: starts[0],
-              text: lines[0],
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-44, 22),
-            ),
-            const SizedBox(height: 34),
-            _ContributeTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[1] - _entranceSpanMs,
-              entranceEndMs: starts[1],
-              typingStartMs: starts[1],
-              text: lines[1],
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-40, 18),
-            ),
-            const SizedBox(height: 34),
-            _ContributeTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[2] - _entranceSpanMs,
-              entranceEndMs: starts[2],
-              typingStartMs: starts[2],
-              text: lines[2],
-              highlightPhrases: {t.ccos.contribute_scene.highlight_new_feature},
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-52, 24),
-            ),
-            const SizedBox(height: 34),
-            _ContributeTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[3] - _entranceSpanMs,
-              entranceEndMs: starts[3],
-              typingStartMs: starts[3],
-              text: lines[3],
-              highlightPhrases: {t.ccos.contribute_scene.highlight_bitcoin_standard},
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-48, 22),
-            ),
-            const Spacer(),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _ContributeCtaButton(
+        return CcosSceneViewport(
+          height: height,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: height * 0.08),
+              _ContributeTypeLine(
                 animation: animation,
                 sceneDurationMs: sceneDurationMs,
-                ctaStartMs: ctaStart,
-                onTap: onStartPr,
+                entranceStartMs: starts[0] - _entranceSpanMs,
+                entranceEndMs: starts[0],
+                typingStartMs: starts[0],
+                text: lines[0],
+                textAlign: TextAlign.left,
+                entryOffset: const Offset(-44, 22),
               ),
-            ),
-          ],
+              const SizedBox(height: 34),
+              _ContributeTypeLine(
+                animation: animation,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[1] - _entranceSpanMs,
+                entranceEndMs: starts[1],
+                typingStartMs: starts[1],
+                text: lines[1],
+                textAlign: TextAlign.left,
+                entryOffset: const Offset(-40, 18),
+              ),
+              const SizedBox(height: 34),
+              _ContributeTypeLine(
+                animation: animation,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[2] - _entranceSpanMs,
+                entranceEndMs: starts[2],
+                typingStartMs: starts[2],
+                text: lines[2],
+                highlightPhrases: {t.ccos.contribute_scene.highlight_new_feature},
+                textAlign: TextAlign.left,
+                entryOffset: const Offset(-52, 24),
+              ),
+              const SizedBox(height: 34),
+              _ContributeTypeLine(
+                animation: animation,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[3] - _entranceSpanMs,
+                entranceEndMs: starts[3],
+                typingStartMs: starts[3],
+                text: lines[3],
+                highlightPhrases: {t.ccos.contribute_scene.highlight_bitcoin_standard},
+                textAlign: TextAlign.left,
+                entryOffset: const Offset(-48, 22),
+              ),
+              const Spacer(),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _ContributeCtaButton(
+                  animation: animation,
+                  sceneDurationMs: sceneDurationMs,
+                  ctaStartMs: ctaStart,
+                  onTap: onStartPr,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

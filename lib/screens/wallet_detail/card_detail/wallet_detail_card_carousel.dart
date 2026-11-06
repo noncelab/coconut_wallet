@@ -12,6 +12,7 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -136,7 +137,7 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   Widget build(BuildContext context) {
     final cardWidth = MediaQuery.sizeOf(context).width * WalletDetailCardCarousel.widthFraction;
     final cardHeight = WalletDetailCardCarousel.heightFor(context);
-    return SizedBox(
+    final carousel = SizedBox(
       height: cardHeight + 16 + _footerHeight,
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
@@ -205,7 +206,41 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
         ),
       ),
     );
+    // 루트가 적용한 옆 여백을 구독해 창 크기가 같아도 좌우가 바뀌면 클립을 갱신한다.
+    // 이웃 카드가 상태 열에 복제되지 않도록
+    // 카드 옆 여백의 절반(최대 32pt)을 배경으로 남기되 카드 크기와 페이지 위치는 바꾸지 않는다.
+    final sides = SideSafeArea.insetsOf(context);
+    final guard = math.min(32.0, (MediaQuery.sizeOf(context).width - cardWidth) / 4);
+    final hasSideInset = sides.left > 0 || sides.right > 0;
+    // 항상 같은 트리를 유지한다. 옆 여백이 없으면 클립 레이어나 추가 페인트를 만들지 않는다.
+    return ClipRect(
+      clipBehavior: hasSideInset ? Clip.hardEdge : Clip.none,
+      clipper:
+          hasSideInset
+              ? _CarouselSideClipper(
+                left: sides.left > 0 ? guard : 0,
+                right: sides.right > 0 ? guard : 0,
+                windowHeight: MediaQuery.sizeOf(context).height,
+              )
+              : null,
+      child: carousel,
+    );
   }
+}
+
+class _CarouselSideClipper extends CustomClipper<Rect> {
+  final double left;
+  final double right;
+  final double windowHeight;
+
+  const _CarouselSideClipper({required this.left, required this.right, required this.windowHeight});
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(left, -windowHeight, size.width - right, size.height + windowHeight);
+
+  @override
+  bool shouldReclip(_CarouselSideClipper oldClipper) =>
+      left != oldClipper.left || right != oldClipper.right || windowHeight != oldClipper.windowHeight;
 }
 
 /// 지갑 상세 카드. 이름·아이콘, 잔액·법정화폐 금액, 동작 버튼을 담는다.

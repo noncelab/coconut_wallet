@@ -23,6 +23,7 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/app/deep_link/deep_link_listener.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -136,10 +137,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   variant: variant,
                   materialTheme: materialTheme,
                   cupertinoTheme: cupertinoTheme,
-                  child:
-                      _appEntryFlow != AppEntryFlow.main
-                          ? currentChild
-                          : AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
+                  child: SideSafeArea(
+                    child:
+                        _appEntryFlow != AppEntryFlow.main
+                            ? currentChild
+                            : AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
+                  ),
                 );
               },
               navigatorObservers: [
