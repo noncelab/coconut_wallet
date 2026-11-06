@@ -328,26 +328,48 @@ class WalletCard extends StatelessWidget {
             if (statusBadge != null) ...[const SizedBox(width: 4), statusBadge!],
           ],
         ),
-        if (balanceDisplay != null) ...[
-          Expanded(
-            child: Align(
-              // Preserve the original 3:2 spacing while letting enlarged text fit vertically.
-              alignment: const Alignment(-1, 0.2),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  balanceDisplay!,
-                  key: const Key('wallet-card-balance'),
-                  style: CoconutTypography.heading4_18_NumberBold.copyWith(color: context.coconutColors.primaryText),
-                ),
-              ),
-            ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final subtitle = _subtitle();
+              final subtitleSize = measureHomeTextSize(context, subtitle?.text ?? '0', _subtitleStyle);
+              final subtitleHeight = subtitleSize.height * math.min(1.0, constraints.maxWidth / subtitleSize.width);
+              final nameHeight = measureHomeTextSize(context, displayName ?? wallet.name, _nameStyle).height;
+              final remaining = math.max(0.0, constraints.maxHeight - nameHeight);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (balanceDisplay != null)
+                    Expanded(
+                      child: Align(
+                        // Preserve the original 3:2 spacing while letting enlarged text fit vertically.
+                        alignment: const Alignment(-1, 0.2),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            balanceDisplay!,
+                            key: const Key('wallet-card-balance'),
+                            style: CoconutTypography.heading4_18_NumberBold.copyWith(
+                              color: context.coconutColors.primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  _buildName(context),
+                  SizedBox(
+                    // Keep the original subtitle geometry unless the name and subtitle would overflow.
+                    height: subtitleHeight <= remaining ? subtitleHeight : remaining / (balanceDisplay == null ? 1 : 2),
+                    child: _buildSubtitleRow(context, subtitle),
+                  ),
+                ],
+              );
+            },
           ),
-        ] else
-          const Spacer(),
-        _buildName(context),
-        _buildSubtitleRow(context, _subtitle()),
+        ),
       ],
     );
   }
