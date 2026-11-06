@@ -51,8 +51,8 @@ void main() {
     await pumpApp(tester, _duoClosed);
     expect(tester.getRect(find.byKey(counter)), const Rect.fromLTRB(0, 0, 466 - 84, 678));
     expect(inner.size, const Size(466 - 84, 678));
-    expect(inner.padding, const EdgeInsets.only(bottom: 34));
-    expect(inner.viewPadding, const EdgeInsets.only(bottom: 34));
+    expect(inner.padding, const EdgeInsets.only(right: 1, bottom: 34));
+    expect(inner.viewPadding, const EdgeInsets.only(right: 1, bottom: 34));
     expect(sideInsets, const EdgeInsets.only(right: 84));
   });
 
@@ -93,6 +93,9 @@ void main() {
       expect(find.byType(BackdropFilter), findsNWidgets((padding.left > 0 ? 1 : 0) + (padding.right > 0 ? 1 : 0)));
       expect(tester.getRect(find.byKey(counter)), Rect.fromLTRB(padding.left, 0, 466 - padding.right, 678));
       expect(inner.size.width, 466 - padding.left - padding.right);
+      expect(inner.padding.left, padding.left > 0 ? 1 : 0);
+      expect(inner.padding.right, padding.right > 0 ? 1 : 0);
+      expect(inner.viewPadding, inner.padding);
       expect(sideInsets, EdgeInsets.only(left: padding.left, right: padding.right));
     }
   });
@@ -109,6 +112,68 @@ void main() {
   });
 
   for (final dpr in [1.0, 3.0, 2.625]) {
+    testWidgets('safe sheets leave one physical pixel for the page behind at DPR $dpr', (tester) async {
+      const size = Size(400, 600);
+      const rightInset = 80.0;
+      const capture = Key('sheet-paint');
+      tester.view.devicePixelRatio = dpr;
+      tester.view.physicalSize = size * dpr;
+      tester.view.padding = FakeViewPadding(right: rightInset * dpr);
+      tester.view.viewPadding = tester.view.padding;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => RepaintBoundary(key: capture, child: SideSafeArea(child: child!)),
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: Builder(
+              builder:
+                  (context) => TextButton(
+                    onPressed:
+                        () => showModalBottomSheet<void>(
+                          context: context,
+                          useSafeArea: true,
+                          backgroundColor: Colors.red,
+                          barrierColor: const Color(0x80000000),
+                          elevation: 0,
+                          shape: const RoundedRectangleBorder(),
+                          clipBehavior: Clip.hardEdge,
+                          builder: (_) => const SizedBox(height: 200, width: double.infinity),
+                        ),
+                    child: const Text('Open'),
+                  ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.getRect(find.byType(Scaffold)).right, size.width - rightInset);
+      final media = MediaQuery.of(tester.element(find.byType(Scaffold)));
+      expect(media.padding.right, 1 / dpr);
+      expect(media.viewPadding.right, 1 / dpr);
+
+      Future<List<int>> pixelAt(int x, int y) async {
+        final image =
+            (await tester.runAsync(
+              () => tester.renderObject<RenderRepaintBoundary>(find.byKey(capture)).toImage(pixelRatio: dpr),
+            ))!;
+        final bytes = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+        final pixel = bytes.buffer.asUint8List((y * image.width + x) * 4, 4).toList();
+        image.dispose();
+        return pixel;
+      }
+
+      final edge = ((size.width - rightInset) * dpr).round();
+      final y = (500 * dpr).round();
+      expect(await pixelAt(edge - 1, y), [255, 255, 255, 255]);
+      expect(await pixelAt(edge + 10, y), [255, 255, 255, 255]);
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byType(BottomSheet)).right, closeTo(size.width - rightInset - 1 / dpr, 1e-9));
+      expect(await pixelAt(edge - 2, y), [244, 67, 54, 255]);
+      expect(await pixelAt(edge - 1, y), [127, 127, 127, 255]);
+      expect(await pixelAt(edge + 10, y), [127, 127, 127, 255]);
+    });
+
     for (final sides in [
       const EdgeInsets.only(left: 80),
       const EdgeInsets.only(right: 88),
@@ -131,11 +196,11 @@ void main() {
                 child: SideSafeArea(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    // 가장자리 3물리 픽셀 밖은 다른 색이라 DPR 샘플 위치 오류도 드러난다.
+                    // 가장자리 1물리 픽셀 밖은 다른 색이라 샘플 위치가 한 픽셀만 어긋나도 드러난다.
                     children: [
-                      SizedBox(width: 3 / dpr, child: const ColoredBox(color: Color(0xFF0000FF))),
+                      SizedBox(width: 1 / dpr, child: const ColoredBox(color: Color(0xFF0000FF))),
                       const Expanded(child: ColoredBox(color: Color(0xFFFF0000))),
-                      SizedBox(width: 3 / dpr, child: const ColoredBox(color: Color(0xFF00FF00))),
+                      SizedBox(width: 1 / dpr, child: const ColoredBox(color: Color(0xFF00FF00))),
                     ],
                   ),
                 ),

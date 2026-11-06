@@ -21,11 +21,15 @@ class SideSafeArea extends StatelessWidget {
     final left = media.padding.left;
     final right = media.padding.right;
     final hasSideInset = left > 0 || right > 0;
+    final pixel = 1 / media.devicePixelRatio;
+    // SafeArea 표면이 열에 복제되지 않도록 샘플 띠에는 뒤 화면이 남게 한다.
     final contentMedia =
         hasSideInset
-            ? media
-                .removePadding(removeLeft: true, removeRight: true)
-                .copyWith(size: Size(media.size.width - left - right, media.size.height))
+            ? media.copyWith(
+              size: Size(media.size.width - left - right, media.size.height),
+              padding: media.padding.copyWith(left: left > 0 ? pixel : 0, right: right > 0 ? pixel : 0),
+              viewPadding: media.viewPadding.copyWith(left: left > 0 ? pixel : 0, right: right > 0 ? pixel : 0),
+            )
             : media;
 
     // 내용의 위치와 트리는 여백이 생기거나 없어져도 같게 유지해 내비게이션 상태를 보존한다.
@@ -74,8 +78,7 @@ class _EdgeExtension extends StatelessWidget {
     // 가장자리 안쪽의 1px 띠를 뒤집어 늘린다. 투명한 열이 섞이지 않도록 1px 안에서 샘플링한다.
     final pixel = 1 / devicePixelRatio;
     final scale = -inset / pixel;
-    final sourceEdge = edge + (isLeft ? pixel : -pixel);
-    final translate = edge - scale * sourceEdge;
+    final translate = edge - scale * edge;
     final matrix = Float64List.fromList([scale, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, translate, 0, 0, 1]);
 
     // 창 전체 크기의 레이어를 클립한다. 필터 행렬과 샘플 위치가 같은 창 좌표계를 사용하도록 한다.
@@ -86,7 +89,7 @@ class _EdgeExtension extends StatelessWidget {
           // 늘리기 전 좌표계에서 블러 반경을 보정한다. 옆의 아이콘을 끌어오지 않고 출력에서는 12pt로 부드러워진다.
           child: BackdropFilter(
             filter: ui.ImageFilter.compose(
-              outer: ui.ImageFilter.matrix(matrix, filterQuality: FilterQuality.low),
+              outer: ui.ImageFilter.matrix(matrix, filterQuality: FilterQuality.none),
               inner: ui.ImageFilter.blur(sigmaX: 12 / scale.abs(), tileMode: TileMode.clamp),
             ),
             child: const SizedBox.expand(),
