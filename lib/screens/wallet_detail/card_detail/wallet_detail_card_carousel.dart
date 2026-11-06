@@ -15,6 +15,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// 지갑 상세 위쪽의 가로 카드 휠. 가운데 카드 양옆으로 이웃 카드의 기울어진 가장자리가 보인다.
@@ -107,6 +108,7 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   PageController? _controller;
   late int _focused = widget.initialIndex;
   double _footerHeight = 0;
+  bool _userScrolling = false;
 
   BorderRadius _containerRadius(int index) {
     final footer = index == _focused ? (_footerHeight / 40).clamp(0.0, 1.0) : 0.0;
@@ -132,6 +134,17 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
 
   void _reportPage() => widget.onPageScrolled?.call(_page);
 
+  /// 레이아웃 도중의 알림은 프레임이 끝난 뒤 전달
+  void _reportScrollActivity(bool moving) {
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+      widget.onScrollActivityChanged?.call(moving);
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _userScrolling == moving) widget.onScrollActivityChanged?.call(moving);
+    });
+  }
+
   double get _page {
     final controller = _controller!;
     return controller.hasClients && controller.position.haveDimensions
@@ -148,8 +161,15 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification.depth != 0 || notification.metrics.axis != Axis.horizontal) return false;
-          if (notification is ScrollStartNotification) widget.onScrollActivityChanged?.call(true);
-          if (notification is ScrollEndNotification) widget.onScrollActivityChanged?.call(false);
+          // 레이아웃 중 페이지 맞춤 같은 자동 스크롤은 넘김으로 보지 않음
+          if (notification is ScrollStartNotification && notification.dragDetails != null && !_userScrolling) {
+            _userScrolling = true;
+            _reportScrollActivity(true);
+          }
+          if (notification is ScrollEndNotification && _userScrolling) {
+            _userScrolling = false;
+            _reportScrollActivity(false);
+          }
           return false;
         },
         child: PageView.builder(

@@ -182,10 +182,16 @@ void main() {
     Size size = const Size(390, 1400),
     CoconutThemeVariant variant = CoconutThemeVariant.light,
     double textScale = 1,
+    bool pushed = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    final screen = WalletCardDetailScreen(
+      id: id,
+      focusRecentTransactions: focusRecentTransactions,
+      focusedTransactionHash: focusedTransactionHash,
+    );
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -206,11 +212,19 @@ void main() {
                 data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
                 child: child!,
               ),
-          home: WalletCardDetailScreen(
-            id: id,
-            focusRecentTransactions: focusRecentTransactions,
-            focusedTransactionHash: focusedTransactionHash,
-          ),
+          home:
+              pushed
+                  ? Builder(
+                    builder:
+                        (context) => TextButton(
+                          onPressed:
+                              () => Navigator.of(
+                                context,
+                              ).push(PageRouteBuilder<void>(pageBuilder: (_, __, ___) => screen)),
+                          child: const Text('open'),
+                        ),
+                  )
+                  : screen,
           onGenerateRoute: (settings) {
             pushedRoutes.add(settings.name!);
             return MaterialPageRoute(settings: settings, builder: (_) => const Scaffold());
@@ -219,6 +233,10 @@ void main() {
       ),
     );
     await tester.pump();
+    if (pushed) {
+      await tester.tap(find.text('open'));
+      await tester.pump();
+    }
   }
 
   testWidgets('syncing keeps detail balance readable without a flashing shader', (tester) async {
@@ -596,6 +614,21 @@ void main() {
 
     final carousel = tester.widget<PageView>(find.byKey(const Key('wallet-detail-carousel')));
     expect(carousel.controller!.initialPage, 1);
+  });
+
+  testWidgets('a pushed detail keeps the entered card focused and its actions tappable', (tester) async {
+    walletProvider = _Wallets([
+      WalletMock.createSingleSigWalletItem(id: 1, name: 'First'),
+      WalletMock.createSingleSigWalletItem(id: 2, name: 'Second'),
+      WalletMock.createSingleSigWalletItem(id: 3, name: 'Third'),
+    ]);
+    await pump(tester, id: 3, pushed: true);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const Key('wallet-detail-action-receive')).hitTestable());
+    await tester.pumpAndSettle();
+    expect(pushedRoutes, [AppRouteNames.receiveAddress]);
   });
 
   testWidgets('flipping the card wheel focuses the next wallet and its background', (tester) async {
