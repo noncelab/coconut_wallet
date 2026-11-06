@@ -350,7 +350,9 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                   },
                   onScrollActivityChanged: (moving) => _carouselMoving.value = moving,
                   onPageScrolled: (page) => _pagePosition.value = page,
-                  cardBuilder: (context, wallet, isFocused) => _buildCard(viewModel, wallet, isFocused),
+                  cardBuilder:
+                      (context, wallet, isFocused, surfaceBuilder) =>
+                          _buildCard(viewModel, wallet, isFocused, surfaceBuilder),
                 ),
               ),
               SliverPadding(
@@ -616,14 +618,17 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     );
   }
 
-  Widget _buildCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, bool isFocused) => _lifted(
-    WalletDetailFlipCard(
-      key: ValueKey('wallet-detail-flip-${wallet.id}'),
-      isFocused: isFocused,
-      frontBuilder: (flip) => _buildDetailCard(viewModel, wallet, flip),
-      backBuilder: (flip) => _buildBalanceHistory(viewModel, wallet, flip),
-    ),
-    radius: 28,
+  Widget _buildCard(
+    WalletCardDetailViewModel viewModel,
+    WalletItemBase wallet,
+    bool isFocused,
+    Widget Function(Widget) surfaceBuilder,
+  ) => WalletDetailFlipCard(
+    key: ValueKey('wallet-detail-flip-${wallet.id}'),
+    isFocused: isFocused,
+    surfaceBuilder: surfaceBuilder,
+    frontBuilder: (flip) => _buildDetailCard(viewModel, wallet, flip),
+    backBuilder: (flip) => _buildBalanceHistory(viewModel, wallet, flip),
   );
 
   Widget _buildDetailCard(WalletCardDetailViewModel viewModel, WalletItemBase wallet, VoidCallback onChart) {

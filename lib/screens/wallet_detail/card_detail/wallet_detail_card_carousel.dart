@@ -28,7 +28,13 @@ class WalletDetailCardCarousel extends StatefulWidget {
   final ValueChanged<bool>? onScrollActivityChanged;
   final Widget Function(BuildContext context, WalletItemBase wallet, ValueChanged<double> onHeightChanged)?
   footerBuilder;
-  final Widget Function(BuildContext context, WalletItemBase wallet, bool isFocused) cardBuilder;
+  final Widget Function(
+    BuildContext context,
+    WalletItemBase wallet,
+    bool isFocused,
+    Widget Function(Widget) surfaceBuilder,
+  )
+  cardBuilder;
 
   const WalletDetailCardCarousel({
     super.key,
@@ -175,28 +181,30 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
                     alignment: Alignment.topCenter,
                     minHeight: 0,
                     maxHeight: double.infinity,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: _containerRadius(index),
-                        boxShadow: WalletCard.elevationOf(context),
-                      ),
-                      child: ClipRRect(
-                        key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
-                        borderRadius: _containerRadius(index),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              height: cardHeight,
-                              child: widget.cardBuilder(context, widget.wallets[index], index == _focused),
-                            ),
-                            if (widget.footerBuilder != null && index == _focused)
-                              widget.footerBuilder!(context, widget.wallets[index], (height) {
-                                if (mounted && index == _focused && _footerHeight != height) {
-                                  setState(() => _footerHeight = height);
-                                }
-                              }),
-                          ],
+                    child: widget.cardBuilder(
+                      context,
+                      widget.wallets[index],
+                      index == _focused,
+                      (face) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: _containerRadius(index),
+                          boxShadow: WalletCard.elevationOf(context),
+                        ),
+                        child: ClipRRect(
+                          key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
+                          borderRadius: _containerRadius(index),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(height: cardHeight, child: face),
+                              if (widget.footerBuilder != null && index == _focused)
+                                widget.footerBuilder!(context, widget.wallets[index], (height) {
+                                  if (mounted && index == _focused && _footerHeight != height) {
+                                    setState(() => _footerHeight = height);
+                                  }
+                                }),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -405,12 +413,14 @@ class WalletDetailFlipCard extends StatefulWidget {
   final bool isFocused;
   final Widget Function(VoidCallback flip) frontBuilder;
   final Widget Function(VoidCallback flip) backBuilder;
+  final Widget Function(Widget) surfaceBuilder;
 
   const WalletDetailFlipCard({
     super.key,
     required this.isFocused,
     required this.frontBuilder,
     required this.backBuilder,
+    required this.surfaceBuilder,
   });
 
   @override
@@ -447,7 +457,7 @@ class _WalletDetailFlipCardState extends State<WalletDetailFlipCard> {
               ..rotateY(math.pi * (back ? progress - 1 : progress)),
         child: IgnorePointer(
           ignoring: !widget.isFocused,
-          child: back ? widget.backBuilder(_flip) : widget.frontBuilder(_flip),
+          child: widget.surfaceBuilder(back ? widget.backBuilder(_flip) : widget.frontBuilder(_flip)),
         ),
       );
     },

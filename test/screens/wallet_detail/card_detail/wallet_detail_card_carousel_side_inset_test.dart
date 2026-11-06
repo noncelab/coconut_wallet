@@ -43,7 +43,7 @@ void main() {
                           wallets: wallets,
                           initialIndex: 1,
                           onFocusChanged: (_) {},
-                          cardBuilder: (_, _, _) => const ColoredBox(color: Colors.red),
+                          cardBuilder: (_, _, _, surfaceBuilder) => surfaceBuilder(const ColoredBox(color: Colors.red)),
                         ),
                       ),
                     ),

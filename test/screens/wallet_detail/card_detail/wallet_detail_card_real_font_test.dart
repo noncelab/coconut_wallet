@@ -83,12 +83,14 @@ void main() {
                             initialIndex: 0,
                             onFocusChanged: (_) {},
                             cardBuilder:
-                                (_, wallet, focused) => WalletDetailCard(
-                                  wallet: wallet,
-                                  appearance: WalletAppearance.of(wallet),
-                                  balance: balance,
-                                  unit: unit,
-                                  actions: actions,
+                                (_, wallet, focused, surfaceBuilder) => surfaceBuilder(
+                                  WalletDetailCard(
+                                    wallet: wallet,
+                                    appearance: WalletAppearance.of(wallet),
+                                    balance: balance,
+                                    unit: unit,
+                                    actions: actions,
+                                  ),
                                 ),
                           ),
                         ),
