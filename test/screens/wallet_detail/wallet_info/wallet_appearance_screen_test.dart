@@ -25,6 +25,7 @@ import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dar
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,9 +140,12 @@ void main() {
     CoconutThemeVariant variant = CoconutThemeVariant.dark,
     TextScaler textScaler = TextScaler.noScaling,
     Size logicalSize = const Size(390, 1400),
+    double sideInset = 0,
     bool settle = true,
     NavigatorObserver? observer,
   }) async {
+    tester.view.padding = FakeViewPadding(right: sideInset, bottom: sideInset > 0 ? 34 : 0);
+    tester.view.viewPadding = tester.view.padding;
     tester.view.physicalSize = logicalSize;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -159,7 +163,7 @@ void main() {
           builder:
               (context, child) => MediaQuery(
                 data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-                child: child ?? const SizedBox.shrink(),
+                child: SideSafeArea(child: child ?? const SizedBox.shrink()),
               ),
           home: Builder(
             builder:
@@ -189,17 +193,23 @@ void main() {
     for (final scale in [1.0, 1.6, 2.0]) {
       testWidgets('fold keyboard keeps editing and completion reachable ${variant.name} $scale', (tester) async {
         walletProvider = _WalletProvider(_hotWallet());
-        await open(tester, variant: variant, textScaler: TextScaler.linear(scale), logicalSize: const Size(841, 874));
+        await open(
+          tester,
+          variant: variant,
+          textScaler: TextScaler.linear(scale),
+          logicalSize: const Size(951, 669),
+          sideInset: 84,
+        );
         final field = find.byType(EditableText);
         await tester.ensureVisible(field);
         await tester.enterText(field, 'Fold savings');
         await tester.pumpAndSettle();
         final editable = tester.widget<EditableText>(field);
 
-        for (final size in [const Size(841, 874), const Size(412, 915), const Size(841, 874)]) {
+        for (final size in [const Size(951, 669), const Size(466, 678), const Size(951, 669)]) {
           tester.view.physicalSize = size;
-          tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 24);
-          tester.view.padding = const FakeViewPadding(top: 24);
+          tester.view.viewPadding = const FakeViewPadding(right: 84, bottom: 34);
+          tester.view.padding = const FakeViewPadding(right: 84);
           tester.view.viewInsets = const FakeViewPadding(bottom: 300);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
@@ -218,10 +228,11 @@ void main() {
         }
 
         tester.view.viewInsets = const FakeViewPadding();
-        tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+        tester.view.padding = const FakeViewPadding(right: 84, bottom: 34);
         await tester.pumpAndSettle();
         final lastIcon = find.byKey(const Key('wallet-appearance-icon-${CustomWalletIcons.totalCount - 1}'));
-        await Scrollable.ensureVisible(tester.element(lastIcon), alignment: 0.5);
+        // Scroll fully into view: centering a tall icon may leave its lower edge under the fixed footer.
+        await Scrollable.ensureVisible(tester.element(lastIcon), alignment: 0);
         await tester.pumpAndSettle();
         expect(tester.getBottomLeft(lastIcon).dy, lessThan(tester.getTopLeft(find.text(t.complete)).dy));
         expect(lastIcon.hitTestable(), findsOneWidget);
@@ -235,6 +246,32 @@ void main() {
       });
     }
   }
+
+  for (final size in [const Size(466, 678), const Size(951, 669)]) {
+    testWidgets('Duo $size keeps every wallpaper picker reachable above completion', (tester) async {
+      await open(tester, logicalSize: size, sideInset: 84);
+      for (final (tab, option) in [('skins', 'skin-mint'), ('colors', 'color-6'), ('photos', 'choose-photo')]) {
+        await tester.tap(find.byKey(Key('wallet-appearance-tab-$tab')));
+        await tester.pumpAndSettle();
+        final choice = find.byKey(Key('wallet-appearance-option-$option'));
+        await tester.ensureVisible(choice);
+        await tester.pumpAndSettle();
+        expect(choice.hitTestable(), findsOneWidget);
+        expect(tester.getRect(choice).bottom, lessThan(tester.getRect(find.text(t.complete)).top));
+        expect(tester.takeException(), isNull);
+      }
+    });
+  }
+
+  testWidgets('iPhone without side insets preserves its preview with and without a keyboard', (tester) async {
+    await open(tester, logicalSize: const Size(402, 874));
+    expect(tester.getSize(find.byKey(const Key('wallet-appearance-preview'))), const Size(179, 179));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(const Key('wallet-appearance-preview'))), const Size(179, 179));
+    expect(MediaQuery.viewInsetsOf(tester.element(find.byType(FixedBottomButton))).bottom, 0);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('starts on the presets tab with a 2x2 preview and switches tabs', (tester) async {
     await open(tester);
