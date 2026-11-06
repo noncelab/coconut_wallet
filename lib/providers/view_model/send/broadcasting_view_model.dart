@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/consensus_constants.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -78,6 +81,11 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<String> _tagSourceUtxoIds = [];
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
+  bool _isBroadcastDispatched = false;
+  bool _isBroadcastResultUnknown = false;
+  bool _isTransactionAccepted = false;
+  bool _isDisposed = false;
+  Completer<void>? _pendingBroadcastCancel;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -124,6 +132,22 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   bool get tagInheritanceFailed => _tagInheritanceFailed;
+
+  /// 노드에 거래를 넘긴 뒤 (결과를 기다리는 중이거나 성공)
+  bool get isBroadcastDispatched => _isBroadcastDispatched;
+
+  /// 마지막 송금이 노드에 들어갔는지 끝내 확인하지 못함
+  bool get isBroadcastResultUnknown => _isBroadcastResultUnknown;
+
+  /// 노드가 받은 것으로 확인된 거래 (결과 확인 필요 안내 뒤 늦게 확인된 경우 포함)
+  bool get isTransactionAccepted => _isTransactionAccepted;
+
+  /// 노드에 넘기기 전인 송금 취소 (이미 넘긴 거래는 되돌릴 수 없음)
+  void cancelPendingBroadcast() {
+    if (_isBroadcastDispatched) return;
+    final cancel = _pendingBroadcastCancel ??= Completer<void>();
+    if (!cancel.isCompleted) cancel.complete();
+  }
 
   List<UtxoTag> prepareTagInheritance() {
     if (!_isInitDone) throw StateError('Transaction is not ready');
@@ -179,26 +203,65 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
-  Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
+  ///
+  /// 노드에 넘기기 전에 [cancelPendingBroadcast]로 취소되면 `null`
+  Future<Result<String>?> broadcast({required List<String> inheritedTagIds}) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();
     if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
       throw ArgumentError('Invalid inherited tag selection');
     }
-    _tagInheritanceFailed = false;
-    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
-    final isConnected = await isElectrumServerConnected();
-    if (!isConnected) {
-      await _nodeProvider.reconnect();
-    }
-    final result = await _nodeProvider.broadcast(_signedTx!);
-    if (result.isFailure) return result;
-
+    final cancel = _pendingBroadcastCancel ??= Completer<void>();
     try {
-      await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
-    } catch (e) {
-      Logger.error('Transaction sent, but marking inputs as outgoing failed: $e');
+      return await _broadcast(selectedIds, cancel);
+    } finally {
+      if (identical(_pendingBroadcastCancel, cancel)) _pendingBroadcastCancel = null;
     }
+  }
+
+  Future<Result<String>?> _broadcast(Set<String> selectedIds, Completer<void> cancel) async {
+    Future<T?> unlessCancelled<T>(Future<T> work) => Future.any<T?>([work, cancel.future.then<T?>((_) => null)]);
+
+    _tagInheritanceFailed = false;
+    _isBroadcastResultUnknown = false;
+    final unsignedDraftId = _sendInfoProvider.unsignedDraftId;
+    Future<void> finalize() => _finalizeAcceptedTransaction(selectedIds, unsignedDraftId);
+    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
+    final connectionWaitLimit =
+        _nodeProvider.host.contains('.onion')
+            ? kBroadcastConnectionWaitTimeoutForOnion
+            : kBroadcastConnectionWaitTimeout;
+    final isConnected = await unlessCancelled(
+      _waitForConnection().timeout(connectionWaitLimit, onTimeout: () => false),
+    );
+    if (cancel.isCompleted) return null;
+    if (isConnected != true) {
+      return Result.failure(
+        AppError(ErrorCodes.nodeConnectionError.code, t.broadcasting_screen.dialog.not_sent_no_connection),
+      );
+    }
+
+    _isBroadcastDispatched = true;
+    notifyListeners();
+    var result = await _nodeProvider.broadcast(_signedTx!);
+    if (result.isFailure && _isUnknownOutcome(result.error)) {
+      result = await _confirmUnansweredBroadcast(connectionWaitLimit, onLateSuccess: finalize);
+      _isBroadcastResultUnknown = result.isFailure && _isUnknownOutcome(result.error);
+    }
+    if (result.isFailure) {
+      _isBroadcastDispatched = false;
+      if (!_isDisposed) notifyListeners();
+      return result;
+    }
+
+    await finalize();
+    return result;
+  }
+
+  /// 노드가 받은 거래의 후처리: 입력 표시, 태그 상속, 관련 임시저장 삭제
+  Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId) async {
+    _isTransactionAccepted = true;
+    await _markInputsAsOutgoing();
 
     try {
       final applied = await _utxoRepository.applyInheritedTags(
@@ -214,8 +277,54 @@ class BroadcastingViewModel extends ChangeNotifier {
       _tagInheritanceFailed = true;
       Logger.error('Transaction sent, but tag inheritance failed: $e');
     }
-    return result;
+
+    await _deleteDrafts(unsignedDraftId, _signedDraftId ?? _savedDraftId);
+    if (!_isDisposed) notifyListeners();
   }
+
+  /// 노드가 거절한 실패와 달리 응답을 받지 못해 전송 여부를 모르는 실패
+  static bool _isUnknownOutcome(AppError error) =>
+      error.code == ErrorCodes.nodeIsolateError.code || error.code == ErrorCodes.nodeUnknown.code;
+
+  /// 노드에 들어갔는지 조회하고, 없으면 같은 거래를 한 번 더 보냄 (같은 txid라 중복 전송 없음)
+  Future<Result<String>> _confirmUnansweredBroadcast(Duration limit, {required Future<void> Function() onLateSuccess}) {
+    final txid = _signedTx!.transactionHash;
+    final unknown = Result<String>.failure(
+      AppError(ErrorCodes.nodeIsolateError.code, t.broadcasting_screen.dialog.result_unknown),
+    );
+    var expired = false;
+    Future<Result<String>> confirm() async {
+      if (!await _waitForConnection() || expired) return unknown;
+      if ((await _nodeProvider.getTransaction(txid)).isSuccess) return Result.success(txid);
+      if (expired || _isDisposed) return unknown;
+      final resent = await _nodeProvider.broadcast(_signedTx!);
+      return resent.isFailure && _isUnknownOutcome(resent.error) ? unknown : resent;
+    }
+
+    final attempt = confirm();
+    // 확인 제한 시간이 지난 뒤에야 성공이 확인된 거래의 후처리
+    attempt.then((late) async {
+      if (expired && late.isSuccess) await onLateSuccess();
+    }).ignore();
+    return attempt.timeout(
+      limit,
+      onTimeout: () {
+        expired = true;
+        return unknown;
+      },
+    );
+  }
+
+  Future<void> _markInputsAsOutgoing() async {
+    try {
+      await _utxoRepository.markUnspentInputsAsOutgoing(_walletId!, _signedTx!);
+    } catch (e) {
+      Logger.error('Transaction sent, but marking inputs as outgoing failed: $e');
+    }
+  }
+
+  Future<bool> _waitForConnection() async =>
+      await isElectrumServerConnected() || await _nodeProvider.reconnectWithoutWaitingForSync();
 
   Future<bool> isElectrumServerConnected() async {
     try {
@@ -525,31 +634,28 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     if (result.isSuccess) {
       _savedDraftId = result.value.id;
+      // 저장이 끝나기 전에 노드가 받은 것으로 확인된 거래의 임시저장
+      if (_isTransactionAccepted) await _deleteDrafts(null, _savedDraftId);
     }
 
     return result;
   }
 
   /// 브로드캐스트 성공 후 관련 draft 삭제
-  /// - _sendInfoProvider.unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션 삭제
-  /// - _signedDraftId: 화면 매개변수로 받은 서명 완료 트랜잭션 삭제 (불러오기)
-  /// - _savedDraftId: 이 화면에서 임시 저장한 서명 완료 트랜잭션 삭제
-  /// (_signedDraftId와 _savedDraftId는 동시에 존재하지 않음)
-  Future<void> deleteDraftsIfNeeded() async {
-    // 서명 전 트랜잭션 삭제
-    if (_sendInfoProvider.unsignedDraftId != null) {
+  /// - unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션 (송금 시작 시점의 ID)
+  /// - signedDraftId: 화면 매개변수로 받았거나(_signedDraftId) 이 화면에서 임시 저장한(_savedDraftId) 서명 완료 트랜잭션
+  Future<void> _deleteDrafts(int? unsignedDraftId, int? signedDraftId) async {
+    if (unsignedDraftId != null) {
       try {
-        await _txDraftRepository.deleteOne(_sendInfoProvider.unsignedDraftId!);
+        await _txDraftRepository.deleteOne(unsignedDraftId);
       } catch (e) {
         Logger.error('Failed to delete unsigned draft: $e');
       }
     }
 
-    // 서명 완료 트랜잭션 삭제 (_signedDraftId와 _savedDraftId는 상호 배타적)
-    final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
-    if (signedDraftIdToDelete != null) {
+    if (signedDraftId != null) {
       try {
-        await _txDraftRepository.deleteOne(signedDraftIdToDelete);
+        await _txDraftRepository.deleteOne(signedDraftId);
       } catch (e) {
         Logger.error('Failed to delete signed draft: $e');
       }
@@ -560,6 +666,14 @@ class BroadcastingViewModel extends ChangeNotifier {
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     assert(signedDraftIdToDelete != null);
     await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
+  }
+
+  @override
+  void dispose() {
+    if (_isDisposed) return;
+    cancelPendingBroadcast();
+    _isDisposed = true;
+    super.dispose();
   }
 
   // ignore: unused_element

@@ -333,7 +333,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                 ),
                 Wrap(
                   spacing: gap,
-                  runSpacing: 4,
+                  runSpacing: 24,
                   children: [
                     for (final definition in definitions)
                       SizedBox(
@@ -379,7 +379,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                               MediaQuery.withClampedTextScaling(
                                 maxScaleFactor: kHomeTileMaxTextScale,
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
                                       final name = Text(

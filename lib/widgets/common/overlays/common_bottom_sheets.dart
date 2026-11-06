@@ -316,6 +316,8 @@ class CommonBottomSheets {
       routeSettings: RouteSettings(name: screenName),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      // 옆 상태 열의 샘플 띠를 비우되 일반 폰의 기존 시트 높이는 유지한다.
+      useSafeArea: MediaQuery.paddingOf(context).horizontal > 0,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
       ),

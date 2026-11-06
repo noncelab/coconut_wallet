@@ -998,6 +998,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "No se puede enviar"
     tag_apply_failed: "La transacción se envió, pero no se pudieron aplicar las etiquetas. Revisa las etiquetas en tu lista de UTXO."
+    not_sent_no_connection: "No se pudo conectar al nodo. Inténtalo de nuevo en un momento."
+    result_unknown_title: "Verifica el estado del envío"
+    result_unknown: "No pudimos confirmar si la transacción se envió. Es la misma transacción, así que volver a enviarla no la enviará dos veces."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"
@@ -1829,7 +1832,7 @@ tooltip:
   utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
-  mfp: "Este es el valor único de la billetera.\nTambién llamado Huella Digital Maestra (MFP)."  
+  mfp: "Identificador de 8 caracteres derivado de la semilla.\nNormalmente se usa para comprobar que el dispositivo de firma y la billetera de solo lectura coinciden."
   rbf: "Una característica para reemplazar una transacción existente con una nueva aumentando la comisión. (RBF, Replace-By-Fee)"  
   cpfp: "Una característica para aumentar la prioridad estableciendo una alta comisión en una nueva transacción (Child) para hacer que la transacción existente (Parent) procese más rápido. (CPFP, Child-Pays-For-Parent)" 
   dont_show_again: "No mostrar de nuevo"

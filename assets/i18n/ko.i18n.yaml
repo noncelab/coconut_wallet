@@ -996,6 +996,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "전송 불가"
     tag_apply_failed: "전송은 완료되었지만 태그를 적용하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
+    not_sent_no_connection: "노드 연결에 실패했어요. 잠시 후 다시 시도해 주세요."
+    result_unknown_title: "전송 결과 확인 필요"
+    result_unknown: "전송 결과를 확인하지 못했어요. 같은 거래라 다시 보내도 두 번 나가지 않아요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"
@@ -1835,7 +1838,7 @@ tooltip:
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."
   faucet: "테스트용 비트코인으로 마음껏 테스트 해보세요"
   multisig_wallet: "$total개의 키 중 $count개로 서명해야 하는\n다중 서명 지갑이에요."
-  mfp: "지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요."
+  mfp: "시드에서 나온 8자리 식별자예요.\n보통 서명기와 보기 전용 지갑이 일치하는지 확인할 때 쓰여요."
   rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
   cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
   dont_show_again: "다시 보지 않기"

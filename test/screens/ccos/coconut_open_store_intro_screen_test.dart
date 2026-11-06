@@ -13,6 +13,7 @@ import 'package:coconut_wallet/screens/ccos/coconut_open_store_build_scene.dart'
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_first_pow_scene.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_idea_scene.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -57,9 +58,12 @@ Future<_Routes> _pumpHost(
   CoconutThemeVariant variant = CoconutThemeVariant.dark,
   double textScale = 1,
   Size viewport = const Size(414, 896),
+  double rightInset = 0,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = viewport;
+  tester.view.padding = FakeViewPadding(right: rightInset);
+  addTearDown(tester.view.resetPadding);
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
   final preferences = _Preferences(variant);
@@ -83,7 +87,7 @@ Future<_Routes> _pumpHost(
                       data: MediaQuery.of(
                         context,
                       ).copyWith(disableAnimations: reduced, textScaler: TextScaler.linear(textScale)),
-                      child: child!,
+                      child: SideSafeArea(child: child!),
                     ),
               ),
           home: Builder(
@@ -614,4 +618,39 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+
+  for (final rightInset in [0.0, 84.0]) {
+    testWidgets(
+      'story and intro content stop before a side status column but the backdrop does not (inset=$rightInset)',
+      (tester) async {
+        await _pumpHost(tester, viewport: const Size(466, 678), rightInset: rightInset);
+        await _finishPush(tester);
+        // 시작 애니메이션: 배경은 그대로, 커지는 아이콘과 제목만 열 앞에서 잘린다.
+        final loadingClip = tester.renderObject<RenderClipRect>(
+          find.descendant(of: find.byKey(_loadingKey), matching: find.byType(ClipRect)).first,
+        );
+        expect(loadingClip.clipBehavior, rightInset == 0 ? Clip.none : Clip.hardEdge);
+        await tester.pump(const Duration(seconds: 6));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.byKey(_storyKey), findsOneWidget);
+        final clip = tester.renderObject<RenderClipRect>(
+          find.descendant(of: find.byKey(_storyKey), matching: find.byType(ClipRect)).first,
+        );
+        if (rightInset == 0) {
+          // 일반 기기: 클립 레이어 없이 원래대로 그린다.
+          expect(clip.clipBehavior, Clip.none);
+        } else {
+          // Duo: 열 바로 앞 1pt를 잘라 열이 배경만 늘려 칠하게 한다. 위아래는 자르지 않는다.
+          expect(clip.clipBehavior, Clip.hardEdge);
+          final rect = clip.clipper!.getClip(clip.size);
+          expect(rect.right, clip.size.width - 1);
+          expect(rect.left, 0);
+          expect(rect.top, lessThan(0));
+          expect(rect.bottom, greaterThan(clip.size.height));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }

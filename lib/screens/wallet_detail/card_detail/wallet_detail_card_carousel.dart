@@ -12,8 +12,10 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// 지갑 상세 위쪽의 가로 카드 휠. 가운데 카드 양옆으로 이웃 카드의 기울어진 가장자리가 보인다.
@@ -27,7 +29,13 @@ class WalletDetailCardCarousel extends StatefulWidget {
   final ValueChanged<bool>? onScrollActivityChanged;
   final Widget Function(BuildContext context, WalletItemBase wallet, ValueChanged<double> onHeightChanged)?
   footerBuilder;
-  final Widget Function(BuildContext context, WalletItemBase wallet, bool isFocused) cardBuilder;
+  final Widget Function(
+    BuildContext context,
+    WalletItemBase wallet,
+    bool isFocused,
+    Widget Function(Widget) surfaceBuilder,
+  )
+  cardBuilder;
 
   const WalletDetailCardCarousel({
     super.key,
@@ -100,6 +108,7 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   PageController? _controller;
   late int _focused = widget.initialIndex;
   double _footerHeight = 0;
+  bool _userScrolling = false;
 
   BorderRadius _containerRadius(int index) {
     final footer = index == _focused ? (_footerHeight / 40).clamp(0.0, 1.0) : 0.0;
@@ -125,6 +134,17 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
 
   void _reportPage() => widget.onPageScrolled?.call(_page);
 
+  /// 레이아웃 도중의 알림은 프레임이 끝난 뒤 전달
+  void _reportScrollActivity(bool moving) {
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+      widget.onScrollActivityChanged?.call(moving);
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _userScrolling == moving) widget.onScrollActivityChanged?.call(moving);
+    });
+  }
+
   double get _page {
     final controller = _controller!;
     return controller.hasClients && controller.position.haveDimensions
@@ -136,13 +156,20 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
   Widget build(BuildContext context) {
     final cardWidth = MediaQuery.sizeOf(context).width * WalletDetailCardCarousel.widthFraction;
     final cardHeight = WalletDetailCardCarousel.heightFor(context);
-    return SizedBox(
+    final carousel = SizedBox(
       height: cardHeight + 16 + _footerHeight,
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification.depth != 0 || notification.metrics.axis != Axis.horizontal) return false;
-          if (notification is ScrollStartNotification) widget.onScrollActivityChanged?.call(true);
-          if (notification is ScrollEndNotification) widget.onScrollActivityChanged?.call(false);
+          // 레이아웃 중 페이지 맞춤 같은 자동 스크롤은 넘김으로 보지 않음
+          if (notification is ScrollStartNotification && notification.dragDetails != null && !_userScrolling) {
+            _userScrolling = true;
+            _reportScrollActivity(true);
+          }
+          if (notification is ScrollEndNotification && _userScrolling) {
+            _userScrolling = false;
+            _reportScrollActivity(false);
+          }
           return false;
         },
         child: PageView.builder(
@@ -174,28 +201,30 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
                     alignment: Alignment.topCenter,
                     minHeight: 0,
                     maxHeight: double.infinity,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: _containerRadius(index),
-                        boxShadow: WalletCard.elevationOf(context),
-                      ),
-                      child: ClipRRect(
-                        key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
-                        borderRadius: _containerRadius(index),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              height: cardHeight,
-                              child: widget.cardBuilder(context, widget.wallets[index], index == _focused),
-                            ),
-                            if (widget.footerBuilder != null && index == _focused)
-                              widget.footerBuilder!(context, widget.wallets[index], (height) {
-                                if (mounted && index == _focused && _footerHeight != height) {
-                                  setState(() => _footerHeight = height);
-                                }
-                              }),
-                          ],
+                    child: widget.cardBuilder(
+                      context,
+                      widget.wallets[index],
+                      index == _focused,
+                      (face) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: _containerRadius(index),
+                          boxShadow: WalletCard.elevationOf(context),
+                        ),
+                        child: ClipRRect(
+                          key: ValueKey('wallet-detail-card-container-${widget.wallets[index].id}'),
+                          borderRadius: _containerRadius(index),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(height: cardHeight, child: face),
+                              if (widget.footerBuilder != null && index == _focused)
+                                widget.footerBuilder!(context, widget.wallets[index], (height) {
+                                  if (mounted && index == _focused && _footerHeight != height) {
+                                    setState(() => _footerHeight = height);
+                                  }
+                                }),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -205,7 +234,41 @@ class _WalletDetailCardCarouselState extends State<WalletDetailCardCarousel> {
         ),
       ),
     );
+    // 루트가 적용한 옆 여백을 구독해 창 크기가 같아도 좌우가 바뀌면 클립을 갱신한다.
+    // 이웃 카드가 상태 열에 복제되지 않도록
+    // 카드 옆 여백의 절반(최대 32pt)을 배경으로 남기되 카드 크기와 페이지 위치는 바꾸지 않는다.
+    final sides = SideSafeArea.insetsOf(context);
+    final guard = math.min(32.0, (MediaQuery.sizeOf(context).width - cardWidth) / 4);
+    final hasSideInset = sides.left > 0 || sides.right > 0;
+    // 항상 같은 트리를 유지한다. 옆 여백이 없으면 클립 레이어나 추가 페인트를 만들지 않는다.
+    return ClipRect(
+      clipBehavior: hasSideInset ? Clip.hardEdge : Clip.none,
+      clipper:
+          hasSideInset
+              ? _CarouselSideClipper(
+                left: sides.left > 0 ? guard : 0,
+                right: sides.right > 0 ? guard : 0,
+                windowHeight: MediaQuery.sizeOf(context).height,
+              )
+              : null,
+      child: carousel,
+    );
   }
+}
+
+class _CarouselSideClipper extends CustomClipper<Rect> {
+  final double left;
+  final double right;
+  final double windowHeight;
+
+  const _CarouselSideClipper({required this.left, required this.right, required this.windowHeight});
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(left, -windowHeight, size.width - right, size.height + windowHeight);
+
+  @override
+  bool shouldReclip(_CarouselSideClipper oldClipper) =>
+      left != oldClipper.left || right != oldClipper.right || windowHeight != oldClipper.windowHeight;
 }
 
 /// 지갑 상세 카드. 이름·아이콘, 잔액·법정화폐 금액, 동작 버튼을 담는다.
@@ -370,12 +433,14 @@ class WalletDetailFlipCard extends StatefulWidget {
   final bool isFocused;
   final Widget Function(VoidCallback flip) frontBuilder;
   final Widget Function(VoidCallback flip) backBuilder;
+  final Widget Function(Widget) surfaceBuilder;
 
   const WalletDetailFlipCard({
     super.key,
     required this.isFocused,
     required this.frontBuilder,
     required this.backBuilder,
+    required this.surfaceBuilder,
   });
 
   @override
@@ -412,7 +477,7 @@ class _WalletDetailFlipCardState extends State<WalletDetailFlipCard> {
               ..rotateY(math.pi * (back ? progress - 1 : progress)),
         child: IgnorePointer(
           ignoring: !widget.isFocused,
-          child: back ? widget.backBuilder(_flip) : widget.frontBuilder(_flip),
+          child: widget.surfaceBuilder(back ? widget.backBuilder(_flip) : widget.frontBuilder(_flip)),
         ),
       );
     },

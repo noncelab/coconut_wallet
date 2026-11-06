@@ -33,6 +33,7 @@ import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 
 class CoconutOpenStoreIntroScreen extends StatefulWidget {
   const CoconutOpenStoreIntroScreen({super.key});
@@ -550,36 +551,77 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       key: const ValueKey('open-store-story'),
       children: [
         const Positioned.fill(child: _OpenStoreBackdrop()),
-        const Positioned.fill(child: IgnorePointer(child: _SceneWatermarkBanner())),
-        PageView(
-          controller: _pageController,
-          scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(),
-          onPageChanged: (index) {
-            if (_currentSceneIndex != index) {
-              setState(() {
-                _currentSceneIndex = index;
-              });
-            }
-          },
-          children: [
-            for (final item in sceneItems)
-              _StoryScene(
-                sceneIndex: item.index,
-                sceneCount: sceneItems.length,
-                label: item.label,
-                hero: item.buildHero?.call(context, _sceneControllers[item.index]),
-                sceneAnimation: _sceneControllers[item.index],
-                sceneDurationMs: _sceneDurationFor(item.index).inMilliseconds,
-                navigationRevealStartMs: _navigationRevealStartMsFor(item.index),
-                onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
-                onNext: item.index == sceneItems.length - 1 ? null : () => _animateToScene(item.index + 1),
-              ),
-          ],
+        // 옆 상태 열 쪽에서는 워터마크와 장면(사진 카드)을 열 앞에서 잘라, 열에는 배경만 이어지게 한다.
+        Positioned.fill(
+          child: _SideGutterClip(
+            child: Stack(
+              children: [
+                const Positioned.fill(child: IgnorePointer(child: _SceneWatermarkBanner())),
+                PageView(
+                  controller: _pageController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) {
+                    if (_currentSceneIndex != index) {
+                      setState(() {
+                        _currentSceneIndex = index;
+                      });
+                    }
+                  },
+                  children: [
+                    for (final item in sceneItems)
+                      _StoryScene(
+                        sceneIndex: item.index,
+                        sceneCount: sceneItems.length,
+                        label: item.label,
+                        hero: item.buildHero?.call(context, _sceneControllers[item.index]),
+                        sceneAnimation: _sceneControllers[item.index],
+                        sceneDurationMs: _sceneDurationFor(item.index).inMilliseconds,
+                        navigationRevealStartMs: _navigationRevealStartMsFor(item.index),
+                        onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
+                        onNext: item.index == sceneItems.length - 1 ? null : () => _animateToScene(item.index + 1),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
+}
+
+/// 옆 상태 열이 있는 쪽만 1pt 앞에서 잘라, 열에는 뒤의 배경만 늘어나게 한다. 좌우 여백이 없으면 클립을 쓰지 않는다.
+class _SideGutterClip extends StatelessWidget {
+  final Widget child;
+
+  const _SideGutterClip({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final sides = SideSafeArea.insetsOf(context);
+    final hasSideInset = sides.left > 0 || sides.right > 0;
+    return ClipRect(
+      clipBehavior: hasSideInset ? Clip.hardEdge : Clip.none,
+      clipper: hasSideInset ? _SideGutterClipper(left: sides.left > 0 ? 1 : 0, right: sides.right > 0 ? 1 : 0) : null,
+      child: child,
+    );
+  }
+}
+
+/// 좌우 안전 영역 쪽만 [left]/[right]만큼 잘라 낸다. 위아래로 넘쳐 그리는 장면은 자르지 않는다.
+class _SideGutterClipper extends CustomClipper<Rect> {
+  final double left;
+  final double right;
+
+  const _SideGutterClipper({required this.left, required this.right});
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(left, -size.height, size.width - right, size.height * 2);
+
+  @override
+  bool shouldReclip(_SideGutterClipper oldClipper) => left != oldClipper.left || right != oldClipper.right;
 }
 
 class _StoryPagerEntrance extends StatelessWidget {
@@ -695,77 +737,85 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               const _OpenStoreLoadingBackdrop(),
-              Align(
-                alignment: Alignment.center,
-                child: Transform.scale(
-                  scale: iconScale,
-                  child: SizedBox(
-                    width: startIconSize,
-                    height: startIconSize,
-                    child: Stack(
+              // 커지는 아이콘과 제목도 옆 상태 열 앞에서 잘라 열에 늘어나지 않게 한다.
+              _SideGutterClip(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Align(
                       alignment: Alignment.center,
-                      children: [
-                        IgnorePointer(
-                          child: Opacity(
-                            opacity: polishGlowOpacity,
-                            child: Container(
-                              width: 74,
-                              height: 74,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Color.fromARGB(37, 31, 31, 47),
-                                    Color.fromARGB(18, 50, 50, 83),
-                                    Colors.transparent,
-                                  ],
-                                  stops: [0.0, 0.45, 1.0],
+                      child: Transform.scale(
+                        scale: iconScale,
+                        child: SizedBox(
+                          width: startIconSize,
+                          height: startIconSize,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              IgnorePointer(
+                                child: Opacity(
+                                  opacity: polishGlowOpacity,
+                                  child: Container(
+                                    width: 74,
+                                    height: 74,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: RadialGradient(
+                                        colors: [
+                                          Color.fromARGB(37, 31, 31, 47),
+                                          Color.fromARGB(18, 50, 50, 83),
+                                          Colors.transparent,
+                                        ],
+                                        stops: [0.0, 0.45, 1.0],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              Transform.scale(
+                                scale: ringHeartbeatScale,
+                                child: Opacity(
+                                  opacity: ringOpacity,
+                                  child: CustomPaint(
+                                    size: const Size.square(86.4),
+                                    painter: _LoadingProgressRingPainter(progress: ringProgress),
+                                  ),
+                                ),
+                              ),
+                              SvgPicture.asset(
+                                BrandIconPath.coconutPlanet,
+                                width: 60,
+                                height: 60,
+                                colorFilter: const ColorFilter.mode(
+                                  _CoconutOpenStoreIntroScreenState._loadingTextPrimary,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Transform.scale(
-                          scale: ringHeartbeatScale,
-                          child: Opacity(
-                            opacity: ringOpacity,
-                            child: CustomPaint(
-                              size: const Size.square(86.4),
-                              painter: _LoadingProgressRingPainter(progress: ringProgress),
-                            ),
-                          ),
-                        ),
-                        SvgPicture.asset(
-                          BrandIconPath.coconutPlanet,
-                          width: 60,
-                          height: 60,
-                          colorFilter: const ColorFilter.mode(
-                            _CoconutOpenStoreIntroScreenState._loadingTextPrimary,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 28,
-                right: 28,
-                bottom: 38,
-                child: Opacity(
-                  opacity: titleOpacity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.ccos.intro_screen.loading_title,
-                        style: CoconutTypography.heading1_32_Bold
-                            .setColor(_CoconutOpenStoreIntroScreenState._loadingTextPrimary)
-                            .copyWith(fontSize: 50, height: 1, letterSpacing: 0.7, fontWeight: FontWeight.w900),
                       ),
-                    ],
-                  ),
+                    ),
+                    Positioned(
+                      left: 28,
+                      right: 28,
+                      bottom: 38,
+                      child: Opacity(
+                        opacity: titleOpacity,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.ccos.intro_screen.loading_title,
+                              style: CoconutTypography.heading1_32_Bold
+                                  .setColor(_CoconutOpenStoreIntroScreenState._loadingTextPrimary)
+                                  .copyWith(fontSize: 50, height: 1, letterSpacing: 0.7, fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

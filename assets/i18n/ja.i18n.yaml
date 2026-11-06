@@ -995,6 +995,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "送信不可"
     tag_apply_failed: "送信は完了しましたが、タグを適用できませんでした。UTXO一覧でタグを確認してください。"
+    not_sent_no_connection: "ノードへの接続に失敗しました。しばらくしてからもう一度お試しください。"
+    result_unknown_title: "送信結果の確認が必要"
+    result_unknown: "送信結果を確認できませんでした。同じトランザクションなので、もう一度送信しても二重に送信されません。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"
@@ -1826,7 +1829,7 @@ tooltip:
   utxo: "UTXOはUnspent Transaction Outputの略で、未使用残高を意味します。ビットコインには残高の概念がありません。ウォレットに表示される残高はUTXOの合計であることを覚えておいてください。"
   faucet: "テストビットコインで自由にテスト"
   multisig_wallet: "これは$total個のキーのうち$count個の署名が必要なマルチシグウォレットです。\n"
-  mfp: "これはウォレットの固有値です。\nマスターフィンガープリント（MFP）とも呼ばれます。"
+  mfp: "シードから得られる8桁の識別子です。\n通常、署名機と閲覧専用ウォレットが一致するか確認するときに使います。"
   rbf: "手数料を増やすことで既存のトランザクションを新しいトランザクションに置き換える機能。（RBF、Replace-By-Fee）"
   cpfp: "新しい子トランザクションに高い手数料を設定して既存の親トランザクションをより早く処理するために優先度を上げる機能。（CPFP、Child-Pays-For-Parent）"
   dont_show_again: "今後表示しない"

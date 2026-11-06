@@ -13,6 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_scene_viewport.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
 
@@ -56,7 +57,44 @@ class DiscoverSceneBody extends StatelessWidget {
         final maxImageHeight = height - (height * 0.04) - firstTextTopGap - 20 - 32 - textHeight - 8;
         final imageHeight = math.min((height * 0.28).clamp(140.0, 190.0), maxImageHeight.clamp(110.0, 190.0));
 
-        return Column(
+        final textBlocks = [
+          _DiscoverTypeLine(
+            animation: animation,
+            sceneDurationMs: sceneDurationMs,
+            entranceStartMs: starts[0] - _entranceSpanMs,
+            entranceEndMs: starts[0],
+            typingStartMs: starts[0],
+            text: lines[0],
+            highlightPhrases: {t.ccos.discover_scene.highlight_new_feature},
+            textAlign: TextAlign.left,
+            entryOffset: const Offset(-46, 24),
+          ),
+          _DiscoverTypeLine(
+            animation: animation,
+            sceneDurationMs: sceneDurationMs,
+            entranceStartMs: starts[1] - _entranceSpanMs,
+            entranceEndMs: starts[1],
+            typingStartMs: starts[1],
+            text: lines[1],
+            textAlign: TextAlign.left,
+            entryOffset: const Offset(-54, 28),
+          ),
+          _DiscoverTypeLine(
+            animation: animation,
+            sceneDurationMs: sceneDurationMs,
+            entranceStartMs: starts[2] - _entranceSpanMs,
+            entranceEndMs: starts[2],
+            typingStartMs: starts[2],
+            text: lines[2],
+            highlightPhrases: {
+              t.ccos.discover_scene.highlight_bitcoin_builder,
+              t.ccos.discover_scene.highlight_can_shine,
+            },
+            textAlign: TextAlign.right,
+            entryOffset: const Offset(60, 30),
+          ),
+        ];
+        final scene = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: height * 0.04),
@@ -65,52 +103,28 @@ class DiscoverSceneBody extends StatelessWidget {
               child: _DiscoverPreviewImage(animation: animation, sceneDurationMs: sceneDurationMs, height: imageHeight),
             ),
             const SizedBox(height: firstTextTopGap),
-            _DiscoverTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[0] - _entranceSpanMs,
-              entranceEndMs: starts[0],
-              typingStartMs: starts[0],
-              text: lines[0],
-              highlightPhrases: {t.ccos.discover_scene.highlight_new_feature},
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-46, 24),
-            ),
+            textBlocks[0],
             const SizedBox(height: 20),
-            _DiscoverTypeLine(
-              animation: animation,
-              sceneDurationMs: sceneDurationMs,
-              entranceStartMs: starts[1] - _entranceSpanMs,
-              entranceEndMs: starts[1],
-              typingStartMs: starts[1],
-              text: lines[1],
-              textAlign: TextAlign.left,
-              entryOffset: const Offset(-54, 28),
-            ),
+            textBlocks[1],
             const SizedBox(height: 32),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: constraints.maxWidth,
-                child: _DiscoverTypeLine(
-                  animation: animation,
-                  sceneDurationMs: sceneDurationMs,
-                  entranceStartMs: starts[2] - _entranceSpanMs,
-                  entranceEndMs: starts[2],
-                  typingStartMs: starts[2],
-                  text: lines[2],
-                  highlightPhrases: {
-                    t.ccos.discover_scene.highlight_bitcoin_builder,
-                    t.ccos.discover_scene.highlight_can_shine,
-                  },
-                  textAlign: TextAlign.right,
-                  entryOffset: const Offset(60, 30),
-                ),
-              ),
-            ),
+            Align(alignment: Alignment.centerRight, child: SizedBox(width: constraints.maxWidth, child: textBlocks[2])),
+            // The final type block paints slightly beyond its layout bounds
+            // at the settled 1.021 scale; keep that ink reachable when scrolling.
+            const SizedBox(height: 4),
             const Spacer(),
           ],
         );
+        final contentHeight =
+            height * 0.04 +
+            imageHeight +
+            firstTextTopGap +
+            20 +
+            32 +
+            4 +
+            textBlocks.fold<double>(0, (sum, block) => sum + block.measureHeight(context, constraints.maxWidth));
+        // Keep the original paint path on phones where everything fits. Even an
+        // idle scroll viewport adds a repaint layer around the tilted preview.
+        return contentHeight <= height ? scene : CcosSceneViewport(height: height, child: scene);
       },
     );
   }
@@ -342,19 +356,36 @@ class _DiscoverTypeLine extends StatelessWidget {
   final TextAlign textAlign;
   final Offset entryOffset;
 
+  TextStyle get _baseStyle =>
+      CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.32);
+  TextStyle get _highlightStyle =>
+      _baseStyle.copyWith(fontSize: (_baseStyle.fontSize ?? 18) * 1.4, fontWeight: FontWeight.w900, height: 1.2);
+  StrutStyle? get _strutStyle =>
+      highlightPhrases.isEmpty
+          ? null
+          : StrutStyle(fontSize: _highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
+
+  double measureHeight(BuildContext context, double width) {
+    final painter = TextPainter(
+      text: typewriterSpan(
+        source: text,
+        animation: const AlwaysStoppedAnimation(1),
+        interval: const Interval(0, 1),
+        baseStyle: _baseStyle,
+        highlightStyle: _highlightStyle,
+        highlightPhrases: highlightPhrases,
+      ),
+      textDirection: Directionality.of(context),
+      textAlign: textAlign,
+      strutStyle: _strutStyle,
+    )..layout(maxWidth: width);
+    final height = painter.height;
+    painter.dispose();
+    return height;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(const Color(0xFF10161C)).copyWith(height: 1.32);
-    final highlightStyle = baseStyle.copyWith(
-      fontSize: (baseStyle.fontSize ?? 18) * 1.4,
-      fontWeight: FontWeight.w900,
-      height: 1.2,
-    );
-    final strutStyle =
-        highlightPhrases.isEmpty
-            ? null
-            : StrutStyle(fontSize: highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
-
     return _AnimatedTypeBlock(
       animation: animation,
       sceneDurationMs: sceneDurationMs,
@@ -365,13 +396,13 @@ class _DiscoverTypeLine extends StatelessWidget {
       builder:
           (animation, textAlign) => RichText(
             textAlign: textAlign,
-            strutStyle: strutStyle,
+            strutStyle: _strutStyle,
             text: typewriterSpan(
               source: text,
               animation: animation,
               interval: typewriterIntervalFromMs(text, typingStartMs, sceneDurationMs),
-              baseStyle: baseStyle,
-              highlightStyle: highlightStyle,
+              baseStyle: _baseStyle,
+              highlightStyle: _highlightStyle,
               highlightPhrases: highlightPhrases,
             ),
           ),

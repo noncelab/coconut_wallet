@@ -1970,12 +1970,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         // Amount Touch Event Panel
         GestureDetector(
           onTap: () {
-            // keyboard > amount request focus
-            if (_hasKeyboard) {
+            // 금액 키보드가 떠 있을 때 누르면 닫는다. 주소·수수료를 입력하던 중이면 한 번에 금액 입력으로 넘어간다.
+            if (_amountFocusNode.hasFocus) {
               _clearFocus();
               return;
             }
-            if (_viewModel.isAmountDisabled) return;
+            if (_viewModel.isAmountDisabled) {
+              if (_hasKeyboard) _clearFocus();
+              return;
+            }
+            _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
             _amountFocusNode.requestFocus();
           },
           child: Container(

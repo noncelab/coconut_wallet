@@ -115,6 +115,8 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
       key: ValueKey('select-wallet-card-${wallet.id}'),
       wallet: wallet,
       appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+      // 흰 카드가 흰 시트에 묻히지 않도록 그리드 카드만 옅은 테두리로 구분한다.
+      border: grid ? Border.all(color: context.coconutColors.border, width: 1) : null,
       backgroundPhoto: appearances?.photoFileFor(wallet.id),
       size: WalletCardSize.small,
       balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),

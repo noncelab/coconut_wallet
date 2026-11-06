@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart' as app_field;
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -27,6 +28,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -338,5 +340,39 @@ void main() {
     }
     expect(find.byType(UtxoSelectionScreen), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('주소를 입력하다가 금액 영역을 한 번 누르면 바로 금액 입력으로 넘어간다', (tester) async {
+    await openSend(tester, 1);
+    // 금액은 화면에 보이지 않는 입력란(커서·선택 없음)이 받고, 주소는 CoconutTextField 안의 입력란이 받는다.
+    final amountField = find.byWidgetPredicate(
+      (w) => w is TextField && w.showCursor == false && w.enableInteractiveSelection == false,
+    );
+    final addressField = find.descendant(
+      of: find.byType(app_field.CoconutTextField).first,
+      matching: find.byType(CupertinoTextField),
+    );
+    FocusNode focusOf(Finder finder) => switch (tester.widget(finder.first)) {
+      final TextField field => field.focusNode!,
+      final CupertinoTextField field => field.focusNode!,
+      _ => throw StateError('not a text field'),
+    };
+
+    await tester.tap(addressField.first);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(focusOf(addressField).hasFocus, isTrue);
+
+    final page = tester.getRect(find.byType(PageView).first);
+    await tester.tapAt(Offset(page.center.dx, page.top + 60));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(focusOf(addressField).hasFocus, isFalse);
+    expect(focusOf(amountField).hasFocus, isTrue, reason: '한 번 누르면 바로 금액 키보드가 떠야 한다');
+
+    // 금액 키보드가 떠 있을 때 금액 영역을 다시 누르면 지금처럼 키보드를 닫는다.
+    await tester.tapAt(Offset(page.center.dx, page.top + 60));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(focusOf(amountField).hasFocus, isFalse);
+    // 주소 포커스 때 예약된 1초 뒤 확인 타이머를 끝낸다.
+    await tester.pump(const Duration(milliseconds: 1500));
   });
 }

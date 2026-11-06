@@ -340,7 +340,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
                 CommonActionIconPath.plus,
                 width: 15,
                 height: 15,
-                colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
             ),
             const SizedBox(width: 4),

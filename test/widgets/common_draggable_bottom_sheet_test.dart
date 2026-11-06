@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,11 +19,15 @@ class _SheetFixture {
   int rowTaps = 0;
 }
 
-Future<_SheetFixture> _openSheet(WidgetTester tester, {bool initiallySelected = true}) async {
+Future<_SheetFixture> _openSheet(WidgetTester tester, {bool initiallySelected = true, double sideInset = 0}) async {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  tester.view.padding = FakeViewPadding(right: sideInset);
+  tester.view.viewPadding = FakeViewPadding(right: sideInset);
+  addTearDown(tester.view.resetPadding);
+  addTearDown(tester.view.resetViewPadding);
   LocaleSettings.setLocaleSync(AppLocale.en);
   final fixture = _SheetFixture()..selected = initiallySelected;
   await tester.pumpWidget(
@@ -30,6 +35,7 @@ Future<_SheetFixture> _openSheet(WidgetTester tester, {bool initiallySelected = 
       value: AnalyticsService(null, true),
       child: MaterialApp(
         theme: buildCoconutThemeData(),
+        builder: (context, child) => SideSafeArea(child: child!),
         home: Builder(
           builder:
               (context) => Scaffold(
@@ -114,6 +120,11 @@ Future<TestGesture> _startAcceptedDrag(WidgetTester tester, Finder target) async
 }
 
 void main() {
+  testWidgets('draggable sheets leave the root side sampling pixel uncovered', (tester) async {
+    await _openSheet(tester, sideInset: 84);
+    expect(tester.getRect(find.byType(BottomSheet)).right, 400 - 84 - 1);
+  });
+
   for (final selectAll in [true, false]) {
     testWidgets('real header ${selectAll ? 'select' : 'unselect'} all tap does not resize', (tester) async {
       final fixture = await _openSheet(tester, initiallySelected: !selectAll);

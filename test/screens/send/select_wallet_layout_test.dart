@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import '../../mock/transaction_mock.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -387,6 +388,10 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
     expect(_button(tester).isActive, isFalse);
     expect(find.byKey(const ValueKey('select-wallet-selected-8')), findsNothing);
+    final borderColor = tester.element(_card(7)).coconutColors.border;
+    for (final card in tester.widgetList<WalletCard>(find.byType(WalletCard))) {
+      expect(card.border, Border.all(color: borderColor, width: 1));
+    }
     expect(tester.widgetList<WalletCard>(find.byType(WalletCard)).map((card) => card.wallet.id), [
       8,
       7,
@@ -414,6 +419,9 @@ void main() {
     await tester.tap(_toggle);
     await tester.pumpAndSettle();
     expect(tester.widget<PageView>(find.byType(PageView)).controller!.page, 1);
+    for (final card in tester.widgetList<WalletCard>(find.byType(WalletCard))) {
+      expect(card.border, isNull);
+    }
     await tester.tap(_toggle);
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox.shrink());
