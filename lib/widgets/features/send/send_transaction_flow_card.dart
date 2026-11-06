@@ -69,6 +69,9 @@ class SendTransactionFlowCard extends StatefulWidget {
 }
 
 class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with SingleTickerProviderStateMixin {
+  // 연결선이 입출력 글자와 띄우는 간격. 입력 칸은 글자 뒤로 두 배를 더 갖고, 선은 그 가운데에서 시작한다.
+  static const double _lineGap = 8;
+
   final GlobalKey _paintAreaKey = GlobalKey();
   List<GlobalKey> _inputKeys = [];
   List<GlobalKey> _outputKeys = [];
@@ -122,61 +125,83 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       rowGap: rowGap,
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchors());
-
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surface),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: SizedBox(
-        key: _paintAreaKey,
-        height: canvasHeight,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _flowController!,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      painter: _FlowConnectionPainter(
-                        inputAnchors: _inputAnchors,
-                        outputAnchors: _outputAnchors,
-                        flowProgress: _flowController!.value,
-                        lineColor: context.coconutColors.txFlowLine,
-                        primaryFlowColor: context.coconutColors.sendingColor,
-                        secondaryFlowColor: context.coconutColors.receivingColor,
-                      ),
-                    );
-                  },
+      // 접기·펴기처럼 카드가 다시 빌드되지 않고 폭만 바뀌어도 연결선 기준점을 다시 잰다.
+      child: _RemeasureOnLayout(
+        onLayout: _measureAnchors,
+        child: SizedBox(
+          key: _paintAreaKey,
+          height: canvasHeight,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _flowController!,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: _FlowConnectionPainter(
+                          inputAnchors: _inputAnchors,
+                          outputAnchors: _outputAnchors,
+                          flowProgress: _flowController!.value,
+                          lineColor: context.coconutColors.txFlowLine,
+                          primaryFlowColor: context.coconutColors.sendingColor,
+                          secondaryFlowColor: context.coconutColors.receivingColor,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNodeStack(
-                    nodes: inputNodes,
-                    nodeKeys: _inputKeys,
-                    anchorY: inputY,
-                    height: canvasHeight,
-                    rowHeight: rowHeight,
-                    isLeft: true,
-                  ),
-                ),
-                const SizedBox(width: curveWidth),
-                Expanded(
-                  child: _buildNodeStack(
-                    nodes: outputNodes,
-                    nodeKeys: _outputKeys,
-                    anchorY: outputY,
-                    height: canvasHeight,
-                    rowHeight: rowHeight,
-                    isLeft: false,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // 입출력 칸은 글자 폭에 맞춰 카드 양 끝에 붙이고(글자 영역은 최대 남는 폭의 절반), 가운데 연결선이
+                  // 입력 글자 바로 뒤부터 출력 글자 바로 앞까지 이어진다. 입력 칸은 선과 띄울 간격만큼 더 넓다.
+                  final share = (constraints.maxWidth - curveWidth) / 2;
+                  return Row(
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: share + _lineGap * 2),
+                        child: IntrinsicWidth(
+                          // 글자 폭을 1pt 단위로 올림해 반올림 오차로 줄바꿈되지 않게 한다.
+                          stepWidth: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: _lineGap * 2),
+                            child: _buildNodeStack(
+                              nodes: inputNodes,
+                              nodeKeys: _inputKeys,
+                              anchorY: inputY,
+                              height: canvasHeight,
+                              rowHeight: rowHeight,
+                              isLeft: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: share),
+                        child: IntrinsicWidth(
+                          // 글자 폭을 1pt 단위로 올림해 반올림 오차로 줄바꿈되지 않게 한다.
+                          stepWidth: 1,
+                          child: _buildNodeStack(
+                            nodes: outputNodes,
+                            nodeKeys: _outputKeys,
+                            anchorY: outputY,
+                            height: canvasHeight,
+                            rowHeight: rowHeight,
+                            isLeft: false,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -190,23 +215,28 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     required double rowHeight,
     required bool isLeft,
   }) {
+    // 행 위치는 이전과 같다(가운데 정렬된 고정 간격). Column이라서 칸이 가장 넓은 행의 글자 폭을 알 수 있다.
     return SizedBox(
       height: height,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: List.generate(nodes.length, (index) {
-          return Positioned(
-            top: anchorY[index] - rowHeight / 2,
-            left: 0,
-            right: 0,
-            child: _FlowNodeTile(
-              key: nodeKeys[index],
-              node: nodes[index],
-              currentUnit: widget.currentUnit,
-              isLeft: isLeft,
-              walletId: widget.walletId,
-              isOutputToMyWallet: widget.isOutputToMyWallet,
-              onOutputTap: widget.onOutputTap,
-              transactionStatus: widget.transactionStatus,
+          final top = anchorY[index] - rowHeight / 2;
+          final previousBottom = index == 0 ? 0.0 : anchorY[index - 1] + rowHeight / 2;
+          return Padding(
+            padding: EdgeInsets.only(top: top - previousBottom),
+            child: SizedBox(
+              height: rowHeight,
+              child: _FlowNodeTile(
+                key: nodeKeys[index],
+                node: nodes[index],
+                currentUnit: widget.currentUnit,
+                isLeft: isLeft,
+                walletId: widget.walletId,
+                isOutputToMyWallet: widget.isOutputToMyWallet,
+                onOutputTap: widget.onOutputTap,
+                transactionStatus: widget.transactionStatus,
+              ),
             ),
           );
         }),
@@ -239,7 +269,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       if (box == null) {
         return;
       }
-      final globalPoint = box.localToGlobal(Offset(box.size.width - 8, box.size.height / 2));
+      final globalPoint = box.localToGlobal(Offset(box.size.width + _lineGap, box.size.height / 2));
       inputAnchors.add(rootBox.globalToLocal(globalPoint));
     }
 
@@ -249,7 +279,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       if (box == null) {
         return;
       }
-      final globalPoint = box.localToGlobal(Offset(-8, box.size.height / 2));
+      final globalPoint = box.localToGlobal(Offset(-_lineGap, box.size.height / 2));
       outputAnchors.add(rootBox.globalToLocal(globalPoint));
     }
 
@@ -512,6 +542,22 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
   String _localizedOutputTitle(BuildContext context, int index) {
     return t.send_confirm_screen.flow_output_title(index: index);
   }
+}
+
+/// 레이아웃 제약이 바뀔 때마다(다시 빌드될 때 포함) 그 프레임이 끝난 뒤 [onLayout]을 부른다.
+class _RemeasureOnLayout extends StatelessWidget {
+  final VoidCallback onLayout;
+  final Widget child;
+
+  const _RemeasureOnLayout({required this.onLayout, required this.child});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => onLayout());
+      return child;
+    },
+  );
 }
 
 class _FlowConnectionPainter extends CustomPainter {
