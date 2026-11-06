@@ -1771,7 +1771,7 @@ tooltip:
   utxo: "UTXO steht für Unspent Transaction Output, was ungenutztes Guthaben bedeutet. Bitcoin hat kein Guthabenkonzept. Denken Sie daran, dass das in Ihrer Wallet angezeigte Guthaben die Summe der UTXOs ist."
   faucet: "Testen Sie frei mit Test-Bitcoin"
   multisig_wallet: "Dies ist eine Multisig-Wallet, die\n$count Signaturen von $total Schlüsseln erfordert."
-  mfp: "Dies ist der eindeutige Wert der Wallet.\nAuch Master Fingerprint (MFP) genannt."
+  mfp: "Eine 8-stellige Kennung, die aus dem Seed abgeleitet wird.\nWird meist genutzt, um zu prüfen, ob Signiergerät und Watch-only-Wallet übereinstimmen."
   rbf: "Eine Funktion, um eine bestehende Transaktion durch eine neue mit einer höheren Gebühr zu ersetzen. (RBF, Replace-By-Fee)"
   cpfp: "Eine Funktion, um die Priorität zu erhöhen, indem eine hohe Gebühr für eine neue Transaktion (Child) festgelegt wird, damit die bestehende Transaktion (Parent) schneller verarbeitet wird. (CPFP, Child-Pays-For-Parent)"
   dont_show_again: "Nicht wieder anzeigen"
