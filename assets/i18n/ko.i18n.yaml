@@ -2145,3 +2145,12 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
+
+payjoin:
+  contacting_receiver: "받는 사람에게 연결 중"
+  waiting_for_receiver: "받는 사람을 기다리는 중"
+  waiting_description: "받는 사람이 이 거래에 자신의 코인을 하나 더할 수 있어요. 이 화면을 열어 두세요."
+  receiver_added_input: "받는 사람이 입력을 추가했어요"
+  send_without_payjoin: "Payjoin 없이 보내기"
+  sent_as_payjoin: "Payjoin으로 보냈어요"
+  sent_without_payjoin: "Payjoin 없이 보냈어요"

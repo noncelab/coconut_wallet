@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -60,6 +61,7 @@ List<SingleChildWidget> buildAppProviders({
     Provider<WalletPreferencesRepository>(
       create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
     ),
+    Provider<PayjoinSessionRepository>(create: (context) => PayjoinSessionRepository(context.read<RealmManager>())),
     ChangeNotifierProvider(create: (_) => ElectrumServerProvider()),
     ChangeNotifierProvider(create: (_) => BlockExplorerProvider()),
     ChangeNotifierProvider(

@@ -21,6 +21,11 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_send_attempt.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show PayjoinCheckedProposal;
+import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -86,6 +91,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool _isTransactionAccepted = false;
   bool _isDisposed = false;
   Completer<void>? _pendingBroadcastCancel;
+  ({PayjoinSessionRepository repository, String id})? _payjoinSession;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -147,6 +153,75 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (_isBroadcastDispatched) return;
     final cancel = _pendingBroadcastCancel ??= Completer<void>();
     if (!cancel.isCompleted) cancel.complete();
+  }
+
+  /// The receiver's BIP 21 URI when this send tries a payjoin first.
+  String? get payjoinUri => feeBumpingType == null && !isFromSignedDraft ? _sendInfoProvider.payjoinUri : null;
+
+  /// The signed, finalized Original: the transaction a payjoin replaces, and
+  /// the one to send if it does not happen.
+  String? get signedOriginalPsbt => _sendInfoProvider.signedResult;
+  double? get feeRate => _sendInfoProvider.feeRate;
+
+  bool _isPayjoinProposalApplied = false;
+  bool get isPayjoinProposalApplied => _isPayjoinProposalApplied;
+
+  /// Signs our inputs of the receiver's payjoin proposal with the hot wallet.
+  Future<String> signPayjoinProposal(PayjoinCheckedProposal proposal) {
+    final walletItem = _walletProvider.getWalletById(_walletId!);
+    final metadata = walletItem.hotWalletMetadata;
+    final wallet = walletItem.walletBase;
+    if (metadata == null || wallet is! SingleSignatureWallet) {
+      throw StateError('Only a hot single-signature wallet signs payjoin proposals');
+    }
+    final unsignedPsbt = addOwnDerivations(
+      proposal.psbtBase64,
+      wallet: wallet,
+      derivationPathOf: (address) => _walletProvider.derivationPathOf(_walletId!, address),
+    );
+    return HotWalletSigningService().signAndFinalize(
+      (
+        storageKey: metadata.secureStorageKey,
+        passphrase: null,
+        addressTypeName: wallet.addressType.name,
+        accountIndex: metadata.accountIndex,
+        expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
+        unsignedPsbt: unsignedPsbt,
+      ),
+      allowFinalizedForeignInputs: true,
+      keepDerivations: false,
+    );
+  }
+
+  /// Makes the signed payjoin proposal the transaction this screen sends.
+  ///
+  /// The receiver's input changes the totals: we now pay the transfer, our
+  /// part of the original fee and the fee contribution payjoin allowed the
+  /// receiver to take from our change.
+  void applyPayjoinProposal(String signedProposalPsbt, PayjoinCheckedProposal checked) {
+    final original = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+    final proposal = Psbt.parse(signedProposalPsbt).getSignedTransaction(walletAddressType!);
+    bool isOurs(TransactionOutput output) => _walletProvider.containsAddress(_walletId!, output.getAddress());
+    TransactionIntentValidator.ensurePayjoinProposalMatches(
+      original.unsignedTransaction,
+      proposal,
+      checked,
+      isOwnOutput: isOurs,
+    );
+
+    final ourInputs = original.inputs.fold<int>(0, (sum, input) => sum + input.witnessUtxo!.amount);
+    final ourOutputs = proposal.outputs.where(isOurs).fold<int>(0, (sum, output) => sum + output.amount);
+    _signedTx = proposal;
+    _outputIndexesToMyAddress
+      ..clear()
+      ..addAll([
+        for (var i = 0; i < proposal.outputs.length; i++)
+          if (isOurs(proposal.outputs[i])) i,
+      ]);
+    _totalAmount = ourInputs - ourOutputs;
+    _fee = _totalAmount! - (_sendingAmount ?? 0);
+    _isPayjoinProposalApplied = true;
+    notifyListeners();
   }
 
   List<UtxoTag> prepareTagInheritance() {
@@ -261,6 +336,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// 노드가 받은 거래의 후처리: 입력 표시, 태그 상속, 관련 임시저장 삭제
   Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId) async {
     _isTransactionAccepted = true;
+    _closePayjoinSession();
     await _markInputsAsOutgoing();
 
     try {
@@ -313,6 +389,66 @@ class BroadcastingViewModel extends ChangeNotifier {
         return unknown;
       },
     );
+  }
+
+  /// Offers the receiver of [payjoinUri] a payjoin and returns whether its
+  /// proposal, signed by [signProposal], replaced the Original as the
+  /// transaction to send. On a fallback, an error, or a [signProposal] that
+  /// returns null, the Original stays, and the receiver accepts it as well.
+  Future<bool> attemptPayjoin(
+    PayjoinSessionRepository sessions,
+    PayjoinSendAttempt attempt, {
+    required Future<String?> Function(PayjoinCheckedProposal proposal) signProposal,
+  }) async {
+    PayjoinSendOutcome? outcome;
+    try {
+      outcome = await attempt.run(
+        walletId: _walletId!,
+        bip21: payjoinUri!,
+        signedOriginalPsbt: signedOriginalPsbt!,
+        originalTxHex: _signedTx!.serialize(),
+        feeRateSatPerVb: feeRate ?? 1,
+      );
+      switch (outcome) {
+        case PayjoinSendProposal(:final proposal):
+          final signed = await signProposal(proposal);
+          if (signed == null) {
+            Logger.log('Payjoin proposal not signed, sending the Original');
+            return false;
+          }
+          applyPayjoinProposal(signed, proposal);
+          return true;
+        case PayjoinSendFallsBack(:final reason):
+          Logger.log('Payjoin not used: $reason');
+          return false;
+      }
+    } catch (e) {
+      Logger.error('Payjoin attempt failed, sending the Original: $e');
+      return false;
+    } finally {
+      final sessionId = outcome?.sessionId;
+      if (sessionId != null) settlePayjoinSessionOnAccept(sessions, sessionId);
+    }
+  }
+
+  /// Records which payjoin send session this screen's transaction settles,
+  /// whether that transaction is the receiver's proposal or the Original.
+  /// The session is closed once the node accepts the transaction, so the
+  /// Original is not broadcast again when the app next starts.
+  void settlePayjoinSessionOnAccept(PayjoinSessionRepository sessions, String sessionId) {
+    _payjoinSession = (repository: sessions, id: sessionId);
+  }
+
+  void _closePayjoinSession() {
+    final session = _payjoinSession;
+    if (session == null) return;
+    try {
+      session.repository
+        ..writeValue(session.id, PayjoinSendValues.broadcastTxid, _signedTx!.transactionHash)
+        ..markClosed(session.id);
+    } catch (e) {
+      Logger.error('Transaction sent, but closing the payjoin session failed: $e');
+    }
   }
 
   Future<void> _markInputsAsOutgoing() async {

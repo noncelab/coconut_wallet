@@ -2144,3 +2144,13 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "Einzeln anzeigen"
 wallet_selection_grid: "Zusammen anzeigen"
+
+# TODO(translation): payjoin keys are in English
+payjoin:
+  contacting_receiver: "Contacting the receiver"
+  waiting_for_receiver: "Waiting for the receiver"
+  waiting_description: "The receiver can add one of their coins to this transaction. Keep this screen open."
+  receiver_added_input: "The receiver added an input"
+  send_without_payjoin: "Send without Payjoin"
+  sent_as_payjoin: "Sent as Payjoin"
+  sent_without_payjoin: "Sent without Payjoin"
