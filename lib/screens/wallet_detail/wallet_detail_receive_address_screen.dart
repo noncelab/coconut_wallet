@@ -13,9 +13,12 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
-import 'package:coconut_wallet/services/payjoin/payjoin_receiver.dart' show payjoinUriWithAmount;
+import 'package:coconut_wallet/screens/payjoin/payjoin_vault_sign_screen.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart' show finalizeDeviceSignedPsbt;
+import 'package:coconut_wallet/services/payjoin/payjoin_receiver.dart'
+    show PayjoinReceiveNeedsSignature, payjoinUriWithAmount;
+import 'package:coconut_wallet/services/payjoin/payjoin_signer.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_session_manager.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/payjoin/payjoin_receive_status.dart';
@@ -75,14 +78,26 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   String? _payjoinUri;
   bool _payjoinStarting = false;
 
-  /// Payjoin receiving needs a single-signature wallet that can sign its
-  /// added input right away.
-  bool get _canPayjoin {
-    final wallet = _selectedWalletItem;
-    return wallet != null &&
-        wallet.walletType == WalletType.singleSignature &&
-        wallet.hasLocalKey &&
-        wallet.hotWalletMetadata?.enterPassphraseWhenSigning == false;
+  PayjoinSigner? get _payjoinSigner => _selectedWalletItem == null ? null : payjoinSignerOf(_selectedWalletItem!);
+
+  /// Takes the proposal to Coconut Vault and back, then lets the session
+  /// post it. The sender is polling meanwhile, so this is the step the
+  /// payjoin waits on.
+  Future<void> _signWithVault(String sessionId, String psbtToSign) async {
+    final manager = context.read<PayjoinSessionManager>();
+    final signed = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => PayjoinVaultSignScreen(
+              psbtBase64: psbtToSign,
+              instruction: t.payjoin.vault_sign_receive(name: _selectedWalletItem!.name),
+              accept: (answer) => finalizeDeviceSignedPsbt(answer, shownPsbtBase64: psbtToSign),
+            ),
+      ),
+    );
+    if (signed == null) return;
+    await manager.submitSignedProposal(sessionId, signed);
   }
 
   void _resumePayjoinSession() {
@@ -118,6 +133,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     }
   }
 
+  bool _isWaitingForVault(PayjoinSessionManager manager) =>
+      _payjoinSigner == PayjoinSigner.coconutVault &&
+      _payjoinSessionId != null &&
+      manager.receiveProgress(_payjoinSessionId!) is PayjoinReceiveNeedsSignature;
+
   Widget _buildPayjoinToggle() {
     final colors = context.coconutColors;
     return Padding(
@@ -133,9 +153,18 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(t.payjoin.receive_title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
-                    Text(
-                      t.payjoin.receive_description,
-                      style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                    // While waiting for the vault the description is hidden, to
+                    // make room for the "Sign with vault" button above the
+                    // screen's bottom actions.
+                    Consumer<PayjoinSessionManager>(
+                      builder:
+                          (context, manager, _) =>
+                              _isWaitingForVault(manager)
+                                  ? const SizedBox.shrink()
+                                  : Text(
+                                    t.payjoin.receive_description,
+                                    style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                                  ),
                     ),
                   ],
                 ),
@@ -156,16 +185,36 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
           if (_payjoinSessionId != null)
             Consumer<PayjoinSessionManager>(
               builder: (context, manager, _) {
+                final sessionId = _payjoinSessionId!;
+                final progress = manager.receiveProgress(sessionId);
+                final signsWithVault = _payjoinSigner == PayjoinSigner.coconutVault;
                 final status = payjoinReceiveStatusText(
-                  manager.receiveProgress(_payjoinSessionId!),
-                  hasError: manager.receiveError(_payjoinSessionId!) != null,
+                  progress,
+                  hasError: manager.receiveError(sessionId) != null,
+                  signsWithVault: signsWithVault,
                 );
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    status,
-                    key: const ValueKey('payjoin-receive-status'),
-                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        status,
+                        key: const ValueKey('payjoin-receive-status'),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                      ),
+                      if (signsWithVault && progress is PayjoinReceiveNeedsSignature) ...[
+                        CoconutLayout.spacing_200h,
+                        CoconutButton(
+                          key: const ValueKey('payjoin-sign-with-vault'),
+                          text: t.payjoin.sign_with_vault,
+                          height: 44,
+                          onPressed: () => _signWithVault(sessionId, progress.psbtToSign),
+                          backgroundColor: colors.primaryText,
+                          foregroundColor: colors.background,
+                        ),
+                      ],
+                    ],
                   ),
                 );
               },
@@ -332,7 +381,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                           embedWidget: const CoconutLogoIcon(size: 16),
                           isAddress: true,
                         ),
-                        if (_canPayjoin) _buildPayjoinToggle(),
+                        if (_payjoinSigner != null) _buildPayjoinToggle(),
                       ],
                     ),
                   ),

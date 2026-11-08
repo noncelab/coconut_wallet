@@ -110,6 +110,23 @@ class PayjoinSessionManager extends ChangeNotifier {
     }
   }
 
+  /// Runs a receive session on with the proposal its signing device signed,
+  /// once `finalizeDeviceSignedPsbt` has finalized our input.
+  Future<void> submitSignedProposal(String sessionId, String signedPsbt) async {
+    final session = _sessions.find(sessionId);
+    if (session == null || session.isClosed) throw StateError('payjoin receive session $sessionId is closed');
+    // A poll may be stepping this session right now; two steps must not
+    // interleave on one event log.
+    while (!_stepping.add(sessionId)) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    try {
+      await _stepReceive(session, signedProposal: signedPsbt);
+    } finally {
+      _stepping.remove(sessionId);
+    }
+  }
+
   void _onSynced() {
     if (!_synced) {
       _synced = true;
@@ -141,11 +158,11 @@ class PayjoinSessionManager extends ChangeNotifier {
     }
   }
 
-  Future<void> _stepReceive(RealmPayjoinSession session) async {
+  Future<void> _stepReceive(RealmPayjoinSession session, {String? signedProposal}) async {
     final sessionId = session.id;
     final adapter = _adapter(session);
     try {
-      final progress = await _receiver.step(sessionId, adapter);
+      final progress = await _receiver.step(sessionId, adapter, signedProposal: signedProposal);
       _progress[sessionId] = progress;
       _errors.remove(sessionId);
       if (progress is PayjoinReceiveClosed && progress.payjoinTxid == null) {
