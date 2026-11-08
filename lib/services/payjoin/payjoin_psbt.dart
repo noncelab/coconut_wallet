@@ -3,15 +3,19 @@ import 'dart:typed_data';
 import 'package:coconut_lib/coconut_lib.dart';
 
 /// Adds this wallet's BIP 32 derivation to each unfinalized input that spends
-/// one of its own addresses but lacks one, and returns the PSBT.
+/// one of its own addresses, and to each output that pays one, where it is
+/// missing, and returns the PSBT.
 ///
 /// coconut_lib signs only inputs whose derivation names our key. Payjoin
 /// PSBTs often lack it: the receiver adds its input with only the spent
 /// output (the BIP 77 bindings have no field for derivations), and the
 /// sender gets its inputs back without derivations when the Original was
-/// finalized. The derivation is added only when the address derived from it
-/// is the one the input spends, so nothing in the PSBT can steer which key
-/// signs.
+/// finalized. A signing device that has no address index, such as Coconut
+/// Vault, also tells our outputs from the counterparty's only by their
+/// derivations, so a receiver's output that came from the sender's Original
+/// would read as money leaving the wallet. The derivation is added only when
+/// the address derived from it is the one the input spends or the output
+/// pays, so nothing in the PSBT can steer which key signs.
 ///
 /// [derivationPathOf] maps an address to its wallet derivation path such as
 /// `m/84'/1'/0'/0/5`, or null if the address is not ours.
@@ -22,26 +26,99 @@ String addOwnDerivations(
 }) {
   final psbt = Psbt.parse(psbtBase64);
   final fingerprint = wallet.keyStore.masterFingerprint.toLowerCase();
-  final inputMaps = psbt.toKeyMap()['inputs'] as List<dynamic>;
-  var changed = false;
+  final keyMap = psbt.toKeyMap();
+  final inputMaps = keyMap['inputs'] as List<dynamic>;
+  final outputMaps = keyMap['outputs'] as List<dynamic>;
+  bool isOurs(DerivationPath d) => d.masterFingerprint.toLowerCase() == fingerprint;
 
+  /// The BIP 32 key-value pair for [address], or null when its path does
+  /// not derive it.
+  MapEntry<String, String>? derivationFor(String address) {
+    final path = derivationPathOf(address);
+    if (path == null) return null;
+    final (isChange, index) = _changeAndIndex(path);
+    if (wallet.getAddress(index, isChange: isChange) != address) return null;
+    final publicKey = wallet.keyStore.getPublicKey(index, isChange: isChange);
+    return MapEntry(publicKey, fingerprint + _hex(_serializePath(path)));
+  }
+
+  var changed = false;
   for (var i = 0; i < psbt.inputs.length; i++) {
     final input = psbt.inputs[i];
     final witnessUtxo = input.witnessUtxo;
     if (input.isFinalized || witnessUtxo == null) continue;
-    if (input.bip32Derivation?.any((d) => d.masterFingerprint.toLowerCase() == fingerprint) ?? false) continue;
-
-    final address = witnessUtxo.scriptPubKey.getAddress();
-    final path = derivationPathOf(address);
-    if (path == null) continue;
-    final (isChange, index) = _changeAndIndex(path);
-    if (wallet.getAddress(index, isChange: isChange) != address) continue;
-
-    final publicKey = wallet.keyStore.getPublicKey(index, isChange: isChange);
-    (inputMaps[i] as Map<String, dynamic>)['06$publicKey'] = fingerprint + _hex(_serializePath(path));
+    if (input.bip32Derivation?.any(isOurs) ?? false) continue;
+    final entry = derivationFor(witnessUtxo.scriptPubKey.getAddress());
+    if (entry == null) continue;
+    (inputMaps[i] as Map<String, dynamic>)['06${entry.key}'] = entry.value;
+    changed = true;
+  }
+  for (var i = 0; i < psbt.outputs.length; i++) {
+    final output = psbt.outputs[i];
+    if (output.bip32Derivations.any(isOurs)) continue;
+    final String address;
+    try {
+      address = output.outAddress;
+    } catch (_) {
+      continue; // OP_RETURN and other scripts without an address
+    }
+    final entry = derivationFor(address);
+    if (entry == null) continue;
+    (outputMaps[i] as Map<String, dynamic>)['02${entry.key}'] = entry.value;
     changed = true;
   }
   return changed ? Psbt.parse(psbt.serialize()).serialize() : psbtBase64;
+}
+
+/// Finalizes the inputs a signing device signed in [signedPsbtBase64], the
+/// device's answer to [shownPsbtBase64], and returns the PSBT.
+///
+/// Coconut Vault and other air-gapped signers return single-signature
+/// inputs signed but not finalized; payjoin wants them final. Each input
+/// the device was asked to sign must carry a valid signature for this
+/// transaction, unless the device finalized it itself, in which case the
+/// signature is left to the counterparty's checks. Throws
+/// [PayjoinSignedPsbtMismatch] when the device answered for another
+/// transaction or left one of those inputs unsigned.
+String finalizeDeviceSignedPsbt(String signedPsbtBase64, {required String shownPsbtBase64}) {
+  final shown = Psbt.parse(shownPsbtBase64);
+  final signed = Psbt.parse(signedPsbtBase64);
+  final shownTx = shown.unsignedTransaction!;
+  if (signed.unsignedTransaction?.transactionHash != shownTx.transactionHash) {
+    throw const PayjoinSignedPsbtMismatch('the signed PSBT is for another transaction');
+  }
+  // A signature over one input commits to the whole unsigned transaction
+  // but not to the other inputs' witnesses (BIP 143), so each one checks out
+  // even while a counterparty's input still shows a final script that does
+  // not fit this transaction.
+  final check = Transaction.parseUnsignedTransaction(shownTx.serialize());
+  for (var i = 0; i < shown.inputs.length; i++) {
+    if (shown.inputs[i].isFinalized) continue;
+    final spent = shown.inputs[i].witnessUtxo;
+    if (signed.inputs[i].isFinalized) continue;
+    final signatures = signed.inputs[i].partialSig;
+    if (spent == null || signatures == null || signatures.isEmpty) {
+      throw PayjoinSignedPsbtMismatch('input $i was not signed');
+    }
+    check.inputs[i].setSignature(AddressType.p2wpkh, signatures);
+    if (!check.validateEcdsa(i, spent)) throw PayjoinSignedPsbtMismatch('input $i has no valid signature');
+  }
+  final Psbt finalized;
+  try {
+    finalized = signed.finalizeInputs();
+  } on PsbtException catch (e) {
+    throw PayjoinSignedPsbtMismatch('an input could not be finalized: $e');
+  }
+  return finalized.serialize();
+}
+
+class PayjoinSignedPsbtMismatch implements Exception {
+  const PayjoinSignedPsbtMismatch(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'Signed PSBT does not match: $message';
 }
 
 (bool, int) _changeAndIndex(String path) {

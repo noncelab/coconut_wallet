@@ -39,6 +39,10 @@ abstract class PayjoinReceiverWallet {
   /// Keeps the contributed input out of other spends while the session runs.
   Future<void> reserveInput(String txid, int vout);
 
+  /// [psbt] with the wallet's key origins on its own inputs and outputs, so
+  /// a signer can recognise them; see [addOwnDerivations].
+  String withOwnDerivations(String psbt);
+
   /// Signs and finalizes the receiver's inputs of [psbt], where the sender's
   /// inputs appear finalized with their scripts from the Original and must be
   /// left alone. Returns null when the signature has to come from elsewhere
@@ -62,6 +66,11 @@ class PayjoinReceiveWaiting extends PayjoinReceiveProgress {
 }
 
 /// The proposal is ready and waits for the receiver's signature.
+///
+/// [psbtToSign] is what a signing device gets: the sender's inputs read as
+/// final, ours carry their key origins, as do our outputs. The device signs
+/// our input; the wallet finalizes it before passing it to
+/// [PayjoinReceiver.step].
 class PayjoinReceiveNeedsSignature extends PayjoinReceiveProgress {
   const PayjoinReceiveNeedsSignature(this.psbtToSign);
 
@@ -290,7 +299,7 @@ class PayjoinReceiver {
 
       case pj.ProvisionalProposalReceiveSession(:final inner):
         final original = fallbackTx(persister.sessionId)!;
-        final toSign = withCounterpartyInputsFinal(inner.psbtToSign(), original);
+        final toSign = wallet.withOwnDerivations(withCounterpartyInputsFinal(inner.psbtToSign(), original));
         final signed = signedProposal ?? await wallet.signProposal(toSign);
         if (signed == null) return PayjoinReceiveNeedsSignature(toSign);
         inner

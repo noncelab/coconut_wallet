@@ -79,17 +79,23 @@ class WalletPayjoinReceiver implements PayjoinReceiverWallet {
   }
 
   @override
+  String withOwnDerivations(String psbt) {
+    final wallet = _wallets.getWalletById(walletId).walletBase;
+    if (wallet is! SingleSignatureWallet) return psbt;
+    return addOwnDerivations(
+      psbt,
+      wallet: wallet,
+      derivationPathOf: (address) => _wallets.derivationPathOf(walletId, address),
+    );
+  }
+
+  @override
   Future<String?> signProposal(String psbt) async {
     final walletItem = _wallets.getWalletById(walletId);
     final metadata = walletItem.hotWalletMetadata;
     final wallet = walletItem.walletBase;
     if (!walletItem.hasLocalKey || metadata == null || wallet is! SingleSignatureWallet) return null;
     if (metadata.enterPassphraseWhenSigning) return null;
-    final withDerivations = addOwnDerivations(
-      psbt,
-      wallet: wallet,
-      derivationPathOf: (address) => _wallets.derivationPathOf(walletId, address),
-    );
     return _signer.signAndFinalize(
       (
         storageKey: metadata.secureStorageKey,
@@ -97,7 +103,7 @@ class WalletPayjoinReceiver implements PayjoinReceiverWallet {
         addressTypeName: wallet.addressType.name,
         accountIndex: metadata.accountIndex,
         expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
-        unsignedPsbt: withDerivations,
+        unsignedPsbt: psbt,
       ),
       allowFinalizedForeignInputs: true,
       keepDerivations: false,

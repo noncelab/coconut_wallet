@@ -98,9 +98,17 @@ void main() {
       );
     });
 
-    test('is a no-op when the derivations are present', () {
+    test('adds what is missing on our outputs too, once', () {
       final unsigned = Psbt.fromTransaction(twoInputSpend(), wallet).serialize();
-      expect(addOwnDerivations(unsigned, wallet: wallet, derivationPathOf: pathOf), unsigned);
+      // The spend pays our own address 9, which coconut_lib leaves without a
+      // derivation, and returns change with one.
+      final added = addOwnDerivations(unsigned, wallet: wallet, derivationPathOf: pathOf);
+      final outputs = Psbt.parse(added).outputs;
+      expect(outputs.map((o) => o.bip32Derivations.single.path).toSet(), {
+        '${vault.derivationPath}/0/9',
+        '${vault.derivationPath}/1/0',
+      });
+      expect(addOwnDerivations(added, wallet: wallet, derivationPathOf: pathOf), added);
     });
   });
 
@@ -189,6 +197,95 @@ void main() {
         expect(back.inputs[0].partialSig ?? const [], isEmpty);
         expect(back.inputs[1].isFinalized, isTrue, reason: 'our input is signed and final');
         expect(back.unsignedTransaction!.transactionHash, proposal.transactionHash);
+      } finally {
+        sender.keyStore.wipeSeed();
+      }
+    });
+
+    test('a vault sees our input and output, signs, and the wallet finalizes', () {
+      final sender = SingleSignatureVault.fromMnemonic(Uint8List.fromList(utf8.encode(senderWords)));
+      try {
+        final senderWallet = SingleSignatureWallet.fromDescriptor(sender.descriptor);
+        final originalTx = Transaction.forSinglePayment(
+          [Utxo(List.filled(32, '44').join(), 0, 90000, '${sender.derivationPath}/0/0')],
+          vault.getAddress(1),
+          '${sender.derivationPath}/1/0',
+          30000,
+          2,
+          sender,
+        );
+        final originalBytes = Uint8List.fromList(
+          hex.decode(
+            Psbt.parse(
+              sender.addSignatureToPsbt(Psbt.fromTransaction(originalTx, senderWallet).serialize()),
+            ).finalizeInputs().getSignedTransaction(AddressType.p2wpkh).serialize(),
+          ),
+        );
+        const ourCoin = 20000;
+        final proposal = Transaction.withInputsAndOutputs(
+          [
+            TransactionInput.forPayment(originalTx.inputs.single.transactionHash, 0),
+            TransactionInput.forPayment(List.filled(32, '55').join(), 1),
+          ],
+          [
+            for (final output in originalTx.outputs)
+              TransactionOutput.forPayment(
+                output.getAddress() == vault.getAddress(1) ? output.amount + ourCoin : output.amount,
+                output.getAddress(),
+              ),
+          ],
+          AddressType.p2wpkh,
+        );
+        final shownFinal = withCounterpartyInputsFinal(
+          _psbtWithSpentOutputs(proposal, [
+            TransactionOutput.forPayment(90000, sender.getAddress(0)),
+            TransactionOutput.forPayment(ourCoin, vault.getAddress(4)),
+          ]),
+          originalBytes,
+        );
+        final forVault = addOwnDerivations(shownFinal, wallet: wallet, derivationPathOf: pathOf);
+
+        // The vault knows our input and our output only by their derivations.
+        final ourOutput = proposal.outputs.indexWhere((o) => o.getAddress() == vault.getAddress(1));
+        final parsed = Psbt.parse(forVault);
+        expect(parsed.inputs[1].bip32Derivation!.single.path, '${vault.derivationPath}/0/4');
+        expect(parsed.outputs[ourOutput].bip32Derivations.single.path, '${vault.derivationPath}/0/1');
+        expect(parsed.outputs.where((o) => o.bip32Derivations.isNotEmpty), hasLength(1));
+        expect(parsed.inputs[0].isFinalized, isTrue, reason: 'the sender input reads as final');
+        final inputOnly = addOwnDerivations(
+          shownFinal,
+          wallet: wallet,
+          derivationPathOf: (address) => address == vault.getAddress(4) ? pathOf(address) : null,
+        );
+        expect(
+          Psbt.parse(inputOnly).netAmount(vault),
+          -ourCoin,
+          reason: 'with our input alone, the vault reads a spend',
+        );
+        expect(parsed.netAmount(vault), 30000, reason: 'with it, the vault reads what we receive');
+        expect(parsed.matchesVault(vault, allowFinalizedForeignInputs: true), isTrue);
+
+        // The vault signs without finalizing, as Coconut Vault returns it.
+        final fromVault = vault.addSignatureToPsbt(forVault, allowFinalizedForeignInputs: true);
+        expect(Psbt.parse(fromVault).inputs[1].isFinalized, isFalse);
+
+        final finalized = finalizeDeviceSignedPsbt(fromVault, shownPsbtBase64: forVault);
+        final back = Psbt.parse(withoutCounterpartyFinals(finalized, originalBytes));
+        expect(back.inputs[0].isFinalized, isFalse, reason: 'the sender input goes back unsigned');
+        expect(back.inputs[1].isFinalized, isTrue, reason: 'our input is final');
+        expect(back.unsignedTransaction!.transactionHash, proposal.transactionHash);
+
+        expect(
+          () => finalizeDeviceSignedPsbt(forVault, shownPsbtBase64: forVault),
+          throwsA(isA<PayjoinSignedPsbtMismatch>()),
+          reason: 'an unsigned answer is refused',
+        );
+        final otherTx = Psbt.fromTransaction(twoInputSpend(), wallet).serialize();
+        expect(
+          () => finalizeDeviceSignedPsbt(vault.addSignatureToPsbt(otherTx), shownPsbtBase64: forVault),
+          throwsA(isA<PayjoinSignedPsbtMismatch>()),
+          reason: 'an answer for another transaction is refused',
+        );
       } finally {
         sender.keyStore.wipeSeed();
       }
