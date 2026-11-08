@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/services/payjoin/ohttp_relay_pool.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_http.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_session_persister.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:payjoin/payjoin.dart' as pj;
 
 /// Where a send session stands after one step.
@@ -18,6 +19,9 @@ class PayjoinSendWaiting extends PayjoinSendProgress {
 /// creates one, so holding it is proof those checks ran.
 class PayjoinCheckedProposal extends PayjoinSendProgress {
   const PayjoinCheckedProposal._(this.psbtBase64);
+
+  @visibleForTesting
+  const PayjoinCheckedProposal.forTesting(this.psbtBase64);
 
   final String psbtBase64;
 }
