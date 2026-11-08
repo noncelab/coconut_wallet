@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart'
+    show transactionTypeOf;
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -206,11 +207,12 @@ class UtxoDetailViewModel extends ChangeNotifier {
         }
       }
 
-      final txType = _determineTransactionType(
-        selfInputCount,
-        selfOutputCount,
-        inputAddressList.length,
-        outputAddressList.length,
+      final txType = transactionTypeOf(
+        selfInputCount: selfInputCount,
+        selfOutputCount: selfOutputCount,
+        inputCount: inputAddressList.length,
+        outputCount: outputAddressList.length,
+        netAmount: amount,
       );
 
       return TransactionRecord(
@@ -232,13 +234,6 @@ class UtxoDetailViewModel extends ChangeNotifier {
       Logger.error('[_transactionRecordFromMempoolResponse] Failed to parse: $e');
       return null;
     }
-  }
-
-  TransactionType _determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
-    if (selfInputCount == 0) return TransactionType.received;
-    if (selfOutputCount < outputCount) return TransactionType.sent;
-    if (selfOutputCount == outputCount && selfInputCount == inputCount) return TransactionType.self;
-    return TransactionType.received;
   }
 
   int get utxoInputMaxCount => _utxoInputMaxCount;
