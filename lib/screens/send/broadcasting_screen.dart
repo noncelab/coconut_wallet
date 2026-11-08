@@ -216,6 +216,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
               id: _viewModel.walletId!,
               txHash: _viewModel.signedTx!.transactionHash,
               animateEntry: true,
+              title: switch (_sentAsPayjoin) {
+                true => t.payjoin.sent_as_payjoin,
+                false => t.payjoin.sent_without_payjoin,
+                null => null,
+              },
             ),
         transitionsBuilder:
             (_, animation, secondaryAnimation, child) =>
