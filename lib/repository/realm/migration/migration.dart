@@ -71,6 +71,9 @@ import 'package:realm/realm.dart';
 /// [addHotWalletBackupVerifiedAt] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 nullable backupVerifiedAt 필드 추가
 /// 2. 기존 백업 완료 지갑은 정확한 완료 시각을 알 수 없으므로 null 유지
+///
+/// (10 -> 11)
+/// 1. Adds RealmPayjoinSession and RealmPayjoinSeenInput (new schemas, no data to migrate)
 void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
