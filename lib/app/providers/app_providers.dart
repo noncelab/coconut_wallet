@@ -24,6 +24,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_session_manager.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -121,6 +122,15 @@ List<SingleChildWidget> buildAppProviders({
           });
           return nodeProvider;
         },
+      ),
+      ChangeNotifierProvider<PayjoinSessionManager>(
+        lazy: false,
+        create:
+            (context) => PayjoinSessionManager(
+              sessions: context.read<PayjoinSessionRepository>(),
+              wallets: context.read<WalletProvider>(),
+              node: context.read<NodeProvider>(),
+            ),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

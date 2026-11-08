@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:coconut_lib/coconut_lib.dart' show Psbt, Transaction;
 import 'package:coconut_wallet/services/payjoin/ohttp_relay_pool.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_http.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show PayjoinSessionExpired;
 import 'package:coconut_wallet/services/payjoin/payjoin_session_persister.dart';
 import 'package:payjoin/http.dart' show fetchOhttpKeys;
@@ -38,10 +39,11 @@ abstract class PayjoinReceiverWallet {
   /// Keeps the contributed input out of other spends while the session runs.
   Future<void> reserveInput(String txid, int vout);
 
-  /// Signs and finalizes the receiver's inputs of [psbt]. Returns null when
-  /// the signature has to come from elsewhere (an air-gapped signer); the
-  /// session then waits in its current state until [PayjoinReceiver.step] is
-  /// called with the signed PSBT.
+  /// Signs and finalizes the receiver's inputs of [psbt], where the sender's
+  /// inputs appear finalized with their scripts from the Original and must be
+  /// left alone. Returns null when the signature has to come from elsewhere
+  /// (an air-gapped signer); the session then waits in its current state
+  /// until [PayjoinReceiver.step] is called with the signed PSBT.
   Future<String?> signProposal(String psbt);
 
   /// The raw transaction with [txid] if the network has it.
@@ -132,6 +134,10 @@ class PayjoinReceiver {
   final OhttpKeysFetcher _fetchKeys;
   final Random _random;
 
+  /// Told about each transition payjoin refused, such as a failed check on
+  /// the sender's Original, before the session replies with the error.
+  void Function(String sessionId, Object error)? onTransitionError;
+
   /// Opens a session that receives to [address] on a directory picked at
   /// random, fetching the directory's OHTTP keys through a relay so the
   /// directory never sees this device's IP.
@@ -196,9 +202,10 @@ class PayjoinReceiver {
       } on PayjoinSessionExpired {
         _cancel(state, persister);
         return const PayjoinReceiveClosed();
-      } on pj.ReceiverPersistedException {
+      } on pj.ReceiverPersistedException catch (e) {
         // The transition recorded its failure; replaying picks up the
         // resulting state (an error to reply with, or a closed session).
+        onTransitionError?.call(sessionId, e);
         continue;
       }
     }
@@ -282,9 +289,13 @@ class PayjoinReceiver {
         return null;
 
       case pj.ProvisionalProposalReceiveSession(:final inner):
-        final signed = signedProposal ?? await wallet.signProposal(inner.psbtToSign());
-        if (signed == null) return PayjoinReceiveNeedsSignature(inner.psbtToSign());
-        inner.finalizeSignedProposal(signedPsbt: signed).save(persister: persister);
+        final original = fallbackTx(persister.sessionId)!;
+        final toSign = withCounterpartyInputsFinal(inner.psbtToSign(), original);
+        final signed = signedProposal ?? await wallet.signProposal(toSign);
+        if (signed == null) return PayjoinReceiveNeedsSignature(toSign);
+        inner
+            .finalizeSignedProposal(signedPsbt: withoutCounterpartyFinals(signed, original))
+            .save(persister: persister);
         return null;
 
       case pj.PayjoinProposalReceiveSession(:final inner):
@@ -406,6 +417,13 @@ class PayjoinReceiver {
   }
 
   StoredReceiverSessionPersister _persister(String sessionId) => StoredReceiverSessionPersister(_store, sessionId);
+}
+
+/// [pjUri] with [amountSats] set, for a receiver who enters an amount after
+/// the session started.
+String payjoinUriWithAmount(String pjUri, int? amountSats) {
+  if (amountSats == null) return pjUri;
+  return pj.Uri.parse(uri: pjUri).checkPjSupported().setAmountSats(amountSats: amountSats).asString();
 }
 
 const _proposalTxidKey = 'proposalTxid';

@@ -63,3 +63,69 @@ Uint8List _serializePath(String path) {
 }
 
 String _hex(List<int> bytes) => bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+/// Marks the sender's inputs of a receiver's payjoin PSBT as finalized, using
+/// their final scripts from the sender's Original ([originalTx], raw bytes).
+///
+/// payjoin hands the receiver its proposal with the sender's signatures
+/// removed, since they do not cover the new transaction. coconut_lib signs a
+/// PSBT only if every input is either ours or already finalized, so that a
+/// PSBT cannot pass off another input as ours. Restoring the sender's own
+/// final scripts lets the signer recognise those inputs as the sender's and
+/// skip them. They are not valid for the proposal and must be removed again
+/// with [withoutCounterpartyFinals] before the proposal goes back to payjoin.
+String withCounterpartyInputsFinal(String psbtBase64, Uint8List originalTx) {
+  final psbt = Psbt.parse(psbtBase64);
+  final inputMaps = psbt.toKeyMap()['inputs'] as List<dynamic>;
+  final originalInputs = {for (final input in _parseTx(originalTx).inputs) _outpoint(input): input};
+  final proposalInputs = psbt.unsignedTransaction!.inputs;
+  for (var i = 0; i < proposalInputs.length; i++) {
+    final original = originalInputs[_outpoint(proposalInputs[i])];
+    if (original == null) continue;
+    final map = inputMaps[i] as Map<String, dynamic>;
+    map['08'] = _serializeWitness(original.witnessList);
+    final scriptSig = original.scriptSig.rawSerialize();
+    if (scriptSig.isNotEmpty) map['07'] = scriptSig;
+  }
+  return Psbt.parse(psbt.serialize()).serialize();
+}
+
+/// Removes the final scripts [withCounterpartyInputsFinal] restored, so the
+/// sender's inputs go back to payjoin unsigned as it requires.
+String withoutCounterpartyFinals(String psbtBase64, Uint8List originalTx) {
+  final psbt = Psbt.parse(psbtBase64);
+  final inputMaps = psbt.toKeyMap()['inputs'] as List<dynamic>;
+  final senderOutpoints = {for (final input in _parseTx(originalTx).inputs) _outpoint(input)};
+  final proposalInputs = psbt.unsignedTransaction!.inputs;
+  for (var i = 0; i < proposalInputs.length; i++) {
+    if (!senderOutpoints.contains(_outpoint(proposalInputs[i]))) continue;
+    (inputMaps[i] as Map<String, dynamic>).removeWhere((key, _) => key == '07' || key == '08');
+  }
+  return Psbt.parse(psbt.serialize()).serialize();
+}
+
+Transaction _parseTx(Uint8List raw) => Transaction.parse(_hex(raw));
+
+String _outpoint(TransactionInput input) => '${input.transactionHash}:${input.index}';
+
+/// BIP 141 witness serialization: item count, then each item with its length.
+/// coconut_lib parses an empty witness item as "00".
+String _serializeWitness(List<String> items) {
+  final buffer = StringBuffer(_varint(items.length));
+  for (final item in items) {
+    if (item.isEmpty || item == '00') {
+      buffer.write('00');
+    } else {
+      buffer
+        ..write(_varint(item.length ~/ 2))
+        ..write(item);
+    }
+  }
+  return buffer.toString();
+}
+
+String _varint(int n) {
+  if (n < 0xfd) return _hex([n]);
+  if (n <= 0xffff) return _hex([0xfd, n & 0xff, n >> 8]);
+  return _hex([0xfe, n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]);
+}

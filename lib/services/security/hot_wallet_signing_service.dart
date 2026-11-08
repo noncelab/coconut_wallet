@@ -26,7 +26,7 @@ typedef _HotWalletSigningArguments =
     });
 
 /// How a payjoin PSBT is finalized after signing.
-typedef _PsbtFinalization = ({bool allowFinalizedForeignInputs, bool keepDerivations});
+typedef _PsbtFinalization = ({bool allowFinalizedForeignInputs, bool keepDerivations, bool verifyForeignInputs});
 
 typedef _HotWalletPassphraseValidationArguments =
     ({
@@ -53,11 +53,22 @@ class HotWalletSigningService {
   /// Original keeps its derivations ([keepDerivations]) because payjoin
   /// copies them into the receiver's proposal, where the wallet needs them to
   /// recognise its inputs.
+  ///
+  /// The finalized PSBT is checked by extracting the transaction, which
+  /// verifies every input's signature. A payjoin receiver passes false for
+  /// [verifyForeignInputs]: the sender's inputs it is shown carry the
+  /// Original's signatures, which do not cover the proposal. Our own
+  /// signatures are verified when they are finalized either way.
   Future<String> signAndFinalize(
     HotWalletSigningRequest request, {
     required bool allowFinalizedForeignInputs,
     required bool keepDerivations,
-  }) => _sign(request, (allowFinalizedForeignInputs: allowFinalizedForeignInputs, keepDerivations: keepDerivations));
+    bool verifyForeignInputs = true,
+  }) => _sign(request, (
+    allowFinalizedForeignInputs: allowFinalizedForeignInputs,
+    keepDerivations: keepDerivations,
+    verifyForeignInputs: verifyForeignInputs,
+  ));
 
   Future<String> _sign(HotWalletSigningRequest request, _PsbtFinalization? finalization) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(request.storageKey);
@@ -162,7 +173,7 @@ String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
       allowFinalizedForeignInputs: finalization.allowFinalizedForeignInputs,
     );
     final finalized = Psbt.parse(signedPsbt).finalizeInputs(keepDerivations: finalization.keepDerivations);
-    finalized.getSignedTransaction(addressType);
+    if (finalization.verifyForeignInputs) finalized.getSignedTransaction(addressType);
     return finalized.serialize();
   } finally {
     vault?.keyStore.wipeSeed();

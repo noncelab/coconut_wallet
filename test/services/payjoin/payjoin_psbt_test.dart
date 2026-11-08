@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
+import 'package:convert/convert.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
@@ -125,4 +126,124 @@ void main() {
       expect(psbt.getSignedTransaction(AddressType.p2wpkh).transactionHash, transaction.transactionHash);
     });
   });
+
+  group('receiver signing with the sender inputs shown final', () {
+    const senderWords = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
+
+    test('signs only our input and hands the sender inputs back unsigned', () {
+      final sender = SingleSignatureVault.fromMnemonic(Uint8List.fromList(utf8.encode(senderWords)));
+      try {
+        final senderWallet = SingleSignatureWallet.fromDescriptor(sender.descriptor);
+        // The sender's signed, finalized Original pays our address 1.
+        final originalTx = Transaction.forSinglePayment(
+          [Utxo(List.filled(32, '44').join(), 0, 90000, '${sender.derivationPath}/0/0')],
+          vault.getAddress(1),
+          '${sender.derivationPath}/1/0',
+          30000,
+          2,
+          sender,
+        );
+        final signedOriginal = Psbt.parse(
+          sender.addSignatureToPsbt(Psbt.fromTransaction(originalTx, senderWallet).serialize()),
+        ).finalizeInputs().getSignedTransaction(AddressType.p2wpkh);
+        final originalBytes = Uint8List.fromList(hex.decode(signedOriginal.serialize()));
+
+        // The proposal payjoin gives the receiver: the sender's input unsigned,
+        // ours added with only its spent output, our output raised by it.
+        const ourCoin = 20000;
+        final ourUtxoAddress = vault.getAddress(4);
+        final proposal = Transaction.withInputsAndOutputs(
+          [
+            TransactionInput.forPayment(
+              originalTx.inputs.single.transactionHash,
+              0,
+              sequence: originalTx.inputs.single.sequence,
+            ),
+            TransactionInput.forPayment(List.filled(32, '55').join(), 1, sequence: originalTx.inputs.single.sequence),
+          ],
+          [
+            for (final output in originalTx.outputs)
+              TransactionOutput.forPayment(
+                output.getAddress() == vault.getAddress(1) ? output.amount + ourCoin : output.amount,
+                output.getAddress(),
+              ),
+          ],
+          AddressType.p2wpkh,
+        );
+        final psbtToSign = _psbtWithSpentOutputs(proposal, [
+          TransactionOutput.forPayment(90000, sender.getAddress(0)),
+          TransactionOutput.forPayment(ourCoin, ourUtxoAddress),
+        ]);
+
+        final shown = withCounterpartyInputsFinal(psbtToSign, originalBytes);
+        expect(Psbt.parse(shown).inputs.map((i) => i.isFinalized), [true, false]);
+
+        final withDerivation = addOwnDerivations(shown, wallet: wallet, derivationPathOf: pathOf);
+        final signed =
+            Psbt.parse(
+              vault.addSignatureToPsbt(withDerivation, allowFinalizedForeignInputs: true),
+            ).finalizeInputs().serialize();
+
+        final back = Psbt.parse(withoutCounterpartyFinals(signed, originalBytes));
+        expect(back.inputs[0].isFinalized, isFalse, reason: 'the sender input goes back unsigned');
+        expect(back.inputs[0].partialSig ?? const [], isEmpty);
+        expect(back.inputs[1].isFinalized, isTrue, reason: 'our input is signed and final');
+        expect(back.unsignedTransaction!.transactionHash, proposal.transactionHash);
+      } finally {
+        sender.keyStore.wipeSeed();
+      }
+    });
+
+    test('without the sender inputs shown final the signer refuses the proposal', () {
+      final sender = SingleSignatureVault.fromMnemonic(Uint8List.fromList(utf8.encode(senderWords)));
+      try {
+        final proposal = Transaction.withInputsAndOutputs(
+          [
+            TransactionInput.forPayment(List.filled(32, '44').join(), 0),
+            TransactionInput.forPayment(List.filled(32, '55').join(), 1),
+          ],
+          [TransactionOutput.forPayment(100000, vault.getAddress(1))],
+          AddressType.p2wpkh,
+        );
+        final psbt = addOwnDerivations(
+          _psbtWithSpentOutputs(proposal, [
+            TransactionOutput.forPayment(90000, sender.getAddress(0)),
+            TransactionOutput.forPayment(20000, vault.getAddress(4)),
+          ]),
+          wallet: wallet,
+          derivationPathOf: pathOf,
+        );
+        expect(() => vault.addSignatureToPsbt(psbt, allowFinalizedForeignInputs: true), throwsA(anything));
+      } finally {
+        sender.keyStore.wipeSeed();
+      }
+    });
+  });
 }
+
+/// A PSBT for [tx] whose inputs carry only their spent outputs, as payjoin
+/// hands a receiver its proposal.
+String _psbtWithSpentOutputs(Transaction tx, List<TransactionOutput> spent) {
+  final unsigned = StringBuffer(tx.version)..write(_varint(tx.inputs.length));
+  for (final input in tx.inputs) {
+    unsigned.write(input.serialize());
+  }
+  unsigned.write(_varint(tx.outputs.length));
+  for (final output in tx.outputs) {
+    unsigned.write(output.serialize());
+  }
+  unsigned.write(tx.lockTime);
+  final psbt =
+      StringBuffer('70736274ff0100')
+        ..write(_varint(unsigned.length ~/ 2))
+        ..write(unsigned)
+        ..write('00');
+  for (final output in spent) {
+    final value = output.serialize();
+    psbt.write('0101${_varint(value.length ~/ 2)}${value}00');
+  }
+  psbt.write('00' * tx.outputs.length);
+  return base64Encode(hex.decode(psbt.toString()));
+}
+
+String _varint(int n) => n.toRadixString(16).padLeft(2, '0');
