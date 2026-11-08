@@ -813,6 +813,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     return true;
   }
 
+  void setPayjoinUri(String? bip21, int recipientIndex) {
+    if (recipientIndex < 0 || recipientIndex >= _recipientList.length) return;
+    _recipientList[recipientIndex].payjoinUri = bip21;
+  }
+
+  String? get _payjoinUriForSend {
+    final wallet = _selectedWalletItem;
+    final metadata = wallet?.hotWalletMetadata;
+    return payjoinUriForSend(
+      recipients: _recipientList,
+      isHotSingleSignatureWallet:
+          wallet != null && wallet.hasLocalKey && metadata != null && wallet.walletType == WalletType.singleSignature,
+      asksPassphraseWhenSigning: metadata?.enterPassphraseWhenSigning ?? false,
+    );
+  }
+
   void setAddressText(String text, int recipientIndex) {
     if (!_isValidRecipientIndex(recipientIndex, 'setAddressText')) return;
     if (_recipientList[recipientIndex].address == text) return;
@@ -1121,6 +1137,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
     _sendInfoProvider.setUnsignedDraftId(canUseTransactionDrafts ? _transactionDraftId : null);
+    _sendInfoProvider.setPayjoinUri(_payjoinUriForSend);
   }
 
   void clearSendInfo() {
@@ -1202,11 +1219,31 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 }
 
+/// The URI to attempt a payjoin with, if this send can make one.
+///
+/// Payjoin needs a single recipient whose address is still the one in the
+/// URI, and a hot single-signature wallet that can sign the receiver's
+/// proposal without asking for a passphrase again.
+String? payjoinUriForSend({
+  required List<RecipientInfo> recipients,
+  required bool isHotSingleSignatureWallet,
+  required bool asksPassphraseWhenSigning,
+}) {
+  if (recipients.length != 1 || !isHotSingleSignatureWallet || asksPassphraseWhenSigning) return null;
+  final recipient = recipients.single;
+  final uri = recipient.payjoinUri;
+  if (uri == null || parseBip21Uri(uri).address != recipient.address) return null;
+  return uri;
+}
+
 class RecipientInfo {
   String address;
   String amount;
   AddressError addressError;
   AmountError minimumAmountError; // 전송량이 적은 경우
+
+  /// The BIP 21 URI this recipient came from when it asks for a payjoin.
+  String? payjoinUri;
 
   RecipientInfo({
     this.address = '',
