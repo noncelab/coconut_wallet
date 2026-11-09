@@ -522,6 +522,9 @@ class SafetyProvider extends ChangeNotifier {
     try {
       final package = await PackageInfo.fromPlatform();
       final response = await AppVersion().getLatestAppVersion();
+      if (response is AppVersionResponse && response.updateAvailable != null) {
+        return response.updateAvailable! ? AppUpdateStatus.available : AppUpdateStatus.upToDate;
+      }
       return response is AppVersionResponse
           ? compareAppVersions(package.version, response.latestVersion)
           : AppUpdateStatus.unknown;

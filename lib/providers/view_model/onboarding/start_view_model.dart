@@ -29,6 +29,7 @@ class StartViewModel extends ChangeNotifier {
 
   bool _canUpdate = false;
   bool _isLoading = true;
+  String? _storeUrl;
 
   StartViewModel(
     this._visibilityProvider,
@@ -85,9 +86,10 @@ class StartViewModel extends ChangeNotifier {
 
   /// 플랫폼별 앱스토어 URL
   String get storeUrl =>
-      Platform.isAndroid
+      _storeUrl ??
+      (Platform.isAndroid
           ? 'https://play.google.com/store/apps/details?id=${_packageInfo.packageName}'
-          : 'https://apps.apple.com/kr/app/$appStoreId';
+          : 'https://apps.apple.com/kr/app/$appStoreId');
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
@@ -99,6 +101,11 @@ class StartViewModel extends ChangeNotifier {
     try {
       final response = await _appVersionRepository.getLatestAppVersion();
       if (response is AppVersionResponse) {
+        _storeUrl = response.storeUrl;
+        if (response.updateAvailable != null) {
+          _canUpdate = response.updateAvailable! && await _shouldShowUpdateDialog();
+          return;
+        }
         String currentVersion = _packageInfo.version;
         String newVersion = response.latestVersion;
         Logger.log('currentVersion : $currentVersion\nnewVersion : $newVersion');
