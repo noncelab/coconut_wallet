@@ -24,6 +24,11 @@ Finder _textContaining(Pattern pattern) => find.byWidgetPredicate(
 
 Color _textColor(WidgetTester tester, String text) => tester.widget<Text>(_text(text).first).style!.color!;
 
+double _contrast(Color a, Color b) {
+  final x = a.computeLuminance() + .05, y = b.computeLuminance() + .05;
+  return x > y ? x / y : y / x;
+}
+
 Future<void> _pump(WidgetTester tester, Widget child, {CoconutThemeVariant variant = CoconutThemeVariant.light}) =>
     pumpWalletHealthApp(tester, Scaffold(body: SingleChildScrollView(child: child)), variant: variant, width: 320);
 
@@ -40,10 +45,13 @@ void main() {
           variant: variant,
         );
         expect(_text('80'), findsOneWidget);
-        expect(_textColor(tester, t.wallet_health.category.addresses_reused(n: 2)), health.warning);
-        expect(_textColor(tester, t.wallet_health.summary.items_need_attention(n: 1)), health.warning);
+        expect(_textColor(tester, t.wallet_health.category.addresses_reused(n: 2)), health.warningText);
+        expect(_textColor(tester, t.wallet_health.summary.items_need_attention(n: 1)), health.warningText);
         expect(_text(t.wallet_health.summary.no_issues_found), findsNWidgets(2));
-        expect(_textColor(tester, t.wallet_health.summary.no_issues_found), health.good);
+        expect(_textColor(tester, t.wallet_health.summary.no_issues_found), health.goodText);
+        for (final text in [t.wallet_health.summary.no_issues_found, t.wallet_health.category.addresses_reused(n: 2)]) {
+          expect(_contrast(_textColor(tester, text), colors.homeSurface), greaterThanOrEqualTo(4.5));
+        }
 
         await _pump(
           tester,
@@ -70,7 +78,7 @@ void main() {
           variant: variant,
         );
         expect(_text(t.wallet_health.check.app_lock.issue), findsOneWidget);
-        expect(_textColor(tester, t.wallet_health.cta.set_up), health.warning);
+        expect(_textColor(tester, t.wallet_health.cta.set_up), health.warningText);
         await tester.tap(_text(t.wallet_health.check.app_lock.issue));
         await tester.pumpAndSettle();
         expect(taps, 1);
@@ -96,7 +104,11 @@ void main() {
           ),
           variant: variant,
         );
-        expect(_textColor(tester, t.wallet_health.check.app_lock.enabled), health.good);
+        expect(_textColor(tester, t.wallet_health.check.app_lock.enabled), health.goodText);
+        final icon = tester.widget<SvgPicture>(
+          find.descendant(of: find.byType(SafetyPassedRow).first, matching: find.byType(SvgPicture)),
+        );
+        expect(icon.colorFilter, ColorFilter.mode(health.good, BlendMode.srcIn));
         expect(_textColor(tester, t.wallet_health.evidence.completed_by_you), colors.secondaryText);
         // 색만으로 구분하지 않게 체크 아이콘에도 의미 라벨
         expect(find.bySemanticsLabel(t.wallet_health.evidence.verified_a11y), findsOneWidget);

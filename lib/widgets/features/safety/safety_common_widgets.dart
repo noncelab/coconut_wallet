@@ -301,7 +301,7 @@ class SafetyActionPill extends StatelessWidget {
           child: Text(
             text,
             maxLines: 1,
-            style: CoconutTypography.body3_12_Bold.setColor(danger ? health.critical : health.warning),
+            style: CoconutTypography.body3_12_Bold.setColor(danger ? health.criticalText : health.warningText),
           ),
         ),
       ),

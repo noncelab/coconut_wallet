@@ -364,7 +364,7 @@ String safetyRecommendedBody(RecommendedCheckId id) {
   final summary = t.wallet_health.summary;
   final score = report.categories[category];
   if (report.status == WalletHealthStatus.noWallet && category == SafetyCategory.app) {
-    return (text: c.reason_checks_available, color: context.walletHealthColors.good);
+    return (text: c.reason_checks_available, color: context.walletHealthColors.goodText);
   }
   if (score?.score == null) {
     return (text: safetyWaitingText(category, score?.waitingReason), color: colors.secondaryText);
@@ -376,7 +376,7 @@ String safetyRecommendedBody(RecommendedCheckId id) {
     if (report.userConfirmedItems.any((r) => r.id.category == category)) {
       return (text: t.wallet_health.evidence.completed_by_you, color: colors.secondaryText);
     }
-    return (text: summary.no_issues_found, color: context.walletHealthColors.good);
+    return (text: summary.no_issues_found, color: context.walletHealthColors.goodText);
   }
   final items = report.reviewItems.where((r) => r.id.category == category);
   int subjects(SafetyCheckId id) => items.where((r) => r.id == id).fold(0, (sum, r) => sum + r.subjects.length);
@@ -391,7 +391,7 @@ String safetyRecommendedBody(RecommendedCheckId id) {
     SafetyCategory.recovery when wallets > 1 => summary.wallets_need_attention(n: wallets),
     _ => summary.items_need_attention(n: issues),
   };
-  return (text: text, color: context.walletHealthColors.warning);
+  return (text: text, color: context.walletHealthColors.warningText);
 }
 
 // ── 위젯 ──
@@ -909,7 +909,7 @@ class SafetyPassedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final result = safetyPassedText(item);
-    final color = result.byUser ? colors.secondaryText : context.walletHealthColors.good;
+    final color = result.byUser ? colors.secondaryText : context.walletHealthColors.goodText;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(

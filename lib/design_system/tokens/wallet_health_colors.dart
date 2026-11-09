@@ -14,6 +14,9 @@ class WalletHealthColors {
     required this.good,
     required this.warning,
     required this.critical,
+    required this.goodText,
+    required this.warningText,
+    required this.criticalText,
     required this.warningPillBackground,
     required this.warningPillBorder,
     required this.premiumGradient,
@@ -43,6 +46,9 @@ class WalletHealthColors {
     good: Color(0xFF16D09C),
     warning: Color(0xFFE9B824),
     critical: Color(0xFFF36769),
+    goodText: Color(0xFF267343),
+    warningText: Color(0xFF8A4E00),
+    criticalText: Color(0xFFBF285F),
     warningPillBackground: Color(0x1FE9B824),
     warningPillBorder: Color(0x52E9B824),
     premiumGradient: [Color(0xFFE8F4FF), Color(0xFFE3DEFD)],
@@ -54,8 +60,13 @@ class WalletHealthColors {
     premiumButtonText: Color(0xFFA25BE0),
   );
 
-  /// 다크 테마: 밝은 회색 트랙만 어두운 바탕에서 튀어 따로 지정한다
-  static final dark = base.copyWith(gaugeTrack: const Color(0xFF2C2C2C));
+  /// 다크 테마: 트랙은 낮추고 정보성 글자는 밝은 원색을 쓴다.
+  static final dark = base.copyWith(
+    gaugeTrack: const Color(0xFF2C2C2C),
+    goodText: base.good,
+    warningText: base.warning,
+    criticalText: base.critical,
+  );
 
   /// 게이지 빈 구간
   final Color gaugeTrack;
@@ -67,14 +78,17 @@ class WalletHealthColors {
   /// 매우 좋음 점수 라벨
   final Color excellent;
 
-  /// 양호: 점수 라벨, 통과 체크 아이콘·값, 카드 "문제 없음"
+  /// 양호 점수 라벨·통과 아이콘
   final Color good;
 
-  /// 주의: 점수 라벨, ⚠ 아이콘, 확인 버튼 글자, 카드 이슈 문구
+  /// 주의 점수 라벨·아이콘
   final Color warning;
 
   /// 조치 필요 점수 라벨
   final Color critical;
+
+  /// 작은 상태 글자는 기존 앱의 진한 텍스트 색을 쓴다. 게이지 라벨·아이콘 색은 유지한다.
+  final Color goodText, warningText, criticalText;
 
   /// 확인 버튼 바탕·테두리
   final Color warningPillBackground;
@@ -89,22 +103,26 @@ class WalletHealthColors {
   final Color premiumButtonBorder;
   final Color premiumButtonText;
 
-  WalletHealthColors copyWith({Color? gaugeTrack}) => WalletHealthColors(
-    gaugeTrack: gaugeTrack ?? this.gaugeTrack,
-    gaugeColors: gaugeColors,
-    gaugeStops: gaugeStops,
-    excellent: excellent,
-    good: good,
-    warning: warning,
-    critical: critical,
-    warningPillBackground: warningPillBackground,
-    warningPillBorder: warningPillBorder,
-    premiumGradient: premiumGradient,
-    premiumTitle: premiumTitle,
-    premiumCheck: premiumCheck,
-    premiumBody: premiumBody,
-    premiumButtonBackground: premiumButtonBackground,
-    premiumButtonBorder: premiumButtonBorder,
-    premiumButtonText: premiumButtonText,
-  );
+  WalletHealthColors copyWith({Color? gaugeTrack, Color? goodText, Color? warningText, Color? criticalText}) =>
+      WalletHealthColors(
+        gaugeTrack: gaugeTrack ?? this.gaugeTrack,
+        gaugeColors: gaugeColors,
+        gaugeStops: gaugeStops,
+        excellent: excellent,
+        good: good,
+        warning: warning,
+        critical: critical,
+        goodText: goodText ?? this.goodText,
+        warningText: warningText ?? this.warningText,
+        criticalText: criticalText ?? this.criticalText,
+        warningPillBackground: warningPillBackground,
+        warningPillBorder: warningPillBorder,
+        premiumGradient: premiumGradient,
+        premiumTitle: premiumTitle,
+        premiumCheck: premiumCheck,
+        premiumBody: premiumBody,
+        premiumButtonBackground: premiumButtonBackground,
+        premiumButtonBorder: premiumButtonBorder,
+        premiumButtonText: premiumButtonText,
+      );
 }

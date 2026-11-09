@@ -622,9 +622,9 @@ class _CheckRow extends StatelessWidget {
                     : safetyReasonText(item.reason!));
     final resultColor =
         failed
-            ? health.warning
+            ? health.warningText
             : passed != null && !passed.byUser
-            ? health.good
+            ? health.goodText
             : colors.secondaryText;
     const tallest = 20.0;
     final resultLine =

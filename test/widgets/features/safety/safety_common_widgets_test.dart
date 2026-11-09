@@ -61,7 +61,11 @@ void main() {
       testWidgets('SafetyActionPill uses the wallet health warning pill colors', (tester) async {
         await tester.pumpWidget(_app(variant, const SafetyActionPill(text: 'Review')));
         expect(_decoration(tester, SafetyActionPill).color, health.warningPillBackground);
-        expect(_textColor(tester, 'Review'), health.warning);
+        expect(_textColor(tester, 'Review'), health.warningText);
+        expect(
+          _contrast(_textColor(tester, 'Review'), Color.alphaBlend(health.warningPillBackground, colors.homeSurface)),
+          greaterThanOrEqualTo(4.5),
+        );
       });
 
       testWidgets('SafetyIconCircle is a circle of the given size', (tester) async {
