@@ -969,7 +969,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         primary = t.alert.update.btn_update;
         onPrimary = () {
           close();
-          InAppReview.instance.openStoreListing(appStoreId: APPSTORE_ID_REGTEST);
+          InAppReview.instance.openStoreListing(appStoreId: appStoreId);
         };
       case SafetyCheckId.txConflict:
         // 대체된 받은 거래는 지갑 기록에서 지워져서 거래 상세로 갈 수 없다

@@ -18,10 +18,10 @@ class AppReviewService {
       if (await _inAppReview.isAvailable()) {
         _inAppReview.requestReview();
       } else {
-        _inAppReview.openStoreListing(appStoreId: APPSTORE_ID_REGTEST);
+        _inAppReview.openStoreListing(appStoreId: appStoreId);
       }
     } catch (_) {
-      _inAppReview.openStoreListing(appStoreId: APPSTORE_ID_REGTEST);
+      _inAppReview.openStoreListing(appStoreId: appStoreId);
     } finally {
       setHasReviewed();
     }

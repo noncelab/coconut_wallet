@@ -87,7 +87,7 @@ class StartViewModel extends ChangeNotifier {
   String get storeUrl =>
       Platform.isAndroid
           ? 'https://play.google.com/store/apps/details?id=${_packageInfo.packageName}'
-          : 'https://apps.apple.com/kr/app/$APPSTORE_ID_REGTEST';
+          : 'https://apps.apple.com/kr/app/$appStoreId';
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
