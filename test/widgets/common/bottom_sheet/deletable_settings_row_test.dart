@@ -168,7 +168,12 @@ void main() {
           await tester.sendKeyEvent(LogicalKeyboardKey.tab);
           await tester.pumpAndSettle();
           expect(
-            tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData().flagsCollection.isFocused,
+            tester
+                .getSemantics(find.bySemanticsLabel(label))
+                .getSemanticsData()
+                .flagsCollection
+                .isFocused
+                .toBoolOrNull(),
             isTrue,
           );
           await tester.sendKeyEvent(LogicalKeyboardKey.delete);
@@ -203,13 +208,13 @@ void main() {
       final data = node.getSemanticsData();
       expect(data.label, label);
       expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.hasEnabledState, isTrue);
-      expect(data.flagsCollection.isEnabled, isTrue);
-      expect(data.flagsCollection.isSelected, isTrue);
+      expect(data.flagsCollection.isEnabled.toBoolOrNull(), isNotNull);
+      expect(data.flagsCollection.isEnabled.toBoolOrNull(), isTrue);
+      expect(data.flagsCollection.isSelected.toBoolOrNull(), isTrue);
       expect(data.hasAction(SemanticsAction.tap), isTrue);
       var selectedNodes = 0;
       void visit(SemanticsNode node) {
-        if (node.getSemanticsData().flagsCollection.isSelected) selectedNodes++;
+        if (node.getSemanticsData().flagsCollection.isSelected.toBoolOrNull() == true) selectedNodes++;
         node.visitChildren((child) {
           visit(child);
           return true;
@@ -231,13 +236,19 @@ void main() {
       expect(taps, 1);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData().flagsCollection.isFocused, isTrue);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData().flagsCollection.isFocused.toBoolOrNull(),
+        isTrue,
+      );
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       expect(taps, 3);
       await tester.pumpWidget(host(row(false), theme: theme.value));
       await tester.pumpAndSettle();
-      expect(tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData().flagsCollection.isSelected, isFalse);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
+        isFalse,
+      );
       semantics.dispose();
     });
 
@@ -288,7 +299,15 @@ void main() {
       expect(deletes, 1);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(tester.getSemantics(find.bySemanticsLabel(t.delete)).getSemanticsData().flagsCollection.isFocused, isTrue);
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(t.delete))
+            .getSemanticsData()
+            .flagsCollection
+            .isFocused
+            .toBoolOrNull(),
+        isTrue,
+      );
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pumpAndSettle();
       expect(deletes, 2);
