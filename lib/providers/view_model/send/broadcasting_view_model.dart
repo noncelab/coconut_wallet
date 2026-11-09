@@ -25,6 +25,7 @@ import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart'
 import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_send_attempt.dart';
 import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show PayjoinCheckedProposal;
+import 'package:coconut_wallet/services/payjoin/payjoin_signer.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -159,8 +160,29 @@ class BroadcastingViewModel extends ChangeNotifier {
   String? get payjoinUri => feeBumpingType == null && !isFromSignedDraft ? _sendInfoProvider.payjoinUri : null;
 
   /// The signed, finalized Original: the transaction a payjoin replaces, and
-  /// the one to send if it does not happen.
-  String? get signedOriginalPsbt => _sendInfoProvider.signedResult;
+  /// the one to send if it does not happen. Coconut Vault returns its
+  /// signatures unfinalized, so they are finalized here.
+  String? get signedOriginalPsbt {
+    final signed = _sendInfoProvider.signedResult;
+    if (signed == null || !isPsbt(signed)) return signed;
+    return finalizeOriginalForPayjoin(signed);
+  }
+
+  String get walletName => _walletProvider.getWalletById(_walletId!).name;
+
+  PayjoinSigner? get payjoinSigner => payjoinSignerOf(_walletProvider.getWalletById(_walletId!));
+
+  /// The receiver's proposal as Coconut Vault gets it for the second
+  /// signature: the receiver's input final, ours with their key origins.
+  String payjoinProposalForVault(PayjoinCheckedProposal proposal) {
+    final wallet = _walletProvider.getWalletById(_walletId!).walletBase as SingleSignatureWallet;
+    return addOwnDerivations(
+      proposal.psbtBase64,
+      wallet: wallet,
+      derivationPathOf: (address) => _walletProvider.derivationPathOf(_walletId!, address),
+    );
+  }
+
   double? get feeRate => _sendInfoProvider.feeRate;
 
   bool _isPayjoinProposalApplied = false;

@@ -23,10 +23,10 @@ void main() {
   RecipientInfo recipient({String to = address, String? payjoinUri = uri}) =>
       RecipientInfo(address: to, amount: '10000')..payjoinUri = payjoinUri;
 
-  String? forSend(List<RecipientInfo> recipients, {bool hot = true, bool passphrase = false}) =>
-      payjoinUriForSend(recipients: recipients, isHotSingleSignatureWallet: hot, asksPassphraseWhenSigning: passphrase);
+  String? forSend(List<RecipientInfo> recipients, {bool canSign = true}) =>
+      payjoinUriForSend(recipients: recipients, canSignPayjoin: canSign);
 
-  test('the URI reaches the send for one recipient from a hot wallet', () {
+  test('the URI reaches the send for one recipient from a wallet that can sign', () {
     final info = SendInfoProvider()..setPayjoinUri(forSend([recipient()]));
     expect(info.payjoinUri, uri);
     info.clear();
@@ -37,10 +37,9 @@ void main() {
     expect(forSend([recipient(to: 'bcrt1qotheraddress')]), isNull);
   });
 
-  test('no payjoin for batches, watch-only wallets or passphrase-at-signing wallets', () {
+  test('no payjoin for batches or wallets that cannot sign a proposal', () {
     expect(forSend([recipient(), recipient()]), isNull);
-    expect(forSend([recipient()], hot: false), isNull);
-    expect(forSend([recipient()], passphrase: true), isNull);
+    expect(forSend([recipient()], canSign: false), isNull);
     expect(forSend([recipient(payjoinUri: null)]), isNull);
   });
 }

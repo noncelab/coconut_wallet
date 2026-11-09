@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_signer.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -820,12 +821,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   String? get _payjoinUriForSend {
     final wallet = _selectedWalletItem;
-    final metadata = wallet?.hotWalletMetadata;
     return payjoinUriForSend(
       recipients: _recipientList,
-      isHotSingleSignatureWallet:
-          wallet != null && wallet.hasLocalKey && metadata != null && wallet.walletType == WalletType.singleSignature,
-      asksPassphraseWhenSigning: metadata?.enterPassphraseWhenSigning ?? false,
+      canSignPayjoin: wallet != null && payjoinSignerOf(wallet) != null,
     );
   }
 
@@ -1222,14 +1220,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 /// The URI to attempt a payjoin with, if this send can make one.
 ///
 /// Payjoin needs a single recipient whose address is still the one in the
-/// URI, and a hot single-signature wallet that can sign the receiver's
-/// proposal without asking for a passphrase again.
-String? payjoinUriForSend({
-  required List<RecipientInfo> recipients,
-  required bool isHotSingleSignatureWallet,
-  required bool asksPassphraseWhenSigning,
-}) {
-  if (recipients.length != 1 || !isHotSingleSignatureWallet || asksPassphraseWhenSigning) return null;
+/// URI, and a wallet that can sign the receiver's proposal; see
+/// [payjoinSignerOf].
+String? payjoinUriForSend({required List<RecipientInfo> recipients, required bool canSignPayjoin}) {
+  if (recipients.length != 1 || !canSignPayjoin) return null;
   final recipient = recipients.single;
   final uri = recipient.payjoinUri;
   if (uri == null || parseBip21Uri(uri).address != recipient.address) return null;

@@ -112,6 +112,16 @@ String finalizeDeviceSignedPsbt(String signedPsbtBase64, {required String shownP
   return finalized.serialize();
 }
 
+/// The Original a payjoin sender posts, from [signedPsbtBase64]: every
+/// input finalized, so the receiver can broadcast it as the fallback, and
+/// the key origins kept, so payjoin can restore them on our inputs of the
+/// receiver's proposal for the second signature.
+String finalizeOriginalForPayjoin(String signedPsbtBase64) {
+  final psbt = Psbt.parse(signedPsbtBase64);
+  if (psbt.inputs.every((input) => input.isFinalized)) return signedPsbtBase64;
+  return psbt.finalizeInputs(keepDerivations: true).serialize();
+}
+
 class PayjoinSignedPsbtMismatch implements Exception {
   const PayjoinSignedPsbtMismatch(this.message);
 
