@@ -2250,6 +2250,9 @@ wallet_health:
     items_need_attention(cardinal):
       one: "要確認 1件"
       other: "要確認 ${n}件"
+    items_unchecked(cardinal):
+      one: "未確認1件"
+      other: "未確認${n}件"
     wallets_need_attention(cardinal):
       one: "要確認のウォレット 1個"
       other: "要確認のウォレット ${n}個"
@@ -2271,7 +2274,7 @@ wallet_health:
     no_wallet_title: "まだウォレットがありません"
     no_wallet_body: "ウォレットを追加して、すべての項目をチェックしましょう。"
     not_enough_data_title: "まだデータが足りません"
-    not_enough_data_body: "ウォレットを使うと、より多くの項目をチェックできます。"
+    not_enough_data_body: "今確認できる項目をチェックしてください。"
     offline_line: "オフライン・保存済みのデータに基づく"
     how_score_works: "スコアの仕組み"
   critical:
@@ -2294,8 +2297,8 @@ wallet_health:
     available: "利用可能"
     reason_add_wallet: "ウォレットがありません"
     reason_onchain_activity: "オンチェーンの履歴がありません"
-    reason_tx_history: "トランザクション履歴が必要"
-    reason_funds_or_usage: "残高か利用履歴が必要"
+    reason_tx_history: "取引履歴がまだありません"
+    reason_funds_or_usage: "残高も利用履歴もまだありません"
     reason_checks_available: "今すぐチェック可能"
     addresses_reused(cardinal):
       one: "再利用されたアドレス 1個"
@@ -2471,7 +2474,7 @@ wallet_health:
     formula_note: "各カテゴリのスコアに比重を掛けて合計します。まだ確認できないカテゴリは除き、その比重は残りのカテゴリで分け合います。"
     formula_cap: "アプリロック無効時の最高点"
     range_title: "スコアの範囲"
-    range_excellent: "チェックした項目はすべてよく管理されています。"
+    range_excellent: "チェックした項目はおおむねよく管理されています。"
     range_good: "いくつか改善するとさらに良くなります。"
     range_needs_attention: "確認が必要な項目があります。"
     range_action_needed: "先に対応すべき重要な項目があります。"
@@ -2486,6 +2489,7 @@ wallet_health:
     excluded_no_tags: "タグやメモがありません"
     excluded_not_scored: "スコアに反映しません"
     excluded_update_unknown: "アップデート情報を確認できませんでした"
+    excluded_sync_pending: "同期が完了すると確認できます"
     data_title: "使用したデータ"
     data_note: "保存済みのウォレットデータに基づいています。"
     last_updated: "最終更新"

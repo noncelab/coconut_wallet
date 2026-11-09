@@ -2253,6 +2253,9 @@ wallet_health:
     items_need_attention(cardinal):
       one: "1 elemento requiere atención"
       other: "${n} elementos requieren atención"
+    items_unchecked(cardinal):
+      one: "1 sin comprobar"
+      other: "${n} sin comprobar"
     wallets_need_attention(cardinal):
       one: "1 billetera requiere atención"
       other: "${n} billeteras requieren atención"
@@ -2274,7 +2277,7 @@ wallet_health:
     no_wallet_title: "Aún no hay billeteras"
     no_wallet_body: "Añade una billetera y revisa todos los puntos."
     not_enough_data_title: "Aún no hay datos suficientes"
-    not_enough_data_body: "Usa tu billetera para revisar más puntos."
+    not_enough_data_body: "Revisa primero las comprobaciones disponibles."
     offline_line: "Sin conexión · Según los datos guardados"
     how_score_works: "Cómo funciona la puntuación"
   critical:
@@ -2297,8 +2300,8 @@ wallet_health:
     available: "Disponible"
     reason_add_wallet: "No hay billeteras"
     reason_onchain_activity: "Sin historial on-chain"
-    reason_tx_history: "Requiere historial de transacciones"
-    reason_funds_or_usage: "Requiere fondos o uso"
+    reason_tx_history: "Aún no hay historial de transacciones"
+    reason_funds_or_usage: "Aún no hay saldo ni historial de uso"
     reason_checks_available: "Revisiones disponibles"
     addresses_reused(cardinal):
       one: "1 dirección reutilizada"
@@ -2474,7 +2477,7 @@ wallet_health:
     formula_note: "Cada puntuación de categoría se multiplica por su peso y se suma. Las categorías que aún no se pueden comprobar se excluyen y su peso se reparte entre las demás."
     formula_cap: "Máximo con el bloqueo desactivado"
     range_title: "Rangos de puntuación"
-    range_excellent: "Todo lo revisado está bien gestionado."
+    range_excellent: "La mayoría de los elementos revisados están bien gestionados."
     range_good: "Con algunas mejoras puede quedar aún mejor."
     range_needs_attention: "Algunos elementos requieren tu atención."
     range_action_needed: "Hay elementos importantes que resolver."
@@ -2489,6 +2492,7 @@ wallet_health:
     excluded_no_tags: "No hay etiquetas ni notas"
     excluded_not_scored: "No puntúa"
     excluded_update_unknown: "No se pudo comprobar si hay actualizaciones"
+    excluded_sync_pending: "Se comprobará al terminar la sincronización"
     data_title: "Datos usados"
     data_note: "Según los datos guardados de tus billeteras."
     last_updated: "Última actualización"

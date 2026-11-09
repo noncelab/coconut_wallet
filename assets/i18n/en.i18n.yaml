@@ -2253,6 +2253,9 @@ wallet_health:
     items_need_attention(cardinal):
       one: "1 item needs attention"
       other: "${n} items need attention"
+    items_unchecked(cardinal):
+      one: "1 not checked"
+      other: "${n} not checked"
     wallets_need_attention(cardinal):
       one: "1 wallet needs attention"
       other: "${n} wallets need attention"
@@ -2274,7 +2277,7 @@ wallet_health:
     no_wallet_title: "No wallets yet"
     no_wallet_body: "Add a wallet and check every item."
     not_enough_data_title: "Not enough data yet"
-    not_enough_data_body: "Use your wallet to unlock more checks."
+    not_enough_data_body: "Review the checks available now."
     offline_line: "Offline · Based on saved data"
     how_score_works: "How the score works"
   critical:
@@ -2297,8 +2300,8 @@ wallet_health:
     available: "Available"
     reason_add_wallet: "No wallet yet"
     reason_onchain_activity: "No on-chain history"
-    reason_tx_history: "Needs transaction history"
-    reason_funds_or_usage: "Needs funds or usage"
+    reason_tx_history: "No transaction history yet"
+    reason_funds_or_usage: "No balance or usage history yet"
     reason_checks_available: "Checks available now"
     addresses_reused(cardinal):
       one: "1 address reused"
@@ -2474,7 +2477,7 @@ wallet_health:
     formula_note: "Each category score is multiplied by its weight and added up. Categories that can't be checked yet are left out, and their weight is shared by the others."
     formula_cap: "Max score with app lock off"
     range_title: "Score range"
-    range_excellent: "Every checked item is well managed."
+    range_excellent: "Most checked items are well managed."
     range_good: "A few improvements can make it even better."
     range_needs_attention: "Some items need your attention."
     range_action_needed: "Important items need to be resolved."
@@ -2489,6 +2492,7 @@ wallet_health:
     excluded_no_tags: "No tags or notes"
     excluded_not_scored: "Not scored"
     excluded_update_unknown: "Couldn't check for updates"
+    excluded_sync_pending: "Checked after syncing finishes"
     data_title: "Data used"
     data_note: "Based on your saved wallet data."
     last_updated: "Last updated"

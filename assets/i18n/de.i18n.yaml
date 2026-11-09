@@ -2258,6 +2258,9 @@ wallet_health:
     items_need_attention(cardinal):
       one: "1 Punkt zu prüfen"
       other: "${n} Punkte zu prüfen"
+    items_unchecked(cardinal):
+      one: "1 nicht geprüft"
+      other: "${n} nicht geprüft"
     wallets_need_attention(cardinal):
       one: "1 Wallet zu prüfen"
       other: "${n} Wallets zu prüfen"
@@ -2279,7 +2282,7 @@ wallet_health:
     no_wallet_title: "Noch keine Wallets"
     no_wallet_body: "Füge eine Wallet hinzu und prüfe alle Punkte."
     not_enough_data_title: "Noch nicht genug Daten"
-    not_enough_data_body: "Nutze deine Wallet, um mehr Punkte zu prüfen."
+    not_enough_data_body: "Prüfe zunächst die Punkte, die jetzt verfügbar sind."
     offline_line: "Offline · Gespeicherte Daten"
     how_score_works: "So funktioniert die Bewertung"
   critical:
@@ -2302,8 +2305,8 @@ wallet_health:
     available: "Verfügbar"
     reason_add_wallet: "Keine Wallet vorhanden"
     reason_onchain_activity: "Kein On-Chain-Verlauf"
-    reason_tx_history: "Braucht Transaktionsverlauf"
-    reason_funds_or_usage: "Braucht Guthaben oder Nutzung"
+    reason_tx_history: "Noch kein Transaktionsverlauf"
+    reason_funds_or_usage: "Noch kein Guthaben und kein Nutzungsverlauf"
     reason_checks_available: "Prüfungen verfügbar"
     addresses_reused(cardinal):
       one: "1 Adresse wiederverwendet"
@@ -2479,7 +2482,7 @@ wallet_health:
     formula_note: "Jede Kategoriebewertung wird mit ihrer Gewichtung multipliziert und addiert. Kategorien, die noch nicht geprüft werden können, fallen weg; ihre Gewichtung wird auf die übrigen verteilt."
     formula_cap: "Höchstwert ohne App-Sperre"
     range_title: "Bewertungsbereiche"
-    range_excellent: "Alles Geprüfte ist gut geregelt."
+    range_excellent: "Die meisten geprüften Punkte sind gut geregelt."
     range_good: "Mit ein paar Verbesserungen wird es noch besser."
     range_needs_attention: "Einige Punkte solltest du prüfen."
     range_action_needed: "Wichtige Punkte müssen gelöst werden."
@@ -2494,6 +2497,7 @@ wallet_health:
     excluded_no_tags: "Keine Tags oder Notizen"
     excluded_not_scored: "Fließt nicht ein"
     excluded_update_unknown: "Updates konnten nicht geprüft werden"
+    excluded_sync_pending: "Wird nach der Synchronisierung geprüft"
     data_title: "Verwendete Daten"
     data_note: "Basierend auf deinen gespeicherten Wallet-Daten."
     last_updated: "Zuletzt aktualisiert"

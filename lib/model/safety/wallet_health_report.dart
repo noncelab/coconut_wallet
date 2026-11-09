@@ -177,6 +177,19 @@ class WalletHealthReport extends Equatable {
           .where((r) => r.severity == SafetySeverity.actionNeeded || r.severity == SafetySeverity.warning)
           .length;
 
+  /// 해당 없음과 달리 아직 판정하지 못한 점검. 점수와 함께 확인 범위를 보여 준다.
+  List<SafetyCheckResult> get uncheckedItems => [
+    for (final item in notIncluded)
+      if (item.outcome == SafetyOutcome.unknown) item,
+  ];
+
+  int uncheckedCountOf(SafetyCategory category) => uncheckedItems.where((r) => r.id.category == category).length;
+
+  List<SafetyCheckResult> get userConfirmedItems => [
+    for (final item in allGoodItems)
+      if (item.evidence == SafetyEvidence.userConfirmed && (item.points ?? 100) < 100) item,
+  ];
+
   /// [evaluatedAt]은 비교에서 뺀다(결과가 같으면 같은 보고서).
   @override
   List<Object?> get props => [

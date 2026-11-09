@@ -149,6 +149,10 @@ class _AboutSheet extends StatelessWidget {
           _ScoreFormula(report: report),
           CoconutLayout.spacing_300h,
           Text(safetyKoText(s.formula_note), style: secondary),
+          if (report.userConfirmedItems.isNotEmpty) ...[
+            CoconutLayout.spacing_200h,
+            Text(safetyKoText(s.weight_user_confirmed), style: secondary),
+          ],
         ],
         if (report != null && report.score != null) ...[
           _SheetTitle(s.data_title, bottom: 0),
@@ -240,7 +244,7 @@ class _RangeRow extends StatelessWidget {
       WalletHealthLabel.needsAttention => ('50 - 74', health.warning, s.range_needs_attention),
       WalletHealthLabel.actionNeeded => ('0 - 49', health.critical, s.range_action_needed),
     };
-    final rowStyle = CoconutTypography.body2_14;
+    const rowStyle = CoconutTypography.body2_14;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -340,12 +344,17 @@ class _IncludedBox extends StatelessWidget {
       for (final r in [...report.reviewItems, ...report.allGoodItems]) r.id,
       if (report.criticalIncidents.isNotEmpty) SafetyCheckId.unrecognizedOutgoing,
     };
+    String nameOf(SafetyCheckId id) =>
+        id == SafetyCheckId.multisigConfig || id == SafetyCheckId.bsmsBackup
+            ? t.wallet_health.about.multisig_recovery
+            : safetyCheckName(id);
+    final failed = {
+      for (final item in report.reviewItems) nameOf(item.id),
+      if (report.criticalIncidents.isNotEmpty) nameOf(SafetyCheckId.unrecognizedOutgoing),
+    };
     final names = <String>{
       for (final id in SafetyCheckId.values)
-        if (id.category == category && applied.contains(id))
-          id == SafetyCheckId.multisigConfig || id == SafetyCheckId.bsmsBackup
-              ? t.wallet_health.about.multisig_recovery
-              : safetyCheckName(id),
+        if (id.category == category && applied.contains(id)) nameOf(id),
     };
     final percent = report.categories[category]?.weightPercent ?? 0;
     return Container(
@@ -398,10 +407,16 @@ class _IncludedBox extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(top: safetyFirstLineTop(context, CoconutTypography.body3_12, 10)),
                   child: SvgPicture.asset(
-                    FeatureWalletHealthIconPath.check,
+                    failed.contains(name)
+                        ? FeatureWalletHealthIconPath.triangleWarningFilled
+                        : FeatureWalletHealthIconPath.check,
                     width: 10,
                     height: 10,
-                    colorFilter: ColorFilter.mode(context.walletHealthColors.good, BlendMode.srcIn),
+                    semanticsLabel: failed.contains(name) ? t.wallet_health.summary.items_need_attention(n: 1) : null,
+                    colorFilter: ColorFilter.mode(
+                      failed.contains(name) ? context.walletHealthColors.warning : context.walletHealthColors.good,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
                 CoconutLayout.spacing_150w,
@@ -518,7 +533,7 @@ class _ConnectionValue extends StatelessWidget {
         CoconutLayout.spacing_200w,
         Flexible(
           child: Text(
-            safetyKoText(connected ? t.wallet_health.connection.connected : t.wallet_health.about.offline_not_scored),
+            safetyKoText(connected ? t.wallet_health.connection.connected : t.wallet_health.hero.offline_line),
             style: CoconutTypography.body3_12.setColor(colors.primaryText),
           ),
         ),
@@ -583,6 +598,12 @@ class _CheckRow extends StatelessWidget {
     final colors = context.coconutColors;
     final failed = item.outcome == SafetyOutcome.failed;
     final passed = item.outcome == SafetyOutcome.passed ? safetyPassedText(item) : null;
+    final actionable =
+        failed ||
+        (item.id == SafetyCheckId.watchOnlyVerify &&
+            item.outcome == SafetyOutcome.passed &&
+            item.evidence == SafetyEvidence.userConfirmed &&
+            (item.points ?? 100) < 100);
     final health = context.walletHealthColors;
     final (icon, iconColor) =
         failed
@@ -605,7 +626,7 @@ class _CheckRow extends StatelessWidget {
             : passed != null && !passed.byUser
             ? health.good
             : colors.secondaryText;
-    final tallest = 20.0;
+    const tallest = 20.0;
     final resultLine =
         MediaQuery.textScalerOf(context).scale(CoconutTypography.body3_12.fontSize!) *
         CoconutTypography.body3_12.height!;
@@ -652,7 +673,7 @@ class _CheckRow extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: CoconutTypography.body3_12.setColor(resultColor),
                   ),
-                  if (failed) ...[CoconutLayout.spacing_100h, SafetyActionPill(text: safetyCtaText(item))],
+                  if (actionable) ...[CoconutLayout.spacing_100h, SafetyActionPill(text: safetyCtaText(item))],
                 ],
               ),
             ),
@@ -660,7 +681,7 @@ class _CheckRow extends StatelessWidget {
         ],
       ),
     );
-    if (!failed) return row;
+    if (!actionable) return row;
     return SafetyPressRow(
       key: Key('wallet-health-check-row-${item.key}'),
       background: colors.surfaceBottomSheetElevated,

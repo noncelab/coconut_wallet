@@ -2259,6 +2259,9 @@ wallet_health:
     items_need_attention(cardinal):
       one: "확인 필요 1건"
       other: "확인 필요 ${n}건"
+    items_unchecked(cardinal):
+      one: "확인 전 1건"
+      other: "확인 전 ${n}건"
     wallets_need_attention(cardinal):
       one: "1개 지갑 확인 필요"
       other: "${n}개 지갑 확인 필요"
@@ -2280,7 +2283,7 @@ wallet_health:
     no_wallet_title: "아직 지갑이 없어요"
     no_wallet_body: "지갑을 추가하고 모든 항목을 점검하세요"
     not_enough_data_title: "아직 데이터가 부족해요"
-    not_enough_data_body: "지갑을 사용하면 더 많은 항목을 점검할 수 있어요."
+    not_enough_data_body: "지금 확인할 수 있는 항목을 먼저 점검해 보세요."
     offline_line: "오프라인 · 저장된 데이터 기준"
     how_score_works: "점수 계산 기준 보기"
   critical:
@@ -2303,8 +2306,8 @@ wallet_health:
     available: "사용 가능"
     reason_add_wallet: "지갑이 없어요"
     reason_onchain_activity: "온체인 이력이 없어요"
-    reason_tx_history: "거래 기록이 필요해요"
-    reason_funds_or_usage: "자금이나 사용 기록이 필요해요"
+    reason_tx_history: "거래 기록이 아직 없어요"
+    reason_funds_or_usage: "자금이나 사용 기록이 아직 없어요"
     reason_checks_available: "지금 확인할 수 있어요"
     addresses_reused(cardinal):
       one: "주소 재사용 1건"
@@ -2480,7 +2483,7 @@ wallet_health:
     formula_note: "카테고리 점수에 비중을 곱해 더해요. 아직 확인할 수 없는 카테고리는 빼고, 그 비중은 나머지 카테고리가 나눠 가져요."
     formula_cap: "앱 잠금 해제 시 최대 점수"
     range_title: "점수 구간"
-    range_excellent: "점검한 항목이 모두 잘 관리되고 있어요."
+    range_excellent: "점검한 항목이 대체로 잘 관리되고 있어요."
     range_good: "몇 가지만 개선하면 더 좋아져요."
     range_needs_attention: "확인이 필요한 항목이 있어요."
     range_action_needed: "먼저 해결해야 할 중요한 항목이 있어요."
@@ -2495,6 +2498,7 @@ wallet_health:
     excluded_no_tags: "태그나 메모가 없어요"
     excluded_not_scored: "점수에 반영하지 않아요"
     excluded_update_unknown: "업데이트 정보를 확인하지 못했어요"
+    excluded_sync_pending: "동기화가 끝나면 확인해요"
     data_title: "사용한 데이터"
     data_note: "저장된 지갑 데이터 기준이에요."
     last_updated: "마지막 업데이트"

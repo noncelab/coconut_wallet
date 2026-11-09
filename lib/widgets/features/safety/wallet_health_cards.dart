@@ -8,6 +8,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -100,7 +101,7 @@ String safetyReasonText(NotApplicableReason reason) => switch (reason) {
   NotApplicableReason.noLabels => t.wallet_health.about.excluded_no_tags,
   NotApplicableReason.notCustomServer => t.wallet_health.about.excluded_not_scored,
   NotApplicableReason.updateCheckFailed => t.wallet_health.about.excluded_update_unknown,
-  NotApplicableReason.notSettled => t.status_updating,
+  NotApplicableReason.notSettled => t.wallet_health.about.excluded_sync_pending,
 };
 
 /// 카드의 "대기 중" 사유(피그마 WH-S0·S4)
@@ -369,7 +370,14 @@ String safetyRecommendedBody(RecommendedCheckId id) {
     return (text: safetyWaitingText(category, score?.waitingReason), color: colors.secondaryText);
   }
   final issues = score!.issueCount;
-  if (issues == 0) return (text: summary.no_issues_found, color: context.walletHealthColors.good);
+  if (issues == 0) {
+    final unchecked = report.uncheckedCountOf(category);
+    if (unchecked > 0) return (text: summary.items_unchecked(n: unchecked), color: colors.secondaryText);
+    if (report.userConfirmedItems.any((r) => r.id.category == category)) {
+      return (text: t.wallet_health.evidence.completed_by_you, color: colors.secondaryText);
+    }
+    return (text: summary.no_issues_found, color: context.walletHealthColors.good);
+  }
   final items = report.reviewItems.where((r) => r.id.category == category);
   int subjects(SafetyCheckId id) => items.where((r) => r.id == id).fold(0, (sum, r) => sum + r.subjects.length);
   final reused = subjects(SafetyCheckId.addressReuse);
@@ -420,12 +428,14 @@ class WalletHealthHeaderCard extends StatelessWidget {
     required this.onCheckAgain,
     required this.onAddWallet,
     this.offlineCause,
+    this.onShowPending,
   });
 
   final WalletHealthReport? report;
   final bool isChecking;
   final VoidCallback onCheckAgain;
   final VoidCallback onAddWallet;
+  final VoidCallback? onShowPending;
 
   /// 오프라인일 때 그 원인(홈 상태칩과 같은 말: 네트워크 끊김·VPN 확인·연결 실패, C46)
   final String? offlineCause;
@@ -437,6 +447,11 @@ class WalletHealthHeaderCard extends StatelessWidget {
     final noWallet = report?.status == WalletHealthStatus.noWallet;
     final hero = t.wallet_health.hero;
     final lineStyle = CoconutTypography.body3_12.setColor(colors.secondaryText);
+    final pending = [
+      if ((report?.attentionCount ?? 0) > 0) t.wallet_health.status_chip.attention(n: report!.attentionCount),
+      if (report?.uncheckedItems.isNotEmpty ?? false)
+        t.wallet_health.summary.items_unchecked(n: report!.uncheckedItems.length),
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Column(
@@ -489,6 +504,20 @@ class WalletHealthHeaderCard extends StatelessWidget {
                 CoconutLayout.spacing_100h,
                 Text(safetyKoText(offlineCause!), textAlign: TextAlign.center, style: lineStyle),
               ],
+            ],
+            if (report.status == WalletHealthStatus.scored &&
+                !isChecking &&
+                pending.isNotEmpty &&
+                onShowPending != null) ...[
+              CoconutLayout.spacing_200h,
+              CoconutUnderlinedButton(
+                key: const Key('wallet-health-pending-link'),
+                text: pending.join(' · '),
+                onTap: onShowPending!,
+                textStyle: CoconutTypography.body3_12_Bold,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+                defaultColor: colors.secondaryTextStrong,
+              ),
             ],
           ],
         ],
@@ -893,7 +922,10 @@ class SafetyPassedRow extends StatelessWidget {
               width: 20,
               height: 20,
               semanticsLabel: safetyEvidenceA11y(byUser: result.byUser),
-              colorFilter: ColorFilter.mode(result.byUser ? colors.iconSecondary : color, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(
+                result.byUser ? colors.iconSecondary : context.walletHealthColors.good,
+                BlendMode.srcIn,
+              ),
             ),
           ),
           CoconutLayout.spacing_200w,
@@ -963,7 +995,17 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
         for (final (name, reason) in [
           for (final n in names ?? const <String>[]) (n, null),
           if (names == null)
-            for (final item in items) (safetyCheckName(item.id), showReasons ? item.reason : null),
+            for (final item in items)
+              (
+                safetyCheckName(item.id),
+                showReasons
+                    ? item.reason != null
+                        ? safetyReasonText(item.reason!)
+                        : item.outcome == SafetyOutcome.unknown
+                        ? t.wallet_health.evidence.not_checked
+                        : null
+                    : null,
+              ),
         ])
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -987,10 +1029,7 @@ class WalletHealthNotIncludedCard extends StatelessWidget {
                     children: [
                       Text(safetyKoText(name), style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
                       // 이유 문장이 길어 이 카드만 이름 아래에 왼쪽 정렬로 둔다(POLISH X4)
-                      if (reason != null) ...[
-                        CoconutLayout.spacing_50h,
-                        Text(safetyKoText(safetyReasonText(reason)), style: style),
-                      ],
+                      if (reason != null) ...[CoconutLayout.spacing_50h, Text(safetyKoText(reason), style: style)],
                     ],
                   ),
                 ),

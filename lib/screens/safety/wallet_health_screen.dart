@@ -72,7 +72,46 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
   late final AnimationController _highlight;
   SafetyCategory? _highlightedCategory;
   final _firstHighlightedRowKey = GlobalKey();
+  final _reviewKey = GlobalKey();
+  final _uncheckedKey = GlobalKey();
   int _highlightRun = 0;
+
+  Future<void> _scrollTo(
+    GlobalKey key,
+    WalletHealthReport report, {
+    int? navigationRun,
+    double alignment = 0.1,
+    Duration duration = const Duration(milliseconds: 300),
+  }) async {
+    final run = navigationRun ?? ++_highlightRun;
+    final still = safetyReduceMotion(context);
+    final safety = context.read<SafetyProvider?>();
+    if (safety?.report != report) return;
+    // SliverList는 화면 밖 제목을 아직 만들지 않을 수 있어, 보이는 범위를 겹쳐 가며 찾는다.
+    while (mounted && run == _highlightRun && _scroll.hasClients && key.currentContext == null) {
+      final position = _scroll.position;
+      final next = (position.pixels + position.viewportDimension * 0.75).clamp(0.0, position.maxScrollExtent);
+      if (next <= position.pixels) return;
+      if (still) {
+        _scroll.jumpTo(next);
+      } else {
+        await _scroll.animateTo(next, duration: const Duration(milliseconds: 200), curve: Curves.easeOutCubic);
+      }
+      await WidgetsBinding.instance.endOfFrame;
+      // 끊긴 애니메이션을 다시 시작해 사용자 드래그를 빼앗거나, 사라진 구역을 계속 찾지 않는다.
+      if (!mounted || !_scroll.hasClients || (_scroll.position.pixels - next).abs() > 1 || safety?.report != report) {
+        return;
+      }
+    }
+    final target = key.currentContext;
+    if (!mounted || run != _highlightRun || safety?.report != report || target == null || !target.mounted) return;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: alignment,
+      duration: still ? Duration.zero : duration,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void initState() {
@@ -103,9 +142,12 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
   /// 사이렌 머리와 [검토] 버튼이 화면 밖에 남는다(예: 불일치를 확정하고 돌아왔을 때)
   void _followCritical(bool critical) {
     if (critical && !_wasCritical) {
+      ++_highlightRun;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scroll.hasClients || _scroll.offset <= 0) return;
-        if (safetyReduceMotion(context)) {
+        if (!mounted || !_scroll.hasClients) return;
+        _highlight.stop();
+        _highlight.value = 0;
+        if (safetyReduceMotion(context) || _scroll.offset <= 0) {
           _scroll.jumpTo(0);
         } else {
           _scroll.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
@@ -125,19 +167,28 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     SafetyCategory category, {
     SafetyCheckResult? inHero,
   }) async {
-    if (!_hasReviewRows(report, category, inHero: inHero)) return;
+    if (!_hasReviewRows(report, category, inHero: inHero)) {
+      if (report.status != WalletHealthStatus.noWallet && report.uncheckedCountOf(category) > 0) {
+        await _scrollTo(_uncheckedKey, report);
+      } else {
+        final walletId = report.userConfirmedItems.where((r) => r.id.category == category).firstOrNull?.walletId;
+        if (walletId != null) await showWalletContributionSheet(context, walletId);
+      }
+      return;
+    }
     final run = ++_highlightRun;
     _highlight.value = 0;
     setState(() => _highlightedCategory = category);
     await WidgetsBinding.instance.endOfFrame;
-    final target = _firstHighlightedRowKey.currentContext;
-    if (!mounted || run != _highlightRun || target == null || !target.mounted) return;
-    await Scrollable.ensureVisible(
-      target,
+    if (!mounted || run != _highlightRun) return;
+    await _scrollTo(
+      _firstHighlightedRowKey,
+      report,
+      navigationRun: run,
       alignment: 0.5,
       duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
     );
+    if (!mounted || run != _highlightRun || _firstHighlightedRowKey.currentContext == null) return;
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!mounted || run != _highlightRun) return;
     if (safetyReduceMotion(context)) {
@@ -258,13 +309,14 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     final waiting = noWallet || status == WalletHealthStatus.notEnoughData;
     final s = t.wallet_health.section;
     final colors = context.coconutColors;
-    final notIncluded = _waitingChecks(report);
+    final notIncluded = _waitingChecks(report, waiting: waiting);
     return [
       WalletHealthHeaderCard(
         report: report,
         isChecking: checking,
         onCheckAgain: _checkAgain,
         onAddWallet: () => WalletAddScreen.openByWalletCount(context),
+        onShowPending: () => _scrollTo(report!.attentionCount > 0 ? _reviewKey : _uncheckedKey, report),
         offlineCause: report != null && !report.isConnected ? _offlineCause() : null,
       ),
       if (waiting) ...[
@@ -314,9 +366,9 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
           // "더 많은 점검을 하려면"은 지갑이 없을 때만(UI 브리프 WH-S0)
           CoconutLayout.spacing_800h,
           const WalletHealthUnlockCard(),
-        ] else if (waiting && notIncluded.isNotEmpty) ...[
-          SafetySectionTitle(s.not_included_yet),
-          WalletHealthNotIncludedCard(items: notIncluded, footer: s.not_included_footer_usage),
+        ] else if (notIncluded.isNotEmpty) ...[
+          KeyedSubtree(key: _uncheckedKey, child: SafetySectionTitle(s.not_included_yet)),
+          WalletHealthNotIncludedCard(items: notIncluded, footer: waiting ? s.not_included_footer_usage : null),
         ],
         ..._recommendedSection(report),
       ],
@@ -344,15 +396,17 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
   }
 
   /// 지갑이 생기거나 쓰기 시작하면 자동으로 들어오는 점검(점검 종류별 한 줄)
-  List<SafetyCheckResult> _waitingChecks(WalletHealthReport? report) => _uniqueById([
+  List<SafetyCheckResult> _waitingChecks(WalletHealthReport? report, {required bool waiting}) => _uniqueById([
     for (final r in report?.notIncluded ?? const <SafetyCheckResult>[])
-      if (const {
-        NotApplicableReason.noWallet,
-        NotApplicableReason.noFunds,
-        NotApplicableReason.noHistory,
-        NotApplicableReason.noReceiveHistory,
-        NotApplicableReason.noUtxoHistory,
-      }.contains(r.reason))
+      if (r.outcome == SafetyOutcome.unknown ||
+          (waiting &&
+              const {
+                NotApplicableReason.noWallet,
+                NotApplicableReason.noFunds,
+                NotApplicableReason.noHistory,
+                NotApplicableReason.noReceiveHistory,
+                NotApplicableReason.noUtxoHistory,
+              }.contains(r.reason)))
         r,
   ]);
 
@@ -385,7 +439,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     }
 
     return [
-      SafetySectionTitle(t.wallet_health.section.review_needed),
+      KeyedSubtree(key: _reviewKey, child: SafetySectionTitle(t.wallet_health.section.review_needed)),
       SafetyListCard(
         rows: [
           for (final (i, item) in items.indexed) wrap(i, SafetyReviewRow(check: item)),
@@ -641,6 +695,10 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
         ],
       ),
       ..._reviewSection(report, inHero: incident == null ? check : null),
+      if (report.uncheckedItems.isNotEmpty) ...[
+        KeyedSubtree(key: _uncheckedKey, child: SafetySectionTitle(t.wallet_health.section.not_included_yet)),
+        WalletHealthNotIncludedCard(items: report.uncheckedItems),
+      ],
     ];
   }
 
