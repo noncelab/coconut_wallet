@@ -215,13 +215,17 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
     final stroke = (size / 7).roundToDouble(); // 208 → 30, 72 → 10
     final radius = (size - stroke) / 2;
     final inner = 2 * radius - stroke - (widget._compact ? 8 : 16);
+    final scoreAndLabel =
+        !widget._compact && !critical && (_scored(report) || widget.isChecking || _caption(report).isNotEmpty)
+            ? _scoreAndLabel(context, report, radius - stroke / 2)
+            : null;
     return Semantics(
       label: _semanticsLabel(report),
       child: ExcludeSemantics(
         child: SizedBox(
           width: size,
-          // 원호 맨 아래까지만
-          height: size / 2 + radius * math.sqrt1_2 + stroke / 2,
+          // 큰 글자 라벨을 원호 아래로 내리면 그 공간도 확보한다.
+          height: math.max(size / 2 + radius * math.sqrt1_2 + stroke / 2, scoreAndLabel?.bottom ?? 0),
           child: Stack(
             children: [
               Positioned.fill(
@@ -244,10 +248,8 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
                 ),
               ),
               // 지갑 없음·데이터 부족도 점수 화면과 같은 자리: 대시는 점수 자리, 안내는 라벨 자리
-              if (!widget._compact &&
-                  !critical &&
-                  (_scored(report) || widget.isChecking || _caption(report).isNotEmpty))
-                ..._scoreAndLabel(context, report, radius - stroke / 2)
+              if (scoreAndLabel != null)
+                ...scoreAndLabel.children
               else
                 Positioned(
                   left: (size - inner) / 2,
@@ -270,14 +272,18 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
   }
 
   /// 점수는 원 중심보다 조금 위, 라벨은 아래쪽 열린 곳. 라벨은 그 높이의 원호 안쪽 폭을 넘지 않게 줄인다
-  List<Widget> _scoreAndLabel(BuildContext context, WalletHealthReport? report, double innerRadius) {
+  ({double bottom, List<Widget> children}) _scoreAndLabel(
+    BuildContext context,
+    WalletHealthReport? report,
+    double innerRadius,
+  ) {
     final size = widget.size;
     final checking = widget.isChecking;
     final label = report?.label;
-    final labelOffset = size * 0.2;
     final labelHalf = MediaQuery.textScalerOf(context).scale(_labelStyle.fontSize!) * _labelStyle.height! / 2;
+    var labelOffset = size * 0.2 + math.max(0.0, labelHalf - _labelStyle.fontSize! * _labelStyle.height! / 2);
     final labelTop = math.max(0.0, labelOffset - labelHalf);
-    final labelWidth = 2 * math.sqrt(math.max(0.0, innerRadius * innerRadius - labelTop * labelTop)) - 16;
+    var labelWidth = 2 * math.sqrt(math.max(0.0, innerRadius * innerRadius - labelTop * labelTop)) - 16;
     final caption = checking || label != null ? null : _caption(report);
     final text =
         checking
@@ -291,6 +297,30 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
             : _labelStyle.setColor(
               checking ? context.coconutColors.secondaryText : walletHealthLabelColor(context, label!),
             );
+    final textScaler = MediaQuery.textScalerOf(context);
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      locale: Localizations.maybeLocaleOf(context),
+      textScaler: textScaler,
+    )..layout();
+    double fittedHeight() => painter.height * math.min(1.0, labelWidth / math.max(1.0, painter.width));
+    var labelHeight = fittedHeight();
+    if (textScaler.scale(style.fontSize!) > style.fontSize!) {
+      final cap = HealthGauge.arcEndSpan(size) / 2;
+      final halfWidth = math.min(labelWidth, painter.width) / 2;
+      final dx = math.max(0.0, cap - halfWidth);
+      final dy = math.max(0.0, (cap - labelOffset).abs() - labelHeight / 2);
+      final stroke = (size / 7).roundToDouble();
+      // 기본 글자 크기의 시안은 유지하고, 커진 글자가 둥근 원호 끝에 닿을 때만 아래로 옮긴다.
+      if (dx * dx + dy * dy < math.pow(stroke / 2 + 4, 2)) {
+        labelWidth = size - 16;
+        labelHeight = fittedHeight();
+        labelOffset = cap + stroke / 2 + 4 + labelHeight / 2;
+      }
+    }
+    painter.dispose();
     Widget at(double dy, double maxWidth, Widget child) => Positioned(
       left: 0,
       top: 0,
@@ -306,17 +336,20 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
         ),
       ),
     );
-    return [
-      at(-size * 0.03, innerRadius * 1.7, _scoreNumber(context, report)),
-      at(
-        labelOffset,
-        labelWidth,
-        AnimatedSwitcher(
-          duration: _still ? Duration.zero : _fade,
-          child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
+    return (
+      bottom: size / 2 + labelOffset + labelHeight / 2,
+      children: [
+        at(-size * 0.03, innerRadius * 1.7, _scoreNumber(context, report)),
+        at(
+          labelOffset,
+          labelWidth,
+          AnimatedSwitcher(
+            duration: _still ? Duration.zero : _fade,
+            child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
+          ),
         ),
-      ),
-    ];
+      ],
+    );
   }
 
   static final _labelStyle = CoconutTypography.heading3_21.copyWith(fontSize: 22, height: 1.2);
@@ -331,12 +364,14 @@ class _HealthGaugeState extends State<HealthGauge> with TickerProviderStateMixin
             opacity: (scored ? Curves.easeOut.transform(_number.value) : 1) * (1 - 0.6 * _checking.value),
             child:
                 scored
-                    ? Text(
-                      '${(_value * 100).round()}',
-                      textAlign: TextAlign.center,
-                      style: CoconutTypography.heading1_32_NumberBold
-                          .copyWith(fontSize: 64, height: 1, fontFeatures: const [FontFeature.tabularFigures()])
-                          .setColor(colors.primaryText),
+                    ? MediaQuery.withNoTextScaling(
+                      child: Text(
+                        '${(_value * 100).round()}',
+                        textAlign: TextAlign.center,
+                        style: CoconutTypography.heading1_32_NumberBold
+                            .copyWith(fontSize: 64, height: 1, fontFeatures: const [FontFeature.tabularFigures()])
+                            .setColor(colors.primaryText),
+                      ),
                     )
                     : child,
           ),

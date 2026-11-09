@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,6 +49,47 @@ Future<void> _pump(
 );
 
 void main() {
+  setUpAll(() async {
+    for (final family in ['Pretendard', 'SpaceGrotesk']) {
+      await (FontLoader(family)
+            ..addFont(rootBundle.load('assets/fonts/$family-Regular.ttf'))
+            ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
+          .load();
+    }
+  });
+  testWidgets('large text keeps the gauge number inside its arc without overlapping the scaled label', (tester) async {
+    for (final locale in AppLocale.values) {
+      for (final scale in [1.3, 2.0, 3.0]) {
+        for (final score in [42, 74, 86, 100]) {
+          final report = scoredReport(score: score);
+          await pumpWalletHealthApp(
+            tester,
+            Scaffold(body: Center(child: HealthGauge(report: report))),
+            locale: locale,
+            textScale: scale,
+            width: 320,
+            height: 844,
+          );
+          final number = tester.getRect(_text('$score'));
+          final label = tester.getRect(_text(walletHealthLabelText(report.label!)));
+          expect(number.height, lessThanOrEqualTo(64));
+          expect(number.bottom, lessThanOrEqualTo(label.top));
+          final gauge = tester.getRect(find.byType(HealthGauge));
+          expect(label.bottom, lessThanOrEqualTo(gauge.bottom + .01));
+          for (final direction in [-1, 1]) {
+            final cap = Offset(
+              gauge.center.dx + direction * HealthGauge.arcEndSpan() / 2,
+              gauge.top + 104 + HealthGauge.arcEndSpan() / 2,
+            );
+            final closest = Offset(cap.dx.clamp(label.left, label.right), cap.dy.clamp(label.top, label.bottom));
+            expect((closest - cap).distance, greaterThanOrEqualTo(15));
+          }
+          expect(tester.takeException(), isNull);
+        }
+      }
+    }
+  });
+
   for (final variant in CoconutThemeVariant.values) {
     final colors = resolveCoconutThemeExtension(variant: variant).colors;
     final health = resolveCoconutThemeExtension(variant: variant).walletHealth;
@@ -58,6 +100,10 @@ void main() {
         await _pump(tester, scoredReport(score: 86), variant: variant);
         expect(_text('86'), findsOneWidget);
         expect(_textColor(tester, t.wallet_health.score_label.good), health.good);
+        expect(
+          tester.getCenter(_text(t.wallet_health.score_label.good)).dy - tester.getTopLeft(find.byType(HealthGauge)).dy,
+          closeTo(145.6, .01),
+        );
         final painter = _painter(tester);
         expect(painter.track, health.gaugeTrack);
         expect(painter.fill, health.gaugeColors);
