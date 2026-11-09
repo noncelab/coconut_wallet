@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -11,7 +12,8 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/utils/mfp_format.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show kHomeWidgetHeaderHeight;
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart'
+    show kHomeWidgetHeaderHeight, measureHomeTextSize;
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +58,7 @@ class WalletCard extends StatelessWidget {
   final String? secondaryText;
   final Widget? statusBadge;
   final VoidCallback? onPressed;
+  final Border? border;
 
   /// [appearance]의 배경이 사진일 때 그 파일. [WalletAppearanceProvider.photoFileFor]로 구한다.
   final File? backgroundPhoto;
@@ -66,6 +69,9 @@ class WalletCard extends StatelessWidget {
   /// 저장 전 이름을 미리 보여 줄 때 쓴다. 없으면 [wallet]의 이름.
   final String? displayName;
 
+  /// 가로 카드에서 잔액을 아래줄 오른쪽에 둔다. 지갑 목록 위젯처럼 잔액을 오른쪽에서 읽게 할 때 쓴다.
+  final bool balanceAtEnd;
+
   const WalletCard({
     super.key,
     required this.wallet,
@@ -75,10 +81,29 @@ class WalletCard extends StatelessWidget {
     this.secondaryText,
     this.statusBadge,
     this.onPressed,
+    this.border,
     this.backgroundPhoto,
     this.showBackground = true,
     this.displayName,
+    this.balanceAtEnd = false,
   });
+
+  static const _padding = 16.0;
+  static const _iconExtent = 36.0;
+  static const _wideBalanceGap = 8.0;
+  static final _nameStyle = CoconutTypography.body2_14_Bold;
+  static final _subtitleStyle = CoconutTypography.body3_12_Number;
+  static final _wideBalanceStyle = CoconutTypography.heading4_18_NumberBold;
+
+  /// 가로 카드가 내용을 모두 담는 최소 높이. 기기 글꼴과 글자 배율로 이름, 보조 줄, 잔액을 재서 구한다.
+  static double wideHeightOf(BuildContext context) {
+    double lineHeight(TextStyle style) => measureHomeTextSize(context, '가0', style).height;
+    final header = math.max(
+      math.max(_iconExtent, kHomeWidgetHeaderHeight),
+      lineHeight(_nameStyle) + lineHeight(_subtitleStyle),
+    );
+    return _padding * 2 + header + _wideBalanceGap + lineHeight(_wideBalanceStyle);
+  }
 
   /// 카드가 같은 색 바탕 위에 놓일 때(지갑 정보·배경화면 화면) 경계를 보이게 하는 그림자.
   static List<BoxShadow> elevationOf(BuildContext context) => [
@@ -106,18 +131,28 @@ class WalletCard extends StatelessWidget {
     final colors = context.coconutColors;
     final background = appearance.background;
     Widget content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(_padding),
       child: Builder(builder: (context) => size == WalletCardSize.wide ? _buildWide(context) : _buildSmall(context)),
     );
     content = WalletContentTheme(background: background, child: content);
     final hasBackground = showBackground && appearance.background != null;
-    Widget withBackground(Widget child) =>
-        hasBackground
-            ? Stack(
-              fit: StackFit.expand,
-              children: [WalletCardBackground(background: appearance.background, photoFile: backgroundPhoto), child],
-            )
-            : child;
+    Widget withBackground(Widget child) {
+      final content =
+          hasBackground
+              ? Stack(
+                fit: StackFit.expand,
+                children: [WalletCardBackground(background: appearance.background, photoFile: backgroundPhoto), child],
+              )
+              : child;
+      return border == null
+          ? content
+          : DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: border),
+            child: content,
+          );
+    }
+
     if (onPressed == null) {
       return DecoratedBox(
         decoration: BoxDecoration(
@@ -162,7 +197,7 @@ class WalletCard extends StatelessWidget {
         subtitle.text,
         key: subtitle.key,
         maxLines: 1,
-        style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.secondaryTextStrong),
+        style: _subtitleStyle.copyWith(color: context.coconutColors.secondaryTextStrong),
       ),
     );
   }
@@ -187,7 +222,7 @@ class WalletCard extends StatelessWidget {
       displayName ?? wallet.name,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.primaryText),
+      style: _nameStyle.copyWith(color: context.coconutColors.primaryText),
     );
   }
 
@@ -242,11 +277,11 @@ class WalletCard extends StatelessWidget {
                       ? const SizedBox.shrink()
                       : FittedBox(
                         fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+                        alignment: balanceAtEnd ? Alignment.centerRight : Alignment.centerLeft,
                         child: Text(
                           balanceDisplay!,
                           key: const Key('wallet-card-balance'),
-                          style: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
+                          style: _wideBalanceStyle.copyWith(color: colors.primaryText),
                         ),
                       ),
             ),
@@ -293,26 +328,48 @@ class WalletCard extends StatelessWidget {
             if (statusBadge != null) ...[const SizedBox(width: 4), statusBadge!],
           ],
         ),
-        if (balanceDisplay != null) ...[
-          Expanded(
-            child: Align(
-              // Preserve the original 3:2 spacing while letting enlarged text fit vertically.
-              alignment: const Alignment(-1, 0.2),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  balanceDisplay!,
-                  key: const Key('wallet-card-balance'),
-                  style: CoconutTypography.heading4_18_NumberBold.copyWith(color: context.coconutColors.primaryText),
-                ),
-              ),
-            ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final subtitle = _subtitle();
+              final subtitleSize = measureHomeTextSize(context, subtitle?.text ?? '0', _subtitleStyle);
+              final subtitleHeight = subtitleSize.height * math.min(1.0, constraints.maxWidth / subtitleSize.width);
+              final nameHeight = measureHomeTextSize(context, displayName ?? wallet.name, _nameStyle).height;
+              final remaining = math.max(0.0, constraints.maxHeight - nameHeight);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (balanceDisplay != null)
+                    Expanded(
+                      child: Align(
+                        // Preserve the original 3:2 spacing while letting enlarged text fit vertically.
+                        alignment: const Alignment(-1, 0.2),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            balanceDisplay!,
+                            key: const Key('wallet-card-balance'),
+                            style: CoconutTypography.heading4_18_NumberBold.copyWith(
+                              color: context.coconutColors.primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  _buildName(context),
+                  SizedBox(
+                    // Keep the original subtitle geometry unless the name and subtitle would overflow.
+                    height: subtitleHeight <= remaining ? subtitleHeight : remaining / (balanceDisplay == null ? 1 : 2),
+                    child: _buildSubtitleRow(context, subtitle),
+                  ),
+                ],
+              );
+            },
           ),
-        ] else
-          const Spacer(),
-        _buildName(context),
-        _buildSubtitleRow(context, _subtitle()),
+        ),
       ],
     );
   }

@@ -142,7 +142,7 @@ class _Network extends Fake implements HttpClient {
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) async {
     // This fake intercepts every request; it never opens a real connection.
-    if (!{'api.coingecko.com', 'api.binance.com', 'api.bitflyer.com', 'api.upbit.com'}.contains(url.host)) {
+    if (!{'api.coingecko.com', 'data-api.binance.vision', 'api.bitflyer.com', 'api.upbit.com'}.contains(url.host)) {
       throw StateError('Unexpected request host: ${url.host}');
     }
     final currency =

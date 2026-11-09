@@ -60,6 +60,7 @@ home_screen_settings: "홈 화면 설정"
 home_connection_status:
   electrum_connection_failed: "일렉트럼 연결 실패"
   electrum_connection_restored: "일렉트럼 연결됨"
+  update_completed: "업데이트 완료"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
 wallet_id: "지갑 ID"
@@ -382,6 +383,8 @@ home_widgets:
   fiat_price_trend: "법정화폐 가격 추이"
   fiat_values: "법정화폐 시세"
   balance_by_wallet: "지갑별 잔액"
+  wallet_list: "지갑 목록"
+  wallet_list_show_all(count): "지갑 ${count}개 모두 보기"
   recent_transactions: "최근 거래"
   transaction_activity: "기간별 거래 분석"
   savings_goal: "목표 수량"
@@ -423,6 +426,8 @@ home_presets:
   hide_balances_description: "잔액이나 법정화폐 금액을 보여 주지 않아요"
   statistics_name: "저축 현황"
   statistics_description: "잔액 추이와 저축 목표, UTXO 현황을 함께 봐요"
+  classic_name: "코코넛 클래식"
+  classic_description: "예전 코코넛 홈 구성대로 위젯을 배치해요"
   apply: "홈에 적용"
   applied: "'$name' 프리셋을 적용했어요"
   undo: "되돌리기"
@@ -525,7 +530,7 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   unbacked_hot_wallet_warning:
-    title: "니모닉이 백업되지 않았어요"
+    title: "니모닉을 백업해주세요"
     description: "지금 백업하지 않으면 비트코인을 영원히 잃을 수 있어요"
   app_lock_warning:
     title: "앱 비밀번호를 설정해 주세요"
@@ -922,7 +927,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
-  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도 기기에서 관리하고, 잔액은 앱에서 확인할 수 있어요."
+  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도로 관리하고, 잔액은 앱에서 확인할 수 있어요."
   utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
   n_utxos(param=count):
@@ -995,6 +1000,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "전송 불가"
     tag_apply_failed: "전송은 완료되었지만 태그를 적용하지 못했어요. UTXO 목록에서 태그를 확인해 주세요."
+    not_sent_no_connection: "노드 연결에 실패했어요. 잠시 후 다시 시도해 주세요."
+    result_unknown_title: "전송 결과 확인 필요"
+    result_unknown: "전송 결과를 확인하지 못했어요. 같은 거래라 다시 보내도 두 번 나가지 않아요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"
@@ -1040,10 +1048,10 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
   error_title: "서명 실패"
   wrong_wallet_title: "잘못된 지갑이 연결됨"
-  device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
+  device_mismatch: "연결된 BitBox02가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1075,7 +1083,7 @@ trezor_sign_screen:
   device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
   device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
   fingerprint_compare:
-    expected: "서명 지갑"
+    expected: "이 지갑"
     connected: "연결된 지갑"
   connected_wallet_label: "연결된 지갑"
   btn:
@@ -1279,6 +1287,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "입출력 상세 보기"
+  coinbase_input: "채굴 보상으로 새로 발행된 비트코인이라 입력이 없어요."
   confirmation: "$height ($count승인)"
   time_ago:
     just_now: 방금 전
@@ -1428,7 +1437,7 @@ wallet_info_screen:
     disconnected: "연결 안 됨"
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
-    disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
+    disconnect_confirm_description: "현재 연결된 기기를 해제할게요.\n다음 서명 시 다시 연결이 필요해요."
 wallet_resync_screen:
   title: "지갑 재동기화"
   exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"
@@ -1582,6 +1591,8 @@ split_utxo_screen:
   question_split_evenly: "몇 개로 나눌까요?"
   label_split_method: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}개"
   label_estimated_fee: "예상 수수료"
   add_new_amount: "금액 추가하기"
   and_more_tags: "외 ${count}개"
@@ -1593,6 +1604,7 @@ split_utxo_screen:
     manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
   dust_error: "나누면 작은 금액(dust)이 생겨요"
+  tx_too_large_error: "트랜잭션이 너무 커서 만들 수 없어요. UTXO나 나눌 개수를 줄여주세요"
   method_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
@@ -1606,9 +1618,10 @@ split_utxo_screen:
     fee: "수수료"
     above_is_expected: "위 결과는 예상값이에요."
   big_tx_confirm:
-    create: "생성하기"
-    preview: "예상 보기"
-    description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
+    title: "대용량 트랜잭션"
+    create: "바로 생성"
+    preview: "예상 결과 보기"
+    description: "생성하는 데 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인해 보세요."
 
 label_management_screen:
   title: "메모 관리"
@@ -1829,7 +1842,7 @@ tooltip:
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."
   faucet: "테스트용 비트코인으로 마음껏 테스트 해보세요"
   multisig_wallet: "$total개의 키 중 $count개로 서명해야 하는\n다중 서명 지갑이에요."
-  mfp: "지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요."
+  mfp: "시드에서 나온 8자리 식별자예요.\n보통 서명기와 보기 전용 지갑이 일치하는지 확인할 때 쓰여요."
   rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
   cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
   dont_show_again: "다시 보지 않기"
@@ -1858,6 +1871,10 @@ alert:
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$amount부터 전송할 수 있어요"
     insufficient_fee: "수수료율을 높여서\n다시 시도해주세요."
+    immature_coinbase: "채굴 보상은 100승인이 지나야 보낼 수 있어요."
+    immature_coinbase_remaining: "채굴 보상은 100승인이 지나야 보낼 수 있어요.\n$count블록 남았어요."
+    used_utxo_included: "이미 사용된 비트코인이 포함되어 있어요.\n거래를 다시 만들어 주세요."
+    locked_utxo_included: "사용 잠금된 비트코인이 포함되어 있어요.\n처음부터 다시 시도해 주세요."
     non_final_taproot_child: "자식 지갑의 상속 일시를 확인하세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
@@ -3014,3 +3031,6 @@ wallet_card_detail_screen:
   wallet_card: "지갑 카드"
   show_balance_trend: "잔액 변화 보기"
   chart_date_format: "M월 d일"
+
+wallet_selection_carousel: "한 장씩 보기"
+wallet_selection_grid: "모아 보기"

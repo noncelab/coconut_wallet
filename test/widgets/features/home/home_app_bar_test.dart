@@ -199,9 +199,42 @@ void main() {
     );
     expect(find.byType(HomeSafetyStatusChip), findsNothing);
   }, timeout: const Timeout(Duration(seconds: 60)));
+
+  testWidgets('update completion survives the safety chip and keeps its navigation and hint anchor', (tester) async {
+    await tester.pumpWidget(_bar(showUpdateCompleted: true));
+    expect(find.text(t.home_connection_status.update_completed), findsOneWidget);
+
+    final link = LayerLink();
+    var taps = 0;
+    final status = resolveHomeSafetyStatus(
+      report: null,
+      networkStatus: NetworkStatus.online,
+      showReconnected: false,
+      isSyncing: false,
+      showUpdateCompleted: true,
+    );
+    await tester.pumpWidget(
+      _bar(safetyStatus: status, showUpdateCompleted: true, statusChipLink: link, onStatusTap: () => taps++),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(t.home_connection_status.update_completed), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) => widget is CompositedTransformTarget && identical(widget.link, link)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(HomeSafetyStatusChip));
+    expect(taps, 1);
+    expect(tester.takeException(), isNull);
+  });
 }
 
-Widget _bar({HomeSafetyStatus? safetyStatus, bool isArranging = false}) => MaterialApp(
+Widget _bar({
+  HomeSafetyStatus? safetyStatus,
+  bool isArranging = false,
+  bool showUpdateCompleted = false,
+  LayerLink? statusChipLink,
+  VoidCallback? onStatusTap,
+}) => MaterialApp(
   theme: buildCoconutThemeData(),
   home: Scaffold(
     body: CustomScrollView(
@@ -210,6 +243,7 @@ Widget _bar({HomeSafetyStatus? safetyStatus, bool isArranging = false}) => Mater
           networkStatus: NetworkStatus.online,
           showReconnected: false,
           isSyncing: false,
+          showUpdateCompleted: showUpdateCompleted,
           isArranging: isArranging,
           addWalletButtonLink: LayerLink(),
           onArrangeDone: () {},
@@ -217,6 +251,8 @@ Widget _bar({HomeSafetyStatus? safetyStatus, bool isArranging = false}) => Mater
           onSettings: () {},
           onEdit: () {},
           safetyStatus: safetyStatus,
+          statusChipLink: statusChipLink,
+          onStatusTap: onStatusTap,
         ),
       ],
     ),

@@ -11,6 +11,8 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
+import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
@@ -18,6 +20,7 @@ import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/wallet_list_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -88,7 +91,7 @@ FiatCode _fiatOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings settings) =>
 List<FiatCode> _fiatsOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings settings, int max) =>
     (settings.fiats ?? fiatsWithDefaultFirst(viewModel.fiat)).take(max).toList();
 
-/// 누른 위젯의 지갑 범위·기간으로 인사이트를 열고, 그 위젯에 해당하는 구역으로 이동한다.
+/// 저장한 인사이트 지갑 선택(미저장 시 위젯 범위)과 위젯의 기간으로 열고 해당 구역으로 이동한다.
 /// 홈 위젯과 호들 인사이트의 대응 카드를 잇는 Hero 태그
 Object insightsHeroTag(String itemId) => ('insights-widget', itemId);
 
@@ -154,6 +157,29 @@ HomeAmount _fiatAmount(int? amount, FiatCode fiat) =>
     amount == null
         ? const HomeAmount('-', '')
         : HomeAmount(amount.toThousandsSeparatedString(), fiat.symbol, unitFirst: true);
+
+/// 홈 위젯에서 지갑 상세를 연다. 호들 인사이트와 같은 길이로 흐려지며 넘어간다.
+void _openWalletDetail(BuildContext context, WalletDetailRouteArgs args) {
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
+      transitionDuration: HodlInsightsScreen.transitionDuration,
+      reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
+      pageBuilder:
+          (_, __, ___) => WalletCardDetailScreen(
+            id: args.id,
+            walletIds: args.walletIds,
+            focusRecentTransactions: args.focusRecentTransactions,
+            focusedTransactionHash: args.focusedTransactionHash,
+          ),
+      transitionsBuilder:
+          (_, animation, __, child) => FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+            child: child,
+          ),
+    ),
+  );
+}
 
 List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
@@ -282,6 +308,40 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   ),
   ...walletStackDefinitions(),
   BuiltinHomeWidget(
+    id: HomeItemIds.walletList,
+    span: HomeSpan.wide,
+    category: HomeItemCategory.wallets,
+    settings: _walletScopeSettings,
+    name: () => t.home_widgets.wallet_list,
+    builder: (context, viewModel, item) {
+      final ids = walletIdsOf(item);
+      final wallets = [
+        for (final wallet in viewModel.wallets)
+          if (ids == null || ids.contains(wallet.id)) wallet,
+      ];
+      return WalletListView(
+        wallets: wallets,
+        balanceTextOf: (wallet) => _btc(viewModel, viewModel.balanceOf(wallet.id)),
+        onWalletPressed:
+            (wallet) => _openWalletDetail(
+              context,
+              WalletDetailRouteArgs(id: wallet.id, walletIds: [for (final other in wallets) other.id]),
+            ),
+        onShowAllPressed:
+            () => WalletStackListScreen.open(
+              context,
+              kind: WalletStackKind.all,
+              title: t.feature_registry.my_wallets,
+              mode: WalletStackListMode.list,
+            ),
+        emptyText: walletStackEmptyText(WalletStackKind.all),
+        emptyActionText: t.home_widgets.add_wallet,
+        onEmptyPressed: () => openWalletAddFor(context, WalletStackKind.all),
+        onAddPressed: ids == null ? () => openWalletAddFor(context, WalletStackKind.all) : null,
+      );
+    },
+  ),
+  BuiltinHomeWidget(
     id: HomeItemIds.balanceByWallet,
     onTap: _openInsights(HodlInsightsSection.balanceByWallet),
     flyToInsightsSection: HodlInsightsSection.balanceByWallet,
@@ -309,33 +369,15 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
           transactions: viewModel.recentTransactions(walletIds: walletIdsOf(item)),
           amountText: (sats) => _btc(viewModel, sats),
           now: DateTime.now(),
-          onTransactionSelected: (tx) {
-            Navigator.of(context).push(
-              PageRouteBuilder<void>(
-                settings: RouteSettings(
-                  name: AppRouteNames.walletDetail,
-                  arguments: WalletDetailRouteArgs(
-                    id: tx.walletId,
-                    focusRecentTransactions: true,
-                    focusedTransactionHash: tx.txHash,
-                  ),
+          onTransactionSelected:
+              (tx) => _openWalletDetail(
+                context,
+                WalletDetailRouteArgs(
+                  id: tx.walletId,
+                  focusRecentTransactions: true,
+                  focusedTransactionHash: tx.txHash,
                 ),
-                transitionDuration: HodlInsightsScreen.transitionDuration,
-                reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
-                pageBuilder:
-                    (_, __, ___) => WalletCardDetailScreen(
-                      id: tx.walletId,
-                      focusRecentTransactions: true,
-                      focusedTransactionHash: tx.txHash,
-                    ),
-                transitionsBuilder:
-                    (_, animation, __, child) => FadeTransition(
-                      opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
-                      child: child,
-                    ),
               ),
-            );
-          },
         ),
   ),
   BuiltinHomeWidget(

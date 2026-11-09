@@ -21,6 +21,7 @@ class HomeAppBar extends StatelessWidget {
   final NetworkStatus networkStatus;
   final bool showReconnected;
   final bool isSyncing;
+  final bool showUpdateCompleted;
   final bool isArranging;
   final HomeAddWalletOption homeAddWalletOption;
   final LayerLink addWalletButtonLink;
@@ -42,6 +43,7 @@ class HomeAppBar extends StatelessWidget {
     required this.networkStatus,
     required this.showReconnected,
     required this.isSyncing,
+    this.showUpdateCompleted = false,
     required this.isArranging,
     this.homeAddWalletOption = HomeAddWalletOption.all,
     required this.addWalletButtonLink,
@@ -164,6 +166,7 @@ class HomeAppBar extends StatelessWidget {
         networkStatus: networkStatus,
         showReconnected: showReconnected,
         isSyncing: isSyncing,
+        showUpdateCompleted: showUpdateCompleted,
       );
     }
     final chip = HomeSafetyStatusChip(status: status, maxWidth: maxWidth, onTap: onStatusTap);

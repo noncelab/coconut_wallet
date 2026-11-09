@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:flutter/services.dart';
 
@@ -131,8 +132,6 @@ class RateInputFormatter extends TextInputFormatter {
 }
 
 class SatoshiAmountInputFormatter extends TextInputFormatter {
-  static const int maxSats = 2_100_000_000_000_000;
-
   const SatoshiAmountInputFormatter();
 
   @override
@@ -144,7 +143,7 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
     if (text.isEmpty) return normalized;
 
     final sats = int.tryParse(text);
-    if (sats == null || sats > maxSats) return oldValue;
+    if (sats == null || sats > kMaxSupplySats) return oldValue;
 
     final groupingSep = NumberFormatConfig.instance.groupingSeparator;
     final formattedText = formatIntWithGroupingSeparator(text.replaceFirst(RegExp(r'^0+(?=\d)'), ''), groupingSep);

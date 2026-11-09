@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hardware_wallet_connection_rows.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
@@ -12,8 +12,14 @@ import 'package:provider/provider.dart';
 class TrezorSection extends StatefulWidget {
   final String walletFingerprint;
   final Future<void> Function() onDisconnect;
+  final Future<void> Function() onReconnect;
 
-  const TrezorSection({super.key, required this.walletFingerprint, required this.onDisconnect});
+  const TrezorSection({
+    super.key,
+    required this.walletFingerprint,
+    required this.onDisconnect,
+    required this.onReconnect,
+  });
 
   @override
   State<TrezorSection> createState() => _TrezorSectionState();
@@ -21,6 +27,7 @@ class TrezorSection extends StatefulWidget {
 
 class _TrezorSectionState extends State<TrezorSection> {
   bool _isConnected = false;
+  bool _reconnecting = false;
   StreamSubscription<bool>? _sub;
 
   @override
@@ -39,6 +46,8 @@ class _TrezorSectionState extends State<TrezorSection> {
 
   Future<void> _checkAndSubscribe() async {
     final transport = TrezorDevice.lastConnected?.transport ?? TrezorTransport.ble;
+    await _sub?.cancel();
+    if (!mounted) return;
     final physicallyConnected = await TrezorConnectivityService.isDeviceConnected(transport);
     if (!mounted) return;
     setState(() {
@@ -74,6 +83,7 @@ class _TrezorSectionState extends State<TrezorSection> {
     );
     if (confirmed == true && mounted) {
       await widget.onDisconnect();
+      if (!mounted) return;
       setState(() {
         _isConnected = false;
       });
@@ -82,83 +92,20 @@ class _TrezorSectionState extends State<TrezorSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(24)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t.wallet_info_screen.connected_hardware_wallet.title,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
-          ),
-          CoconutLayout.spacing_300h,
-          Divider(color: context.coconutColors.divider, height: 1),
-          CoconutLayout.spacing_300h,
-          _InfoRow(
-            label: t.wallet_info_screen.connected_hardware_wallet.connection_status,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.primaryText : context.coconutColors.surfaceDisabled,
-                  ),
-                ),
-                CoconutLayout.spacing_100w,
-                Text(
-                  _isConnected
-                      ? t.wallet_info_screen.connected_hardware_wallet.connected
-                      : t.wallet_info_screen.connected_hardware_wallet.disconnected,
-                  style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.primaryText : context.coconutColors.secondaryText,
-                  ),
-                ),
-                if (_isConnected) ...[
-                  CoconutLayout.spacing_100w,
-                  GestureDetector(
-                    onTap: _confirmDisconnect,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        color: context.coconutColors.primaryText.withValues(alpha: 0.06),
-                      ),
-                      child: Text(
-                        t.wallet_info_screen.connected_hardware_wallet.disconnect_button,
-                        style: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final Widget child;
-
-  const _InfoRow({required this.label, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-        const SizedBox(width: 12),
-        child,
-      ],
+    return HardwareWalletConnectionRows(
+      isConnected: _isConnected,
+      isBusy: _reconnecting,
+      onDisconnect: _confirmDisconnect,
+      onReconnect: () async {
+        if (_reconnecting) return;
+        setState(() => _reconnecting = true);
+        try {
+          await widget.onReconnect();
+          if (mounted) await _checkAndSubscribe();
+        } finally {
+          if (mounted) setState(() => _reconnecting = false);
+        }
+      },
     );
   }
 }

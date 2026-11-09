@@ -26,6 +26,10 @@ class SharedPrefKeys {
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
   static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
+  static const String kSelectWalletGridView = 'SELECT_WALLET_GRID_VIEW';
+
+  static const String kHodlInsightsWalletIds = 'HODL_INSIGHTS_WALLET_IDS';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -55,6 +59,10 @@ class SharedPrefKeys {
 
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
+
+  /// 예전 기본 통화 KRW를 지역 기본값으로 바로잡는 확인(설치당 1회)을 마쳤는지. 새 설치에서도 남긴다.
+  /// 초기화 금지: 지우면 사용자가 직접 고른 KRW가 다시 바뀔 수 있다. (keysToReset에도 넣지 않는다)
+  static const String kHasCheckedRegionDefaultFiat = 'HAS_CHECKED_REGION_DEFAULT_FIAT';
 
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
@@ -130,6 +138,8 @@ class SharedPrefKeys {
     kFakeBalanceTotal,
     kFakeBalanceMap,
     kWalletOrder,
+    kSelectWalletGridView,
+    kHodlInsightsWalletIds,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

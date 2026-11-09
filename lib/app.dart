@@ -23,6 +23,7 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/app/deep_link/deep_link_listener.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -33,6 +34,9 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
+
+  /// iOS 지역 설정. 기본 통화를 정할 때 쓴다. AppBootstrap에서 읽으며, iOS가 아니거나 읽지 못하면 null이다.
+  static String? kIosRegionCode;
 
   const CoconutWalletApp({super.key});
 
@@ -116,6 +120,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         isMainFlow: _appEntryFlow == AppEntryFlow.main,
         isFirebaseAnalyticsUsed: CoconutWalletApp.kIsFirebaseAnalyticsUsed,
         networkType: CoconutWalletApp.kNetworkType,
+        iosRegionCode: CoconutWalletApp.kIosRegionCode,
       ),
       child: TranslationProvider(
         child: ValueListenableBuilder<CoconutThemeVariant>(
@@ -132,10 +137,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   variant: variant,
                   materialTheme: materialTheme,
                   cupertinoTheme: cupertinoTheme,
-                  child:
-                      _appEntryFlow != AppEntryFlow.main
-                          ? currentChild
-                          : AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
+                  child: SideSafeArea(
+                    child:
+                        _appEntryFlow != AppEntryFlow.main
+                            ? currentChild
+                            : AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
+                  ),
                 );
               },
               navigatorObservers: [

@@ -477,6 +477,50 @@ void main() {
     expect(isolate.blockRequestCount, blockRequests);
   });
 
+  testWidgets('connection-only reconnect resolves before the wallet subscription finishes', (tester) async {
+    isolate.onBulkSubscribe = (_) async => Result.failure(ErrorCodes.nodeConnectionError);
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    expect(provider!.isConnected, false);
+    final bulkCompletion = Completer<Result<bool>>();
+    isolate.onBulkSubscribe = (_) => bulkCompletion.future;
+
+    var connected = false;
+    provider!.reconnectWithoutWaitingForSync().then((value) => connected = value);
+    await tester.pump();
+
+    expect(connected, true);
+    expect(isolate.initializationCount, 2);
+    bulkCompletion.complete(Result.success(true));
+    await tester.pump();
+    expect(provider!.isConnected, true);
+
+    provider!.dispose();
+    provider = null;
+    await tester.pump();
+  });
+
+  testWidgets('connection-only reconnect does not trust a connection that only looks healthy', (tester) async {
+    createProvider();
+    wallets.value = [_Wallet(1)];
+    load.value = WalletLoadState.loadCompleted;
+    await tester.pump();
+    expect(provider!.isConnected, true);
+
+    var connected = false;
+    provider!.reconnectWithoutWaitingForSync().then((value) => connected = value);
+    await tester.pump();
+
+    expect(connected, true);
+    expect(isolate.initializationCount, 2);
+
+    provider!.dispose();
+    provider = null;
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   for (final crossErrorZone in [false, true]) {
     test('overlapping initialization retries StateError across error zones=$crossErrorZone', () async {
       connectivity.online = false;

@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
@@ -22,6 +24,43 @@ class TrezorTransportSelectScreen extends StatelessWidget {
     this.walletName,
     this.walletFingerprint,
   });
+
+  static Future<TrezorTransport?> showSelectionSheet(BuildContext context) {
+    final strings = t.wallet_connect_screen.guide_trezor.transport_select;
+    return CommonBottomSheets.showBottomSheet<TrezorTransport>(
+      context: context,
+      title: strings.title,
+      screenName: 'trezor-reconnect-transport-selection',
+      showDragHandle: true,
+      child: Builder(
+        builder:
+            (sheetContext) => SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TransportOptionCard(
+                      iconPath: ThirdPartyWalletTypeIconPath.trezor,
+                      title: strings.btn.ble,
+                      subtitle: strings.notice_ble,
+                      onTap: () => Navigator.pop(sheetContext, TrezorTransport.ble),
+                    ),
+                    const SizedBox(height: 12),
+                    _TransportOptionCard(
+                      iconPath: ThirdPartyWalletTypeIconPath.trezor,
+                      title: strings.btn.usb,
+                      subtitle: strings.notice_usb,
+                      onTap: () => Navigator.pop(sheetContext, TrezorTransport.usb),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

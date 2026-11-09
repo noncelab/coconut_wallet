@@ -60,6 +60,7 @@ home_screen_settings: "Startseiten-Einstellungen"
 home_connection_status:
   electrum_connection_failed: "Electrum nicht erreichbar"
   electrum_connection_restored: "Mit Electrum verbunden"
+  update_completed: "Aktualisiert"
 tx_list: "Transaktionen"
 utxo_list: "UTXO-Liste"
 wallet_id: "Wallet-ID"
@@ -382,6 +383,8 @@ home_widgets:
   fiat_price_trend: "Fiat-Preisverlauf"
   fiat_values: "Fiat-Kurse"
   balance_by_wallet: "Guthaben nach Wallet"
+  wallet_list: "Wallet-Liste"
+  wallet_list_show_all(count): "Alle $count Wallets anzeigen"
   recent_transactions: "Letzte Transaktionen"
   transaction_activity: "Transaktionsanalyse nach Zeitraum"
   savings_goal: "Sparziel"
@@ -423,6 +426,8 @@ home_presets:
   hide_balances_description: "Keine echten Guthaben oder Fiat-Werte auf der Startseite"
   statistics_name: "Sparübersicht"
   statistics_description: "Guthabenverlauf, Sparziel und UTXO-Status auf einen Blick"
+  classic_name: "Coconut Classic"
+  classic_description: "Widgets wie auf dem früheren Coconut-Startbildschirm anordnen"
   apply: "Auf Startseite anwenden"
   applied: "Voreinstellung „$name“ angewendet"
   undo: "Rückgängig"
@@ -997,6 +1002,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "Senden nicht möglich"
     tag_apply_failed: "Die Transaktion wurde gesendet, aber die Tags konnten nicht angewendet werden. Prüfe die Tags in deiner UTXO-Liste."
+    not_sent_no_connection: "Verbindung zum Node fehlgeschlagen. Bitte versuche es gleich noch einmal."
+    result_unknown_title: "Sendestatus prüfen"
+    result_unknown: "Wir konnten nicht bestätigen, ob die Transaktion gesendet wurde. Es ist dieselbe Transaktion, ein erneutes Senden sendet sie nicht doppelt."
 send_address_screen:
   text1: "QR scannen oder\nkopierte Adresse einfügen"
   text2: "Bitte scannen Sie den Adress-QR-Code"
@@ -1215,6 +1223,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "Eingabe-/Ausgabedetails anzeigen"
+  coinbase_input: "Neu geschürfte Bitcoin aus einer Blockbelohnung haben keine Eingaben."
   confirmation: "$height ($count Bestätigungen)"
   time_ago:
     just_now: gerade eben
@@ -1515,6 +1524,8 @@ split_utxo_screen:
   question_split_evenly: "In wie viele Teile?"
   label_split_method: "Teilungsmethode"
   label_selected_utxo: "Ausgewähltes UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Geschätzte Gebühr"
   add_new_amount: "Betrag hinzufügen"
   and_more_tags: "und ${count} weitere"
@@ -1526,6 +1537,7 @@ split_utxo_screen:
     manual_sum_over_input: "Unzureichender Betrag"
   fee_error: "Die Gebühr ist größer als der UTXO-Betrag"
   dust_error: "Das Teilen erzeugt einen kleinen Betrag (Staub)"
+  tx_too_large_error: "Die Transaktion ist zu groß. Wähle weniger UTXOs oder teile in weniger Beträge"
   method_bottom_sheet:
     title: "Teilungsmethode auswählen"
     split_by_amount: "Nach festem Betrag teilen"
@@ -1539,9 +1551,10 @@ split_utxo_screen:
     fee: "Gebühr"
     above_is_expected: "Das obige Ergebnis ist eine Schätzung"
   big_tx_confirm:
-    create: "Erstellen"
-    preview: "Vorschau"
-    description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+    title: "Große Transaktion"
+    create: "Jetzt erstellen"
+    preview: "Ergebnis ansehen"
+    description: "Die Erstellung kann einige Zeit dauern. Sehen Sie sich zuerst das voraussichtliche Ergebnis an."
 
 label_management_screen:
   title: "Notizen"
@@ -1762,7 +1775,7 @@ tooltip:
   utxo: "UTXO steht für Unspent Transaction Output, was ungenutztes Guthaben bedeutet. Bitcoin hat kein Guthabenkonzept. Denken Sie daran, dass das in Ihrer Wallet angezeigte Guthaben die Summe der UTXOs ist."
   faucet: "Testen Sie frei mit Test-Bitcoin"
   multisig_wallet: "Dies ist eine Multisig-Wallet, die\n$count Signaturen von $total Schlüsseln erfordert."
-  mfp: "Dies ist der eindeutige Wert der Wallet.\nAuch Master Fingerprint (MFP) genannt."
+  mfp: "Eine 8-stellige Kennung, die aus dem Seed abgeleitet wird.\nWird meist genutzt, um zu prüfen, ob Signiergerät und Watch-only-Wallet übereinstimmen."
   rbf: "Eine Funktion, um eine bestehende Transaktion durch eine neue mit einer höheren Gebühr zu ersetzen. (RBF, Replace-By-Fee)"
   cpfp: "Eine Funktion, um die Priorität zu erhöhen, indem eine hohe Gebühr für eine neue Transaktion (Child) festgelegt wird, damit die bestehende Transaktion (Parent) schneller verarbeitet wird. (CPFP, Child-Pays-For-Parent)"
   dont_show_again: "Nicht wieder anzeigen"
@@ -1791,6 +1804,10 @@ alert:
     insufficient_balance: "Unzureichendes Guthaben"
     minimum_amount: "Sie können mindestens $amount senden"
     insufficient_fee: "Bitte versuchen Sie es erneut, indem Sie\ndie Gebührenrate erhöhen."
+    immature_coinbase: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden."
+    immature_coinbase_remaining: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden.\nNoch $count Blöcke."
+    used_utxo_included: "Die Transaktion enthält bereits ausgegebene Bitcoin.\nBitte erstellen Sie die Transaktion erneut."
+    locked_utxo_included: "Die Transaktion enthält gesperrte Bitcoin.\nBitte versuchen Sie es von Anfang an erneut."
     non_final_taproot_child: "Bitte überprüfen Sie das Vererbungsdatum und die Uhrzeit der untergeordneten Wallet."
   signed_psbt:
     wrong_send_info: "Sendeinformationen sind unterschiedlich.\nBitte versuchen Sie es von Anfang an erneut."
@@ -1979,16 +1996,38 @@ taproot:
     inheritance_condition: "Vererbungsbedingung"
 
 bitbox02_sign_screen:
+  tx_card:
+    title: "Transaktion"
+    send: "Senden"
+    to: "An"
+    fee: "Gebühr"
+    total_cost: "Gesamtkosten"
+  device_status:
+    title: "Gerätestatus"
+  idle:
+    waiting: "Warten auf Signatur"
+  done:
+    title: "Signiert"
+    description: "Transaktion wurde von BitBox02 signiert."
+  error_title: "Signaturfehler"
   wrong_wallet_title: "Falsche Wallet verbunden"
-  device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
+  device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   status:
-    connecting_device: "Connecting to BitBox02 via USB..."
-    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
-    preparing_data: "Preparing transaction data..."
-    confirm_on_device: "Confirm amount, address, and fee on your device"
+    connecting_device: "Verbindung zum BitBox02 über USB..."
+    connecting_device_ble: "BitBox02 wird über Bluetooth gesucht..."
+    preparing_data: "Transaktionsdaten werden vorbereitet..."
+    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
   btn:
+    sign: "Mit BitBox02 signieren"
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
+  state_label:
+    idle: "Signaturbereit"
+    signing: "Signieren"
 
 trezor_sign_screen:
   tx_card:
@@ -2007,14 +2046,19 @@ trezor_sign_screen:
   done:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."
-  error_title: "Signatur fehlgeschlagen"
+  error_title: "Signaturfehler"
+  wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   btn:
     sign: "Mit Trezor signieren"
     connect_other_trezor: "Anderes Trezor verbinden"
   state_label:
-    idle: "Warten auf Signatur"
+    idle: "Signaturbereit"
     signing: "Signieren"
 
 passphrase_input_text_field:
@@ -2986,3 +3030,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet-Karte"
   show_balance_trend: "Saldoverlauf anzeigen"
   chart_date_format: "d.M."
+
+wallet_selection_carousel: "Einzeln anzeigen"
+wallet_selection_grid: "Zusammen anzeigen"

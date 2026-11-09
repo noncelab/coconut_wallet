@@ -207,7 +207,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       const lottieHeight = 96.0;
-                      final lottieTop = (constraints.maxHeight - lottieHeight) * 0.14;
+                      final lottieTop = (constraints.maxHeight - lottieHeight) * 0.06;
                       return SingleChildScrollView(
                         controller: _preparationScrollController,
                         physics: const ClampingScrollPhysics(),
@@ -231,7 +231,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                                 ),
                               ),
                             ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 12),
 
                             _SequentialEntry(
                               visible: _isPreparationTitleVisible,
@@ -246,7 +246,9 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                             _SequentialEntry(
                               visible: _isPreparationDescriptionVisible,
                               child: Text(
-                                strings.backup_preparation_description,
+                                LocaleSettings.currentLocale == AppLocale.ko
+                                    ? TextUtils.preventLineBreakInsideWords(strings.backup_preparation_description)
+                                    : strings.backup_preparation_description,
                                 textAlign: TextAlign.center,
                                 style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                               ),

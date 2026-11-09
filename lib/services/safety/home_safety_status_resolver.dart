@@ -2,8 +2,17 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:equatable/equatable.dart';
 
-/// 홈 앱바 상태칩. 선언 순서가 우선순위다(SPEC v2: 위급 > 연결·동기화 실패 > 조치 필요 > 재연결 > 업데이트 중 > 정상).
-enum HomeSafetyStatusKind { critical, connectionProblem, actionNeeded, reconnected, updating, noIssues, noScore }
+/// 홈 앱바 상태칩. 연결·업데이트 단계에서도 안전 경고를 먼저 표시한다.
+enum HomeSafetyStatusKind {
+  critical,
+  connectionProblem,
+  actionNeeded,
+  reconnected,
+  updating,
+  updateCompleted,
+  noIssues,
+  noScore,
+}
 
 class HomeSafetyStatus extends Equatable {
   const HomeSafetyStatus(this.kind, {this.count = 0, this.networkStatus = NetworkStatus.online, this.label});
@@ -28,6 +37,7 @@ HomeSafetyStatus resolveHomeSafetyStatus({
   required NetworkStatus networkStatus,
   required bool showReconnected,
   required bool isSyncing,
+  bool showUpdateCompleted = false,
 }) {
   HomeSafetyStatus status(HomeSafetyStatusKind kind, [int count = 0]) =>
       HomeSafetyStatus(kind, count: count, networkStatus: networkStatus, label: report?.label);
@@ -38,5 +48,6 @@ HomeSafetyStatus resolveHomeSafetyStatus({
   if (count > 0) return status(HomeSafetyStatusKind.actionNeeded, count);
   if (showReconnected) return status(HomeSafetyStatusKind.reconnected);
   if (isSyncing) return status(HomeSafetyStatusKind.updating);
+  if (showUpdateCompleted) return status(HomeSafetyStatusKind.updateCompleted);
   return status(report?.score != null ? HomeSafetyStatusKind.noIssues : HomeSafetyStatusKind.noScore);
 }

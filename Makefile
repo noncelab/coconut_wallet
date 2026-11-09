@@ -85,11 +85,13 @@ trezor-android:
 
 trezor-bind: trezor-android trezor-ios
 
-FASTLANE_USER :=
 -include ios/fastlane/.env
-export FASTLANE_USER
+export APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER_ID APP_STORE_CONNECT_API_KEY_KEY_FILEPATH
 
-REQUIRE_APPLE_ID = if [ -z "$${FASTLANE_USER:-}" ]; then echo "FASTLANE_USER must be set in ios/fastlane/.env." >&2; exit 1; fi;
+REQUIRE_ASC_API_KEY = \
+	for var in APP_STORE_CONNECT_API_KEY_KEY_ID APP_STORE_CONNECT_API_KEY_ISSUER_ID APP_STORE_CONNECT_API_KEY_KEY_FILEPATH; do \
+		if [ -z "$$(printenv $$var)" ]; then echo "$$var must be set in ios/fastlane/.env." >&2; exit 1; fi; \
+	done;
 
 REQUIRE_REGTEST_BRANCH = \
 	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "release-regtest" ]; then \
@@ -102,33 +104,33 @@ REQUIRE_REGTEST_BRANCH = \
 	fi;
 
 fastlane-mainnet:
-	@$(REQUIRE_APPLE_ID) \
+	@$(REQUIRE_ASC_API_KEY) \
 	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 
 fastlane-regtest:
 	@$(REQUIRE_REGTEST_BRANCH) \
-	$(REQUIRE_APPLE_ID) \
+	$(REQUIRE_ASC_API_KEY) \
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
 fastlane-production-mainnet:
-	@$(REQUIRE_APPLE_ID) \
+	@$(REQUIRE_ASC_API_KEY) \
 	$(PREP_COMMAND) && \
 	(cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production) && \
 	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true)
 
 fastlane-production-regtest:
 	@$(REQUIRE_REGTEST_BRANCH) \
-	$(REQUIRE_APPLE_ID) \
+	$(REQUIRE_ASC_API_KEY) \
 	$(PREP_COMMAND) && \
 	(cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production) && \
 	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true)
 	
 fastlane-mainnet-skipbridge:
-	@$(REQUIRE_APPLE_ID) \
+	@$(REQUIRE_ASC_API_KEY) \
 	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
 
 fastlane-regtest-skipbridge:
 	@$(REQUIRE_REGTEST_BRANCH) \
-	$(REQUIRE_APPLE_ID) \
+	$(REQUIRE_ASC_API_KEY) \
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_bridge:true

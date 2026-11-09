@@ -61,6 +61,7 @@ home_screen_settings: "Configuración de inicio"
 home_connection_status:
   electrum_connection_failed: "Sin conexión a Electrum"
   electrum_connection_restored: "Conectado a Electrum"
+  update_completed: "Actualizado"
 tx_list: "Transacciones"
 utxo_list: "Lista UTXO"
 wallet_id: "ID de billetera"
@@ -383,6 +384,8 @@ home_widgets:
   fiat_price_trend: "Tendencia del precio en fiat"
   fiat_values: "Valores fiat"
   balance_by_wallet: "Saldo por billetera"
+  wallet_list: "Lista de billeteras"
+  wallet_list_show_all(count): "Ver las $count billeteras"
   recent_transactions: "Transacciones recientes"
   transaction_activity: "Análisis de transacciones por período"
   savings_goal: "Meta de ahorro"
@@ -424,6 +427,8 @@ home_presets:
   hide_balances_description: "No muestra saldos reales ni valores fiat en Inicio"
   statistics_name: "Resumen de ahorros"
   statistics_description: "Consulta la evolución del saldo, tu meta de ahorro y el estado de los UTXO de un vistazo"
+  classic_name: "Coconut Clásico"
+  classic_description: "Coloca los widgets como en la pantalla de inicio clásica de Coconut"
   apply: "Aplicar a Inicio"
   applied: "Se aplicó el ajuste predefinido «$name»"
   undo: "Deshacer"
@@ -997,6 +1002,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "No se puede enviar"
     tag_apply_failed: "La transacción se envió, pero no se pudieron aplicar las etiquetas. Revisa las etiquetas en tu lista de UTXO."
+    not_sent_no_connection: "No se pudo conectar al nodo. Inténtalo de nuevo en un momento."
+    result_unknown_title: "Verifica el estado del envío"
+    result_unknown: "No pudimos confirmar si la transacción se envió. Es la misma transacción, así que volver a enviarla no la enviará dos veces."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"
@@ -1042,13 +1050,17 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
   error_title: "Error al firmar"
   wrong_wallet_title: "Billetera incorrecta conectada"
-  device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."
+  device_mismatch: "El BitBox02 conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con BitBox02"
     connect_other_bitbox02: "Conectar otro BitBox02"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 trezor_sign_screen:
@@ -1069,13 +1081,18 @@ trezor_sign_screen:
     title: "Firmado"
     description: "La transacción ha sido firmada por Trezor."
   error_title: "Error al firmar"
+  wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera."
   device_mismatch_other_wallet: "La billetera conectada pertenece a '${wallet_name}'. Por favor conecte la billetera correcta."
+  fingerprint_compare:
+    expected: "Esta billetera"
+    connected: "Billetera conectada"
+  connected_wallet_label: "Billetera conectada"
   btn:
     sign: "Firmar con Trezor"
     connect_other_trezor: "Conectar otro Trezor"
   state_label:
-    idle: "Esperando para firmar"
+    idle: "Esperando firma"
     signing: "Firmando"
 
 signed_psbt_scanner_screen:
@@ -1267,6 +1284,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "Ver detalles de entrada/salida"
+  coinbase_input: "Es bitcoin recién minado como recompensa de bloque, por eso no tiene entradas."
   confirmation: "$height ($count confirmaciones)"
   time_ago:
     just_now: Ahora mismo
@@ -1567,6 +1585,8 @@ split_utxo_screen:
   question_split_evenly: "¿En cuántas partes?"
   label_split_method: "Criterio de división"
   label_selected_utxo: "UTXO seleccionado"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Comisión estimada"
   add_new_amount: "Añadir monto"
   and_more_tags: "y ${count} más"
@@ -1578,6 +1598,7 @@ split_utxo_screen:
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
+  tx_too_large_error: "La transacción es demasiado grande. Selecciona menos UTXO o divide en menos partes"
   method_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
@@ -1591,9 +1612,10 @@ split_utxo_screen:
     fee: "Comisión"
     above_is_expected: "El resultado anterior es una estimación."
   big_tx_confirm:
-    create: "Crear"
-    preview: "Vista previa"
-    description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
+    title: "Transacción grande"
+    create: "Crear ahora"
+    preview: "Ver estimación"
+    description: "Crearla puede tardar un poco. Revisa primero el resultado estimado."
 
 label_management_screen:
   title: "Notas"
@@ -1814,7 +1836,7 @@ tooltip:
   utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
-  mfp: "Este es el valor único de la billetera.\nTambién llamado Huella Digital Maestra (MFP)."  
+  mfp: "Identificador de 8 caracteres derivado de la semilla.\nNormalmente se usa para comprobar que el dispositivo de firma y la billetera de solo lectura coinciden."
   rbf: "Una característica para reemplazar una transacción existente con una nueva aumentando la comisión. (RBF, Replace-By-Fee)"  
   cpfp: "Una característica para aumentar la prioridad estableciendo una alta comisión en una nueva transacción (Child) para hacer que la transacción existente (Parent) procese más rápido. (CPFP, Child-Pays-For-Parent)" 
   dont_show_again: "No mostrar de nuevo"
@@ -1843,6 +1865,10 @@ alert:
     insufficient_balance: "Saldo insuficiente"
     minimum_amount: "Puedes enviar al menos $amount"
     insufficient_fee: "Por favor, intenta nuevamente aumentando la comisión."
+    immature_coinbase: "Las recompensas de minería se pueden enviar después de 100 confirmaciones."
+    immature_coinbase_remaining: "Las recompensas de minería se pueden enviar después de 100 confirmaciones.\nFaltan $count bloques."
+    used_utxo_included: "La transacción incluye bitcoin que ya se ha gastado.\nPor favor, vuelve a crear la transacción."
+    locked_utxo_included: "La transacción incluye bitcoin bloqueado.\nPor favor, intenta nuevamente desde el principio."
     non_final_taproot_child: "Por favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
@@ -2999,3 +3025,6 @@ wallet_card_detail_screen:
   wallet_card: "Tarjeta de cartera"
   show_balance_trend: "Ver evolución del saldo"
   chart_date_format: "d/M"
+
+wallet_selection_carousel: "Ver de una en una"
+wallet_selection_grid: "Ver juntas"

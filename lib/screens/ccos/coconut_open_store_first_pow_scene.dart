@@ -13,12 +13,16 @@ import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/ccos/coconut_open_store_scene_viewport.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -322,172 +326,176 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
             final wiggleEnvelope = _hasInteractedWithCards ? 0.0 : _wiggleEnvelope(_wiggleController.value);
             final wiggleRotation = wiggleEnvelope * 0.04;
 
-            final content = Stack(
-              clipBehavior: Clip.none,
-              children: [
-                SizedBox(
-                  width: width,
-                  height: cardHeight + topExtra,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      Transform.translate(
-                        offset: leftCardOffset,
-                        child: _PolaroidCard(
-                          imagePath: _creatorImagePath,
-                          width: cardWidth,
-                          height: cardHeight,
-                          finalAngle: leftAngle,
-                          entranceOffset: Offset(-cardWidth * 0.7, -24),
-                          progress: cardsProgress,
-                          heroTag: _creatorHeroTag,
-                          onTap: () => _openDetail(context, _FirstPowCardKind.creator),
-                        ),
-                      ),
-                      Transform.translate(
-                        offset: rightCardOffset,
-                        child: _PolaroidCard(
-                          imagePath: _deliveryImagePath,
-                          width: cardWidth,
-                          height: cardHeight,
-                          finalAngle: rightAngle,
-                          entranceOffset: Offset(cardWidth * 0.7, -24),
-                          progress: cardsProgress,
-                          heroTag: _deliveryHeroTag,
-                          onTap: () => _openDetail(context, _FirstPowCardKind.delivery),
-                        ),
-                      ),
-                      _PolaroidCard(
-                        imagePath: _featureImagePath,
-                        width: cardWidth,
-                        height: cardHeight,
-                        finalAngle: 0,
-                        entranceOffset: const Offset(0, -260),
-                        progress: cardsProgress,
-                        heroTag: _featureHeroTag,
-                        onTap: () => _openDetail(context, _FirstPowCardKind.feature),
-                        extraRotation: wiggleRotation,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: cardHeight + topExtra + 44),
-                  child: Builder(
-                    builder: (context) {
-                      final starts = FirstPowSceneBody.typingStartMs([text1, text2]);
-                      final titleEntranceInterval = intervalFromMs(
-                        starts[0] - 180,
-                        starts[0],
-                        widget.sceneDurationMs,
-                        curve: Curves.easeOutCubic,
-                      );
-                      final entranceT = titleEntranceInterval.transform(value);
-                      final dy = 20 * (1 - entranceT);
-
-                      return Opacity(
-                        opacity: entranceT,
-                        child: Transform.translate(
-                          offset: Offset(0, dy),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              RichText(
-                                textAlign: TextAlign.left,
-                                strutStyle: strutStyle,
-                                text: typewriterSpan(
-                                  source: text1,
-                                  animation: widget.animation,
-                                  interval: typewriterIntervalFromMs(text1, starts[0], widget.sceneDurationMs),
-                                  baseStyle: bodyStyle,
-                                  highlightStyle: highlightStyle,
-                                  highlightPhrases: introHighlights,
-                                ),
-                              ),
-                              const SizedBox(height: 22),
-                              RichText(
-                                textAlign: TextAlign.left,
-                                strutStyle: text2StrutStyle,
-                                text: typewriterSpan(
-                                  source: text2,
-                                  animation: widget.animation,
-                                  interval: typewriterIntervalFromMs(text2, starts[1], widget.sceneDurationMs),
-                                  baseStyle: text2Style,
-                                  highlightStyle: text2HighlightStyle,
-                                  highlightPhrases: const {},
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-            final action = Builder(
-              builder: (context) {
-                final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
-                final buttonEntranceInterval = intervalFromMs(
-                  ctaStart,
-                  ctaStart + _buttonEntranceMs,
-                  widget.sceneDurationMs,
-                  curve: Curves.linear,
-                );
-                final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
-                final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
-                return Opacity(
-                  opacity: buttonOpacity,
-                  child: Transform.scale(
-                    scale: buttonT.clamp(0.0, 1.4),
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      runSpacing: 8,
+            return CcosSceneViewport(
+              height: constraints.maxHeight,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  SizedBox(
+                    width: width,
+                    height: cardHeight + topExtra,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
                       children: [
-                        AnimatedBuilder(
-                          animation: _addedBadgeController,
-                          builder: (context, child) {
-                            final progress = _addedBadgeController.value;
-                            if (progress <= 0.001) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Transform.scale(scale: progress, child: child),
-                            );
-                          },
-                          child: _AddedGlassBadge(
-                            label:
-                                widget.isApplied
-                                    ? t.ccos.first_pow_scene.status_applied
-                                    : t.ccos.first_pow_scene.status_added,
+                        Transform.translate(
+                          offset: leftCardOffset,
+                          child: _PolaroidCard(
+                            imagePath: _creatorImagePath,
+                            width: cardWidth,
+                            height: cardHeight,
+                            finalAngle: leftAngle,
+                            entranceOffset: Offset(-cardWidth * 0.7, -24),
+                            progress: cardsProgress,
+                            heroTag: _creatorHeroTag,
+                            onTap: () => _openDetail(context, _FirstPowCardKind.creator),
                           ),
                         ),
-                        _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
+                        Transform.translate(
+                          offset: rightCardOffset,
+                          child: _PolaroidCard(
+                            imagePath: _deliveryImagePath,
+                            width: cardWidth,
+                            height: cardHeight,
+                            finalAngle: rightAngle,
+                            entranceOffset: Offset(cardWidth * 0.7, -24),
+                            progress: cardsProgress,
+                            heroTag: _deliveryHeroTag,
+                            onTap: () => _openDetail(context, _FirstPowCardKind.delivery),
+                          ),
+                        ),
+                        _PolaroidCard(
+                          imagePath: _featureImagePath,
+                          width: cardWidth,
+                          height: cardHeight,
+                          finalAngle: 0,
+                          entranceOffset: const Offset(0, -260),
+                          progress: cardsProgress,
+                          heroTag: _featureHeroTag,
+                          onTap: () => _openDetail(context, _FirstPowCardKind.feature),
+                          extraRotation: wiggleRotation,
+                        ),
                       ],
                     ),
                   ),
-                );
-              },
-            );
-            final screenWidth = MediaQuery.sizeOf(context).width;
-            // Keep the tilted photos full-bleed while clipping vertical scrolling to the scene.
-            return OverflowBox(
-              minWidth: screenWidth,
-              maxWidth: screenWidth,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: (screenWidth - width) / 2),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  Padding(
+                    padding: EdgeInsets.only(top: cardHeight + topExtra + 44),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [content, Padding(padding: const EdgeInsets.only(top: 26), child: action)],
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Builder(
+                          builder: (context) {
+                            final starts = FirstPowSceneBody.typingStartMs([text1, text2]);
+                            final titleEntranceInterval = intervalFromMs(
+                              starts[0] - 180,
+                              starts[0],
+                              widget.sceneDurationMs,
+                              curve: Curves.easeOutCubic,
+                            );
+                            final entranceT = titleEntranceInterval.transform(value);
+                            final dy = 20 * (1 - entranceT);
+
+                            return Opacity(
+                              opacity: entranceT,
+                              child: Transform.translate(
+                                offset: Offset(0, dy),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    RichText(
+                                      textAlign: TextAlign.left,
+                                      strutStyle: strutStyle,
+                                      text: typewriterSpan(
+                                        source: text1,
+                                        animation: widget.animation,
+                                        interval: typewriterIntervalFromMs(text1, starts[0], widget.sceneDurationMs),
+                                        baseStyle: bodyStyle,
+                                        highlightStyle: highlightStyle,
+                                        highlightPhrases: introHighlights,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 22),
+                                    RichText(
+                                      textAlign: TextAlign.left,
+                                      strutStyle: text2StrutStyle,
+                                      text: typewriterSpan(
+                                        source: text2,
+                                        animation: widget.animation,
+                                        interval: typewriterIntervalFromMs(text2, starts[1], widget.sceneDurationMs),
+                                        baseStyle: text2Style,
+                                        highlightStyle: text2HighlightStyle,
+                                        highlightPhrases: const {},
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        const Spacer(),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          // Match the original Positioned(right: 0) width while
+                          // contributing the CTA's natural height to the scroll flow.
+                          child: OverflowBox(
+                            minWidth: 0,
+                            maxWidth: double.infinity,
+                            fit: OverflowBoxFit.deferToChild,
+                            alignment: Alignment.centerRight,
+                            child: Builder(
+                              builder: (context) {
+                                final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
+                                final buttonEntranceInterval = intervalFromMs(
+                                  ctaStart,
+                                  ctaStart + _buttonEntranceMs,
+                                  widget.sceneDurationMs,
+                                  curve: Curves.linear,
+                                );
+                                final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
+                                final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
+                                return Opacity(
+                                  opacity: buttonOpacity,
+                                  child: Transform.scale(
+                                    scale: buttonT.clamp(0.0, 1.4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        AnimatedBuilder(
+                                          animation: _addedBadgeController,
+                                          builder: (context, child) {
+                                            final progress = _addedBadgeController.value;
+                                            if (progress <= 0.001) return const SizedBox.shrink();
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8),
+                                              child: Transform.scale(scale: progress, child: child),
+                                            );
+                                          },
+                                          child: _AddedGlassBadge(
+                                            label:
+                                                widget.isApplied
+                                                    ? t.ccos.first_pow_scene.status_applied
+                                                    : t.ccos.first_pow_scene.status_added,
+                                          ),
+                                        ),
+                                        _AddThemeButton(
+                                          isAdded: widget.isAdded,
+                                          onAdd: widget.onAdd,
+                                          onRemove: widget.onRemove,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
             );
           },
@@ -940,7 +948,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     final isApplied =
         isAdded && listing.linkedVariant != null && preferenceProvider.themeVariant == listing.linkedVariant;
 
-    return Scaffold(
+    final photoScreen = Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
@@ -1168,6 +1176,16 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
           ),
         ],
       ),
+    );
+    // These photos have a pale status-bar background in every app theme.
+    // Preserve the app's other system-bar values and restore them on route pop.
+    final theme = Theme.of(context);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: buildSystemBarStyle(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        brightness: theme.brightness,
+      ).copyWith(statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
+      child: photoScreen,
     );
   }
 }

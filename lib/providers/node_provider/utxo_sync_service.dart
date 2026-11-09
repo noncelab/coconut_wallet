@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -153,6 +154,8 @@ class UtxoSyncService {
           continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
         }
 
+        final previousTxByHash = TransactionUtil.indexByHash(previousTxs);
+
         // 5. 트랜잭션 입력 분석하여 내 지갑의 UTXO인지 확인
         for (int i = 0; i < transaction.inputs.length; i++) {
           final input = transaction.inputs[i];
@@ -162,12 +165,8 @@ class UtxoSyncService {
             continue;
           }
 
-          Transaction? previousTx;
-          try {
-            previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-          } catch (_) {
-            continue;
-          }
+          final previousTx = previousTxByHash[input.transactionHash];
+          if (previousTx == null) continue;
 
           if (input.index >= previousTx.outputs.length) {
             continue;

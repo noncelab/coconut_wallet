@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -33,6 +35,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
+import '../../../mock/utxo_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 const _hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -69,8 +72,19 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
   int broadcasts = 0;
   final pending = Completer<Result<String>>();
+  bool connected = true;
+  Completer<bool>? reconnecting;
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  String get host => 'localhost';
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+  @override
+  Future<bool> reconnectWithoutWaitingForSync() => reconnecting?.future ?? Future.value(true);
+  Completer<Result<String>>? lookup;
+  @override
+  Future<Result<String>> getTransaction(String txHash) =>
+      lookup?.future ?? Future.value(Result.failure(ErrorCodes.nodeUnknown));
   @override
   Future<Result<String>> broadcast(Transaction transaction) {
     broadcasts++;
@@ -95,6 +109,7 @@ void main() {
   late String target;
   late String transactionHash;
   final navigated = <String?>[];
+  final navigator = GlobalKey<NavigatorState>();
 
   setUpAll(() {
     NetworkType.setNetworkType(NetworkType.testnet);
@@ -111,7 +126,7 @@ void main() {
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2}) async {
+  Future<void> open(WidgetTester tester, {int count = 2, bool seedInput = true, bool pushed = false}) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -139,6 +154,11 @@ void main() {
           ..setTxWaitingForSign(psbt.serialize())
           ..setSignedResult(signed.serialize());
     manager.realm.write(() {
+      if (seedInput) {
+        manager.realm.add(
+          UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: _hash),
+        );
+      }
       for (var i = 0; i < count; i++) {
         manager.realm.add(RealmUtxoTag('tag-$i', 1, 'tag-$i', i, DateTime(2026), utxoIdList: [_source]));
       }
@@ -166,18 +186,35 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          navigatorKey: navigator,
           navigatorObservers: [_NavigationObserver(navigated)],
-          home: const LoaderOverlay(child: BroadcastingScreen()),
+          home: pushed ? const SizedBox() : const LoaderOverlay(child: BroadcastingScreen()),
           onGenerateRoute: (settings) {
             return MaterialPageRoute<void>(settings: settings, builder: (_) => const SizedBox());
           },
         ),
       ),
     );
+    if (pushed) {
+      navigator.currentState!.push(
+        MaterialPageRoute<void>(builder: (_) => const LoaderOverlay(child: BroadcastingScreen())),
+      );
+    }
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
   }
+
+  testWidgets('an input that is no longer spendable shows send unavailable and never broadcasts', (tester) async {
+    await open(tester, seedInput: false);
+
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.send_unavailable)),
+      findsOneWidget,
+    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.alert.error_send.used_utxo_included)), findsOneWidget);
+    expect(node.broadcasts, 0);
+  });
 
   Future<void> tapSend(WidgetTester tester) async {
     await tester.tap(find.text(t.broadcasting_screen.btn_submit));
@@ -193,8 +230,11 @@ void main() {
     node.pending.complete(success ? Result.success(transactionHash) : Result.failure(ErrorCodes.broadcastError));
     bool completed() =>
         navigated.isNotEmpty ||
-        find.text(t.broadcasting_screen.dialog.tag_apply_failed).evaluate().isNotEmpty ||
-        find.text(t.broadcasting_screen.error_popup_title).evaluate().isNotEmpty;
+        find
+            .text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.tag_apply_failed))
+            .evaluate()
+            .isNotEmpty ||
+        find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)).evaluate().isNotEmpty;
     // Native Realm commits need real async time as well as Flutter's fake-clock frames.
     for (var attempt = 0; !completed() && attempt < 100; attempt++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -234,7 +274,7 @@ void main() {
     expect(tagIds(_source), ['tag-0', 'tag-1']);
     expect(tagIds(target), isEmpty);
     expect(navigated, isEmpty);
-    expect(find.text(t.broadcasting_screen.error_popup_title), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)), findsOneWidget);
   });
 
   testWidgets('explicit decline sends once and clears consumed links without inheriting', (tester) async {
@@ -270,11 +310,17 @@ void main() {
     await finish(tester);
 
     expect(
-      find.descendant(of: find.byType(Dialog), matching: find.text(t.broadcasting_complete_screen.complete)),
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_complete_screen.complete)),
+      ),
       findsOneWidget,
     );
-    expect(find.text(t.broadcasting_screen.dialog.tag_apply_failed), findsOneWidget);
-    expect(find.text(t.broadcasting_screen.error_popup_title), findsNothing);
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.tag_apply_failed)),
+      findsOneWidget,
+    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.error_popup_title)), findsNothing);
     expect(navigated, isEmpty);
     expect(tagIds(_source), ['tag-1']);
     expect(tagIds(target), isEmpty);
@@ -282,5 +328,168 @@ void main() {
     await tester.pumpAndSettle();
     expect(navigated, [AppRouteNames.broadcastingComplete]);
     expect(node.broadcasts, 1);
+  });
+
+  testWidgets('system back while waiting for the connection never sends, even if it returns during the pop', (
+    tester,
+  ) async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.broadcasts, 0);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 50));
+    node.reconnecting!.complete(true);
+    for (var frame = 0; frame < 10; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.byType(BroadcastingScreen), findsNothing);
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('going to the background while scrolling back up before sending cancels the send', (tester) async {
+    await open(tester, count: 0);
+    await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -400));
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.stateList<ScrollableState>(find.byType(Scrollable)).any((s) => s.position.pixels > 0), isTrue);
+
+    await tapSend(tester);
+    await tester.pump(const Duration(milliseconds: 100));
+    for (final state in [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump(const Duration(seconds: 2));
+    for (final state in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(node.broadcasts, 0);
+    expect(find.text(t.broadcasting_screen.btn_submit), findsOneWidget);
+  });
+
+  testWidgets('a late confirmation after the unknown-result notice moves to the completion screen', (tester) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    expect(
+      find.text(TextUtils.preventLineBreakInsideWords(t.broadcasting_screen.dialog.result_unknown_title)),
+      findsOneWidget,
+    );
+    expect(navigated, isEmpty);
+
+    node.lookup!.complete(Result.success(transactionHash));
+    for (var attempt = 0; navigated.isEmpty && attempt < 100; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('tapping save while a late confirmation is being finished opens the completion screen once', (
+    tester,
+  ) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    await tester.tap(find.text(t.OK));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    node.lookup!.complete(Result.success(transactionHash));
+    await tester.pump();
+    await tester.tap(find.text(t.transaction_draft.save));
+    for (var attempt = 0; attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, [AppRouteNames.broadcastingComplete]);
+    expect(manager.realm.all<RealmTransactionDraft>(), isEmpty);
+  });
+
+  testWidgets('a late confirmation arriving while leaving with system back does not open the completion screen', (
+    tester,
+  ) async {
+    node.lookup = Completer<Result<String>>();
+    await open(tester, count: 0, pushed: true);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(Result.failure(ErrorCodes.nodeIsolateError));
+    for (var frame = 0; frame < 40; frame++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    }
+    await tester.tap(find.text(t.OK));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 50));
+    node.lookup!.complete(Result.success(transactionHash));
+    for (var attempt = 0; attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(navigated, isNot(contains(AppRouteNames.broadcastingComplete)));
+    expect(find.byType(BroadcastingScreen), findsNothing);
+    expect(repository.getUtxoState(1, getUtxoId(_hash, 0))!.status, UtxoStatus.outgoing);
+  });
+
+  testWidgets('a node rejection for spent inputs shows the friendly message instead of the raw reason', (tester) async {
+    await open(tester, count: 0);
+    await tapSend(tester);
+    for (var frame = 0; frame < 20 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    node.pending.complete(
+      Result.failure(
+        ErrorCodes.broadcastErrorWithMessage(
+          {
+            'code': 1,
+            'message': 'the transaction was rejected by network rules.\n\nbad-txns-inputs-missingorspent\n[0200...]',
+          }.toString(),
+        ),
+      ),
+    );
+    final friendly = find.text(TextUtils.preventLineBreakInsideWords(t.alert.error_send.used_utxo_included));
+    for (var attempt = 0; friendly.evaluate().isEmpty && attempt < 40; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+
+    expect(friendly, findsOneWidget);
+    expect(find.textContaining('missingorspent'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

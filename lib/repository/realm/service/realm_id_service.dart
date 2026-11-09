@@ -3,17 +3,13 @@ import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:realm/realm.dart';
 
 int getLastId(Realm realm, String key) {
-  // 해당 key에 대한 ID 값 조회
-  final counter = realm.find<RealmIntegerId>(key);
-  if (counter == null) {
-    // ID 카운터가 없다면 새로운 카운터 추가
-    realm.write(() {
-      realm.add(RealmIntegerId(key, 1)); // 첫 번째 ID는 1로 시작
-    });
-    return 1; // 첫 번째 ID
-  } else {
-    return counter.value;
-  }
+  // 다른 Realm 인스턴스의 쓰기 결과가 반영된 트랜잭션 안에서 존재 여부를 확인한다.
+  return realm.write(() {
+    final counter = realm.find<RealmIntegerId>(key);
+    if (counter != null) return counter.value;
+    realm.add(RealmIntegerId(key, 1));
+    return 1;
+  });
 }
 
 void saveLastId(Realm realm, String key, int lastId) {

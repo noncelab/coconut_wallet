@@ -57,12 +57,12 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(direct[ExchangeType.upbit], Uri.parse('wss://api.upbit.com/websocket/v1'));
-    expect(direct[ExchangeType.binance], Uri.parse('wss://stream.binance.com:9443/ws/btcusdt@ticker'));
+    expect(direct[ExchangeType.binance], Uri.parse('wss://data-stream.binance.vision/ws/btcusdt@ticker'));
     expect(direct[ExchangeType.bitflyer], Uri.parse('wss://ws.lightstream.bitflyer.com/json-rpc'));
     expect(factoryUris[FiatCode.KRW], direct[ExchangeType.upbit]);
     expect(factoryUris[FiatCode.USD], direct[ExchangeType.binance]);
     expect(factoryUris[FiatCode.JPY], direct[ExchangeType.bitflyer]);
-    expect(factoryUris[FiatCode.EUR], Uri.parse('wss://stream.binance.com:9443/ws/btceur@ticker'));
+    expect(factoryUris[FiatCode.EUR], Uri.parse('wss://data-stream.binance.vision/ws/btceur@ticker'));
 
     expect(_texts(sentByExchange[ExchangeType.upbit]!), anyElement(contains('KRW-BTC')));
     expect(_texts(sentByExchange[ExchangeType.bitflyer]!), anyElement(contains('lightning_ticker_BTC_JPY')));

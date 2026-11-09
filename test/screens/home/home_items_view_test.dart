@@ -39,6 +39,176 @@ HomeItem _item(String id, String definitionId, HomeItemKind kind, int order, Hom
 }
 
 void main() {
+  for (final (description, nextSize, capturing) in [
+    ('fold', const Size(356, 600), false),
+    ('same-count width change', const Size(600, 600), false),
+    ('height-only change', const Size(540, 500), false),
+    ('viewport height change', const Size(540, 600), false),
+    ('fold during capture', const Size(356, 600), true),
+  ]) {
+    testWidgets('home resize menu dismisses on $description', (tester) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final registry = HomeItemRegistry()..register(_ResizableDefinition());
+      final configuration = HomeConfiguration(
+        columns: 6,
+        items: [
+          _item('left', 'resizable', HomeItemKind.widget, 0, HomeSpan.small),
+          _item('middle', 'resizable', HomeItemKind.widget, 1, HomeSpan.small),
+          _item('right', 'resizable', HomeItemKind.widget, 2, HomeSpan.small),
+        ],
+      );
+      var edits = 0;
+      Future<void> pump(Size size) => tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: HomeItemsView(
+                configuration: configuration,
+                registry: registry,
+                onMoveToCell: (_, __) => edits++,
+                onResize: (_, __) => edits++,
+                menuItemsOf:
+                    (_) => [
+                      LongPressedMenuItem(
+                        title: 'remove item',
+                        iconPath: CommonActionIconPath.editHome,
+                        onSelected: () => edits++,
+                      ),
+                    ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await pump(const Size(540, 600));
+      if (capturing) {
+        final menu = tester.state<LongPressedMenuWidgetState>(
+          find.descendant(
+            of: find.byKey(const ValueKey('home-item-right')),
+            matching: find.byType(LongPressedMenuWidget),
+          ),
+        );
+        // Leave the end-of-frame snapshot pending while the grid constraints change.
+        menu.showMenu();
+      } else {
+        await tester.longPress(find.byKey(const ValueKey('home-item-right')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('home-item-size-right-4x2')), findsOneWidget);
+      }
+      if (description == 'viewport height change') tester.view.physicalSize = const Size(800, 700);
+      await pump(nextSize);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home-item-size-right-4x2')), findsNothing);
+      expect(find.text('remove item'), findsNothing);
+      expect(edits, 0);
+      expect(tester.takeException(), isNull);
+      await tester.longPress(find.byKey(const ValueKey('home-item-right')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home-item-size-right-4x2')), findsOneWidget);
+    });
+  }
+
+  testWidgets('folding repeatedly reflows every tile and restores compact positions without edits', (tester) async {
+    tester.view.physicalSize = const Size(1000, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final registry =
+        HomeItemRegistry()
+          ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut))
+          ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small))
+          ..register(_LabelDefinition('wide', HomeItemKind.widget, HomeSpan.wide));
+    final configuration =
+        HomeGridLayout(
+          HomeConfiguration(
+            items: [
+              _item('wide', 'wide', HomeItemKind.widget, 0, HomeSpan.wide),
+              _item('small', 'small', HomeItemKind.widget, 1, HomeSpan.small),
+              for (var i = 0; i < 7; i++) _item('s$i', 'shortcut', HomeItemKind.shortcut, i + 2, HomeSpan.shortcut),
+            ],
+          ),
+        ).positionedConfiguration;
+    final original = configuration.toJson();
+    var edits = 0;
+    Map<String, Rect>? compactRects;
+    for (final width in [388.0, 572.0, 756.0, 940.0, 572.0, 388.0]) {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: HomeItemsView(
+                configuration: configuration,
+                registry: registry,
+                badgeInset: 16,
+                onMoveToCell: (_, __) => edits++,
+                onInsertBefore: (_, __) => edits++,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final rects = {
+        for (final item in configuration.items) item.id: tester.getRect(find.byKey(ValueKey('home-item-${item.id}'))),
+      };
+      for (final item in configuration.items) {
+        expect(rects[item.id]!.left, greaterThanOrEqualTo(16));
+        expect(rects[item.id]!.right, lessThanOrEqualTo(width - 16));
+        for (final other in configuration.items.where((other) => other.id != item.id)) {
+          expect(rects[item.id]!.overlaps(rects[other.id]!), isFalse, reason: '${item.id}/${other.id} at $width');
+        }
+      }
+      expect(rects['s0']!.width, 80);
+      if (width == 388) {
+        if (compactRects != null) expect(rects, compactRects);
+        compactRects = rects;
+      }
+      expect(edits, 0);
+      expect(configuration.toJson(), original);
+    }
+  });
+
+  for (final columns in [6, 8]) {
+    testWidgets('expanded $columns-column grid drops wide tiles away from column zero', (tester) async {
+      final harness = _ViewportDragHarness(tester, span: HomeSpan.wide);
+      await harness.pump(columns * 92.0 - 12);
+      final gesture = await harness.startAt(Offset((columns - 4) * 92.0 + 178, 86));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(harness.drops, [HomeGridPosition(columns - 4, 0)]);
+    });
+  }
+
+  testWidgets('expanded width uses six cells instead of enlarging four', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(540);
+    expect(tester.getSize(find.byKey(const ValueKey('home-item-s'))).width, 80);
+    final gesture = await harness.startAt(const Offset(500, 40));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(harness.drops, [const HomeGridPosition(5, 0)]);
+  });
+
+  testWidgets('column changes cancel held drags and their pending previews', (tester) async {
+    final harness = _ViewportDragHarness(tester);
+    await harness.pump(356);
+    final gesture = await harness.startAt(const Offset(230, 40));
+    await harness.pump(540);
+    await tester.pump(const Duration(milliseconds: 200));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(harness.drops, isEmpty);
+    expect(find.text('built:shortcut'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a 4×2 can drop between a full shortcut row and a single shortcut row', (tester) async {
     HomeGridPosition? target;
     final registry =
@@ -1815,90 +1985,104 @@ void main() {
     expect(find.text('remove stack'), findsNothing);
   });
 
-  for (final rapidRegrab in [false, true]) {
-    testWidgets('occupied reverse: staggered fixture never overlaps after release, rapidRegrab=$rapidRegrab', (
-      tester,
-    ) async {
-      usePhoneViewport(tester);
-      final registry =
-          HomeItemRegistry()
-            ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut))
-            ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small));
-      var configuration = HomeConfiguration(
-        items: [
-          for (final entry
-              in [
-                ('source', HomeSpan.shortcut, const HomeGridPosition(2, 0)),
-                ('tall', HomeSpan.small, const HomeGridPosition(1, 1)),
-                ('target', HomeSpan.shortcut, const HomeGridPosition(3, 2)),
-                ('other', HomeSpan.shortcut, const HomeGridPosition(1, 3)),
-              ].indexed)
-            HomeItem(
-              id: entry.$2.$1,
-              definitionId: entry.$2.$2 == HomeSpan.small ? 'small' : 'shortcut',
-              kind: entry.$2.$2 == HomeSpan.small ? HomeItemKind.widget : HomeItemKind.shortcut,
-              order: entry.$1,
-              span: entry.$2.$2,
-              position: entry.$2.$3,
-            ),
-        ],
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: buildCoconutThemeData(),
-          home: Align(
-            alignment: Alignment.topLeft,
-            child: StatefulBuilder(
-              builder:
-                  (context, update) => HomeItemsView(
-                    configuration: configuration,
-                    registry: registry,
-                    isArranging: true,
-                    badgeInset: 16,
-                    onRemove: (_) {},
-                    menuItemsOf: (_) => [],
-                    onMoveToCell:
-                        (id, position) => update(() {
-                          configuration = HomeGridLayout(configuration).moveToCell(id, position);
-                        }),
-                  ),
+  for (final (columns, rapidRegrab) in [
+    for (final columns in [4, 6, 8])
+      for (final regrab in [false, true]) (columns, regrab),
+  ]) {
+    testWidgets(
+      'occupied reverse: staggered fixture never overlaps after release, rapidRegrab=$rapidRegrab, columns=$columns',
+      (tester) async {
+        usePhoneViewport(tester);
+        tester.view.physicalSize = Size(columns * 92.5 + 20, 844);
+        final registry =
+            HomeItemRegistry()
+              ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut))
+              ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small));
+        var configuration = HomeConfiguration(
+          columns: columns,
+          items: [
+            for (final entry
+                in [
+                  ('source', HomeSpan.shortcut, const HomeGridPosition(2, 0)),
+                  ('tall', HomeSpan.small, const HomeGridPosition(1, 1)),
+                  ('target', HomeSpan.shortcut, const HomeGridPosition(3, 2)),
+                  ('other', HomeSpan.shortcut, const HomeGridPosition(1, 3)),
+                ].indexed)
+              HomeItem(
+                id: entry.$2.$1,
+                definitionId: entry.$2.$2 == HomeSpan.small ? 'small' : 'shortcut',
+                kind: entry.$2.$2 == HomeSpan.small ? HomeItemKind.widget : HomeItemKind.shortcut,
+                order: entry.$1,
+                span: entry.$2.$2,
+                position: entry.$2.$3,
+              ),
+          ],
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildCoconutThemeData(),
+            home: Align(
+              alignment: Alignment.topLeft,
+              child: StatefulBuilder(
+                builder:
+                    (context, update) => HomeItemsView(
+                      configuration: configuration,
+                      registry: registry,
+                      isArranging: true,
+                      badgeInset: 16,
+                      onRemove: (_) {},
+                      menuItemsOf: (_) => [],
+                      onMoveToCell:
+                          (id, position) => update(() {
+                            configuration = HomeGridLayout(configuration).moveToCell(id, position);
+                          }),
+                    ),
+              ),
             ),
           ),
-        ),
-      );
-      final target = tester.getCenter(find.byKey(const ValueKey('home-item-target')));
-      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
-      await gesture.moveBy(const Offset(24, 0));
-      await tester.pump(const Duration(milliseconds: 32));
-      await gesture.moveTo(target);
-      await tester.pump(const Duration(milliseconds: 200));
-      await gesture.up();
-      for (var frame = 0; frame < 20; frame++) {
-        await tester.pump(const Duration(milliseconds: 16));
-        if (rapidRegrab && frame == 1) {
-          final regrab = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
-          await regrab.moveBy(const Offset(0, 92.5));
-          await regrab.up();
-          await tester.pump();
-          await tester.pump();
-        }
-        final rects = [
-          for (final item in configuration.items) tester.getRect(find.byKey(ValueKey('home-item-content-${item.id}'))),
-        ];
-        for (var i = 0; i < rects.length; i++) {
-          for (var j = i + 1; j < rects.length; j++) {
-            final overlap = rects[i].intersect(rects[j]);
+        );
+        final target = tester.getCenter(find.byKey(const ValueKey('home-item-target')));
+        final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+        await gesture.moveBy(const Offset(24, 0));
+        await tester.pump(const Duration(milliseconds: 32));
+        await gesture.moveTo(target);
+        await tester.pump(const Duration(milliseconds: 200));
+        await gesture.up();
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          if (frame == 0) {
             expect(
-              overlap.width <= 0.5 || overlap.height <= 0.5,
-              isTrue,
-              reason: 'Frame $frame: ${configuration.items[i].id} overlaps ${configuration.items[j].id}',
+              tester.getTopLeft(find.byKey(const ValueKey('home-item-source'))),
+              const Offset(281.5, 189),
+              reason: 'A released tile must remain at the destination even when its preview tween is still running.',
             );
           }
+          if (rapidRegrab && frame == 1) {
+            final regrab = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-source'))));
+            await regrab.moveBy(const Offset(0, 92.5));
+            await regrab.up();
+            await tester.pump();
+            await tester.pump();
+          }
+          final rects = [
+            for (final item in configuration.items)
+              tester.getRect(find.byKey(ValueKey('home-item-content-${item.id}'))),
+          ];
+          for (var i = 0; i < rects.length; i++) {
+            for (var j = i + 1; j < rects.length; j++) {
+              final overlap = rects[i].intersect(rects[j]);
+              expect(
+                overlap.width <= 0.5 || overlap.height <= 0.5,
+                isTrue,
+                reason: 'Frame $frame: ${configuration.items[i].id} overlaps ${configuration.items[j].id}',
+              );
+            }
+          }
         }
-      }
-      expect(HomeGridLayout(configuration).positionOf('source'), HomeGridPosition(3, rapidRegrab ? 3 : 2));
-      await tester.pumpWidget(const SizedBox());
-    });
+        expect(HomeGridLayout(configuration).positionOf('source'), HomeGridPosition(3, rapidRegrab ? 3 : 2));
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
   }
 
   for (final span in [HomeSpan.shortcut, HomeSpan.small, HomeSpan.wide]) {

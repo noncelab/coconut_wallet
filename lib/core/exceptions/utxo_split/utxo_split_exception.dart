@@ -26,3 +26,8 @@ class SplitInsufficientAmountException extends UtxoSplitException {
 class FeeExceedsUtxoAmountException extends UtxoSplitException {
   const FeeExceedsUtxoAmountException({super.message = 'Estimated fee exceeds UTXO amount.', super.estimatedFee});
 }
+
+/// Exception thrown when the split tx would exceed the standard tx size (100,000 vB)
+class SplitTxTooLargeException extends UtxoSplitException {
+  const SplitTxTooLargeException({super.message = 'Split tx exceeds the standard tx size.', super.estimatedFee});
+}

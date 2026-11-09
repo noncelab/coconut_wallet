@@ -43,14 +43,28 @@ class _Node extends SafetyNodeFake {
   bool failBroadcast = false;
   int broadcasts = 0;
   bool recordedBeforeBroadcast = false;
+  final broadcastHashes = <String>[];
+  final recordingChecks = <bool>[];
+  final broadcastErrors = <AppError?>[];
+  Completer<void>? resending;
   @override
   Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
+    broadcastHashes.add(signedTx.transactionHash);
     recordedBeforeBroadcast = SafetyStore(SharedPrefsRepository()).load().isAppCreated(signedTx.transactionHash);
+    recordingChecks.add(recordedBeforeBroadcast);
+    if (broadcasts > 1) await resending?.future;
+    if (broadcastErrors.isNotEmpty) {
+      final error = broadcastErrors.removeAt(0);
+      return error == null ? Result.success(signedTx.transactionHash) : Result.failure(error);
+    }
     return failBroadcast ? Result.failure(ErrorCodes.broadcastError) : Result.success(signedTx.transactionHash);
   }
+
+  @override
+  Future<Result<String>> getTransaction(String txHash) async => Result.failure(ErrorCodes.nodeUnknown);
 }
 
 class _Transactions extends Fake implements TransactionProvider {}
@@ -58,6 +72,9 @@ class _Transactions extends Fake implements TransactionProvider {}
 // Keep native Realm I/O outside the fake clock used to verify the broadcast deadline.
 class _ImmediateTagUtxos extends UtxoRepository {
   _ImmediateTagUtxos(super.realm);
+
+  @override
+  Future<void> markUnspentInputsAsOutgoing(int walletId, Transaction transaction) async {}
 
   @override
   Future<Result<void>> applyInheritedTags(
@@ -152,7 +169,7 @@ void main() {
 
   test('records signed hash before network call and success after broadcast', () async {
     final model = await broadcasting();
-    final result = await model.broadcast(inheritedTagIds: []);
+    final result = (await model.broadcast(inheritedTagIds: []))!;
     await Future<void>.delayed(Duration.zero);
     expect(result.isSuccess, isTrue);
     expect(node.recordedBeforeBroadcast, isTrue);
@@ -162,7 +179,7 @@ void main() {
   test('recording write failure never blocks or changes broadcast result', () async {
     final model = await broadcasting();
     disk.fails = true;
-    final result = await model.broadcast(inheritedTagIds: []);
+    final result = (await model.broadcast(inheritedTagIds: []))!;
     await Future<void>.delayed(Duration.zero);
     expect(result.isSuccess, isTrue);
     expect(node.broadcasts, 1);
@@ -182,7 +199,7 @@ void main() {
       expect(node.broadcasts, 0);
       await tester.pump(const Duration(milliseconds: 1));
       expect(node.broadcasts, 1);
-      final result = await broadcast;
+      final result = (await broadcast)!;
       expect(result.isSuccess, isTrue);
       expect(node.recordedBeforeBroadcast, isTrue);
       expect(result.value, model.signedTx!.transactionHash);
@@ -194,9 +211,74 @@ void main() {
   test('network failure keeps pre-record and does not write a success marker', () async {
     final model = await broadcasting();
     node.failBroadcast = true;
-    expect((await model.broadcast(inheritedTagIds: [])).isFailure, isTrue);
+    expect((await model.broadcast(inheritedTagIds: []))!.isFailure, isTrue);
     expect(store.load().appTxidPrefixes, {SafetyState.txidPrefix(model.signedTx!.transactionHash)});
     expect(store.load().lastBroadcast, isNull);
+  });
+  test('cancelled broadcast keeps pre-record without sending or writing a success marker', () async {
+    final model = await broadcasting();
+    model.cancelPendingBroadcast();
+
+    expect(await model.broadcast(inheritedTagIds: []), isNull);
+    expect(node.broadcasts, 0);
+    expect(model.isBroadcastDispatched, isFalse);
+    expect(store.load().appTxidPrefixes, {SafetyState.txidPrefix(model.signedTx!.transactionHash)});
+    expect(store.load().lastBroadcast, isNull);
+    expect(disk.writes, 1);
+  });
+  testWidgets('cancelling during a stalled safety write prevents dispatch after the disk deadline', (tester) async {
+    final model = await broadcasting(repository: _ImmediateTagUtxos(realm));
+    disk.stalls = true;
+    final pending = model.broadcast(inheritedTagIds: []);
+    await tester.pump();
+    expect(disk.writes, 1);
+    expect(node.broadcasts, 0);
+    model.cancelPendingBroadcast();
+
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(await pending, isNull);
+    expect(node.broadcasts, 0);
+    expect(model.isBroadcastDispatched, isFalse);
+    expect(store.load().appTxidPrefixes, {SafetyState.txidPrefix(model.signedTx!.transactionHash)});
+    expect(store.load().lastBroadcast, isNull);
+    expect(disk.writes, 1);
+  });
+  testWidgets('a retry accepted after the unknown-result deadline records the same hash exactly once', (tester) async {
+    final model = await broadcasting(repository: _ImmediateTagUtxos(realm));
+    final txid = model.signedTx!.transactionHash;
+    node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
+    node.resending = Completer<void>();
+
+    final pending = model.broadcast(inheritedTagIds: []);
+    await tester.pump();
+    expect(node.broadcastHashes, [txid, txid]);
+    expect(node.recordingChecks, [true, true]);
+    expect(store.load().lastBroadcast, isNull);
+    expect(disk.writes, 1);
+    await tester.pump(const Duration(seconds: 15));
+
+    final result = (await pending)!;
+    expect(result.error.code, ErrorCodes.nodeIsolateError.code);
+    expect(model.isBroadcastResultUnknown, isTrue);
+    expect(model.isTransactionAccepted, isFalse);
+    expect(store.load().lastBroadcast, isNull);
+    expect(store.load().appTxidPrefixes, {SafetyState.txidPrefix(txid)});
+    expect(disk.writes, 1);
+
+    model.dispose();
+    send.clear();
+    node.resending!.complete();
+    await tester.pump();
+
+    expect(model.isTransactionAccepted, isTrue);
+    expect(store.load().lastBroadcast!.walletId, 1);
+    expect(store.load().lastBroadcast!.txid, txid);
+    expect(store.load().appTxidPrefixes, {SafetyState.txidPrefix(txid)});
+    expect(disk.writes, 2);
+    await tester.pump(const Duration(seconds: 1));
+    expect(disk.writes, 2);
+    expect(node.broadcasts, 2);
   });
   test('PSBT signing handoff records the same hash as the signed transaction', () async {
     final model = SendConfirmViewModel(send, wallets);

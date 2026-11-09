@@ -22,6 +22,7 @@ const _allStatuses = [
   _attention,
   HomeSafetyStatus(HomeSafetyStatusKind.reconnected),
   HomeSafetyStatus(HomeSafetyStatusKind.updating),
+  HomeSafetyStatus(HomeSafetyStatusKind.updateCompleted),
   HomeSafetyStatus(HomeSafetyStatusKind.noIssues),
   HomeSafetyStatus(HomeSafetyStatusKind.noScore),
 ];
@@ -93,8 +94,9 @@ String _chipText(HomeSafetyStatus status) => switch (status.kind) {
     _ => t.wallet_health.status_chip.connection_failed,
   },
   HomeSafetyStatusKind.actionNeeded => t.wallet_health.status_chip.attention(n: status.count),
-  HomeSafetyStatusKind.reconnected => t.wallet_health.status_chip.reconnected,
+  HomeSafetyStatusKind.reconnected => t.home_connection_status.electrum_connection_restored,
   HomeSafetyStatusKind.updating => t.status_updating,
+  HomeSafetyStatusKind.updateCompleted => t.home_connection_status.update_completed,
   HomeSafetyStatusKind.noIssues => t.wallet_health.summary.no_issues_found,
   HomeSafetyStatusKind.noScore => t.wallet_health.title,
 };

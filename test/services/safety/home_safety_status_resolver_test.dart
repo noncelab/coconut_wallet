@@ -20,7 +20,14 @@ HomeSafetyStatus _resolve(
   NetworkStatus network = NetworkStatus.online,
   bool reconnected = false,
   bool syncing = false,
-}) => resolveHomeSafetyStatus(report: report, networkStatus: network, showReconnected: reconnected, isSyncing: syncing);
+  bool completed = false,
+}) => resolveHomeSafetyStatus(
+  report: report,
+  networkStatus: network,
+  showReconnected: reconnected,
+  isSyncing: syncing,
+  showUpdateCompleted: completed,
+);
 
 void main() {
   final critical = _report(WalletHealthStatus.criticalOverride, score: 80, review: [SafetySeverity.actionNeeded]);
@@ -34,7 +41,7 @@ void main() {
   test('critical wins over a connection problem, items, reconnect and sync', () {
     for (final network in NetworkStatus.values) {
       expect(
-        _resolve(critical, network: network, reconnected: true, syncing: true).kind,
+        _resolve(critical, network: network, reconnected: true, syncing: true, completed: true).kind,
         HomeSafetyStatusKind.critical,
       );
     }
@@ -44,7 +51,7 @@ void main() {
     for (final network in [NetworkStatus.offline, NetworkStatus.connectionFailed, NetworkStatus.vpnBlocked]) {
       for (final report in [attention, scored, null]) {
         expect(
-          _resolve(report, network: network, reconnected: true, syncing: true),
+          _resolve(report, network: network, reconnected: true, syncing: true, completed: true),
           HomeSafetyStatus(HomeSafetyStatusKind.connectionProblem, networkStatus: network),
         );
       }
@@ -53,15 +60,22 @@ void main() {
 
   test('items to check count action-needed and warning only, and beat reconnect and sync', () {
     expect(
-      _resolve(attention, reconnected: true, syncing: true),
+      _resolve(attention, reconnected: true, syncing: true, completed: true),
       const HomeSafetyStatus(HomeSafetyStatusKind.actionNeeded, count: 2),
     );
   });
 
   test('reconnected beats updating, updating beats the idle states', () {
-    expect(_resolve(scored, reconnected: true, syncing: true).kind, HomeSafetyStatusKind.reconnected);
-    expect(_resolve(scored, syncing: true).kind, HomeSafetyStatusKind.updating);
+    expect(_resolve(scored, reconnected: true, syncing: true, completed: true).kind, HomeSafetyStatusKind.reconnected);
+    expect(_resolve(scored, syncing: true, completed: true).kind, HomeSafetyStatusKind.updating);
     expect(_resolve(null, syncing: true).kind, HomeSafetyStatusKind.updating);
+  });
+
+  test('completed remains visible before returning to scored or unscored idle', () {
+    for (final report in [scored, null]) {
+      expect(_resolve(report, completed: true).kind, HomeSafetyStatusKind.updateCompleted);
+      expect(_resolve(report).kind, report == null ? HomeSafetyStatusKind.noScore : HomeSafetyStatusKind.noIssues);
+    }
   });
 
   test('idle: no issues with a score, up to date without one', () {

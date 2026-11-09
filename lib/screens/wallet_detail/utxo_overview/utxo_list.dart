@@ -13,6 +13,7 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
@@ -73,12 +74,12 @@ class _UtxoListState extends State<UtxoList> {
     final viewModel = widget.viewModel;
     return ListenableBuilder(
       listenable: viewModel,
-      builder: (_, __) => _buildList(viewModel.utxoList, viewModel.activeUtxoTagName, bottomInset),
+      builder: (_, __) => _buildList(viewModel.utxoList, viewModel.activeUtxoFilter, bottomInset),
     );
   }
 
-  Widget _buildList(List<UtxoState> utxoList, String activeTag, double bottomInset) {
-    if (utxoList.isEmpty || !utxoList.any((utxo) => _belongsToTag(utxo, activeTag))) {
+  Widget _buildList(List<UtxoState> utxoList, UtxoFilter activeFilter, double bottomInset) {
+    if (utxoList.isEmpty || !utxoList.any(activeFilter.matches)) {
       return _buildEmptyState();
     }
 
@@ -90,31 +91,22 @@ class _UtxoListState extends State<UtxoList> {
 
     return SliverPadding(
       padding: EdgeInsets.only(bottom: bottomInset + 70),
-      sliver: _buildSliverAnimatedList(utxoList, activeTag),
+      sliver: _buildSliverAnimatedList(utxoList, activeFilter),
     );
   }
 
   // --------------------
   // Sliver & List Building
   // --------------------
-  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String activeTag) {
-    Key listKey;
-    if (activeTag == t.utxo_detail_screen.utxo_locked) {
-      listKey = _lockedUtxoListKey;
-    } else if (activeTag == t.change) {
-      listKey = _changeUtxoListKey;
-    } else {
-      listKey = _utxoListKey;
-    }
-
+  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, UtxoFilter activeFilter) {
     return SliverAnimatedList(
-      key: listKey,
+      key: _listKeyFor(activeFilter),
       initialItemCount: _displayedUtxoList.length,
       itemBuilder: (context, index, animation) {
         if (index >= utxoList.length) return const SizedBox();
 
         final utxo = utxoList[index];
-        if (!_belongsToTag(utxo, activeTag)) return const SizedBox();
+        if (!activeFilter.matches(utxo)) return const SizedBox();
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -122,6 +114,12 @@ class _UtxoListState extends State<UtxoList> {
         );
       },
     );
+  }
+
+  GlobalKey<SliverAnimatedListState> _listKeyFor(UtxoFilter filter) {
+    if (filter == UtxoFilter.locked) return _lockedUtxoListKey;
+    if (filter == UtxoFilter.change) return _changeUtxoListKey;
+    return _utxoListKey;
   }
 
   Widget _buildEmptyState() {
@@ -138,18 +136,6 @@ class _UtxoListState extends State<UtxoList> {
         ),
       ),
     );
-  }
-
-  bool _belongsToTag(UtxoState utxo, String? tagName) {
-    if (tagName == null || tagName.isEmpty) return false;
-
-    final matchers = {
-      t.all: true,
-      t.utxo_detail_screen.utxo_locked: utxo.status == UtxoStatus.locked,
-      t.change: utxo.isChange == true,
-    };
-
-    return matchers[tagName] ?? (utxo.tags?.any((e) => e.name == tagName) ?? false);
   }
 
   // --------------------
@@ -291,7 +277,7 @@ class _UtxoListState extends State<UtxoList> {
       if (index >= _displayedUtxoList.length) continue;
       await Future.delayed(_animationDuration);
       if (!mounted) return;
-      _utxoListKey.currentState?.removeItem(
+      _listKeyFor(widget.viewModel.activeUtxoFilter).currentState?.removeItem(
         index,
         (c, anim) => _buildRemoveUtxoItem(_displayedUtxoList[index], anim),
         duration: _duration,
@@ -301,7 +287,7 @@ class _UtxoListState extends State<UtxoList> {
     for (var index in inserted) {
       await Future.delayed(_animationDuration);
       if (!mounted) return;
-      _utxoListKey.currentState?.insertItem(index, duration: _duration);
+      _listKeyFor(widget.viewModel.activeUtxoFilter).currentState?.insertItem(index, duration: _duration);
     }
 
     _isListLoading = false;

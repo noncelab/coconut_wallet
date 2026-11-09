@@ -1,3 +1,10 @@
+import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
+import 'dart:io';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
@@ -369,6 +376,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   ),
               ]),
             _section(t.wallet_info_screen.section_details, _buildDetailRows(context, viewModel)),
+            if (viewModel.isBitBox02Wallet || viewModel.isTrezorWallet)
+              _section(t.wallet_info_screen.connected_hardware_wallet.title, _buildHardwareWalletRows(viewModel)),
             _section(t.wallet_info_screen.section_data, [
               _walletInfoMenu(
                 title: t.wallet_info_screen.target_quantity,
@@ -593,24 +602,60 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
         ),
       ],
-      if (viewModel.isBitBox02Wallet)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-          child: BitBox02Section(
-            walletFingerprint: viewModel.walletFingerprint,
-            onDisconnect: () async => viewModel.disconnectBitBox02(),
-          ),
-        ),
-      if (viewModel.isTrezorWallet)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-          child: TrezorSection(
-            walletFingerprint: viewModel.walletFingerprint,
-            onDisconnect: () async => viewModel.disconnectTrezor(),
-          ),
-        ),
       WalletSafetyStatusRow(walletId: widget.id),
       WalletRescueDestinationRow(walletId: widget.id),
+    ];
+  }
+
+  Future<void> _reconnectHardwareWallet(WalletInfoViewModel viewModel, {required bool trezor}) async {
+    var usb = false;
+    if (trezor && Platform.isAndroid) {
+      final choice = await TrezorTransportSelectScreen.showSelectionSheet(context);
+      if (!mounted || choice == null) return;
+      usb = choice == TrezorTransport.usb;
+    }
+    if (!mounted) return;
+    final Widget screen;
+    if (!trezor) {
+      screen = BitBox02ConnectScreen(
+        importSource: WalletImportSource.bitbox02,
+        walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+      );
+    } else if (usb) {
+      screen = TrezorUsbConnectScreen(
+        walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+      );
+    } else {
+      screen = TrezorBleConnectScreen(
+        walletId: widget.id,
+        mode: HardwareWalletConnectMode.reconnect,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+      );
+    }
+    await Navigator.push(context, MaterialPageRoute<bool>(builder: (_) => screen));
+  }
+
+  List<Widget> _buildHardwareWalletRows(WalletInfoViewModel viewModel) {
+    return [
+      if (viewModel.isBitBox02Wallet)
+        BitBox02Section(
+          walletFingerprint: viewModel.walletFingerprint,
+          onDisconnect: () async => viewModel.disconnectBitBox02(),
+          onReconnect: () => _reconnectHardwareWallet(viewModel, trezor: false),
+        ),
+      if (viewModel.isTrezorWallet)
+        TrezorSection(
+          walletFingerprint: viewModel.walletFingerprint,
+          onDisconnect: () async => viewModel.disconnectTrezor(),
+          onReconnect: () => _reconnectHardwareWallet(viewModel, trezor: true),
+        ),
     ];
   }
 

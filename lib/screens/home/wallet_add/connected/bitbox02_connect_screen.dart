@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -40,6 +42,10 @@ class BitBox02ConnectScreen extends StatefulWidget {
   final String? walletName;
   final String? walletFingerprint;
   final bool resumeFromExistingSession;
+  final HardwareWalletConnectMode? mode;
+
+  HardwareWalletConnectMode get connectionMode =>
+      mode ?? (psbtBase64 == null ? HardwareWalletConnectMode.addWallet : HardwareWalletConnectMode.sign);
 
   const BitBox02ConnectScreen({
     super.key,
@@ -49,7 +55,10 @@ class BitBox02ConnectScreen extends StatefulWidget {
     this.walletName,
     this.walletFingerprint,
     this.resumeFromExistingSession = false,
-  });
+    this.mode,
+  }) : assert(mode != HardwareWalletConnectMode.reconnect || (walletId != null && psbtBase64 == null)),
+       assert(mode != HardwareWalletConnectMode.sign || (walletId != null && psbtBase64 != null)),
+       assert(mode != HardwareWalletConnectMode.addWallet || psbtBase64 == null);
 
   @override
   State<BitBox02ConnectScreen> createState() => _BitBox02ConnectScreenState();
@@ -236,7 +245,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
   Widget _buildSuccessCard(BitBox02ConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
-    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+    final isMismatch =
+        (widget.connectionMode != HardwareWalletConnectMode.addWallet) && hasXpub && _isWalletMismatch(vm);
 
     if (isMismatch) {
       final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
@@ -288,11 +298,15 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   bool _isWalletMismatch(BitBox02ConnectViewModel vm) {
-    final isSignFlow = widget.psbtBase64 != null;
+    final isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
     final isPaired = vm.step == BitBox02ConnectStep.paired;
     final hasXpub = vm.xpub.isNotEmpty;
     if (!isSignFlow || !isPaired || !hasXpub) return false;
 
+    if (widget.connectionMode == HardwareWalletConnectMode.reconnect) {
+      final target = context.read<WalletProvider>().getWalletById(widget.walletId!);
+      return target is! SinglesigWalletItem || target.extendedPublicKey != vm.xpub;
+    }
     final wp = context.read<WalletProvider>();
     final matchedName = wp.findWalletNameByXpub(vm.xpub);
     return matchedName == null || matchedName != (widget.walletName ?? '');
@@ -325,7 +339,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     final bool isRetry = vm.step == BitBox02ConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == BitBox02ConnectStep.paired;
-    final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
     final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
@@ -340,6 +354,9 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         text: t.bitbox02_sign_screen.btn.connect_other_bitbox02,
         isActive: !_isAddingWallet && !vm.isConnecting,
       );
+    } else if (widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired) {
+      buttonText = t.complete;
+      onPressed = () => Navigator.pop(context, true);
     } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_bitbox02.btn.start_signing;
       onPressed = () {
@@ -374,7 +391,10 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     return FixedBottomButton(
       onButtonClicked: onPressed,
       text: buttonText,
-      isActive: !_isAddingWallet && !vm.isConnecting,
+      isActive:
+          !(widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired && !hasXpub) &&
+          !_isAddingWallet &&
+          !vm.isConnecting,
     );
   }
 }

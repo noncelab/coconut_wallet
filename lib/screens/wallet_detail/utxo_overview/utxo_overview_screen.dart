@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -20,6 +22,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -107,6 +110,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
   late List<UtxoBucket> _filteredBuckets;
   late List<GlobalKey> _filteredBucketKeys;
+  late UtxoFilter _activeUtxoFilter;
 
   /// 상세 화면 복귀 시 복원할 상태
   String? _restoreUtxoId;
@@ -206,6 +210,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
     _buckets = viewModel.buildBuckets();
     _utxoDataKey = viewModel.utxoDataKey;
+    _activeUtxoFilter = viewModel.activeUtxoFilter;
     _updateFilteredBuckets();
 
     viewModel.addListener(_onViewModelChanged);
@@ -237,6 +242,10 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
   void _onViewModelChanged() {
     if (!mounted) return;
+    if (_activeUtxoFilter != viewModel.activeUtxoFilter) {
+      _activeUtxoFilter = viewModel.activeUtxoFilter;
+      unawaited(_scrollHeaderToTop());
+    }
     setState(() {
       final nextDataKey = viewModel.utxoDataKey;
       if (_utxoDataKey == nextDataKey) return;
@@ -323,6 +332,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
     if (mounted) {
       setState(() {
         viewModel.isOverviewTab = selectOverview;
+        if (!selectOverview) viewModel.setActiveUtxoFilter(UtxoFilter.all);
         _isListOrderDropdownVisible = false;
         viewModel.isSelectionMode = false;
         viewModel.selectedUtxoIds.clear();
@@ -331,16 +341,21 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
     }
 
     await WidgetsBinding.instance.endOfFrame;
-    if (mounted && _headerScrollController.hasClients && _headerScrollController.offset > 0) {
-      _isSnappingHeader = true;
-      final duration = Duration(milliseconds: (280 + _headerScrollController.offset * 0.8).round().clamp(320, 420));
-      try {
-        await _headerScrollController.animateTo(0, duration: duration, curve: Curves.easeInOutCubic);
-      } finally {
-        _isSnappingHeader = false;
-      }
-    }
+    await _scrollHeaderToTop();
     _isSwitchingPrimaryTab = false;
+  }
+
+  Future<void> _scrollHeaderToTop() async {
+    if (!mounted || !_headerScrollController.hasClients || _headerScrollController.offset <= 0 || _isSnappingHeader) {
+      return;
+    }
+    _isSnappingHeader = true;
+    final duration = Duration(milliseconds: (280 + _headerScrollController.offset * 0.8).round().clamp(320, 420));
+    try {
+      await _headerScrollController.animateTo(0, duration: duration, curve: Curves.easeInOutCubic);
+    } finally {
+      _isSnappingHeader = false;
+    }
   }
 
   SliverPersistentHeader _buildMorphingHeader() {
@@ -450,9 +465,9 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
           walletId: widget.id,
           currentUnit: _currentUnit,
           emptyStateText:
-              viewModel.activeUtxoTagName == t.utxo_detail_screen.utxo_locked
+              viewModel.activeUtxoFilter == UtxoFilter.locked
                   ? t.utxo_overview_screen.no_locked_utxos
-                  : viewModel.activeUtxoTagName == t.change
+                  : viewModel.activeUtxoFilter == UtxoFilter.change
                   ? t.utxo_overview_screen.no_change_utxos
                   : null,
           emptyStateTextStyle: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),

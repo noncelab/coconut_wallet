@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -30,6 +32,10 @@ class TrezorBleConnectScreen extends StatefulWidget {
   final String? walletName;
   final String? walletFingerprint;
   final bool resumeFromExistingSession;
+  final HardwareWalletConnectMode? mode;
+
+  HardwareWalletConnectMode get connectionMode =>
+      mode ?? (psbtBase64 == null ? HardwareWalletConnectMode.addWallet : HardwareWalletConnectMode.sign);
 
   const TrezorBleConnectScreen({
     super.key,
@@ -38,7 +44,10 @@ class TrezorBleConnectScreen extends StatefulWidget {
     this.walletName,
     this.walletFingerprint,
     this.resumeFromExistingSession = false,
-  });
+    this.mode,
+  }) : assert(mode != HardwareWalletConnectMode.reconnect || (walletId != null && psbtBase64 == null)),
+       assert(mode != HardwareWalletConnectMode.sign || (walletId != null && psbtBase64 != null)),
+       assert(mode != HardwareWalletConnectMode.addWallet || psbtBase64 == null);
 
   @override
   State<TrezorBleConnectScreen> createState() => _TrezorBleConnectScreenState();
@@ -440,7 +449,8 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   Widget _buildSuccessCard(TrezorBleConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
     final hasSilentError = !hasXpub && vm.errorMessage != null;
-    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+    final isMismatch =
+        (widget.connectionMode != HardwareWalletConnectMode.addWallet) && hasXpub && _isWalletMismatch(vm);
 
     if (isMismatch) {
       final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
@@ -515,7 +525,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   bool _isWalletMismatch(TrezorBleConnectViewModel vm) {
-    final isSignFlow = widget.psbtBase64 != null;
+    final isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
     final isPaired = vm.step == TrezorBleConnectStep.paired;
     final hasXpub = vm.xpub.isNotEmpty;
     if (!isSignFlow || !isPaired || !hasXpub) {
@@ -526,6 +536,10 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       return false;
     }
 
+    if (widget.connectionMode == HardwareWalletConnectMode.reconnect) {
+      final target = context.read<WalletProvider>().getWalletById(widget.walletId!);
+      return target is! SinglesigWalletItem || target.extendedPublicKey != vm.xpub;
+    }
     final wp = context.read<WalletProvider>();
     final matchedName = wp.findWalletNameByXpub(vm.xpub);
     final isMismatch = matchedName == null || matchedName != (widget.walletName ?? '');
@@ -542,7 +556,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     final bool isRetry = vm.step == TrezorBleConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == TrezorBleConnectStep.paired;
-    final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isSignFlow = (widget.connectionMode != HardwareWalletConnectMode.addWallet);
     final bool isMismatch = _isWalletMismatch(vm);
     debugPrint(
       'TREZOR_BLE_CONNECT button build: step=${vm.step.name} signFlow=$isSignFlow '
@@ -561,6 +575,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
         },
         isActive: !_isAddingWallet && !vm.isConnecting,
       );
+    } else if (widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired) {
+      buttonText = t.complete;
+      onPressed = () => Navigator.pop(context, true);
     } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
       onPressed = () {
@@ -598,7 +615,10 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     return FixedBottomButton(
       onButtonClicked: onPressed,
       text: buttonText,
-      isActive: !_isAddingWallet && !vm.isConnecting,
+      isActive:
+          !(widget.connectionMode == HardwareWalletConnectMode.reconnect && isPaired && !hasXpub) &&
+          !_isAddingWallet &&
+          !vm.isConnecting,
     );
   }
 }

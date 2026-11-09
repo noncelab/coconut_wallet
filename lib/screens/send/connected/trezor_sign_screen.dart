@@ -237,7 +237,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
         ),
         CoconutLayout.spacing_300h,
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.coconutColors.surface,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
@@ -246,25 +246,38 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (vm.fingerprint != null) ...[
-                    Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
-                    CoconutLayout.spacing_100w,
-                    MfpText(
-                      mfp: vm.fingerprint!.toUpperCase(),
-                      style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
+                        CoconutLayout.spacing_100w,
+                        MfpText(
+                          mfp: vm.fingerprint!.toUpperCase(),
+                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                        ),
+                      ],
                     ),
-                    const Spacer(),
+                    CoconutLayout.spacing_300w,
                   ],
-                  stateIcon,
-                  CoconutLayout.spacing_200w,
-                  Text(stateLabel, style: CoconutTypography.body2_14_Bold.setColor(stateColor)),
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        stateIcon,
+                        CoconutLayout.spacing_200w,
+                        Flexible(child: Text(stateLabel, style: CoconutTypography.body2_14_Bold.setColor(stateColor))),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               if (detailText != null && detailText.isNotEmpty) ...[
-                CoconutLayout.spacing_400h,
+                CoconutLayout.spacing_300h,
                 Container(height: 1, color: context.coconutColors.divider),
-                CoconutLayout.spacing_400h,
+                CoconutLayout.spacing_300h,
                 Text(detailText, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
               ],
             ],

@@ -3,22 +3,21 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
-import 'package:coconut_wallet/app/router/app_route_names.dart';
-import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
+import 'package:coconut_wallet/widgets/features/wallet/add/wallet_add_options.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_card_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_expand_transition.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -30,6 +29,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 /// 지갑 목록. 카드가 화면 오른쪽 밖을 중심으로 한 원호를 따라 위아래로 돌고, 가운데 카드의 정보를 왼쪽 아래에 보여 준다.
 /// 홈 스택에서 열면 스택 카드가 가운데 카드로 커지며 날아오고, 나머지 카드는 원호를 따라 펼쳐진다.
+/// 지갑 목록을 보는 방식. 휠은 한 장씩, 목록은 모든 지갑의 잔액을 한 화면에서 본다.
 class WalletStackListScreen extends StatefulWidget {
   static const routeNameSuffix = '-wallet-list';
   static String routeNameOf(WalletStackKind kind) => '/${kind.name}$routeNameSuffix';
@@ -50,6 +50,7 @@ class WalletStackListScreen extends StatefulWidget {
     required WalletStackKind kind,
     WalletStackOpenRequest? request,
     String title = '',
+    WalletStackListMode mode = WalletStackListMode.wheel,
   }) {
     final walletProvider = context.read<WalletProvider>();
     final preferenceProvider = context.read<PreferenceProvider>();
@@ -60,7 +61,7 @@ class WalletStackListScreen extends StatefulWidget {
         reverseTransitionDuration: transitionDuration,
         pageBuilder:
             (_, __, ___) => ChangeNotifierProvider(
-              create: (_) => WalletStackListViewModel(kind, walletProvider, preferenceProvider),
+              create: (_) => WalletStackListViewModel(kind, walletProvider, preferenceProvider, mode: mode),
               child: WalletStackListScreen(
                 initialWalletId: request?.front.id,
                 heroTagOf: request?.heroTagOf,
@@ -90,6 +91,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   late final PageController _controller;
   final Map<int, GlobalKey> _cardKeys = {};
+  final Map<int, GlobalKey> _rowKeys = {};
   int _focused = 0;
   double? _indicatorDragDistance;
   Offset? _indicatorPointerDown;
@@ -245,43 +247,65 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
 
   /// 휠에 놓인 지갑 카드의 화면 좌표. 지갑 상세로 펼치고 접을 때 쓴다.
   Rect? _cardRectOf(int walletId) {
-    final box = _cardKeys[walletId]?.currentContext?.findRenderObject();
+    final keys = _viewModel.mode == WalletStackListMode.list ? _rowKeys : _cardKeys;
+    final box = keys[walletId]?.currentContext?.findRenderObject();
     if (box is! RenderBox || !box.hasSize || !box.attached) return null;
     return box.localToGlobal(Offset.zero) & box.size;
   }
 
-  void _openWallet(WalletItemBase wallet) {
-    final openedWalletId = ValueNotifier(wallet.id);
-    final args = WalletDetailRouteArgs(
-      id: wallet.id,
-      walletIds: [for (final item in _viewModel.wallets) item.id],
-      onFocusChanged: (walletId) {
-        openedWalletId.value = walletId;
-        _showWallet(walletId);
-      },
-    );
-    final routeBuilder = context.findAncestorWidgetOfExactType<WidgetsApp>()?.routes?[AppRouteNames.walletDetail];
-    Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        settings: RouteSettings(name: AppRouteNames.walletDetail, arguments: args),
-        transitionDuration: WalletCardDetailScreen.transitionDuration,
-        reverseTransitionDuration: WalletCardDetailScreen.transitionDuration,
-        pageBuilder:
-            (routeContext, _, __) =>
-                routeBuilder?.call(routeContext) ??
-                WalletCardDetailScreen(id: args.id, walletIds: args.walletIds, onFocusChanged: args.onFocusChanged),
-        transitionsBuilder:
-            (_, animation, __, child) => WalletDetailExpandTransition(
-              animation: animation,
-              walletId: openedWalletId,
-              cardRectOf: _cardRectOf,
-              child: child,
-            ),
-      ),
-    );
-  }
+  void _openWallet(WalletItemBase wallet) => WalletDetailExpandTransition.open(
+    context,
+    walletId: wallet.id,
+    walletIds: [for (final item in _viewModel.wallets) item.id],
+    cardRectOf: _cardRectOf,
+    onFocusChanged: _showWallet,
+  );
 
   void _addWallet() => openWalletAddFor(context, _viewModel.kind);
+
+  Widget _buildList(BuildContext context, WalletStackListViewModel viewModel, double topInset) {
+    final appearances = context.watchWalletAppearance();
+    final cardHeight = WalletCard.wideHeightOf(context);
+    final wallets = viewModel.wallets;
+    return ReorderableListView.builder(
+      key: const Key('wallet-stack-list-rows'),
+      padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 24 - HomeItemsView.gap),
+      itemCount: wallets.length,
+      onReorderStart: (_) => vibrateExtraLight(),
+      onReorder: (oldIndex, newIndex) => viewModel.reorder(oldIndex, newIndex > oldIndex ? newIndex - 1 : newIndex),
+      proxyDecorator:
+          (child, _, animation) => AnimatedBuilder(
+            animation: animation,
+            builder:
+                (context, child) => Transform.scale(
+                  scale: 1 + 0.03 * Curves.easeOut.transform(animation.value),
+                  child: Material(type: MaterialType.transparency, child: child),
+                ),
+            child: child,
+          ),
+      itemBuilder: (context, index) {
+        final wallet = wallets[index];
+        return Padding(
+          key: ValueKey('wallet-stack-list-row-${wallet.id}'),
+          padding: const EdgeInsets.only(bottom: HomeItemsView.gap),
+          child: SizedBox(
+            key: _rowKeys.putIfAbsent(wallet.id, GlobalKey.new),
+            height: cardHeight,
+            child: WalletCard(
+              key: ValueKey('wallet-stack-list-wide-card-${wallet.id}'),
+              wallet: wallet,
+              appearance: appearances?.appearanceOf(wallet) ?? WalletAppearance.of(wallet),
+              backgroundPhoto: appearances?.photoFileFor(wallet.id),
+              size: WalletCardSize.wide,
+              balanceDisplay: viewModel.balanceText(wallet),
+              balanceAtEnd: true,
+              onPressed: () => _openWallet(wallet),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -298,116 +322,153 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         context: context,
         title: widget.title,
         actionButtonList: [
-          CoconutAppBarActionButton(
-            key: const Key('wallet-stack-list-add'),
-            onPressed: _addWallet,
-            icon: SvgPicture.asset(
-              CommonActionIconPath.plus,
-              width: 15,
-              height: 15,
-              colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+          if (wallets.isNotEmpty)
+            CoconutAppBarActionButton(
+              key: const Key('wallet-stack-list-mode'),
+              width: CoconutAppBarActionButton.actionWidth,
+              onPressed: viewModel.toggleMode,
+              icon: SvgPicture.asset(
+                viewModel.mode == WalletStackListMode.wheel ? CommonMenuIconPath.list : CommonMenuIconPath.stackWheel,
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              ),
             ),
-          ),
+          if (wallets.isNotEmpty) ...[
+            CoconutAppBarActionButton(
+              key: const Key('wallet-stack-list-add'),
+              width: CoconutAppBarActionButton.actionWidth,
+              onPressed: _addWallet,
+              icon: SvgPicture.asset(
+                CommonActionIconPath.plus,
+                width: 15,
+                height: 15,
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
         ],
       ),
       body: SafeArea(
         top: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final height = constraints.maxHeight - topInset;
-            final extent = math.min(width * (1 - _cardLeftRatio), height * 0.46);
-            final cardLeft = width * _cardLeftRatio;
-            final centerY = topInset + height * 0.4;
-            final cardRect = Rect.fromLTWH(cardLeft, centerY - extent / 2, extent, extent);
-            final count = wallets.length + 1;
-            return GestureDetector(
-              key: const Key('wallet-stack-list-wheel'),
-              behavior: HitTestBehavior.opaque,
-              onTapUp: (details) {
-                if (!cardRect.contains(details.localPosition)) return;
-                final index = _page.round();
-                index < wallets.length ? _openWallet(wallets[index]) : _addWallet();
-              },
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([_controller, fan]),
-                      builder: (context, _) {
-                        final page = _page;
-                        final order = [
-                          for (var i = 0; i < count; i++)
-                            if ((i - page).abs() < 3.5) i,
-                        ]..sort((a, b) => (b - page).abs().compareTo((a - page).abs()));
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            for (final i in order)
-                              _positioned(
-                                context,
-                                index: i,
-                                distance: i - page,
-                                fan: fan.value,
-                                rect: cardRect,
-                                child:
-                                    i < wallets.length
-                                        ? _walletCard(context, viewModel, wallets[i])
-                                        : const _AddWalletCard(),
+        child:
+            wallets.isEmpty
+                ? ListView(
+                  key: const Key('wallet-stack-list-empty'),
+                  padding: EdgeInsets.fromLTRB(20, topInset + 16, 20, 32),
+                  children: [
+                    WalletAddOptions(
+                      showsWatchOnly: viewModel.kind != WalletStackKind.hot,
+                      showsHot: viewModel.kind != WalletStackKind.watchOnly,
+                    ),
+                  ],
+                )
+                : Stack(
+                  children: [
+                    Offstage(
+                      offstage: viewModel.mode == WalletStackListMode.list,
+                      child: TickerMode(
+                        enabled: viewModel.mode == WalletStackListMode.wheel,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final width = constraints.maxWidth;
+                            final height = constraints.maxHeight - topInset;
+                            final extent = math.min(width * (1 - _cardLeftRatio), height * 0.46);
+                            final cardLeft = width * _cardLeftRatio;
+                            final centerY = topInset + height * 0.4;
+                            final cardRect = Rect.fromLTWH(cardLeft, centerY - extent / 2, extent, extent);
+                            final count = wallets.length + 1;
+                            return GestureDetector(
+                              key: const Key('wallet-stack-list-wheel'),
+                              behavior: HitTestBehavior.opaque,
+                              onTapUp: (details) {
+                                if (!cardRect.contains(details.localPosition)) return;
+                                final index = _page.round();
+                                index < wallets.length ? _openWallet(wallets[index]) : _addWallet();
+                              },
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: AnimatedBuilder(
+                                      animation: Listenable.merge([_controller, fan]),
+                                      builder: (context, _) {
+                                        final page = _page;
+                                        final order = [
+                                          for (var i = 0; i < count; i++)
+                                            if ((i - page).abs() < 3.5) i,
+                                        ]..sort((a, b) => (b - page).abs().compareTo((a - page).abs()));
+                                        return Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            for (final i in order)
+                                              _positioned(
+                                                context,
+                                                index: i,
+                                                distance: i - page,
+                                                fan: fan.value,
+                                                rect: cardRect,
+                                                child:
+                                                    i < wallets.length
+                                                        ? _walletCard(context, viewModel, wallets[i])
+                                                        : const _AddWalletCard(),
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: PageView.builder(
+                                      key: const Key('wallet-stack-list-pager'),
+                                      controller: _controller,
+                                      scrollDirection: Axis.vertical,
+                                      itemCount: count,
+                                      itemBuilder: (_, __) => const SizedBox.expand(),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 0,
+                                    width: cardLeft,
+                                    top: centerY - 60,
+                                    height: 120,
+                                    child: GestureDetector(
+                                      key: const Key('wallet-stack-list-indicator-scrubber'),
+                                      behavior: HitTestBehavior.opaque,
+                                      onVerticalDragDown: (details) => _indicatorPointerDown = details.globalPosition,
+                                      onVerticalDragStart: _startIndicatorDrag,
+                                      onVerticalDragUpdate: _updateIndicatorDrag,
+                                      onVerticalDragEnd: (_) => _endIndicatorDrag(),
+                                      onVerticalDragCancel: _endIndicatorDrag,
+                                      child: FadeTransition(opacity: fan, child: _indicator(context, count)),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 28,
+                                    right: 28,
+                                    bottom: 28,
+                                    child: IgnorePointer(
+                                      child: FadeTransition(
+                                        opacity: fan,
+                                        child:
+                                            _focused < wallets.length
+                                                ? _WalletFacts(
+                                                  key: ValueKey('wallet-stack-list-facts-${wallets[_focused].id}'),
+                                                  viewModel: viewModel,
+                                                  wallet: wallets[_focused],
+                                                )
+                                                : const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: PageView.builder(
-                      key: const Key('wallet-stack-list-pager'),
-                      controller: _controller,
-                      scrollDirection: Axis.vertical,
-                      itemCount: count,
-                      itemBuilder: (_, __) => const SizedBox.expand(),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    width: cardLeft,
-                    top: centerY - 60,
-                    height: 120,
-                    child: GestureDetector(
-                      key: const Key('wallet-stack-list-indicator-scrubber'),
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragDown: (details) => _indicatorPointerDown = details.globalPosition,
-                      onVerticalDragStart: _startIndicatorDrag,
-                      onVerticalDragUpdate: _updateIndicatorDrag,
-                      onVerticalDragEnd: (_) => _endIndicatorDrag(),
-                      onVerticalDragCancel: _endIndicatorDrag,
-                      child: FadeTransition(opacity: fan, child: _indicator(context, count)),
-                    ),
-                  ),
-                  Positioned(
-                    left: 28,
-                    right: 28,
-                    bottom: 28,
-                    child: IgnorePointer(
-                      child: FadeTransition(
-                        opacity: fan,
-                        child:
-                            _focused < wallets.length
-                                ? _WalletFacts(
-                                  key: ValueKey('wallet-stack-list-facts-${wallets[_focused].id}'),
-                                  viewModel: viewModel,
-                                  wallet: wallets[_focused],
-                                )
-                                : const SizedBox.shrink(),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                    if (viewModel.mode == WalletStackListMode.list) _buildList(context, viewModel, topInset),
+                  ],
+                ),
       ),
     );
   }

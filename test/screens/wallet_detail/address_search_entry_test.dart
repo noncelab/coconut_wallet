@@ -23,9 +23,9 @@ class _Preferences extends ChangeNotifier implements PreferenceProvider {
   @override
   bool get showOnlyUnusedAddresses => unused;
   @override
-  bool hasSeenReceivingTooltipToday() => true;
+  bool hasSeenReceivingTooltip() => true;
   @override
-  bool hasSeenChangeTooltipToday() => true;
+  bool hasSeenChangeTooltip() => true;
   @override
   Future<void> changeShowOnlyUnusedAddresses(bool value) async {
     unused = value;

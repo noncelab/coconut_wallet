@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -75,7 +76,7 @@ Future<_TagProvider> _openTagSheet(
     await tester.pump();
     await tester.tap(find.text(t.edit));
   } else {
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byType(CoconutAppBarActionButton).last);
   }
   await tester.pumpAndSettle();
   await tester.pump(const Duration(milliseconds: 300));

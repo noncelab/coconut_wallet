@@ -39,8 +39,9 @@ class HomeSafetyStatusChip extends StatelessWidget {
       _ => t.wallet_health.status_chip.connection_failed,
     },
     HomeSafetyStatusKind.actionNeeded => t.wallet_health.status_chip.attention(n: status.count),
-    HomeSafetyStatusKind.reconnected => t.wallet_health.status_chip.reconnected,
+    HomeSafetyStatusKind.reconnected => t.home_connection_status.electrum_connection_restored,
     HomeSafetyStatusKind.updating => t.status_updating,
+    HomeSafetyStatusKind.updateCompleted => t.home_connection_status.update_completed,
     HomeSafetyStatusKind.noIssues => t.wallet_health.summary.no_issues_found,
     HomeSafetyStatusKind.noScore => t.wallet_health.title,
   };
@@ -70,7 +71,8 @@ class HomeSafetyStatusChip extends StatelessWidget {
         svg(FeatureWalletHealthIconPath.triangleWarningFilled, health.warning),
         health.warning,
       ),
-      HomeSafetyStatusKind.reconnected => (svg(CommonFormIconPath.circleCheck, colors.success), colors.success),
+      HomeSafetyStatusKind.reconnected ||
+      HomeSafetyStatusKind.updateCompleted => (svg(CommonFormIconPath.circleCheck, colors.success), colors.success),
       HomeSafetyStatusKind.updating => (
         // 18 상자 안의 15: 체크 아이콘의 원(24 중 20)과 같은 지름·굵기
         SizedBox.square(

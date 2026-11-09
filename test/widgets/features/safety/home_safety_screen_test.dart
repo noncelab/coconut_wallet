@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -25,6 +27,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -332,7 +335,7 @@ void main() {
 
       final pager = find.byKey(const Key('${HomeItemIds.allWalletStack}-pager'));
       await tester.ensureVisible(pager);
-      await tester.tap(pager);
+      unawaited(WalletStackListScreen.open(tester.element(pager), kind: WalletStackKind.all));
       await tester.pump();
       await tester.pump(WalletStackListScreen.transitionDuration);
       await tester.pump(const Duration(milliseconds: 50));

@@ -1,3 +1,9 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToolTip;
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -115,6 +121,15 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   UtxoOrder get utxoSortOrder => UtxoOrder.byAmountDesc;
 }
 
+class _Node extends Fake with ChangeNotifier implements NodeProvider {
+  @override
+  NodeProviderState get state => const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
+  @override
+  Stream<NodeSyncState> get syncStateStream => const Stream.empty();
+  @override
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) => const Stream.empty();
+}
+
 class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
   @override
   bool get isInternetOn => true;
@@ -187,6 +202,7 @@ void main() {
           ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets(wallet, vault)),
           ChangeNotifierProvider<PreferenceProvider>(create: (_) => _Preferences(manualMode, unit: unit)),
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
+          ChangeNotifierProvider<NodeProvider>(create: (_) => _Node()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: repository),
@@ -233,6 +249,24 @@ void main() {
       expect(tester.takeException(), isNull);
     }
     if (vaultEntry) {
+      final vaultInfo = find.text(
+        TextUtils.preventLineBreakInsideWords(t.send_screen.vault_transfer_description),
+        findRichText: true,
+      );
+      final vaultChipLabel = find.descendant(
+        of: find.byKey(const Key('send-vault-info-chip')),
+        matching: find.text(t.wallet_detail_screen.move_to_vault),
+      );
+      expect(vaultInfo, findsNothing);
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsOneWidget);
+      final bubble = tester.getRect(find.byType(CoconutToolTip));
+      expect(bubble.width, lessThanOrEqualTo(280));
+      expect(bubble.right, moreOrLessEquals(tester.getRect(find.byKey(const Key('send-vault-info-chip'))).right));
+      await tester.tap(vaultChipLabel);
+      await tester.pump();
+      expect(vaultInfo, findsNothing);
       final fieldFinder = find.byType(VaultReceivingAddressField);
       final field = tester.widget<VaultReceivingAddressField>(fieldFinder);
       expect(field.address, vault.getAddress(0));
