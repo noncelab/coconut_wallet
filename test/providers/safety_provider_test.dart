@@ -98,6 +98,7 @@ void main() {
     WidgetTester tester, {
     bool checksThrow = false,
     Future<ServerCertObservation?> Function(NodeProvider)? probe,
+    Future<AppUpdateStatus> Function()? update,
   }) {
     provider = _Provider(
       walletProvider: wallets,
@@ -108,10 +109,12 @@ void main() {
       analytics: analytics,
       store: store,
       now: () => tester.binding.clock.now(),
-      checkAppUpdate: () async {
-        if (checksThrow) throw StateError('offline');
-        return AppUpdateStatus.upToDate;
-      },
+      checkAppUpdate:
+          update ??
+          () async {
+            if (checksThrow) throw StateError('offline');
+            return AppUpdateStatus.upToDate;
+          },
       probeServerCert:
           probe ??
           (_) async {
@@ -127,6 +130,123 @@ void main() {
   }
 
   SafetyIncident incident(String txid) => SafetyIncident(walletId: 1, txid: txid, detectedAt: DateTime(2026));
+
+  testWidgets('unknown external checks recover once on completed sync without querying on every burst', (tester) async {
+    var updates = 0;
+    var probes = 0;
+    create(
+      tester,
+      update: () async => ++updates == 1 ? AppUpdateStatus.unknown : AppUpdateStatus.available,
+      probe:
+          (_) async =>
+              ++probes == 1
+                  ? const ServerCertObservation(applicable: true, pinned: 'pin', caValid: false)
+                  : const ServerCertObservation(applicable: true, pinned: 'pin', actual: 'pin', caValid: true),
+    );
+    await settle(tester);
+    expect(provider.report!.notIncluded.where((r) => r.outcome == SafetyOutcome.unknown), hasLength(2));
+    for (var i = 0; i < 10; i++) {
+      node.sync.add(NodeSyncState.completed);
+    }
+    await settle(tester);
+    expect(updates, 2);
+    expect(probes, 2);
+    expect(provider.report!.notIncluded.where((r) => r.outcome == SafetyOutcome.unknown), isEmpty);
+    expect(provider.report!.reviewItems.any((r) => r.id == SafetyCheckId.appUpdate), isTrue);
+    node.sync.add(NodeSyncState.completed);
+    await settle(tester);
+    expect(updates, 2);
+  });
+
+  testWidgets('permanent lookup failure is bounded until reconnect, while manual check still retries', (tester) async {
+    var updates = 0;
+    create(
+      tester,
+      update: () async {
+        updates++;
+        return AppUpdateStatus.unknown;
+      },
+    );
+    await settle(tester);
+    for (var i = 0; i < 5; i++) {
+      node.sync.add(NodeSyncState.completed);
+      await settle(tester);
+    }
+    expect(updates, 2);
+    connectivity.connected = false;
+    connectivity.notifyListeners();
+    connectivity.connected = true;
+    connectivity.notifyListeners();
+    node.sync.add(NodeSyncState.completed);
+    await settle(tester);
+    expect(updates, 3);
+    final check = provider.checkAgain();
+    await tester.pump(const Duration(milliseconds: 1200));
+    await check;
+    expect(updates, 4);
+  });
+
+  testWidgets('completed sync deduplicates pending external lookups and ignores late results after dispose', (
+    tester,
+  ) async {
+    final pending = Completer<AppUpdateStatus>();
+    var updates = 0;
+    create(
+      tester,
+      update: () {
+        updates++;
+        return pending.future;
+      },
+    );
+    for (var i = 0; i < 10; i++) {
+      node.sync.add(NodeSyncState.completed);
+    }
+    await settle(tester);
+    expect(updates, 1);
+    provider.dispose();
+    pending.complete(AppUpdateStatus.available);
+    await settle(tester);
+    expect(updates, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sync completion during a failed lookup queues one retry after the result arrives', (tester) async {
+    final pending = Completer<AppUpdateStatus>();
+    var updates = 0;
+    create(tester, update: () => ++updates == 1 ? pending.future : Future.value(AppUpdateStatus.upToDate));
+    node.sync.add(NodeSyncState.completed);
+    await settle(tester);
+    expect(updates, 1);
+    pending.complete(AppUpdateStatus.unknown);
+    await settle(tester);
+    expect(updates, 2);
+    expect(provider.report!.notIncluded.any((r) => r.id == SafetyCheckId.appUpdate), isFalse);
+  });
+
+  testWidgets('certificate-only failure retries after reconnect without replacing a later successful observation', (
+    tester,
+  ) async {
+    var probes = 0;
+    create(
+      tester,
+      probe:
+          (_) async =>
+              ++probes == 1
+                  ? const ServerCertObservation(applicable: true, pinned: 'pin', caValid: false)
+                  : const ServerCertObservation(applicable: true, pinned: 'pin', actual: 'pin', caValid: true),
+    );
+    await settle(tester);
+    node.connected = false;
+    node.notifyListeners();
+    node.connected = true;
+    node.notifyListeners();
+    await settle(tester);
+    expect(probes, 2);
+    expect(provider.report!.allGoodItems.any((r) => r.id == SafetyCheckId.serverCert), isTrue);
+    node.sync.add(NodeSyncState.completed);
+    await settle(tester);
+    expect(probes, 2);
+  });
 
   testWidgets('debounce coalesces bursts and identical reports do not notify', (tester) async {
     create(tester);

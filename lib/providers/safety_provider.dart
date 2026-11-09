@@ -81,7 +81,7 @@ class SafetyProvider extends ChangeNotifier {
     walletProvider.walletItemListNotifier.addListener(_schedule);
     walletProvider.addListener(_schedule);
     authProvider.addListener(_schedule);
-    connectivityProvider.addListener(_schedule);
+    connectivityProvider.addListener(_onConnectionChanged);
     nodeProvider.addListener(_onNodeChanged);
     nodeProvider.currentBlockNotifier.addListener(_schedule);
     _syncSubscription = nodeProvider.syncStateStream.listen(_onSync);
@@ -126,6 +126,7 @@ class SafetyProvider extends ChangeNotifier {
   bool _refreshPending = false;
   Timer? _timer;
   Future<void>? _refreshFuture, _checkFuture, _externalFuture;
+  bool _externalRetryReady = false, _externalRetryUsed = false;
   StreamSubscription<NodeSyncState>? _syncSubscription;
   StreamSubscription<WalletLifecycleEvent>? _walletSubscription;
   DateTime? _successfulSyncAt;
@@ -186,11 +187,37 @@ class SafetyProvider extends ChangeNotifier {
   (String, int, bool, String?) get _serverIdentity => (_node!.host, _node.port, _node.ssl, _node.pinnedCertFingerprint);
 
   void _onNodeChanged() {
-    _schedule();
+    _onConnectionChanged();
     if (_observedServer != _serverIdentity) {
+      _externalRetryReady = false;
+      _externalRetryUsed = false;
       _certProbe?.cancel();
       unawaited(_checkExternal().catchError((_) {}));
     }
+  }
+
+  void _onConnectionChanged() {
+    _schedule();
+    if (!_node!.isConnected || !_connectivity!.isInternetOn) {
+      _externalRetryReady = false;
+      _externalRetryUsed = false;
+    } else if (_hasCompletedSync) {
+      _externalRetryReady = true;
+      _retryUnknownExternalChecks();
+    }
+  }
+
+  void _retryUnknownExternalChecks() {
+    if (_disposed || !_externalRetryReady || _externalRetryUsed || _externalFuture != null || !_hasCompletedSync) {
+      return;
+    }
+    _externalRetryReady = false;
+    if (_appUpdate != AppUpdateStatus.unknown && !(_serverCert?.applicable == true && _serverCert?.actual == null)) {
+      return;
+    }
+    // 스토어에 없는 QA 빌드도 있어 연결 회복마다 자동 재시도는 한 번만 한다.
+    _externalRetryUsed = true;
+    unawaited(_checkExternal().catchError((_) {}));
   }
 
   bool get _hasCompletedSync =>
@@ -204,6 +231,10 @@ class SafetyProvider extends ChangeNotifier {
     _successfulSyncAt = sync == NodeSyncState.completed && _hasCompletedSync ? _now() : null;
     _successfulSyncServer = _serverIdentity;
     _schedule();
+    if (sync == NodeSyncState.completed && _hasCompletedSync) {
+      _externalRetryReady = true;
+      _retryUnknownExternalChecks();
+    }
   }
 
   void _onWalletEvent(WalletLifecycleEvent event) {
@@ -306,7 +337,11 @@ class SafetyProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _checkExternal() => _externalFuture ??= _runExternalChecks().whenComplete(() => _externalFuture = null);
+  Future<void> _checkExternal() =>
+      _externalFuture ??= _runExternalChecks().whenComplete(() {
+        _externalFuture = null;
+        _retryUnknownExternalChecks();
+      });
 
   Future<void> _runExternalChecks() async {
     if (_node == null || _disposed) return;
@@ -560,7 +595,7 @@ class SafetyProvider extends ChangeNotifier {
     _wallets?.walletItemListNotifier.removeListener(_schedule);
     _wallets?.removeListener(_schedule);
     _auth?.removeListener(_schedule);
-    _connectivity?.removeListener(_schedule);
+    _connectivity?.removeListener(_onConnectionChanged);
     _node?.removeListener(_onNodeChanged);
     _node?.currentBlockNotifier.removeListener(_schedule);
     unawaited(_syncSubscription?.cancel());
