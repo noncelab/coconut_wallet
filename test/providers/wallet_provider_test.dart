@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cbor/simple.dart';
 import 'package:ur/ur.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/migration/taproot_legacy_inheritance_migration.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'dart:ui';
 
@@ -31,6 +32,7 @@ import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repos
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ─────────────────────────────────────────────
 // Fixture constants (wallet_repository_test.dart와 동일한 값 사용)
@@ -513,16 +515,20 @@ TaprootWalletItem _createTaprootWalletListItem({
   int colorIndex = 0,
   int iconIndex = 0,
 }) {
+  final loaded = TaprootLegacyInheritanceMigration.migrate(
+    descriptor: _oneParentDescriptor,
+    scriptPathSeedInfos: [
+      TaprootScriptPathSeedInfo(miniscript: _inheritanceMiniscript, extendedPublicKeys: [_childTaprootXpub]),
+    ],
+  );
   return TaprootWalletItem(
     id: id,
     name: name,
     colorIndex: colorIndex,
     iconIndex: iconIndex,
-    descriptor: _oneParentDescriptor,
+    descriptor: loaded.descriptor,
     keyPathSeedInfos: [_parentTaprootXpub],
-    scriptPathSeedInfos: [
-      TaprootScriptPathSeedInfo(miniscript: _inheritanceMiniscript, extendedPublicKeys: [_childTaprootXpub]),
-    ],
+    scriptPathSeedInfos: loaded.scriptPathSeedInfos,
   );
 }
 
@@ -695,6 +701,84 @@ void main() {
       await expectLater(multisigProvider.updateWalletName(8, 'No'), throwsA(isA<Exception>()));
       expect(multisigRepo.updateWalletUICallCount, 0);
       multisigProvider.dispose();
+    });
+
+    group('스크립트 수정 이전과 이후 상속 지갑', () {
+      setUp(() async {
+        SharedPreferences.setMockInitialValues({});
+        // ignore: deprecated_member_use_from_same_package
+        SharedPrefsRepository().setSharedPreferencesForTest(await SharedPreferences.getInstance());
+      });
+
+      WatchOnlyWallet vaultQr(String miniscript, {String name = 'Taproot Wallet'}) {
+        final descriptor =
+            Descriptor.parse(
+              "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,$miniscript)",
+              ignoreChecksum: true,
+            ).serialize();
+        return WatchOnlyWallet.fromJson({
+          'name': name,
+          'colorIndex': 0,
+          'iconIndex': 0,
+          'descriptor': descriptor,
+          'walletImportSource': WalletImportSource.coconutVault.name,
+          'keyPathSeedInfos': [_parentTaprootXpub],
+          'scriptPathSeedInfos': [
+            {
+              'miniscript': miniscript,
+              'extendedPublicKeys': [_childTaprootXpub],
+            },
+          ],
+        });
+      }
+
+      const legacyMiniscript = "and_v(after_drop(500000000),pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*))";
+      const newMiniscript = "and_v(v:after(500000000),pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*))";
+
+      test('볼트 3.4.0의 after_drop QR은 저장된 이전 지갑과 같은 지갑이다', () async {
+        final walletRepo = FakeWalletRepository()..walletItems = [_createTaprootWalletListItem()];
+        final provider = await _buildProvider(walletRepo);
+
+        final result = await provider.syncFromCoconutVault(vaultQr(legacyMiniscript));
+
+        expect(result.result, WalletSyncResult.existingWalletNoUpdate);
+        expect(walletRepo.addTaprootWalletCallCount, 0);
+        provider.dispose();
+      });
+
+      test('v:after QR은 같은 키여도 다른 지갑으로 추가한다', () async {
+        final walletRepo = FakeWalletRepository()..walletItems = [_createTaprootWalletListItem()];
+        walletRepo.addTaprootWalletResult = _createTaprootWalletListItem(id: 2, name: 'New Inheritance');
+        final provider = await _buildProvider(walletRepo);
+
+        final result = await provider.syncFromCoconutVault(vaultQr(newMiniscript, name: 'New Inheritance'));
+
+        expect(result.result, WalletSyncResult.newWalletAdded);
+        expect(walletRepo.lastTaprootWallet!.descriptor, contains('v:after(500000000)'));
+        expect(walletRepo.lastTaprootWallet!.descriptor, isNot(contains('after_drop')));
+        provider.dispose();
+      });
+
+      for (final entry
+          in {
+            'older': (_inheritanceMiniscript.replaceFirst('after(', 'older('), true),
+            'v:pk…after': (_inheritanceMiniscript, false),
+            'after_drop': (legacyMiniscript, false),
+          }.entries) {
+        test('${entry.key} QR은 after_drop으로 저장하고 백업 안내는 older일 때만 띄운다', () async {
+          final walletRepo = FakeWalletRepository();
+          walletRepo.addTaprootWalletResult = _createTaprootWalletListItem();
+          final provider = await _buildProvider(walletRepo);
+
+          final result = await provider.syncFromCoconutVault(vaultQr(entry.value.$1));
+
+          expect(result.result, WalletSyncResult.newWalletAdded);
+          expect(walletRepo.lastTaprootWallet!.descriptor, contains('after_drop(500000000)'));
+          expect(walletRepo.lastTaprootWallet!.scriptPathSeedInfos!.single.miniscript, legacyMiniscript);
+          expect(provider.hasUnacknowledgedOlderToAfterBackupUpdate, entry.value.$2);
+          provider.dispose();
+        });
+      }
     });
 
     test('다른 지갑과 이름 충돌 시 existingName 반환', () async {

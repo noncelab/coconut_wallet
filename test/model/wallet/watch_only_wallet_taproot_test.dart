@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/coconut_wallet_add_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,7 +50,8 @@ void main() {
           miniscript.replaceFirst("6213D91E/86'", '6213D91E/86'): false,
           "and_v(v:pk([6213D91E/86'/1'/0']$child/<0;1>/*),after(1792646340))": false,
           "and_v(v:pk([6213D91E/86'/1'/0']$child/<0;1>/*),older(1792646340))": false,
-          "and_v(after_drop(1792646340),pk([6213D91E/86'/1'/0']$child/<0;1>/*))": false,
+          "and_v(after_drop(1792646340),pk([6213D91E/86'/1'/0']$child/<0;1>/*))": true,
+          "and_v(after_drop(1792646340),pk([6213D91E/84'/1'/0']$child/<0;1>/*))": false,
           "and_v(v:pk([6213D91E/84'/1'/0']$child/<0;1>/*),after(1792646340))": false,
         }.entries) {
       final variantDescriptor =
@@ -134,6 +136,32 @@ void main() {
       });
     }
   }
+
+  test('볼트 3.3.0 QR과 볼트 3.4.0 after_drop QR을 모두 받는다', () {
+    const legacyMiniscript = "and_v(after_drop(500000000),pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*))";
+    final afterDropDescriptor =
+        Descriptor.parse(
+          "tr([9B1441E4/86'/1'/0']$parentTaprootXpub/<0;1>/*,$legacyMiniscript)",
+          ignoreChecksum: true,
+        ).serialize();
+    for (final entry in {oneParentDescriptor: inheritanceMiniscript, afterDropDescriptor: legacyMiniscript}.entries) {
+      final handler = CoconutWalletAddQrScanDataHandler();
+      final qr = jsonEncode({
+        'name': 'Legacy inheritance',
+        'colorIndex': 0,
+        'iconIndex': 0,
+        'descriptor': entry.key,
+        'keyPathSeedInfos': [parentTaprootXpub],
+        'scriptPathSeedInfos': [
+          {
+            'miniscript': entry.value,
+            'extendedPublicKeys': [childTaprootXpub],
+          },
+        ],
+      });
+      expect(handler.joinData(qr), isTrue, reason: entry.key);
+    }
+  });
 
   group('Taproot older to after migration', () {
     test('중첩 트리 구조를 유지하고 재실행 시 변경하지 않는다', () {

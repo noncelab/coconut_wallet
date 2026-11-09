@@ -73,8 +73,8 @@ class WatchOnlyWallet {
     final keyOriginRegex = RegExp(r'\[([^\[\]]+)\]');
     try {
       final miniScript = _descriptor.miniscriptList.first;
-      if (!RegExp(r'^and_v\(v:after\(\d+\),pk\(.+\)\)$').hasMatch(miniScript)) return false;
-      InheritancePolicy.fromMiniscript(miniScript);
+      if (!RegExp(r'^and_v\((v:after|after_drop)\(\d+\),pk\(.+\)\)$').hasMatch(miniScript)) return false;
+      if (Policy.fromMiniscript(miniScript) is! InheritancePolicy) return false;
       final origins = keyOriginRegex.allMatches(miniScript).toList();
       if (origins.length != 1) return false;
       final keyOriginPath = origins.single.group(1)!; // e.g. "70C4E9DE/86'/1'/0'"

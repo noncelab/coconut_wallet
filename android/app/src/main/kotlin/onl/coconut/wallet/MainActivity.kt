@@ -190,7 +190,7 @@ class MainActivity : FlutterFragmentActivity() {
         val flutterView = findFlutterView(window.decorView) ?: return
         val insets = flutterView.rootWindowInsets ?: return
         if (insets.isVisible(WindowInsets.Type.ime())) return
-        flutterView.onApplyWindowInsets(insets)
+        flutterView.requestApplyInsets()
     }
 
     private fun findFlutterView(view: View): FlutterView? {
