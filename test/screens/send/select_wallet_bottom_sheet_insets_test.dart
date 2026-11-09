@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -27,6 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../../mock/wallet_mock.dart';
+import '../safety/safety_test_harness.dart' show fixedSafety;
 
 const _phase = String.fromEnvironment('PICKER_PHASE', defaultValue: 'current');
 
@@ -100,6 +102,7 @@ class _Host {
     List<int>? candidates,
     bool onlyMfp = false,
     BalanceMode balanceMode = BalanceMode.includingPending,
+    SafetyProvider? safety,
   }) async {
     callerWalletId = initialWallet;
     await SharedPrefsRepository().setSelectWalletGridView(grid);
@@ -115,6 +118,7 @@ class _Host {
         providers: [
           ChangeNotifierProvider<WalletProvider>.value(value: wallets),
           ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
+          if (safety != null) ChangeNotifierProvider<SafetyProvider>.value(value: safety),
         ],
         child: MaterialApp(
           navigatorKey: navigator,
@@ -287,6 +291,33 @@ void main() {
     _Fixture('small', Size(320, 568), 0),
     _Fixture('small-no-navigation-inset', Size(320, 568), 0, bottomPadding: 0),
   ];
+  for (final grid in [false, true]) {
+    testWidgets('merge caution: picker keeps the warning on the affected wallet, grid=$grid', (tester) async {
+      final safety = fixedSafety(caution: {8});
+      addTearDown(safety.dispose);
+      final host = _Host();
+      await host.open(
+        tester,
+        fixtures[6],
+        CoconutThemeVariant.light,
+        2,
+        initialWallet: 8,
+        grid: grid,
+        candidates: [8, 7],
+        safety: safety,
+      );
+      final warning = find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == t.safety_guide.caution.badge_a11y,
+      );
+      expect(find.descendant(of: _card(8), matching: warning), findsOneWidget);
+      expect(find.descendant(of: _card(7), matching: warning), findsNothing);
+      await safety.setCaution(8, false);
+      await tester.pump();
+      expect(find.descendant(of: _card(8), matching: warning), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
   for (final variant in CoconutThemeVariant.values) {
     for (final scale in [.85, 1.0, 1.3, 2.0]) {
       for (final fixture in fixtures) {

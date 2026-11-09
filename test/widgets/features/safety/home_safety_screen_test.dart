@@ -299,6 +299,80 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   }, timeout: _timeout);
 
+  for (final scale in [1.3, 2.0]) {
+    testWidgets('merge caution: wallet list widget warns only on the affected wallet at ×$scale', (tester) async {
+      final safety = SafetyProvider.fixed(
+        _scored(walletCount: 2),
+        state: const SafetyState(cautionWalletIds: {1}, hintDismissed: true),
+      );
+      addTearDown(safety.dispose);
+      await _pumpHome(
+        tester,
+        safety: safety,
+        wallets: [safetyWallet(id: 1), safetyWallet(id: 2)],
+        items: [_widgetItem('list-1', HomeItemIds.walletList, HomeSpan.wide, 0)],
+        width: 320,
+        textScale: scale,
+      );
+      final warning = find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == t.safety_guide.caution.badge_a11y,
+      );
+      expect(find.descendant(of: find.byKey(const ValueKey('wallet-list-row-1')), matching: warning), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const ValueKey('wallet-list-row-2')), matching: warning), findsNothing);
+      await safety.setCaution(1, false);
+      await tester.pump();
+      expect(find.descendant(of: find.byKey(const ValueKey('wallet-list-row-1')), matching: warning), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+
+    testWidgets('merge caution: switching the wallet wheel to list keeps the warning at ×$scale', (tester) async {
+      final safety = SafetyProvider.fixed(
+        _scored(walletCount: 2),
+        state: const SafetyState(cautionWalletIds: {1}, hintDismissed: true),
+      );
+      addTearDown(safety.dispose);
+      await _pumpHome(
+        tester,
+        safety: safety,
+        wallets: [safetyWallet(id: 1), safetyWallet(id: 2)],
+        items: [_widgetItem('stack-1', HomeItemIds.allWalletStack, HomeSpan.small, 0)],
+        width: 320,
+        textScale: scale,
+      );
+      final pager = find.byKey(const Key('${HomeItemIds.allWalletStack}-pager'));
+      unawaited(WalletStackListScreen.open(tester.element(pager), kind: WalletStackKind.all));
+      await tester.pump();
+      await tester.pump(WalletStackListScreen.transitionDuration);
+      await tester.pump(const Duration(milliseconds: 50));
+      final warning = find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == t.safety_guide.caution.badge_a11y,
+      );
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('wallet-stack-list-card-1')), matching: warning),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('wallet-stack-list-mode')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('wallet-stack-list-wide-card-1')), matching: warning),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('wallet-stack-list-wide-card-2')), matching: warning),
+        findsNothing,
+      );
+      await safety.setCaution(1, false);
+      await tester.pump();
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('wallet-stack-list-wide-card-1')), matching: warning),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+  }
+
   // POLISH §5·E5(GPT M2): 가장 좁은 폰(320dp)과 큰 글자에서 새 홈 전체. 사용 주의 배지는 2×2 지갑 카드와
   // 지갑 바퀴에서 아이콘 원(compact), 4×2에서만 글자 배지
   testWidgets('the real home fits 320dp at 1.3×/2.0×, with the icon caution badge on the 2×2 stack and the wheel', (

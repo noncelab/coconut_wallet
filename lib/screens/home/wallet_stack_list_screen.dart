@@ -299,6 +299,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
               size: WalletCardSize.wide,
               balanceDisplay: viewModel.balanceText(wallet),
               balanceAtEnd: true,
+              statusBadge: safetyCautionBadgeFor(context, wallet.id, leadingGap: 8),
               onPressed: () => _openWallet(wallet),
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_stack_list_view_model.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_carousel_indicator.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -120,6 +121,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
       backgroundPhoto: appearances?.photoFileFor(wallet.id),
       size: WalletCardSize.small,
       balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),
+      statusBadge: safetyCautionBadgeFor(context, wallet.id, compact: true),
       onPressed: () => _viewModel.selectWallet(wallet.id),
     );
     if (!grid) return card;

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_caution_widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -49,6 +50,7 @@ class WalletBalanceRow extends StatelessWidget {
                 style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
               ),
             ),
+            SafetyCautionBadge(walletId: wallet.id, compact: true, leadingGap: 8),
             const SizedBox(width: 8),
             Expanded(
               flex: 3,
