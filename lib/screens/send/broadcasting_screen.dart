@@ -67,7 +67,16 @@ class BroadcastingScreen extends StatefulWidget {
 
 enum _BroadcastAnimationOutcome { pending, succeeded, failed }
 
-class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTickerProviderStateMixin {
+/// 보내기 진행 단계
+/// - choosing: 태그 상속 선택 중 (송금 확정 전)
+/// - sending: 송금 확정 후 노드 응답까지 (백그라운드·화면 이탈 시 취소 대상)
+///   내용이 아래로 스크롤된 상태면 맨 위로 스크롤(320ms)한 뒤 전송하므로, 이 스크롤 구간도 포함
+/// - finishing: 결과를 받아 애니메이션 마무리 중
+/// - left: 화면을 떠남 (완료 화면 이동 또는 뒤로 가기, 이후 완료 화면으로 다시 이동하지 않음)
+enum _BroadcastingPhase { idle, choosing, sending, finishing, left }
+
+class _BroadcastingScreenState extends State<BroadcastingScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
   late bool _showEntryChrome;
@@ -78,8 +87,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   late final ScrollController _scrollController;
   final Completer<void> _broadcastLottieLoaded = Completer<void>();
   _BroadcastAnimationOutcome _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
-  bool _isBroadcasting = false;
-  bool _isPreparingBroadcast = false;
+  _BroadcastingPhase _phase = _BroadcastingPhase.idle;
   bool _showBroadcastLottie = false;
   bool _isBroadcastCompletionPhase = false;
   bool _isOverlayLoading = false;
@@ -95,16 +103,16 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   String get unitText => _currentUnit.symbol;
 
+  bool get _isBroadcasting => _phase == _BroadcastingPhase.sending || _phase == _BroadcastingPhase.finishing;
+
   void _setOverlayLoading(bool value) {
     if (!mounted || _isOverlayLoading == value) return;
     setState(() => _isOverlayLoading = value);
   }
 
-  Future<void> broadcast({required List<String> inheritedTagIds}) async {
-    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading) {
-      return;
-    }
-    _isPreparingBroadcast = true;
+  Future<void> _broadcast({required List<String> inheritedTagIds}) async {
+    if (_phase != _BroadcastingPhase.choosing) return;
+    setState(() => _phase = _BroadcastingPhase.sending);
     if (_scrollController.hasClients && _scrollController.offset > 0) {
       await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
     }
@@ -113,15 +121,32 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
     try {
-      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      final Result<String>? result;
+      try {
+        result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      } finally {
+        _phase = _BroadcastingPhase.finishing;
+      }
+
+      if (result == null) {
+        _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
+        await lottieAnimation;
+        if (!mounted) return;
+        _restoreAfterBroadcastFailure();
+        return;
+      }
 
       if (result.isFailure) {
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
         await lottieAnimation;
         if (!mounted) return;
         _restoreAfterBroadcastFailure();
+        if (_viewModel.isTransactionAccepted) {
+          _goToBroadcastingCompleteIfAccepted();
+          return;
+        }
         vibrateMedium();
-        String message = result.error.message;
+        String message = BroadcastingViewModel.broadcastFailureMessage(result.error.message);
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
           message = t.alert.error_send.non_final_taproot_child;
         }
@@ -129,18 +154,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         showInfoDialog(
           context,
           context.read<PreferenceProvider>().language,
-          t.broadcasting_screen.error_popup_title,
+          _viewModel.isBroadcastResultUnknown
+              ? t.broadcasting_screen.dialog.result_unknown_title
+              : t.broadcasting_screen.error_popup_title,
           message,
         );
         return;
       }
 
       if (result.isSuccess) {
-        try {
-          await _viewModel.deleteDraftsIfNeeded();
-        } catch (e) {
-          Logger.error('Transaction sent, but draft cleanup failed: $e');
-        }
         if (!mounted) return;
         _broadcastAnimationOutcome = _BroadcastAnimationOutcome.succeeded;
         await lottieAnimation;
@@ -154,40 +176,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
           );
           if (!mounted) return;
         }
-        Navigator.of(context).pushAndRemoveUntil(
-          PageRouteBuilder<void>(
-            settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
-            transitionDuration: const Duration(milliseconds: 280),
-            reverseTransitionDuration: const Duration(milliseconds: 200),
-            pageBuilder:
-                (_, animation, secondaryAnimation) => BroadcastingCompleteScreen(
-                  id: _viewModel.walletId!,
-                  txHash: _viewModel.signedTx!.transactionHash,
-                  animateEntry: true,
-                ),
-            transitionsBuilder:
-                (_, animation, secondaryAnimation, child) => FadeTransition(
-                  opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-                  child: child,
-                ),
-          ),
-          switch (_viewModel.sendEntryPoint) {
-            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
-            SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
-            SendEntryPoint.home || null => (route) => route.isFirst,
-          },
-        );
+        _goToBroadcastingComplete();
       }
     } catch (e) {
-      Logger.error(">>>>> broadcast error: $e");
       _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
       await lottieAnimation;
       if (!mounted) return;
       _restoreAfterBroadcastFailure();
-      String message = e.toString();
-      if (e.toString().contains('min relay fee not met')) {
-        message = t.alert.error_send.insufficient_fee;
-      }
+      final message = BroadcastingViewModel.broadcastFailureMessage(e);
       if (!mounted) return;
       showInfoDialog(
         context,
@@ -199,9 +195,35 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     }
   }
 
+  void _goToBroadcastingComplete() {
+    if (_phase == _BroadcastingPhase.left) return;
+    _phase = _BroadcastingPhase.left;
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder<void>(
+        settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder:
+            (_, animation, secondaryAnimation) => BroadcastingCompleteScreen(
+              id: _viewModel.walletId!,
+              txHash: _viewModel.signedTx!.transactionHash,
+              animateEntry: true,
+            ),
+        transitionsBuilder:
+            (_, animation, secondaryAnimation, child) =>
+                FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
+      ),
+      switch (_viewModel.sendEntryPoint) {
+        SendEntryPoint.walletDetail => (route) => route.settings.name == AppRouteNames.walletDetail || route.isFirst,
+        SendEntryPoint.transactionDetail =>
+          (route) => route.settings.name == AppRouteNames.transactionDetail || route.isFirst,
+        SendEntryPoint.home || null => (route) => route.isFirst,
+      },
+    );
+  }
+
   Future<void> _prepareBroadcastAnimation() async {
     setState(() {
-      _isBroadcasting = true;
       _showEntryChrome = false;
       _showBottomButton = false;
       _broadcastAnimationOutcome = _BroadcastAnimationOutcome.pending;
@@ -250,25 +272,33 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
   void _restoreAfterBroadcastFailure() {
     setState(() {
-      _isBroadcasting = false;
+      if (_phase != _BroadcastingPhase.left) _phase = _BroadcastingPhase.idle;
       _showBroadcastLottie = false;
       _showEntryChrome = true;
       _showTransactionFlow = true;
       _showOutputDetail = true;
       _showBottomButton = true;
       _isBroadcastCompletionPhase = false;
-      _isPreparingBroadcast = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop && _viewModel.isFromSignedDraft) {
-          _viewModel.clearSendInfo();
-        }
-      },
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder:
+          (context, child) => PopScope(
+            canPop: !_viewModel.isBroadcastDispatched,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop) return;
+              _phase = _BroadcastingPhase.left;
+              _viewModel.cancelPendingBroadcast();
+              if (_viewModel.isFromSignedDraft) {
+                _viewModel.clearSendInfo();
+              }
+            },
+            child: child!,
+          ),
       child: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
         create: (_) => _viewModel,
         update: (_, connectivityProvider, walletProvider, viewModel) {
@@ -394,8 +424,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                                   );
                                   return;
                                 }
+                                if (viewModel.isTransactionAccepted) {
+                                  _goToBroadcastingComplete();
+                                  return;
+                                }
                                 try {
                                   final result = await viewModel.saveTransactionDraft();
+                                  if (!mounted || viewModel.isTransactionAccepted) return;
                                   if (result.isSuccess) {
                                     _showTransactionDraftSavedDialog();
                                   } else {
@@ -484,8 +519,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   }
 
   Future<void> _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
-    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading || !viewModel.isInitDone) return;
-    _isPreparingBroadcast = true;
+    if (_phase != _BroadcastingPhase.idle || _isOverlayLoading || !viewModel.isInitDone) return;
+    _phase = _BroadcastingPhase.choosing;
     try {
       if (viewModel.isNetworkOn == false) {
         CoconutToast.showToast(
@@ -514,8 +549,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                     ),
               );
       if (!mounted || inheritedTagIds == null) return;
-      _isPreparingBroadcast = false;
-      await broadcast(inheritedTagIds: inheritedTagIds);
+      await _broadcast(inheritedTagIds: inheritedTagIds);
     } catch (e) {
       Logger.error('Preparing tag inheritance failed: $e');
       if (!mounted) return;
@@ -526,7 +560,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         e.toString(),
       );
     } finally {
-      _isPreparingBroadcast = false;
+      if (_phase == _BroadcastingPhase.choosing) {
+        _phase = _BroadcastingPhase.idle;
+      } else if (_phase == _BroadcastingPhase.sending && mounted) {
+        _restoreAfterBroadcastFailure();
+      }
     }
   }
 
@@ -537,6 +575,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     _showTransactionFlow = !widget.animateHotWalletEntry;
     _showOutputDetail = !widget.animateHotWalletEntry;
     _showBottomButton = !widget.animateHotWalletEntry;
+    WidgetsBinding.instance.addObserver(this);
     _broadcastLottieController = AnimationController(vsync: this);
     _scrollController = ScrollController();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
@@ -550,7 +589,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       Provider.of<TransactionDraftRepository>(context, listen: false),
       Provider.of<UtxoRepository>(context, listen: false),
       widget.signedTransactionDraftId,
-    );
+    )..addListener(_goToBroadcastingCompleteIfAccepted);
 
     WidgetsBinding.instance.addPostFrameCallback((duration) async {
       if (widget.animateHotWalletEntry) {
@@ -568,7 +607,22 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
 
       try {
         final excludedUtxoStatus = await _viewModel.setTxInfo();
-        if (excludedUtxoStatus != null && mounted) {
+        if (excludedUtxoStatus != null && mounted && !_viewModel.isFromSignedDraft) {
+          vibrateMedium();
+          showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_screen.dialog.send_unavailable,
+            excludedUtxoStatus == SelectedUtxoExcludedStatus.used
+                ? t.alert.error_send.used_utxo_included
+                : t.alert.error_send.locked_utxo_included,
+            barrierDismissible: false,
+            onTapButton: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          );
+        } else if (excludedUtxoStatus != null && mounted) {
           final message =
               excludedUtxoStatus == SelectedUtxoExcludedStatus.used
                   ? t.transaction_draft.dialog.transaction_already_used_utxo_included
@@ -631,8 +685,23 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     });
   }
 
+  void _goToBroadcastingCompleteIfAccepted() {
+    if (!mounted || !_viewModel.isTransactionAccepted) return;
+    if (_phase != _BroadcastingPhase.idle && _phase != _BroadcastingPhase.choosing) return;
+    _goToBroadcastingComplete();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_phase == _BroadcastingPhase.sending &&
+        (state == AppLifecycleState.hidden || state == AppLifecycleState.paused)) {
+      _viewModel.cancelPendingBroadcast();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _broadcastLottieController.dispose();
     _scrollController.dispose();
     super.dispose();

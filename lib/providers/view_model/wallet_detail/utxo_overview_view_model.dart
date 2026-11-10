@@ -9,6 +9,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
+import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -55,7 +56,7 @@ class UtxoOverviewViewModel extends ChangeNotifier {
   bool _isUtxoListLoadComplete = false;
   bool _isRefreshing = false;
   bool _isDisposed = false;
-  String _activeUtxoTagName = t.all;
+  UtxoFilter _activeUtxoFilter = UtxoFilter.all;
   late UtxoOrder _activeUtxoOrder;
 
   // Tag Data
@@ -86,7 +87,7 @@ class UtxoOverviewViewModel extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
 
   UtxoOrder get activeUtxoOrder => _activeUtxoOrder;
-  String get activeUtxoTagName => _activeUtxoTagName;
+  UtxoFilter get activeUtxoFilter => _activeUtxoFilter;
   UtxoTagProvider get tagProvider => _tagProvider;
   List<UtxoState> get utxoList => _utxoList;
   List<UtxoTag> get utxoTagList => _utxoTagList;
@@ -181,8 +182,8 @@ class UtxoOverviewViewModel extends ChangeNotifier {
     _tagProvider.resetUtxoTagsUpdateState();
   }
 
-  void setActiveUtxoTagName(String value) {
-    _activeUtxoTagName = value;
+  void setActiveUtxoFilter(UtxoFilter value) {
+    _activeUtxoFilter = value;
     for (var utxo in _confirmedUtxoList) {
       _utxoTagMap[utxo.utxoId] = _getCachedTagsForUtxo(utxo.utxoId);
     }
@@ -212,23 +213,10 @@ class UtxoOverviewViewModel extends ChangeNotifier {
   }
 
   void _updateFilteredUtxoList() {
-    if (_activeUtxoTagName == t.all) {
-      // 모든 UTXO 표시
-      _filteredUtxoList = List<UtxoState>.from(_confirmedUtxoList);
-    } else if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
-      // 잠금된 UTXO만 표시
-      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isLocked).toList();
-    } else if (_activeUtxoTagName == t.change) {
-      // 체인지 UTXO만 표시
-      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isChange).toList();
-    } else {
-      // 태그 기반 필터링
-      _filteredUtxoList =
-          _confirmedUtxoList.where((utxo) {
-            final tags = _utxoTagMap[utxo.utxoId];
-            return tags != null && tags.any((tag) => tag.name == _activeUtxoTagName);
-          }).toList();
-    }
+    _filteredUtxoList =
+        _confirmedUtxoList
+            .where((utxo) => _activeUtxoFilter.matches(utxo, tags: _utxoTagMap[utxo.utxoId] ?? []))
+            .toList();
     notifyListeners();
   }
 
@@ -440,13 +428,13 @@ class UtxoOverviewViewModel extends ChangeNotifier {
 
       // selected 리스트 갱신
       if (status == UtxoStatus.locked) {
-        if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+        if (_activeUtxoFilter == UtxoFilter.locked) {
           _selectedUtxoList = affectedUtxos;
         } else {
           _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
         }
       } else if (status == UtxoStatus.unspent) {
-        if (_activeUtxoTagName != t.utxo_detail_screen.utxo_locked) {
+        if (_activeUtxoFilter != UtxoFilter.locked) {
           _selectedUtxoList
             ..removeWhere((u) => utxoIds.contains(u.utxoId))
             ..addAll(affectedUtxos);

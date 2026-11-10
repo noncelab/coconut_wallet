@@ -42,9 +42,8 @@ import 'package:tuple/tuple.dart';
 
 class TransactionListScreen extends StatefulWidget {
   final int id;
-  final String entryPoint;
 
-  const TransactionListScreen({super.key, required this.id, required this.entryPoint});
+  const TransactionListScreen({super.key, required this.id});
 
   @override
   State<TransactionListScreen> createState() => _TransactionListScreenState();

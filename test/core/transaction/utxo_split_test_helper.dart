@@ -8,10 +8,12 @@ String formatAmountCountMap(Map<int, int> amountCountMap) {
       .join('\n');
 }
 
-void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedOutputCount}) {
+void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedInputCount, int? expectedOutputCount}) {
   expect(result.isSuccess, isTrue);
   expect(result.transaction, isNotNull);
-  expect(result.transaction!.inputs.length, 1);
+  if (expectedInputCount != null) {
+    expect(result.transaction!.inputs.length, expectedInputCount);
+  }
 
   final splitMapOutputCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
   expect(result.transaction!.outputs.length, splitMapOutputCount);

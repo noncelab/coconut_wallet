@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 
 class UtxoBucket {
@@ -11,7 +12,7 @@ class UtxoBucket {
 /// UTXO 금액 구간 정의 (그래프, 모달 등 공통 사용)
 List<({String label, int min, int max})> getUtxoBucketRanges({required int dustThreshold}) {
   return [
-    (label: 'whale', min: 1_000_000_000, max: 2_100_000_000_000_000),
+    (label: 'whale', min: 1_000_000_000, max: kMaxSupplySats),
     (label: 'whole', min: 100_000_000, max: 999_999_999),
     (label: 'huge', min: 10_000_000, max: 99_999_999),
     (label: 'large', min: 1_000_001, max: 9_999_999),

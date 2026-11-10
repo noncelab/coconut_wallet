@@ -19,6 +19,7 @@ import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
@@ -43,12 +44,18 @@ class UtxoTagCrudScreen extends StatelessWidget {
               },
               actionButtonList: [
                 CoconutAppBarActionButton(
+                  width: CoconutAppBarActionButton.actionWidth,
                   onPressed: () {
                     _handleAddTagPressed(context, model);
                   },
-                  icon: const Icon(Icons.add_rounded),
-                  color: context.coconutColors.iconPrimary,
+                  icon: SvgPicture.asset(
+                    CommonActionIconPath.plus,
+                    width: 15,
+                    height: 15,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                  ),
                 ),
+                const SizedBox(width: 4),
               ],
             ),
             body: SafeArea(

@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
@@ -75,17 +76,20 @@ class TransactionRecordService {
     int fee = 0;
     int amount = 0;
 
+    var previousTxByHash = TransactionUtil.indexByHash(previousTxs);
+    // 이전 거래가 하나라도 빠지면 금액·수수료가 틀리므로 입력 없이, 수수료 0으로 기록 (거래 상세에서 멤풀로 보정)
+    final hasAllPreviousTxs = tx.inputs.every(
+      (input) => input.index < (previousTxByHash[input.transactionHash]?.outputs.length ?? 0),
+    );
+    if (!hasAllPreviousTxs) previousTxByHash = const {};
+
     // 입력 처리
     for (int i = 0; i < tx.inputs.length; i++) {
       final input = tx.inputs[i];
 
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
-      Transaction? previousTx;
-      try {
-        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
-      } catch (_) {
-        continue;
-      }
+      final previousTx = previousTxByHash[input.transactionHash];
+      if (previousTx == null) continue;
 
       if (input.index >= previousTx.outputs.length) {
         continue;
@@ -124,6 +128,8 @@ class TransactionRecordService {
         amount += outputAddress.amount;
       }
     }
+
+    if (!hasAllPreviousTxs) fee = 0;
 
     // 트랜잭션 유형 결정
     TransactionType txType = determineTransactionType(

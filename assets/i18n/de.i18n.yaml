@@ -60,6 +60,7 @@ home_screen_settings: "Startseiten-Einstellungen"
 home_connection_status:
   electrum_connection_failed: "Electrum nicht erreichbar"
   electrum_connection_restored: "Mit Electrum verbunden"
+  update_completed: "Aktualisiert"
 tx_list: "Transaktionen"
 utxo_list: "UTXO-Liste"
 wallet_id: "Wallet-ID"
@@ -366,16 +367,21 @@ wallet_stack_list:
   single_sig: "Single-Sig"
   multisig: "Multisig"
   inheritance: "Erbschaft"
+  inheritance_wallet: "Erbschafts-Wallet"
 home_widgets:
   hot_wallet_stack: "Hot Wallets"
   all_wallet_stack: "Alle Wallets"
   empty_all_wallets: "Noch keine Wallets"
+  empty_watch_only_wallets: "Keine Watch-only-Wallets"
+  empty_hot_wallets: "Keine Hot Wallets"
   add_wallet: "Wallet hinzufügen"
   bitcoin_balance_trend: "Bitcoin-Guthabenverlauf"
   bitcoin_balance_by_fiat: "Bitcoin-Guthaben"
   fiat_price_trend: "Fiat-Preisverlauf"
   fiat_values: "Fiat-Kurse"
   balance_by_wallet: "Guthaben nach Wallet"
+  wallet_list: "Wallet-Liste"
+  wallet_list_show_all(count): "Alle $count Wallets anzeigen"
   recent_transactions: "Letzte Transaktionen"
   transaction_activity: "Transaktionsanalyse nach Zeitraum"
   savings_goal: "Sparziel"
@@ -417,6 +423,8 @@ home_presets:
   hide_balances_description: "Keine echten Guthaben oder Fiat-Werte auf der Startseite"
   statistics_name: "Sparübersicht"
   statistics_description: "Guthabenverlauf, Sparziel und UTXO-Status auf einen Blick"
+  classic_name: "Coconut Classic"
+  classic_description: "Widgets wie auf dem früheren Coconut-Startbildschirm anordnen"
   apply: "Auf Startseite anwenden"
   applied: "Voreinstellung „$name“ angewendet"
   undo: "Rückgängig"
@@ -876,83 +884,18 @@ wallet_connect_screen:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
     loading_wallet_info: "Wallet-Informationen werden geladen"
 
-# lib/screens/wallet_list
-wallet_list:
-  balance_history_detail:
-    period_summary: "Zeitraumübersicht"
-    gesture_guide_title: "Diagramm erkunden"
-    gesture_guide_pan: "Nach links oder rechts wischen, um den Zeitraum zu verschieben."
-    gesture_guide_zoom: "Nach oben oder unten wischen oder mit zwei Fingern zoomen, um den Bereich anzupassen: 1 Woche, 1 Monat, 3 Monate und mehr."
-    balance_label: "Saldo"
-    transactions_label: "Transaktionen"
-    flow_count: "${count} Tx"
-    flow_summary: "${count} Tx · ${amount}"
-    no_transactions_at_date: "Keine Transaktionen am gewählten Tag"
-    transactions_at_date: "Transaktionen am gewählten Tag"
-    wallets_at_date: "Wallets zu diesem Zeitpunkt"
-    no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
-    changed_wallets_only: "Nur Wallets mit Änderungen"
-    transaction_count(cardinal):
-      one: "${n} Transaktion"
-      other: "${n} Transaktionen"
-  header:
-    total_amount: "Gesamtguthaben"
-    balance_history: "Guthabenverlauf"
-    bitcoin_price: "BTC-Kurs"
-    converted_amount: "Umgerechneter Betrag"
-    than_yesterday: "Seit gestern"
-    than_a_week_ago: "Vor 7 Tagen"
-    than_a_month_ago: "Vor 30 Tagen"
-    tooltip:
-      title: "Preisdetails"
-      price_source(source): "1-BTC-Preis: $source"
-      fiat_price_source(fiat, source): "$fiat-Preis: $source"
-      closing_time: "Der Tagespreis schließt um 00:00 UTC."
-      yesterday_basis: "Seit gestern: Letzter Schlusskurs"
-      week_basis: "Seit einer Woche: Schlusskurs vor 7 Tagen"
-      month_basis: "Seit einem Monat: Schlusskurs vor 30 Tagen"
-      historical_price_unavailable: "bitFlyer bietet keine offiziellen Tageskerzen an, daher werden JPY-Änderungen nicht angezeigt."
-  menu:
-    edit_order: "Reihenfolge bearbeiten"
-    display_settings: "Anzeigeeinstellungen"
-  wallet_count: "$count Elemente"
-  empty_watch_only: "Keine Watch-only-Wallets"
-  empty_hot_wallet: "Keine Hot Wallets"
-  favorite_watch_only_limit: "Du kannst bis zu 5 Watch-only-Wallets zu den Favoriten hinzufügen"
-  favorite_hot_wallet_limit: "Du kannst bis zu 5 Hot Wallets zu den Favoriten hinzufügen"
-  primary_wallet: "Primäre Wallet"
-  exclude_from_total_amount: "Von der Gesamtsumme ausgeschlossen"
-  home_balance: "Startseiten-Guthaben"
-  excluded_balance: "Ausgeschlossenes Guthaben"
-  settings:
-    title: "Einstellungen für dieses Wallet"
-    primary_wallet: "Als primäre Wallet festlegen"
-    primary_wallet_disabled_description: "Diese Wallet wird als Standard für Senden/Empfangen auf dem Startbildschirm verwendet"
-    primary_wallet_abled_description: "Das Festlegen einer anderen Wallet als primär deaktiviert diese Einstellung automatisch"
-    exclude_from_total_amount: "Von der Gesamtsumme ausschließen"
-    exclude_from_total_amount_description: "Diese Wallet wird von der Berechnung des Gesamtguthabens auf dem Startbildschirm ausgeschlossen"
-  edit:
-    order: "Reihenfolge bearbeiten"
-    order_description: "um die Reihenfolge der Wallets zu ändern."
-    tab_order_description: "um die Reihenfolge der Tabs zu ändern."
-    delete_description: "Wischen Sie auf einer Wallet nach links, um sie zu löschen."
-    finish: "Bearbeitung beenden"
-    unsaved_changes_confirm_exit: "Sie haben ungespeicherte Änderungen.\nSind Sie sicher, dass Sie beenden möchten?"
-  bottom_sheet:
-    tab_display_settings: "Tab-Anzeigeeinstellungen"
-    wallet_list_settings: "Wallet-Liste"
-    home_screen_settings: "Startseite"
-    show_watch_only_tab: "Watch-only-Wallet-Tab anzeigen"
-    show_watch_only_tab_description: "Zeigt den Watch-only-Wallet-Tab auf der Startseite an"
-    show_hot_wallet_tab: "Hot-Wallet-Tab anzeigen"
-    show_hot_wallet_tab_description: "Zeigt den Hot-Wallet-Tab auf der Startseite an"
-    show_fiat_price: "Fiat-Guthaben anzeigen"
-    show_fiat_price_description: "Zeigt das Fiat-Guthaben auf diesem Bildschirm an"
-    show_bitcoin_price: "1-BTC-Preisinformationen anzeigen"
-    show_bitcoin_price_description: "Zeigt den Preis von 1 BTC und dessen zeitliche Veränderung an"
-    show_balance_chart: "Bestandsverlauf anzeigen"
-    show_balance_chart_description: "Zeigt die Entwicklung des Gesamtbestands aller Wallets an"
-    visible: "Sichtbar"
+# lib/screens/home/wallet_balance_history_screen.dart
+wallet_balance_history_screen:
+  title: "Guthabenverlauf"
+  period_summary: "Zeitraumübersicht"
+  gesture_guide_title: "Diagramm erkunden"
+  gesture_guide_pan: "Nach links oder rechts wischen, um den Zeitraum zu verschieben."
+  gesture_guide_zoom: "Nach oben oder unten wischen oder mit zwei Fingern zoomen, um den Bereich anzupassen: 1 Woche, 1 Monat, 3 Monate und mehr."
+  balance_label: "Saldo"
+  transactions_label: "Transaktionen"
+  flow_count: "${count} Tx"
+  flow_summary: "${count} Tx · ${amount}"
+  no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -1056,6 +999,9 @@ broadcasting_screen:
   dialog:
     send_unavailable: "Senden nicht möglich"
     tag_apply_failed: "Die Transaktion wurde gesendet, aber die Tags konnten nicht angewendet werden. Prüfe die Tags in deiner UTXO-Liste."
+    not_sent_no_connection: "Verbindung zum Node fehlgeschlagen. Bitte versuche es gleich noch einmal."
+    result_unknown_title: "Sendestatus prüfen"
+    result_unknown: "Wir konnten nicht bestätigen, ob die Transaktion gesendet wurde. Es ist dieselbe Transaktion, ein erneutes Senden sendet sie nicht doppelt."
 send_address_screen:
   text1: "QR scannen oder\nkopierte Adresse einfügen"
   text2: "Bitte scannen Sie den Adress-QR-Code"
@@ -1264,9 +1210,7 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "Gesamtguthaben"
   tag_apply: "Tag anwenden"
-  utxo_select_required: "Bitte wählen Sie zuerst ein UTXO aus."
   utxo_tag_updated: "UTXO-Tags wurden aktualisiert."
-  utxo_tag_no_changes: "Es wurden keine Tags geändert."
   send_locked_utxo: "Gesperrte UTXOs können nicht gesendet werden."
   utxo_locked_button: "Sperren"
   utxo_unlocked_button: "Entsperren"
@@ -1276,6 +1220,7 @@ utxo_list_screen:
 
 transaction_detail_screen:
   input_output_detail_title: "Eingabe-/Ausgabedetails anzeigen"
+  coinbase_input: "Neu geschürfte Bitcoin aus einer Blockbelohnung haben keine Eingaben."
   confirmation: "$height ($count Bestätigungen)"
   time_ago:
     just_now: gerade eben
@@ -1576,6 +1521,8 @@ split_utxo_screen:
   question_split_evenly: "In wie viele Teile?"
   label_split_method: "Teilungsmethode"
   label_selected_utxo: "Ausgewähltes UTXO"
+  selected_utxo_count(param=count):
+    other: "${count}"
   label_estimated_fee: "Geschätzte Gebühr"
   add_new_amount: "Betrag hinzufügen"
   and_more_tags: "und ${count} weitere"
@@ -1587,6 +1534,7 @@ split_utxo_screen:
     manual_sum_over_input: "Unzureichender Betrag"
   fee_error: "Die Gebühr ist größer als der UTXO-Betrag"
   dust_error: "Das Teilen erzeugt einen kleinen Betrag (Staub)"
+  tx_too_large_error: "Die Transaktion ist zu groß. Wähle weniger UTXOs oder teile in weniger Beträge"
   method_bottom_sheet:
     title: "Teilungsmethode auswählen"
     split_by_amount: "Nach festem Betrag teilen"
@@ -1600,9 +1548,10 @@ split_utxo_screen:
     fee: "Gebühr"
     above_is_expected: "Das obige Ergebnis ist eine Schätzung"
   big_tx_confirm:
-    create: "Erstellen"
-    preview: "Vorschau"
-    description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+    title: "Große Transaktion"
+    create: "Jetzt erstellen"
+    preview: "Ergebnis ansehen"
+    description: "Die Erstellung kann einige Zeit dauern. Sehen Sie sich zuerst das voraussichtliche Ergebnis an."
 
 label_management_screen:
   title: "Notizen"
@@ -1823,7 +1772,7 @@ tooltip:
   utxo: "UTXO steht für Unspent Transaction Output, was ungenutztes Guthaben bedeutet. Bitcoin hat kein Guthabenkonzept. Denken Sie daran, dass das in Ihrer Wallet angezeigte Guthaben die Summe der UTXOs ist."
   faucet: "Testen Sie frei mit Test-Bitcoin"
   multisig_wallet: "Dies ist eine Multisig-Wallet, die\n$count Signaturen von $total Schlüsseln erfordert."
-  mfp: "Dies ist der eindeutige Wert der Wallet.\nAuch Master Fingerprint (MFP) genannt."
+  mfp: "Eine 8-stellige Kennung, die aus dem Seed abgeleitet wird.\nWird meist genutzt, um zu prüfen, ob Signiergerät und Watch-only-Wallet übereinstimmen."
   rbf: "Eine Funktion, um eine bestehende Transaktion durch eine neue mit einer höheren Gebühr zu ersetzen. (RBF, Replace-By-Fee)"
   cpfp: "Eine Funktion, um die Priorität zu erhöhen, indem eine hohe Gebühr für eine neue Transaktion (Child) festgelegt wird, damit die bestehende Transaktion (Parent) schneller verarbeitet wird. (CPFP, Child-Pays-For-Parent)"
   dont_show_again: "Nicht wieder anzeigen"
@@ -1852,6 +1801,10 @@ alert:
     insufficient_balance: "Unzureichendes Guthaben"
     minimum_amount: "Sie können mindestens $amount senden"
     insufficient_fee: "Bitte versuchen Sie es erneut, indem Sie\ndie Gebührenrate erhöhen."
+    immature_coinbase: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden."
+    immature_coinbase_remaining: "Mining-Belohnungen können nach 100 Bestätigungen gesendet werden.\nNoch $count Blöcke."
+    used_utxo_included: "Die Transaktion enthält bereits ausgegebene Bitcoin.\nBitte erstellen Sie die Transaktion erneut."
+    locked_utxo_included: "Die Transaktion enthält gesperrte Bitcoin.\nBitte versuchen Sie es von Anfang an erneut."
     non_final_taproot_child: "Bitte überprüfen Sie das Vererbungsdatum und die Uhrzeit der untergeordneten Wallet."
   signed_psbt:
     wrong_send_info: "Sendeinformationen sind unterschiedlich.\nBitte versuchen Sie es von Anfang an erneut."
@@ -1991,16 +1944,38 @@ taproot:
     inheritance_condition: "Vererbungsbedingung"
 
 bitbox02_sign_screen:
+  tx_card:
+    title: "Transaktion"
+    send: "Senden"
+    to: "An"
+    fee: "Gebühr"
+    total_cost: "Gesamtkosten"
+  device_status:
+    title: "Gerätestatus"
+  idle:
+    waiting: "Warten auf Signatur"
+  done:
+    title: "Signiert"
+    description: "Transaktion wurde von BitBox02 signiert."
+  error_title: "Signaturfehler"
   wrong_wallet_title: "Falsche Wallet verbunden"
-  device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
+  device_mismatch: "Das verbundene BitBox02 stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   status:
-    connecting_device: "Connecting to BitBox02 via USB..."
-    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
-    preparing_data: "Preparing transaction data..."
-    confirm_on_device: "Confirm amount, address, and fee on your device"
+    connecting_device: "Verbindung zum BitBox02 über USB..."
+    connecting_device_ble: "BitBox02 wird über Bluetooth gesucht..."
+    preparing_data: "Transaktionsdaten werden vorbereitet..."
+    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
   btn:
+    sign: "Mit BitBox02 signieren"
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
+  state_label:
+    idle: "Signaturbereit"
+    signing: "Signieren"
 
 trezor_sign_screen:
   tx_card:
@@ -2019,14 +1994,19 @@ trezor_sign_screen:
   done:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."
-  error_title: "Signatur fehlgeschlagen"
+  error_title: "Signaturfehler"
+  wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  fingerprint_compare:
+    expected: "Diese Wallet"
+    connected: "Verbundene Wallet"
+  connected_wallet_label: "Verbundene Wallet"
   btn:
     sign: "Mit Trezor signieren"
     connect_other_trezor: "Anderes Trezor verbinden"
   state_label:
-    idle: "Warten auf Signatur"
+    idle: "Signaturbereit"
     signing: "Signieren"
 
 passphrase_input_text_field:
@@ -2162,3 +2142,6 @@ wallet_card_detail_screen:
   wallet_card: "Wallet-Karte"
   show_balance_trend: "Saldoverlauf anzeigen"
   chart_date_format: "d.M."
+
+wallet_selection_carousel: "Einzeln anzeigen"
+wallet_selection_grid: "Zusammen anzeigen"

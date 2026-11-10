@@ -55,7 +55,7 @@ void main() {
       );
       expect(addresses.containsAddress(wallet.id, wallet.walletBase.getAddress(count)), isFalse);
       final builder = UtxoSplitTransactionBuilder(
-        utxo: utxo,
+        utxos: [utxo],
         dustThreshold: DustThresholds.p2wpkh,
         feeRate: 1,
         walletListItemBase: wallet,

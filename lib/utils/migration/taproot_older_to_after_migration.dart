@@ -37,19 +37,19 @@ class TaprootOlderToAfterMigration {
     required List<TaprootScriptPathSeedInfo> scriptPathSeedInfos,
   }) {
     final descriptorObject = Descriptor.parse(descriptor, ignoreChecksum: true);
+    var descriptorBody = descriptorObject.serialize().split('#').first;
     var hasChanges = false;
 
-    for (var index = 0; index < descriptorObject.miniscriptList.length; index++) {
-      final miniscript = descriptorObject.miniscriptList[index];
+    for (final miniscript in descriptorObject.miniscriptList) {
       final migratedMiniscript = _migrateMiniscript(miniscript);
       if (migratedMiniscript != miniscript) {
-        descriptorObject.miniscriptList[index] = migratedMiniscript;
+        descriptorBody = descriptorBody.replaceAll(miniscript, migratedMiniscript);
         hasChanges = true;
       }
     }
 
     // serialize()는 descriptor body에 대한 checksum을 항상 다시 계산합니다.
-    final migratedDescriptor = descriptorObject.serialize();
+    final migratedDescriptor = Descriptor.parse(descriptorBody, ignoreChecksum: true).serialize();
     hasChanges = hasChanges || descriptor != migratedDescriptor;
 
     final migratedScriptPathSeedInfos =

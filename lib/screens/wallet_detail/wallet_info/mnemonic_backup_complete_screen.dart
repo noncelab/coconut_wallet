@@ -9,7 +9,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
@@ -139,7 +138,7 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
     Navigator.of(context).pushNamedAndRemoveUntil(
       AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: WalletDetailRouteArgs(id: widget.walletId!, entryPoint: kEntryPointWalletHome),
+      arguments: WalletDetailRouteArgs(id: widget.walletId!),
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:realm/realm.dart';
 
 class AddressRepository extends BaseRepository {
@@ -33,8 +34,9 @@ class AddressRepository extends BaseRepository {
     int cursor,
     int count,
     bool isChange,
-    bool showOnlyUnusedAddresses,
-  ) async {
+    bool showOnlyUnusedAddresses, {
+    bool Function()? shouldStopGenerating,
+  }) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
     final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
 
@@ -69,6 +71,7 @@ class AddressRepository extends BaseRepository {
       startIndex: startIndex,
       count: remainingCount,
       isChange: isChange,
+      shouldStopGenerating: shouldStopGenerating,
     );
 
     return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
@@ -268,10 +271,14 @@ class AddressRepository extends BaseRepository {
     required int startIndex,
     required int count,
     required bool isChange,
+    bool Function()? shouldStopGenerating,
   }) async {
     final List<WalletAddress> addresses = [];
 
     for (int i = 0; i < count; i++) {
+      if (shouldStopGenerating?.call() == true) {
+        throw const TaskCancelledException();
+      }
       await Future.delayed(Duration.zero);
       final address = generateAddress(wallet, startIndex + i, isChange);
       addresses.add(address);

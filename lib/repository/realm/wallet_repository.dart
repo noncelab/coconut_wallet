@@ -20,7 +20,6 @@ import 'package:coconut_wallet/repository/realm/converter/hot_wallet_metadata.da
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/taproot_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
@@ -72,7 +71,8 @@ class WalletRepository extends BaseRepository {
       } else if (walletBases[i].walletType == WalletType.taproot.name) {
         final realmTaprootWallet = taprootWalletMap[walletBases[i].id];
         assert(realmTaprootWallet != null);
-        walletList.add(mapRealmToTaprootWalletItem(realmTaprootWallet!, walletBases[i].descriptor));
+        final taprootWalletItem = _loadTaprootWalletItem(realmTaprootWallet!, walletBases[i].descriptor);
+        if (taprootWalletItem != null) walletList.add(taprootWalletItem);
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(multisigWallets[multisigWalletIndex++], walletBases[i].descriptor));
@@ -80,6 +80,26 @@ class WalletRepository extends BaseRepository {
     }
 
     return walletList;
+  }
+
+  TaprootWalletItem? _loadTaprootWalletItem(RealmTaprootWallet realmTaprootWallet, String descriptor) {
+    final TaprootWalletItem walletItem;
+    try {
+      walletItem = mapRealmToTaprootWalletItem(realmTaprootWallet, descriptor);
+    } catch (e, stackTrace) {
+      Logger.error('getWalletItemList: skip taproot wallet ${realmTaprootWallet.id} - $e\n$stackTrace');
+      return null;
+    }
+
+    final cachedReceiveAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND index == 0 AND isChange == false', [
+          walletItem.id,
+        ]).firstOrNull;
+    if (cachedReceiveAddress != null && cachedReceiveAddress.address != walletItem.walletBase.getAddress(0)) {
+      Logger.error('getWalletItemList: skip taproot wallet ${walletItem.id} - receive address 0 mismatch');
+      return null;
+    }
+    return walletItem;
   }
 
   /// 싱글시그 지갑 추가
@@ -621,11 +641,7 @@ class WalletRepository extends BaseRepository {
       throw StateError('[updateWalletBalance] Wallet not found');
     }
 
-    if (balanceResults.isEmpty) {
-      return _createNewWalletBalance(realmWalletBase, balance);
-    }
-
-    final realmWalletBalance = balanceResults.first;
+    final realmWalletBalance = balanceResults.firstOrNull ?? _createNewWalletBalance(realmWalletBase, balance);
 
     realm.write(() {
       realmWalletBalance.total = balance.total;
@@ -652,22 +668,26 @@ class WalletRepository extends BaseRepository {
   }
 
   RealmWalletBalance _createNewWalletBalance(RealmWalletBase realmWalletBase, Balance walletBalance) {
-    int walletBalanceLastId = getLastId(realm, (RealmWalletBalance).toString());
+    return realm.write(() {
+      // 조회 이후 다른 isolate가 먼저 생성했을 수 있으므로 쓰기 잠금 안에서 다시 확인한다.
+      final existing = realm.query<RealmWalletBalance>('walletId == ${realmWalletBase.id}').firstOrNull;
+      if (existing != null) return existing;
 
-    final realmWalletBalance = RealmWalletBalance(
-      ++walletBalanceLastId,
-      realmWalletBase.id,
-      walletBalance.confirmed + walletBalance.unconfirmed,
-      walletBalance.confirmed,
-      walletBalance.unconfirmed,
-    );
-
-    realm.write(() {
-      realm.add(realmWalletBalance);
+      final key = (RealmWalletBalance).toString();
+      final counter = realm.find<RealmIntegerId>(key) ?? realm.add(RealmIntegerId(key, 1));
+      final nextId = counter.value + 1;
+      final balance = realm.add(
+        RealmWalletBalance(
+          nextId,
+          realmWalletBase.id,
+          walletBalance.confirmed + walletBalance.unconfirmed,
+          walletBalance.confirmed,
+          walletBalance.unconfirmed,
+        ),
+      );
+      counter.value = nextId;
+      return balance;
     });
-    saveLastId(realm, (RealmWalletBalance).toString(), walletBalanceLastId);
-
-    return realmWalletBalance;
   }
 
   RealmWalletBalance? getWalletBalance(int walletId) {

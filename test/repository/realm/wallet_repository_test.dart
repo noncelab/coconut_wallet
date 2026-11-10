@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -11,9 +12,15 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/taproot_wallet_backup_view_model.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/coconut_wallet_add_qr_scan_data_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:realm/realm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../fixtures/legacy_inheritance_fixtures.dart';
 import '../../mock/realm/realm_transaction_mock.dart';
 import '../../mock/realm/realm_utxo_mock.dart';
 import '../../mock/utxo_mock.dart';
@@ -24,11 +31,24 @@ const _parentTaprootXpub =
 const _childTaprootXpub =
     "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
 const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),after(500000000))";
+const _legacyInheritanceMiniscript = "and_v(after_drop(500000000),pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*))";
 
 const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#652j50l8";
 
 const _singlesigDescriptor =
     "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
+
+class _TaprootBackupWalletProvider extends Fake implements WalletProvider {
+  _TaprootBackupWalletProvider(this.wallet);
+
+  final TaprootWalletItem wallet;
+
+  @override
+  TaprootWalletItem getWalletById(int id) => wallet;
+
+  @override
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) async {}
+}
 
 void main() {
   late TestRealmManager realmManager;
@@ -46,6 +66,89 @@ void main() {
     realmManager.reset();
     realmManager.dispose();
   });
+
+  for (final parentCount in [1, 2]) {
+    for (final capability in ['parent', 'beneficiary', 'both']) {
+      test('1.1.5 persistence and backup: $parentCount parents, $capability capability', () async {
+        const secondParent =
+            'tpubDDJ3csugKLHjjx6HpLQLc9kpbQs5Kh1Kp3riEQ7Zm9YebjK8v7eFcZKdVRSuVDeXcjU3yM2e1cZXe1T7cTtPJQZvow5EovmgNoV6zgEJdc9';
+        const miniscript = "and_v(v:after(1792646340),pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*))";
+        const firstKey = "[9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*";
+        final key = parentCount == 1 ? firstKey : "musig($firstKey,[57450F41/86'/1'/0']$secondParent/<0;1>/*)";
+        final descriptor = Descriptor.parse('tr($key,$miniscript)', ignoreChecksum: true).serialize();
+        final createdAt = DateTime.utc(2026, 10, 22, 14, 20);
+        final original = WatchOnlyWallet.fromJson({
+          'name': 'New inheritance',
+          'descriptor': descriptor,
+          'colorIndex': 2,
+          'iconIndex': 3,
+          'createdAt': createdAt.toIso8601String(),
+          'keyPathSeedInfos': capability == 'beneficiary' ? <String>[] : [_parentTaprootXpub],
+          'scriptPathSeedInfos':
+              capability == 'parent'
+                  ? <Map<String, dynamic>>[]
+                  : [
+                    {
+                      'miniscript': miniscript,
+                      'extendedPublicKeys': [_childTaprootXpub],
+                    },
+                  ],
+        });
+        expect(original.isSupportedTaprootConfiguration, isTrue);
+        final directory = Directory.systemTemp.createTempSync('taproot_115_');
+        final config = Configuration.local(realmAllSchemas, path: '${directory.path}/wallet.realm');
+        var database = Realm(config);
+        try {
+          var manager = RealmManager.withRealm(database);
+          var repository = WalletRepository(manager, TransactionDraftRepository(manager));
+          final saved = await repository.addTaprootWallet(original);
+          await repository.updateTaprootDefaultSpendType(saved.id, TaprootSpendType.scriptPath);
+          database.close();
+          database = Realm(config);
+          manager = RealmManager.withRealm(database);
+          repository = WalletRepository(manager, TransactionDraftRepository(manager));
+          final restored = (await repository.getWalletItemList()).single as TaprootWalletItem;
+          expect(restored.descriptor, descriptor);
+          expect(restored.name, original.name);
+          expect(restored.colorIndex, 2);
+          expect(restored.iconIndex, 3);
+          expect(restored.createdAtInVault, createdAt);
+          expect(restored.canSpendViaKeyPath, capability != 'beneficiary');
+          expect(restored.canSpendViaScriptPath, capability != 'parent');
+          expect(
+            restored.defaultSpendType,
+            capability == 'parent' ? TaprootSpendType.keyPath : TaprootSpendType.scriptPath,
+          );
+          final backup = TaprootWalletBackupViewModel(_TaprootBackupWalletProvider(restored), restored.id);
+          final handler = CoconutWalletAddQrScanDataHandler();
+          final qr = backup.walletQrDataMap['Wallet Info']!;
+          expect(handler.validateFormat(qr), isTrue);
+          expect(handler.joinData(qr), isTrue);
+          final imported = handler.result as WatchOnlyWallet;
+          expect(imported.descriptor, descriptor);
+          expect(imported.createdAtInVault, createdAt);
+          expect(imported.keyPathSeedInfos, original.keyPathSeedInfos);
+          expect(
+            imported.scriptPathSeedInfos!.map((info) => info.toJson()),
+            original.scriptPathSeedInfos!.map((info) => info.toJson()),
+          );
+          final reimported = await repository.addTaprootWallet(imported);
+          final expected = TaprootWallet.fromDescriptor(descriptor);
+          for (final isChange in [false, true]) {
+            for (final index in [0, 1, 19]) {
+              final address = expected.getAddress(index, isChange: isChange);
+              expect(restored.walletBase.getAddress(index, isChange: isChange), address);
+              expect(reimported.walletBase.getAddress(index, isChange: isChange), address);
+            }
+          }
+          backup.dispose();
+        } finally {
+          if (!database.isClosed) database.close();
+          directory.deleteSync(recursive: true);
+        }
+      });
+    }
+  }
 
   group('WalletRepository - 싱글시그', () {
     WatchOnlyWallet createSinglesigWallet({
@@ -433,7 +536,7 @@ void main() {
       expect(result, isA<TaprootWalletItem>());
       expect(result.keyPathSeedInfos, [_parentTaprootXpub]);
       expect(result.scriptPathSeedInfos.length, 1);
-      expect(result.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
+      expect(result.scriptPathSeedInfos.first.miniscript, _legacyInheritanceMiniscript);
       expect(result.createdAtInVault, createdAtInVault);
     });
 
@@ -450,8 +553,80 @@ void main() {
       expect(list.first, isA<TaprootWalletItem>());
       final item = list.first as TaprootWalletItem;
       expect(item.keyPathSeedInfos, [_parentTaprootXpub]);
-      expect(item.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
+      expect(item.scriptPathSeedInfos.first.miniscript, _legacyInheritanceMiniscript);
       expect(item.createdAtInVault, createdAtInVault);
+    });
+
+    group('스크립트 수정 이전 상속 지갑', () {
+      final fixture = legacyInheritanceFixtures.firstWhere(
+        (fixture) => fixture.parentMnemonics.length == 1 && fixture.locktime == 1780012800,
+      );
+      late NetworkType previousNetwork;
+
+      setUp(() {
+        previousNetwork = NetworkType.currentNetworkType;
+        NetworkType.setNetworkType(NetworkType.testnet);
+      });
+
+      tearDown(() => NetworkType.setNetworkType(previousNetwork));
+
+      void addStoredLegacyWallet(int id, String descriptor, {String? cachedReceiveAddress}) {
+        final walletBase = RealmWalletBase(id, 0, 0, descriptor, 'Legacy $id', WalletType.taproot.name);
+        realmManager.realm.write(() {
+          realmManager.realm.add(walletBase);
+          realmManager.realm.add(
+            RealmTaprootWallet(
+              id,
+              jsonEncode(<String>[]),
+              jsonEncode([
+                {'miniscript': fixture.storedMiniscript, 'extendedPublicKeys': <String>[]},
+              ]),
+              walletBase: walletBase,
+            ),
+          );
+          if (cachedReceiveAddress != null) {
+            realmManager.realm.add(
+              RealmWalletAddress(id * 1000, id, cachedReceiveAddress, 0, false, "m/86'/1'/0'/0/0", true, 0, 0, 0),
+            );
+          }
+        });
+      }
+
+      test('v1.0.0에 저장된 지갑을 coconut_lib 1.1.1 주소 그대로 불러온다', () async {
+        addStoredLegacyWallet(1, fixture.storedDescriptor, cachedReceiveAddress: fixture.receive0);
+
+        final list = await walletRepository.getWalletItemList();
+
+        final item = list.single as TaprootWalletItem;
+        expect(item.descriptor, contains('after_drop(1780012800)'));
+        expect(item.defaultPolicy, isA<LegacyInheritancePolicy>());
+        expect(item.walletBase.getAddress(0), fixture.receive0);
+        expect(item.walletBase.getAddress(1), fixture.receive1);
+        expect(item.walletBase.getAddress(0, isChange: true), fixture.change0);
+        expect(realmManager.realm.find<RealmWalletBase>(1)!.descriptor, fixture.storedDescriptor);
+      });
+
+      test('캐시된 받기 주소 0번과 다르면 목록에서 제외하고 다른 지갑은 불러온다', () async {
+        addStoredLegacyWallet(1, fixture.storedDescriptor, cachedReceiveAddress: fixture.receive0);
+        addStoredLegacyWallet(
+          2,
+          fixture.storedDescriptor,
+          cachedReceiveAddress: 'tb1pcnwfgvdym3sewa7cdccscmensvy45lfes4hla3j887ul0lxlzmzqk9n266',
+        );
+
+        final list = await walletRepository.getWalletItemList();
+
+        expect(list.map((wallet) => wallet.id), [1]);
+      });
+
+      test('불러올 수 없는 지갑이 있어도 나머지 지갑은 불러온다', () async {
+        addStoredLegacyWallet(1, fixture.storedDescriptor);
+        addStoredLegacyWallet(2, 'tr(invalid)');
+
+        final list = await walletRepository.getWalletItemList();
+
+        expect(list.map((wallet) => wallet.id), [1]);
+      });
     });
 
     test('deleteWallet: RealmTaprootWallet도 함께 삭제', () async {

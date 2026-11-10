@@ -307,7 +307,7 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
                 if (_selectedId == null) ...[
                   const SizedBox(height: 16),
                   Text(
-                    t.wallet_list.balance_history_detail.no_wallets,
+                    t.wallet_balance_history_screen.no_wallets,
                     style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
                   ),
                 ],
@@ -381,12 +381,10 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
     final numberStyle = CoconutTypography.body3_12_NumberBold.copyWith(color: colors.primaryText);
     List<InlineSpan> flow(String label, int count, int amount, String sign) {
       if (count == 0) {
-        return [TextSpan(text: '$label ${t.wallet_list.balance_history_detail.flow_count(count: count)}')];
+        return [TextSpan(text: '$label ${t.wallet_balance_history_screen.flow_count(count: count)}')];
       }
       const placeholder = '\u0000';
-      final parts = t.wallet_list.balance_history_detail
-          .flow_summary(count: count, amount: placeholder)
-          .split(placeholder);
+      final parts = t.wallet_balance_history_screen.flow_summary(count: count, amount: placeholder).split(placeholder);
       return [
         TextSpan(text: '$label ${parts.first}'),
         TextSpan(text: '${amount == 0 ? '' : sign}${widget.amountText(amount)}', style: numberStyle),
@@ -419,14 +417,14 @@ class _BalanceHistoryWalletBreakdownState extends State<BalanceHistoryWalletBrea
               row(t.name, text(slice.wallet.name)),
               row(t.home_edit.period, text(widget.periodLabel)),
               row(
-                t.wallet_list.balance_history_detail.balance_label,
+                t.wallet_balance_history_screen.balance_label,
                 rich([
                   TextSpan(text: widget.amountText(slice.balance), style: numberStyle),
                   if (slice.change != 0) TextSpan(text: ' ($change)', style: numberStyle),
                 ]),
               ),
               row(
-                t.wallet_list.balance_history_detail.transactions_label,
+                t.wallet_balance_history_screen.transactions_label,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

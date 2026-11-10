@@ -19,6 +19,7 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_merge/utxo_merge_view_model.dart';
@@ -37,6 +38,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/features/utxo/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/wallet_syncing_label.dart';
 import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
@@ -74,6 +76,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   late UtxoMergeViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
   MergeState? _lastObservedSummaryMergeState;
+  late int _lastUsedUtxoExcludedNonce;
+  bool _needsRevalidation = false;
   bool _isAmountTextHighlighted = false;
   UtxoMergeStep? _displayedHeaderStep;
   UtxoMergeStep? _pendingHeaderStep;
@@ -103,22 +107,49 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       context.read<UtxoTagProvider>(),
       context.read<SendInfoProvider>(),
       context.read<WalletProvider>(),
+      context.read<NodeProvider>(),
+      _onWalletSynced,
     )..initialize();
     _lastObservedSummaryMergeState = _viewModel.mergeState;
+    _lastUsedUtxoExcludedNonce = _viewModel.usedUtxoExcludedNonce;
     _viewModel.addListener(_handleMergeSummaryStateChanged);
+    _viewModel.addListener(_handleUsedUtxoExcluded);
   }
 
   @override
   void didUpdateWidget(covariant UtxoMergeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isActive && widget.isActive) {
-      _viewModel.revalidateAvailableUtxos();
+      _needsRevalidation = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revalidateIfVisible());
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (ModalRoute.of(context)?.isCurrent ?? true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revalidateIfVisible());
+    }
+  }
+
+  /// 업데이트가 끝났을 때 이 탭이 보이는 중이면 바로, 아니면 다시 보일 때 UTXO를 다시 확인
+  void _onWalletSynced() {
+    _needsRevalidation = true;
+    _revalidateIfVisible();
+  }
+
+  void _revalidateIfVisible() {
+    if (!_needsRevalidation || !mounted || !widget.isActive) return;
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    _needsRevalidation = false;
+    _viewModel.revalidateAvailableUtxos();
   }
 
   @override
   void dispose() {
     _viewModel.removeListener(_handleMergeSummaryStateChanged);
+    _viewModel.removeListener(_handleUsedUtxoExcluded);
     _receiveAddressSummaryLottieController.dispose();
     _viewModel.dispose();
     super.dispose();
@@ -129,6 +160,19 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     if (state == _lastObservedSummaryMergeState) return;
     _lastObservedSummaryMergeState = state;
     _applyLottieForMergeState(state);
+  }
+
+  void _handleUsedUtxoExcluded() {
+    final nonce = _viewModel.usedUtxoExcludedNonce;
+    if (nonce == _lastUsedUtxoExcludedNonce) return;
+    _lastUsedUtxoExcludedNonce = nonce;
+    CoconutToast.showToast(
+      context: context,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.triangleWarning,
+      text: t.send_screen.toast.draft_utxo_used,
+      level: CoconutToastLevel.warning,
+    );
   }
 
   void _applyLottieForMergeState(MergeState state) {
@@ -320,6 +364,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       ({
         bool isMergeButtonVisible,
         bool isMergeButtonEnabled,
+        bool isWalletSyncing,
         MergeState summaryState,
         MergeRecommendationLevelAndInfo? mergeRecommendationLevelAndInfo,
         List<String> additionalWarnings,
@@ -329,6 +374,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           (_, viewModel) => (
             isMergeButtonVisible: viewModel.isMergeButtonVisible,
             isMergeButtonEnabled: viewModel.isMergeButtonEnabled,
+            isWalletSyncing: viewModel.isWalletSyncing,
             summaryState: viewModel.mergeState,
             mergeRecommendationLevelAndInfo: viewModel.mergeRecommendationLevelAndInfo,
             additionalWarnings: viewModel.additionalWarnings,
@@ -338,11 +384,14 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           return const SizedBox.shrink();
         }
 
-        Widget? subWidget = _getMergeButtonSubTextWidget(
-          ctaState.additionalWarnings,
-          ctaState.summaryState,
-          ctaState.mergeRecommendationLevelAndInfo,
-        );
+        Widget? subWidget =
+            ctaState.isWalletSyncing
+                ? const WalletSyncingLabel()
+                : _getMergeButtonSubTextWidget(
+                  ctaState.additionalWarnings,
+                  ctaState.summaryState,
+                  ctaState.mergeRecommendationLevelAndInfo,
+                );
 
         return Positioned(
           left: 0,
@@ -410,7 +459,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   }
 
   Future<void> _onMergeButtonClicked() async {
-    if (_viewModel.mergeState != MergeState.ready) return;
+    if (_viewModel.mergeState != MergeState.ready || _viewModel.isWalletSyncing) return;
 
     context.loaderOverlay.show();
 
@@ -427,6 +476,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         arguments: SendConfirmRouteArgs(currentUnit: context.read<PreferenceProvider>().currentUnit),
       );
       if (mounted && widget.isActive) {
+        _needsRevalidation = false;
         _viewModel.revalidateAvailableUtxos();
       }
     } finally {
@@ -968,21 +1018,24 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           ValueListenableBuilder<bool>(
             valueListenable: isEditingNotifier,
             builder:
-                (context, isEditing, _) => MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutUnderlinedButton(
-                    text: isEditing ? t.done : t.edit,
-                    onTap: () {
-                      if (isEditing) {
-                        final committedSelectedUtxoIds = Set<String>.from(draftSelectedUtxoIdsNotifier.value);
-                        setState(() {
-                          _viewModel.commitEditedSelectedUtxoIds(committedSelectedUtxoIds);
-                        });
-                        unawaited(_viewModel.prepareMergeTransaction());
-                      }
-                      isEditingNotifier.value = !isEditing;
-                      vibrateExtraLight();
-                    },
+                (context, isEditing, _) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                    child: CoconutUnderlinedButton(
+                      text: isEditing ? t.done : t.edit,
+                      onTap: () {
+                        if (isEditing) {
+                          final committedSelectedUtxoIds = Set<String>.from(draftSelectedUtxoIdsNotifier.value);
+                          setState(() {
+                            _viewModel.commitEditedSelectedUtxoIds(committedSelectedUtxoIds);
+                          });
+                          unawaited(_viewModel.prepareMergeTransaction());
+                        }
+                        isEditingNotifier.value = !isEditing;
+                        vibrateExtraLight();
+                      },
+                    ),
                   ),
                 ),
           ),

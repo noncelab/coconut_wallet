@@ -13,6 +13,10 @@ import io.flutter.plugin.common.MethodChannel
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowInsets
+import io.flutter.embedding.android.FlutterView
 
 class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "onl.coconut.wallet/os"
@@ -177,6 +181,25 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             null
         }
+    }
+
+    // 다른 앱 키보드 애니메이션 중 복귀 시 엔진에 남는 키보드 높이 보정
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val flutterView = findFlutterView(window.decorView) ?: return
+        val insets = flutterView.rootWindowInsets ?: return
+        if (insets.isVisible(WindowInsets.Type.ime())) return
+        flutterView.requestApplyInsets()
+    }
+
+    private fun findFlutterView(view: View): FlutterView? {
+        if (view is FlutterView) return view
+        if (view !is ViewGroup) return null
+        for (i in 0 until view.childCount) {
+            findFlutterView(view.getChildAt(i))?.let { return it }
+        }
+        return null
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {

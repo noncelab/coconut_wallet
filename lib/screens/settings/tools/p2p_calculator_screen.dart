@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/consensus_constants.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
@@ -41,7 +42,6 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoTextField;
@@ -62,7 +62,6 @@ class P2PCalculatorScreen extends StatefulWidget {
 
 class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerProviderStateMixin {
   static const double _maxBtc = 21000000;
-  static const int _maxSats = 2100000000000000; // 21M BTC
   static const double _offlineBottomCardSwapThreshold = 0.4;
   final GlobalKey _shareButtonKey = GlobalKey();
 
@@ -301,11 +300,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     inputText: _formatLocaleDecimalText(sanitized),
                   ) ??
                   0;
-      if (!_resultIsFiat) amount = amount.clamp(0, _maxSats).toInt();
+      if (!_resultIsFiat) amount = amount.clamp(0, kMaxSupplySats).toInt();
       final inverse = _viewModel.calculateInputFromResult(amount);
       if (inverse == null) return;
-      if (_resultIsFiat && inverse > _maxSats) {
-        amount = _viewModel.calculateFiatFromSats(_maxSats);
+      if (_resultIsFiat && inverse > kMaxSupplySats) {
+        amount = _viewModel.calculateFiatFromSats(kMaxSupplySats);
       }
       _viewModel.setResultAmount(amount);
       _updateControllerWithResult(_viewModel.inputAmount!);
@@ -411,8 +410,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         ) ??
         0;
 
-    if (sats > _maxSats) {
-      sats = _maxSats;
+    if (sats > kMaxSupplySats) {
+      sats = kMaxSupplySats;
       btcText = _maxBtc.toInt().toString();
     }
 
@@ -442,8 +441,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _processSatsInput(String sanitized) {
     var sats = sanitized.toIntSafe() ?? 0;
 
-    if (sats > _maxSats) {
-      sats = _maxSats;
+    if (sats > kMaxSupplySats) {
+      sats = kMaxSupplySats;
     }
 
     _viewModel.setInputAmount(sats);
@@ -536,30 +535,29 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
       default:
         {
-          CommonBottomSheets.showDraggableBottomSheet(
+          SelectWalletBottomSheet.show(
             context: context,
             screenName: AnalyticsScreenNames.p2pCalculatorSelectWalletSheet,
-            childBuilder:
-                (scrollController) => P2PSelectWalletBottomSheet(
-                  showOnlyMfpWallets: false,
-                  scrollController: scrollController,
-                  currentUnit: _viewModel.currentUnit,
-                  onWalletSelected: (walletId) {
-                    debugPrint('satsAmount: $satsAmount');
+            child: P2PSelectWalletBottomSheet(
+              showOnlyMfpWallets: false,
 
-                    Navigator.pop(context);
-                    Navigator.pushNamed(
-                      context,
-                      AppRouteNames.send,
-                      arguments: SendRouteArgs(
-                        id: walletId,
-                        sendEntryPoint: SendEntryPoint.home,
-                        transactionDraftId: null,
-                        initialSatsFromP2P: satsAmount,
-                      ),
-                    );
-                  },
-                ),
+              currentUnit: _viewModel.currentUnit,
+              onWalletSelected: (walletId) {
+                debugPrint('satsAmount: $satsAmount');
+
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  AppRouteNames.send,
+                  arguments: SendRouteArgs(
+                    id: walletId,
+                    sendEntryPoint: SendEntryPoint.home,
+                    transactionDraftId: null,
+                    initialSatsFromP2P: satsAmount,
+                  ),
+                );
+              },
+            ),
           );
           break;
         }
@@ -1871,7 +1869,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               inputText: _formatLocaleDecimalText(value),
             ) ??
             0;
-        final nextSats = (currentSats + addSats).clamp(0, _maxSats).toInt();
+        final nextSats = (currentSats + addSats).clamp(0, kMaxSupplySats).toInt();
         _handleAmountInputChanged(BalanceFormatUtil.formatSatoshiToBtcInputText(nextSats));
       }
     }

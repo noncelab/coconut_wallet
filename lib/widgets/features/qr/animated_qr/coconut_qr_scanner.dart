@@ -62,7 +62,8 @@ class _CoconutQrScannerState extends State<CoconutQrScanner>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _progressNotifier.dispose();
-    _controller?.dispose();
+    final controller = _controller;
+    if (controller != null) QrScannerView.releaseController(controller);
     super.dispose();
   }
 

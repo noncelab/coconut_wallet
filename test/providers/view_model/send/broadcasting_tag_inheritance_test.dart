@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -15,8 +20,10 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/transaction_mock.dart';
@@ -42,17 +49,52 @@ class _WalletProvider extends Fake implements WalletProvider {
 
 class _NodeProvider extends Fake implements NodeProvider {
   int broadcasts = 0;
+  int reconnects = 0;
   bool fails = false;
+  bool connected = true;
+  Completer<bool>? reconnecting;
   void Function()? duringBroadcast;
 
   @override
-  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  String host = 'localhost';
+
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async =>
+      connected ? Result.success(BlockTimestamp(100, DateTime(2026))) : Result.failure(ErrorCodes.nodeConnectionError);
+
+  @override
+  Future<Result<bool>> reconnect() => throw StateError('broadcast must not wait for wallet subscription');
+
+  @override
+  Future<bool> reconnectWithoutWaitingForSync() {
+    reconnects++;
+    return reconnecting?.future ?? Future.value(true);
+  }
+
+  /// 앞에서부터 차례로 쓰는 전송 결과 (비면 [fails]를 따름)
+  final List<AppError?> broadcastErrors = [];
+  int lookups = 0;
+  bool transactionFound = false;
+  Completer<void>? lookingUp;
+  Completer<void>? resending;
 
   @override
   Future<Result<String>> broadcast(Transaction signedTx) async {
     broadcasts++;
     duringBroadcast?.call();
+    if (broadcasts > 1) await resending?.future;
+    if (broadcastErrors.isNotEmpty) {
+      final error = broadcastErrors.removeAt(0);
+      return error == null ? Result.success(signedTx.transactionHash) : Result.failure(error);
+    }
     return fails ? Result.failure(ErrorCodes.broadcastError) : Result.success(signedTx.transactionHash);
+  }
+
+  @override
+  Future<Result<String>> getTransaction(String txHash) async {
+    lookups++;
+    await lookingUp?.future;
+    return transactionFound ? Result.success('raw') : Result.failure(ErrorCodes.nodeUnknown);
   }
 }
 
@@ -74,6 +116,7 @@ void main() {
   late SingleSignatureVault vault;
   late BroadcastingViewModel viewModel;
   late UtxoTagProvider tags;
+  late SendInfoProvider sendInfo;
 
   setUpAll(() {
     NetworkType.setNetworkType(NetworkType.testnet);
@@ -111,7 +154,12 @@ void main() {
   List<String> tagIds(String utxoId, {int walletId = 1}) =>
       repository.getUtxoTagsByTxHash(walletId, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> initializeTransaction(Transaction transaction, {bool returnPsbt = false}) async {
+  Future<void> initializeTransaction(
+    Transaction transaction, {
+    bool returnPsbt = false,
+    FeeBumpingType? feeBumpingType,
+    SelectedUtxoExcludedStatus? expectedExcludedStatus,
+  }) async {
     transaction.changeAddressDerivationPath = "${vault.derivationPath}/1/1";
     final original = Psbt.fromTransaction(transaction, vault);
     final signed = Psbt.parse(vault.addSignatureToPsbt(original.serialize()));
@@ -119,9 +167,10 @@ void main() {
       // Some signers retain input derivation but omit optional output metadata.
       signed.psbtMap['outputs'][0].clear();
     }
-    final sendInfo =
+    sendInfo =
         SendInfoProvider()
           ..setWalletId(1)
+          ..setFeeBumpingType(feeBumpingType)
           ..setTxWaitingForSign(original.serialize())
           ..setSignedResult(
             returnPsbt ? signed.serialize() : signed.getSignedTransaction(AddressType.p2wpkh).serialize(),
@@ -138,8 +187,8 @@ void main() {
       null,
     );
     addTearDown(viewModel.dispose);
-    expect(await viewModel.setTxInfo(), isNull);
-    expect(viewModel.isInitDone, isTrue);
+    expect(await viewModel.setTxInfo(), expectedExcludedStatus);
+    expect(viewModel.isInitDone, expectedExcludedStatus == null);
   }
 
   Future<void> initialize({
@@ -147,6 +196,8 @@ void main() {
     bool outputDerivation = true,
     bool returnPsbt = false,
     int outputAmount = 999000,
+    FeeBumpingType? feeBumpingType,
+    SelectedUtxoExcludedStatus? expectedExcludedStatus,
   }) async {
     final recipient = ownOutput ? vault.getAddress(1, isChange: true) : vault.getAddress(10);
     final transaction = Transaction.withInputsAndOutputs(
@@ -162,7 +213,12 @@ void main() {
       AddressType.p2wpkh,
     );
     transaction.utxoList.add(Utxo(_inputHash, 0, 1000000, "${vault.derivationPath}/0/0"));
-    await initializeTransaction(transaction, returnPsbt: returnPsbt);
+    await initializeTransaction(
+      transaction,
+      returnPsbt: returnPsbt,
+      feeBumpingType: feeBumpingType,
+      expectedExcludedStatus: expectedExcludedStatus,
+    );
   }
 
   String targetId() => getUtxoId(viewModel.signedTx!.transactionHash, 0);
@@ -215,7 +271,7 @@ void main() {
 
     final result = await viewModel.broadcast(inheritedTagIds: ['savings']);
 
-    expect(result.isSuccess, isTrue);
+    expect(result!.isSuccess, isTrue);
     expect(tagIds(targetId()), ['savings']);
     expect(tagIds(inputId), isEmpty);
     expect(tagIds('another-utxo'), ['unrelated']);
@@ -238,14 +294,14 @@ void main() {
     await initialize();
     viewModel.prepareTagInheritance();
     node.fails = true;
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isFailure, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isFailure, isTrue);
     expect(tagIds(inputId), ['savings']);
     expect(tagIds(targetId()), isEmpty);
 
     manager.realm.write(() => manager.realm.find<RealmUtxoTag>('savings')!.utxoIdList.clear());
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), ['savings']);
     node.fails = false;
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isSuccess, isTrue);
     expect(tagIds(targetId()), ['savings']);
     expect(node.broadcasts, 2);
   });
@@ -261,6 +317,361 @@ void main() {
     expect(tagIds(targetId()), ['savings']);
   });
 
+  test('normal broadcast marks the spent input as outgoing before sync', () async {
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(node.reconnects, 0);
+    final input = repository.getUtxoState(1, inputId)!;
+    expect(input.status, UtxoStatus.outgoing);
+    expect(input.spentByTransactionHash, viewModel.signedTx!.transactionHash);
+  });
+
+  test('disconnected broadcast waits only for the connection, not wallet subscription', () async {
+    node.connected = false;
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(node.reconnects, 1);
+    expect(node.broadcasts, 1);
+  });
+
+  test('leaving the screen while reconnecting never sends the transaction', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    viewModel.dispose();
+    node.reconnecting!.complete(true);
+
+    expect(await pending, isNull);
+    expect(node.broadcasts, 0);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a reconnect that fails reports a connection error without sending', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>()..complete(false);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result.error.message),
+      t.broadcasting_screen.dialog.not_sent_no_connection,
+    );
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('waiting for the connection gives up after 15 seconds without sending', (tester) async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 14));
+    expect(result, isNull);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.not_sent_no_connection,
+    );
+    expect(node.broadcasts, 0);
+  });
+
+  testWidgets('a Tor connection waits up to 120 seconds without sending', (tester) async {
+    node.host = 'example.onion';
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 119));
+    expect(result, isNull);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result!.error.code, ErrorCodes.nodeConnectionError.code);
+    expect(node.broadcasts, 0);
+  });
+
+  test('going to the background while reconnecting stops waiting and never sends', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    viewModel.cancelPendingBroadcast();
+
+    expect(await pending, isNull);
+    expect(node.broadcasts, 0);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a cancel requested before the broadcast starts is honored, then cleared for the next send', () async {
+    await initialize();
+
+    viewModel.cancelPendingBroadcast();
+    expect(await viewModel.broadcast(inheritedTagIds: const []), isNull);
+    expect(node.broadcasts, 0);
+
+    expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+  });
+
+  test('a cancel after the transaction is handed to the node does not change the result', () async {
+    await initialize();
+    node.duringBroadcast = viewModel.cancelPendingBroadcast;
+
+    expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+    expect(node.broadcasts, 1);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('transaction is marked as dispatched only once it is handed to the node', () async {
+    node.connected = false;
+    node.reconnecting = Completer<bool>();
+    await initialize();
+    bool? dispatchedDuringBroadcast;
+    node.duringBroadcast = () => dispatchedDuringBroadcast = viewModel.isBroadcastDispatched;
+
+    final pending = viewModel.broadcast(inheritedTagIds: const []);
+    await Future<void>.delayed(Duration.zero);
+    expect(viewModel.isBroadcastDispatched, isFalse);
+    node.reconnecting!.complete(true);
+    await pending;
+
+    expect(dispatchedDuringBroadcast, isTrue);
+    expect(viewModel.isBroadcastDispatched, isTrue);
+  });
+
+  test('failed broadcast is no longer dispatched so the user can leave', () async {
+    node.fails = true;
+    await initialize();
+
+    await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(viewModel.isBroadcastDispatched, isFalse);
+  });
+
+  test('an unanswered broadcast that reached the node is reported as sent', () async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.transactionFound = true;
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(result.value, viewModel.signedTx!.transactionHash);
+    expect(node.lookups, 1);
+    expect(viewModel.isBroadcastResultUnknown, isFalse);
+    expect(node.broadcasts, 1);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('an unanswered broadcast not found on the node is sent once more as the same transaction', () async {
+    node.broadcastErrors.addAll([ErrorCodes.nodeUnknown, null]);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.isSuccess, isTrue);
+    expect(node.lookups, 1);
+    expect(node.broadcasts, 2);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+  });
+
+  test('a broadcast whose result stays unknown asks the user to send the same transaction again', () async {
+    node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, ErrorCodes.nodeIsolateError]);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.result_unknown,
+    );
+    expect(node.broadcasts, 2);
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    expect(viewModel.isBroadcastDispatched, isFalse);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a node rejection is reported as is without checking or resending', () async {
+    node.broadcastErrors.add(ErrorCodes.broadcastError);
+    await initialize();
+
+    final result = await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(result!.error.code, ErrorCodes.broadcastError.code);
+    expect(node.lookups, 0);
+    expect(viewModel.isBroadcastResultUnknown, isFalse);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a confirmation that ran past the limit never resends afterwards', (tester) async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.lookingUp = Completer<void>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 15));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    node.lookingUp!.complete();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(result, isNotNull);
+    expect(node.lookups, 1);
+    expect(node.broadcasts, 1);
+  });
+
+  testWidgets('a resend that succeeds after the limit still finishes inputs, tags and drafts', (tester) async {
+    addTag('savings', inputId);
+    node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
+    node.resending = Completer<void>();
+    await tester.runAsync(() => initialize());
+    final drafts = TransactionDraftRepository(manager);
+    final draft = await tester.runAsync(
+      () => drafts.saveUnsignedDraft(
+        walletId: 1,
+        feeRate: 1,
+        isMaxMode: false,
+        isFeeSubtractedFromSendAmount: false,
+        recipients: [RecipientDraft(address: vault.getAddress(10), amount: 1000000)],
+        bitcoinUnit: BitcoinUnit.btc,
+      ),
+    );
+    sendInfo.setUnsignedDraftId(draft!.value.id);
+
+    viewModel.broadcast(inheritedTagIds: ['savings']).ignore();
+    await tester.pump(const Duration(seconds: 15));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    expect(node.broadcasts, 2);
+    viewModel.dispose();
+    sendInfo.clear();
+    node.resending!.complete();
+    for (var i = 0; i < 40 && drafts.getAllUnsignedDrafts().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+    expect(tagIds(targetId()), ['savings']);
+    expect(drafts.getAllUnsignedDrafts(), isEmpty);
+  });
+
+  Future<void> prepareSignedDraftSave() async {
+    FlutterSecureStorage.setMockInitialValues(<String, String>{});
+    sendInfo
+      ..setTransaction(viewModel.signedTx!)
+      ..setFeeRate(1)
+      ..setIsMaxMode(false);
+  }
+
+  int signedDraftCount() => manager.realm.all<RealmTransactionDraft>().length;
+
+  for (final saveFirst in [true, false]) {
+    testWidgets(
+      'a draft saved after the result was unknown is removed once the late success lands (saveFirst=$saveFirst)',
+      (tester) async {
+        node.broadcastErrors.addAll([ErrorCodes.nodeIsolateError, null]);
+        node.resending = Completer<void>();
+        await tester.runAsync(() => initialize());
+        await prepareSignedDraftSave();
+
+        viewModel.broadcast(inheritedTagIds: const []).ignore();
+        await tester.pump(const Duration(seconds: 15));
+        expect(viewModel.isBroadcastResultUnknown, isTrue);
+
+        Future<void> settle() async {
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+          }
+        }
+
+        if (saveFirst) {
+          expect((await tester.runAsync(viewModel.saveTransactionDraft))!.isSuccess, isTrue);
+          expect(signedDraftCount(), 1);
+          node.resending!.complete();
+          await settle();
+        } else {
+          node.resending!.complete();
+          await settle();
+          expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
+          expect((await tester.runAsync(viewModel.saveTransactionDraft))!.isSuccess, isTrue);
+          await settle();
+        }
+
+        expect(signedDraftCount(), 0);
+      },
+    );
+  }
+
+  testWidgets('checking an unanswered broadcast gives up after 15 seconds', (tester) async {
+    node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+    node.lookingUp = Completer<void>();
+    await tester.runAsync(() => initialize());
+
+    Result<String>? result;
+    viewModel.broadcast(inheritedTagIds: const []).then((value) => result = value);
+    await tester.pump(const Duration(seconds: 14));
+    expect(result, isNull);
+    expect(viewModel.isBroadcastDispatched, isTrue);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      BroadcastingViewModel.broadcastFailureMessage(result!.error.message),
+      t.broadcasting_screen.dialog.result_unknown,
+    );
+    expect(node.broadcasts, 1);
+  });
+
+  test('failed broadcast leaves the input spendable', () async {
+    node.fails = true;
+    await initialize();
+
+    await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  test('a normal send whose input is already outgoing is reported before broadcasting', () async {
+    manager.realm.write(() {
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
+      input.status = 'outgoing';
+      input.spentByTransactionHash = _previousHash;
+    });
+
+    await initialize(expectedExcludedStatus: SelectedUtxoExcludedStatus.used);
+  });
+
+  test('RBF keeps the predecessor as the spender of an already outgoing input', () async {
+    manager.realm.write(() {
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
+      input.status = 'outgoing';
+      input.spentByTransactionHash = _previousHash;
+    });
+    transactions.previous = TransactionMock.createUnconfirmedTransactionRecord(transactionHash: _previousHash);
+    await initialize(feeBumpingType: FeeBumpingType.rbf);
+
+    await viewModel.broadcast(inheritedTagIds: const []);
+
+    expect(repository.getUtxoState(1, inputId)!.spentByTransactionHash, _previousHash);
+  });
+
   test('RBF inherits predecessor output tags before its output UTXO is synchronized', () async {
     final previousOutput = getUtxoId(_previousHash, 1);
     addTag('savings', previousOutput);
@@ -271,7 +682,7 @@ void main() {
     });
     transactions.previous = TransactionMock.createUnconfirmedTransactionRecord(transactionHash: _previousHash);
     expect(repository.getUtxoState(1, previousOutput), isNull);
-    await initialize();
+    await initialize(feeBumpingType: FeeBumpingType.rbf);
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), ['savings']);
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     expect(tagIds(targetId()), ['savings']);
@@ -287,7 +698,7 @@ void main() {
       input.spentByTransactionHash = _previousHash;
     });
     transactions.previous = TransactionMock.createConfirmedTransactionRecord(transactionHash: _previousHash);
-    await initialize();
+    await initialize(feeBumpingType: FeeBumpingType.rbf);
     expect(viewModel.prepareTagInheritance(), isEmpty);
   });
 
@@ -303,7 +714,7 @@ void main() {
     });
     transactions.previous = TransactionMock.createUnconfirmedTransactionRecord(transactionHash: originalHash);
 
-    await initialize(outputAmount: 998000);
+    await initialize(outputAmount: 998000, feeBumpingType: FeeBumpingType.rbf);
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), ['savings']);
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     final firstBumpHash = viewModel.signedTx!.transactionHash;
@@ -348,10 +759,10 @@ void main() {
       Utxo(_inputHash, 0, 1000000, "${vault.derivationPath}/0/0"),
       Utxo(extraHash, 3, 300000, "${vault.derivationPath}/0/1"),
     ]);
-    await initializeTransaction(secondBump);
+    await initializeTransaction(secondBump, feeBumpingType: FeeBumpingType.rbf);
     const expectedTags = ['savings', 'reviewed', 'salary'];
     expect(viewModel.prepareTagInheritance().map((tag) => tag.id), unorderedEquals(expectedTags));
-    expect((await viewModel.broadcast(inheritedTagIds: expectedTags)).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: expectedTags))!.isSuccess, isTrue);
     final secondBumpHash = viewModel.signedTx!.transactionHash;
     expect(tagIds(getUtxoId(secondBumpHash, 0)), isEmpty);
     for (final index in [1, 2]) {
@@ -425,7 +836,7 @@ void main() {
     node.duringBroadcast = () {
       manager.realm.write(() => manager.realm.delete(manager.realm.find<RealmUtxoTag>('savings')!));
     };
-    expect((await viewModel.broadcast(inheritedTagIds: ['savings'])).isSuccess, isTrue);
+    expect((await viewModel.broadcast(inheritedTagIds: ['savings']))!.isSuccess, isTrue);
     expect(viewModel.tagInheritanceFailed, isTrue);
     expect(node.broadcasts, 1);
   });

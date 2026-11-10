@@ -26,6 +26,10 @@ class SharedPrefKeys {
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
   static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
+  static const String kSelectWalletGridView = 'SELECT_WALLET_GRID_VIEW';
+
+  static const String kHodlInsightsWalletIds = 'HODL_INSIGHTS_WALLET_IDS';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -55,6 +59,10 @@ class SharedPrefKeys {
 
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
+
+  /// 예전 기본 통화 KRW를 지역 기본값으로 바로잡는 확인(설치당 1회)을 마쳤는지. 새 설치에서도 남긴다.
+  /// 초기화 금지: 지우면 사용자가 직접 고른 KRW가 다시 바뀔 수 있다. (keysToReset에도 넣지 않는다)
+  static const String kHasCheckedRegionDefaultFiat = 'HAS_CHECKED_REGION_DEFAULT_FIAT';
 
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
@@ -102,13 +110,6 @@ class SharedPrefKeys {
   /// UTXO 수동선택 모드 여부
   static const String kIsManualUtxoSelectionMode = 'IS_MANUAL_UTXO_SELECTION_MODE';
 
-  /// 지갑 목록 화면 - 법정화폐 관련
-  static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
-  static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
-  static const String kWalletListBitcoinPriceHidden = 'WALLET_LIST_BITCOIN_PRICE_HIDDEN'; // 지갑 목록 화면의 1 BTC 가격 정보 숨김 여부
-  static const String kWalletListBalanceChartHidden =
-      'WALLET_LIST_BALANCE_CHART_HIDDEN'; // 지갑 목록 화면의 총 보유 수량 변화 그래프 숨김 여부
-
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
 
@@ -128,6 +129,8 @@ class SharedPrefKeys {
     kFakeBalanceTotal,
     kFakeBalanceMap,
     kWalletOrder,
+    kSelectWalletGridView,
+    kHodlInsightsWalletIds,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

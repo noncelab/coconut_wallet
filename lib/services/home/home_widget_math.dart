@@ -53,9 +53,6 @@ class HomeWidgetMath {
     return [for (var i = days - 1; i >= 0; i--) DateTime(start.year, start.month, start.day - i)];
   }
 
-  // TODO(P10): 잔액 이력 서비스로 합친다. WalletListViewModel._updateWalletBalanceHistory도 같은 거래 기록에서 잔액 흐름을
-  //  구하지만 방식이 다르다(그쪽은 0부터 거래를 더해 거래 시점마다 점을 찍고 끝을 현재 잔액에 맞추며, 이쪽은 현재 잔액에서
-  //  거꾸로 빼 하루 한 값을 낸다). 거래 기록이 덜 받아진 지갑에서 결과가 갈리므로 합칠 때 처리 방식을 먼저 정해야 한다.
   /// 각 날의 마지막 잔액
   static List<int> dailyBalances(List<TransactionRecord> transactions, int currentBalance, DateTime now, int days) {
     final daysList = lastDays(now, days);

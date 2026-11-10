@@ -1,6 +1,12 @@
 import Flutter
 import UIKit
 
+// Request UIKit's native orientation lock, including for resizable scenes such as the unfolded iPhone Duo.
+final class OrientationLockedFlutterViewController: FlutterViewController {
+  @available(iOS 26.0, *)
+  override var prefersInterfaceOrientationLocked: Bool { true }
+}
+
 class SceneDelegate: FlutterSceneDelegate {
   override func scene(
     _ scene: UIScene,
@@ -14,7 +20,7 @@ class SceneDelegate: FlutterSceneDelegate {
 
     super.scene(scene, willConnectTo: session, options: connectionOptions)
     let controller = appDelegate.flutterEngine.viewController
-      ?? FlutterViewController(engine: appDelegate.flutterEngine, nibName: nil, bundle: nil)
+      ?? OrientationLockedFlutterViewController(engine: appDelegate.flutterEngine, nibName: nil, bundle: nil)
     let sceneWindow = window ?? UIWindow(windowScene: windowScene)
     sceneWindow.rootViewController = controller
     window = sceneWindow

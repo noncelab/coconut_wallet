@@ -6,7 +6,7 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:provider/provider.dart';
@@ -86,11 +86,11 @@ void main() {
 //   app.main();
 //   await tester.pumpAndSettle();
 
-//   final Finder walletListScreen = find.byType(WalletListScreen);
+//   final Finder walletListScreen = find.byType(HomeScreen);
 //   await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
 //   await tester.pumpAndSettle();
 
-//   final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
+//   final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(HomeScreen)), listen: false);
 
 //   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
 //   await Future.delayed(const Duration(seconds: 2));
@@ -154,11 +154,11 @@ Future<void> validateDuplicatedExternalWalletAddFailed(WidgetTester tester, Wall
   app.main();
   await tester.pumpAndSettle();
 
-  final Finder walletListScreen = find.byType(WalletListScreen);
+  final Finder walletListScreen = find.byType(HomeScreen);
   await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 
-  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
+  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(HomeScreen)), listen: false);
 
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   //walletProvider.setIsNetworkOn(true);
@@ -199,11 +199,11 @@ Future<void> validateDuplicatedCoconutVaultAddFailed(WidgetTester tester, Wallet
   app.main();
   await tester.pumpAndSettle();
 
-  final Finder walletListScreen = find.byType(WalletListScreen);
+  final Finder walletListScreen = find.byType(HomeScreen);
   await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 
-  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
+  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(HomeScreen)), listen: false);
 
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   //walletProvider.setIsNetworkOn(true);

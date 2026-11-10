@@ -29,6 +29,9 @@ class TransactionInputOutputCard extends StatefulWidget {
   /// 내 지갑 중 하나의 주소이고 UTXO가 유효할 때 true. null이면 이동 불가.
   final bool Function(String address, int outputIndex)? isOutputNavigable;
 
+  /// 입력이 없는 이유가 coinbase(채굴 보상)이면 경고 대신 안내 표시
+  final bool isCoinbase;
+
   const TransactionInputOutputCard({
     super.key,
     required this.transaction,
@@ -37,6 +40,7 @@ class TransactionInputOutputCard extends StatefulWidget {
     this.isForTransaction = true,
     this.onOutputTap,
     this.isOutputNavigable,
+    this.isCoinbase = false,
   });
 
   @override
@@ -221,18 +225,18 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                           children: [
                             CoconutLayout.spacing_100h,
                             SvgPicture.asset(
-                              CommonStateIconPath.triangleWarning,
+                              widget.isCoinbase ? CommonStateIconPath.circleInfo : CommonStateIconPath.triangleWarning,
                               width: 14,
-                              colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(_emptyInputColor(context), BlendMode.srcIn),
                             ),
                           ],
                         ),
                         CoconutLayout.spacing_100w,
                         Expanded(
                           child: Text(
-                            t.errors.empty_input,
+                            widget.isCoinbase ? t.transaction_detail_screen.coinbase_input : t.errors.empty_input,
                             softWrap: true,
-                            style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.warning),
+                            style: CoconutTypography.body2_14.copyWith(color: _emptyInputColor(context)),
                           ),
                         ),
                       ],
@@ -308,6 +312,9 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       ),
     );
   }
+
+  Color _emptyInputColor(BuildContext context) =>
+      widget.isCoinbase ? context.coconutColors.secondaryText : context.coconutColors.warning;
 
   Widget _buildAddressList({required List<TransactionAddress> list, required InputOutputRowType rowType}) {
     final filteredEntries = list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();

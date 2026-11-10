@@ -17,7 +17,6 @@ class AppRouteNames {
   static const String hotWalletMnemonicBackupGuide = '/hot-wallet-mnemonic-backup-guide';
   static const String hotWalletPassphraseCheck = '/hot-wallet-passphrase-check';
   static const String hotWalletRestore = '/hot-wallet-restore';
-  static const String mergeUtxos = '/merge-utxos';
   static const String mnemonicWordList = '/mnemonic-word-list';
   static const String mnemonicBackupComplete = '/mnemonic-backup-complete';
   static const String mnemonicBackupConfirm = '/mnemonic-backup-confirm';
@@ -28,7 +27,6 @@ class AppRouteNames {
   static const String send = '/send';
   static const String sendConfirm = '/send-confirm';
   static const String signedPsbtScanner = '/signed-psbt-scanner';
-  static const String splitUtxo = '/split-utxo';
   static const String taprootWalletBackupData = '/taproot-wallet-backup-data';
   static const String transactionDetail = '/transaction-detail';
   static const String transactionList = '/transaction-list';
@@ -40,7 +38,6 @@ class AppRouteNames {
   static const String trezorUsbConnect = '/trezor-usb-connect';
   static const String unsignedTransactionQr = '/unsigned-transaction-qr';
   static const String utxoDetail = '/utxo-detail';
-  static const String utxoList = '/utxo-list';
   static const String utxoOverview = '/utxo-overview';
   static const String utxoOrganizer = '/utxo-organizer';
   static const String utxoSelection = '/utxo-selection';
@@ -50,6 +47,5 @@ class AppRouteNames {
   static const String walletBackupData = '/wallet-backup-data';
   static const String walletDetail = '/wallet-detail';
   static const String walletInfo = '/wallet-info';
-  static const String walletList = '/wallet-list';
   static const String walletResync = '/wallet-resync';
 }

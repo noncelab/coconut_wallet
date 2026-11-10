@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutTextField, CoconutTextFieldStyle, CoconutToast, CoconutToastLevel;
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -15,6 +17,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_photo_crop_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/home/span_size_option.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
@@ -68,76 +71,107 @@ class _WalletAppearanceBody extends StatelessWidget {
             if (!viewModel.isSaving) Navigator.maybePop(context);
           },
         ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                _preview(context, viewModel),
-                CoconutLayout.spacing_300h,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final size in WalletCardSize.values)
-                      SpanSizeOption(
-                        key: Key('wallet-appearance-size-${size.name}'),
-                        columns: size == WalletCardSize.wide ? 4 : 2,
-                        rows: 2,
-                        isSelected: viewModel.previewSize == size,
-                        onTap: () => viewModel.selectPreviewSize(size),
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Keep the original card size while a full picker row and the fixed button fit.
+              // Width alone makes the open Duo preview consume the entire editor height.
+              final hasSideInset = SideSafeArea.insetsOf(context).horizontal > 0;
+              final rowHeight = (constraints.maxWidth - _horizontalPadding * 2 - 12 * 4) / 5;
+              final maxPreviewSide = math.max(
+                0.0,
+                constraints.maxHeight - (8 + 12 + 44 + 16 + _WallpaperTabBar.heightOf(context) + 24 + rowHeight + 120),
+              );
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      _preview(context, viewModel, hasSideInset ? maxPreviewSide : double.infinity),
+                      CoconutLayout.spacing_300h,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (final size in WalletCardSize.values)
+                            SpanSizeOption(
+                              key: Key('wallet-appearance-size-${size.name}'),
+                              columns: size == WalletCardSize.wide ? 4 : 2,
+                              rows: 2,
+                              isSelected: viewModel.previewSize == size,
+                              onTap: () => viewModel.selectPreviewSize(size),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
-                CoconutLayout.spacing_400h,
-                _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
-                    padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
-                    child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                      CoconutLayout.spacing_400h,
+                      _WallpaperTabBar(tabs: viewModel.tabs, selected: viewModel.tab, onSelected: viewModel.selectTab),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          key: PageStorageKey('wallet-appearance-tab-body-${viewModel.tab.name}'),
+                          padding: const EdgeInsets.fromLTRB(_horizontalPadding, 24, _horizontalPadding, 120),
+                          child: SizedBox(width: double.infinity, child: _TabBody(viewModel: viewModel)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FixedBottomButton(
-                text: t.complete,
-                isActive: viewModel.canSave,
-                onButtonClicked: () async {
-                  await viewModel.save();
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-            ),
-          ],
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: FixedBottomButton(
+                      text: t.complete,
+                      isVisibleAboveKeyboard: false,
+                      isActive: viewModel.canSave,
+                      onButtonClicked: () async {
+                        await viewModel.save();
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _preview(BuildContext context, WalletAppearanceViewModel viewModel) {
+  Widget _preview(BuildContext context, WalletAppearanceViewModel viewModel, double maxSide) {
     final width = MediaQuery.sizeOf(context).width - _horizontalPadding * 2;
-    final side = (width - _cardGap) / 2;
+    final originalSide = (width - _cardGap) / 2;
+    final side = math.min(originalSide, maxSide);
     final isWide = viewModel.previewSize == WalletCardSize.wide;
-    final size = Size(isWide ? width : side, side);
+    final size = Size(isWide ? width : originalSide, originalSide);
+    final previewScale = MediaQuery.viewInsetsOf(context).bottom > 0 ? 0.6 : 1.0;
     final photo = viewModel.photo;
     final card = AnimatedContainer(
       key: const Key('wallet-appearance-preview'),
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
-      width: size.width,
-      height: size.height,
+      width: size.width * previewScale,
+      height: size.height * previewScale,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), boxShadow: WalletCard.elevationOf(context)),
-      child: WalletCard(
-        wallet: viewModel.wallet,
-        appearance: viewModel.appearance,
-        size: viewModel.previewSize,
-        displayName: viewModel.name.trim().isEmpty ? null : viewModel.name.trim(),
-        balanceDisplay: viewModel.balanceText,
-        backgroundPhoto: photo == null ? null : viewModel.photoFileOf(photo),
+      child: FittedBox(
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: WalletCard(
+            wallet: viewModel.wallet,
+            appearance: viewModel.appearance,
+            size: viewModel.previewSize,
+            displayName: viewModel.name.trim().isEmpty ? null : viewModel.name.trim(),
+            balanceDisplay: viewModel.balanceText,
+            backgroundPhoto: photo == null ? null : viewModel.photoFileOf(photo),
+          ),
+        ),
       ),
     );
-    return Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: card));
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Center(
+        child:
+            side == originalSide ? card : SizedBox(height: side, child: FittedBox(fit: BoxFit.scaleDown, child: card)),
+      ),
+    );
   }
 }
 
@@ -147,6 +181,17 @@ class _WallpaperTabBar extends StatelessWidget {
   final ValueChanged<WalletAppearanceTab> onSelected;
 
   const _WallpaperTabBar({required this.tabs, required this.selected, required this.onSelected});
+
+  static double heightOf(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(text: 'Ag', style: CoconutTypography.heading4_18_Bold),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final height = painter.height + 10 + 3 + 1;
+    painter.dispose();
+    return height;
+  }
 
   String _label(WalletAppearanceTab tab) => switch (tab) {
     WalletAppearanceTab.wallet => t.wallet_appearance_screen.wallet_tab,

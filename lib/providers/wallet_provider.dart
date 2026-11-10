@@ -26,7 +26,7 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
+import 'package:coconut_wallet/utils/migration/taproot_legacy_inheritance_migration.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -411,14 +411,14 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  ({WatchOnlyWallet wallet, bool changed}) _migrateTaprootOlderToAfter(WatchOnlyWallet wallet) {
-    if (!wallet.isTaproot) return (wallet: wallet, changed: false);
+  ({WatchOnlyWallet wallet, bool hasOlder}) _migrateTaprootLegacyInheritance(WatchOnlyWallet wallet) {
+    if (!wallet.isTaproot) return (wallet: wallet, hasOlder: false);
 
-    final result = TaprootOlderToAfterMigration.migrate(
+    final result = TaprootLegacyInheritanceMigration.migrate(
       descriptor: wallet.descriptor,
       scriptPathSeedInfos: wallet.scriptPathSeedInfos ?? const [],
     );
-    if (!result.hasChanges) return (wallet: wallet, changed: false);
+    if (!result.hasChanges) return (wallet: wallet, hasOlder: false);
 
     return (
       wallet: WatchOnlyWallet(
@@ -433,7 +433,7 @@ class WalletProvider extends ChangeNotifier {
         scriptPathSeedInfos: result.scriptPathSeedInfos,
         createdAtInVault: wallet.createdAtInVault,
       ),
-      changed: true,
+      hasOlder: result.hasOlder,
     );
   }
 
@@ -447,7 +447,7 @@ class WalletProvider extends ChangeNotifier {
     WatchOnlyWallet watchOnlyWallet, {
     bool allowExistingHotWallet = false,
   }) async {
-    final migration = _migrateTaprootOlderToAfter(watchOnlyWallet);
+    final migration = _migrateTaprootLegacyInheritance(watchOnlyWallet);
     watchOnlyWallet = migration.wallet;
     final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
@@ -513,7 +513,7 @@ class WalletProvider extends ChangeNotifier {
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     final newWallet = await _addNewWallet(watchOnlyWallet);
-    if (migration.changed) {
+    if (migration.hasOlder) {
       await addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(newWallet.id);
     }
 
