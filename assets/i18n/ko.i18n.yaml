@@ -367,6 +367,7 @@ wallet_stack_list:
   single_sig: "단일 서명"
   multisig: "다중 서명"
   inheritance: "상속"
+  inheritance_wallet: "상속 지갑"
 home_widgets:
   hot_wallet_stack: "핫월렛"
   all_wallet_stack: "모든 지갑"

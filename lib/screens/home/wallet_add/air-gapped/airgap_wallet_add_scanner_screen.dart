@@ -717,7 +717,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
+      errorMessage = t.alert.invalid_qr;
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }

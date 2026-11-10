@@ -366,6 +366,7 @@ wallet_stack_list:
   single_sig: "シングルシグ"
   multisig: "マルチシグ"
   inheritance: "相続"
+  inheritance_wallet: "相続ウォレット"
 home_widgets:
   hot_wallet_stack: "ホットウォレット"
   all_wallet_stack: "すべてのウォレット"

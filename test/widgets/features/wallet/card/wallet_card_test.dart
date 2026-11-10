@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
@@ -134,6 +135,17 @@ void main() {
     await _pump(tester, WalletMock.createMultiSigWalletItem(), WalletCardSize.wide);
 
     expect(find.byKey(const Key('wallet-card-mfp')), findsNothing);
+  });
+
+  testWidgets('inheritance wallet shows the inheritance label instead of an MFP', (tester) async {
+    for (final size in WalletCardSize.values) {
+      await _pump(tester, WalletMock.createTaprootWalletItem(), size);
+
+      final label = find.byKey(const Key('wallet-card-inheritance'));
+      expect(label, findsOneWidget);
+      expect(tester.widget<Text>(label).data, t.wallet_stack_list.inheritance_wallet);
+      expect(find.byKey(const Key('wallet-card-mfp')), findsNothing);
+    }
   });
 
   for (final size in WalletCardSize.values) {
