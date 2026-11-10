@@ -702,7 +702,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     ];
   }
 
-  /// 위급 Premium 자리: 준비된 비상 이동(구독이 끝나도 쓸 수 있다) → 지금 이동 / Premium → 대응 준비 / Free → 비트코인 보호하기
+  /// 위급 Premium 자리: 준비된 비상 이동(구독이 끝나도 쓸 수 있다) → 지금 이동 / 구독 확인 중 → 확인 중 안내 /
+  /// Premium → 대응 준비 / Free → 비트코인 보호하기
   /// 카드가 있으면 아래 32 여백까지(없으면 "다른 점검"이 바로 온다)
   Widget _criticalPremium(SafetyIncident incident) {
     Widget card(BuildContext context, PremiumState? premium) {
@@ -739,6 +740,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
       );
     }
     if (premium == null) return null;
+    // 구독 확인 중인 구독자에게 판매 카드("Premium 알아보기")를 보이지 않는다(M04). 확인이 끝나면 위·아래 카드로 바뀐다
+    if (premium.status == PremiumStatus.verifying) return const _PremiumVerifyingCard();
     if (premium.isActive) {
       return PremiumActionCard(
         key: const Key('wallet-health-assist-card'),
@@ -749,6 +752,54 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
       );
     }
     return WalletHealthPremiumCard(critical: true, onTap: () => PremiumPaywallScreen.open(context));
+  }
+}
+
+/// 위급 Premium 자리의 "구독 확인 중" 카드(t3 P-03). 누를 곳이 없고, 거래 검토와 무료 대응은 그대로 쓸 수 있다고 알린다
+class _PremiumVerifyingCard extends StatelessWidget {
+  const _PremiumVerifyingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final card = t.premium.card;
+    return SafetyListCard(
+      key: const Key('wallet-health-premium-verifying'),
+      rows: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: safetyTitleLineTop(context, 20, tallest: 20)),
+                child: const PremiumMark(size: 20, muted: true),
+              ),
+              CoconutLayout.spacing_200w,
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: safetyTitleLineShift(context, 20)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        safetyKoText(card.verifying_title),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                      ),
+                      CoconutLayout.spacing_50h,
+                      Text(
+                        safetyKoText(card.verifying_body),
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

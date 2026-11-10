@@ -2823,6 +2823,8 @@ premium:
     active_body: "Wird ein Problem gefunden, bereitet Coconut die Reaktion für dich vor."
     prepare_response: "Reaktion vorbereiten"
     active_incident_body: "Reaktionsanalyse verfügbar"
+    verifying_title: "Abo wird geprüft"
+    verifying_body: "Du kannst die Transaktion weiter prüfen und die kostenlose Reaktion nutzen."
   incident_chip:
     body: "Premium bereitet eine neue Wallet und die Transfer-Transaktion für dich vor"
   rescue:

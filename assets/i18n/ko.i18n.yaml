@@ -2824,6 +2824,8 @@ premium:
     active_body: "문제가 발견되면 대응 거래를 자동으로 준비해요."
     prepare_response: "대응 준비하기"
     active_incident_body: "대응 분석을 시작할 수 있어요"
+    verifying_title: "구독을 확인하고 있어요"
+    verifying_body: "거래 검토와 무료 대응은 계속할 수 있어요."
   incident_chip:
     body: "새 지갑과 이동 거래를 자동으로 준비해요"
   rescue:

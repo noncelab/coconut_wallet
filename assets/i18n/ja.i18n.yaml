@@ -2815,6 +2815,8 @@ premium:
     active_body: "問題が見つかったときに、対応トランザクションを自動で準備します。"
     prepare_response: "対応を準備"
     active_incident_body: "対応の分析を始められます"
+    verifying_title: "サブスクリプションを確認しています"
+    verifying_body: "トランザクションの確認と無料の対応は続けられます。"
   incident_chip:
     body: "新しいウォレットと移動トランザクションを自動で準備します"
   rescue:

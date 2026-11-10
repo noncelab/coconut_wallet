@@ -747,6 +747,33 @@ void main() {
     expect(_text(t.premium.card.prepare_response), findsOneWidget);
   });
 
+  // M04: 구독 확인 중(verifying)인 구독자에게 위급(S3) 화면이 무료 판매 카드("Premium 알아보기")를 보이지 않는다.
+  // 대신 누를 곳 없는 중립 "구독 확인 중" 카드. 준비된 비상 이동 초안이 있으면 그 카드가 그대로다
+  testWidgets('S3 while the subscription is verifying: a neutral checking card, not the sales card', (tester) async {
+    const verifyingPremium = PremiumState(PremiumStatus.verifying);
+    final verifying = find.byKey(const Key('wallet-health-premium-verifying'));
+    await _pump(tester, criticalReport(), premium: verifyingPremium, rescue: FakeRescueReady());
+    expect(verifying, findsOneWidget);
+    expect(find.descendant(of: verifying, matching: find.byType(PremiumMark)), findsOneWidget);
+    expect(find.descendant(of: verifying, matching: find.byType(Text)), findsNWidgets(2));
+    expect(_premiumCard, findsNothing);
+    expect(_text(t.premium.card.explore), findsNothing);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('wallet-health-critical-review'))).dy,
+      lessThan(tester.getTopLeft(verifying).dy),
+    );
+
+    await _pump(
+      tester,
+      criticalReport(),
+      premium: verifyingPremium,
+      rescue: FakeRescueReady(statuses: {1: RescueStatus.ready}, drafts: {1: readyDraft()}),
+    );
+    expect(find.byKey(const Key('wallet-health-rescue-card')), findsOneWidget);
+    expect(verifying, findsNothing);
+    expect(_premiumCard, findsNothing);
+  });
+
   testWidgets('S3 without an incident: server identity change shows the server card and [인증서 검토]', (tester) async {
     final report = WalletHealthReport(
       status: WalletHealthStatus.criticalOverride,
