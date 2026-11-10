@@ -819,7 +819,7 @@ class _CriticalCheckCard extends StatelessWidget {
   }
 }
 
-/// 위급 사건 거래. 잔액 숨김·가짜 잔액이면 금액 없이 지갑 이름과 발견 시각만
+/// 위급 사건 거래. 가짜 잔액이면 금액 없이 지갑 이름과 발견 시각만
 class _IncidentCard extends StatelessWidget {
   const _IncidentCard({required this.incident});
 
@@ -831,7 +831,7 @@ class _IncidentCard extends StatelessWidget {
     final preferences = context.watch<PreferenceProvider?>();
     final tx = context.read<WalletProvider?>()?.getTransactionRecord(incident.walletId, incident.txid);
     void open() => openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid, autoReview: false);
-    final hideAmount = preferences == null || preferences.isBalanceHidden || preferences.isFakeBalanceActive;
+    final hideAmount = preferences == null || preferences.isFakeBalanceActive;
     if (tx != null && !hideAmount) {
       return TransactionItemCard(
         key: const Key('wallet-health-incident-card'),
@@ -858,7 +858,7 @@ class _IncidentCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 금액 대신 "보낸 거래"(잔액 숨김을 따른다)
+                      // 금액 대신 "보낸 거래"(가짜 잔액을 따른다)
                       Text(
                         safetyKoText(t.wallet_health.critical.sent_transaction),
                         style: CoconutTypography.body2_14.setColor(colors.primaryText),

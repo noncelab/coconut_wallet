@@ -569,7 +569,7 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
           CoconutLayout.spacing_300h,
           row(
             t.premium.assist.remaining_bitcoin,
-            // 잔액 숨김·가짜 잔액이면 실제 금액을 보이지 않는다(H1)
+            // 가짜 잔액이면 실제 금액을 보이지 않는다(H1)
             safetyHidesAmounts(context)
                 ? t.premium.assist.hidden
                 : unit.displayBitcoinAmount(remainingSats, withUnit: true),

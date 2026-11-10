@@ -121,10 +121,10 @@ String safetyShortFingerprint(String fingerprint) {
   return hex.length <= 8 ? hex : '${hex.substring(0, 8)}…';
 }
 
-/// 잔액 숨김·가짜 잔액이거나 설정을 모르면 실제 금액과 주소를 보이지 않는다(사건 카드·지갑 기여·검토 시트 공용)
+/// 가짜 잔액이거나 설정을 모르면 실제 금액과 주소를 보이지 않는다(사건 카드·지갑 기여·검토 시트 공용). 옛 잔액 숨김은 따르지 않는다(M28)
 bool safetyHidesAmounts(BuildContext context) {
   final preferences = context.watch<PreferenceProvider?>();
-  return preferences == null || preferences.isBalanceHidden || preferences.isFakeBalanceActive;
+  return preferences == null || preferences.isFakeBalanceActive;
 }
 
 /// 앱이 아는 지갑. WalletProvider가 없거나(위젯 테스트) 지워진 지갑이면 null

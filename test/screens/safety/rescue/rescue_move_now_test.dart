@@ -73,6 +73,9 @@ class _Preferences extends Fake implements PreferenceProvider {
 
   @override
   bool get isBalanceHidden => true;
+
+  @override
+  bool get isFakeBalanceActive => false;
 }
 
 class _TxRepo extends Fake implements TransactionRepository {

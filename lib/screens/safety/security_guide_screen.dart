@@ -415,7 +415,7 @@ class _Submitted extends StatelessWidget {
               ),
       children: [
         if (record != null && broadcast != null)
-          // 잔액 숨김·가짜 잔액이거나 설정을 모르면 금액 없이 "보낸 거래 · 지갑 이름"(안전 화면 공용 규칙)
+          // 가짜 잔액이거나 설정을 모르면 금액 없이 "보낸 거래 · 지갑 이름"(안전 화면 공용 규칙)
           if (preferences == null || safetyHidesAmounts(context))
             SafetyChoiceRow(
               key: const Key('safety-guide-submitted-tx'),

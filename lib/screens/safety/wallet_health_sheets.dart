@@ -872,7 +872,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     final r = t.wallet_health.review;
     final walletId = item.walletId;
     final count = item.count ?? 0;
-    // 잔액 숨김·가짜 잔액이면 실제 금액과 주소 조각을 보이지 않는다(설명과 동작은 그대로)
+    // 가짜 잔액이면 실제 금액과 주소 조각을 보이지 않는다(설명과 동작은 그대로)
     final hidden = safetyHidesAmounts(context);
     void close() => Navigator.pop(context);
 
@@ -1138,7 +1138,7 @@ class _AddressRow extends StatelessWidget {
 class _UtxoRow extends StatelessWidget {
   const _UtxoRow({required this.amount, required this.date, required this.onTap, this.label});
 
-  /// null = 숨김(잔액 숨김·가짜 잔액)
+  /// null = 숨김(가짜 잔액)
   final int? amount;
   final DateTime date;
   final VoidCallback onTap;

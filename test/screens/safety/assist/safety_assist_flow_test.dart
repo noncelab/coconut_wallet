@@ -1110,10 +1110,10 @@ void main() {
     });
   });
 
-  group('H1: 잔액 숨김·가짜 잔액이면 Assist에 실제 금액을 보이지 않음(safetyHidesAmounts)', () {
-    for (final (mode, hidden, fake) in const [('표시', false, false), ('가짜 잔액', false, true), ('잔액 숨김', true, false)]) {
+  group('H1: 가짜 잔액이면 Assist에 실제 금액을 보이지 않음(safetyHidesAmounts), 옛 잔액 숨김은 따르지 않음(M28)', () {
+    for (final (mode, hidden, fake) in const [('표시', false, false), ('가짜 잔액', false, true), ('옛 잔액 숨김', true, false)]) {
       testWidgets(mode, (tester) async {
-        final shows = !hidden && !fake;
+        final shows = !fake;
         final env = await pump(
           tester,
           utxos: [

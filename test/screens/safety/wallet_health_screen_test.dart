@@ -1,15 +1,19 @@
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_sheets.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
@@ -18,6 +22,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -27,6 +32,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../mock/transaction_record_mock.dart';
 import '../../mock/wallet_mock.dart';
 import 'wallet_health_fixtures.dart';
 
@@ -95,6 +101,20 @@ final _wallets = [
   WalletMock.createSingleSigWalletItem(id: 1, name: 'Daily'),
   WalletMock.createSingleSigWalletItem(id: 2, name: 'Savings'),
 ];
+
+/// 사건 거래 기록도 아는 지갑 목록(위급 카드가 거래 줄을 그릴 수 있다)
+class _WalletsWithRecord extends FakeWallets {
+  _WalletsWithRecord() : super(_wallets);
+
+  @override
+  TransactionRecord? getTransactionRecord(int walletId, String transactionHash) =>
+      TransactionRecordMock.createMockTransactionRecord(
+        transactionHash: transactionHash,
+        amount: -50000,
+        inputAddressList: [TransactionAddress('bc1qinput', 60141)],
+        outputAddressList: [TransactionAddress('bc1qrecipient', 50000), TransactionAddress('bc1qchange', 10000)],
+      );
+}
 
 Finder _inGauge(String text) => find.descendant(of: find.byType(HealthGauge), matching: _text(text));
 
@@ -270,7 +290,8 @@ void main() {
     expect(_text(t.wallet_health.summary.check_again), findsOneWidget);
   });
 
-  group('C1: review sheets follow balance hide / fake balance', () {
+  // M28: 옛 잔액 숨김(IS_BALANCE_HIDDEN)은 따르지 않고 가짜 잔액만 금액을 가린다
+  group('C1: review sheets follow fake balance, not the legacy balance hide', () {
     final dust = UtxoState(
       transactionHash: 'd' * 64,
       index: 0,
@@ -336,21 +357,25 @@ void main() {
       expect(_textContaining('1,000'), findsOneWidget);
       // 남은 개수 글은 없다(줄이 보여 준다)
       expect(_text(t.wallet_health.review.address_reuse.utxos_left(n: 7)), findsNothing);
-      // 숨김이면 금액 대신 "숨김", 동작은 그대로
-      await open(tester, reuseCheck, FakePreferences(isBalanceHidden: true), utxos: left);
+      // 가짜 잔액이면 금액 대신 "숨김", 동작은 그대로
+      await open(tester, reuseCheck, FakePreferences(isFakeBalanceActive: true), utxos: left);
       expect(_textContaining('1,000'), findsNothing);
       expect(find.descendant(of: sheet, matching: _text(t.premium.assist.hidden)), findsNWidgets(5));
     });
 
-    testWidgets('visible: dust amount and reused addresses are shown', (tester) async {
-      await open(tester, dustCheck, FakePreferences());
-      expect(_textContaining('546'), findsOneWidget);
-      await open(tester, reuseCheck, FakePreferences());
-      expect(_textContaining('bc1qreuse000'), findsNWidgets(2));
-    });
+    for (final (mode, preferences) in [
+      ('visible', FakePreferences()),
+      ('legacy hidden balance', FakePreferences(isBalanceHidden: true)),
+    ]) {
+      testWidgets('$mode: dust amount and reused addresses are shown', (tester) async {
+        await open(tester, dustCheck, preferences);
+        expect(_textContaining('546'), findsOneWidget);
+        await open(tester, reuseCheck, preferences);
+        expect(_textContaining('bc1qreuse000'), findsNWidgets(2));
+      });
+    }
 
     for (final (mode, preferences) in [
-      ('hidden balance', FakePreferences(isBalanceHidden: true)),
       ('fake balance', FakePreferences(isFakeBalanceActive: true)),
       ('no preference provider', null),
     ]) {
@@ -367,6 +392,25 @@ void main() {
       });
     }
   });
+
+  // M28: 위급 카드는 옛 잔액 숨김이어도 보낸 금액을 보이고, 가짜 잔액이면 금액 없이 "보낸 거래"
+  for (final (mode, preferences, shows) in [
+    ('legacy hidden balance', FakePreferences(isBalanceHidden: true), true),
+    ('fake balance', FakePreferences(isFakeBalanceActive: true), false),
+  ]) {
+    testWidgets('$mode: the incident card ${shows ? 'shows' : 'hides'} the sent amount', (tester) async {
+      await pumpWalletHealthApp(
+        tester,
+        const WalletHealthScreen(),
+        report: criticalReport(),
+        preferences: preferences,
+        extra: [ChangeNotifierProvider<WalletProvider>.value(value: _WalletsWithRecord())],
+      );
+      expect(tester.widget(find.byKey(const Key('wallet-health-incident-card'))) is TransactionItemCard, shows);
+      expect(_text(BitcoinUnit.btc.displayBitcoinAmount(-50000)), shows ? findsOneWidget : findsNothing);
+      expect(_text(t.wallet_health.critical.sent_transaction), shows ? findsNothing : findsOneWidget);
+    });
+  }
 
   testWidgets('C2: an incident plus a critical certificate change keeps the certificate actionable', (tester) async {
     final base = criticalReport();

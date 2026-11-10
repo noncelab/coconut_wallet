@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 /// 안전 화면의 지갑 카드(가이드·Assist 공용, POLISH H1): Epic 2 WalletCard wide, 4×2 홈 타일 높이.
-/// 잔액은 앱 잔액 표시 설정을 따른다(숨김이면 없음, 가짜 잔액이면 가짜 금액, 실제 잔액은 안 보임).
+/// 잔액은 가짜 잔액이면 가짜 금액(실제 잔액은 안 보임), 아니면 실제 잔액. 옛 잔액 숨김은 따르지 않는다(M28).
 /// 높이가 고정이라 홈 타일과 같은 배율에서 글자 확대를 멈춘다(GPT M4)
 class SafetyWalletCard extends StatelessWidget {
   const SafetyWalletCard({super.key, required this.walletId, this.animateBadge = false});
@@ -30,7 +30,7 @@ class SafetyWalletCard extends StatelessWidget {
     if (wallets == null || wallet == null) return const SizedBox.shrink();
     final preferences = context.watch<PreferenceProvider?>();
     String? balance;
-    if (preferences != null && !preferences.isBalanceHidden) {
+    if (preferences != null) {
       final sats =
           preferences.isFakeBalanceActive
               ? preferences.getFakeBalance(walletId).round()

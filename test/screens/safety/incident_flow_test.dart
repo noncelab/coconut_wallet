@@ -349,10 +349,10 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // R1-M3: 잔액 숨김·가짜 잔액·설정 없음이면 사실 상자(금액·받는 주소)를 통째로 뺀다
+  // R1-M3: 가짜 잔액·설정 없음이면 사실 상자(금액·받는 주소)를 통째로 뺀다. 옛 잔액 숨김은 따르지 않는다(M28)
   final privacy = [
     ('normal', FakePreferences(), true),
-    ('hidden balance', FakePreferences(isBalanceHidden: true), false),
+    ('legacy hidden balance', FakePreferences(isBalanceHidden: true), true),
     ('fake balance', FakePreferences(isFakeBalanceActive: true), false),
     ('no preference provider', null, false),
   ];

@@ -293,7 +293,7 @@ class _RecognizeSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: CoconutTypography.body2_14.setColor(colors.secondaryText),
           ),
-          // 잔액 숨김·가짜 잔액이거나 설정을 모르면 금액·주소를 보이지 않는다(안전 화면 공용 규칙)
+          // 가짜 잔액이거나 설정을 모르면 금액·주소를 보이지 않는다(안전 화면 공용 규칙)
           if (facts != null && !safetyHidesAmounts(context)) ...[CoconutLayout.spacing_400h, _FactsBox(facts: facts!)],
           CoconutLayout.spacing_500h,
           SafetyChoiceRow(

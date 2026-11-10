@@ -317,12 +317,14 @@ void main() {
               2: {kRecipient},
             },
           ),
-          // 금액 없는 요약 줄(앱 공용 TransactionItemCard는 2.0배·320dp에서 따로 넘친다: 리드에 보고)
-          preferences: FakePreferences(isBalanceHidden: true),
+          // 가짜 잔액: 금액 없는 요약 줄. 옛 잔액 숨김(거래 카드)의 2.0배 경우는 develop의 카드 글자 배율 상한이 epic3에 합쳐진 뒤 추가한다
+          preferences: FakePreferences(isFakeBalanceActive: true),
         ),
       );
       await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
       expect(find.byKey(const Key('safety-guide-back-up-now')), findsOneWidget);
+      expect(find.byType(TransactionItemCard), findsNothing);
+      expect(findText(t.wallet_health.critical.sent_transaction), findsOneWidget);
       final scroll = find.descendant(
         of: find.byKey(const Key('safety-guide-submitted')),
         matching: find.byType(SingleChildScrollView),
@@ -336,10 +338,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    // R1-M3: 보낸 거래 요약도 잔액 숨김·가짜 잔액·설정 없음이면 금액 없이 "보낸 거래 · 지갑 이름"
+    // R1-M3: 보낸 거래 요약도 가짜 잔액·설정 없음이면 금액 없이 "보낸 거래 · 지갑 이름". 옛 잔액 숨김은 따르지 않는다(M28)
     final privacy = [
       ('normal', FakePreferences(), true),
-      ('hidden balance', FakePreferences(isBalanceHidden: true), false),
+      ('legacy hidden balance', FakePreferences(isBalanceHidden: true), true),
       ('fake balance', FakePreferences(isFakeBalanceActive: true), false),
       ('no preference provider', null, false),
     ];

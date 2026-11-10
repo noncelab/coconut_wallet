@@ -275,10 +275,11 @@ void main() {
     }
   });
 
-  // D22: 사건 줄에 보낸 금액(안전 화면 공용 규칙으로 숨김), "발견 · N분 전"은 둘째 줄
+  // D22: 사건 줄에 보낸 금액(안전 화면 공용 규칙으로 숨김), "발견 · N분 전"은 둘째 줄. 옛 잔액 숨김은 따르지 않는다(M28)
   for (final (label, preferences, shows) in [
     ('visible', FakePreferences(), true),
-    ('hidden balance', FakePreferences(isBalanceHidden: true), false),
+    ('legacy hidden balance', FakePreferences(isBalanceHidden: true), true),
+    ('fake balance', FakePreferences(isFakeBalanceActive: true), false),
   ]) {
     testWidgets('an incident row shows the sent amount ($label) and the detected time on its own line', (tester) async {
       usePhoneSize(tester);

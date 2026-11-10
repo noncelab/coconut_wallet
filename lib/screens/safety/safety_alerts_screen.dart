@@ -189,7 +189,7 @@ class _IncidentRow extends StatelessWidget {
       ),
     };
     final walletName = incidentWalletOf(context, incident.walletId)?.name;
-    // 보낸 금액(잔액 숨김·가짜 잔액이거나 설정·거래 기록을 모르면 뺀다, 안전 화면 공용 규칙)
+    // 보낸 금액(가짜 잔액이거나 설정·거래 기록을 모르면 뺀다, 안전 화면 공용 규칙)
     final record = context.read<WalletProvider?>()?.getTransactionRecord(incident.walletId, incident.txid);
     final unit = context.read<PreferenceProvider?>()?.currentUnit;
     final amount =
