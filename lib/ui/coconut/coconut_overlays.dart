@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' show pi;
+import 'dart:math' show max, pi;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 enum CoconutToastLevel {
@@ -759,6 +760,8 @@ class _CoconutPopupState extends State<CoconutPopup> {
     final descriptionStyle =
         widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
         CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
+    final descriptionPadding =
+        widget.descriptionPadding ?? const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12);
     final checkboxTextStyle = widget.checkboxTextStyle ?? CoconutTypography.body3_12;
     final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryTextStrong;
     final checkboxTextPressingColor =
@@ -769,160 +772,179 @@ class _CoconutPopupState extends State<CoconutPopup> {
         color: widget.backgroundColor ?? colors.popupBackground,
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
-      child: IntrinsicHeight(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: widget.titlePadding ?? const EdgeInsets.only(top: 24, bottom: 12),
-              child:
-                  widget.wrapTitleByWords
-                      ? Semantics(
-                        label: widget.title,
-                        container: true,
-                        child: ExcludeSemantics(
-                          child: Wrap(
-                            alignment: widget.centerTitle ? WrapAlignment.center : WrapAlignment.start,
-                            spacing: (titleStyle.fontSize ?? 18) * 0.25,
-                            children: [
-                              for (final word in widget.title.split(RegExp(r'\s+'))) Text(word, style: titleStyle),
-                            ],
-                          ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: widget.titlePadding ?? const EdgeInsets.only(top: 24, bottom: 12),
+            child:
+                widget.wrapTitleByWords
+                    ? Semantics(
+                      label: widget.title,
+                      container: true,
+                      child: ExcludeSemantics(
+                        child: Wrap(
+                          alignment: widget.centerTitle ? WrapAlignment.center : WrapAlignment.start,
+                          spacing: (titleStyle.fontSize ?? 18) * 0.25,
+                          children: [
+                            for (final word in widget.title.split(RegExp(r'\s+'))) Text(word, style: titleStyle),
+                          ],
                         ),
-                      )
-                      : Text(
-                        _keepWords(widget.title),
-                        semanticsLabel: widget.title,
-                        style: titleStyle,
-                        textAlign: widget.centerTitle ? TextAlign.center : null,
                       ),
-            ),
-            Container(
-              alignment: Alignment.topCenter,
-              padding: widget.descriptionPadding ?? const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12),
-              constraints: const BoxConstraints(minHeight: 66),
-              child:
-                  widget.descriptionSpan != null
-                      ? RichText(
-                        text: TextSpan(style: descriptionStyle, children: [_keepWordsInSpan(widget.descriptionSpan!)]),
-                        textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
-                        textScaler:
-                            widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context),
-                      )
-                      : widget.wrapDescriptionByWords
-                      ? Semantics(
-                        label: widget.description,
-                        container: true,
-                        child: ExcludeSemantics(
-                          child: Wrap(
-                            alignment: widget.centerDescription ? WrapAlignment.center : WrapAlignment.start,
-                            spacing: (descriptionStyle.fontSize ?? 16) * 0.25,
-                            children: [
-                              for (final word in widget.description.split(RegExp(r'\s+')))
-                                Text(word, style: descriptionStyle),
-                            ],
-                          ),
-                        ),
-                      )
-                      : Text(
-                        _keepWords(widget.description),
-                        semanticsLabel: widget.description,
-                        textAlign: widget.centerDescription ? TextAlign.center : null,
-                        style: descriptionStyle,
-                      ),
-            ),
-            if (widget.checkboxText != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    CoconutCheckbox(
-                      isSelected: widget.isCheckboxSelected,
-                      color: colors.iconPrimary,
-                      unSelectedColor: colors.iconPrimary,
-                      inactiveColor: colors.iconDisabled,
-                      onChanged: (value) => widget.onCheckboxChanged?.call(value),
+                    )
+                    : Text(
+                      _keepWords(widget.title),
+                      semanticsLabel: widget.title,
+                      style: titleStyle,
+                      textAlign: widget.centerTitle ? TextAlign.center : null,
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          setState(() => _isCheckboxTextPressing = false);
-                          widget.onCheckboxChanged?.call(!widget.isCheckboxSelected);
-                        },
-                        onTapCancel: () => setState(() => _isCheckboxTextPressing = false),
-                        onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
-                        child: Text(
-                          _keepWords(widget.checkboxText!),
-                          semanticsLabel: widget.checkboxText,
-                          style: checkboxTextStyle.setColor(
-                            _isCheckboxTextPressing ? checkboxTextPressingColor : checkboxTextColor,
-                          ),
-                        ),
-                      ),
+          ),
+          // 설명이 길어도 제목과 버튼은 고정하고 설명 영역만 스크롤한다
+          // 위아래 패딩은 스크롤 밖에 두어, 스크롤 중에도 제목·체크박스와의 간격을 유지한다
+          Flexible(
+            child: Padding(
+              padding: EdgeInsets.only(top: descriptionPadding.top, bottom: descriptionPadding.bottom),
+              // 더 볼 내용이 있는 쪽 가장자리만 흐리게 해서 스크롤할 수 있다는 걸 알려준다
+              child: ScrollEdgeFade(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(left: descriptionPadding.left, right: descriptionPadding.right),
+                  child: ConstrainedBox(
+                    // 기존 설명 영역 최소 높이 66(패딩 포함)을 유지
+                    constraints: BoxConstraints(minHeight: max(0, 66 - descriptionPadding.vertical)),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child:
+                          widget.descriptionSpan != null
+                              ? RichText(
+                                text: TextSpan(
+                                  style: descriptionStyle,
+                                  children: [_keepWordsInSpan(widget.descriptionSpan!)],
+                                ),
+                                textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
+                                textScaler:
+                                    widget.useFixedFontSize
+                                        ? const TextScaler.linear(1)
+                                        : MediaQuery.textScalerOf(context),
+                              )
+                              : widget.wrapDescriptionByWords
+                              ? Semantics(
+                                label: widget.description,
+                                container: true,
+                                child: ExcludeSemantics(
+                                  child: Wrap(
+                                    alignment: widget.centerDescription ? WrapAlignment.center : WrapAlignment.start,
+                                    spacing: (descriptionStyle.fontSize ?? 16) * 0.25,
+                                    children: [
+                                      for (final word in widget.description.split(RegExp(r'\s+')))
+                                        Text(word, style: descriptionStyle),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              : Text(
+                                _keepWords(widget.description),
+                                semanticsLabel: widget.description,
+                                textAlign: widget.centerDescription ? TextAlign.center : null,
+                                style: descriptionStyle,
+                              ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            Row(
-              children: [
-                if (widget.onTapLeft != null)
-                  Expanded(
+            ),
+          ),
+          if (widget.checkboxText != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CoconutCheckbox(
+                    isSelected: widget.isCheckboxSelected,
+                    color: colors.iconPrimary,
+                    unSelectedColor: colors.iconPrimary,
+                    inactiveColor: colors.iconDisabled,
+                    onChanged: (value) => widget.onCheckboxChanged?.call(value),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
                     child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        setState(() => _isLeftButtonPressing = false);
-                        widget.onTapLeft?.call();
+                        setState(() => _isCheckboxTextPressing = false);
+                        widget.onCheckboxChanged?.call(!widget.isCheckboxSelected);
                       },
-                      onTapCancel: () => setState(() => _isLeftButtonPressing = false),
-                      onTapDown: (_) => setState(() => _isLeftButtonPressing = true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        color:
-                            _isLeftButtonPressing
-                                ? colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity)
-                                : Colors.transparent,
-                        alignment: Alignment.center,
-                        child: Text(
-                          widget.leftButtonText ?? _getLeftButtonText(),
-                          style:
-                              widget.leftButtonTextStyle?.setColor(widget.leftButtonColor ?? colors.primaryText) ??
-                              CoconutTypography.body1_16_Bold.setColor(widget.leftButtonColor ?? colors.primaryText),
+                      onTapCancel: () => setState(() => _isCheckboxTextPressing = false),
+                      onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
+                      child: Text(
+                        _keepWords(widget.checkboxText!),
+                        semanticsLabel: widget.checkboxText,
+                        style: checkboxTextStyle.setColor(
+                          _isCheckboxTextPressing ? checkboxTextPressingColor : checkboxTextColor,
                         ),
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          Row(
+            children: [
+              if (widget.onTapLeft != null)
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      setState(() => _isRightButtonPressing = false);
-                      widget.onTapRight.call();
+                      setState(() => _isLeftButtonPressing = false);
+                      widget.onTapLeft?.call();
                     },
-                    onTapCancel: () => setState(() => _isRightButtonPressing = false),
-                    onTapDown: (_) => setState(() => _isRightButtonPressing = true),
+                    onTapCancel: () => setState(() => _isLeftButtonPressing = false),
+                    onTapDown: (_) => setState(() => _isLeftButtonPressing = true),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       color:
-                          _isRightButtonPressing
+                          _isLeftButtonPressing
                               ? colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity)
                               : Colors.transparent,
                       alignment: Alignment.center,
                       child: Text(
-                        widget.rightButtonText ?? _getRightButtonText(),
+                        widget.leftButtonText ?? _getLeftButtonText(),
                         style:
-                            widget.rightButtonTextStyle?.setColor(widget.rightButtonColor ?? colors.primaryText) ??
-                            CoconutTypography.body1_16_Bold.setColor(widget.rightButtonColor ?? colors.primaryText),
+                            widget.leftButtonTextStyle?.setColor(widget.leftButtonColor ?? colors.primaryText) ??
+                            CoconutTypography.body1_16_Bold.setColor(widget.leftButtonColor ?? colors.primaryText),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _isRightButtonPressing = false);
+                    widget.onTapRight.call();
+                  },
+                  onTapCancel: () => setState(() => _isRightButtonPressing = false),
+                  onTapDown: (_) => setState(() => _isRightButtonPressing = true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    color:
+                        _isRightButtonPressing
+                            ? colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity)
+                            : Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.rightButtonText ?? _getRightButtonText(),
+                      style:
+                          widget.rightButtonTextStyle?.setColor(widget.rightButtonColor ?? colors.primaryText) ??
+                          CoconutTypography.body1_16_Bold.setColor(widget.rightButtonColor ?? colors.primaryText),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
 
@@ -936,9 +958,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
             widget.useFixedFontSize
                 ? MediaQuery(
                   data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
-                  child: SingleChildScrollView(child: content),
+                  child: content,
                 )
-                : SingleChildScrollView(child: content),
+                : content,
       ),
     );
   }
@@ -977,5 +999,83 @@ class _CoconutPopupState extends State<CoconutPopup> {
       default:
         return 'OK';
     }
+  }
+}
+
+/// 스크롤할 내용이 남아 있는 쪽(위/아래) 가장자리만 흐리게 처리한다.
+/// 스크롤이 필요 없으면 아무 효과도 넣지 않는다.
+class ScrollEdgeFade extends StatefulWidget {
+  const ScrollEdgeFade({super.key, required this.child});
+
+  /// 세로 스크롤 위젯
+  final Widget child;
+
+  @override
+  State<ScrollEdgeFade> createState() => ScrollEdgeFadeState();
+}
+
+class ScrollEdgeFadeState extends State<ScrollEdgeFade> {
+  static const double _fadeExtent = 24;
+
+  bool _fadeTop = false;
+  bool _fadeBottom = false;
+
+  @visibleForTesting
+  bool get fadeTop => _fadeTop;
+
+  @visibleForTesting
+  bool get fadeBottom => _fadeBottom;
+
+  bool _onMetrics(ScrollMetrics metrics) {
+    if (metrics.axis != Axis.vertical) return false;
+    final fadeTop = metrics.pixels > metrics.minScrollExtent + 0.5;
+    final fadeBottom = metrics.pixels < metrics.maxScrollExtent - 0.5;
+    if (fadeTop == _fadeTop && fadeBottom == _fadeBottom) return false;
+    void apply() {
+      if (!mounted) return;
+      setState(() {
+        _fadeTop = fadeTop;
+        _fadeBottom = fadeBottom;
+      });
+    }
+
+    // 레이아웃 중에 오는 알림에서는 바로 setState 할 수 없어 다음 프레임으로 미룬다
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => apply());
+    } else {
+      apply();
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 스크롤 위치가 초기화되지 않도록 ShaderMask는 항상 두고 그라데이션만 바꾼다
+    final child = ShaderMask(
+      key: const Key('coconut-popup-description-fade'),
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) {
+        final stop = bounds.height <= 0 ? 0.0 : (_fadeExtent / bounds.height).clamp(0.0, 0.5);
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _fadeTop ? Colors.transparent : Colors.black,
+            Colors.black,
+            Colors.black,
+            _fadeBottom ? Colors.transparent : Colors.black,
+          ],
+          stops: [0, stop, 1 - stop, 1],
+        ).createShader(bounds);
+      },
+      child: widget.child,
+    );
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) => notification.depth == 0 && _onMetrics(notification.metrics),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) => notification.depth == 0 && _onMetrics(notification.metrics),
+        child: child,
+      ),
+    );
   }
 }
