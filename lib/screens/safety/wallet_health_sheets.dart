@@ -1250,11 +1250,13 @@ Future<void> showSafetyRecommendedSheet(BuildContext context, RecommendedItem it
               InlineActionButton(
                 key: const Key('wallet-health-recommended-toggle'),
                 text: item.done ? r.mark_not_done : r.mark_done,
-                onPressed: () {
+                onPressed: () async {
+                  // 저장한 뒤 닫는다: 저장이 안 되면 시트에 남아 알린다(M08)
                   final provider = context.read<SafetyProvider?>();
+                  if (!await safetySaved(context, () => provider?.setRecommendedDone(id, !item.done))) return;
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   if (!item.done) vibrateLight();
-                  provider?.setRecommendedDone(id, !item.done);
                 },
               ),
             ],

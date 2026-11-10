@@ -16,6 +16,8 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/safety_store.dart';
+import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
@@ -102,6 +104,7 @@ void main() {
     bool checksThrow = false,
     Future<ServerCertObservation?> Function(NodeProvider)? probe,
     Future<AppUpdateStatus> Function()? update,
+    SafetyStore? safetyStore,
   }) {
     provider = _Provider(
       walletProvider: wallets,
@@ -110,7 +113,7 @@ void main() {
       connectivityProvider: connectivity,
       realmManager: realm,
       analytics: analytics,
-      store: store,
+      store: safetyStore ?? store,
       now: () => tester.binding.clock.now(),
       checkAppUpdate:
           update ??
@@ -385,6 +388,73 @@ void main() {
     expect(provider.hasUnreadAlerts, isFalse);
     expect(store.state.readItemIds, contains('incident:1:outgoing'));
   });
+  // M08: 사용자가 기다리지 않는 감지 결과는 기기가 저장을 거절해도 숨기지 않는다(위급 알림이 뜬다).
+  // 메모리에 남았다가 다음에 쓰기가 되면 함께 저장된다. 진짜 저장소(SafetyStore → shared_preferences → 기기 저장소)로 본다
+  testWidgets('M08 a detected incident still alerts when the device rejects the write, and is saved later', (
+    tester,
+  ) async {
+    final disk = SafetyDiskFake();
+    addTearDown(SafetyStore.resetForTest);
+    create(tester, safetyStore: await disk.open());
+    await settle(tester);
+    disk.accept = false;
+    wallets.records[1] = [safetyTx('outgoing')];
+    await provider.refresh();
+    expect(provider.report!.criticalIncidents.single.txid, 'outgoing');
+    expect(provider.vibrations, 1);
+    expect(disk.durable.incidents, isEmpty);
+    disk.accept = true;
+    await provider.markAlertsRead();
+    expect(disk.durable.incidents.single.txid, 'outgoing');
+  });
+  // M08: 기기 저장이 답하지 않아도(느린 기기) 새 위급 경고는 늦지 않는다. 감지 결과는 메모리에 먼저 들어가고 저장은 뒤에서 기다린다
+  testWidgets('M08 a stalled device write never delays a new alert', (tester) async {
+    final disk = SafetyDiskFake();
+    addTearDown(SafetyStore.resetForTest);
+    create(tester, safetyStore: await disk.open());
+    await settle(tester);
+    disk.hold = Completer<void>().future;
+    wallets.records[1] = [safetyTx('outgoing')];
+    unawaited(provider.refresh());
+    await tester.pump();
+    expect(provider.report!.criticalIncidents.map((i) => i.txid), ['outgoing']);
+    expect(provider.vibrations, 1);
+  });
+  // M08 B4: 사용 주의 저장이 3초 상한을 넘겨 실패로 알린 뒤 늦게 성공하면 저장소의 확인된 상태로 맞춘다(목적지 목록도 따라온다).
+  // 늦게 실패하면 아무것도 바뀌지 않는다. 어느 쪽이든 화면(provider)·저장소·디스크가 같은 값을 본다
+  for (final lateSuccess in [true, false]) {
+    testWidgets(
+      'M08 a caution save that ${lateSuccess ? 'succeeds' : 'fails'} after the 3 s cap leaves provider, store and disk agreeing',
+      (tester) async {
+        final disk = SafetyDiskFake();
+        addTearDown(SafetyStore.resetForTest);
+        final real = await disk.open();
+        create(tester, safetyStore: real);
+        await settle(tester);
+        final reply = Completer<void>();
+        disk
+          ..accept = lateSuccess
+          ..hold = reply.future;
+        Object? failure;
+        unawaited(
+          provider.setCaution(1, true).catchError((Object e) {
+            failure = e;
+          }),
+        );
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump();
+        expect(failure, isA<SafetyStoreWriteException>());
+        expect(provider.isCaution(1), isFalse);
+        disk.hold = null;
+        reply.complete();
+        await tester.pump();
+        expect(provider.isCaution(1), lateSuccess);
+        expect(real.load().cautionWalletIds.contains(1), lateSuccess);
+        expect(disk.durable.cautionWalletIds.contains(1), lateSuccess);
+        expect(SafetyAssist.unsafeWalletIds(provider.state, wallets.walletItemList).contains(1), lateSuccess);
+      },
+    );
+  }
   testWidgets('previously persisted incidents do not vibrate again at startup', (tester) async {
     store.state = SafetyState(incidents: [incident('known')]);
     wallets.records[1] = [safetyTx('known')];
@@ -720,7 +790,10 @@ void main() {
     create(tester);
     await settle(tester);
     store.failWrites = true;
-    await expectLater(provider.markIncidentUnrecognized('1:known', IncidentResponseMode.free), throwsStateError);
+    await expectLater(
+      provider.markIncidentUnrecognized('1:known', IncidentResponseMode.free),
+      throwsA(isA<SafetyStoreWriteException>()),
+    );
     expect(analytics.events, isEmpty);
     expect(provider.state.incidents.single.state, IncidentState.detected);
   });

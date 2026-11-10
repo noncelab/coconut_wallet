@@ -43,6 +43,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/bsms_verification_screen.dart';
+import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart' show safetySaved;
 import 'package:coconut_wallet/widgets/features/safety/wallet_health_cards.dart'
     show safetyFailedResultText, safetyPassedText;
 import 'package:coconut_wallet/screens/safety/watch_only_verification_screen.dart';
@@ -1099,7 +1100,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         plaintext.wipe();
       }
       if (mounted && verified == true) {
-        await context.read<SafetyProvider?>()?.recordPassphraseVerified(widget.id);
+        final provider = context.read<SafetyProvider?>();
+        await safetySaved(context, () => provider?.recordPassphraseVerified(widget.id));
       }
     } catch (error) {
       if (!mounted) return;

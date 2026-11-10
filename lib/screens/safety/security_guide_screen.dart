@@ -60,17 +60,22 @@ abstract final class SecurityGuide {
       review: review,
     );
     // 가이드는 "모르는 거래" 대응이다
-    if (incident.state == IncidentState.detected) {
-      await provider.markIncidentUnrecognized(incidentId, safetyResponseMode(context));
+    if (incident.state == IncidentState.detected &&
+        !await safetySaved(context, () => provider.markIncidentUnrecognized(incidentId, safetyResponseMode(context)))) {
+      return;
     }
     // Premium 이동을 보낸 뒤 보내기 완료 화면이 흐름을 비웠으면 "거래를 보냈어요"부터(그때 STEP3로 기록)
     if (!restart && !review && incident.guideStep < 3 && incident.responseTxid != null) {
-      await provider.setIncidentGuideStep(incidentId, 3);
+      if (!context.mounted || !await safetySaved(context, () => provider.setIncidentGuideStep(incidentId, 3))) return;
       if (context.mounted) await Navigator.of(context).push(_route('submitted', _Submitted(guide: guide)));
       return;
     }
     final step = restart || review || incident.guideStep < 1 ? 1 : incident.guideStep.clamp(1, 4);
-    if (!review && step != incident.guideStep) await provider.setIncidentGuideStep(incidentId, step);
+    if (!review &&
+        step != incident.guideStep &&
+        (!context.mounted || !await safetySaved(context, () => provider.setIncidentGuideStep(incidentId, step)))) {
+      return;
+    }
     if (context.mounted) await guide.push(context, step);
   }
 }
@@ -99,7 +104,8 @@ class _Guide {
 
   /// 다음 단계를 기록하고 연다
   Future<void> next(BuildContext context, int step) async {
-    if (!review) await context.read<SafetyProvider?>()?.setIncidentGuideStep(incidentId, step);
+    final provider = context.read<SafetyProvider?>();
+    if (!review && !await safetySaved(context, () => provider?.setIncidentGuideStep(incidentId, step))) return;
     if (context.mounted) await push(context, step);
   }
 
@@ -350,8 +356,14 @@ class _PremiumAssistRow extends StatelessWidget {
     if (!context.mounted) return;
     final provider = context.read<SafetyProvider?>();
     final incident = provider?.state.incidents.firstWhereOrNull((i) => i.id == guide.incidentId);
-    if (incident != null && incident.isOpen && incident.responseMode != IncidentResponseMode.premium) {
-      await provider!.markIncidentUnrecognized(guide.incidentId, IncidentResponseMode.premium);
+    if (incident != null &&
+        incident.isOpen &&
+        incident.responseMode != IncidentResponseMode.premium &&
+        !await safetySaved(
+          context,
+          () => provider!.markIncidentUnrecognized(guide.incidentId, IncidentResponseMode.premium),
+        )) {
+      return;
     }
     if (!context.mounted) return;
     final exit = await SafetyAssistFlow.start(
@@ -476,9 +488,12 @@ class _Step3 extends StatelessWidget {
       return;
     }
     final provider = context.read<SafetyProvider?>();
-    await provider?.setCaution(guide.walletId, true);
-    await provider?.setIncidentGuideStep(guide.incidentId, 4);
-    if (!context.mounted) return;
+    // 저장이 안 되면 "표시했어요"로 가지 않고 알린 뒤 STEP3에 남는다(앱을 다시 켜면 사라질 표시를 한 것처럼 보이지 않게, M08)
+    final saved = await safetySaved(context, () async {
+      await provider?.setCaution(guide.walletId, true);
+      await provider?.setIncidentGuideStep(guide.incidentId, 4);
+    });
+    if (!saved || !context.mounted) return;
     await Navigator.of(context).push(_route('step3-marked', _Step3Marked(guide: guide)));
   }
 }
@@ -549,7 +564,10 @@ class _Step4 extends StatelessWidget {
     if (incident?.recoveryReview != RecoveryReviewStatus.exposureSuspected && context.mounted) {
       await _recordReview(context, RecoveryReviewStatus.completedByUser);
     }
-    if (incident?.state == IncidentState.responding) await provider!.completeIncident(guide.incidentId);
+    if (incident?.state == IncidentState.responding &&
+        (!context.mounted || !await safetySaved(context, () => provider!.completeIncident(guide.incidentId)))) {
+      return;
+    }
     if (!context.mounted) return;
     await Navigator.of(context).push(_route('done', _Done(guide: guide)));
   }
@@ -558,8 +576,10 @@ class _Step4 extends StatelessWidget {
   /// 기록은 덧붙임일 뿐이라, 실패해도(그사이 지갑·사건이 사라짐 등) 가이드는 그대로 이어 간다
   Future<void> _recordReview(BuildContext context, RecoveryReviewStatus status) async {
     if (guide.review) return;
+    final provider = context.read<SafetyProvider?>();
     try {
-      await context.read<SafetyProvider?>()?.recordRecoveryReview(guide.incidentId, status);
+      // 저장이 안 되면 알리기만 하고 이어 간다(점검 상태 줄은 저장된 값만 보여 준다)
+      await safetySaved(context, () => provider?.recordRecoveryReview(guide.incidentId, status));
     } catch (_) {}
   }
 }

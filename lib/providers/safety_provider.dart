@@ -366,18 +366,15 @@ class SafetyProvider extends ChangeNotifier {
               _serverCert = observation;
             }
             if (observation?.applicable == true && observation?.actual != null) {
-              await _store!.update(
-                (s) => s.copyWith(
-                  serverCert: ServerCertRecord(
-                    host: identity.$1,
-                    port: identity.$2,
-                    fingerprint: observation!.actual!,
-                    endValidity: observation.endValidity,
-                    caValid: observation.caValid,
-                    observedAt: _now(),
-                  ),
-                ),
+              final record = ServerCertRecord(
+                host: identity.$1,
+                port: identity.$2,
+                fingerprint: observation!.actual!,
+                endValidity: observation.endValidity,
+                caValid: observation.caValid,
+                observedAt: _now(),
               );
+              await _store!.update((s) => s.copyWith(serverCert: record));
             }
           } catch (_) {
             // 같은 서버의 마지막 관찰은 오프라인에서도 유지한다.
@@ -388,14 +385,28 @@ class SafetyProvider extends ChangeNotifier {
     _schedule();
   }
 
-  Future<void> _change(SafetyState Function(SafetyState) change) async {
+  /// 사용자 동작 기록. 기기가 저장을 거절하면 상태를 바꾸지 않고 [SafetyStoreWriteException]을 던진다(화면이 실패를 알린다, M08).
+  /// [confirmed]가 false면 결과를 기다리지 않는 기록: 거절돼도 메모리에 남기고 다음 저장 때 함께 쓴다([SafetyStore.update])
+  Future<void> _change(SafetyState Function(SafetyState) change, {bool confirmed = true}) async {
     if (_disposed) return;
     final previous = _state;
     final previousReport = _report;
-    _state = _store == null ? change(_state) : await _store.update(change);
+    _state =
+        _store == null
+            ? change(_state)
+            : await (confirmed ? _store.updateConfirmed(change, onLateSave: _followStore) : _store.update(change));
     if (_disposed) return;
     await refresh();
     if (!_disposed && previous != _state && previousReport == _report) notifyListeners();
+  }
+
+  /// 사용자 동작의 저장이 상한(3초)을 넘겨 실패로 알린 뒤 늦게 저장됐다: 저장소의 확인된 상태로 맞추고 알린다
+  /// (화면·비상 이동 목적지가 디스크와 같은 값을 보게, M08)
+  void _followStore() {
+    if (_disposed) return;
+    _state = _store!.load();
+    notifyListeners();
+    unawaited(refresh());
   }
 
   SafetyIncident _incident(SafetyState state, String id, {bool allowBaseline = false}) {
@@ -537,7 +548,12 @@ class SafetyProvider extends ChangeNotifier {
   /// "갱신 필요"를 가른다(REQ A.1 2). 해시는 BSMS 검증·입력 수집기와 같은 원본 디스크립터 해시
   Future<void> recordBsmsExport(int walletId) {
     final hash = WalletVerification.descriptorHash(_wallets!.getWalletById(walletId).descriptor);
-    return _change((s) => s.copyWith(bsmsExports: {...s.bsmsExports, walletId: (configHash: hash, at: _now())}));
+    final at = _now();
+    // 보여 준 기록일 뿐 결과를 기다리지 않는다(저장이 안 되면 메모리에 남긴다)
+    return _change(
+      (s) => s.copyWith(bsmsExports: {...s.bsmsExports, walletId: (configHash: hash, at: at)}),
+      confirmed: false,
+    );
   }
 
   Future<void> setRecommendedDone(RecommendedCheckId id, bool done) => _change((s) {
@@ -551,7 +567,8 @@ class SafetyProvider extends ChangeNotifier {
     return _change((s) => s.copyWith(readItemIds: {...s.readItemIds, ...keys}));
   }
 
-  Future<void> dismissHomeHint() => _change((s) => s.copyWith(hintDismissed: true));
+  /// 결과를 기다리지 않는다: 저장이 안 돼도 이번에는 숨기고 다음 저장 때 함께 쓴다
+  Future<void> dismissHomeHint() => _change((s) => s.copyWith(hintDismissed: true), confirmed: false);
 
   static Future<AppUpdateStatus> _defaultCheckAppUpdate() async {
     try {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -21,11 +22,14 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/safety_store.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 WalletItemBase safetyWallet({int id = 1, bool hot = false, bool backedUp = false, bool passphrase = false}) {
   final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -219,13 +223,21 @@ class SafetyAnalyticsFake extends Fake implements AnalyticsService {
 class SafetyStoreFake extends Fake implements SafetyStore {
   SafetyState state = SafetyState.initial();
   int writes = 0;
+
+  /// 기기가 저장을 거절한다: 진짜 저장소처럼 기다리지 않는 기록은 메모리에 남고, 사용자 동작 기록은 던진다(M08)
   bool failWrites = false;
   final removed = <int>[];
   @override
   SafetyState load() => state;
   @override
   Future<SafetyState> update(SafetyState Function(SafetyState) change) async {
-    if (failWrites) throw StateError('storage unavailable');
+    if (!failWrites) writes++;
+    return state = change(state);
+  }
+
+  @override
+  Future<SafetyState> updateConfirmed(SafetyState Function(SafetyState) change, {void Function()? onLateSave}) async {
+    if (failWrites) throw const SafetyStoreWriteException();
     writes++;
     return state = change(state);
   }
@@ -234,6 +246,65 @@ class SafetyStoreFake extends Fake implements SafetyStore {
   Future<void> removeWallet(int walletId) async {
     removed.add(walletId);
     await update((s) => s.withoutWallet(walletId));
+  }
+}
+
+/// 기기 저장소 대역. [accept]가 false면 안드로이드 commit()이 false를 돌려줄 때(저장 공간 가득 등)처럼 쓰기를 거절한다(M08).
+/// 안드로이드처럼 거절된 값도 플랫폼 메모리 맵에는 남는다. [nativeCache]면 다시 읽을 때 그 맵을 돌려준다(디스크가 아니라).
+/// 저장·불러오기는 진짜 길(SafetyStore → SharedPrefsRepository → shared_preferences)을 탄다
+class SafetyDiskFake extends SharedPreferencesStorePlatform {
+  final durableValues = <String, Object>{};
+  final memoryValues = <String, Object>{};
+  bool accept = true;
+  bool nativeCache = false;
+
+  /// 차례로 쓸 쓰기 결과(비면 [accept])
+  final outcomes = <bool>[];
+
+  /// 있으면 쓰기를 반영한 뒤 이 Future가 끝날 때까지 답을 미룬다(느린 기기). 끝나지 않는 Future면 멈춘 쓰기
+  Future<void>? hold;
+
+  @override
+  Future<Map<String, Object>> getAll() async => Map.of(nativeCache ? memoryValues : durableValues);
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    memoryValues[key] = value;
+    final saved = outcomes.isEmpty ? accept : outcomes.removeAt(0);
+    if (saved) durableValues[key] = value;
+    if (hold != null) await hold;
+    return saved;
+  }
+
+  @override
+  Future<bool> remove(String key) async {
+    memoryValues.remove(key);
+    durableValues.remove(key);
+    return true;
+  }
+
+  @override
+  Future<bool> clear() async {
+    memoryValues.clear();
+    durableValues.clear();
+    return true;
+  }
+
+  /// 디스크에 실제로 남은 상태(앱을 다시 켜면 읽는 값)
+  SafetyState get durable {
+    final raw = durableValues['flutter.${SafetyStore.key}'];
+    return raw == null
+        ? SafetyState.initial()
+        : SafetyState.fromJson(jsonDecode(raw as String) as Map<String, Object?>);
+  }
+
+  /// 앱 시작(다시 켜기)과 같은 순서로 이 저장소를 새로 읽어 연 SafetyStore
+  Future<SafetyStore> open() async {
+    SafetyStore.resetForTest();
+    SharedPreferences.resetStatic();
+    SharedPreferencesStorePlatform.instance = this;
+    await SharedPrefsRepository().init();
+    return SafetyStore(SharedPrefsRepository());
   }
 }
 

@@ -17,6 +17,7 @@ class SharedPrefsRepository {
   void setSharedPreferencesForTest(SharedPreferences sp) {
     _sharedPrefs = sp;
     _isInitialized = true;
+    _reopens++;
   }
 
   static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
@@ -29,7 +30,17 @@ class SharedPrefsRepository {
     // init in main.dart
     _sharedPrefs = await SharedPreferences.getInstance();
     _isInitialized = true;
+    _reopens++;
   }
+
+  int _reopens = 0;
+  final _removals = <String, int>{};
+
+  /// 이 키를 지우거나(PIN 초기화 등) 저장소를 다시 열 때마다 커진다. 디스크가 확인한 값을 메모리에 따로 들고 있는
+  /// SafetyStore가 바깥에서 지운 것을 알아채는 데 쓴다
+  int versionOf(String key) => _reopens + (_removals[key] ?? 0);
+
+  void _removed(String key) => _removals.update(key, (count) => count + 1, ifAbsent: () => 1);
 
   ({bool saved, List<int>? ids}) _readHodlInsightsWalletSelection() {
     final encoded = getStringOrNull(SharedPrefKeys.kHodlInsightsWalletIds);
@@ -80,6 +91,7 @@ class SharedPrefsRepository {
 
   /// Common--------------------------------------------------------------------
   Future clearSharedPref() async {
+    _reopens++;
     await _sharedPrefs.clear();
   }
 
@@ -88,6 +100,7 @@ class SharedPrefsRepository {
   }
 
   Future deleteSharedPrefsWithKey(String key) async {
+    _removed(key);
     await _sharedPrefs.remove(key);
   }
 
@@ -125,6 +138,9 @@ class SharedPrefsRepository {
   /// [setString]과 같지만, 기기 저장소가 저장을 확인했는지(true) 거절했는지(false)를 돌려준다.
   Future<bool> setStringAndConfirm(String key, String value) => _sharedPrefs.setString(key, value);
 
+  /// 값을 지우되 지운 횟수([versionOf])는 그대로 둔다. 저장소가 거절된 쓰기를 "값 없음"으로 되돌릴 때 쓴다(SafetyStore)
+  Future<bool> removeAndConfirm(String key) => _sharedPrefs.remove(key);
+
   String? getStringOrNull(String key) {
     return _sharedPrefs.getString(key);
   }
@@ -140,6 +156,7 @@ class SharedPrefsRepository {
   /// Delete multiple keys at once
   Future<void> deleteMultipleKeys(List<String> keys) async {
     for (final key in keys) {
+      _removed(key);
       await _sharedPrefs.remove(key);
     }
   }

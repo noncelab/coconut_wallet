@@ -105,8 +105,9 @@ Future<bool> markIncidentRecognized(BuildContext context, String incidentId, {bo
   // 끝난 사건(가이드 다시 보기)은 바꾸지 않는다. 사건이 없으면 기준점 검토 항목
   if (provider == null || (incident != null && !incident.isOpen)) return false;
   if (askShared && !await confirmSharedRecognition(context, incidentId)) return false;
+  if (!context.mounted) return false;
   try {
-    await provider.recognizeIncident(incidentId);
+    if (!await safetySaved(context, () => provider.recognizeIncident(incidentId))) return false;
   } on StateError {
     return false; // 그사이 사라진 항목
   }
@@ -215,7 +216,12 @@ Future<void> showRecognizeSheet(BuildContext context, SafetyIncident incident) a
   if (provider == null || (current != null && !current.isOpen)) return;
   if (current == null || current.state == IncidentState.detected) {
     try {
-      await provider.markIncidentUnrecognized(incident.id, safetyResponseMode(context));
+      if (!await safetySaved(
+        context,
+        () => provider.markIncidentUnrecognized(incident.id, safetyResponseMode(context)),
+      )) {
+        return;
+      }
     } on StateError {
       return;
     }

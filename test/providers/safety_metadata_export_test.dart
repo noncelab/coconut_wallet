@@ -32,6 +32,8 @@ class _FailingDisk extends InMemorySharedPreferencesStore {
 }
 
 void main() {
+  // 앱 전체가 함께 쓰는 Safety 메모리와 쓰기 줄을 테스트마다 비운다
+  tearDown(SafetyStore.resetForTest);
   TestWidgetsFlutterBinding.ensureInitialized();
   late SafetyWalletsFake wallets;
   late LabelExportViewModel model;

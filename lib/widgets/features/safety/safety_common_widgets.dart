@@ -1,9 +1,12 @@
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToast, CoconutToastLevel, CoconutUnderlinedButton;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/repository/shared_preference/safety_store.dart' show SafetyStoreWriteException;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToast, CoconutToastLevel;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -25,6 +28,27 @@ String safetyKoText(String text) =>
 
 /// 한글이 없는 글(영문 고유명사만 있는 줄 등)에는 넣지 않는다: 읽기 라벨·검색에 그대로 남는다
 final _hangul = RegExp('[\uAC00-\uD7A3]');
+
+/// Wallet Health 기록을 저장했으면 true. 기기가 저장을 거절하면(저장 공간 가득 등) "결과를 저장하지 못했어요" 경고 토스트를 띄우고
+/// false: 부른 쪽은 성공 화면으로 가지 않고 그 자리에 남는다(M08)
+Future<bool> safetySaved(BuildContext context, Future<void>? Function() write) async {
+  try {
+    await write();
+    return true;
+  } on SafetyStoreWriteException {
+    if (context.mounted) {
+      vibrateLightDouble();
+      CoconutToast.showToast(
+        context: context,
+        text: t.wallet_health.save_failed,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        level: CoconutToastLevel.warning,
+      );
+    }
+    return false;
+  }
+}
 
 /// 글 첫 줄 가운데에 [iconSize] 아이콘을 두는 위 여백(글자 배율로 계산, POLISH R3·SafetyNumberedRow와 같은 식)
 double safetyIconTop(BuildContext context, TextStyle style, double iconSize) =>

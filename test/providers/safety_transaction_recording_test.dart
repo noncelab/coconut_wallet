@@ -110,6 +110,8 @@ class _Signer extends Fake implements HotWalletSigningService {
 }
 
 void main() {
+  // 앱 전체가 함께 쓰는 Safety 메모리와 쓰기 줄을 테스트마다 비운다
+  tearDown(SafetyStore.resetForTest);
   TestWidgetsFlutterBinding.ensureInitialized();
   const inputHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   late _Disk disk;
@@ -460,7 +462,8 @@ void main() {
       expect(node.recordedBeforeBroadcast, isTrue);
       expect(result.value, model.signedTx!.transactionHash);
       expect(store.load().lastBroadcast!.txid, result.value);
-      expect(disk.writes, 2);
+      // 쓰기는 차례대로라 전송 기록은 멈춘 쓰기 뒤에서 기다린다(메모리에는 이미 있다, M08)
+      expect(disk.writes, 1);
     },
     timeout: const Timeout(Duration(seconds: 15)),
   );

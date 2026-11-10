@@ -143,7 +143,7 @@ class SafetyGuidePage extends StatefulWidget {
   final String? description;
   final List<Widget> children;
   final String buttonText;
-  final VoidCallback? onButton;
+  final FutureOr<void> Function()? onButton;
   final bool buttonEnabled;
   final String? laterText;
   final VoidCallback? onLater;
@@ -292,6 +292,19 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
     );
   }
 
+  bool _pressing = false;
+
+  /// 버튼 동작(저장 뒤 다음 단계 열기)이 끝날 때까지 다시 누르는 것을 막는다: 저장이 느릴 때 두 번 누르면 같은 화면이 두 장 쌓였다
+  Future<void> _press() async {
+    if (_pressing) return;
+    _pressing = true;
+    try {
+      await widget.onButton!();
+    } finally {
+      _pressing = false;
+    }
+  }
+
   Widget _bottomButton(BuildContext context) {
     final colors = context.coconutColors;
     final subWidget =
@@ -307,7 +320,7 @@ class _SafetyGuidePageState extends State<SafetyGuidePage> {
     final button = FixedBottomButton(
       buttonKey: const Key('safety-guide-button'),
       surroundingsKey: const Key('safety-guide-fade'),
-      onButtonClicked: widget.onButton!,
+      onButtonClicked: _press,
       text: widget.buttonText,
       isActive: widget.buttonEnabled,
       surroundingsColor: colors.background,

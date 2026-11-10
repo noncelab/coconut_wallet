@@ -70,8 +70,7 @@ class SafetyCautionBanner extends StatelessWidget {
     if (removed != true || !context.mounted) return;
     final provider = context.read<SafetyProvider?>();
     if (provider == null) return;
-    await provider.setCaution(walletId, false);
-    if (!context.mounted) return;
+    if (!await safetySaved(context, () => provider.setCaution(walletId, false)) || !context.mounted) return;
     CoconutToast.showToast(
       context: context,
       text: strings.removed_toast,
