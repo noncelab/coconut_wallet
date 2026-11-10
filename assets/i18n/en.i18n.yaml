@@ -367,6 +367,7 @@ wallet_stack_list:
   single_sig: "Single-sig"
   multisig: "Multisig"
   inheritance: "Inheritance"
+  inheritance_wallet: "Inheritance Wallet"
 home_widgets:
   hot_wallet_stack: "Hot Wallets"
   all_wallet_stack: "All Wallets"

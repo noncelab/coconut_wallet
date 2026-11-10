@@ -368,6 +368,7 @@ wallet_stack_list:
   single_sig: "Firma única"
   multisig: "Multifirma"
   inheritance: "Herencia"
+  inheritance_wallet: "Billetera de herencia"
 home_widgets:
   hot_wallet_stack: "Billeteras calientes"
   all_wallet_stack: "Todas las billeteras"
