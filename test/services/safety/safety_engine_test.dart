@@ -874,4 +874,101 @@ void main() {
     );
     expect(SafetyEngine.evaluate(i), SafetyEngine.evaluate(i));
   });
+
+  // M36: 핫월렛이 있으면 비중이 15.13%처럼 끝없는 소수라, 정확히 ○○.5인 합계가 77.49999999999999로 들어와
+  // 한 칸 아래로 반올림됐다(라벨 경계면 라벨까지 바뀜). 합성 지갑으로 실제 엔진을 돌려 .5가 올라가는지 본다
+  group('score rounding (M36)', () {
+    int sats(num amount) => (amount * btc).round();
+    final baselines = {
+      for (final id in [1, 2, 3]) id: baseline(),
+    };
+    SafetyWalletSnapshot watch(int id, num amount, {int dust = 0}) => wallet(
+      id,
+      kind: SafetyWalletKind.watchOnly,
+      balance: sats(amount),
+      txs: [_received],
+      dust: [for (var i = 0; i < dust; i++) 'u$id-$i'],
+    );
+    List<String> reused(int n) => [for (var i = 0; i < n; i++) 'a$i'];
+
+    test('hot 0.05 · watch-only 1.8 · multisig 4 BTC totals exactly 77.5 and scores 78', () {
+      final report = _evaluate([
+        _hot(1, balance: sats(0.05), passphrase: true),
+        watch(2, 1.8),
+        wallet(
+          3,
+          kind: SafetyWalletKind.multisig,
+          balance: sats(4),
+          txs: [_received],
+          multisigConfig: MultisigConfigStatus.complete,
+        ),
+      ], state: SafetyState(baselines: baselines, watchOnlyVerifications: {2: _verified(2)}));
+      expect(report.score, 78);
+    });
+
+    test('label edge 74.5 → 75 good', () {
+      final report = _evaluate(
+        [_hot(1, balance: sats(0.08), reused: reused(3)), watch(2, 0.25, dust: 2)],
+        state: SafetyState(
+          baselines: baselines,
+          watchOnlyVerifications: {2: _verified(2, method: VerificationMethod.user)},
+        ),
+      );
+      expect((report.score, report.label), (75, WalletHealthLabel.good));
+    });
+
+    test('label edge 49.5 → 50 needs attention', () {
+      final report = _evaluate(
+        [_hot(1, balance: sats(0.08)), watch(2, 0.115, dust: 2)],
+        state: SafetyState(baselines: baselines),
+        update: AppUpdateStatus.available,
+      );
+      expect((report.score, report.label), (50, WalletHealthLabel.needsAttention));
+    });
+
+    test('label edge 89.5 → 90 excellent', () {
+      final report = _evaluate(
+        [_hot(1, balance: sats(0.08), reused: reused(3)), watch(2, 1.21, dust: 2)],
+        state: SafetyState(
+          baselines: baselines,
+          watchOnlyVerifications: {2: _verified(2)},
+          conflicts: [(walletId: 1, txid: 'c0', at: testNow.subtract(const Duration(days: 1)))],
+        ),
+      );
+      expect((report.score, report.label), (90, WalletHealthLabel.excellent));
+    });
+
+    // Codex B1: 진짜 합계가 74.5보다 조금 작다(74.5 − 3/10560000928 ≈ 74.4999999997). .5로 올리면 안 된다
+    test('a true total just below 74.5 is not lifted: stays 74 needs attention', () {
+      final report = _evaluate(
+        [_hot(1, balance: 80000007, reused: reused(3)), watch(2, 2.50000022, dust: 2)],
+        state: SafetyState(
+          baselines: baselines,
+          watchOnlyVerifications: {2: _verified(2, method: VerificationMethod.user)},
+        ),
+      );
+      expect((report.score, report.label), (74, WalletHealthLabel.needsAttention));
+    });
+
+    // 복구 평균도 같은 반올림: 자금 있는 핫(100) + 이력만 있는 빈 지갑 4개(다중서명 BSMS 없음 50, 미검증 보기 전용 0 ×3)는
+    // 빈 지갑 비중이 25% 상한으로 줄어 핫 잔액과 관계없이 정확히 82.5다
+    test('the recovery average rounds an exact 82.5 to 83 at every hot balance', () {
+      for (var i = 0; i <= 60; i++) {
+        final hot = sats(0.001 * math.pow(10, i / 20)); // 0.001 ~ 1 BTC
+        final report = _evaluate(
+          [
+            _hot(1, balance: hot),
+            wallet(2, kind: SafetyWalletKind.multisig, txs: [_received], multisigConfig: MultisigConfigStatus.complete),
+            for (final id in [3, 4, 5]) watch(id, 0),
+          ],
+          state: SafetyState(
+            baselines: {
+              for (final id in [1, 2, 3, 4, 5]) id: baseline(),
+            },
+          ),
+        );
+        expect(_score(report, SafetyCategory.recovery), 83, reason: 'hot $hot sats');
+      }
+    });
+  });
 }

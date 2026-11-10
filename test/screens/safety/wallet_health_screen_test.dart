@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
+import 'package:coconut_wallet/model/safety/safety_inputs.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -20,6 +22,7 @@ import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_sheets.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
+import 'package:coconut_wallet/services/safety/safety_engine.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
@@ -36,6 +39,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mock/transaction_record_mock.dart';
 import '../../mock/wallet_mock.dart';
+import '../../model/safety/safety_fixtures.dart' as f;
 import 'wallet_health_fixtures.dart';
 
 /// 글자 찾기. 앱은 한국어 단어가 중간에서 끊기지 않게 글자 사이에 U+2060을 넣으므로(safetyKoText) 그 문자를 빼고 비교한다
@@ -898,6 +902,48 @@ void main() {
     expect(_text('Savings2 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsOneWidget);
     expect(_text('Daily1 · ${t.wallet_home_screen.wallet_filter.watch_only}'), findsNWidgets(2));
     expect(_text(t.wallet_health.section.recommended_progress(done: 0, total: 1)), findsOneWidget);
+  });
+
+  // M36: 합계가 정확히 77.5인 구성(핫 0.05 · 보기 전용 1.8 · 다중서명 4 BTC, 합성 지갑)은 머리 점수가 78이고,
+  // "점수 계산 방법" 표의 합계 77.5와 맞는다(소수 오차로 77이 되지 않는다)
+  testWidgets('M36 an exact 77.5 total shows 78 in the header, matching the About table total', (tester) async {
+    final received = f.tx('r', type: TransactionType.received, height: 900);
+    final report = SafetyEngine.evaluate(
+      f.inputs(
+        wallets: [
+          f.wallet(1, balance: 5000000, backupVerified: true, passphrase: true, txs: [received]),
+          f.wallet(2, kind: SafetyWalletKind.watchOnly, balance: 180000000, txs: [received]),
+          f.wallet(
+            3,
+            kind: SafetyWalletKind.multisig,
+            balance: 400000000,
+            txs: [received],
+            multisigConfig: MultisigConfigStatus.complete,
+          ),
+        ],
+        state: SafetyState(
+          baselines: {
+            for (final id in [1, 2, 3]) id: f.baseline(),
+          },
+          watchOnlyVerifications: {
+            2: WatchOnlyVerification(
+              method: VerificationMethod.qr,
+              result: VerificationResult.match,
+              descriptorHash: 'descriptor-2',
+              at: f.testNow,
+            ),
+          },
+        ),
+      ),
+    );
+    await _pump(tester, report);
+    expect(_inGauge('78'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('wallet-health-info')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: find.byKey(const Key('wallet-health-about-sheet')), matching: _text('77.5')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('info button opens the About sheet with the v2 categories and no "pts"', (tester) async {

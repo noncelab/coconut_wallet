@@ -273,9 +273,9 @@ abstract final class SafetyEngine {
                   },
         ),
     };
-    final weighted =
-        (scores.entries.fold<double>(0, (sum, e) => sum + (e.value ?? 0) * weights.weightOf(e.key)) / totalWeight)
-            .round();
+    final weighted = _roundScore(
+      scores.entries.fold<double>(0, (sum, e) => sum + (e.value ?? 0) * weights.weightOf(e.key)) / totalWeight,
+    );
     // 앱 잠금 상한. 비중만으로는 잠금이 꺼져도 최대 76점('양호')까지 나올 수 있고, 콜드 자산이 많으면 거의 감점되지 않는다.
     // 그래서 핫월렛에 10만 sats 이상 있는데 앱 잠금이 꺼져 있으면, 전체 자산 중 몫과 관계없이 총점을 74 이하로 묶는다.
     final capped = !inputs.appLockEnabled && hotSats >= hotExposureFullSats && weighted > appLockOffScoreCap;
@@ -480,8 +480,15 @@ abstract final class SafetyEngine {
       final largest = recovery.where((r) => r.balanceSats == maxBalance).map((r) => r.score).reduce(math.min);
       score = math.min(score, largest.toDouble());
     }
-    return score.round();
+    return _roundScore(score);
   }
+
+  /// 총점·복구 평균의 반올림. 비중이 15.13%처럼 끝없는 소수라 정확히 77.5인 값이 77.49999999999999로 들어오기도 하므로
+  /// 1e-12 자리에서 계산 오차를 먼저 정리해 정확한 .5가 한 칸 아래로 가지 않게 한다(M36, 관찰한 오차는 최대 3.8e-14)
+  // ponytail: .5보다 5e-13 안쪽으로만 작은 진짜 값도 올린다. 예: 핫 80,000,000,007 + 보기 전용 250,000,000,022 sats는
+  // 진짜 합계가 74.49999999999972인데 75가 된다(3,000 BTC 넘게 사토시 단위로 나눠야 나오고, double로는 계산 오차와 가를 수 없다).
+  // 정확히 가르려면 비중부터 합계까지 정수 분수(유리수)로 계산해 .5와 비교한다
+  static int _roundScore(double score) => ((score * 1e12).roundToDouble() / 1e12).round();
 
   /// 지갑마다 판정하는 개인정보·활동 점검: 실패한 지갑은 지갑별 결과, 없으면 앱 전체 결과 하나
   static void _addAggregate(
