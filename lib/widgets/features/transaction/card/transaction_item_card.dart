@@ -217,9 +217,14 @@ class TransactionItemCard extends StatelessWidget {
           width: Sizes.size12,
         ),
         CoconutLayout.spacing_100w,
-        Text(
-          TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 20),
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+        // 좁은 화면에서는 한 줄 안에서 말줄임(띄어쓰기 없는 20자 메모가 1.1배부터 넘치던 것)
+        Flexible(
+          child: Text(
+            TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 20),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+          ),
         ),
       ],
     );
@@ -229,7 +234,7 @@ class TransactionItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
     final colors = context.coconutColors;
-    return ShrinkAnimationButton(
+    final card = ShrinkAnimationButton(
       onPressed: () {
         onPressed();
       },
@@ -259,6 +264,8 @@ class TransactionItemCard extends StatelessWidget {
                 ),
       ),
     );
+    // 큰 글자에서도 카드 글자는 1.2배까지만 키운다(좁은 화면에서 줄이 넘치지 않게). 1.0배 미만은 그대로 따른다
+    return MediaQuery.withClampedTextScaling(maxScaleFactor: 1.2, child: card);
   }
 }
 

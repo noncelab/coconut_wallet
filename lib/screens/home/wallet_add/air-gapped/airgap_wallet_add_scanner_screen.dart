@@ -612,36 +612,18 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   Future<void> _showHotWalletDuplicatePopup(ResultOfSyncFromVault duplicateResult) async {
     final walletProvider = context.read<WalletProvider>();
     final existingHotWallet = walletProvider.getWalletById(duplicateResult.walletId!);
-    var removeHotWallet = false;
-    final shouldAdd = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (context, setDialogState) => CoconutPopup(
-                  languageCode: context.read<PreferenceProvider>().language,
-                  title: t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_title,
-                  description: '',
-                  descriptionSpan: buildDuplicateWalletDescriptionSpan(
-                    name: existingHotWallet.name,
-                    type: t.wallet_home_screen.hot_wallet_restore.hot_wallet_type,
-                  ),
-                  backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
-                  checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_hot_wallet,
-                  isCheckboxSelected: removeHotWallet,
-                  onCheckboxChanged: (value) => setDialogState(() => removeHotWallet = value),
-                  rightButtonText: t.wallet_home_screen.add_wallet_action,
-                  rightButtonColor: context.coconutColors.primaryText,
-                  onTapRight: () => Navigator.of(dialogContext).pop(true),
-                ),
-          ),
+    final choice = await showDuplicateHotWalletPopup(
+      context,
+      existingWalletName: existingHotWallet.name,
+      languageCode: context.read<PreferenceProvider>().language,
     );
-    if (shouldAdd != true) {
+    if (choice == null) {
       _skipNextFinalizeVibration = true;
       _resumeScanning();
       return;
     }
     if (!mounted) return;
+    final removeHotWallet = choice.removeHotWallet;
 
     if (removeHotWallet) {
       final authenticated = await FlutterHotWalletAuthenticator(context).authenticate();
