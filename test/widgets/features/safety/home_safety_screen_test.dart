@@ -63,8 +63,6 @@ class _Connectivity extends SafetyConnectivityFake {
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
   @override
-  bool get isFiatBalanceHidden => false;
-  @override
   HomeAddWalletOption get homeAddWalletOption => HomeAddWalletOption.all;
   @override
   bool get isFakeBalanceActive => false;

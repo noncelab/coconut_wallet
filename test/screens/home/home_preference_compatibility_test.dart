@@ -259,7 +259,7 @@ void main() {
       expect(button, option == HomeAddWalletOption.hidden ? findsNothing : findsOneWidget);
       expect(viewModel.showsAddWalletHint, option != HomeAddWalletOption.hidden);
       final fiat = tester.widget<Text>(find.byKey(const Key('balance-change-fiat'))).data!;
-      expect(fiat.isEmpty, option != HomeAddWalletOption.watchOnly);
+      expect(fiat.isEmpty, isFalse);
       expect(viewModel.configuration, configuration);
       expect(HomeConfigurationRepository(SharedPrefsRepository()).load(), configuration);
       expect(SharedPrefsRepository().getString(SharedPrefKeys.kHomeAddWalletOption), option.name);
@@ -289,7 +289,7 @@ void main() {
         );
         final viewModel = tester.element(find.byType(HomeItemsView)).read<HomeViewModel>();
         expect(viewModel.configuration.items.single.id, 'configured-widget');
-        expect(tester.widget<Text>(find.byKey(const Key('balance-change-fiat'))).data!.isEmpty, hidden);
+        expect(tester.widget<Text>(find.byKey(const Key('balance-change-fiat'))).data!.isEmpty, isFalse);
         final data = tester.element(find.byType(HomeItemsView)).read<HomeWidgetsViewModel>();
         expect(data.isFakeBalance, fake);
         expect(data.totalBalance() == (fake ? 50000000 : 20000000), isTrue);
@@ -330,10 +330,11 @@ void main() {
     }
   }
 
+  // M26: 1.0·1.1처럼 옛 법정화폐 숨김(IS_FIAT_BALANCE_HIDDEN)을 읽지 않는다. 저장값은 그대로 둔다
   for (final fake in [false, true]) {
     for (final span in [HomeSpan.small, HomeSpan.wide]) {
-      testWidgets('balance trend obeys both fiat modes with live updates (fake: $fake, span: $span)', (tester) async {
-        final (preferences, data) = await _pumpWidget(
+      testWidgets('balance trend shows fiat despite the legacy fiat hiding (fake: $fake, span: $span)', (tester) async {
+        final (_, data) = await _pumpWidget(
           tester,
           _item(
             HomeItemIds.bitcoinBalanceTrend,
@@ -347,22 +348,15 @@ void main() {
           fake: fake,
         );
         final fiat = formatHomeFiat(data.fiatValueOf(data.totalBalance(), data.fiat), data.fiat);
-        expect(find.text(fiat).evaluate().isEmpty, isTrue, reason: 'Hidden fiat must not enter the widget tree');
+        expect(find.text(fiat), findsOneWidget);
         final balance = tester.widget<HomeAmountText>(find.byType(HomeAmountText)).amount;
         expect(balance.number, data.unit.displayBitcoinAmount(data.totalBalance()));
-        await preferences.changeIsFiatBalanceHidden(false);
-        await tester.pump();
-        expect(find.text(fiat).evaluate().length, 1);
-        await preferences.changeIsFiatBalanceHidden(true);
-        await tester.pump();
-        expect(find.text(fiat).evaluate().isEmpty, isTrue);
-        expect(tester.widget<HomeAmountText>(find.byType(HomeAmountText)).amount.number, balance.number);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       });
     }
 
-    testWidgets('configured multi-fiat balances obey hiding without losing currencies (fake: $fake)', (tester) async {
+    testWidgets('configured multi-fiat balances ignore the legacy fiat hiding (fake: $fake)', (tester) async {
       final item = _item(
         HomeItemIds.bitcoinBalanceByFiat,
         configuration: const {
@@ -370,25 +364,22 @@ void main() {
           'fiats': ['USD', 'EUR'],
         },
       );
-      final (preferences, _) = await _pumpWidget(tester, item, hidden: true, fake: fake);
-      expect(tester.widget<BitcoinBalanceByFiatView>(find.byType(BitcoinBalanceByFiatView)).rows, isEmpty);
-      await preferences.changeIsFiatBalanceHidden(false);
-      await tester.pump();
+      await _pumpWidget(tester, item, hidden: true, fake: fake);
       final rows = tester.widget<BitcoinBalanceByFiatView>(find.byType(BitcoinBalanceByFiatView)).rows;
       expect(rows.map((row) => row.fiat), [FiatCode.USD, FiatCode.EUR]);
       expect(rows.every((row) => row.amountText.isNotEmpty), isTrue);
-      await preferences.changeIsFiatBalanceHidden(true);
-      await tester.pump();
-      expect(tester.widget<BitcoinBalanceByFiatView>(find.byType(BitcoinBalanceByFiatView)).rows, isEmpty);
+      for (final row in rows) {
+        expect(find.text(row.fiat.code), findsOneWidget);
+        expect(find.text(row.amountText), findsWidgets); // 가짜 시세는 통화마다 같다
+      }
       await tester.pumpWidget(const SizedBox());
     });
   }
 
   for (final id in [HomeItemIds.bitcoinBalanceTrend, HomeItemIds.bitcoinBalanceByFiat]) {
-    testWidgets('hidden fiat does not delay $id waiting for an unused price', (tester) async {
+    testWidgets('legacy fiat hiding does not skip waiting for the $id price', (tester) async {
       await _pumpWidget(tester, _item(id), hidden: true, pricesAvailable: false);
-      expect(find.byType(HomeWidgetSkeleton), findsNothing);
-      expect(find.byType(HomeAmountText), findsOneWidget);
+      expect(find.byType(HomeWidgetSkeleton), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
   }

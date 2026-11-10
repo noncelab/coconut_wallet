@@ -55,8 +55,6 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   @override
   HomeAddWalletOption get homeAddWalletOption => HomeAddWalletOption.all;
   @override
-  bool get isFiatBalanceHidden => false;
-  @override
   bool get isFakeBalanceActive => false;
   @override
   int? get fakeBalanceTotalAmount => null;

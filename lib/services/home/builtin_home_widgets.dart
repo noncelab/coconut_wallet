@@ -193,10 +193,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       fakeBalance: true,
       sizes: [HomeSpan.wide, HomeSpan.small],
     ),
-    isLoading:
-        (viewModel, settings) =>
-            viewModel.isWalletDataLoading ||
-            (!viewModel.isFiatBalanceHidden && viewModel.isPriceLoading(viewModel.fiat)),
+    isLoading: (viewModel, settings) => viewModel.isWalletDataLoading || viewModel.isPriceLoading(viewModel.fiat),
     name: () => t.home_widgets.bitcoin_balance_trend,
     builder: (context, viewModel, item) {
       final settings = _settingsOf(item);
@@ -205,10 +202,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
         final delta = values.last - values.first;
         return BalanceChangeOverTimeView(
           balance: _btcAmount(viewModel, values.last),
-          fiatText:
-              viewModel.isFiatBalanceHidden
-                  ? ''
-                  : formatHomeFiat(viewModel.fiatValueOf(values.last, viewModel.fiat), viewModel.fiat),
+          fiatText: formatHomeFiat(viewModel.fiatValueOf(values.last, viewModel.fiat), viewModel.fiat),
           rate: HomeWidgetMath.changeRate(values.first, values.last),
           deltaText: '${delta >= 0 ? '+' : '-'} ${_btc(viewModel, delta.abs())}',
           deltaSign: delta.sign,
@@ -218,10 +212,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       }
       return BitcoinBalanceTrendView(
         balance: _btcAmount(viewModel, values.last),
-        fiatText:
-            viewModel.isFiatBalanceHidden
-                ? ''
-                : formatHomeFiat(viewModel.fiatValueOf(values.last, viewModel.fiat), viewModel.fiat),
+        fiatText: formatHomeFiat(viewModel.fiatValueOf(values.last, viewModel.fiat), viewModel.fiat),
         rate: HomeWidgetMath.changeRate(values.first, values.last),
         values: values,
       );
@@ -239,25 +230,21 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
     ),
     isLoading:
         (viewModel, settings) =>
-            viewModel.isWalletDataLoading ||
-            (!viewModel.isFiatBalanceHidden && viewModel.isPriceLoading(_fiatsOf(viewModel, settings, 4).first)),
+            viewModel.isWalletDataLoading || viewModel.isPriceLoading(_fiatsOf(viewModel, settings, 4).first),
     name: () => t.home_widgets.bitcoin_balance_by_fiat,
     builder: (context, viewModel, item) {
       final settings = _settingsOf(item);
       final balance = viewModel.totalBalance(settings.walletIds);
       return BitcoinBalanceByFiatView(
         balance: _btcAmount(viewModel, balance),
-        rows:
-            viewModel.isFiatBalanceHidden
-                ? const []
-                : [
-                  for (final fiat in _fiatsOf(viewModel, settings, 4))
-                    HomeFiatRow(
-                      fiat: fiat,
-                      amountText: formatHomeFiat(viewModel.fiatValueOf(balance, fiat), fiat, withSymbol: false),
-                      rate: viewModel.priceChange24h(fiat),
-                    ),
-                ],
+        rows: [
+          for (final fiat in _fiatsOf(viewModel, settings, 4))
+            HomeFiatRow(
+              fiat: fiat,
+              amountText: formatHomeFiat(viewModel.fiatValueOf(balance, fiat), fiat, withSymbol: false),
+              rate: viewModel.priceChange24h(fiat),
+            ),
+        ],
       );
     },
   ),
