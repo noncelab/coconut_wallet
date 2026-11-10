@@ -602,6 +602,7 @@ wallet_home_screen:
     watch_only_type: "Solo lectura"
     remove_watch_only: "Eliminar la billetera de solo lectura existente"
     remove_hot_wallet: "Eliminar la billetera caliente existente"
+    remove_hot_wallet_warning: "Se eliminará la frase mnemónica guardada en este dispositivo. Si no has hecho una copia de seguridad, no podrás deshacerlo."
     scan_seed_qr: "Escanear Seed QR"
     enter_mnemonic: "Introducir mnemónica"
     seed_qr_guide: "Escanea tu código Seed QR. (21x21 o 25x25)"
