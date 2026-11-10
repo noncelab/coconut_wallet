@@ -5,7 +5,9 @@ import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLa
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -226,7 +228,7 @@ class WalletCard extends StatelessWidget {
     );
   }
 
-  /// 이름 아래 줄. 단일서명은 MFP, 다중서명은 정족수(m/n).
+  /// 이름 아래 줄. 단일서명은 MFP, 다중서명은 정족수(m/n), 상속 지갑은 '상속 지갑'.
   ({String text, Key key})? _subtitle() {
     final current = wallet;
     if (current is MultisigWalletItem) {
@@ -234,6 +236,9 @@ class WalletCard extends StatelessWidget {
         text: '${current.requiredSignatureCount}/${current.signers.length}',
         key: const Key('wallet-card-quorum'),
       );
+    }
+    if (current is TaprootWalletItem) {
+      return (text: t.wallet_stack_list.inheritance_wallet, key: const Key('wallet-card-inheritance'));
     }
     final mfp = walletMasterFingerprint(current);
     return mfp == null ? null : (text: formatMfp(mfp), key: const Key('wallet-card-mfp'));

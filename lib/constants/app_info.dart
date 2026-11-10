@@ -3,7 +3,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 
 /// TODO: release date 기록
-const RELEASE_DATE = '2026.11.06';
+const RELEASE_DATE = '2026.11.10';
 const COPYRIGHT_TEXT = '© 2025 Nonce Lab. Inc. in S.Korea.\nLicensed under the MIT License.';
 
 /// AppStore App ID (iOS)

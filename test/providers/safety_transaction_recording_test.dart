@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -132,7 +133,18 @@ void main() {
       [TransactionOutput.forPayment(999000, vault.getAddress(5))],
       AddressType.p2wpkh,
     );
-    transaction.utxoList.add(Utxo(inputHash, 0, 1000000, '${vault.derivationPath}/0/0'));
+    // develop 335fdf6f3부터 PSBT를 만들기 전에 UTXO가 지갑 주소인지 확인하므로, 주소를 가진 UtxoState로 넣는다
+    transaction.utxoList.add(
+      UtxoState(
+        transactionHash: inputHash,
+        index: 0,
+        amount: 1000000,
+        derivationPath: '${vault.derivationPath}/0/0',
+        blockHeight: 1,
+        to: vault.getAddress(0),
+        timestamp: DateTime(2026),
+      ),
+    );
     send =
         SendInfoProvider()
           ..setWalletId(1)

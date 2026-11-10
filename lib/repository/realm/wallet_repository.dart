@@ -71,7 +71,8 @@ class WalletRepository extends BaseRepository {
       } else if (walletBases[i].walletType == WalletType.taproot.name) {
         final realmTaprootWallet = taprootWalletMap[walletBases[i].id];
         assert(realmTaprootWallet != null);
-        walletList.add(mapRealmToTaprootWalletItem(realmTaprootWallet!, walletBases[i].descriptor));
+        final taprootWalletItem = _loadTaprootWalletItem(realmTaprootWallet!, walletBases[i].descriptor);
+        if (taprootWalletItem != null) walletList.add(taprootWalletItem);
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(multisigWallets[multisigWalletIndex++], walletBases[i].descriptor));
@@ -79,6 +80,26 @@ class WalletRepository extends BaseRepository {
     }
 
     return walletList;
+  }
+
+  TaprootWalletItem? _loadTaprootWalletItem(RealmTaprootWallet realmTaprootWallet, String descriptor) {
+    final TaprootWalletItem walletItem;
+    try {
+      walletItem = mapRealmToTaprootWalletItem(realmTaprootWallet, descriptor);
+    } catch (e, stackTrace) {
+      Logger.error('getWalletItemList: skip taproot wallet ${realmTaprootWallet.id} - $e\n$stackTrace');
+      return null;
+    }
+
+    final cachedReceiveAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND index == 0 AND isChange == false', [
+          walletItem.id,
+        ]).firstOrNull;
+    if (cachedReceiveAddress != null && cachedReceiveAddress.address != walletItem.walletBase.getAddress(0)) {
+      Logger.error('getWalletItemList: skip taproot wallet ${walletItem.id} - receive address 0 mismatch');
+      return null;
+    }
+    return walletItem;
   }
 
   /// 싱글시그 지갑 추가
