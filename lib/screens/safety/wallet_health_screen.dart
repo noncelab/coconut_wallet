@@ -969,8 +969,12 @@ class _InfoIncidentRow extends StatelessWidget {
 
   final SafetyIncident incident;
 
+  /// 같은 카드의 검토 행([SafetyReviewRow])처럼 글자는 1.2배까지만(M20)
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      MediaQuery.withClampedTextScaling(maxScaleFactor: 1.2, child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     final colors = context.coconutColors;
     final wallet = safetyWalletLine(context, incident.walletId);
     return SafetyPressRow(
@@ -993,7 +997,8 @@ class _InfoIncidentRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (wallet != null) Text(wallet, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  if (wallet != null)
+                    Text(safetyKoText(wallet), style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                   Text(
                     safetyKoText(t.wallet_health.section.mempool_dropped),
                     style: CoconutTypography.body2_14.setColor(colors.primaryText),

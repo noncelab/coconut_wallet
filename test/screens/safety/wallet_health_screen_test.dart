@@ -766,6 +766,61 @@ void main() {
     }
   });
 
+  // M20: 320dp·글자 200%에서 검토 카드 행(검토 필요·사라진 거래)은 글자를 1.2배까지만 키운다(결정 #11과 같은 규칙).
+  // 문제 글도 지갑 줄도 단어 가운데서 줄을 바꾸지 않는다("지갑이 일 / 치하는지", "보 / 기 전용"이 아니다).
+  // 지갑 이름 길이를 2~7자로 바꿔 지갑 줄이 줄바꿈되는 자리를 고루 지나게 한다(테스트 글꼴은 글자마다 1em이라 더 길면 이름 한 단어가 칸보다 넓다)
+  testWidgets('M20 review card rows at 200% text on 320dp: text capped at 1.2x, no word split across lines', (
+    tester,
+  ) async {
+    await pumpWalletHealthApp(
+      tester,
+      const WalletHealthScreen(),
+      report: WalletHealthReport(
+        status: WalletHealthStatus.scored,
+        score: 60,
+        label: WalletHealthLabel.of(60),
+        categories: categories(),
+        reviewItems: [
+          for (var id = 1; id <= 6; id++)
+            SafetyCheckResult(
+              SafetyCheckId.watchOnlyVerify,
+              SafetyOutcome.failed,
+              walletId: id,
+              severity: SafetySeverity.actionNeeded,
+            ),
+        ],
+        infoIncidents: [
+          SafetyIncident(walletId: 6, txid: 'b' * 64, detectedAt: DateTime.now(), txState: IncidentTxState.dropped),
+        ],
+        walletCount: 6,
+        evaluatedAt: DateTime.now(),
+      ),
+      wallets: [for (var id = 1; id <= 6; id++) WalletMock.createSingleSigWalletItem(id: id, name: 'W' * id)],
+      width: 320,
+      textScale: 2,
+    );
+    final rows = find.byWidgetPredicate((w) => '${w.key}'.contains(RegExp('wallet-health-(review|info)-')));
+    expect(rows, findsNWidgets(7));
+    for (final paragraph in tester.renderObjectList<RenderParagraph>(
+      find.descendant(of: rows, matching: find.byType(RichText)),
+    )) {
+      final text = paragraph.text.toPlainText();
+      for (final word in RegExp('[^ ]+').allMatches(text)) {
+        final lines = {
+          for (var i = word.start; i < word.end; i++)
+            if (text[i] != '\u2060')
+              paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)).first.top,
+        };
+        expect(
+          lines,
+          hasLength(1),
+          reason: '"${word[0]!.replaceAll('\u2060', '')}" in "${text.replaceAll('\u2060', '')}"',
+        );
+      }
+      expect(paragraph.textScaler.scale(10), moreOrLessEquals(12), reason: text.replaceAll('\u2060', ''));
+    }
+  });
+
   // M04: 구독 확인 중(verifying)인 구독자에게 위급(S3) 화면이 무료 판매 카드("Premium 알아보기")를 보이지 않는다.
   // 대신 누를 곳 없는 중립 "구독 확인 중" 카드. 준비된 비상 이동 초안이 있으면 그 카드가 그대로다
   testWidgets('S3 while the subscription is verifying: a neutral checking card, not the sales card', (tester) async {

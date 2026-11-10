@@ -841,8 +841,13 @@ class SafetyReviewRow extends StatelessWidget {
   /// ⚠ 자리 폭(아이콘은 가운데). 🔔 알림처럼 36 원 아이콘의 사건 줄과 한 화면에 있으면 36을 줘 글 시작선을 맞춘다(POLISH D23)
   final double? iconBox;
 
+  /// 글 칸이 알약 옆이라 좁다: 큰 글자에서 단어가 끊기지 않게 글자는 1.2배까지만(결정 #11과 같은 규칙, M20).
+  /// 아이콘·알약 위치 계산도 상한 배율을 쓰도록 Builder 안에서 그린다
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      MediaQuery.withClampedTextScaling(maxScaleFactor: 1.2, child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     final colors = context.coconutColors;
     final wallet = safetyWalletLine(context, check.walletId);
     final aboveStyle = wallet == null ? null : CoconutTypography.body3_12;
@@ -876,7 +881,7 @@ class SafetyReviewRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (wallet != null) Text(wallet, style: aboveStyle!.setColor(colors.secondaryText)),
+                    if (wallet != null) Text(safetyKoText(wallet), style: aboveStyle!.setColor(colors.secondaryText)),
                     Text(
                       safetyKoText(safetyIssueText(check)),
                       style: CoconutTypography.body2_14.setColor(colors.primaryText),
