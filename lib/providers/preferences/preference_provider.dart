@@ -109,6 +109,8 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _hasInitializedFavoriteWalletIds;
 
   /// 총 잔액에서 제외할 지갑 목록
+  /// 0.x의 "총 잔액에서 제외" 목록. 1.0부터 합계에 쓰지 않는다("모든 지갑"은 전체 합산, 일부만 보려면 위젯·인사이트에서 지갑을 고른다).
+  /// Realm에 남아 있는 값이라 지갑 삭제 때 정리만 한다.
   late List<int> _excludedFromTotalBalanceWalletIds;
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
