@@ -62,6 +62,7 @@ abstract final class SafetyAssistFlow {
       safety.setIncidentGuideStep(incident.id, incident.guideStep, assistStartedAt: DateTime.now()).catchError((_) {}),
     );
     final session = AssistSession(
+      incidentId: incident.id,
       wallet: context.read<WalletProvider>().getWalletById(incident.walletId),
       incidentTxids: _openTxids(safety.state, incident.walletId, also: incident.txid),
       entryPoint: entryPoint,
@@ -81,10 +82,12 @@ abstract final class SafetyAssistFlow {
     BuildContext context, {
     required int walletId,
     required RescueDestination destination,
+    String? incidentId,
     double? fallbackFeeRate,
   }) async {
     final state = context.read<SafetyProvider?>()?.state;
     final session = AssistSession(
+      incidentId: incidentId,
       wallet: context.read<WalletProvider>().getWalletById(walletId),
       incidentTxids: state == null ? const [] : _openTxids(state, walletId),
       entryPoint: SendEntryPoint.home,
@@ -144,6 +147,7 @@ class AssistSession {
     required this.wallet,
     required this.incidentTxids,
     required this.entryPoint,
+    this.incidentId,
     this.opener,
     this.rescue,
     this.isMoveNow = false,
@@ -153,6 +157,7 @@ class AssistSession {
   /// 사고 지갑
   final WalletItemBase wallet;
   final List<String> incidentTxids;
+  final String? incidentId;
   final SendEntryPoint entryPoint;
   final Route<dynamic>? opener;
   final RescueDestination? rescue;
@@ -271,7 +276,8 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
   }
 
   /// 비상 이동의 검증된 진입(Track I: 목적지 다시 확인·마지막 수수료 대체)으로 넘긴다
-  Future<void> _moveViaRescueReady() => context.read<RescueReadyProvider>().moveNow(context, _session.wallet.id);
+  Future<void> _moveViaRescueReady() =>
+      context.read<RescueReadyProvider>().moveNow(context, _session.wallet.id, incidentId: _session.incidentId);
 
   /// 네트워크 실패는 자동으로 다시 하지 않는다(사용자가 다시 시도)
   Future<void> _analyze() async {
@@ -984,6 +990,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         destination: widget.destination.address,
         destinationWalletId: widget.destination.wallet?.id,
         entryPoint: session.entryPoint,
+        incidentId: session.incidentId,
       );
     } on AssistDestinationRejected catch (e) {
       if (!mounted) return;

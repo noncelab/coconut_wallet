@@ -107,6 +107,21 @@ void main() {
     expect(reviewed.complete(now).recoveryReview, RecoveryReviewStatus.exposureSuspected, reason: 'kept on completion');
   });
 
+  test('response survives JSON, guide restart, mode changes and completion; old saves have no inferred response', () {
+    final old = detected.respond(IncidentResponseMode.premium).toJson()..remove('responseTxid');
+    expect(SafetyIncident.fromJson(old).responseTxid, isNull);
+    final response = detected.respond(IncidentResponseMode.premium).withResponseTxid('response');
+    expect(response, isNot(detected.respond(IncidentResponseMode.premium)));
+    final resumed = SafetyIncident.fromJson(response.toJson())
+        .withGuideStep(2, assistStartedAt: now)
+        .withGuideStep(2, assistStartedAt: now.add(const Duration(hours: 1)))
+        .respond(IncidentResponseMode.free)
+        .withTxState(IncidentTxState.confirmed)
+        .withRecoveryReview(RecoveryReviewStatus.completedByUser, RecoveryMaterialType.mnemonic)
+        .complete(now);
+    expect(resumed.responseTxid, 'response');
+  });
+
   test('unknown state name throws (state loader falls back to initial)', () {
     expect(() => SafetyIncident.fromJson({...detected.toJson(), 'state': 'hacked'}), throwsArgumentError);
   });

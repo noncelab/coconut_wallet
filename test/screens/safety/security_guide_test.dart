@@ -226,6 +226,7 @@ void main() {
             responseMode: IncidentResponseMode.premium,
             guideStep: 2,
             assistStartedAt: assistAt,
+            responseTxid: 'move',
           ),
         ],
         lastBroadcast: (walletId: kWalletId, txid: 'move', at: assistAt.add(const Duration(minutes: 5))),
@@ -379,51 +380,94 @@ void main() {
     }
   });
 
-  // D2: 요약의 "대응 거래"는 Safety Assist를 시작한 뒤 이 지갑에서 보낸 거래만
-  group('Premium summary only counts a send made after Safety Assist started', () {
+  group('M02: the real guide only uses the incident response transaction', () {
     final assistAt = DateTime(2026, 10, 20, 10);
-    final cases = [
-      (
-        'a normal send before Safety Assist',
-        (walletId: kWalletId, txid: 'pay', at: DateTime(2026, 10, 20, 9, 30)),
-        false,
+
+    SafetyProvider response({String? txid, int otherWallet = kWalletId}) => SafetyProvider.fixed(
+      null,
+      state: SafetyState(
+        incidents: [
+          SafetyIncident.fromJson({
+            ...SafetyIncident(
+              walletId: kWalletId,
+              txid: kTxid,
+              detectedAt: DateTime(2026, 10, 20, 9),
+              state: IncidentState.responding,
+              responseMode: IncidentResponseMode.premium,
+              guideStep: 2,
+              assistStartedAt: assistAt,
+            ).toJson(),
+            'responseTxid': txid,
+          }),
+        ],
+        lastBroadcast: (walletId: otherWallet, txid: 'unrelated', at: assistAt.add(const Duration(minutes: 5))),
       ),
-      ('a send from another wallet', (walletId: 2, txid: 'other', at: DateTime(2026, 10, 20, 10, 30)), false),
-      (
-        'the response sent after Safety Assist',
-        (walletId: kWalletId, txid: 'move', at: DateTime(2026, 10, 20, 10, 30)),
-        true,
-      ),
-    ];
-    for (final (label, broadcast, sent) in cases) {
-      testWidgets(label, (tester) async {
+    );
+
+    Future<void> finish(WidgetTester tester, {required bool sent}) async {
+      if (sent) {
+        await tapVisible(tester, findText(strings.continue_review));
+      } else {
+        await tapVisible(tester, findText(strings.step2.moved));
+        await tapVisible(tester, findText(strings.step2.moved_confirm));
+      }
+      await tapVisible(tester, findText(strings.step3.mark));
+      await tapVisible(tester, findText(strings.next_step));
+      await tapVisible(tester, findText(strings.step4.complete));
+      expect(find.byKey(const Key('safety-guide-done')), findsOneWidget);
+      expect(findText(strings.complete.sent), sent ? findsOneWidget : findsNothing);
+      expect(findText(strings.complete.none), sent ? findsNothing : findsOneWidget);
+    }
+
+    for (final wallet in [kWalletId, 2]) {
+      testWidgets('cancelled Assist then unrelated send from wallet $wallet keeps STEP2 and response none', (
+        tester,
+      ) async {
         usePhoneSize(tester);
-        final safety = SafetyProvider.fixed(
-          null,
-          state: SafetyState(
-            incidents: [
-              SafetyIncident(
-                walletId: kWalletId,
-                txid: kTxid,
-                detectedAt: DateTime(2026, 10, 20, 9),
-                state: IncidentState.responding,
-                responseMode: IncidentResponseMode.premium,
-                guideStep: 4,
-                assistStartedAt: assistAt,
-              ),
-            ],
-            lastBroadcast: broadcast,
-          ),
-        );
+        final safety = response(otherWallet: wallet);
         await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
         await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
-        await tester.tap(findText(strings.step4.complete));
-        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('safety-guide-step2')), findsOneWidget);
+        expect(find.byKey(const Key('safety-guide-submitted')), findsNothing);
+        expect(safety.incidentFor(kWalletId, kTxid)!.guideStep, 2);
+        await finish(tester, sent: false);
+      });
 
-        expect(findText(strings.complete.sent), sent ? findsOneWidget : findsNothing);
-        expect(findText(strings.complete.none), sent ? findsNothing : findsOneWidget);
+      testWidgets('response survives later unrelated send from wallet $wallet in submitted card and summary', (
+        tester,
+      ) async {
+        usePhoneSize(tester);
+        final safety = response(txid: 'response', otherWallet: wallet);
+        await tester.pumpWidget(
+          safetyTestApp(
+            origin(),
+            safety: safety,
+            wallets: FakeWallets(
+              [WalletMock.createSingleSigWalletItem(id: kWalletId)],
+              records: {'response', 'unrelated'},
+            ),
+            preferences: FakePreferences(),
+          ),
+        );
+        await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+        expect(find.byKey(const Key('safety-guide-submitted')), findsOneWidget);
+        expect(tester.widget<TransactionItemCard>(find.byType(TransactionItemCard)).tx.transactionHash, 'response');
+        await finish(tester, sent: true);
       });
     }
+
+    testWidgets('restarting Assist after a response keeps submitted and summary even with a newer start time', (
+      tester,
+    ) async {
+      usePhoneSize(tester);
+      final safety = response(txid: 'response');
+      // Same persisted update as SafetyAssistFlow.start (also called by S3 prepare response).
+      await safety.setIncidentGuideStep(kIncidentId, 2, assistStartedAt: assistAt.add(const Duration(hours: 1)));
+      await tester.pumpWidget(safetyTestApp(origin(), safety: safety));
+      await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+      expect(find.byKey(const Key('safety-guide-submitted')), findsOneWidget);
+      await finish(tester, sent: true);
+    });
   });
 
   // D4: 끝난 사건 다시 보기는 사용 주의 표시를 포함해 아무것도 바꾸지 않는다

@@ -231,6 +231,7 @@ abstract final class SafetyAssist {
     required SweepPlan plan,
     required String destination,
     int? destinationWalletId,
+    String? incidentId,
     SendEntryPoint entryPoint = SendEntryPoint.home,
   }) async {
     final walletProvider = context.read<WalletProvider>();
@@ -260,6 +261,7 @@ abstract final class SafetyAssist {
 
     sendInfo.clear();
     sendInfo.setWalletId(wallet.id);
+    sendInfo.setSafetyIncidentId(incidentId);
     sendInfo.setSendEntryPoint(entryPoint);
     sendInfo.setIsMultisig(wallet.walletType == WalletType.multiSignature);
     sendInfo.setTransaction(transaction);

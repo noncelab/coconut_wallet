@@ -27,7 +27,16 @@ class SafetyStore {
 
   /// 읽기·바꾸기·캐시 쓰기가 await 없이 이어져 동시에 부른 update끼리 서로 덮어쓰지 않는다.
   Future<SafetyState> update(SafetyState Function(SafetyState) change) async {
-    final next = change(load());
+    var next = change(load());
+    if (next.draftResponseIncidents.isNotEmpty) {
+      final openIncidents = next.incidents.where((i) => i.isOpen).map((i) => i.id).toSet();
+      next = next.copyWith(
+        draftResponseIncidents: {
+          for (final entry in next.draftResponseIncidents.entries)
+            if (openIncidents.contains(entry.value)) entry.key: entry.value,
+        },
+      );
+    }
     if (_prefs.isInitialized) await _prefs.setString(key, jsonEncode(next.toJson()));
     return next;
   }
@@ -42,8 +51,35 @@ class SafetyStore {
     await update((s) => s.copyWith(appTxidPrefixes: {...s.appTxidPrefixes.where((p) => p != prefix), prefix}));
   }
 
-  Future<void> recordBroadcastSucceeded(int walletId, String txid) async {
-    await update((s) => s.copyWith(lastBroadcast: (walletId: walletId, txid: txid, at: DateTime.now())));
+  Future<void> recordResponseDraft(int walletId, String txid, {required String incidentId}) async {
+    await update((s) {
+      if (!s.incidents.any((i) => i.id == incidentId && i.walletId == walletId && i.isOpen)) return s;
+      return s.copyWith(draftResponseIncidents: {...s.draftResponseIncidents, txid: incidentId});
+    });
+  }
+
+  Future<void> recordBroadcastSucceeded(
+    int walletId,
+    String txid, {
+    String? incidentId,
+    Set<String> replacedTxids = const {},
+  }) async {
+    await update((s) {
+      final responseIncidentId = incidentId ?? s.draftResponseIncidents[txid];
+      return s.copyWith(
+        lastBroadcast: (walletId: walletId, txid: txid, at: DateTime.now()),
+        draftResponseIncidents: {...s.draftResponseIncidents}..remove(txid),
+        incidents: [
+          for (final incident in s.incidents)
+            if (incident.walletId == walletId &&
+                ((incident.id == responseIncidentId && (incidentId != null || incident.isOpen)) ||
+                    (incident.responseTxid != null && replacedTxids.contains(incident.responseTxid))))
+              incident.withResponseTxid(txid)
+            else
+              incident,
+        ],
+      );
+    });
   }
 
   Future<void> recordMetadataExport({required int tagCount, required int memoCount}) async {

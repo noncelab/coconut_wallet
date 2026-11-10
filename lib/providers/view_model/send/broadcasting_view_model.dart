@@ -65,6 +65,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final int? _signedDraftId;
   WalletBase? _walletBase;
   int? _walletId;
+  String? _safetyIncidentId;
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
@@ -81,6 +82,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<BroadcastingOutputDetailItem> _outputDetailItems = [];
   final List<int> _outputIndexesToMyAddress = [];
   final List<String> _tagSourceUtxoIds = [];
+  final Set<String> _replacedTxids = {};
   List<UtxoTag>? _inheritanceTags;
   bool _tagInheritanceFailed = false;
   bool _isBroadcastDispatched = false;
@@ -179,6 +181,7 @@ class BroadcastingViewModel extends ChangeNotifier {
       }
     }
     _tagSourceUtxoIds.addAll(sourceIds);
+    _replacedTxids.addAll(replacedHashes);
     _inheritanceTags = List.unmodifiable(
       _outputIndexesToMyAddress.isEmpty
           ? <UtxoTag>[]
@@ -268,9 +271,14 @@ class BroadcastingViewModel extends ChangeNotifier {
   Future<void> _finalizeAcceptedTransaction(Set<String> selectedIds, int? unsignedDraftId) async {
     _isTransactionAccepted = true;
     unawaited(
-      SafetyStore(
-        SharedPrefsRepository(),
-      ).recordBroadcastSucceeded(_walletId!, _signedTx!.transactionHash).catchError((_) {}),
+      SafetyStore(SharedPrefsRepository())
+          .recordBroadcastSucceeded(
+            _walletId!,
+            _signedTx!.transactionHash,
+            incidentId: _safetyIncidentId,
+            replacedTxids: _replacedTxids,
+          )
+          .catchError((_) {}),
     );
     await _markInputsAsOutgoing();
 
@@ -390,6 +398,8 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
+    // 늦은 성공 응답도 이 전송에 연결한다(화면 종료 뒤 SendInfo가 비워지거나 재사용될 수 있음).
+    _safetyIncidentId = _sendInfoProvider.safetyIncidentId;
 
     final originalPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
     final expectedTransaction = originalPsbt.unsignedTransaction;
@@ -645,6 +655,11 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     if (result.isSuccess) {
       _savedDraftId = result.value.id;
+      if (_safetyIncidentId != null && !_isTransactionAccepted) {
+        await SafetyStore(SharedPrefsRepository())
+            .recordResponseDraft(_walletId!, _signedTx!.transactionHash, incidentId: _safetyIncidentId!)
+            .catchError((_) {});
+      }
       // 저장이 끝나기 전에 노드가 받은 것으로 확인된 거래의 임시저장
       if (_isTransactionAccepted) await _deleteDrafts(null, _savedDraftId);
     }

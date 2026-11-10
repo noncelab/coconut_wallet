@@ -241,7 +241,7 @@ Future<void> showRecognizeSheet(BuildContext context, SafetyIncident incident) a
   );
   if (choice == null || !context.mounted) return;
   if (choice == _WhatToDoChoice.moveNow) {
-    await rescue?.moveNow(context, incident.walletId);
+    await rescue?.moveNow(context, incident.walletId, incidentId: incident.id);
   } else {
     // 새 대응은 단계 0이라 STEP1부터, 이미 대응 중이던 사건은 저장된 단계를 지킨다
     await SecurityGuide.resume(context, incident.id);

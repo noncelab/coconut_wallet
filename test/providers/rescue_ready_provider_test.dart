@@ -151,7 +151,12 @@ class _Store extends SafetyStoreFake {
   Future<void> recordAppCreatedTxid(int walletId, String txid) => throw StateError('must not record txids');
 
   @override
-  Future<void> recordBroadcastSucceeded(int walletId, String txid) => throw StateError('must not record broadcasts');
+  Future<void> recordBroadcastSucceeded(
+    int walletId,
+    String txid, {
+    String? incidentId,
+    Set<String> replacedTxids = const {},
+  }) => throw StateError('must not record broadcasts');
 }
 
 void main() {

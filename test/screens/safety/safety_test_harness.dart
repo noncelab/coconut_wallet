@@ -123,7 +123,7 @@ class FakeRescue extends Fake with ChangeNotifier implements RescueReadyProvider
       RescueDestination(address: destination, setAt: DateTime(2026, 10, 20));
 
   @override
-  Future<void> moveNow(BuildContext context, int walletId) async => moves++;
+  Future<void> moveNow(BuildContext context, int walletId, {String? incidentId}) async => moves++;
 }
 
 Widget safetyTestApp(

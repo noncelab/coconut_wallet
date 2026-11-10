@@ -736,7 +736,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
           if (updated != null) r.last_updated(time: formatHomeRelativeTime(updated, DateTime.now())),
         ].join(' '),
         button: r.move_now,
-        onPressed: () => rescue.moveNow(context, incident.walletId),
+        onPressed: () => rescue.moveNow(context, incident.walletId, incidentId: incident.id),
       );
     }
     if (premium == null) return null;

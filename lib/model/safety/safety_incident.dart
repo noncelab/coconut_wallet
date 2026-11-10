@@ -23,6 +23,7 @@ class SafetyIncident extends Equatable {
     this.responseMode,
     this.guideStep = 0,
     this.assistStartedAt,
+    this.responseTxid,
     this.resolvedAt,
     this.recoveryReview = RecoveryReviewStatus.notChecked,
     this.recoveryMaterial,
@@ -36,6 +37,9 @@ class SafetyIncident extends Equatable {
   final IncidentResponseMode? responseMode;
   final int guideStep;
   final DateTime? assistStartedAt, resolvedAt;
+
+  /// 이 사건의 Assist 보내기 흐름에서 성공한 전송만 기록한다.
+  final String? responseTxid;
 
   /// STEP4 복구 정보 점검 결과와 그 종류(기록할 때 정한다, 기록 전 null). 대응 단계·Premium 준비 상태와 따로 둔다(REQ §23.5)
   final RecoveryReviewStatus recoveryReview;
@@ -72,6 +76,8 @@ class SafetyIncident extends Equatable {
   SafetyIncident withGuideStep(int step, {DateTime? assistStartedAt}) =>
       _copy(guideStep: step, assistStartedAt: assistStartedAt);
 
+  SafetyIncident withResponseTxid(String txid) => _copy(responseTxid: txid);
+
   /// 상태·단계·모드는 그대로. 노출 의심도 자금 이동 단계로 되돌리지 않는다(안내만 연다, REQ §23.5)
   SafetyIncident withRecoveryReview(RecoveryReviewStatus status, RecoveryMaterialType material) =>
       _copy(recoveryReview: status, recoveryMaterial: material);
@@ -82,6 +88,7 @@ class SafetyIncident extends Equatable {
     IncidentResponseMode? responseMode,
     int? guideStep,
     DateTime? assistStartedAt,
+    String? responseTxid,
     DateTime? resolvedAt,
     RecoveryReviewStatus? recoveryReview,
     RecoveryMaterialType? recoveryMaterial,
@@ -94,6 +101,7 @@ class SafetyIncident extends Equatable {
     responseMode: responseMode ?? this.responseMode,
     guideStep: guideStep ?? this.guideStep,
     assistStartedAt: assistStartedAt ?? this.assistStartedAt,
+    responseTxid: responseTxid ?? this.responseTxid,
     resolvedAt: resolvedAt ?? this.resolvedAt,
     recoveryReview: recoveryReview ?? this.recoveryReview,
     recoveryMaterial: recoveryMaterial ?? this.recoveryMaterial,
@@ -108,6 +116,7 @@ class SafetyIncident extends Equatable {
     'responseMode': responseMode?.name,
     'guideStep': guideStep,
     'assistStartedAt': assistStartedAt?.toIso8601String(),
+    'responseTxid': responseTxid,
     'resolvedAt': resolvedAt?.toIso8601String(),
     'recoveryReview': recoveryReview.name,
     'recoveryMaterial': recoveryMaterial?.name,
@@ -123,6 +132,7 @@ class SafetyIncident extends Equatable {
     responseMode: j['responseMode'] == null ? null : IncidentResponseMode.values.byName(j['responseMode'] as String),
     guideStep: j['guideStep'] as int? ?? 0,
     assistStartedAt: j['assistStartedAt'] == null ? null : DateTime.parse(j['assistStartedAt'] as String),
+    responseTxid: j['responseTxid'] as String?,
     resolvedAt: j['resolvedAt'] == null ? null : DateTime.parse(j['resolvedAt'] as String),
     recoveryReview:
         j['recoveryReview'] == null
@@ -142,6 +152,7 @@ class SafetyIncident extends Equatable {
     responseMode,
     guideStep,
     assistStartedAt,
+    responseTxid,
     resolvedAt,
     recoveryReview,
     recoveryMaterial,

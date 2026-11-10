@@ -251,6 +251,7 @@ class SafetyState extends Equatable {
     this.lastBroadcast,
     this.recognizedTxids = const {},
     this.incidents = const [],
+    this.draftResponseIncidents = const {},
     this.cautionWalletIds = const {},
     this.watchOnlyVerifications = const {},
     this.passphraseVerifiedAt = const {},
@@ -282,6 +283,9 @@ class SafetyState extends Equatable {
   final WalletTxEvent? lastBroadcast;
   final Set<String> recognizedTxids;
   final List<SafetyIncident> incidents;
+
+  /// 서명된 대응 초안의 전체 txid → 사건 ID. 같은 초안을 다시 열어도 전송 성공 때만 소비한다.
+  final Map<String, String> draftResponseIncidents;
   final Set<int> cautionWalletIds;
   final Map<int, WatchOnlyVerification> watchOnlyVerifications;
   final Map<int, DateTime> passphraseVerifiedAt;
@@ -312,6 +316,7 @@ class SafetyState extends Equatable {
     WalletTxEvent? lastBroadcast,
     Set<String>? recognizedTxids,
     List<SafetyIncident>? incidents,
+    Map<String, String>? draftResponseIncidents,
     Set<int>? cautionWalletIds,
     Map<int, WatchOnlyVerification>? watchOnlyVerifications,
     Map<int, DateTime>? passphraseVerifiedAt,
@@ -332,6 +337,7 @@ class SafetyState extends Equatable {
     lastBroadcast: lastBroadcast ?? this.lastBroadcast,
     recognizedTxids: recognizedTxids ?? this.recognizedTxids,
     incidents: incidents ?? this.incidents,
+    draftResponseIncidents: draftResponseIncidents ?? this.draftResponseIncidents,
     cautionWalletIds: cautionWalletIds ?? this.cautionWalletIds,
     watchOnlyVerifications: watchOnlyVerifications ?? this.watchOnlyVerifications,
     passphraseVerifiedAt: passphraseVerifiedAt ?? this.passphraseVerifiedAt,
@@ -363,6 +369,10 @@ class SafetyState extends Equatable {
       lastBroadcast: lastBroadcast?.walletId == walletId ? null : lastBroadcast,
       recognizedTxids: recognizedTxids,
       incidents: [...incidents.where((i) => i.walletId != walletId)],
+      draftResponseIncidents: {
+        for (final entry in draftResponseIncidents.entries)
+          if (incidents.any((i) => i.id == entry.value && i.walletId != walletId && i.isOpen)) entry.key: entry.value,
+      },
       cautionWalletIds: {...cautionWalletIds}..remove(walletId),
       watchOnlyVerifications: drop(watchOnlyVerifications),
       passphraseVerifiedAt: drop(passphraseVerifiedAt),
@@ -393,6 +403,7 @@ class SafetyState extends Equatable {
     'lastBroadcast': lastBroadcast == null ? null : _eventToJson(lastBroadcast!),
     'recognizedTxids': recognizedTxids.toList(),
     'incidents': [for (final i in incidents) i.toJson()],
+    'draftResponseIncidents': draftResponseIncidents,
     'cautionWalletIds': cautionWalletIds.toList(),
     'watchOnlyVerifications': _byWallet(watchOnlyVerifications, (v) => v.toJson()),
     'passphraseVerifiedAt': _byWallet(passphraseVerifiedAt, (at) => at.toIso8601String()),
@@ -436,6 +447,7 @@ class SafetyState extends Equatable {
         lastBroadcast: j['lastBroadcast'] == null ? null : _eventFromJson(j['lastBroadcast']),
         recognizedTxids: _strings(j['recognizedTxids']),
         incidents: [for (final i in _list(j['incidents'])) SafetyIncident.fromJson(_obj(i))],
+        draftResponseIncidents: Map<String, String>.from(_obj(j['draftResponseIncidents'] ?? const {})),
         cautionWalletIds: Set<int>.from(_list(j['cautionWalletIds'])),
         watchOnlyVerifications: _walletMap(j['watchOnlyVerifications'], (v) => WatchOnlyVerification.fromJson(_obj(v))),
         passphraseVerifiedAt: _walletMap(j['passphraseVerifiedAt'], _date),
@@ -483,6 +495,7 @@ class SafetyState extends Equatable {
     lastBroadcast,
     recognizedTxids,
     incidents,
+    draftResponseIncidents,
     cautionWalletIds,
     watchOnlyVerifications,
     passphraseVerifiedAt,

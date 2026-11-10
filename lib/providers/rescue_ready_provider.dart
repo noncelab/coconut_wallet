@@ -220,7 +220,7 @@ class RescueReadyProvider extends ChangeNotifier {
   /// 사용자가 시작하는 이동. 구독이 끝나도 동작한다(새로 시작하는 자동화가 아님).
   /// Safety Assist 흐름이 지금 수수료와 열린 위급 사건의 충돌로 다시 계획해 검토 화면 → 기존 보내기 확인으로 간다.
   /// 서명·전송은 거기서 사용자가 한다
-  Future<void> moveNow(BuildContext context, int walletId) async {
+  Future<void> moveNow(BuildContext context, int walletId, {String? incidentId}) async {
     if (_moving) return;
     _moving = true;
     try {
@@ -247,6 +247,7 @@ class RescueReadyProvider extends ChangeNotifier {
       await SafetyAssistFlow.moveNow(
         context,
         walletId: walletId,
+        incidentId: incidentId,
         destination: destination,
         fallbackFeeRate: _feeRate ?? state.rescue[walletId]?.draft?.feeRate,
       );

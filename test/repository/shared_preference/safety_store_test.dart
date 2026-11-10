@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
@@ -68,6 +70,89 @@ void main() {
     final s = store.load();
     expect((s.lastBroadcast!.walletId, s.lastBroadcast!.txid), (3, 'sent'));
     expect((s.metadataExport!.tagCount, s.metadataExport!.memoCount), (4, 7));
+  });
+
+  test('an incident response survives later broadcasts and a restarted Assist after reloading the store', () async {
+    final incident = SafetyIncident(
+      walletId: 1,
+      txid: 'incident',
+      detectedAt: DateTime(2026),
+    ).respond(IncidentResponseMode.premium).withGuideStep(2, assistStartedAt: DateTime(2026, 1, 1));
+    await store.update((s) => s.copyWith(incidents: [incident]));
+    await store.recordBroadcastSucceeded(1, 'response', incidentId: incident.id);
+    await store.recordBroadcastSucceeded(1, 'unrelated-same-wallet');
+    await store.recordBroadcastSucceeded(2, 'unrelated-other-wallet');
+    await store.update(
+      (s) => s.copyWith(incidents: [s.incidents.single.withGuideStep(2, assistStartedAt: DateTime(2026, 1, 2))]),
+    );
+    final restored = SafetyStore(prefs).load();
+    expect(restored.lastBroadcast!.txid, 'unrelated-other-wallet');
+    expect(restored.incidents.single.responseTxid, 'response');
+    expect(restored.incidents.single.guideStep, 2);
+    expect(restored.incidents.single.state, IncidentState.responding);
+  });
+
+  group('M02 response map', () {
+    final at = DateTime(2026);
+    final incident = SafetyIncident(
+      walletId: 1,
+      txid: 'incident',
+      detectedAt: at,
+    ).respond(IncidentResponseMode.premium);
+    final other = SafetyIncident(walletId: 2, txid: 'other', detectedAt: at);
+    final txid = 'a' * 64;
+    final links = {txid: incident.id, 'other-draft': other.id};
+
+    Future<void> seed({List<SafetyIncident>? incidents}) => prefs.setString(
+      SafetyStore.key,
+      jsonEncode({
+        ...SafetyState(incidents: incidents ?? [incident, other]).toJson(),
+        'draftResponseIncidents': links,
+      }),
+    );
+
+    test('only the full successful txid consumes its persisted incident link', () async {
+      await seed();
+      final reloaded = SafetyStore(prefs);
+      await reloaded.recordBroadcastSucceeded(1, '${'a' * 63}b');
+      expect(reloaded.load().incidents.every((i) => i.responseTxid == null), isTrue);
+      expect(reloaded.load().toJson()['draftResponseIncidents'], links);
+      await reloaded.recordBroadcastSucceeded(1, txid);
+      expect(reloaded.load().incidents.first.responseTxid, txid);
+      expect(reloaded.load().incidents.last.responseTxid, isNull);
+      expect(reloaded.load().toJson()['draftResponseIncidents'], {'other-draft': other.id});
+    });
+
+    for (final invalid in ['wrong-wallet', 'missing', 'resolved']) {
+      test('$invalid link cannot create a response association', () async {
+        await seed(
+          incidents: [if (invalid != 'missing') invalid == 'resolved' ? incident.recognize(at) : incident, other],
+        );
+        await store.recordBroadcastSucceeded(invalid == 'wrong-wallet' ? 2 : 1, txid);
+        expect(store.load().incidents.every((i) => i.responseTxid == null), isTrue);
+        expect(store.load().toJson()['draftResponseIncidents'], {'other-draft': other.id});
+      });
+    }
+
+    for (final change in ['recognized', 'completed', 'deleted', 'wallet deleted']) {
+      test('$change cleans only that incident or wallet links', () async {
+        await seed();
+        if (change == 'wallet deleted') {
+          await store.removeWallet(1);
+        } else {
+          await store.update(
+            (s) => s.copyWith(
+              incidents: [
+                if (change == 'recognized') incident.recognize(at),
+                if (change == 'completed') incident.complete(at),
+                other,
+              ],
+            ),
+          );
+        }
+        expect(SafetyStore(prefs).load().toJson()['draftResponseIncidents'], {'other-draft': other.id});
+      });
+    }
   });
 
   test('removeWallet clears that wallet', () async {

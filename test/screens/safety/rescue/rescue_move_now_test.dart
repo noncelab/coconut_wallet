@@ -8,6 +8,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
+import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -21,6 +22,8 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/screens/safety/assist/safety_assist_screen.dart';
+import 'package:coconut_wallet/screens/safety/incident_sheets.dart';
+import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
@@ -32,6 +35,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../../../services/safety/safety_fakes.dart';
+import '../safety_test_harness.dart' as guide;
 
 const _attackTxid = 'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
 
@@ -92,7 +96,7 @@ class _Analytics extends AnalyticsService {
 
 /// 흐름 도중에 안전 상태가 바뀌는 SafetyProvider(사건 감지·사용 주의 표시가 그사이 들어온 경우)
 class _LiveSafety extends SafetyProvider {
-  _LiveSafety(this.current) : super.fixed(null);
+  _LiveSafety(this.current, {WalletHealthReport? report}) : super.fixed(report, state: current);
 
   SafetyState current;
 
@@ -283,6 +287,8 @@ void main() {
     WidgetTester tester, {
     required RescueReadyProvider Function(_Wallets, _Node, SafetyStoreFake) rescueOf,
     required SafetyState state,
+    WalletHealthReport? report,
+    EntitlementService? entitlement,
   }) async {
     final source = _single(1, 1), vault = _single(2, 2);
     final wallets = _Wallets([source, vault]);
@@ -300,7 +306,7 @@ void main() {
     final node = _Node();
     final store = SafetyStoreFake()..state = state;
     final rescue = rescueOf(wallets, node, store);
-    final safety = _LiveSafety(state);
+    final safety = _LiveSafety(state, report: report);
     final sendInfo = SendInfoProvider();
     final pushed = <String>[];
     late BuildContext host;
@@ -321,6 +327,7 @@ void main() {
           ChangeNotifierProvider<SafetyProvider>.value(value: safety),
           Provider<SendInfoProvider>.value(value: sendInfo),
           ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
+          if (entitlement != null) Provider<EntitlementService>.value(value: entitlement),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
@@ -351,6 +358,92 @@ void main() {
         store: store,
         fetchFees: () async => RecommendedFee(5, 5, 5, 5, 1),
       );
+
+  for (final entry in ['Assist prepared move', 'Wallet Health S3', 'incident sheet', 'standalone']) {
+    testWidgets('M02 rescue: $entry preserves only an explicit incident through the real move flow', (tester) async {
+      guide.usePhoneSize(tester);
+      SafetyAssistFlow.fastFeeRateOverride = () async => 5;
+      final incident = SafetyIncident(
+        walletId: 1,
+        txid: _attackTxid,
+        detectedAt: DateTime(2026, 10, 20),
+        state: IncidentState.responding,
+        responseMode: IncidentResponseMode.premium,
+        guideStep: 2,
+      );
+      final destinationAddress = _single(2, 2).walletBase.getAddress(0);
+      final state = toVault.copyWith(
+        incidents: [incident],
+        rescue: {
+          1: (
+            destination: toVault.rescue[1]!.destination,
+            draft: RescueDraftSummary(
+              destinationAddress: destinationAddress,
+              amount: 49000,
+              fee: 1000,
+              inputCount: 1,
+              feeRate: 5,
+              preparedAt: DateTime(2026, 10, 20),
+            ),
+          ),
+        },
+      );
+      final entitlement = FakeEntitlementService(initial: const PremiumState(PremiumStatus.active));
+      final env = await pumpFlow(
+        tester,
+        state: state,
+        report: WalletHealthReport(
+          status: WalletHealthStatus.criticalOverride,
+          criticalIncidents: [incident],
+          evaluatedAt: DateTime(2026, 10, 20),
+          walletCount: 2,
+          fundedWalletCount: 1,
+        ),
+        entitlement: entitlement,
+        rescueOf:
+            (wallets, node, store) => RescueReadyProvider(
+              walletProvider: wallets,
+              nodeProvider: node,
+              entitlement: entitlement,
+              store: store,
+              fetchFees: () async => RecommendedFee(5, 5, 5, 5, 1),
+            ),
+      );
+      // An old send session must not leak into either an incident move or a standalone move.
+      env.sendInfo.setSafetyIncidentId('stale-incident');
+      switch (entry) {
+        case 'Assist prepared move':
+          unawaited(SafetyAssistFlow.start(env.host(), incident.id));
+          await tester.pumpAndSettle();
+          expect(find.byKey(const Key('safety-assist-rescue-ready')), findsOneWidget);
+          await guide.tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+        case 'Wallet Health S3':
+          unawaited(WalletHealthScreen.open(env.host()));
+          await tester.pumpAndSettle();
+          await guide.tapVisible(
+            tester,
+            find.descendant(
+              of: find.byKey(const Key('wallet-health-rescue-card')),
+              matching: guide.findText(t.premium.rescue.move_now),
+            ),
+          );
+        case 'incident sheet':
+          unawaited(showRecognizeSheet(env.host(), incident));
+          await tester.pumpAndSettle();
+          await guide.tapVisible(tester, find.byKey(const Key('incident-recognize-no')));
+          await guide.tapVisible(tester, guide.findText(t.premium.rescue.move_now));
+        case 'standalone':
+          unawaited(env.host().read<RescueReadyProvider>().moveNow(env.host(), incident.walletId));
+      }
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+      expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
+      await guide.tapVisible(tester, find.byKey(const Key('safety-guide-button')));
+      expect(env.pushed.last, AppRouteNames.sendConfirm);
+      expect(env.sendInfo.transaction!.outputs.single.getAddress(), destinationAddress);
+      expect(env.sendInfo.safetyIncidentId, entry == 'standalone' ? isNull : incident.id);
+    });
+  }
 
   testWidgets('분석하는 동안 목적지가 제외되면 검토로 가지 않는다(리뷰 I-1)', (tester) async {
     final feeGate = Completer<double?>();

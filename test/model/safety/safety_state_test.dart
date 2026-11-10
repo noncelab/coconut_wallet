@@ -140,6 +140,20 @@ void main() {
     expect(decode(old), old);
   });
 
+  test('M02 response map survives JSON and copying, and follows wallet deletion', () {
+    final original = SafetyState.fromJson({
+      ...full().toJson(),
+      'draftResponseIncidents': const {'signed-response-txid': '1:x'},
+    });
+    expect(decode(original).toJson()['draftResponseIncidents'], {'signed-response-txid': '1:x'});
+    expect(original.copyWith(hintDismissed: false).toJson()['draftResponseIncidents'], {'signed-response-txid': '1:x'});
+    expect(original.withoutWallet(1).toJson()['draftResponseIncidents'], isEmpty);
+    expect(original.withoutWallet(2).toJson()['draftResponseIncidents'], {'signed-response-txid': '1:x'});
+    final old = SafetyState.fromJson(full().toJson()..remove('draftResponseIncidents'));
+    expect(old.toJson()['draftResponseIncidents'], isEmpty);
+    expect(old.incidents, full().incidents);
+  });
+
   test('missing keys read as empty', () {
     expect(SafetyState.fromJson(const {'version': SafetyState.version}), SafetyState.initial());
   });

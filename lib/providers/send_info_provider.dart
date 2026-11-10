@@ -18,6 +18,7 @@ class SendInfoProvider {
   WalletImportSource? _walletImportSource;
   int? _unsignedDraftId;
   double? _feeRate;
+  String? _safetyIncidentId;
 
   int? get walletId => _walletId;
   int? get estimatedFee => _estimatedFee;
@@ -31,6 +32,11 @@ class SendInfoProvider {
   WalletImportSource? get walletImportSource => _walletImportSource;
   int? get unsignedDraftId => _unsignedDraftId;
   double? get feeRate => _feeRate;
+  String? get safetyIncidentId => _safetyIncidentId;
+
+  void setSafetyIncidentId(String? id) {
+    _safetyIncidentId = id;
+  }
 
   void setFeeRate(double feeRate) {
     _feeRate = feeRate;
@@ -81,6 +87,7 @@ class SendInfoProvider {
   }
 
   void clear() {
+    _safetyIncidentId = null;
     _walletId =
         _estimatedFee =
             _isMaxMode =

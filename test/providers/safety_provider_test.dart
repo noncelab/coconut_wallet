@@ -21,9 +21,12 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/services/safety/safety_inputs_collector.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 
 import '../repository/realm/test_realm_manager.dart';
 import '../services/safety/safety_fakes.dart';
+import '../screens/safety/safety_test_harness.dart' as guide;
 
 /// 구성이 온전한 2-of-2 다중서명 지갑
 MultisigWalletItem _multisig({int id = 1}) {
@@ -130,6 +133,21 @@ void main() {
   }
 
   SafetyIncident incident(String txid) => SafetyIncident(walletId: 1, txid: txid, detectedAt: DateTime(2026));
+
+  testWidgets('M02: guide resume reloads an incident response persisted after the last safety refresh', (tester) async {
+    guide.usePhoneSize(tester);
+    store.state = SafetyState(incidents: [incident('attack').respond(IncidentResponseMode.premium).withGuideStep(2)]);
+    create(tester);
+    await settle(tester);
+    await tester.pumpWidget(guide.safetyTestApp(guide.origin(), safety: provider, wallets: wallets));
+    await store.update((s) => s.copyWith(incidents: [s.incidents.single.withResponseTxid('response')]));
+    expect(provider.state.incidents.single.responseTxid, isNull);
+    unawaited(SecurityGuide.resume(guide.originContext(tester), '1:attack'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-guide-submitted')), findsOneWidget);
+    expect(provider.state.incidents.single.guideStep, 3);
+    expect(provider.state.incidents.single.responseTxid, 'response');
+  });
 
   testWidgets('unknown external checks recover once on completed sync without querying on every burst', (tester) async {
     var updates = 0;

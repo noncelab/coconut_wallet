@@ -6,7 +6,6 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
-import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
@@ -47,8 +46,11 @@ abstract final class SecurityGuide {
 
   static Future<void> _open(BuildContext context, String incidentId, {required bool restart}) async {
     final provider = context.read<SafetyProvider?>();
-    final incident = provider?.state.incidents.firstWhereOrNull((i) => i.id == incidentId);
-    if (provider == null || incident == null || incident.state == IncidentState.recognized) return;
+    if (provider == null) return;
+    await provider.refresh();
+    if (!context.mounted) return;
+    final incident = provider.state.incidents.firstWhereOrNull((i) => i.id == incidentId);
+    if (incident == null || incident.state == IncidentState.recognized) return;
     // 끝난 사건은 "가이드 다시 보기": 처음부터 보여 주고 사건 상태·단계는 바꾸지 않는다
     final review = incident.state == IncidentState.completed;
     final guide = _Guide(
@@ -62,7 +64,7 @@ abstract final class SecurityGuide {
       await provider.markIncidentUnrecognized(incidentId, safetyResponseMode(context));
     }
     // Premium 이동을 보낸 뒤 보내기 완료 화면이 흐름을 비웠으면 "거래를 보냈어요"부터(그때 STEP3로 기록)
-    if (!restart && !review && incident.guideStep < 3 && _sentAfterAssist(incident, provider.state.lastBroadcast)) {
+    if (!restart && !review && incident.guideStep < 3 && incident.responseTxid != null) {
       await provider.setIncidentGuideStep(incidentId, 3);
       if (context.mounted) await Navigator.of(context).push(_route('submitted', _Submitted(guide: guide)));
       return;
@@ -71,15 +73,6 @@ abstract final class SecurityGuide {
     if (!review && step != incident.guideStep) await provider.setIncidentGuideStep(incidentId, step);
     if (context.mounted) await guide.push(context, step);
   }
-}
-
-/// 대응(Safety Assist)을 시작한 뒤 이 지갑에서 성공한 전송이 있음(대응 거래의 증거. 이어 하기·요약이 같이 쓴다)
-bool _sentAfterAssist(SafetyIncident incident, WalletTxEvent? lastBroadcast) {
-  final assistAt = incident.assistStartedAt;
-  return assistAt != null &&
-      lastBroadcast != null &&
-      lastBroadcast.walletId == incident.walletId &&
-      lastBroadcast.at.isAfter(assistAt);
 }
 
 class _Guide {
@@ -388,14 +381,17 @@ class _Submitted extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final strings = t.safety_guide.move;
-    final broadcast = context.watch<SafetyProvider?>()?.state.lastBroadcast;
+    final incident = context.watch<SafetyProvider?>()?.state.incidents.firstWhereOrNull(
+      (i) => i.id == guide.incidentId,
+    );
+    final responseTxid = incident?.responseTxid;
     final wallets = context.watch<WalletProvider?>();
     // 이번 이동 거래를 실제로 받은, 아직 백업하지 않은 핫월렛(Track H가 출력 주소·넘겨준 목적지로 찾는다)
     final unbacked =
-        broadcast == null || wallets == null
+        responseTxid == null || wallets == null
             ? null
-            : SafetyAssist.unbackedHotWalletFor(wallets, walletId: broadcast.walletId, txid: broadcast.txid);
-    final record = broadcast == null ? null : wallets?.getTransactionRecord(broadcast.walletId, broadcast.txid);
+            : SafetyAssist.unbackedHotWalletFor(wallets, walletId: guide.walletId, txid: responseTxid);
+    final record = responseTxid == null ? null : wallets?.getTransactionRecord(guide.walletId, responseTxid);
     final preferences = context.watch<PreferenceProvider?>();
     return SafetyResultPage(
       key: const Key('safety-guide-submitted'),
@@ -414,24 +410,24 @@ class _Submitted extends StatelessWidget {
                 onTap: () => SafetyAssist.openBackup(context, unbacked.id),
               ),
       children: [
-        if (record != null && broadcast != null)
+        if (record != null && responseTxid != null)
           // 가짜 잔액이거나 설정을 모르면 금액 없이 "보낸 거래 · 지갑 이름"(안전 화면 공용 규칙)
           if (preferences == null || safetyHidesAmounts(context))
             SafetyChoiceRow(
               key: const Key('safety-guide-submitted-tx'),
               title: t.wallet_health.critical.sent_transaction,
-              subtitle: incidentWalletOf(context, broadcast.walletId)?.name,
-              onTap: () => _openDetail(context, broadcast.walletId, broadcast.txid),
+              subtitle: incidentWalletOf(context, guide.walletId)?.name,
+              onTap: () => _openDetail(context, guide.walletId, responseTxid),
             )
           else
             TransactionItemCard(
               key: const Key('safety-guide-submitted-tx'),
               tx: record,
               currentUnit: preferences.currentUnit,
-              id: broadcast.walletId,
+              id: guide.walletId,
               backgroundColor: colors.surface,
               borderRadius: CoconutStyles.radius_250,
-              onPressed: () => _openDetail(context, broadcast.walletId, broadcast.txid),
+              onPressed: () => _openDetail(context, guide.walletId, responseTxid),
             ),
         if (unbacked != null) ...[
           CoconutLayout.spacing_400h,
@@ -635,7 +631,7 @@ class _Done extends StatelessWidget {
       onButton: () => guide.close(context),
       children: [
         if (isPremium && incident != null) ...[
-          _PremiumSummary(incident: incident, isCaution: isCaution, lastBroadcast: provider!.state.lastBroadcast),
+          _PremiumSummary(incident: incident, isCaution: isCaution),
           CoconutLayout.spacing_600h,
           SafetyChoiceRow(
             key: const Key('safety-guide-help'),
@@ -658,19 +654,17 @@ class _Done extends StatelessWidget {
 }
 
 class _PremiumSummary extends StatelessWidget {
-  const _PremiumSummary({required this.incident, required this.isCaution, required this.lastBroadcast});
+  const _PremiumSummary({required this.incident, required this.isCaution});
 
   final SafetyIncident incident;
   final bool isCaution;
-  final WalletTxEvent? lastBroadcast;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final strings = t.safety_guide.complete;
     final txStates = t.wallet_health.incident.tx_state;
-    // 대응을 시작하기 전의 보통 전송이나 다른 지갑의 전송은 대응 거래로 보지 않는다
-    final responded = _sentAfterAssist(incident, lastBroadcast);
+    final responded = incident.responseTxid != null;
     final rows = [
       (
         strings.suspicious_tx,

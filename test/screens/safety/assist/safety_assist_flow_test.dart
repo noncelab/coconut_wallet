@@ -40,6 +40,7 @@ import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart'
     show PremiumActionCard, PremiumChip, PremiumHero, SafetyIconCircle;
 import 'package:coconut_wallet/screens/safety/help_channels_sheet.dart';
+import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/safety/safety_address_entry_sheet.dart';
@@ -156,7 +157,7 @@ class _Rescue extends Fake implements RescueReadyProvider {
   bool canMoveNow(int walletId) => ready && walletId == 1;
 
   @override
-  Future<void> moveNow(BuildContext context, int walletId) async => moves++;
+  Future<void> moveNow(BuildContext context, int walletId, {String? incidentId}) async => moves++;
 }
 
 class _Analytics extends AnalyticsService {
@@ -275,6 +276,7 @@ void main() {
     FakeEntitlementService? premium,
     Map<int, WatchOnlyVerification> verifications = const {},
     bool withIncident = true,
+    String? responseTxid,
     Map<int, WalletBaseline> baselines = const {},
     _Preferences? preferences,
     double textScale = 1,
@@ -300,6 +302,7 @@ void main() {
               state: IncidentState.responding,
               responseMode: IncidentResponseMode.premium,
               guideStep: 2,
+              responseTxid: responseTxid,
             ),
         ],
         rescue: rescue,
@@ -402,12 +405,43 @@ void main() {
     expect(tx.outputs.single.getAddress(), destination.walletBase.getAddress(0));
     expect(tx.inputs.length, 2);
     expect(tx.inputs.every((i) => i.sequence == SweepBuilder.rbfSequence), isTrue);
+    expect(env.sendInfo.safetyIncidentId, '1:$_attackTxid');
     expect(env.sendInfo.isMaxMode, isTrue);
     expect(env.sendInfo.txWaitingForSign, isNull);
     expect(env.sendInfo.signedResult, isNull);
     // 충돌 거래 기록이 로컬에 없으면 확정 확인 경로를 켜지 않는다
     expect(env.sendInfo.feeBumpingType, isNull);
     expect(env.sendInfo.feeBumpingType, isNot(FeeBumpingType.cpfp));
+  });
+
+  testWidgets('M02: reopening prepare response twice preserves the response through the real guide summary', (
+    tester,
+  ) async {
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], responseTxid: 'response');
+    for (var attempt = 0; attempt < 2; attempt++) {
+      // This is also the entry point invoked by S3's prepare-response button.
+      unawaited(env.start());
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-assist-unavailable')), findsOneWidget);
+      Navigator.of(env.host()).popUntil((route) => route.isFirst);
+      await tester.pumpAndSettle();
+      expect(env.safety.incidentFor(1, _attackTxid)!.responseTxid, 'response');
+    }
+    unawaited(SecurityGuide.resume(env.host(), '1:$_attackTxid'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-guide-submitted')), findsOneWidget);
+    for (final text in [
+      t.safety_guide.continue_review,
+      t.safety_guide.step3.mark,
+      t.safety_guide.next_step,
+      t.safety_guide.step4.complete,
+    ]) {
+      await tester.tap(_koText(text));
+      await tester.pumpAndSettle();
+    }
+    expect(find.byKey(const Key('safety-guide-done')), findsOneWidget);
+    expect(_koText(t.safety_guide.complete.sent), findsOneWidget);
+    expect(_koText(t.safety_guide.complete.none), findsNothing);
   });
 
   testWidgets('확정된 충돌 → 대체 불가(P6) → 남은 비트코인 보호는 남은 코인만', (tester) async {
@@ -476,6 +510,7 @@ void main() {
 
   testWidgets('지금 이동(비상 목적지): 분석 → 바로 검토(수수료 다시 계산 안내) → 기존 보내기 확인(home)', (tester) async {
     final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    env.sendInfo.setSafetyIncidentId('1:$_attackTxid'); // Earlier cancelled Assist must not leak into moveNow.
     final moving = SafetyAssistFlow.moveNow(
       env.host(),
       walletId: 1,
@@ -488,6 +523,7 @@ void main() {
     expect(find.byKey(const Key('safety-assist-review-excludes')), findsNothing); // 빠진 코인 없음
     await tester.tap(find.byKey(const Key('safety-guide-button')));
     await tester.pumpAndSettle();
+    expect(env.sendInfo.safetyIncidentId, isNull);
     expect(env.pushed.last, AppRouteNames.sendConfirm);
     expect(env.sendInfo.sendEntryPoint, SendEntryPoint.home);
     expect(env.sendInfo.transaction!.outputs.single.getAddress(), destination.walletBase.getAddress(0));

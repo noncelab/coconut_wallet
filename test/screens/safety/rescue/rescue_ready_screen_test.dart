@@ -103,7 +103,7 @@ class _Rescue extends RescueReadyProvider {
   bool deriveFails = false;
 
   @override
-  Future<void> moveNow(BuildContext context, int walletId) async => moves.add(walletId);
+  Future<void> moveNow(BuildContext context, int walletId, {String? incidentId}) async => moves.add(walletId);
 
   @override
   Future<bool> derivesFromExcludedWallet(int walletId, String address) async {
