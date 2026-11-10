@@ -286,57 +286,66 @@ void main() {
     });
 
     // M10/R4: 큰 글자에서 버튼이 두 줄이 되고 "지금 백업하기"가 붙어도 마지막 안내가 버튼과 페이드 위로 스크롤된다
-    testWidgets('the submitted page scrolls the backup reminder clear of the footer at 2.0x on 320dp', (tester) async {
-      useSmallPhone(tester, 2.0);
-      useLocale(AppLocale.en);
-      final hot = SinglesigWalletItem(
-        id: 2,
-        name: 'new',
-        colorIndex: 0,
-        iconIndex: 0,
-        descriptor: WalletMock.createSingleSigWalletItem().descriptor,
-        hotWalletMetadata: HotWalletMetadata(
-          walletId: 2,
-          secureStorageKey: 'key',
-          masterFingerprint: 'D45AA182',
-          derivationPath: "m/84'/1'/0'",
-          accountIndex: 0,
-          backupVerified: false,
-          enterPassphraseWhenSigning: false,
-          createdAt: assistAt.add(const Duration(minutes: 1)),
-        ),
-      );
-      await tester.pumpWidget(
-        safetyTestApp(
-          origin(),
-          safety: sentAfterAssist(),
-          wallets: FakeWallets(
-            [hot],
-            records: {'move'},
-            owned: {
-              2: {kRecipient},
-            },
+    // 옛 잔액 숨김(가짜 잔액 꺼짐)은 금액 있는 거래 카드가 보여도 카드 글자 1.2배 상한으로 넘치지 않는다(M28).
+    // 가짜 잔액은 금액 없는 요약 줄이다
+    for (final (label, preferences, showsCard) in [
+      ('legacy hidden balance', FakePreferences(isBalanceHidden: true), true),
+      ('fake balance', FakePreferences(isFakeBalanceActive: true), false),
+    ]) {
+      testWidgets('the submitted page scrolls the backup reminder clear of the footer at 2.0x on 320dp: $label', (
+        tester,
+      ) async {
+        useSmallPhone(tester, 2.0);
+        useLocale(AppLocale.en);
+        final hot = SinglesigWalletItem(
+          id: 2,
+          name: 'new',
+          colorIndex: 0,
+          iconIndex: 0,
+          descriptor: WalletMock.createSingleSigWalletItem().descriptor,
+          hotWalletMetadata: HotWalletMetadata(
+            walletId: 2,
+            secureStorageKey: 'key',
+            masterFingerprint: 'D45AA182',
+            derivationPath: "m/84'/1'/0'",
+            accountIndex: 0,
+            backupVerified: false,
+            enterPassphraseWhenSigning: false,
+            createdAt: assistAt.add(const Duration(minutes: 1)),
           ),
-          // 가짜 잔액: 금액 없는 요약 줄. 옛 잔액 숨김(거래 카드)의 2.0배 경우는 develop의 카드 글자 배율 상한이 epic3에 합쳐진 뒤 추가한다
-          preferences: FakePreferences(isFakeBalanceActive: true),
-        ),
-      );
-      await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
-      expect(find.byKey(const Key('safety-guide-back-up-now')), findsOneWidget);
-      expect(find.byType(TransactionItemCard), findsNothing);
-      expect(findText(t.wallet_health.critical.sent_transaction), findsOneWidget);
-      final scroll = find.descendant(
-        of: find.byKey(const Key('safety-guide-submitted')),
-        matching: find.byType(SingleChildScrollView),
-      );
-      await tester.dragFrom(tester.getTopLeft(scroll) + const Offset(40, 24), const Offset(0, -8000)); // 버튼 묶음 위에서 끈다
-      await tester.pumpAndSettle();
-      final last = tester.getRect(findText(t.safety_guide.move.backup_reminder)).bottom;
-      expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-button'))).top));
-      final fade = tester.getRect(find.byKey(const Key('safety-result-fade')));
-      expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
-      expect(tester.takeException(), isNull);
-    });
+        );
+        await tester.pumpWidget(
+          safetyTestApp(
+            origin(),
+            safety: sentAfterAssist(),
+            wallets: FakeWallets(
+              [hot],
+              records: {'move'},
+              owned: {
+                2: {kRecipient},
+              },
+            ),
+            preferences: preferences,
+          ),
+        );
+        await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+        expect(find.byKey(const Key('safety-guide-back-up-now')), findsOneWidget);
+        expect(find.byType(TransactionItemCard), showsCard ? findsOneWidget : findsNothing);
+        expect(findText(BitcoinUnit.btc.displayBitcoinAmount(-50000)), showsCard ? findsOneWidget : findsNothing);
+        if (!showsCard) expect(findText(t.wallet_health.critical.sent_transaction), findsOneWidget);
+        final scroll = find.descendant(
+          of: find.byKey(const Key('safety-guide-submitted')),
+          matching: find.byType(SingleChildScrollView),
+        );
+        await tester.dragFrom(tester.getTopLeft(scroll) + const Offset(40, 24), const Offset(0, -8000)); // 버튼 묶음 위에서 끈다
+        await tester.pumpAndSettle();
+        final last = tester.getRect(findText(t.safety_guide.move.backup_reminder)).bottom;
+        expect(last, lessThanOrEqualTo(tester.getRect(find.byKey(const Key('safety-result-button'))).top));
+        final fade = tester.getRect(find.byKey(const Key('safety-result-fade')));
+        expect(last, lessThanOrEqualTo(fade.top + fade.height / 2)); // 페이드의 불투명한 절반 위(X1)
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     // R1-M3: 보낸 거래 요약도 가짜 잔액·설정 없음이면 금액 없이 "보낸 거래 · 지갑 이름". 옛 잔액 숨김은 따르지 않는다(M28)
     final privacy = [
