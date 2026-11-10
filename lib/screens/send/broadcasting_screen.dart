@@ -179,7 +179,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
         _goToBroadcastingComplete();
       }
     } catch (e) {
-      Logger.error(">>>>> broadcast error: $e");
       _broadcastAnimationOutcome = _BroadcastAnimationOutcome.failed;
       await lottieAnimation;
       if (!mounted) return;
@@ -215,8 +214,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
                 FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
       ),
       switch (_viewModel.sendEntryPoint) {
-        SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
-        SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
+        SendEntryPoint.walletDetail => (route) => route.settings.name == AppRouteNames.walletDetail || route.isFirst,
+        SendEntryPoint.transactionDetail =>
+          (route) => route.settings.name == AppRouteNames.transactionDetail || route.isFirst,
         SendEntryPoint.home || null => (route) => route.isFirst,
       },
     );
