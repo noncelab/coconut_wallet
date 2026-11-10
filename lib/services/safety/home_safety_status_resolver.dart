@@ -10,6 +10,7 @@ enum HomeSafetyStatusKind {
   reconnected,
   updating,
   updateCompleted,
+  unchecked,
   noIssues,
   noScore,
 }
@@ -19,7 +20,7 @@ class HomeSafetyStatus extends Equatable {
 
   final HomeSafetyStatusKind kind;
 
-  /// [HomeSafetyStatusKind.actionNeeded]일 때 확인할 항목 수
+  /// [HomeSafetyStatusKind.actionNeeded]일 때 확인할 항목 수, [HomeSafetyStatusKind.unchecked]일 때 확인 전 점검 수
   final int count;
 
   /// [HomeSafetyStatusKind.connectionProblem]일 때 문구를 고르는 데 쓴다
@@ -49,5 +50,8 @@ HomeSafetyStatus resolveHomeSafetyStatus({
   if (showReconnected) return status(HomeSafetyStatusKind.reconnected);
   if (isSyncing) return status(HomeSafetyStatusKind.updating);
   if (showUpdateCompleted) return status(HomeSafetyStatusKind.updateCompleted);
+  // 점수가 있어도 아직 판정하지 못한 점검이 남았으면 "점검 이상 없음"이 아니라 "확인 전 N건"(상세 머리와 같은 말, M11)
+  final unchecked = report?.score != null ? report!.uncheckedItems.length : 0;
+  if (unchecked > 0) return status(HomeSafetyStatusKind.unchecked, unchecked);
   return status(report?.score != null ? HomeSafetyStatusKind.noIssues : HomeSafetyStatusKind.noScore);
 }

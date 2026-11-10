@@ -42,6 +42,7 @@ class HomeSafetyStatusChip extends StatelessWidget {
     HomeSafetyStatusKind.reconnected => t.home_connection_status.electrum_connection_restored,
     HomeSafetyStatusKind.updating => t.status_updating,
     HomeSafetyStatusKind.updateCompleted => t.home_connection_status.update_completed,
+    HomeSafetyStatusKind.unchecked => t.wallet_health.summary.items_unchecked(n: status.count),
     HomeSafetyStatusKind.noIssues => t.wallet_health.summary.no_issues_found,
     HomeSafetyStatusKind.noScore => t.wallet_health.title,
   };
@@ -88,6 +89,11 @@ class HomeSafetyStatusChip extends StatelessWidget {
             ),
           ),
         ),
+        colors.secondaryTextStrong,
+      ),
+      // 확인 전은 경고도 정상도 아닌 중립(빈 동그라미, 권장 점검의 할 일 표시와 같은 아이콘)
+      HomeSafetyStatusKind.unchecked => (
+        svg(FeatureWalletHealthIconPath.circleEmpty, colors.iconSecondary),
         colors.secondaryTextStrong,
       ),
       HomeSafetyStatusKind.noIssues => (svg(FeatureWalletHealthIconPath.checkCircleFilled, okColor), okColor),

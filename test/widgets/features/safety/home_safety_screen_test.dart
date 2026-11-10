@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
+import 'package:coconut_wallet/model/safety/safety_inputs.dart';
 import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -27,6 +29,7 @@ import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
+import 'package:coconut_wallet/services/safety/safety_engine.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -40,6 +43,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../model/safety/safety_fixtures.dart' as f;
 import '../../../services/safety/safety_fakes.dart';
 
 /// 무한 애니메이션 등으로 멈추면 공유 레인을 오래 잡지 않게
@@ -279,6 +283,53 @@ void main() {
     );
     expect(title, findsOneWidget);
     expect(tester.renderObject<RenderParagraph>(title).textScaler.scale(10), moreOrLessEquals(12));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  }, timeout: _timeout);
+
+  // M11: 점수가 있어도 확인 전 점검이 남았으면 홈 칩·Safety 타일은 "점검 이상 없음"이 아니라 "확인 전 N건"(중립 색)
+  testWidgets('a scored report with an unchecked check reads "확인 전 1건" in the chip and the tile, not no issues', (
+    tester,
+  ) async {
+    // 엔진이 만든 보고서: 백업한 핫월렛, 앱 업데이트 확인 실패(unknown) 하나
+    final report = SafetyEngine.evaluate(
+      f.inputs(
+        wallets: [
+          f.wallet(
+            1,
+            balance: 1000000,
+            backupVerified: true,
+            txs: [f.tx('received', type: TransactionType.received, height: 900)],
+          ),
+        ],
+        state: SafetyState(
+          baselines: {
+            1: f.baseline(known: {'received'}),
+          },
+        ),
+        update: AppUpdateStatus.unknown,
+      ),
+    );
+    expect((report.score != null, report.attentionCount, report.uncheckedItems.length), (true, 0, 1));
+    final safety = SafetyProvider.fixed(report, state: SafetyState.initial().copyWith(hintDismissed: true));
+    await _pumpHome(tester, safety: safety, wallets: [safetyWallet(id: 1, hot: true)], items: const [_safetyTile]);
+    // 첫 동기화 뒤 잠깐 보이는 "업데이트 완료"가 지나간 뒤의 평상시 칩
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final unchecked = t.wallet_health.summary.items_unchecked(n: 1);
+    final chipText = find.descendant(of: find.byType(HomeSafetyStatusChip), matching: find.text(unchecked));
+    expect(chipText, findsOneWidget);
+    final tileTitle = find.descendant(
+      of: find.byType(SafetyStatusWidgetView),
+      matching: find.text(safetyKoText(unchecked)),
+    );
+    expect(tileTitle, findsOneWidget);
+    expect(find.text(t.wallet_health.summary.no_issues_found), findsNothing);
+    expect(find.text(safetyKoText(t.wallet_health.summary.no_issues_found)), findsNothing);
+    final neutral = tester.element(chipText).coconutColors.secondaryTextStrong;
+    expect(tester.widget<Text>(chipText).style!.color, neutral);
+    expect(tester.widget<Text>(tileTitle).style!.color, neutral);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   }, timeout: _timeout);

@@ -124,6 +124,18 @@ class SafetyStatusWidgetView extends StatelessWidget {
           ),
         checked,
       ];
+    } else if (report.score != null && report.uncheckedItems.isNotEmpty) {
+      // 점수가 있어도 확인 전 점검이 남았으면 "점검 이상 없음"이 아니라 "확인 전 N건"(중립 색, 홈 칩과 같은 말, M11)
+      title = t.wallet_health.summary.items_unchecked(n: report.uncheckedItems.length);
+      (iconPath, iconColor, titleColor) = (
+        FeatureWalletHealthIconPath.circleEmpty,
+        colors.iconSecondary,
+        colors.secondaryTextStrong,
+      );
+      details = [
+        if (wide) line(t.wallet_health.widget.checks_count(n: report.allGoodItems.length + report.reviewItems.length)),
+        checked,
+      ];
     } else {
       final scored = report.score != null;
       final noWallet = report.status == WalletHealthStatus.noWallet;

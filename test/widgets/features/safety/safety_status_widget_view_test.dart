@@ -16,6 +16,8 @@ import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dar
 import 'package:coconut_wallet/widgets/features/safety/safety_score_gauge.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_status_widget_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -68,6 +70,15 @@ final _several = _report(
     SafetyIncident(walletId: 1, txid: 'a', detectedAt: DateTime(2026, 10, 20)),
     SafetyIncident(walletId: 1, txid: 'b', detectedAt: DateTime(2026, 10, 20)),
   ],
+);
+
+/// M11: 점수는 있지만 판정하지 못한 점검이 남음("확인 전 1건", 중립 색)
+final _pending = WalletHealthReport(
+  status: WalletHealthStatus.scored,
+  score: 92,
+  allGoodItems: const [SafetyCheckResult(SafetyCheckId.appLock, SafetyOutcome.passed)],
+  notIncluded: const [SafetyCheckResult(SafetyCheckId.appUpdate, SafetyOutcome.unknown)],
+  evaluatedAt: DateTime.now(),
 );
 
 /// 홈 그리드 칸(320dp: 63, 344dp: 69, 412dp: 86) 기준 2×2·4×2 크기
@@ -146,6 +157,7 @@ void main() {
   testWidgets('every state fits 2×2 and 4×2 at 320/344/412dp with 1.3× and 2.0× system text', (tester) async {
     final states = {
       'W1': _scored,
+      'W1 pending': _pending,
       'S0': _report(WalletHealthStatus.noWallet),
       'W2': _attention,
       'W3': _critical,
@@ -330,6 +342,41 @@ void main() {
       if (!reduceMotion) expect(tester.widget<Shimmer>(shimmer).gradient.colors.first, muted);
     }
   }, timeout: _timeout);
+
+  // 이 묶음은 실제 글꼴을 올리므로 파일 맨 끝에 둔다(앞 테스트는 테스트 글꼴로 돈다)
+  group('real fonts', () {
+    setUpAll(() async {
+      for (final family in ['Pretendard', 'SpaceGrotesk']) {
+        await (FontLoader(family)
+              ..addFont(rootBundle.load('assets/fonts/$family-Regular.ttf'))
+              ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
+            .load();
+      }
+    });
+
+    // M11: "확인 전 N건" 타일이 5개 언어 모두 2×2·4×2에 넘침도 말줄임도 없이 들어간다(320/344/412dp, 시스템 1.0·1.3·2.0배)
+    testWidgets('pending checks fit 2×2 and 4×2 in every language', (tester) async {
+      addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+      for (final locale in AppLocale.values) {
+        LocaleSettings.setLocaleSync(locale);
+        final title = find.text(safetyKoText(t.wallet_health.summary.items_unchecked(n: 1)));
+        for (final span in [HomeSpan.small, HomeSpan.wide]) {
+          for (final cell in [63.0, 69.0, 86.0]) {
+            for (final scale in [1.0, 1.3, 2.0]) {
+              final reason = '${locale.languageCode} $span cell $cell ×$scale';
+              await _pump(tester, span, report: _pending, cell: cell, textScale: scale);
+              expect(tester.takeException(), isNull, reason: reason);
+              expect(title, findsOneWidget, reason: reason);
+              final paragraph = tester.renderObject<RenderParagraph>(
+                find.descendant(of: title, matching: find.byType(RichText)),
+              );
+              expect(paragraph.didExceedMaxLines, isFalse, reason: reason);
+            }
+          }
+        }
+      }
+    }, timeout: _timeout);
+  });
 }
 
 /// 마운트된 채로 보고서를 바꿔 끼우고 알린다(검사 완료 알림)
