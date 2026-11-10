@@ -53,8 +53,6 @@ class _Tile extends HomeItemDefinition {
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
   @override
-  HomeAddWalletOption get homeAddWalletOption => HomeAddWalletOption.all;
-  @override
   bool get isFakeBalanceActive => false;
   @override
   int? get fakeBalanceTotalAmount => null;

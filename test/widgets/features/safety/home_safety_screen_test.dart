@@ -4,7 +4,6 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
@@ -62,8 +61,6 @@ class _Connectivity extends SafetyConnectivityFake {
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
-  @override
-  HomeAddWalletOption get homeAddWalletOption => HomeAddWalletOption.all;
   @override
   bool get isFakeBalanceActive => false;
   @override

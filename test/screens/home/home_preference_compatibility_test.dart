@@ -28,6 +28,7 @@ import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/feature/builtin_features.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
@@ -198,39 +199,55 @@ Future<(PreferenceProvider, HomeWidgetsViewModel)> _pumpWidget(
 }
 
 void main() {
+  // M27: 1.0·1.1처럼 옛 지갑 추가 버튼 설정(HOME_ADD_WALLET_OPTION)을 읽지 않는다. 저장값은 그대로 둔다
   for (final empty in [false, true]) {
     for (final option in HomeAddWalletOption.values) {
-      testWidgets('stored add-wallet ${option.name} controls icon and entry (empty: $empty)', (tester) async {
+      testWidgets('stored add-wallet ${option.name} is ignored (empty: $empty)', (tester) async {
         await _pumpHome(tester, empty: empty, stored: {SharedPrefKeys.kHomeAddWalletOption: option.name});
         final button = find.byKey(const Key('home-add-wallet-button'));
-        if (option == HomeAddWalletOption.hidden) {
-          expect(button, findsNothing);
-          expect(find.byKey(const Key('add-wallet-hint')), findsNothing);
+        expect(find.byKey(const Key('add-wallet-hint')), empty ? findsOneWidget : findsNothing);
+        final icon = tester.widget<SvgPicture>(find.descendant(of: button, matching: find.byType(SvgPicture)));
+        expect((icon.bytesLoader as SvgAssetLoader).assetName, FeatureWalletIconPath.walletAddDefault);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        if (empty) {
+          expect(find.byType(WalletAddScreen), findsOneWidget);
         } else {
-          final expectedIcon = switch (option) {
-            HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,
-            HomeAddWalletOption.watchOnly => FeatureWalletIconPath.walletEyes,
-            _ => FeatureWalletIconPath.walletAddHot,
-          };
-          final icon = tester.widget<SvgPicture>(find.descendant(of: button, matching: find.byType(SvgPicture)));
-          expect((icon.bytesLoader as SvgAssetLoader).assetName, expectedIcon);
-          await tester.tap(button);
-          await tester.pumpAndSettle();
-          if (option == HomeAddWalletOption.all && empty) {
-            expect(find.byType(WalletAddScreen), findsOneWidget);
-          } else {
-            expect(tester.widget<WalletAddDialog>(find.byType(WalletAddDialog)).mode, switch (option) {
-              HomeAddWalletOption.all => WalletAddDialogMode.walletType,
-              HomeAddWalletOption.watchOnly => WalletAddDialogMode.watchOnlySource,
-              _ => WalletAddDialogMode.hotWalletAction,
-            });
-          }
+          expect(tester.widget<WalletAddDialog>(find.byType(WalletAddDialog)).mode, WalletAddDialogMode.walletType);
         }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       });
     }
   }
+
+  testWidgets('stored add-wallet hidden: a wallet shortcut recalls the hint instead of a toast', (tester) async {
+    await _pumpHome(
+      tester,
+      empty: true,
+      stored: {
+        SharedPrefKeys.kHomeAddWalletOption: HomeAddWalletOption.hidden.name,
+        SharedPrefKeys.kAddWalletHintDismissed: true,
+      },
+      items: [
+        HomeItem(
+          id: 'receive-shortcut',
+          definitionId: HomeItemIds.shortcut(FeatureIds.receive),
+          kind: HomeItemKind.shortcut,
+          order: 0,
+          span: HomeSpan.shortcut,
+        ),
+      ],
+    );
+    // 이미 닫은 말풍선은 그대로 닫혀 있다
+    expect(find.byKey(const Key('add-wallet-hint')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('shortcut-${FeatureIds.receive}-disabled')));
+    await tester.pump();
+    expect(find.byKey(const Key('add-wallet-hint')), findsOneWidget);
+    expect(find.text(t.add_wallet_hint.needs_wallet), findsNothing);
+    expect(SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed), isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('missing preferences keep the default entry and visible fiat balance', (tester) async {
     final preferences = await _pumpHome(tester, items: [_item(HomeItemIds.bitcoinBalanceTrend, span: HomeSpan.wide)]);
@@ -243,7 +260,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('mounted home follows saved preference changes without replacing its configuration', (tester) async {
+  testWidgets('mounted home ignores saved legacy preference changes and keeps its configuration', (tester) async {
     final preferences = await _pumpHome(
       tester,
       empty: true,
@@ -255,9 +272,8 @@ void main() {
       await preferences.changeIsFiatBalanceHidden(option != HomeAddWalletOption.watchOnly);
       await preferences.changeHomeAddWalletOption(option);
       await tester.pump();
-      final button = find.byKey(const Key('home-add-wallet-button'));
-      expect(button, option == HomeAddWalletOption.hidden ? findsNothing : findsOneWidget);
-      expect(viewModel.showsAddWalletHint, option != HomeAddWalletOption.hidden);
+      expect(find.byKey(const Key('home-add-wallet-button')), findsOneWidget);
+      expect(viewModel.showsAddWalletHint, isTrue);
       final fiat = tester.widget<Text>(find.byKey(const Key('balance-change-fiat'))).data!;
       expect(fiat.isEmpty, isFalse);
       expect(viewModel.configuration, configuration);
@@ -266,7 +282,7 @@ void main() {
     }
     await tester.tap(find.byKey(const Key('home-add-wallet-button')));
     await tester.pumpAndSettle();
-    expect(tester.widget<WalletAddDialog>(find.byType(WalletAddDialog)).mode, WalletAddDialogMode.watchOnlySource);
+    expect(find.byType(WalletAddScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await preferences.changeHomeAddWalletOption(HomeAddWalletOption.all);
     expect(tester.takeException(), isNull);
@@ -311,7 +327,6 @@ void main() {
               repository: HomeConfigurationRepository(SharedPrefsRepository()),
               wallets: () => [],
               onShortcutTap: (_, __) {},
-              preferenceProvider: preferences,
               legacyBalanceHidden: preferences.isBalanceHidden,
               legacyFakeBalanceActive: preferences.isFakeBalanceActive,
             );

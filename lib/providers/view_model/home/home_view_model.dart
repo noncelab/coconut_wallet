@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
@@ -10,7 +9,6 @@ import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
@@ -30,7 +28,6 @@ class HomeViewModel extends ChangeNotifier {
   final bool Function(FeatureItem feature) _isFeatureAvailable;
   final bool _legacyFakeBalanceActive;
   final bool _legacyBalanceHidden;
-  final PreferenceProvider? _preferenceProvider;
   final PriceProvider? _priceProvider;
   late final HomeItemRegistry registry;
   late HomeConfiguration _configuration;
@@ -53,7 +50,6 @@ class HomeViewModel extends ChangeNotifier {
     bool Function(FeatureItem feature)? isFeatureAvailable,
     bool legacyFakeBalanceActive = false,
     bool legacyBalanceHidden = false,
-    PreferenceProvider? preferenceProvider,
     PriceProvider? priceProvider,
     Listenable? walletListChanges,
     bool addWalletHintDismissed = false,
@@ -69,7 +65,6 @@ class HomeViewModel extends ChangeNotifier {
        _isFeatureAvailable = isFeatureAvailable ?? ((_) => true),
        _legacyFakeBalanceActive = legacyFakeBalanceActive,
        _legacyBalanceHidden = legacyBalanceHidden,
-       _preferenceProvider = preferenceProvider,
        _priceProvider = priceProvider,
        _wallets = wallets,
        _presets = presets ?? builtinHomePresets(),
@@ -82,19 +77,13 @@ class HomeViewModel extends ChangeNotifier {
     _configuration = _load();
     _priceProvider?.setHomeWidgetFiats(widgetFiats);
     _walletListChanges?.addListener(_onWalletListChanged);
-    _preferenceProvider?.addListener(notifyListeners);
   }
 
   /// 지갑이 하나도 없으면 true. 지갑이 필요한 바로가기를 흐리게 하고 지갑 추가 말풍선을 띄운다.
   ValueListenable<bool> get noWallets => _noWallets;
 
   /// 앱 바 지갑 추가 버튼의 말풍선. 지갑이 없고, 닫지 않았거나 흐린 바로가기를 눌러 다시 부른 경우에 보인다.
-  bool get showsAddWalletHint =>
-      homeAddWalletOption != HomeAddWalletOption.hidden &&
-      _noWallets.value &&
-      (!_addWalletHintDismissed || _addWalletHintReminded);
-
-  HomeAddWalletOption get homeAddWalletOption => _preferenceProvider?.homeAddWalletOption ?? HomeAddWalletOption.all;
+  bool get showsAddWalletHint => _noWallets.value && (!_addWalletHintDismissed || _addWalletHintReminded);
 
   /// 흐린 바로가기를 누를 때마다 늘어난다. 말풍선이 이 값이 바뀔 때 살짝 흔들린다.
   int get addWalletHintNudges => _addWalletHintNudges;
@@ -134,7 +123,6 @@ class HomeViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _preferenceProvider?.removeListener(notifyListeners);
     _walletListChanges?.removeListener(_onWalletListChanged);
     _noWallets.dispose();
     super.dispose();

@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/services/safety/home_safety_status_resolver.dart';
 import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
 import 'package:coconut_wallet/widgets/features/home/add_wallet_hint.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -115,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isFeatureAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
       legacyFakeBalanceActive: context.read<PreferenceProvider>().isFakeBalanceActive,
       legacyBalanceHidden: context.read<PreferenceProvider>().isBalanceHidden,
-      preferenceProvider: context.read<PreferenceProvider>(),
       priceProvider: context.read<PriceProvider>(),
       walletListChanges: context.read<WalletProvider>().walletItemListNotifier,
       addWalletHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed),
@@ -160,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) async {
     if (_viewModel.shouldAddWalletBeforeLaunch(feature)) {
-      if (useShortcutWallet && _viewModel.homeAddWalletOption != HomeAddWalletOption.hidden) {
+      if (useShortcutWallet) {
         _viewModel.remindAddWallet();
       } else {
         CoconutToast.showToast(context: context, text: t.add_wallet_hint.needs_wallet);
@@ -190,20 +187,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openAddWallet(BuildContext context) {
-    final option = _viewModel.homeAddWalletOption;
-    if (option == HomeAddWalletOption.hidden) return;
     context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.appBar);
     _viewModel.dismissAddWalletHint();
-    switch (option) {
-      case HomeAddWalletOption.all:
-        WalletAddScreen.openByWalletCount(context);
-      case HomeAddWalletOption.watchOnly:
-        WalletAddDialog.showTopSheet(context, WalletAddDialogMode.watchOnlySource);
-      case HomeAddWalletOption.hotWallet:
-        WalletAddDialog.showTopSheet(context, WalletAddDialogMode.hotWalletAction);
-      case HomeAddWalletOption.hidden:
-        break;
-    }
+    WalletAddScreen.openByWalletCount(context);
   }
 
   Future<void> _openHomeEdit(BuildContext context) async {
@@ -533,7 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isSyncing: isSyncing,
       showUpdateCompleted: status.showUpdateCompleted,
       isArranging: arranging,
-      homeAddWalletOption: _viewModel.homeAddWalletOption,
       addWalletButtonLink: _addWalletButtonLink,
       onArrangeDone: _finishArranging,
       onUndoArrangement: _viewModel.canUndoArrangement ? _undoArrangement : null,
