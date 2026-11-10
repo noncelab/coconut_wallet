@@ -82,6 +82,9 @@ class SafetyWalletsFake extends ChangeNotifier implements WalletProvider {
   final replaced = <String, TransactionRecord>{};
   final utxos = <int, List<UtxoState>>{};
   final ownedReceive = <String>{};
+
+  /// 주소 → 그 주소를 가진 앱 지갑 id(없으면 외부 주소)
+  final addressOwners = <String, int>{};
   final suspicious = <String>{};
   final balances = <int, Balance>{};
   final tags = <int, List<RealmUtxoTag>>{};
@@ -113,6 +116,8 @@ class SafetyWalletsFake extends ChangeNotifier implements WalletProvider {
     return ownedReceive.contains(address);
   }
 
+  @override
+  int? findWalletIdContainingAddress(String address) => addressOwners[address];
   @override
   bool isUtxoSuspicious(UtxoState utxo, TransactionRecord? txRecord) => suspicious.contains(utxo.utxoId);
   @override

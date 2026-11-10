@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/services/safety/incident_detector.dart';
 import 'package:coconut_wallet/services/safety/safety_inputs_collector.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -143,6 +144,39 @@ void main() {
       'replaced': IncidentTxState.replaced,
       'dropped': IncidentTxState.dropped,
     });
+  });
+  // M01: 금액 있는 출력이 모두 내 지갑(거스름돈 포함)일 때만 내 지갑끼리 이동. 0원 출력(OP_RETURN, 기록상 '')은 세지 않는다
+  test('a send is internal only when every paid output goes to my wallets; zero-value outputs are ignored', () {
+    wallets.addressOwners.addAll({'change': 1, 'wallet-b': 2, 'wallet-c': 3});
+    wallets.records[1] = [
+      safetyTx('mixed', outputs: [TransactionAddress('wallet-b', 5000), TransactionAddress('external', 99000000)]),
+      safetyTx(
+        'internal',
+        outputs: [
+          TransactionAddress('wallet-b', 5000),
+          TransactionAddress('wallet-c', 6000),
+          TransactionAddress('change', 300),
+        ],
+      ),
+      safetyTx('opReturn', outputs: [TransactionAddress('wallet-b', 5000), TransactionAddress('', 0)]),
+      safetyTx('nothingPaid', outputs: [TransactionAddress('', 0)]),
+      // 값이 있는 주소 없는 출력(P2PK 등, 기록상 '' + 금액)은 외부다. 거스름 먼지를 붙여도 감지된다
+      safetyTx('p2pkSweep', outputs: [TransactionAddress('', 99000000), TransactionAddress('change', 546)]),
+      // received로 잘못 분류됐지만 내 UTXO를 쓰는 대기 거래도 같은 규칙(ARCH R4)
+      safetyTx(
+        'misclassified',
+        type: TransactionType.received,
+        outputs: [TransactionAddress('external', 5000), TransactionAddress('change', 300)],
+      ),
+    ];
+    wallets.utxos[1] = [utxo('spent', 'change', status: UtxoStatus.outgoing, spentBy: 'misclassified')];
+    final state = SafetyState(baselines: {1: WalletBaseline(height: 99, at: DateTime(2026))});
+    expect(IncidentDetector.detect(collect(state: state)).created.map((i) => i.txid), [
+      'mixed',
+      'nothingPaid',
+      'p2pkSweep',
+      'misclassified',
+    ]);
   });
   test('createdAt is retained instead of mutable confirmation timestamp', () {
     wallets.records[1] = [safetyTx('one', height: 101, createdAt: DateTime(2025))];

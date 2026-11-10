@@ -149,7 +149,7 @@ abstract final class IncidentDetector {
   }
 
   /// 위험한 출금 = 내 지갑이 아닌 곳으로 나간 거래. sent, 또는 received로 잘못 분류됐지만 내 UTXO를 쓰는 대기 거래(ARCH R4).
-  /// 이 지갑 안에서 옮긴 거래(self)와 앱에 추가한 내 다른 지갑으로 보낸 거래는 돈이 내 손을 떠나지 않았으므로 아니다
+  /// 이 지갑 안에서 옮긴 거래(self)와 금액 있는 출력이 모두 앱에 추가한 내 지갑으로 간 거래는 돈이 내 손을 떠나지 않았으므로 아니다
   static bool _isOutgoing(SafetyTx tx, SafetyWalletSnapshot w) =>
       !tx.paysOwnWallet &&
       (tx.type == TransactionType.sent ||

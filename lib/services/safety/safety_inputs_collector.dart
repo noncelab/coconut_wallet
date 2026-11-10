@@ -48,7 +48,7 @@ class SafetyInputsCollector {
     var tagCount = 0;
     var memoCount = 0;
     final snapshots = <SafetyWalletSnapshot>[];
-    // 주소 → 앱에 추가한 다른 지갑의 주소인지(지갑마다 "그 지갑이 아닌 지갑"을 보지만, 한 주소는 한 지갑에만 속한다)
+    // 주소 → 그 주소를 가진 앱 지갑(없으면 null). 어느 지갑의 거래에서 찾든 같으므로 지갑을 넘어 결과를 모은다
     final otherWalletOwner = <String, int?>{};
     for (final wallet in _wallets.walletItemList) {
       final id = wallet.id;
@@ -87,15 +87,21 @@ class SafetyInputsCollector {
         }
         // 출금 감지 후보만 본다(기준점이 이미 아는 옛 거래는 다시 판정하지 않는다). 주소마다 모든 지갑을 찾으므로 결과를 모은다
         final outgoing = tx.transactionType == TransactionType.sent || pendingSpentBy.contains(tx.transactionHash);
+        // 첫 기준점을 잡을 때는 주소 없는 출력을 금액과 관계없이 외부로 센다. 1.1 이하가 P2PK 등을 ('', 0)으로 저장했기 때문이다.
+        // 그래야 최근 출금이 검토 목록에서 빠지지 않는다(R2-B1). 기준점 뒤 새 사건은 결정 #1대로 0원 출력을 무시한다
+        final paid = tx.outputAddressList.where(
+          (output) => output.amount > 0 || (baseline == null && output.address.isEmpty),
+        );
         final paysOwnWallet =
             outgoing &&
             !(baseline?.knows(tx.transactionHash, tx.blockHeight) ?? false) &&
-            tx.outputAddressList.any((output) {
+            paid.isNotEmpty &&
+            paid.every((output) {
               final owner = otherWalletOwner.putIfAbsent(
                 output.address,
                 () => _wallets.findWalletIdContainingAddress(output.address),
               );
-              return owner != null && owner != id;
+              return owner != null;
             });
         txs.add((
           txid: tx.transactionHash,

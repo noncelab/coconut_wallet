@@ -113,8 +113,10 @@ class TransactionRecordService {
       final output = tx.outputs[i];
       final outputAddressString = output.scriptPubKey.getAddress();
 
+      // 주소 없는 출력(OP_RETURN·P2PK·맨 multisig 등): 주소는 비우고 금액은 남긴다(값이 있으면 밖으로 나간 돈이다)
       if (outputAddressString.startsWith('Script')) {
-        outputAddressList.add(TransactionAddress('', 0));
+        outputAddressList.add(TransactionAddress('', output.amount));
+        fee -= output.amount;
         continue;
       }
 

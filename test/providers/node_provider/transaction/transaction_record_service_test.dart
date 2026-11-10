@@ -1,13 +1,20 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/safety/safety_check.dart';
+import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
+import 'package:coconut_wallet/services/safety/incident_detector.dart';
+import 'package:coconut_wallet/services/safety/safety_engine.dart';
+import 'package:coconut_wallet/services/safety/safety_inputs_collector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -15,6 +22,7 @@ import 'package:mockito/mockito.dart';
 import '../../../mock/transaction_mock.dart';
 import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
+import '../../../services/safety/safety_fakes.dart';
 
 // 모킹할 클래스 목록
 @GenerateMocks([ElectrumService])
@@ -209,6 +217,170 @@ void main() {
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
     });
   });
+
+  // M01: 주소 없는 출력(OP_RETURN·P2PK 등)은 주소를 비우되 금액은 남긴다. 값이 있으면 밖으로 나간 돈이고 수수료가 아니다
+  test('Script 출력은 주소 없이 금액을 남기고 수수료 계산에서도 뺀다', () {
+    final testAddress = testWalletItem.walletBase.getAddress(0);
+    final prev = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 100000);
+    // ScriptPublicKey.parse는 길이(varint)가 앞에 붙은 스크립트를 받는다
+    TransactionOutput script(int amount, String hex) =>
+        TransactionOutput(Converter.intToLittleEndianBytes(amount, 8), ScriptPublicKey.parse(hex));
+    final tx = Transaction.withInputsAndOutputs(
+      [TransactionInput.forPayment(prev.transactionHash, 0)],
+      [
+        script(90000, '2321${'02${'11' * 32}'}ac'), // P2PK
+        script(0, '066a04deadbeef'), // OP_RETURN
+        TransactionOutput.forPayment(9000, testAddress),
+      ],
+      AddressType.p2wpkh,
+    );
+
+    final details = transactionRecordService.processTransactionDetails(tx, [prev], testWalletId);
+
+    expect(details.outputAddressList.map((o) => (o.address, o.amount)), [('', 90000), ('', 0), (testAddress, 9000)]);
+    expect(details.fee, 1000);
+    expect(details.amount, -91000);
+    expect(details.txType, TransactionType.sent);
+  });
+
+  // M01: 파싱·기록부터 수집기·감지기까지 한 번에. 같은 지갑 거스름 + 금액 있는 Script 출력은 사건, 0원 OP_RETURN은 아니다
+  test('값 있는 Script 출력과 같은 지갑 거스름이 섞인 출금은 사건이 되고, 0원 OP_RETURN은 무시된다', () {
+    final own = testWalletItem.walletBase.getAddress(0);
+    final prev = TransactionMock.createMockTransaction(toAddress: own, amount: 100000);
+    final pubkey = '02${'11' * 32}';
+    final names = <String, String>{};
+    final records = [
+      for (final (name, amount, script) in [
+        ('opReturnZero', 0, '066a04deadbeef'),
+        ('p2pk', 90000, '2321${pubkey}ac'),
+        ('bareMultisig', 90000, '255121${pubkey}51ae'),
+        ('opReturnValued', 90000, '066a04deadbeef'),
+      ])
+        () {
+          final tx = Transaction.withInputsAndOutputs(
+            [TransactionInput.forPayment(prev.transactionHash, 0)],
+            [
+              TransactionOutput(Converter.intToLittleEndianBytes(amount, 8), ScriptPublicKey.parse(script)),
+              TransactionOutput.forPayment(9000, own),
+            ],
+            AddressType.p2wpkh,
+          );
+          names[tx.transactionHash] = name;
+          final d = transactionRecordService.processTransactionDetails(tx, [prev], testWalletId);
+          return TransactionRecord.fromTransactions(
+            transactionHash: tx.transactionHash,
+            timestamp: DateTime(2026),
+            blockHeight: 0,
+            inputAddressList: d.inputAddressList,
+            outputAddressList: d.outputAddressList,
+            transactionType: d.txType,
+            amount: d.amount,
+            fee: d.fee,
+            vSize: tx.getVirtualByte(),
+          );
+        }(),
+    ];
+    final wallets =
+        SafetyWalletsFake([safetyWallet(id: testWalletId)])
+          ..records[testWalletId] = records
+          ..addressOwners[own] = testWalletId;
+    final node = SafetyNodeFake();
+    final auth = SafetyAuthFake();
+    final connectivity = SafetyConnectivityFake();
+    addTearDown(() {
+      wallets.dispose();
+      node.dispose();
+      auth.dispose();
+      connectivity.dispose();
+    });
+    final inputs = SafetyInputsCollector(
+      walletProvider: wallets,
+      nodeProvider: node,
+      authProvider: auth,
+      connectivityProvider: connectivity,
+      realmManager: realmManager,
+    ).collect(
+      state: SafetyState(baselines: {testWalletId: WalletBaseline(height: 99, at: DateTime(2026))}),
+      now: DateTime(2026),
+    );
+
+    expect(IncidentDetector.detect(inputs).created.map((i) => names[i.txid]), [
+      'p2pk',
+      'bareMultisig',
+      'opReturnValued',
+    ]);
+  });
+
+  // M01 R2-B1(업그레이드): 1.1 이하는 주소 없는 출력을 ('', 0)으로 저장했고 그 금액을 수수료로 셌다. 재조회도 저장된 출력·수수료를
+  // 고치지 않는다. 이런 최근 출금(P2PK + 같은 지갑 거스름)이 첫 기준점의 검토 목록에서 빠지면 안 된다
+  for (final height in [0, 100]) {
+    test('1.1이 저장한 (\'\', 0) P2PK 출금은 첫 기준점 검토에 남는다(저장 높이 $height)', () async {
+      final own = testWalletItem.walletBase.getAddress(0);
+      final prev = TransactionMock.createMockTransaction(toAddress: own, amount: 100000);
+      final tx = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment(prev.transactionHash, 0)],
+        [
+          TransactionOutput.forPayment(9000, own),
+          TransactionOutput(
+            Converter.intToLittleEndianBytes(90000, 8),
+            ScriptPublicKey.parse('2321${'02${'11' * 32}'}ac'),
+          ),
+        ],
+        AddressType.p2wpkh,
+      );
+      final d = transactionRecordService.processTransactionDetails(tx, [prev], testWalletId);
+      expect(d.outputAddressList.last.amount, 90000);
+      TransactionRecord record(List<TransactionAddress> outputs, int fee, int blockHeight) =>
+          TransactionRecord.fromTransactions(
+            transactionHash: tx.transactionHash,
+            timestamp: DateTime(2026, 11, 10, 10),
+            blockHeight: blockHeight,
+            inputAddressList: d.inputAddressList,
+            outputAddressList: outputs,
+            transactionType: d.txType,
+            amount: d.amount,
+            fee: fee,
+            vSize: tx.getVirtualByte(),
+          );
+      final repository = TransactionRepository(realmManager);
+      // v1.1.0 transaction_record_service.dart:116-118의 모양: ('', 0), 그 금액 90,000은 수수료로 셈
+      await repository.addAllTransactions(testWalletId, [
+        record([d.outputAddressList.first, TransactionAddress('', 0)], d.fee + 90000, height),
+      ]);
+      // 지금 파서로 다시 받아 확정으로 저장해도 출력·수수료는 그대로다
+      await repository.addAllTransactions(testWalletId, [record(d.outputAddressList, d.fee, 100)]);
+      final stored = repository.getTransactionRecordList(testWalletId).single;
+      expect((stored.blockHeight, stored.outputAddressList.last.amount, stored.fee), (100, 0, 91000));
+
+      final wallets =
+          SafetyWalletsFake([safetyWallet(id: testWalletId)])
+            ..records[testWalletId] = [stored]
+            ..addressOwners[own] = testWalletId;
+      final node = SafetyNodeFake();
+      final auth = SafetyAuthFake();
+      final connectivity = SafetyConnectivityFake();
+      addTearDown(() {
+        wallets.dispose();
+        node.dispose();
+        auth.dispose();
+        connectivity.dispose();
+      });
+      final collector = SafetyInputsCollector(
+        walletProvider: wallets,
+        nodeProvider: node,
+        authProvider: auth,
+        connectivityProvider: connectivity,
+        realmManager: realmManager,
+      );
+      final now = DateTime(2026, 11, 10, 10, 5);
+      final delta = IncidentDetector.detect(collector.collect(state: SafetyState.initial(), now: now));
+      expect(delta.baselines[testWalletId]!.pendingSentAtBaseline, {tx.transactionHash});
+      final report = SafetyEngine.evaluate(collector.collect(state: delta.applyTo(SafetyState.initial()), now: now));
+      expect(report.reviewItems.where((c) => c.id == SafetyCheckId.pendingOutgoingAtBaseline).map((c) => c.subjects), [
+        [tx.transactionHash],
+      ]);
+    });
+  }
 
   group('이전 거래 일부 누락', () {
     late Transaction prevA;
