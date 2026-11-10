@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -745,6 +747,23 @@ void main() {
     await _pump(tester, criticalReport(), premium: const PremiumState(PremiumStatus.active), rescue: FakeRescueReady());
     expect(find.byKey(const Key('wallet-health-assist-card')), findsOneWidget);
     expect(_text(t.premium.card.prepare_response), findsOneWidget);
+  });
+
+  // M18: S3 "다른 점검"의 점수·상태는 행 오른쪽 끝에 붙는다. 오른쪽 여백 = 왼쪽 여백(아이콘 앞 16)
+  testWidgets('S3 other checks: the score and state end at a right margin equal to the left one', (tester) async {
+    await _pump(tester, criticalReport());
+    for (final category in [SafetyCategory.recovery, SafetyCategory.app, SafetyCategory.privacy]) {
+      final name = _text(safetyCategoryName(category));
+      final row = find.ancestor(of: name, matching: find.byType(SafetyPressRow)).first;
+      final rowRect = tester.getRect(row);
+      final left =
+          tester.getRect(find.descendant(of: row, matching: find.byType(SvgPicture)).first).left - rowRect.left;
+      final valueRight = [
+        for (final element in find.descendant(of: row, matching: find.byType(Text)).evaluate())
+          if (element.widget != tester.widget(name)) tester.getRect(find.byElementPredicate((e) => e == element)).right,
+      ].reduce(math.max);
+      expect(rowRect.right - valueRight, moreOrLessEquals(left, epsilon: 0.5), reason: '$category');
+    }
   });
 
   // M04: 구독 확인 중(verifying)인 구독자에게 위급(S3) 화면이 무료 판매 카드("Premium 알아보기")를 보이지 않는다.

@@ -1125,7 +1125,8 @@ class _OtherCheckRow extends StatelessWidget {
               ),
             ),
             CoconutLayout.spacing_200w,
-            Flexible(
+            // Flexible은 남는 몫을 오른쪽에 비워 둔다. Expanded라야 값이 오른쪽 여백(=왼쪽 여백)에 붙는다(M18)
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
