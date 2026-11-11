@@ -1,6 +1,9 @@
 class AnalyticsScreenNames {
   // 진입 플로우 (Navigator.push를 타지 않아 FirebaseAnalyticsObserver가 못 잡는 화면)
   static const String splash = 'splash';
+
+  /// 앱을 열 때 새 버전이 있으면 뜨는 업데이트 안내(start_screen.dart)
+  static const String splashUpdateDialog = 'splash-update-dialog';
   static const String pinCheck = 'pin-check';
   static const String walletHome = 'wallet-home';
   static const String allFeatures = 'all-features';

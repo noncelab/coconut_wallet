@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:provider/provider.dart';
 
 const Color kNativeSplashBackgroundColor = Color(0xFF121416);
@@ -25,7 +27,11 @@ const Duration kSplashTransitionDuration = Duration(milliseconds: 3500);
 class StartScreen extends StatefulWidget {
   final void Function(AppEntryFlow nextScreen) onComplete;
 
-  const StartScreen({super.key, required this.onComplete});
+  /// 테스트에서 최신 버전 응답을 정할 때만 넘긴다. 없으면 스토어에 묻는다.
+  @visibleForTesting
+  final AppVersion? appVersionRepository;
+
+  const StartScreen({super.key, required this.onComplete, this.appVersionRepository});
 
   @override
   State<StartScreen> createState() => _StartScreenState();
@@ -67,6 +73,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<AuthProvider>(context, listen: false),
       Provider.of<AnalyticsService>(context, listen: false),
+      appVersionRepository: widget.appVersionRepository,
     );
 
     _initialize();
@@ -105,6 +112,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
     return (await showDialog<bool>(
           context: context,
           barrierDismissible: false,
+          routeSettings: const RouteSettings(name: AnalyticsScreenNames.splashUpdateDialog),
           builder:
               (context) => CoconutPopup(
                 languageCode: context.read<PreferenceProvider>().language,
