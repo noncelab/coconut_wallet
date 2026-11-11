@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutTextField, CoconutToast, CoconutToastLevel, CoconutUnderlinedButton;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -70,7 +73,7 @@ abstract final class SafetyAssistFlow {
       // 비상 목적지는 Rescue-ready만 가진다(SafetyProvider 상태는 예전 값일 수 있음)
       rescue: context.read<RescueReadyProvider?>()?.destinationOf(incident.walletId),
     );
-    await Navigator.of(context).push(assistRoute('assist', _AssistHomeScreen(session: session)));
+    await Navigator.of(context).push(assistHomeRoute(_AssistHomeScreen(session: session)));
     return session.exitReason;
   }
 
@@ -96,7 +99,7 @@ abstract final class SafetyAssistFlow {
       isMoveNow: true,
       fallbackFeeRate: fallbackFeeRate,
     );
-    await Navigator.of(context).push(assistRoute('assist', _AssistHomeScreen(session: session)));
+    await Navigator.of(context).push(assistHomeRoute(_AssistHomeScreen(session: session)));
   }
 
   @visibleForTesting
@@ -122,6 +125,10 @@ abstract final class SafetyAssistFlow {
 /// 단계 화면 경로. 가이드 경로 접두사와 같아서 가이드의 "나중에 하기"가 함께 닫는다
 Route<T> assistRoute<T>(String name, Widget page) =>
     CupertinoPageRoute<T>(settings: RouteSettings(name: '/safety-guide/$name'), builder: (_) => page);
+
+/// Assist 홈 경로([AppRouteNames.safetyAssist]). 화면 기록은 화면이 단계마다 스스로 남긴다
+Route<T> assistHomeRoute<T>(Widget page) =>
+    CupertinoPageRoute<T>(settings: const RouteSettings(name: AppRouteNames.safetyAssist), builder: (_) => page);
 
 /// 아직 열린 기준점 검토 거래(최근 출금·앱이 만들지 않은 자기 앞 전송). 엔진과 같은 규칙: 지갑 기록에 있고 인지·앱이 만든
 /// 거래·사건이 아님. 사용자 거래일 수 있어 대체하지 않는다(그 코인은 이동 금액에 없음, Grok G6)
@@ -254,11 +261,45 @@ class _AssistHomeScreen extends StatefulWidget {
   State<_AssistHomeScreen> createState() => _AssistHomeScreenState();
 }
 
-class _AssistHomeScreenState extends State<_AssistHomeScreen> {
+class _AssistHomeScreenState extends State<_AssistHomeScreen> with SelfLoggedScreenView<_AssistHomeScreen> {
   _Phase _phase = _Phase.analyzing;
   int _step = 0;
 
   AssistSession get _session => widget.session;
+
+  /// 화면 기록: 단계마다 이름(/safety-guide/assist/<단계>, brief P1·P2·P6)과 흐름(source: 사건 대응·지금 이동).
+  /// 금액·수수료·목적지·거래는 보내지 않는다
+  @override
+  String get analyticsScreenName => '${AppRouteNames.safetyAssist}/${_phaseName(_phase)}';
+
+  @override
+  Map<String, Object> get analyticsParameters => {
+    AnalyticsParameterNames.source: _session.isMoveNow ? 'moveNow' : 'incident',
+  };
+
+  static String _phaseName(_Phase phase) => switch (phase) {
+    _Phase.rescueReady => 'rescue-ready',
+    _Phase.analyzing => 'analyzing',
+    _Phase.failed => 'failed',
+    _Phase.options => 'options',
+    _Phase.unavailable => 'unavailable',
+    _Phase.nothingToMove => 'nothing-to-move',
+  };
+
+  _Phase? _loggedPhase;
+
+  /// 단계가 바뀌면 화면이 보일 때만 한 번 기록한다. 다른 화면에 가려진 채 바뀌면 돌아올 때 SelfLoggedScreenView가 남긴다
+  void _followPhase() {
+    if (_loggedPhase == _phase) return;
+    final first = _loggedPhase == null;
+    _loggedPhase = _phase;
+    if (first) return;
+    final route = ModalRoute.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(route?.isCurrent ?? false)) return;
+      logScreenViewIfChanged();
+    });
+  }
 
   @override
   void initState() {
@@ -383,6 +424,7 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _followPhase();
     final strings = t.premium;
     switch (_phase) {
       case _Phase.rescueReady:

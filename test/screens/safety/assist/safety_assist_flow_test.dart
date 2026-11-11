@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -50,6 +51,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import '../../../analytics/screen_view_recorder.dart';
 
 /// R1(한국어 단어 안 줄바꿈 막기)의 이음 문자를 빼고 비교한다. 공용 부품이 글을 감싸는지와 무관하게 같은 글을 찾는다
 String _plain(String text) => text.replaceAll('\u2060', '');
@@ -281,6 +283,7 @@ void main() {
     _Preferences? preferences,
     double textScale = 1,
     RescueDraftSummary? rescueDraft,
+    ScreenViewRecorder? recorder,
   }) async {
     final auth = _Auth();
     final rescueProvider =
@@ -316,7 +319,7 @@ void main() {
       MultiProvider(
         providers: [
           InheritedProvider<WalletProvider>.value(value: walletProvider),
-          Provider<AnalyticsService>.value(value: _Analytics()),
+          Provider<AnalyticsService>.value(value: recorder ?? _Analytics()),
           if (rescueProvider != null) InheritedProvider<RescueReadyProvider>.value(value: rescueProvider),
           InheritedProvider<NodeProvider>.value(value: _ThrowingNode()),
           ChangeNotifierProvider<PreferenceProvider>.value(value: preferences ?? _Preferences()),
@@ -335,7 +338,7 @@ void main() {
                 data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
                 child: child!,
               ),
-          navigatorObservers: [routeObserver],
+          navigatorObservers: [routeObserver, if (recorder != null) recorder.observer],
           home: Builder(
             builder: (context) {
               host = context;
@@ -1454,6 +1457,109 @@ void main() {
         expect(lines(tester, amount), 1, reason: key);
       }
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  // T5-01: Assist는 단계마다 이름(/safety-guide/assist/<단계>)으로, 사건 대응인지 지금 이동인지는 source로 남는다
+  group('analytics: Assist steps', () {
+    List<(String, Object?)> assistViews(ScreenViewRecorder recorder) => [
+      for (final (name, parameters) in recorder.views)
+        if (name.startsWith('/safety-guide/assist')) (name, parameters[AnalyticsParameterNames.source]),
+    ];
+
+    testWidgets('analytics: replaceable conflict → analyzing, options', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(
+        tester,
+        utxos: [
+          _utxo(incident, 0, 90000, status: UtxoStatus.outgoing, spentBy: _attackTxid),
+          _utxo(incident, 1, 30000, status: UtxoStatus.locked),
+        ],
+        conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: false)],
+        recorder: recorder,
+      );
+      env.start();
+      await tester.pumpAndSettle();
+      expect(assistViews(recorder), [
+        ('/safety-guide/assist/analyzing', 'incident'),
+        ('/safety-guide/assist/options', 'incident'),
+      ]);
+    });
+
+    testWidgets('analytics: confirmed conflict → analyzing, unavailable', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(
+        tester,
+        utxos: [_utxo(incident, 1, 50000)],
+        conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true, confirmed: true)],
+        recorder: recorder,
+      );
+      env.start();
+      await tester.pumpAndSettle();
+      expect(assistViews(recorder), [
+        ('/safety-guide/assist/analyzing', 'incident'),
+        ('/safety-guide/assist/unavailable', 'incident'),
+      ]);
+    });
+
+    testWidgets('analytics: nothing to move → analyzing, nothing-to-move', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(tester, utxos: const [], conflicts: const [], recorder: recorder);
+      env.start();
+      await tester.pumpAndSettle();
+      expect(assistViews(recorder), [
+        ('/safety-guide/assist/analyzing', 'incident'),
+        ('/safety-guide/assist/nothing-to-move', 'incident'),
+      ]);
+    });
+
+    testWidgets('analytics: no fee → analyzing, failed', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(
+        tester,
+        utxos: [_utxo(incident, 1, 50000)],
+        conflicts: const [],
+        fastFee: null,
+        recorder: recorder,
+      );
+      env.start();
+      await tester.pumpAndSettle();
+      expect(assistViews(recorder), [
+        ('/safety-guide/assist/analyzing', 'incident'),
+        ('/safety-guide/assist/failed', 'incident'),
+      ]);
+    });
+
+    testWidgets('analytics: a prepared rescue move shows first as rescue-ready', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(
+        tester,
+        utxos: [_utxo(incident, 1, 50000)],
+        conflicts: const [],
+        fastFee: null,
+        rescueReady: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+        rescueCanMoveNow: true,
+        recorder: recorder,
+      );
+      env.start();
+      await tester.pumpAndSettle();
+      expect(assistViews(recorder), [('/safety-guide/assist/rescue-ready', 'incident')]);
+    });
+
+    // 지금 이동은 분석 뒤 바로 검토 화면이 덮어서, 가려진 채 바뀐 단계는 그때 남기지 않는다
+    testWidgets('analytics: move now is recorded with source moveNow', (tester) async {
+      final recorder = ScreenViewRecorder();
+      final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], recorder: recorder);
+      unawaited(
+        SafetyAssistFlow.moveNow(
+          env.host(),
+          walletId: 1,
+          destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+      expect(assistViews(recorder), [('/safety-guide/assist/analyzing', 'moveNow')]);
     });
   });
 }
