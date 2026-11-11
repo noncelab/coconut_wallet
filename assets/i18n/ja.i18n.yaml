@@ -1502,6 +1502,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "このトランザクションはサポートされていません。"
     utxo_not_found_title: "UTXOが見つかりません"
     utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
+    unverified_original_title: "署名を確認できません"
+    unverified_original: "このトランザクションの署名を確認できないため、手数料を上げることはできません。接続しているサーバーが誤ったトランザクションを送った可能性があります。「Electrum Server設定」で別のサーバーに変更してから、「ウォレット再同期」を行ってください。"
+    change_server: "サーバーを変更"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
