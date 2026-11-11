@@ -108,4 +108,29 @@ class HomeSavingsGoal {
   String get percentText => formatGoalPercent(ratio);
 }
 
+/// 목표 수량 화면의 지갑 하나. [target]이 없으면 목표를 정하지 않은 지갑이다.
+class HomeGoalShare {
+  final int walletId;
+  final String name;
+  final int balance;
+  final int? target;
+  final int? colorIndex;
+
+  const HomeGoalShare({
+    required this.walletId,
+    required this.name,
+    required this.balance,
+    required this.target,
+    this.colorIndex,
+  });
+
+  bool get hasTarget => target != null && target! > 0;
+
+  /// 지갑별 잔액 도넛과 같은 색을 쓰도록 [HomeBalanceShare]로 바꾼다.
+  HomeBalanceShare get asBalanceShare =>
+      HomeBalanceShare(walletId: walletId, name: name, balance: balance, colorIndex: colorIndex);
+
+  HomeSavingsGoal? get goal => hasTarget ? HomeSavingsGoal(balance: balance, target: target!) : null;
+}
+
 String formatGoalPercent(double ratio) => '${(ratio * 100).toStringAsFixed(1)}%';

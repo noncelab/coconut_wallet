@@ -44,6 +44,7 @@ class WidgetConfigureSheet extends StatefulWidget {
 
   /// 지갑 목록 위 '지갑' 제목. 시트 제목이 이미 지갑 선택이면 숨긴다.
   final bool showWalletsTitle;
+  final bool showIntro;
 
   const WidgetConfigureSheet({
     super.key,
@@ -59,6 +60,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     this.previewBuilder,
     this.compactFakeBalance = false,
     this.showWalletsTitle = true,
+    this.showIntro = true,
   });
 
   static Future<HomeWidgetSettings?> open(
@@ -94,6 +96,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     Widget Function(HomeSpan span)? previewBuilder,
     bool compactFakeBalance = false,
     bool showWalletsTitle = true,
+    bool showIntro = true,
   }) {
     return CommonBottomSheets.showBottomSheet_100<HomeWidgetSettings>(
       context: context,
@@ -113,6 +116,7 @@ class WidgetConfigureSheet extends StatefulWidget {
         previewBuilder: previewBuilder,
         compactFakeBalance: compactFakeBalance,
         showWalletsTitle: showWalletsTitle,
+        showIntro: showIntro,
       ),
     );
   }
@@ -247,7 +251,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
           final spec = viewModel.spec;
           return HomeConfigureSheetLayout(
             scrollController: _scrollController,
-            showIntro: !widget.compactFakeBalance,
+            showIntro: widget.showIntro && !widget.compactFakeBalance,
             title: widget.title ?? t.home_edit.configure_widget,
             heading: widget.heading,
             description:

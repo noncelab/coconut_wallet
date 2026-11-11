@@ -176,6 +176,9 @@ class HodlInsightsViewModel extends ChangeNotifier {
 
   HomeSavingsGoal? get goal => _data.savingsGoal(walletIds: _walletIds);
 
+  /// 범위 안 지갑별 잔액과 목표. 목표 수량 막대와 지갑별 목표 목록에 쓴다.
+  List<HomeGoalShare> get goalShares => _data.savingsGoalShares(walletIds: _walletIds);
+
   List<HomeBalanceShare> balanceShares(String othersName) =>
       _data.balanceShares(walletIds: _walletIds, othersName: othersName);
 

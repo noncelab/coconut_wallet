@@ -30,6 +30,16 @@ class SharedPrefKeys {
 
   static const String kHodlInsightsWalletIds = 'HODL_INSIGHTS_WALLET_IDS';
 
+  /// 목표 수량 화면의 모으기 계획: 채울 기간과 모으는 주기(enum 이름)
+  static const String kGoalPlanPeriod = 'GOAL_PLAN_PERIOD';
+  static const String kGoalPlanCycle = 'GOAL_PLAN_CYCLE';
+
+  /// 모으기 계획 기간을 직접 고른 날(yyyy-MM-dd)
+  static const String kGoalPlanCustomDate = 'GOAL_PLAN_CUSTOM_DATE';
+
+  /// 모으기 알림 설정(JSON): 켜짐, 시각, 요일·날짜, 수량 표시
+  static const String kGoalReminder = 'GOAL_REMINDER';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -140,6 +150,10 @@ class SharedPrefKeys {
     kWalletOrder,
     kSelectWalletGridView,
     kHodlInsightsWalletIds,
+    kGoalPlanPeriod,
+    kGoalPlanCycle,
+    kGoalPlanCustomDate,
+    kGoalReminder,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

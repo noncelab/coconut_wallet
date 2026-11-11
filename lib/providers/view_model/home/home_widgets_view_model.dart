@@ -406,6 +406,22 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     );
   }
 
+  /// 범위 안 지갑마다 잔액과 목표 수량. 지갑 목록 순서이며 목표가 없는 지갑도 포함한다.
+  List<HomeGoalShare> savingsGoalShares({List<int>? walletIds}) {
+    final ids = _idsOf(walletIds).toSet();
+    return [
+      for (final wallet in wallets)
+        if (ids.contains(wallet.id))
+          HomeGoalShare(
+            walletId: wallet.id,
+            name: wallet.name,
+            balance: balanceOf(wallet.id),
+            target: _targetSatsOf(wallet.id),
+            colorIndex: wallet.walletImportSource == WalletImportSource.coconutVault ? wallet.colorIndex : null,
+          ),
+    ];
+  }
+
   List<HomeBalanceShare> balanceShares({List<int>? walletIds, required String othersName}) {
     final ids = _idsOf(walletIds).toSet();
     return HomeWidgetMath.balanceShares([
