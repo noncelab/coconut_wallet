@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/model/safety/safety_check.dart';
+
 class AnalyticsScreenNames {
   // 진입 플로우 (Navigator.push를 타지 않아 FirebaseAnalyticsObserver가 못 잡는 화면)
   static const String splash = 'splash';
@@ -110,4 +112,38 @@ enum TransactionDetailPurpose {
   const TransactionDetailPurpose(this.screenName);
 
   final String screenName;
+}
+
+/// Wallet Health 검토·권장 시트의 화면 이름(결정 #10, T5-10): 점검 종류마다 고정 이름.
+/// 모든 종류를 나열한 switch라 점검 종류가 늘면 이름을 정할 때까지 컴파일되지 않는다.
+/// 점수·지갑·검사 수치는 이름에 넣지 않는다
+abstract final class WalletHealthSheetNames {
+  static String review(SafetyCheckId id) =>
+      '/wallet-health/review/${switch (id) {
+        SafetyCheckId.appLock => 'app-lock',
+        SafetyCheckId.appUpdate => 'app-update',
+        SafetyCheckId.mnemonicBackup => 'mnemonic-backup',
+        SafetyCheckId.passphraseVerify => 'passphrase-verify',
+        SafetyCheckId.watchOnlyVerify => 'watch-only-verify',
+        SafetyCheckId.multisigConfig => 'multisig-config',
+        SafetyCheckId.bsmsBackup => 'bsms-backup',
+        SafetyCheckId.unrecognizedOutgoing => 'unrecognized-outgoing',
+        SafetyCheckId.txConflict => 'tx-conflict',
+        SafetyCheckId.addressReuse => 'address-reuse',
+        SafetyCheckId.possibleDusting => 'possible-dusting',
+        SafetyCheckId.pendingOutgoingAtBaseline => 'pending-outgoing-at-baseline',
+        SafetyCheckId.unexpectedSelfTransfer => 'unexpected-self-transfer',
+        SafetyCheckId.serverCert => 'server-cert',
+        SafetyCheckId.metadataBackup => 'metadata-backup',
+      }}';
+
+  static String recommended(RecommendedCheckId id) =>
+      '/wallet-health/recommended/${switch (id) {
+        RecommendedCheckId.hotPhysicalBackup => 'hot-physical-backup',
+        RecommendedCheckId.hotSafeStorage => 'hot-safe-storage',
+        RecommendedCheckId.hotPassphraseOffline => 'hot-passphrase-offline',
+        RecommendedCheckId.multisigQuorumAccess => 'multisig-quorum-access',
+        RecommendedCheckId.multisigBackupSeparation => 'multisig-backup-separation',
+        RecommendedCheckId.metadataStoredOffsite => 'metadata-stored-offsite',
+      }}';
 }

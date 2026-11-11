@@ -834,7 +834,7 @@ class _WalletSheet extends StatelessWidget {
 Future<void> showSafetyReviewItemSheet(BuildContext context, SafetyCheckResult item) =>
     CommonBottomSheets.showBottomSheet<void>(
       context: context,
-      screenName: '/wallet-health/review',
+      screenName: WalletHealthSheetNames.review(item.id),
       // 시트 제목은 점검 이름으로 짧게, 문장 제목은 본문 첫 줄로(POLISH C16)
       title: safetyCheckName(item.id),
       showDragHandle: true,
@@ -1235,7 +1235,7 @@ Future<void> showSafetyRecommendedSheet(BuildContext context, RecommendedItem it
   if (id == null) return Future.value();
   return CommonBottomSheets.showBottomSheet<void>(
     context: context,
-    screenName: '/wallet-health/recommended',
+    screenName: WalletHealthSheetNames.recommended(id),
     title: safetyRecommendedSheetTitle(id),
     showDragHandle: true,
     showCloseButton: true,
