@@ -711,7 +711,7 @@ class _CategoryCard extends StatelessWidget {
       final big = SizedBox(
         height: 32,
         child: Align(
-          alignment: Alignment.bottomLeft,
+          alignment: Alignment.bottomCenter,
           child: Text(
             bigText,
             maxLines: 1,
@@ -727,9 +727,10 @@ class _CategoryCard extends StatelessWidget {
         ),
       );
       result = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SvgPicture.asset(
                 safetyCategoryIconPath(category),
@@ -738,12 +739,12 @@ class _CategoryCard extends StatelessWidget {
                 colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
               ),
               CoconutLayout.spacing_200w,
-              Expanded(
+              Flexible(
                 child: SizedBox(
                   height: 20,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: Text(
                       name,
                       maxLines: 1,
@@ -756,15 +757,15 @@ class _CategoryCard extends StatelessWidget {
             ],
           ),
           CoconutLayout.spacing_200h,
-          Padding(
-            padding: const EdgeInsets.only(left: 28),
+          SizedBox(
+            width: double.infinity,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 big,
                 CoconutLayout.spacing_200h,
                 Text(
                   safetyKoText(status.text),
+                  textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: CoconutTypography.body3_12.copyWith(height: 1.2).setColor(status.color),
@@ -827,7 +828,7 @@ class _CardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     Widget bar(double widthFactor, double height) => FractionallySizedBox(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.center,
       widthFactor: widthFactor,
       // surfaceSkeletonBase는 homeSurface와 같아(어두움·코코넛 1.00) 동작 줄이기에서 안 보인다(POLISH R6)
       child: Container(
@@ -837,7 +838,7 @@ class _CardSkeleton extends StatelessWidget {
     );
     final bars = Column(
       key: const Key('wallet-health-card-skeleton'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [bar(0.7, 12), CoconutLayout.spacing_300h, bar(0.4, 20), CoconutLayout.spacing_200h, bar(0.6, 10)],
     );
     if (safetyReduceMotion(context)) return bars;
