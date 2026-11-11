@@ -46,6 +46,7 @@ class AppRouteNames {
   static const String walletAppearance = '/wallet-appearance';
   static const String walletBackupData = '/wallet-backup-data';
   static const String walletDetail = '/wallet-detail';
+  static const String walletHealth = '/wallet-health';
   static const String walletInfo = '/wallet-info';
   static const String walletResync = '/wallet-resync';
 }

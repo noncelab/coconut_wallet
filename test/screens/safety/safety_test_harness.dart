@@ -145,7 +145,9 @@ Widget safetyTestApp(
     if (entitlement != null) Provider<EntitlementService>.value(value: entitlement),
     if (rescue != null) ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
     if (preferences != null) ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
-    if (analytics != null) Provider<AnalyticsService>.value(value: analytics),
+    // 스스로 화면을 기록하는 화면(SelfLoggedScreenView)은 AnalyticsService가 꼭 있어야 한다. 앱은 루트에서 늘 준다.
+    // 테스트가 따로 주지 않으면 꺼진 서비스를 준다
+    Provider<AnalyticsService>.value(value: analytics ?? AnalyticsService(null, true)),
   ],
   child: MaterialApp(
     theme: buildCoconutThemeData(variant: variant),

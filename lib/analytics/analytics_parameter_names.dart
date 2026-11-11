@@ -24,6 +24,9 @@ class AnalyticsParameterNames {
   // 화면 (screen_view): 탭이 있는 화면에서 보이는 탭, UtxoOrganizerSegment / UtxoOverviewSegment .name
   static const String segment = 'segment';
 
+  // 화면 (screen_view): 앱이 바꾸는 화면 상태. Wallet Health는 checking 또는 WalletHealthStatus .name
+  static const String stage = 'stage';
+
   // Wallet Health: incident_response_*의 대응 방식(free / premium), premium_purchase_completed의 기간(monthly / yearly)
   static const String responseMode = 'response_mode';
   static const String period = 'period';

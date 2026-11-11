@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -337,6 +338,7 @@ Future<FakeSafetyProvider> pumpWalletHealthApp(
   FakeSafetyProvider? safety,
   List<SingleChildWidget> extra = const [],
   bool settle = true,
+  List<NavigatorObserver> navigatorObservers = const [],
 }) async {
   LocaleSettings.setLocaleSync(locale);
   addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
@@ -353,10 +355,14 @@ Future<FakeSafetyProvider> pumpWalletHealthApp(
         if (rescue != null) ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
         if (wallets != null) ChangeNotifierProvider<WalletProvider>.value(value: FakeWallets(wallets, utxos: utxos)),
         if (preferences != null) ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
+        // Wallet Health는 스스로 화면을 기록해서(SelfLoggedScreenView) AnalyticsService가 꼭 있어야 한다. 앱은 루트에서 늘 준다.
+        // 기본은 꺼진 서비스이고, extra로 준 기록기가 더 안쪽이라 그쪽이 쓰인다
+        Provider<AnalyticsService>.value(value: AnalyticsService(null, true)),
         ...extra,
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(variant: variant),
+        navigatorObservers: navigatorObservers,
         builder:
             (context, child) => MediaQuery(
               data: MediaQuery.of(

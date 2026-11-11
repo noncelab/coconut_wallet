@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/safety/safety_incident.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/safety_features.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:coconut_wallet/services/home/safety_widget_definitions.dart';
@@ -226,6 +227,8 @@ void main() {
           providers: [
             ChangeNotifierProvider<SafetyProvider>.value(value: SafetyProvider.fixed(report)),
             ChangeNotifierProvider<WalletProvider>.value(value: SafetyWalletsFake([safetyWallet(id: 1)])),
+            // Wallet Health는 스스로 화면을 기록한다(앱은 루트에서 AnalyticsService를 준다)
+            Provider<AnalyticsService>.value(value: AnalyticsService(null, true)),
           ],
           child: MaterialApp(
             theme: buildCoconutThemeData(),

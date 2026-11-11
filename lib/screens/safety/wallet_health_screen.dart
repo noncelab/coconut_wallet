@@ -37,6 +37,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 
 /// Wallet Health(지갑 상태): 게이지 · 카테고리 2×2 · 검토 필요 · Premium · 정상 항목 · 권장 점검.
 /// 위급 사건이 있으면 점수 대신 사건이 먼저 온다(WH-S3).
@@ -48,7 +51,7 @@ class WalletHealthScreen extends StatefulWidget {
 
   static Future<void> open(BuildContext context, {bool startCheck = false}) => Navigator.of(context).push(
     CupertinoPageRoute<void>(
-      settings: const RouteSettings(name: '/wallet-health'),
+      settings: const RouteSettings(name: AppRouteNames.walletHealth),
       builder: (_) => WalletHealthScreen(startCheck: startCheck),
     ),
   );
@@ -57,12 +60,53 @@ class WalletHealthScreen extends StatefulWidget {
   State<WalletHealthScreen> createState() => _WalletHealthScreenState();
 }
 
-class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTickerProviderStateMixin {
+class _WalletHealthScreenState extends State<WalletHealthScreen>
+    with SingleTickerProviderStateMixin, SelfLoggedScreenView<WalletHealthScreen> {
   /// 깜빡임 방지(지갑 상세 당겨서 새로고침과 같은 값)
   static const _minimumCheckingDuration = Duration(milliseconds: 700);
 
   bool _checking = false;
   VoidCallback? _cancelSettle;
+
+  /// 바로가기·모든 기능으로 들어와 검사를 시작하기 전(화면 전환 중)
+  late bool _startCheckPending = widget.startCheck;
+
+  /// 화면 기록(screen_view)의 stage: 검사 중이면 checking, 아니면 결과 상태(WalletHealthStatus .name).
+  /// 점수·등급·검사 결과는 보내지 않는다(Epic 3 측정 설계, 결정 #10)
+  static const _checkingStage = 'checking';
+  String? _loggedStage;
+
+  bool _isChecking(SafetyProvider? provider) =>
+      _checking || (provider?.isChecking ?? false) || provider?.report == null;
+
+  String _stageOf(SafetyProvider? provider) {
+    final report = provider?.report;
+    // 바로가기 진입은 검사하러 온 것이라, 전환 중에 잠깐 보이는 지난 결과를 결과 조회로 세지 않는다
+    if (_startCheckPending || _isChecking(provider) || report == null) return _checkingStage;
+    return report.status.name;
+  }
+
+  @override
+  String get analyticsScreenName => AppRouteNames.walletHealth;
+
+  @override
+  Map<String, Object> get analyticsParameters => {
+    AnalyticsParameterNames.stage: _stageOf(Provider.of<SafetyProvider?>(context, listen: false)),
+  };
+
+  /// stage가 바뀌면 화면이 보일 때만 한 번 기록한다. 다른 화면에 가려진 채 바뀌면 돌아올 때 SelfLoggedScreenView가 남긴다
+  void _followStage(String stage) {
+    if (_loggedStage == stage) return;
+    final first = _loggedStage == null;
+    _loggedStage = stage;
+    if (first) return;
+    final route = ModalRoute.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(route?.isCurrent ?? false)) return;
+      logScreenViewIfChanged();
+    });
+  }
+
   final _scroll = ScrollController();
 
   /// 직전 빌드가 위급 배치였는지(위급으로 바뀌는 순간을 안다)
@@ -208,7 +252,10 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     final provider = context.read<SafetyProvider?>();
     if (provider == null || _checking) return;
     vibrateExtraLight();
-    setState(() => _checking = true);
+    setState(() {
+      _checking = true;
+      _startCheckPending = false;
+    });
     final stopwatch = Stopwatch()..start();
     var failed = false;
     try {
@@ -249,8 +296,9 @@ class _WalletHealthScreenState extends State<WalletHealthScreen> with SingleTick
     final provider = context.watch<SafetyProvider?>();
     final report = provider?.report;
     // checkAgain은 provider가 1.2초 이상 검사 중으로 둔다(백그라운드 refresh는 검사 중 표시 없음)
-    final checking = _checking || (provider?.isChecking ?? false) || report == null;
+    final checking = _isChecking(provider);
     _followCritical(report?.isCritical ?? false);
+    _followStage(_stageOf(provider));
     return Scaffold(
       key: const Key('wallet-health-screen'),
       backgroundColor: colors.background,

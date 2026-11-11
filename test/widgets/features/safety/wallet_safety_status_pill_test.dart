@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/safety/safety_state.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/wallet_safety_status_row.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +85,8 @@ void main() {
       home: Scaffold(body: Column(children: [WalletSafetyStatusPill(walletId: 1, onPressed: onPressed)])),
     );
     if (safety != null) app = ChangeNotifierProvider<SafetyProvider>.value(value: safety, child: app);
+    // 알약이 여는 Wallet Health는 스스로 화면을 기록한다(앱은 루트에서 AnalyticsService를 준다)
+    app = Provider<AnalyticsService>.value(value: AnalyticsService(null, true), child: app);
     await tester.pumpWidget(app);
     await tester.pumpAndSettle();
   }
