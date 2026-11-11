@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutChip, CoconutTypography;
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
@@ -34,9 +34,12 @@ import 'package:coconut_wallet/repository/shared_preference/home_configuration_r
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/home_edit_screen.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/screens/home/goal_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
+import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
@@ -55,7 +58,12 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart'
-    show CupertinoApp, CupertinoPageScaffold, CupertinoScrollBehavior, DefaultCupertinoLocalizations;
+    show
+        CupertinoApp,
+        CupertinoDatePicker,
+        CupertinoPageScaffold,
+        CupertinoScrollBehavior,
+        DefaultCupertinoLocalizations;
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
@@ -199,6 +207,7 @@ Future<void> _openWidgetsTab(
   DateTime? dataNow,
   Map<int, WalletBackground> walletBackgrounds = const {},
   bool gestureGuideDismissed = true,
+  int? Function(int walletId)? targetSatsOf,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -258,7 +267,7 @@ Future<void> _openWidgetsTab(
         walletProvider: _Wallets(wallets, transactions, loadState: loadState),
         preferenceProvider: _Preferences(isFakeBalanceActive: fake, unit: unit),
         priceProvider: _Prices(available: pricesAvailable),
-        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+        targetSatsOf: targetSatsOf ?? (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
         now: dataNow == null ? null : () => dataNow,
       );
@@ -2389,6 +2398,239 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
       expect(tester.getSize(find.byKey(const Key('goal-progress-fill'))).width, fill);
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('a goal on one wallet shows that wallet name, a single-color bar and no wallet chips', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, disableAnimations: true);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(t.hodl_insights.goal_amount), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-scope-label'))).data,
+        _widgetsViewModel!.wallets.firstWhere((wallet) => wallet.id == 1).name,
+      );
+
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(GoalAmountScreen), findsOneWidget);
+      expect(find.byKey(const Key('goal-amount-wallet-chips')), findsNothing);
+      expect(find.byKey(const Key('goal-amount-by-wallet')), findsNothing);
+      expect(find.byKey(const ValueKey('goal-segment-combined')), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-segment-1')), findsNothing);
+      expect(find.byKey(const Key('goal-legend')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('goal-amount-edit')));
+      await tester.pumpAndSettle();
+      expect(find.byType(WidgetConfigureSheet), findsOneWidget);
+      expect(find.text(t.hodl_insights.goal_settings_title), findsOneWidget);
+      expect(find.text(t.hodl_insights.settings_title), findsNothing);
+      expect(find.text(t.hodl_insights.settings_heading), findsNothing);
+      expect(find.byKey(const Key('widget-configure-all-wallets')), findsNothing);
+      expect(find.byKey(const ValueKey('widget-configure-wallet-1')), findsNothing);
+      final goalSettings = tester.widget<WidgetConfigureSheet>(find.byType(WidgetConfigureSheet));
+      expect(goalSettings.spec.goals, isTrue);
+      expect(goalSettings.spec.wallets, isFalse);
+      expect(goalSettings.showIntro, isFalse);
+      expect(find.byKey(const ValueKey('widget-configure-goal-1')), findsOneWidget);
+      Navigator.of(tester.element(find.byType(WidgetConfigureSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(WidgetConfigureSheet), findsNothing);
+
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(GoalAmountScreen), findsNothing);
+      await _close(tester);
+    });
+
+    testWidgets('goal amount detail without any goal opens the goal settings when tapped', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [2])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('goal-amount-empty')), findsOneWidget);
+      expect(find.text(t.hodl_insights.no_goal), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('goal-amount-empty')));
+      await tester.pumpAndSettle();
+      expect(find.byType(WidgetConfigureSheet), findsOneWidget);
+      Navigator.of(tester.element(find.byType(WidgetConfigureSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('goals on several wallets show those wallets as chips, colored segments and per-wallet goals', (
+      tester,
+    ) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 100000000 : (id == 2 ? 300000000 : null),
+        screen: insights,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-scope-label'))).data,
+        t.hodl_insights.goal_wallet_count(count: 2),
+      );
+
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      expect(find.byType(GoalAmountScreen), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-amount-chip-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-amount-chip-2')), findsOneWidget);
+      expect(find.byType(CoconutChip), findsNWidgets(2));
+      for (final id in [1, 2]) {
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('goal-amount-card')),
+            matching: find.byKey(ValueKey('goal-segment-$id')),
+          ),
+          findsOneWidget,
+        );
+        expect(find.byKey(ValueKey('goal-amount-wallet-$id')), findsOneWidget);
+      }
+      expect(find.byKey(const ValueKey('goal-segment-combined')), findsNothing);
+      expect(find.byKey(const Key('goal-legend')), findsOneWidget);
+      expect(find.byKey(const Key('goal-amount-by-wallet')), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('tapping a wallet chip leaves that wallet out of the goal and back in', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 100000000 : (id == 2 ? 300000000 : null),
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      String label() => tester.widget<Text>(find.byKey(const Key('goal-scope-label'))).data!;
+      String target() => tester.widget<Text>(find.byKey(const Key('goal-target-amount'))).data!;
+      final wallet1 = _widgetsViewModel!.wallets.firstWhere((wallet) => wallet.id == 1).name;
+      expect(label(), t.hodl_insights.goal_wallet_count(count: 2));
+      final both = target();
+
+      await tester.tap(find.byKey(const ValueKey('goal-amount-chip-2')));
+      await tester.pump();
+      expect(label(), wallet1);
+      expect(target(), isNot(both));
+      expect(find.byKey(const ValueKey('goal-segment-combined')), findsOneWidget);
+
+      // 마지막 남은 지갑은 뺄 수 없다.
+      await tester.tap(find.byKey(const ValueKey('goal-amount-chip-1')));
+      await tester.pump();
+      expect(label(), wallet1);
+
+      await tester.tap(find.byKey(const ValueKey('goal-amount-chip-2')));
+      await tester.pump();
+      expect(label(), t.hodl_insights.goal_wallet_count(count: 2));
+      expect(target(), both);
+      await _close(tester);
+    });
+
+    testWidgets('the saving plan shows with one goal wallet and keeps its choices after reopening', (tester) async {
+      await _openWidgetsTab(tester, fake: false, disableAnimations: true, screen: insights);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-plan-card')), findsOneWidget);
+      String until() => tester.widget<Text>(find.byKey(const Key('goal-plan-until'))).data!;
+      expect(until(), contains(t.hodl_insights.goal_plan_weekly));
+
+      await tester.ensureVisible(find.byKey(const ValueKey('goal-plan-cycle-daily')));
+      await tester.tap(find.byKey(const ValueKey('goal-plan-period-oneMonth')));
+      await tester.tap(find.byKey(const ValueKey('goal-plan-cycle-daily')));
+      await tester.pumpAndSettle();
+      expect(until(), contains(t.hodl_insights.goal_plan_daily));
+      final perAfterChange = tester.widget<Text>(find.byKey(const Key('goal-plan-per'))).data;
+
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      expect(until(), contains(t.hodl_insights.goal_plan_daily));
+      expect(tester.widget<Text>(find.byKey(const Key('goal-plan-per'))).data, perAfterChange);
+      expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanPeriod), GoalPlanPeriod.oneMonth.name);
+      expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCycle), GoalPlanCycle.daily.name);
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('a custom saving plan date is picked, kept after reopening and dropped once it passes', (tester) async {
+      await _openWidgetsTab(tester, fake: false, disableAnimations: true, screen: insights);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      String until() => tester.widget<Text>(find.byKey(const Key('goal-plan-until'))).data!;
+      final custom = find.byKey(const ValueKey('goal-plan-period-custom'));
+      await tester.ensureVisible(custom);
+      expect(find.descendant(of: custom, matching: find.text(t.hodl_insights.goal_plan_custom)), findsOneWidget);
+
+      await tester.tap(custom);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-plan-date-picker')), findsOneWidget);
+      final picker = tester.widget<CupertinoDatePicker>(find.byKey(const Key('goal-plan-date-picker')));
+      final today = _widgetsViewModel!.now;
+      expect(picker.minimumDate, DateTime(today.year, today.month, today.day).add(const Duration(days: 1)));
+      await tester.tap(find.byKey(const Key('goal-plan-date-done')));
+      await tester.pumpAndSettle();
+
+      final saved = DateTime.parse(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCustomDate));
+      expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanPeriod), GoalPlanPeriod.custom.name);
+      expect(until(), contains('${saved.year}.${saved.month}.${saved.day}'));
+      expect(find.descendant(of: custom, matching: find.text(t.hodl_insights.goal_plan_custom)), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-plan-custom-date-text'))).data,
+        '${saved.year}.${saved.month}.${saved.day}',
+      );
+      await tester.tap(find.byKey(const Key('goal-plan-custom-date')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-plan-date-picker')), findsOneWidget);
+      Navigator.of(tester.element(find.byKey(const Key('goal-plan-date-picker')))).pop();
+      await tester.pumpAndSettle();
+
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      expect(until(), contains('${saved.year}.${saved.month}.${saved.day}'));
+
+      // 고른 날이 지나면 기본 기간(3개월)으로 돌아간다.
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      await SharedPrefsRepository().setString(SharedPrefKeys.kGoalPlanCustomDate, DateTime(2000).toIso8601String());
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      final fallback = GoalPlanMath.deadline(today, GoalPlanPeriod.threeMonths);
+      expect(until(), contains('${fallback.year}.${fallback.month}.${fallback.day}'));
+      expect(find.byKey(const Key('goal-plan-custom-date')), findsNothing);
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('a goal on one wallet among selected wallets still shows no chips', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1, 2])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('goal-amount-wallet-chips')), findsNothing);
+      expect(find.byKey(const Key('goal-amount-by-wallet')), findsNothing);
+      expect(find.byKey(const ValueKey('goal-segment-combined')), findsOneWidget);
       await _close(tester);
     });
 

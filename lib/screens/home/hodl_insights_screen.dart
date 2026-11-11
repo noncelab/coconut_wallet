@@ -6,13 +6,14 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
+import 'package:coconut_wallet/screens/home/goal_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -28,6 +29,29 @@ import 'package:flutter/foundation.dart' show precisionErrorTolerance, listEqual
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+
+/// 인사이트 설정(지갑 선택·지갑별 목표 수량)을 열고 저장한다.
+/// 목표 수량 상세 화면은 지갑 선택 없이 목표 수량 전용 설정을 연다.
+Future<void> openHodlInsightsSettings(BuildContext context, HodlInsightsViewModel viewModel) async {
+  if (viewModel.isSavingWalletSelection) return;
+  final settings = await WidgetConfigureSheet.openSettings(
+    context,
+    title: t.hodl_insights.settings_title,
+    heading: t.hodl_insights.settings_heading,
+    description: t.hodl_insights.settings_description,
+    headingStyle: CoconutTypography.body1_16_Bold,
+    descriptionStyle: CoconutTypography.body3_12,
+    showWalletsTitle: false,
+    spec: const HomeWidgetSettingsSpec(wallets: true, goals: true),
+    wallets: viewModel.data.wallets,
+    initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
+  );
+  if (settings == null || !context.mounted) return;
+  final saved = await viewModel.saveWalletSelection(settings.walletIds);
+  if (!saved && context.mounted) {
+    CoconutToast.showToast(context: context, text: t.errors.storage_write_error, level: CoconutToastLevel.warning);
+  }
+}
 
 /// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서
 /// 기간을 바꿔 가며 본다.
@@ -165,26 +189,8 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
     );
   }
 
-  Future<void> _openSettings(BuildContext context, HodlInsightsViewModel viewModel) async {
-    if (viewModel.isSavingWalletSelection) return;
-    final settings = await WidgetConfigureSheet.openSettings(
-      context,
-      title: t.hodl_insights.settings_title,
-      heading: t.hodl_insights.settings_heading,
-      description: t.hodl_insights.settings_description,
-      headingStyle: CoconutTypography.body1_16_Bold,
-      descriptionStyle: CoconutTypography.body3_12,
-      showWalletsTitle: false,
-      spec: const HomeWidgetSettingsSpec(wallets: true, goals: true),
-      wallets: viewModel.data.wallets,
-      initial: HomeWidgetSettings(walletIds: viewModel.walletIds),
-    );
-    if (settings == null || !mounted) return;
-    final saved = await viewModel.saveWalletSelection(settings.walletIds);
-    if (!saved && context.mounted) {
-      CoconutToast.showToast(context: context, text: t.errors.storage_write_error, level: CoconutToastLevel.warning);
-    }
-  }
+  Future<void> _openSettings(BuildContext context, HodlInsightsViewModel viewModel) =>
+      openHodlInsightsSettings(context, viewModel);
 
   @override
   Widget build(BuildContext context) {
@@ -1092,104 +1098,63 @@ class _GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final goal = viewModel.goal;
-    final card = _InsightCard(
-      child: Column(
-        key: const Key('hodl-insights-goal'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HomeWidgetHeader(
-            iconPath: FeatureWidgetIconPath.bullseyeArrow,
-            title: t.hodl_insights.goal,
-            style: CoconutTypography.body1_16_Bold,
-          ),
-          CoconutLayout.spacing_300h,
-          if (goal == null)
-            Row(
-              key: const Key('hodl-insights-goal-empty'),
-              children: [
-                Expanded(
-                  child: Text(
-                    t.hodl_insights.no_goal,
-                    style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
+    if (goal == null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSetGoal,
+        child: _InsightCard(
+          child: Column(
+            key: const Key('hodl-insights-goal'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HomeWidgetHeader(
+                iconPath: FeatureWidgetIconPath.bullseyeArrow,
+                title: t.hodl_insights.goal_amount,
+                style: CoconutTypography.body1_16_Bold,
+              ),
+              CoconutLayout.spacing_300h,
+              Row(
+                key: const Key('hodl-insights-goal-empty'),
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.hodl_insights.no_goal,
+                      style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
+                    ),
                   ),
-                ),
-                Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
-              ],
-            )
-          else
-            Builder(
-              builder: (context) {
-                final numberStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
-                  color: colors.primaryText,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                );
-                return _OpenProgress(
-                  progress: goal.ratio,
-                  builder: (context, ratio) {
-                    final animatedBalance =
-                        goal.ratio == 0 ? goal.balance : (goal.balance * ratio / goal.ratio).round();
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '${_btcNumber(viewModel, animatedBalance)} / ${_btcText(viewModel, goal.target)}',
-                            key: const Key('goal-progress-amount'),
-                            style: numberStyle,
-                          ),
-                        ),
-                        CoconutLayout.spacing_200h,
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: SizedBox(
-                                  height: 12,
-                                  child: Stack(
-                                    children: [
-                                      Container(color: colors.surfaceMuted),
-                                      FractionallySizedBox(
-                                        key: const Key('goal-progress-fill'),
-                                        widthFactor: ratio.clamp(0.0, 1.0),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: colors.success,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            CoconutLayout.spacing_400w,
-                            SizedBox(
-                              width: measureHomeText(context, goal.percentText, numberStyle) + 1,
-                              child: Text(
-                                formatGoalPercent(ratio),
-                                key: const Key('goal-progress-percent'),
-                                textAlign: TextAlign.right,
-                                maxLines: 1,
-                                style: numberStyle,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
+                  Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final card = _InsightCard(
+      child: _OpenProgress(
+        progress: 1,
+        builder:
+            (context, reveal) => GoalAmountSummary(
+              goal: goal,
+              shares: viewModel.goalShares,
+              amountNumber: (sats) => _btcNumber(viewModel, sats),
+              amountText: (sats) => _btcText(viewModel, sats),
+              reveal: reveal,
             ),
-        ],
       ),
     );
-    if (goal != null) return card;
-    return GestureDetector(behavior: HitTestBehavior.opaque, onTap: onSetGoal, child: card);
+    // 홈 목표 위젯에서 열었으면 이미 그 카드의 Hero 안에 있다. 그 태그로 목표 수량 화면에 이어진다.
+    final ancestorHero = context.findAncestorWidgetOfExactType<Hero>();
+    final heroTag = ancestorHero?.tag ?? goalAmountHeroTag;
+    return GestureDetector(
+      key: const Key('hodl-insights-goal-card'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => GoalAmountScreen.open(context, viewModel, heroTag: heroTag),
+      child:
+          ancestorHero != null
+              ? card
+              : Hero(tag: goalAmountHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: card),
+    );
   }
 }
 
