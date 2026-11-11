@@ -55,6 +55,8 @@ class SafetyCautionBanner extends StatelessWidget {
     final strings = t.safety_guide.caution;
     final removed = await showDialog<bool>(
       context: context,
+      // 지갑 상세와 Wallet Health의 지갑 시트 두 곳에서 열려서 /wallet-health 아래에 두지 않는다
+      routeSettings: const RouteSettings(name: '/safety/caution-remove-dialog'),
       builder:
           (dialogContext) => CoconutPopup(
             languageCode: LocaleSettings.currentLocale.languageCode,

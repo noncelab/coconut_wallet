@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +136,8 @@ Widget safetyTestApp(
   PreferenceProvider? preferences,
   CoconutThemeVariant variant = CoconutThemeVariant.light,
   Map<String, WidgetBuilder> routes = const {},
+  AnalyticsService? analytics,
+  List<NavigatorObserver> navigatorObservers = const [],
 }) => MultiProvider(
   providers: [
     ChangeNotifierProvider<SafetyProvider>.value(value: safety),
@@ -142,8 +145,14 @@ Widget safetyTestApp(
     if (entitlement != null) Provider<EntitlementService>.value(value: entitlement),
     if (rescue != null) ChangeNotifierProvider<RescueReadyProvider>.value(value: rescue),
     if (preferences != null) ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
+    if (analytics != null) Provider<AnalyticsService>.value(value: analytics),
   ],
-  child: MaterialApp(theme: buildCoconutThemeData(variant: variant), home: home, routes: routes),
+  child: MaterialApp(
+    theme: buildCoconutThemeData(variant: variant),
+    home: home,
+    routes: routes,
+    navigatorObservers: navigatorObservers,
+  ),
 );
 
 /// 가이드·시트를 여는 쪽 화면(내비게이터 아래 context)

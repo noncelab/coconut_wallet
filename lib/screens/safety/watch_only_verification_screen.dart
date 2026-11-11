@@ -131,6 +131,12 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
     final copy = t.wallet_health.watch_only_verify;
     final confirmed = await showDialog<bool>(
       context: context,
+      routeSettings: RouteSettings(
+        name:
+            mismatch
+                ? '/wallet-health/watch-only-verification/device-confirm-dialog'
+                : '/wallet-health/watch-only-verification/confirm-dialog',
+      ),
       builder:
           (dialogContext) => CoconutPopup(
             key: const Key('watch-only-verification-confirm-dialog'),

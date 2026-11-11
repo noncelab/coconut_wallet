@@ -277,6 +277,7 @@ class _Step2 extends StatelessWidget {
     final strings = t.safety_guide.step2;
     final confirmed = await showDialog<bool>(
       context: context,
+      routeSettings: const RouteSettings(name: '/safety-guide/moved-confirm-dialog'),
       builder:
           (dialogContext) => CoconutPopup(
             languageCode: LocaleSettings.currentLocale.languageCode,

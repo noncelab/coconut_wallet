@@ -29,8 +29,11 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
+import '../../../analytics/screen_view_recorder.dart';
 
 import '../../../services/safety/safety_fakes.dart';
 
@@ -163,6 +166,7 @@ void main() {
     int? walletId,
     SafetyState? safety,
     SafetyProvider? safetyProvider,
+    ScreenViewRecorder? recorder,
   }) async {
     // 목적지 시트의 모든 줄이 한 화면에 그려지게(ListView.builder는 화면 밖 줄을 만들지 않는다)
     tester.view.physicalSize = const Size(400, 1600);
@@ -179,8 +183,13 @@ void main() {
             ChangeNotifierProvider<SafetyProvider>.value(
               value: safetyProvider ?? SafetyProvider.fixed(null, state: safety),
             ),
+          if (recorder != null) Provider<AnalyticsService>.value(value: recorder),
         ],
-        child: MaterialApp(theme: buildCoconutThemeData(variant: variant), home: RescueReadyScreen(walletId: walletId)),
+        child: MaterialApp(
+          theme: buildCoconutThemeData(variant: variant),
+          home: RescueReadyScreen(walletId: walletId),
+          navigatorObservers: [if (recorder != null) recorder.observer],
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -804,5 +813,23 @@ void main() {
     await pumpScreen(tester, CoconutThemeVariant.light, walletId: 6);
     expect(find.text(t.premium.rescue.destination), findsOneWidget);
     expect(find.byKey(const Key('rescue-destination-wallet:2')), findsOneWidget);
+  });
+
+  // T5-06: 비상 목적지로 새 핫월렛을 만들지 묻는 팝업이 화면 기록에 이름으로 한 번 남고, 닫으면 비상 이동 준비로 돌아온다
+  testWidgets('analytics: the new hot wallet confirm popup is recorded by name', (tester) async {
+    final recorder = ScreenViewRecorder();
+    await pumpScreen(tester, CoconutThemeVariant.light, recorder: recorder);
+    await tester.tap(find.byKey(const Key('rescue-wallet-6')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('rescue-destination-hot:new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.premium.rescue.save));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('rescue-hot-wallet-confirm')), findsOneWidget);
+    await tester.tap(find.text(t.cancel));
+    await tester.pumpAndSettle();
+
+    expect(recorder.names.where((name) => name == '/wallet-health/rescue/create-hot-wallet-dialog'), hasLength(1));
+    expect(recorder.names.last, '/');
   });
 }

@@ -36,10 +36,13 @@ import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+
+import '../../analytics/screen_view_recorder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ur/cbor_lite.dart';
 import 'package:ur/fountain_encoder.dart';
@@ -211,6 +214,7 @@ void main() {
     bool provider = true,
     Size viewport = const Size(320, 844),
     double textScale = 1.3,
+    ScreenViewRecorder? recorder,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -221,9 +225,11 @@ void main() {
         providers: [
           ChangeNotifierProvider<WalletProvider>.value(value: wallets),
           if (provider) ChangeNotifierProvider<SafetyProvider>.value(value: safety),
+          if (recorder != null) Provider<AnalyticsService>.value(value: recorder),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: theme),
+          navigatorObservers: [if (recorder != null) recorder.observer],
           builder:
               (context, child) => MediaQuery(
                 data: MediaQuery.of(
@@ -662,5 +668,50 @@ void main() {
       await capture(tester, ur.nextPart());
     }
     expect(safety.bsms.single.matched, isTrue);
+  });
+
+  // T5-06: 보기 전용 지갑 검증의 직접 확인 팝업과 기기 불일치 확인 팝업, BSMS 스캔 실패 팝업이 화면 기록에 이름으로 남는다
+  testWidgets('analytics: watch-only confirm popups are recorded by name', (tester) async {
+    final recorder = ScreenViewRecorder();
+    final copy = t.wallet_health.watch_only_verify;
+    await mount(tester, CoconutThemeVariant.light, const WatchOnlyVerificationScreen(walletId: 1), recorder: recorder);
+    await tester.tap(_text(copy.compared_manually));
+    await tester.pumpAndSettle();
+    await tester.tap(_text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(recorder.names, ['/', '/wallet-health/watch-only-verification/confirm-dialog', '/']);
+
+    await startScan(tester, copy.scan);
+    await capture(tester, single.walletBase.getAddress(20));
+    await startScan(tester, copy.scan_again);
+    await capture(tester, single.walletBase.getAddress(0, isChange: true));
+    await tester.tap(_text(copy.confirm_device));
+    await tester.pumpAndSettle();
+    await tester.tap(_text(t.cancel));
+    await tester.pumpAndSettle();
+    expect(recorder.names.where((name) => name == '/wallet-health/watch-only-verification/device-confirm-dialog'), [
+      '/wallet-health/watch-only-verification/device-confirm-dialog',
+    ]);
+    expect(recorder.names.last, '/');
+  });
+
+  testWidgets('analytics: the BSMS scan failed popup is recorded by name', (tester) async {
+    final recorder = ScreenViewRecorder();
+    await mount(tester, CoconutThemeVariant.light, const BsmsVerificationScreen(walletId: 2), recorder: recorder);
+    await startScan(tester, t.wallet_health.bsms_verify.scan);
+    await capture(
+      tester,
+      'ur:crypto-psbt/hdcxlkahssqzwfvslofzoxwkrewngotktbmwjkwdcmnefsaaehrlolkskncnktlbaypkvoonhknt',
+    );
+    expect(find.byKey(const Key('bsms-verification-scan-error')), findsOneWidget);
+    await tester.tap(_text(t.OK));
+    await tester.pumpAndSettle();
+    // 닫으면 아래의 스캔 화면이 다시 기록된다(다른 다섯 팝업과 같다)
+    expect(recorder.names, [
+      '/',
+      '/wallet-health/bsms-verification/scan',
+      '/wallet-health/bsms-verification/scan-failed-dialog',
+      '/wallet-health/bsms-verification/scan',
+    ]);
   });
 }

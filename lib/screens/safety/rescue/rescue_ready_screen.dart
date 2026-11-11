@@ -180,6 +180,7 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
     final copy = t.premium.rescue;
     final confirmed = await showDialog<bool>(
       context: context,
+      routeSettings: const RouteSettings(name: '/wallet-health/rescue/create-hot-wallet-dialog'),
       builder:
           (dialogContext) => CoconutPopup(
             key: const Key('rescue-hot-wallet-confirm'),

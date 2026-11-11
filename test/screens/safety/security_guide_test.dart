@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/wallet_mock.dart';
 import 'safety_test_harness.dart';
+import '../../analytics/screen_view_recorder.dart';
 
 double _progress(WidgetTester tester) =>
     tester
@@ -657,6 +658,33 @@ void main() {
       },
     );
   }
+
+  // T5-06: STEP2 "완료했어요" 확인 팝업이 화면 기록에 이름으로 남고, 닫으면 STEP2로 돌아온다
+  testWidgets('analytics: the STEP2 moved confirm popup is recorded by name', (tester) async {
+    usePhoneSize(tester);
+    final recorder = ScreenViewRecorder();
+    await tester.pumpWidget(
+      safetyTestApp(
+        origin(),
+        safety: fixedSafety(incidents: [testIncident(state: IncidentState.responding)]),
+        wallets: FakeWallets([WalletMock.createSingleSigWalletItem(id: kWalletId)], balance: 50000),
+        analytics: recorder,
+        navigatorObservers: [recorder.observer],
+      ),
+    );
+    await _openGuide(tester, (context) => SecurityGuide.start(context, kIncidentId));
+    await tapVisible(tester, find.byKey(const Key('safety-guide-step1-not-found')));
+    await tester.tap(findText(strings.step2.moved));
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.cancel));
+    await tester.pumpAndSettle();
+
+    expect(recorder.names.skipWhile((name) => name != '/safety-guide/step2'), [
+      '/safety-guide/step2',
+      '/safety-guide/moved-confirm-dialog',
+      '/safety-guide/step2',
+    ]);
+  });
 }
 
 /// 복구 자료 점검 기록만 받아 두는 제공자(고정 제공자에는 지갑 목록이 없어 실제 기록은 지갑 종류를 알 수 없다)

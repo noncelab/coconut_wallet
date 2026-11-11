@@ -147,6 +147,7 @@ Future<bool> confirmSharedRecognition(BuildContext context, String incidentId) a
   final strings = t.safety_guide.recognize;
   final confirmed = await showDialog<bool>(
     context: context,
+    routeSettings: const RouteSettings(name: '/incident/recognize-shared-dialog'),
     builder:
         (dialogContext) => CoconutPopup(
           key: const Key('incident-recognize-shared'),

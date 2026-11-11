@@ -324,6 +324,7 @@ class _BsmsScannerScreenState extends State<_BsmsScannerScreen> {
     try {
       await showDialog<void>(
         context: context,
+        routeSettings: const RouteSettings(name: '/wallet-health/bsms-verification/scan-failed-dialog'),
         builder:
             (dialogContext) => CoconutPopup(
               key: const Key('bsms-verification-scan-error'),

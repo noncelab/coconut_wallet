@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/wallet_mock.dart';
 import '../../../screens/safety/safety_test_harness.dart';
+import '../../../analytics/screen_view_recorder.dart';
 
 Widget _walletDetailLike() => origin(
   child: const Column(children: [SafetyCautionBanner(walletId: kWalletId), SafetyCautionBadge(walletId: kWalletId)]),
@@ -195,5 +196,25 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(findText(t.safety_guide.caution.badge), findsOneWidget);
+  });
+
+  // T5-06: "사용 주의" 해제 확인 팝업이 화면 기록에 이름으로 남고, 닫으면 원래 화면으로 돌아온다
+  testWidgets('analytics: the caution remove popup is recorded by name', (tester) async {
+    final recorder = ScreenViewRecorder();
+    await tester.pumpWidget(
+      safetyTestApp(
+        _walletDetailLike(),
+        safety: fixedSafety(caution: {kWalletId}),
+        analytics: recorder,
+        navigatorObservers: [recorder.observer],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.safety_guide.caution.remove_link));
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.cancel));
+    await tester.pumpAndSettle();
+
+    expect(recorder.names, ['/', '/safety/caution-remove-dialog', '/']);
   });
 }

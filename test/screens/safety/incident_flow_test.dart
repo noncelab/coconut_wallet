@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/wallet_mock.dart';
 import 'safety_test_harness.dart';
+import '../../analytics/screen_view_recorder.dart';
 
 Widget _detail() => origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid));
 
@@ -547,4 +548,38 @@ void main() {
       expect(safety.state, before); // 두 지갑 모두 그대로
     });
   }
+
+  // T5-06: 같은 거래를 다른 지갑에서도 함께 닫을지 묻는 팝업이 화면 기록에 이름으로 남는다
+  testWidgets('analytics: the shared-transaction popup is recorded by name', (tester) async {
+    final recorder = ScreenViewRecorder();
+    final safety = fixedSafety(
+      incidents: [testIncident(), SafetyIncident(walletId: 2, txid: kTxid, detectedAt: DateTime(2026, 10, 20, 9))],
+    );
+    final wallets = FakeWallets([
+      WalletMock.createSingleSigWalletItem(id: kWalletId, name: 'daily'),
+      WalletMock.createSingleSigWalletItem(id: 2, name: 'savings'),
+    ]);
+    await tester.pumpWidget(
+      safetyTestApp(
+        _detail(),
+        safety: safety,
+        wallets: wallets,
+        analytics: recorder,
+        navigatorObservers: [recorder.observer],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.safety_guide.tx_banner.review));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('incident-recognize-yes')));
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.cancel));
+    await tester.pumpAndSettle();
+
+    expect(recorder.names.skipWhile((name) => name != '/incident/recognize'), [
+      '/incident/recognize',
+      '/incident/recognize-shared-dialog',
+      '/incident/recognize',
+    ]);
+  });
 }
