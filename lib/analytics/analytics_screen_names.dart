@@ -98,3 +98,16 @@ class AnalyticsScreenNames {
   static const String tagApplyEditTagSheet = 'tag-apply-edit-tag-sheet';
   static const String tagApplyAddTagSheet = 'tag-apply-add-tag-sheet';
 }
+
+/// 거래 상세를 연 목적. 사건·검토 거래로 연 상세는 분석 이름만 바꾼다(T5-04).
+/// 라우트 이름 /transaction-detail은 가이드·보내기 뒤 복귀가 쓰므로 그대로 둔다
+enum TransactionDetailPurpose {
+  incident('/incident/detail'),
+
+  /// 지갑을 추가할 때 이미 있던 출금·코코넛 밖 자기 앞 전송(기준점 검토)
+  baselineReview('/wallet-health/review/detail');
+
+  const TransactionDetailPurpose(this.screenName);
+
+  final String screenName;
+}

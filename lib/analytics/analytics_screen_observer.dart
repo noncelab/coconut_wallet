@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
@@ -15,8 +16,15 @@ const analyticsSelfLoggedRouteNames = {
 };
 
 /// The screen name the observer reports for [settings]: its route name, unless the page logs its own.
-String? analyticsRouteScreenName(RouteSettings settings) =>
-    analyticsSelfLoggedRouteNames.contains(settings.name) ? null : settings.name;
+String? analyticsRouteScreenName(RouteSettings settings) {
+  if (analyticsSelfLoggedRouteNames.contains(settings.name)) return null;
+  final arguments = settings.arguments;
+  // 사건·검토로 연 거래 상세는 분석 이름만 바꾼다(라우트 이름은 그대로)
+  if (settings.name == AppRouteNames.transactionDetail && arguments is TransactionDetailRouteArgs) {
+    return arguments.purpose?.screenName ?? settings.name;
+  }
+  return settings.name;
+}
 
 /// screen_view of a page in [analyticsSelfLoggedRouteNames]: [analyticsScreenName] with [analyticsParameters]
 /// (the visible segment) when first shown, on top again after a page or sheet above it closes, and on

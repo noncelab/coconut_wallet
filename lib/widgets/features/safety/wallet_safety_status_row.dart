@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -149,7 +150,12 @@ class WalletSafetyStatusPill extends StatelessWidget {
       if (status.state != WalletSafetyState.critical) {
         showWalletContributionSheet(context, walletId);
       } else if (incident != null) {
-        openSafetyIncident(context, walletId: walletId, txid: incident.txid);
+        openSafetyIncident(
+          context,
+          walletId: walletId,
+          txid: incident.txid,
+          purpose: TransactionDetailPurpose.incident,
+        );
       } else {
         WalletHealthScreen.open(context);
       }

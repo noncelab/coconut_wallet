@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     show CoconutLayout, CoconutTypography, TextColorExtension;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -668,7 +669,12 @@ class _WalletHealthScreenState extends State<WalletHealthScreen>
       } else if (incident.state == IncidentState.responding) {
         SecurityGuide.resume(context, incident.id);
       } else {
-        openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid);
+        openSafetyIncident(
+          context,
+          walletId: incident.walletId,
+          txid: incident.txid,
+          purpose: TransactionDetailPurpose.incident,
+        );
       }
     }
 
@@ -929,7 +935,13 @@ class _IncidentCard extends StatelessWidget {
     final colors = context.coconutColors;
     final preferences = context.watch<PreferenceProvider?>();
     final tx = context.read<WalletProvider?>()?.getTransactionRecord(incident.walletId, incident.txid);
-    void open() => openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid, autoReview: false);
+    void open() => openSafetyIncident(
+      context,
+      walletId: incident.walletId,
+      txid: incident.txid,
+      autoReview: false,
+      purpose: TransactionDetailPurpose.incident,
+    );
     final hideAmount = preferences == null || preferences.isFakeBalanceActive;
     if (tx != null && !hideAmount) {
       return TransactionItemCard(
@@ -1029,7 +1041,14 @@ class _InfoIncidentRow extends StatelessWidget {
       key: Key('wallet-health-info-${incident.id}'),
       background: colors.homeSurface,
       // 사라진 거래는 거래 상세 대신 사건 시트로(D가 처리)
-      onTap: () => openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid, autoReview: false),
+      onTap:
+          () => openSafetyIncident(
+            context,
+            walletId: incident.walletId,
+            txid: incident.txid,
+            autoReview: false,
+            purpose: TransactionDetailPurpose.incident,
+          ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(

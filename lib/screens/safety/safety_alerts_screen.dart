@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -318,6 +319,7 @@ class _IncidentRow extends StatelessWidget {
       walletId: incident.walletId,
       txid: incident.txid,
       autoReview: incident.state == IncidentState.detected && incident.isCritical,
+      purpose: TransactionDetailPurpose.incident,
     );
   }
 }

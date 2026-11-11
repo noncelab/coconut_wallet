@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutPopup, CoconutToast, CoconutUnderlinedButton;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -35,10 +36,12 @@ String? _autoReviewIncidentId;
 
 /// 사건 거래 상세를 연다. [autoReview]면 상세의 배너가 전환이 끝나고 300ms 뒤 인지 시트를 띄운다.
 /// 거래 기록이 지갑에서 사라졌으면(대체·추방) 상세 대신 인지 시트를 바로 띄운다(없는 거래 상세는 열 수 없다).
+/// [purpose]는 분석에 남길 이유(사건·기준점 검토)다. 기본값이 없어 부르는 곳마다 직접 고른다
 Future<void> openSafetyIncident(
   BuildContext context, {
   required int walletId,
   required String txid,
+  required TransactionDetailPurpose purpose,
   bool autoReview = true,
 }) async {
   final incidentId = '$walletId:$txid';
@@ -58,9 +61,10 @@ Future<void> openSafetyIncident(
     return;
   }
   _autoReviewIncidentId = autoReview ? incidentId : null;
-  await Navigator.of(
-    context,
-  ).pushNamed(AppRouteNames.transactionDetail, arguments: TransactionDetailRouteArgs(id: walletId, txHash: txid));
+  await Navigator.of(context).pushNamed(
+    AppRouteNames.transactionDetail,
+    arguments: TransactionDetailRouteArgs(id: walletId, txHash: txid, purpose: purpose),
+  );
   if (_autoReviewIncidentId == incidentId) _autoReviewIncidentId = null;
 }
 

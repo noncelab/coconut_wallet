@@ -61,7 +61,12 @@ SafetyCriticalAlert? safetyCriticalAlertOf(WalletHealthReport? report, String Fu
           (context) =>
               incident.state == IncidentState.responding
                   ? SecurityGuide.resume(context, incident.id)
-                  : openSafetyIncident(context, walletId: incident.walletId, txid: incident.txid),
+                  : openSafetyIncident(
+                    context,
+                    walletId: incident.walletId,
+                    txid: incident.txid,
+                    purpose: TransactionDetailPurpose.incident,
+                  ),
     );
   }
   final check = report.reviewItems.where((item) => item.severity == SafetySeverity.critical).firstOrNull;

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 
 class BroadcastingRouteArgs {
   final int? signedTransactionDraftId;
@@ -73,7 +74,10 @@ class AddressSearchRouteArgs {
 class TransactionDetailRouteArgs {
   final int id;
   final String txHash;
-  const TransactionDetailRouteArgs({required this.id, required this.txHash});
+
+  /// 사건·검토 거래로 열었으면 분석 이름만 바뀐다. 지갑 ID·거래 해시는 분석으로 보내지 않는다
+  final TransactionDetailPurpose? purpose;
+  const TransactionDetailRouteArgs({required this.id, required this.txHash, this.purpose});
 }
 
 class TransactionFeeBumpingRouteArgs {

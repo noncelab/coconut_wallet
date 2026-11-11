@@ -75,7 +75,12 @@ Future<void> openSafetyCheckAction(BuildContext context, SafetyCheckResult item)
     case SafetyCheckId.pendingOutgoingAtBaseline || SafetyCheckId.unexpectedSelfTransfer
         when walletId != null && item.subjects.isNotEmpty:
       // 시트 없이 거래 상세 + 인지 시트로 바로 간다(내 거래예요로 닫힌다)
-      await openSafetyIncident(context, walletId: walletId, txid: item.subjects.first);
+      await openSafetyIncident(
+        context,
+        walletId: walletId,
+        txid: item.subjects.first,
+        purpose: TransactionDetailPurpose.baselineReview,
+      );
     default:
       await showSafetyReviewItemSheet(context, item);
   }
@@ -755,7 +760,13 @@ class _WalletSheet extends StatelessWidget {
                     background: colors.surfaceBottomSheetElevated,
                     onTap: () {
                       Navigator.pop(context);
-                      if (opener.mounted) openSafetyIncident(opener, walletId: walletId, txid: incident.txid);
+                      if (opener.mounted)
+                        openSafetyIncident(
+                          opener,
+                          walletId: walletId,
+                          txid: incident.txid,
+                          purpose: TransactionDetailPurpose.incident,
+                        );
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

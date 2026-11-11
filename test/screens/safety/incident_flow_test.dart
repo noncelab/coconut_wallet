@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -109,7 +110,14 @@ void main() {
         routes: {AppRouteNames.transactionDetail: (_) => _detail()},
       ),
     );
-    unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid));
+    unawaited(
+      openSafetyIncident(
+        originContext(tester),
+        walletId: kWalletId,
+        txid: kTxid,
+        purpose: TransactionDetailPurpose.incident,
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
     expect(find.byKey(const Key('transaction-safety-banner-unreviewed')), findsOneWidget);
@@ -133,7 +141,15 @@ void main() {
         routes: {AppRouteNames.transactionDetail: (_) => _detail()},
       ),
     );
-    unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid, autoReview: false));
+    unawaited(
+      openSafetyIncident(
+        originContext(tester),
+        walletId: kWalletId,
+        txid: kTxid,
+        autoReview: false,
+        purpose: TransactionDetailPurpose.incident,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
@@ -142,7 +158,14 @@ void main() {
 
     Navigator.of(tester.element(find.byKey(const Key('origin')).last)).pop();
     await tester.pumpAndSettle();
-    unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: 'gone'));
+    unawaited(
+      openSafetyIncident(
+        originContext(tester),
+        walletId: kWalletId,
+        txid: 'gone',
+        purpose: TransactionDetailPurpose.incident,
+      ),
+    );
     await tester.pumpAndSettle();
     expect(findText(strings.recognize.title), findsOneWidget);
   });
@@ -175,7 +198,14 @@ void main() {
           },
         ),
       );
-      unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: pending));
+      unawaited(
+        openSafetyIncident(
+          originContext(tester),
+          walletId: kWalletId,
+          txid: pending,
+          purpose: TransactionDetailPurpose.incident,
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -218,7 +248,15 @@ void main() {
     testWidgets('a ${state.name} incident whose transaction record is gone opens a read-only summary', (tester) async {
       final safety = fixedSafety(incidents: [testIncident(state: state)]);
       await tester.pumpWidget(safetyTestApp(origin(), safety: safety, wallets: FakeWallets(const [])));
-      unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid, autoReview: false));
+      unawaited(
+        openSafetyIncident(
+          originContext(tester),
+          walletId: kWalletId,
+          txid: kTxid,
+          autoReview: false,
+          purpose: TransactionDetailPurpose.incident,
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byKey(Key('transaction-safety-banner-${state.name}')), findsOneWidget);
@@ -252,7 +290,14 @@ void main() {
         routes: {AppRouteNames.transactionDetail: (_) => _detail()},
       ),
     );
-    unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid));
+    unawaited(
+      openSafetyIncident(
+        originContext(tester),
+        walletId: kWalletId,
+        txid: kTxid,
+        purpose: TransactionDetailPurpose.incident,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
@@ -476,7 +521,14 @@ void main() {
         },
       ),
     );
-    unawaited(openSafetyIncident(originContext(tester), walletId: other, txid: kTxid));
+    unawaited(
+      openSafetyIncident(
+        originContext(tester),
+        walletId: other,
+        txid: kTxid,
+        purpose: TransactionDetailPurpose.incident,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
@@ -530,7 +582,14 @@ void main() {
           routes: {AppRouteNames.transactionDetail: (_) => _detail()},
         ),
       );
-      unawaited(openSafetyIncident(originContext(tester), walletId: kWalletId, txid: kTxid));
+      unawaited(
+        openSafetyIncident(
+          originContext(tester),
+          walletId: kWalletId,
+          txid: kTxid,
+          purpose: TransactionDetailPurpose.incident,
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
