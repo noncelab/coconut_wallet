@@ -100,6 +100,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
   int get _dustThreshold => viewModel.walletType.addressType.dustThreshold;
 
+  /// 지갑 잔액과 같은 UTXO 합계. 잔액(confirmed + unconfirmed)은 보내는 중(outgoing)인 UTXO를 이미 빼고 받는 중인
+  /// UTXO를 더하므로, 보내는 중인 UTXO만 빼고 더한다(목록에는 '보내는 중'으로 그대로 둔다)
+  int get _balanceSats =>
+      viewModel.utxoList.where((u) => u.status != UtxoStatus.outgoing).fold<int>(0, (s, u) => s + u.amount);
+
   bool _isSnappingHeader = false;
   bool _isSwitchingPrimaryTab = false;
   final ValueNotifier<double> _collapseProgress = ValueNotifier<double>(0);
@@ -359,12 +364,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
   }
 
   SliverPersistentHeader _buildMorphingHeader() {
-    final totalSats = viewModel.utxoList.fold<int>(0, (sum, utxo) => sum + utxo.amount);
     return SliverPersistentHeader(
       pinned: true,
       delegate: UtxoHeaderDelegate(
         topPadding: MediaQuery.paddingOf(context).top,
-        totalBalance: formatUtxoAmountForDisplay(totalSats, _currentUnit, dustThreshold: _dustThreshold),
+        totalBalance: formatUtxoAmountForDisplay(_balanceSats, _currentUnit, dustThreshold: _dustThreshold),
         fiatPrice: viewModel.fiatPriceString,
         bottomBar:
             viewModel.isOverviewTab
@@ -541,7 +545,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
                 key: _summaryChartKey,
                 height: UtxoSummaryChart.amountViewMinHeight,
                 buckets: _buckets,
-                totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
+                totalSats: _balanceSats,
                 coinCount: viewModel.utxoList.length,
                 availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
                 availableSats: viewModel.utxoList
