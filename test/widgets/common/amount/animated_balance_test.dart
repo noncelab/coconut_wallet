@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:flutter/material.dart';
@@ -100,6 +101,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         navigatorKey: navigator,
+        theme: buildCoconutThemeData(),
         home: ValueListenableBuilder<int>(
           valueListenable: balance,
           builder:

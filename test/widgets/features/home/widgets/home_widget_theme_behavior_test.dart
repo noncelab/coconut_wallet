@@ -107,8 +107,8 @@ void main() {
     await pump(tester, HomeWidgetPressable(onTap: () => taps++, child: const Text('Open insights')));
     final node = tester.getSemantics(find.byType(HomeWidgetPressable));
     expect(node.flagsCollection.isButton, isTrue);
-    expect(node.flagsCollection.hasEnabledState, isTrue);
-    expect(node.flagsCollection.isEnabled, isTrue);
+    expect(node.flagsCollection.isEnabled, isNot(ui.Tristate.none));
+    expect(node.flagsCollection.isEnabled, ui.Tristate.isTrue);
     expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
     node.owner!.performAction(node.id, SemanticsAction.tap);
     await tester.pump();

@@ -47,6 +47,12 @@ ThemeData buildCoconutThemeData({CoconutThemeVariant? variant}) {
   return ThemeData(
     brightness: brightness,
     scaffoldBackgroundColor: extension.colors.background,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     extensions: [extension],
   );
 }
