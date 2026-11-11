@@ -1504,6 +1504,8 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "This transaction is not supported."
     utxo_not_found_title: "UTXO Not Found"
     utxo_not_found: "Cannot find the UTXO used in the transaction."
+    unverified_original_title: "Signature Not Verified"
+    unverified_original: "We couldn't verify this transaction's signature, so its fee can't be bumped. Please check the server you're connected to."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 

@@ -33,6 +33,13 @@ class DuplicatedOutputException extends RbfCreationException {
   const DuplicatedOutputException({super.message = 'RBF is not supported because duplicated outputs exist.'});
 }
 
+/// Exception thrown when the original transaction's signatures for our inputs do not verify
+class UnverifiedOriginalTransactionException extends RbfCreationException {
+  const UnverifiedOriginalTransactionException({
+    super.message = 'The signatures of the original transaction could not be verified.',
+  });
+}
+
 class UtxoNotFoundException extends RbfCreationException {
   final String utxoId;
 

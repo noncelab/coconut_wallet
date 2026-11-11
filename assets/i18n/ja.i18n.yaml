@@ -1501,6 +1501,8 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "このトランザクションはサポートされていません。"
     utxo_not_found_title: "UTXOが見つかりません"
     utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
+    unverified_original_title: "署名を確認できません"
+    unverified_original: "このトランザクションの署名を確認できないため、手数料を上げることはできません。接続しているサーバーを確認してください。"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 

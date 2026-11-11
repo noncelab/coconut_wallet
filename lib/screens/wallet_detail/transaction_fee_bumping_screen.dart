@@ -252,6 +252,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               } else if (e is UtxoNotFoundException) {
                 title = t.transaction_fee_bumping_screen.dialog.utxo_not_found_title;
                 description = t.transaction_fee_bumping_screen.dialog.utxo_not_found;
+              } else if (e is UnverifiedOriginalTransactionException) {
+                title = t.transaction_fee_bumping_screen.dialog.unverified_original_title;
+                description = t.transaction_fee_bumping_screen.dialog.unverified_original;
               }
 
               showDialog(
