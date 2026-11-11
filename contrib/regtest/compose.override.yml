@@ -1,0 +1,30 @@
+# Layered on top of the faucet repo's docker-compose.yml (see ./regtest.sh).
+# Exposes the bits Coconut Wallet needs from the emulator (host = 10.0.2.2).
+services:
+  electrs:
+    # Blockstream's electrs instead of the faucet stack's mempool fork, built with
+    # server.features (see electrs.Dockerfile). One server for Coconut (Electrum),
+    # bark (Esplora REST) and the mempool backend.
+    image: coconut-regtest/electrs:blockstream
+    build:
+      context: ${COCONUT_REGTEST_DIR}
+      dockerfile: electrs.Dockerfile
+    command: [
+      "--db-dir", "/electrs",
+      "--network", "regtest",
+      "--daemon-dir", "/root/.bitcoin",
+      "--daemon-rpc-addr", "bitcoind:18443",
+      "--electrum-rpc-addr", "0.0.0.0:50001",
+      # Enables server.features (no announcing, and regtest has no peers to discover)
+      "--electrum-public-hosts", '{"10.0.2.2":{"tcp_port":50001}}',
+      "--http-addr", "0.0.0.0:3002",
+      "--cors", "*",
+    ]
+    ports:
+      - "50001:50001" # Electrum (Coconut on-chain wallets)
+      - "3002:3002"   # Esplora REST (bark chain source)
+
+  faucet-api:
+    volumes:
+      # The faucet's dummy secrets plus the GitHub login files it requires (see regtest.sh)
+      - ${COCONUT_FAUCET_SECRETS_DIR}:/secrets
