@@ -1131,6 +1131,8 @@ class CoconutColors {
     const caramel = Color(0xFFD89A5B);
     const huskDeep = Color(0xFF6E3D18);
     const husk = Color(0xFFB87433);
+    // husk와 같은 색상, 명도만 낮춘 보조 글자색. 크림 4.70:1, 밝은 바탕 5.33:1로 작은 글자 기준(4.5:1)을 넘는다
+    const huskText = Color(0xFF905B28);
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
@@ -1156,7 +1158,7 @@ class CoconutColors {
       primary: palmGreen,
       primaryText: huskDeep,
       secondaryTextStrong: huskDeep,
-      secondaryText: husk,
+      secondaryText: huskText,
       tertiaryText: toast,
       mutedText: huskSoft,
       accentForeground: palmGreen,
