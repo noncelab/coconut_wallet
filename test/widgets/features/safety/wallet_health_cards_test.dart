@@ -274,6 +274,57 @@ void main() {
     }
   });
 
+  // T3-04: "다시 검사하기"는 보이는 126×34 그대로, 위 6·아래 8까지 눌린다(누름 126×48). 화면 읽기에는 48 높이 버튼 하나
+  testWidgets(
+    'T3-04 check again keeps its 34-high look, answers taps 5 px outside it and reads as one 48-high button',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      var taps = 0;
+      Widget header({required bool isChecking}) => WalletHealthHeaderCard(
+        report: scoredReport(),
+        isChecking: isChecking,
+        onCheckAgain: () => taps++,
+        onAddWallet: () {},
+      );
+      final hit = find.byKey(const Key('wallet-health-check-again-hit'));
+
+      await _pump(tester, header(isChecking: false));
+      final visible = tester.getRect(find.byKey(const Key('wallet-health-check-again')));
+      expect(visible.height, moreOrLessEquals(34, epsilon: 1));
+      await tester.tapAt(Offset(visible.center.dx, visible.top - 5));
+      await tester.tapAt(Offset(visible.center.dx, visible.bottom + 5));
+      await tester.pumpAndSettle();
+      expect(taps, 2);
+      expect(find.bySemanticsLabel(t.wallet_health.summary.check_again), findsOneWidget);
+      expect(
+        tester.getSemantics(hit),
+        containsSemantics(
+          label: t.wallet_health.summary.check_again,
+          isButton: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(tester.getSemantics(hit).rect.height, greaterThanOrEqualTo(48));
+
+      // 검사 중에는 바깥 탭도 실행하지 않고, 이름은 보이는 글을 따른다
+      await _pump(tester, header(isChecking: true));
+      await tester.tapAt(Offset(visible.center.dx, visible.top - 5));
+      await tester.pump();
+      expect(taps, 2);
+      expect(
+        tester.getSemantics(hit),
+        containsSemantics(
+          label: t.wallet_health.summary.checking,
+          isButton: true,
+          isEnabled: false,
+          hasTapAction: false,
+        ),
+      );
+      semantics.dispose();
+    },
+  );
+
   testWidgets('C6: the passed value sits at the right end of its row', (tester) async {
     await _pump(
       tester,

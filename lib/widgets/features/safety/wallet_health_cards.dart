@@ -457,7 +457,8 @@ class WalletHealthHeaderCard extends StatelessWidget {
       child: Column(
         children: [
           HealthGauge(report: report, isChecking: isChecking),
-          CoconutLayout.spacing_150h,
+          // 다시 검사하기는 누름 여백(위 6·아래 8)이 이 간격을 대신한다(T3-04)
+          if (noWallet) CoconutLayout.spacing_150h,
           noWallet
               ? _AddWalletButton(onTap: onAddWallet)
               : SizedBox(
@@ -465,7 +466,6 @@ class WalletHealthHeaderCard extends StatelessWidget {
                 child: _CheckAgainButton(isChecking: isChecking, onTap: onCheckAgain),
               ),
           if (report != null && !noWallet) ...[
-            CoconutLayout.spacing_100h,
             Text(
               safetyKoText(
                 t.wallet_health.summary.last_checked(time: formatHomeRelativeTime(report.evaluatedAt, DateTime.now())),
@@ -536,47 +536,68 @@ class _CheckAgainButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return ShrinkAnimationButton(
-      key: const Key('wallet-health-check-again'),
-      onPressed: onTap,
-      isActive: !isChecking,
-      defaultColor: colors.homeBackground,
-      // 기본 disabledColor(surface)는 다크에서 homeSurface와 같아 버튼이 사라진다
-      disabledColor: colors.homeBackground,
-      pressedOverlayColor: colors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 8,
-      child: DecoratedBox(
-        decoration: BoxDecoration(border: Border.all(color: colors.border), borderRadius: BorderRadius.circular(8)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 32),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isChecking) ...[
-                  SizedBox.square(
-                    dimension: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colors.secondaryText,
-                      value: safetyReduceMotion(context) ? 0.25 : null,
-                    ),
-                  ),
-                  CoconutLayout.spacing_200w,
-                ],
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      isChecking ? t.wallet_health.summary.checking : t.wallet_health.summary.check_again,
-                      maxLines: 1,
-                      style: CoconutTypography.body1_16.setColor(colors.primaryText),
-                    ),
+    final label = isChecking ? t.wallet_health.summary.checking : t.wallet_health.summary.check_again;
+    // T3-04: 보이는 테두리(126×34)는 그대로 두고 위 6·아래 8을 더 눌리게 해 누름 126×48(지갑 상세 알약과 같은 방법).
+    // 화면 읽기도 이 48 영역을 버튼 하나로 읽는다. 테두리 안의 탭은 안쪽 버튼이 받는다
+    return Semantics(
+      button: true,
+      enabled: !isChecking,
+      label: label,
+      onTap: isChecking ? null : onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('wallet-health-check-again-hit'),
+        behavior: HitTestBehavior.opaque,
+        onTap: isChecking ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          child: ShrinkAnimationButton(
+            key: const Key('wallet-health-check-again'),
+            onPressed: onTap,
+            isActive: !isChecking,
+            defaultColor: colors.homeBackground,
+            // 기본 disabledColor(surface)는 다크에서 homeSurface와 같아 버튼이 사라진다
+            disabledColor: colors.homeBackground,
+            pressedOverlayColor: colors.homeSurfacePressOverlay,
+            pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
+            borderRadius: 8,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: colors.border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 32),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (isChecking) ...[
+                        SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.secondaryText,
+                            value: safetyReduceMotion(context) ? 0.25 : null,
+                          ),
+                        ),
+                        CoconutLayout.spacing_200w,
+                      ],
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            style: CoconutTypography.body1_16.setColor(colors.primaryText),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
