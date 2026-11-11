@@ -46,6 +46,9 @@ WalletChoice resolveWallet(FeatureItem item, List<WalletItemBase> wallets, Short
 
 enum FeatureLaunchResult { launched, cancelled, unavailable }
 
+/// 기능을 연 곳(홈 바로가기 / 모든 기능). 지금은 Wallet Health 진입 구분(T5-03)에만 쓴다
+enum FeatureSurface { homeShortcut, allFeatures }
+
 typedef WalletPicker = Future<int?> Function(BuildContext context, List<int> candidateWalletIds);
 
 class FeatureLauncher {
@@ -54,17 +57,36 @@ class FeatureLauncher {
 
   const FeatureLauncher({required this.wallets, required this.pickWallet});
 
+  /// 기능을 연 곳. 기능의 launch가 (동기로) 불리는 그 순간에만 값이 있고, 그 밖에서는 null이다
+  static FeatureSurface? get launchingSurface => _launchingSurface;
+  static FeatureSurface? _launchingSurface;
+
+  static Future<void> _invoke(
+    FeatureLaunch launch,
+    BuildContext context,
+    WalletItemBase? wallet,
+    FeatureSurface? surface,
+  ) {
+    _launchingSurface = surface;
+    try {
+      return launch(context, wallet);
+    } finally {
+      _launchingSurface = null;
+    }
+  }
+
   Future<FeatureLaunchResult> launch(
     BuildContext context,
     FeatureItem item, {
     ShortcutWalletContext? walletContext,
+    FeatureSurface? surface,
   }) async {
     final launch = item.launch;
     if (launch == null) return FeatureLaunchResult.unavailable;
     if (item.isAvailable != null && !item.isAvailable!(context)) return FeatureLaunchResult.unavailable;
 
     if (item.context == FeatureContext.none) {
-      await FeatureEntryRoutes.instance.launching(() => launch(context, null));
+      await FeatureEntryRoutes.instance.launching(() => _invoke(launch, context, null, surface));
       return FeatureLaunchResult.launched;
     }
 
@@ -88,7 +110,7 @@ class FeatureLauncher {
     if (wallet == null || (item.isAvailable != null && !item.isAvailable!(context))) {
       return FeatureLaunchResult.unavailable;
     }
-    await FeatureEntryRoutes.instance.launching(() => launch(context, wallet));
+    await FeatureEntryRoutes.instance.launching(() => _invoke(launch, context, wallet, surface));
     return FeatureLaunchResult.launched;
   }
 }

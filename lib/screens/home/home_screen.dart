@@ -164,10 +164,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    await FeatureLauncher(
-      wallets: () => _viewModel.wallets,
-      pickWallet: _pickWallet,
-    ).launch(context, feature, walletContext: useShortcutWallet ? _viewModel.shortcutWalletContext : null);
+    await FeatureLauncher(wallets: () => _viewModel.wallets, pickWallet: _pickWallet).launch(
+      context,
+      feature,
+      walletContext: useShortcutWallet ? _viewModel.shortcutWalletContext : null,
+      surface: useShortcutWallet ? FeatureSurface.homeShortcut : FeatureSurface.allFeatures,
+    );
     if (mounted) setState(() {});
   }
 
@@ -402,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     void open() {
       safety.dismissHomeHint();
-      WalletHealthScreen.open(context);
+      WalletHealthScreen.open(context, source: WalletHealthEntry.homeHint);
     }
 
     final title = t.wallet_health.first_hint.title;
@@ -538,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
       statusChipLink: _statusChipLink,
       onStatusTap: () {
         safety?.dismissHomeHint();
-        WalletHealthScreen.open(context);
+        WalletHealthScreen.open(context, source: WalletHealthEntry.homeChip);
       },
     );
   }

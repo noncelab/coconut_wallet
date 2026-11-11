@@ -28,9 +28,12 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/feature/feature_launcher.dart';
+import 'package:coconut_wallet/services/feature/safety_features.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/services/safety/safety_engine.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
+import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/safety/home_safety_status_chip.dart';
@@ -45,6 +48,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../model/safety/safety_fixtures.dart' as f;
 import '../../../services/safety/safety_fakes.dart';
+import '../../../analytics/screen_view_recorder.dart';
 
 /// 무한 애니메이션 등으로 멈추면 공유 레인을 오래 잡지 않게
 const _timeout = Timeout(Duration(seconds: 60));
@@ -142,6 +146,7 @@ Future<void> _pumpHome(
   double width = 412,
   double textScale = 1,
   NavigatorObserver? observer,
+  AnalyticsService? analytics,
 }) async {
   tester.view.physicalSize = Size(width, _height);
   tester.view.devicePixelRatio = 1;
@@ -162,7 +167,7 @@ Future<void> _pumpHome(
         ChangeNotifierProvider<NodeProvider>.value(value: node),
         ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity()),
         ChangeNotifierProvider<AuthProvider>.value(value: SafetyAuthFake()),
-        Provider<AnalyticsService>.value(value: SafetyAnalyticsFake()),
+        Provider<AnalyticsService>.value(value: analytics ?? SafetyAnalyticsFake()),
         if (safety != null) ChangeNotifierProvider<SafetyProvider>.value(value: safety),
       ],
       child: MaterialApp(
@@ -464,4 +469,120 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     }
   }, timeout: _timeout);
+
+  // T5-03: 홈 안의 입구(앱바 칩·말풍선·Safety Status 위젯)를 Wallet Health 화면 기록의 source로 나눈다
+  group('analytics: Wallet Health entry from home', () {
+    Set<Object?> sources(ScreenViewRecorder recorder) => {
+      for (final (name, parameters) in recorder.views)
+        if (name == '/wallet-health') parameters['source'],
+    };
+
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+    }
+
+    testWidgets('analytics: the app bar chip records source homeChip', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await _pumpHome(
+        tester,
+        safety: SafetyProvider.fixed(_scored()),
+        wallets: [safetyWallet(id: 1)],
+        analytics: recorder,
+        observer: recorder.observer,
+      );
+      await tester.tap(find.byType(HomeSafetyStatusChip));
+      await settle(tester);
+      expect(sources(recorder), {'homeChip'});
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+
+    testWidgets('analytics: the first hint records source homeHint', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await _pumpHome(
+        tester,
+        safety: SafetyProvider.fixed(_scored()),
+        wallets: [safetyWallet(id: 1)],
+        analytics: recorder,
+        observer: recorder.observer,
+      );
+      await tester.tap(find.byKey(const Key('wallet-health-hint')));
+      await settle(tester);
+      expect(sources(recorder), {'homeHint'});
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+
+    testWidgets('analytics: the Safety Status widget records source homeWidget', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await _pumpHome(
+        tester,
+        safety: SafetyProvider.fixed(_scored()),
+        wallets: [safetyWallet(id: 1)],
+        items: const [_safetyTile],
+        analytics: recorder,
+        observer: recorder.observer,
+      );
+      await tester.tap(find.byType(SafetyStatusWidgetView));
+      await settle(tester);
+      expect(sources(recorder), {'homeWidget'});
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+
+    // 홈 바로가기와 모든 기능의 Safety Check는 같은 기능이다. 연 곳은 홈 화면이 FeatureLauncher에 넘긴다
+    testWidgets('analytics: the Safety Check shortcut records source homeShortcut', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await _pumpHome(
+        tester,
+        // 첫 안내 말풍선이 바로가기 칸을 덮지 않게 이미 닫은 상태로 둔다
+        safety: SafetyProvider.fixed(_scored(), state: SafetyState.initial().copyWith(hintDismissed: true)),
+        wallets: [safetyWallet(id: 1)],
+        items: [
+          HomeItem(
+            id: 'check-1',
+            definitionId: HomeItemIds.shortcut(SafetyFeatureIds.safetyCheck),
+            kind: HomeItemKind.shortcut,
+            order: 0,
+            span: HomeSpan.shortcut,
+          ),
+        ],
+        analytics: recorder,
+        observer: recorder.observer,
+      );
+      await tester.tap(find.byKey(const ValueKey('shortcut-background-${SafetyFeatureIds.safetyCheck}')));
+      await settle(tester);
+      // 바로가기는 들어가자마자 다시 검사한다. 검사가 끝날 때까지 돌린다
+      await tester.pump(const Duration(seconds: 3));
+      expect(sources(recorder), {'homeShortcut'});
+      // 연 곳은 기능을 여는 그 순간에만 있다. Wallet Health가 열려 있는 지금은 비어 있어야 한다
+      expect(FeatureLauncher.launchingSurface, isNull);
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+
+    testWidgets('analytics: Safety Check in All Features records source allFeatures', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await _pumpHome(
+        tester,
+        safety: SafetyProvider.fixed(_scored()),
+        wallets: [safetyWallet(id: 1)],
+        analytics: recorder,
+        observer: recorder.observer,
+      );
+      tester.state<HomeCubePagerState>(find.byType(HomeCubePager)).showAllFeatures();
+      await settle(tester);
+      // 안전 분류는 목록 아래쪽이라 내려서 보이게 한다
+      final item = find.byKey(const ValueKey('all-features-item-${SafetyFeatureIds.safetyCheck}'));
+      await tester.scrollUntilVisible(
+        item,
+        200,
+        scrollable: find.descendant(of: find.byKey(const Key('all-features-body')), matching: find.byType(Scrollable)),
+      );
+      await tester.tap(item);
+      await settle(tester);
+      await tester.pump(const Duration(seconds: 3));
+      expect(sources(recorder), {'allFeatures'});
+      expect(FeatureLauncher.launchingSurface, isNull);
+      await tester.pumpWidget(const SizedBox());
+    }, timeout: _timeout);
+  });
 }

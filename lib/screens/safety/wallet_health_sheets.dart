@@ -818,7 +818,7 @@ class _WalletSheet extends StatelessWidget {
                 surroundingsColor: Colors.transparent,
                 onButtonClicked: () {
                   Navigator.pop(context);
-                  if (opener.mounted) WalletHealthScreen.open(opener);
+                  if (opener.mounted) WalletHealthScreen.open(opener, source: WalletHealthEntry.contributionSheet);
                 },
               ),
             ),

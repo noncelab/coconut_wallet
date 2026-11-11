@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 /// 위급이면 사건 상세(배너와 같은 곳), 아니면 Wallet Health
 void _open(BuildContext context, HomeItem _) {
   final critical = safetyCriticalAlertOf(context.read<SafetyProvider?>()?.report, (_) => '');
-  critical == null ? WalletHealthScreen.open(context) : critical.open(context);
+  critical == null ? WalletHealthScreen.open(context, source: WalletHealthEntry.homeWidget) : critical.open(context);
 }
 
 /// Safety Status 위젯. 추가할 때 2×2·4×2 중에서 고른다.

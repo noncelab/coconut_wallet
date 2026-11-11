@@ -85,7 +85,7 @@ SafetyCriticalAlert? safetyCriticalAlertOf(WalletHealthReport? report, String Fu
       SafetyCheckResult(id: SafetyCheckId.serverCert) =>
         (context) => Navigator.pushNamed<void>(context, AppRouteNames.electrumServer),
       final check? => (context) => openSafetyCheckAction(context, check),
-      null => WalletHealthScreen.open,
+      null => (context) => WalletHealthScreen.open(context, source: WalletHealthEntry.homeWidget),
     },
   );
 }

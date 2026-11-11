@@ -276,7 +276,8 @@ void main() {
       Builder(
         builder:
             (context) => TextButton(
-              onPressed: () => WalletHealthScreen.open(context, startCheck: true),
+              onPressed:
+                  () => WalletHealthScreen.open(context, startCheck: true, source: WalletHealthEntry.homeShortcut),
               child: const Text('open'),
             ),
       ),

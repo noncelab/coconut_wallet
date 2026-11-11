@@ -42,20 +42,49 @@ import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 
+/// Wallet Health로 들어온 곳(화면 기록 source, T5-03). 어느 입구가 효과가 있는지 본다.
+/// 위젯·홈 바로가기·모든 기능을 나누는 것은 결정 #9의 예외로 리드가 정했다(Wallet Health 진입만)
+enum WalletHealthEntry {
+  /// 홈 앱바의 "지갑 점검" 칩
+  homeChip,
+
+  /// 홈에 처음 보이는 안내 말풍선
+  homeHint,
+
+  /// 홈의 Safety Status 위젯
+  homeWidget,
+
+  /// 홈 바로가기의 Safety Check
+  homeShortcut,
+
+  /// 모든 기능의 Safety Check
+  allFeatures,
+
+  /// 지갑 상세 화면(잔액 아래)의 안전 상태 알약. 위급인데 사건이 없는 지갑일 때만 Wallet Health를 연다
+  walletDetail,
+
+  /// 지갑 기여 시트
+  contributionSheet,
+}
+
 /// Wallet Health(지갑 상태): 게이지 · 카테고리 2×2 · 검토 필요 · Premium · 정상 항목 · 권장 점검.
 /// 위급 사건이 있으면 점수 대신 사건이 먼저 온다(WH-S3).
 class WalletHealthScreen extends StatefulWidget {
-  const WalletHealthScreen({super.key, this.startCheck = false});
+  const WalletHealthScreen({super.key, this.startCheck = false, this.source});
 
   /// 진입 직후 다시 검사(안전 점검 바로가기·모든 기능)
   final bool startCheck;
 
-  static Future<void> open(BuildContext context, {bool startCheck = false}) => Navigator.of(context).push(
-    CupertinoPageRoute<void>(
-      settings: const RouteSettings(name: AppRouteNames.walletHealth),
-      builder: (_) => WalletHealthScreen(startCheck: startCheck),
-    ),
-  );
+  /// 들어온 곳. 앱에서는 [open]이 늘 넘긴다
+  final WalletHealthEntry? source;
+
+  static Future<void> open(BuildContext context, {bool startCheck = false, required WalletHealthEntry source}) =>
+      Navigator.of(context).push(
+        CupertinoPageRoute<void>(
+          settings: const RouteSettings(name: AppRouteNames.walletHealth),
+          builder: (_) => WalletHealthScreen(startCheck: startCheck, source: source),
+        ),
+      );
 
   @override
   State<WalletHealthScreen> createState() => _WalletHealthScreenState();
@@ -93,6 +122,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen>
   @override
   Map<String, Object> get analyticsParameters => {
     AnalyticsParameterNames.stage: _stageOf(Provider.of<SafetyProvider?>(context, listen: false)),
+    if (widget.source != null) AnalyticsParameterNames.source: widget.source!.name,
   };
 
   /// stage가 바뀌면 화면이 보일 때만 한 번 기록한다. 다른 화면에 가려진 채 바뀌면 돌아올 때 SelfLoggedScreenView가 남긴다

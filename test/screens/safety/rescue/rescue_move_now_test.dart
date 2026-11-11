@@ -418,7 +418,7 @@ void main() {
           expect(find.byKey(const Key('safety-assist-rescue-ready')), findsOneWidget);
           await guide.tapVisible(tester, find.byKey(const Key('safety-guide-button')));
         case 'Wallet Health S3':
-          unawaited(WalletHealthScreen.open(env.host()));
+          unawaited(WalletHealthScreen.open(env.host(), source: WalletHealthEntry.homeChip));
           await tester.pumpAndSettle();
           await guide.tapVisible(
             tester,

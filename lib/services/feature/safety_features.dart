@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
@@ -23,6 +24,15 @@ List<FeatureItem> safetyFeatures() => [
     iconPath: FeatureWalletHealthIconPath.walletCheck,
     shortcutEligible: true,
     localizedKeywords: () => _keywords(t.wallet_health.feature.safety_check_search),
-    launch: (context, _) => WalletHealthScreen.open(context, startCheck: true),
+    // 홈 바로가기와 모든 기능이 같은 기능을 쓴다. 이 기능만 연 곳을 나눠 남긴다(T5-03, 리드 결정)
+    launch:
+        (context, _) => WalletHealthScreen.open(
+          context,
+          startCheck: true,
+          source:
+              FeatureLauncher.launchingSurface == FeatureSurface.allFeatures
+                  ? WalletHealthEntry.allFeatures
+                  : WalletHealthEntry.homeShortcut,
+        ),
   ),
 ];

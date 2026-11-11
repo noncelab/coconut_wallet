@@ -34,6 +34,7 @@ Future<ScreenViewRecorder> _open(
   FakeSafetyProvider safety, {
   bool startCheck = false,
   PremiumState? premium,
+  WalletHealthEntry source = WalletHealthEntry.homeChip,
 }) async {
   final recorder = ScreenViewRecorder();
   await pumpWalletHealthApp(
@@ -41,7 +42,7 @@ Future<ScreenViewRecorder> _open(
     Builder(
       builder:
           (context) => TextButton(
-            onPressed: () => WalletHealthScreen.open(context, startCheck: startCheck),
+            onPressed: () => WalletHealthScreen.open(context, startCheck: startCheck, source: source),
             child: const Text('open'),
           ),
     ),
@@ -72,7 +73,7 @@ void main() {
     testWidgets('analytics: Wallet Health records stage=$stage', (tester) async {
       final recorder = await _open(tester, FakeSafetyProvider(report));
       expect(_stages(recorder), [('/', null), ('/wallet-health', stage)]);
-      expect(recorder.views.last.$2.keys, [AnalyticsParameterNames.stage]);
+      expect(recorder.views.last.$2.keys.toSet(), {AnalyticsParameterNames.stage, AnalyticsParameterNames.source});
     });
   }
 

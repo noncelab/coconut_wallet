@@ -157,7 +157,7 @@ class WalletSafetyStatusPill extends StatelessWidget {
           purpose: TransactionDetailPurpose.incident,
         );
       } else {
-        WalletHealthScreen.open(context);
+        WalletHealthScreen.open(context, source: WalletHealthEntry.walletDetail);
       }
     }
 
