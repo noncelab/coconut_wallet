@@ -23,6 +23,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, rootBundle;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../analytics/screen_view_recorder.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -114,26 +116,35 @@ void main() {
     NetworkType.setNetworkType(NetworkType.regtest);
   });
 
-  Widget app(EntitlementService? premium, Widget home, {bool reduceMotion = false, double textScale = 1}) =>
-      MultiProvider(
-        providers: [
-          Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
-          ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
-          ChangeNotifierProvider<AuthProvider>.value(value: _Auth()),
-          if (premium != null) Provider<EntitlementService>.value(value: premium),
-        ],
-        child: MaterialApp(
-          theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
-          builder:
-              (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(disableAnimations: reduceMotion, textScaler: TextScaler.linear(textScale)),
-                child: child!,
-              ),
-          home: home,
-        ),
-      );
+  Widget app(
+    EntitlementService? premium,
+    Widget home, {
+    bool reduceMotion = false,
+    double textScale = 1,
+    ScreenViewRecorder? recorder,
+  }) => MultiProvider(
+    providers: [
+      if (recorder != null)
+        Provider<AnalyticsService>.value(value: recorder)
+      else
+        Provider<AnalyticsService>(create: (_) => AnalyticsService(null, true)),
+      ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
+      ChangeNotifierProvider<AuthProvider>.value(value: _Auth()),
+      if (premium != null) Provider<EntitlementService>.value(value: premium),
+    ],
+    child: MaterialApp(
+      theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
+      navigatorObservers: [if (recorder != null) recorder.observer],
+      builder:
+          (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(disableAnimations: reduceMotion, textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+      home: home,
+    ),
+  );
 
   /// 런처 버튼으로 [open]을 불러 돌려준 값을 받는다
   Future<ValueNotifier<bool?>> pumpPaywall(
@@ -141,6 +152,8 @@ void main() {
     FakeEntitlementService premium, {
     bool reduceMotion = false,
     double textScale = 1,
+    PaywallSource source = PaywallSource.subscription,
+    ScreenViewRecorder? recorder,
   }) async {
     final result = ValueNotifier<bool?>(null);
     await tester.pumpWidget(
@@ -148,11 +161,12 @@ void main() {
         premium,
         reduceMotion: reduceMotion,
         textScale: textScale,
+        recorder: recorder,
         Builder(
           builder:
               (context) => Scaffold(
                 body: TextButton(
-                  onPressed: () async => result.value = await PremiumPaywallScreen.open(context),
+                  onPressed: () async => result.value = await PremiumPaywallScreen.open(context, source: source),
                   child: const Text('open'),
                 ),
               ),
@@ -528,11 +542,17 @@ void main() {
   });
 
   group('구독 관리', () {
-    Future<void> pumpManage(WidgetTester tester, FakeEntitlementService premium, {bool reduceMotion = false}) async {
+    Future<void> pumpManage(
+      WidgetTester tester,
+      FakeEntitlementService premium, {
+      bool reduceMotion = false,
+      ScreenViewRecorder? recorder,
+    }) async {
       await tester.pumpWidget(
         app(
           premium,
           reduceMotion: reduceMotion,
+          recorder: recorder,
           Builder(
             builder:
                 (context) => Scaffold(
@@ -819,5 +839,62 @@ void main() {
         );
       }
     }
+  });
+
+  // T5-05: 페이월은 연 곳(source)과 상품 상태(stage)로 남는다. 가격·결제 정보는 보내지 않는다
+  group('analytics: paywall', () {
+    List<(String, Map<String, Object>)> paywallViews(ScreenViewRecorder recorder) => [
+      for (final view in recorder.views)
+        if (view.$1 == '/premium/paywall') view,
+    ];
+
+    testWidgets('analytics: products load → loading, then ready, with the source', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await pumpPaywall(
+        tester,
+        FakeEntitlementService(products: _products),
+        source: PaywallSource.whCard,
+        recorder: recorder,
+      );
+      expect(paywallViews(recorder).map((view) => view.$2), [
+        {'source': 'whCard', 'stage': 'loading'},
+        {'source': 'whCard', 'stage': 'ready'},
+      ]);
+    });
+
+    testWidgets('analytics: no store → loading, then unavailable', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await pumpPaywall(
+        tester,
+        FakeEntitlementService(isAvailable: false, products: _products),
+        source: PaywallSource.guideStep2,
+        recorder: recorder,
+      );
+      expect(paywallViews(recorder).map((view) => view.$2), [
+        {'source': 'guideStep2', 'stage': 'loading'},
+        {'source': 'guideStep2', 'stage': 'unavailable'},
+      ]);
+    });
+
+    testWidgets('analytics: the subscription screen opens the paywall with source subscription', (tester) async {
+      final recorder = ScreenViewRecorder();
+      await tester.pumpWidget(
+        app(
+          FakeEntitlementService(products: _products, initial: const PremiumState(PremiumStatus.none)),
+          Builder(
+            builder:
+                (context) => Scaffold(
+                  body: TextButton(onPressed: () => PremiumSubscriptionScreen.open(context), child: const Text('open')),
+                ),
+          ),
+          recorder: recorder,
+        ),
+      );
+      await tester.tap(findText('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(findText(t.premium.card.explore));
+      await tester.pumpAndSettle();
+      expect(paywallViews(recorder).map((view) => view.$2['source']).toSet(), {'subscription'});
+    });
   });
 }

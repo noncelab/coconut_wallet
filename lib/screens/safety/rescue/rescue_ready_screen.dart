@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/premium/premium_paywall_screen.dart' show PaywallSource;
 import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart'
     show AssistSignerGuideScreen, ensurePremium;
 import 'package:coconut_wallet/services/safety/safety_assist.dart';
@@ -79,7 +80,7 @@ class _RescueReadyScreenState extends State<RescueReadyScreen> {
       // 목적지 정하기·바꾸기는 Premium만(새 자동화): 목적지가 없으면 페이월이 시트보다 먼저, 저장에서는 막지 않는다(D8).
       // 정해 둔 목적지 지우기(정하지 않음)는 구독과 무관하게 언제나(G-R6). 만료돼도 초안·지금 이동은 그대로
       final current = rescue.destinationOf(wallet.id);
-      if (current == null && !await ensurePremium(context)) return;
+      if (current == null && !await ensurePremium(context, source: PaywallSource.rescue)) return;
       if (!mounted) return;
       final canChange = rescue.isPremiumActive;
       final options = [

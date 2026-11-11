@@ -685,6 +685,34 @@ void main() {
       '/safety-guide/step2',
     ]);
   });
+  // T5-05: 가이드 2단계의 Premium 대응에서 연 페이월은 source=guideStep2로 남는다
+  testWidgets('analytics: the STEP2 Premium row opens the paywall with source guideStep2', (tester) async {
+    usePhoneSize(tester);
+    final recorder = ScreenViewRecorder();
+    final safety = fixedSafety(incidents: [testIncident(state: IncidentState.responding, guideStep: 2)]);
+    await tester.pumpWidget(
+      safetyTestApp(
+        origin(),
+        safety: safety,
+        entitlement: FakeEntitlementService(),
+        analytics: recorder,
+        navigatorObservers: [recorder.observer],
+      ),
+    );
+    await _openGuide(tester, (context) => SecurityGuide.resume(context, kIncidentId));
+    final row = find.byKey(const Key('safety-guide-step2-premium'));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(
+      {
+        for (final (name, parameters) in recorder.views)
+          if (name == '/premium/paywall') parameters['source'],
+      },
+      {'guideStep2'},
+    );
+  });
 }
 
 /// 복구 자료 점검 기록만 받아 두는 제공자(고정 제공자에는 지갑 목록이 없어 실제 기록은 지갑 종류를 알 수 없다)

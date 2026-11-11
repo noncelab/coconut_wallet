@@ -19,6 +19,7 @@ import 'package:coconut_wallet/providers/rescue_ready_provider.dart';
 import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/premium/premium_paywall_screen.dart' show PaywallSource;
 import 'package:coconut_wallet/screens/safety/assist/assist_move_screens.dart';
 import 'package:coconut_wallet/screens/safety/help_channels_sheet.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
@@ -57,7 +58,7 @@ abstract final class SafetyAssistFlow {
     SendEntryPoint entryPoint = SendEntryPoint.home,
   }) async {
     // 대체 자동 준비를 시작하는 순간의 권한으로 판단한다(페이월 결과 값은 믿지 않음)
-    if (!await ensurePremium(context) || !context.mounted) return null;
+    if (!await ensurePremium(context, source: PaywallSource.assist) || !context.mounted) return null;
     final safety = context.read<SafetyProvider>();
     final incident = safety.state.incidents.where((i) => i.id == incidentId).firstOrNull;
     if (incident == null) return null;
@@ -414,7 +415,7 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> with SelfLoggedScr
 
   Future<void> _choose({required bool replace}) async {
     // 대체 거래 자동 준비는 새 자동화라 누르는 순간 권한을 다시 확인한다. 지금 이동은 사용자가 시작한 초안이라 제외
-    if (replace && !_session.isMoveNow && !await ensurePremium(context)) return;
+    if (replace && !_session.isMoveNow && !await ensurePremium(context, source: PaywallSource.assist)) return;
     if (!mounted) return;
     // 지금 이동은 정해 둔 비상 목적지로 바로 검토
     if (_session.isMoveNow && !replace) return _moveToRescueDestination();

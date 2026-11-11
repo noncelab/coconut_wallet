@@ -183,7 +183,8 @@ void main() {
             ChangeNotifierProvider<SafetyProvider>.value(
               value: safetyProvider ?? SafetyProvider.fixed(null, state: safety),
             ),
-          if (recorder != null) Provider<AnalyticsService>.value(value: recorder),
+          // 페이월은 스스로 화면을 기록한다(앱은 루트에서 AnalyticsService를 준다). 기록기를 주지 않으면 꺼진 서비스
+          Provider<AnalyticsService>.value(value: recorder ?? AnalyticsService(null, true)),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: variant),
@@ -831,5 +832,22 @@ void main() {
 
     expect(recorder.names.where((name) => name == '/wallet-health/rescue/create-hot-wallet-dialog'), hasLength(1));
     expect(recorder.names.last, '/');
+  });
+
+  // T5-05: 비상 이동 준비에서 연 페이월은 source=rescue로 남는다
+  testWidgets('analytics: the rescue screen opens the paywall with source rescue', (tester) async {
+    final recorder = ScreenViewRecorder();
+    premium.emit(const PremiumState(PremiumStatus.none));
+    await pumpScreen(tester, CoconutThemeVariant.light, recorder: recorder);
+    await tester.tap(find.byKey(const Key('rescue-wallet-6')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PremiumPaywallScreen), findsOneWidget);
+    expect(
+      {
+        for (final (name, parameters) in recorder.views)
+          if (name == '/premium/paywall') parameters['source'],
+      },
+      {'rescue'},
+    );
   });
 }

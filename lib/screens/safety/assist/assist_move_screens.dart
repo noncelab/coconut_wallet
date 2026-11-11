@@ -25,10 +25,10 @@ import 'package:provider/provider.dart';
 
 /// 새 지갑 자동 생성 같은 자동화를 새로 시작할 때만 구독을 확인한다(만료돼도 이미 만든 것은 막지 않음)
 /// 페이월이 true를 돌려줘도 그 사이 만료·취소됐을 수 있어서 결과 값이 아니라 지금 권한을 다시 읽는다(G-R4)
-Future<bool> ensurePremium(BuildContext context) async {
+Future<bool> ensurePremium(BuildContext context, {required PaywallSource source}) async {
   bool active() => context.read<EntitlementService?>()?.state.value.isActive == true;
   if (active()) return true;
-  await PremiumPaywallScreen.open(context);
+  await PremiumPaywallScreen.open(context, source: source);
   return context.mounted && active();
 }
 
@@ -66,7 +66,7 @@ class _AssistNewHotWalletScreenState extends State<AssistNewHotWalletScreen> {
 
     try {
       if (_walletId == null) {
-        if (!await ensurePremium(context) || !mounted) return _leave();
+        if (!await ensurePremium(context, source: PaywallSource.assist) || !mounted) return _leave();
         final id = await SafetyAssist.createHotWallet(context);
         if (!mounted) return;
         if (id == null) return _leave(); // 기기 비밀번호가 없어 기존 안내에서 멈춤

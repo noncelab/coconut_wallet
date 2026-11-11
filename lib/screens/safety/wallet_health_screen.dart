@@ -551,7 +551,7 @@ class _WalletHealthScreenState extends State<WalletHealthScreen>
               ],
               if (sales) ...[
                 if (rows.isEmpty) CoconutLayout.spacing_600h else CoconutLayout.spacing_300h,
-                WalletHealthPremiumCard(onTap: () => PremiumPaywallScreen.open(context)),
+                WalletHealthPremiumCard(onTap: () => PremiumPaywallScreen.open(context, source: PaywallSource.whCard)),
               ],
             ],
           );
@@ -805,7 +805,10 @@ class _WalletHealthScreenState extends State<WalletHealthScreen>
         onPressed: () => SafetyAssistFlow.start(context, incident.id),
       );
     }
-    return WalletHealthPremiumCard(critical: true, onTap: () => PremiumPaywallScreen.open(context));
+    return WalletHealthPremiumCard(
+      critical: true,
+      onTap: () => PremiumPaywallScreen.open(context, source: PaywallSource.whCritical),
+    );
   }
 }
 

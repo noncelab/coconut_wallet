@@ -351,7 +351,7 @@ class _PremiumAssistRow extends StatelessWidget {
   /// 끝나면 보안 점검을 이어 가거나 가이드를 닫는다
   Future<void> _open(BuildContext context) async {
     if (context.read<EntitlementService?>()?.state.value.isActive != true &&
-        !await PremiumPaywallScreen.open(context)) {
+        !await PremiumPaywallScreen.open(context, source: PaywallSource.guideStep2)) {
       return;
     }
     if (!context.mounted) return;

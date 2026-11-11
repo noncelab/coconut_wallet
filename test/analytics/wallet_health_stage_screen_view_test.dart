@@ -4,6 +4,7 @@ import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/model/safety/wallet_health_report.dart';
 import 'package:coconut_wallet/screens/safety/wallet_health_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +29,12 @@ class _SwitchableSafety extends FakeSafetyProvider {
 }
 
 /// 홈 같은 시작 화면에서 [WalletHealthScreen.open]으로 연다(앱과 같은 경로 이름)
-Future<ScreenViewRecorder> _open(WidgetTester tester, FakeSafetyProvider safety, {bool startCheck = false}) async {
+Future<ScreenViewRecorder> _open(
+  WidgetTester tester,
+  FakeSafetyProvider safety, {
+  bool startCheck = false,
+  PremiumState? premium,
+}) async {
   final recorder = ScreenViewRecorder();
   await pumpWalletHealthApp(
     tester,
@@ -40,6 +46,7 @@ Future<ScreenViewRecorder> _open(WidgetTester tester, FakeSafetyProvider safety,
           ),
     ),
     safety: safety,
+    premium: premium,
     wallets: [WalletMock.createSingleSigWalletItem(id: 1)],
     extra: [Provider<AnalyticsService>.value(value: recorder)],
     navigatorObservers: [recorder.observer],
@@ -109,4 +116,23 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(_stages(recorder), [('/', null), ('/wallet-health', 'scored'), ('/wallet-health', 'criticalOverride')]);
   });
+
+  // T5-05: Wallet Health의 Premium 카드(보통·위급)에서 연 페이월은 각각 source=whCard·whCritical로 남는다
+  for (final (report, source) in [(scoredReport(), 'whCard'), (criticalReport(), 'whCritical')]) {
+    testWidgets('analytics: the Wallet Health Premium card opens the paywall with source $source', (tester) async {
+      final recorder = await _open(tester, FakeSafetyProvider(report), premium: const PremiumState(PremiumStatus.none));
+      final card = find.byKey(const Key('wallet-health-premium-card'));
+      await tester.ensureVisible(card);
+      await tester.pumpAndSettle();
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(
+        {
+          for (final (name, parameters) in recorder.views)
+            if (name == '/premium/paywall') parameters[AnalyticsParameterNames.source],
+        },
+        {source},
+      );
+    });
+  }
 }

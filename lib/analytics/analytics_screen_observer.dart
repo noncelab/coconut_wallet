@@ -14,6 +14,7 @@ const analyticsSelfLoggedRouteNames = {
   AppRouteNames.utxoOverview,
   AppRouteNames.walletHealth,
   AppRouteNames.safetyAssist,
+  AppRouteNames.premiumPaywall,
 };
 
 /// The screen name the observer reports for [settings]: its route name, unless the page logs its own.

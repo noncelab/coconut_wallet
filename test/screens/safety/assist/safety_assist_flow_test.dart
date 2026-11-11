@@ -1562,4 +1562,25 @@ void main() {
       expect(assistViews(recorder), [('/safety-guide/assist/analyzing', 'moveNow')]);
     });
   });
+
+  // T5-05: Assist에서 연 페이월은 source=assist로 남는다
+  testWidgets('analytics: Assist opens the paywall with source assist', (tester) async {
+    final recorder = ScreenViewRecorder();
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      premium: FakeEntitlementService(initial: const PremiumState(PremiumStatus.none)),
+      recorder: recorder,
+    );
+    env.start();
+    await tester.pumpAndSettle();
+    expect(
+      {
+        for (final (name, parameters) in recorder.views)
+          if (name == '/premium/paywall') parameters[AnalyticsParameterNames.source],
+      },
+      {'assist'},
+    );
+  });
 }

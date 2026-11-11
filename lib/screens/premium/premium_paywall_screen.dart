@@ -1,5 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutToast, CoconutToastLevel, CoconutUnderlinedButton;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -29,17 +32,40 @@ import 'package:shimmer/shimmer.dart';
 /// 줄 사이로 갈리면 안 되는 짧은 값(플랜 줄의 "1년"·가격)
 String _unbroken(String text) => TextUtils.preventLineBreakInsideWords(text).replaceAll(' ', '\u00A0');
 
+/// 페이월을 연 곳(화면 기록 source, T5-05). 어느 안내가 구매로 이어지는지 본다
+enum PaywallSource {
+  /// Wallet Health의 Premium 카드
+  whCard,
+
+  /// Wallet Health 위급 화면의 Premium 카드
+  whCritical,
+
+  /// 대응 가이드 2단계의 Premium 대응
+  guideStep2,
+
+  /// Safety Assist(대응 시작·대체·새 핫월렛 자동 생성)
+  assist,
+
+  /// 비상 이동 준비(목적지 정하기)
+  rescue,
+
+  /// 설정의 구독 화면
+  subscription,
+}
+
 /// Coconut Premium 페이월(PA1 소개 → PA2 무료와 비교 → PA3 플랜을 한 화면에). Premium 카드·칩·설정에서만 연다
 class PremiumPaywallScreen extends StatefulWidget {
-  const PremiumPaywallScreen({super.key});
+  const PremiumPaywallScreen({super.key, required this.source});
+
+  final PaywallSource source;
 
   /// 구독(또는 복원)을 마치면 true
-  static Future<bool> open(BuildContext context) async {
+  static Future<bool> open(BuildContext context, {required PaywallSource source}) async {
     final purchased = await Navigator.of(context).push<bool>(
       CupertinoPageRoute(
         fullscreenDialog: true,
-        settings: const RouteSettings(name: '/premium/paywall'),
-        builder: (_) => const CustomLoadingOverlay(child: PremiumPaywallScreen()),
+        settings: const RouteSettings(name: AppRouteNames.premiumPaywall),
+        builder: (_) => CustomLoadingOverlay(child: PremiumPaywallScreen(source: source)),
       ),
     );
     return purchased ?? false;
@@ -49,11 +75,44 @@ class PremiumPaywallScreen extends StatefulWidget {
   State<PremiumPaywallScreen> createState() => _PremiumPaywallScreenState();
 }
 
-class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
+class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> with SelfLoggedScreenView<PremiumPaywallScreen> {
   late final EntitlementService _premium = context.read<EntitlementService>();
 
   /// null = 불러오는 중
   List<PremiumProduct>? _products;
+
+  /// 화면 기록: 연 곳(source)과 상품 상태(stage: loading·ready·unavailable). 가격·결제 정보는 보내지 않는다
+  @override
+  String get analyticsScreenName => AppRouteNames.premiumPaywall;
+
+  @override
+  Map<String, Object> get analyticsParameters => {
+    AnalyticsParameterNames.source: widget.source.name,
+    AnalyticsParameterNames.stage: _productStage,
+  };
+
+  String get _productStage {
+    final products = _products;
+    if (products == null) return 'loading';
+    return products.isEmpty || !_premium.isAvailable ? 'unavailable' : 'ready';
+  }
+
+  String? _loggedStage;
+
+  /// 상품 상태가 바뀌면 화면이 보일 때만 한 번 기록한다
+  void _followStage() {
+    final stage = _productStage;
+    if (_loggedStage == stage) return;
+    final first = _loggedStage == null;
+    _loggedStage = stage;
+    if (first) return;
+    final route = ModalRoute.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(route?.isCurrent ?? false)) return;
+      logScreenViewIfChanged();
+    });
+  }
+
   PremiumProduct? _selected;
   bool _busy = false;
 
@@ -176,6 +235,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _followStage();
     final colors = context.coconutColors;
     final trial = _selected?.freeTrialDays != null;
     return Scaffold(

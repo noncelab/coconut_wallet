@@ -153,7 +153,7 @@ class _StatusCard extends StatelessWidget {
     Widget plans(String text) => InlineActionButton(
       key: const Key('premium-subscription-see-plans'),
       text: text,
-      onPressed: () => PremiumPaywallScreen.open(context),
+      onPressed: () => PremiumPaywallScreen.open(context, source: PaywallSource.subscription),
     );
     final children = switch (state.status) {
       // 갱신일은 쓰지 않는다: 자동 갱신을 껐는지 기기에서 알 수 없다

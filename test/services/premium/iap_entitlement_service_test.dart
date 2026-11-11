@@ -278,11 +278,15 @@ void main() {
           _iosProduct('coconut_premium_monthly', '스토어 월간 가격', rawPrice: 3),
         ];
         await tester.pumpWidget(
-          Provider<EntitlementService>.value(
-            value: create(),
+          MultiProvider(
+            providers: [
+              Provider<EntitlementService>.value(value: create()),
+              // 페이월은 스스로 화면을 기록한다(앱은 루트에서 AnalyticsService를 준다)
+              Provider<AnalyticsService>.value(value: AnalyticsService(null, true)),
+            ],
             child: MaterialApp(
               theme: buildCoconutThemeData(variant: CoconutThemeVariant.light),
-              home: const PremiumPaywallScreen(),
+              home: const PremiumPaywallScreen(source: PaywallSource.subscription),
             ),
           ),
         );

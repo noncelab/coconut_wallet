@@ -31,6 +31,7 @@ class AppRouteNames {
 
   /// Safety Assist 홈(분석·대응 선택 등 단계를 한 화면에서 바꾼다)
   static const String safetyAssist = '/safety-guide/assist';
+  static const String premiumPaywall = '/premium/paywall';
   static const String transactionDetail = '/transaction-detail';
   static const String transactionList = '/transaction-list';
   static const String transactionDraft = '/transaction-draft';
