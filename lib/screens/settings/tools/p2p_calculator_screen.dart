@@ -735,12 +735,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   String _formatPremiumAmount(double amount) {
-    final fixedText = amount.toStringAsFixed(2);
+    // 소수 3자리 통화(KWD·BHD)는 3자리까지 보인다(괄호 안 sats와 같은 금액). 0·2자리 통화는 지금처럼 2자리(A-C1)
+    final fixedText = amount.toStringAsFixed(math.max(2, _viewModel.fiatCode.decimalDigits));
     final parts = fixedText.split('.');
     final integerText = (parts[0].toIntSafe() ?? 0).toThousandsSeparatedString();
     final decimalText = parts.length > 1 ? parts[1] : '';
 
-    if (decimalText == '00') {
+    if (decimalText.replaceAll('0', '').isEmpty) {
       return integerText;
     }
 
