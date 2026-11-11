@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/pending_transaction_verifier.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
@@ -49,6 +50,7 @@ class TransactionSyncService {
   final RbfService _rbfService;
   final CpfpService _cpfpService;
   final ScriptCallbackService _scriptCallbackService;
+  final PendingTransactionVerifier _pendingTransactionVerifier;
 
   TransactionSyncService(
     this._electrumService,
@@ -56,9 +58,13 @@ class TransactionSyncService {
     this._transactionRecordService,
     this._stateManager,
     this._utxoRepository,
-    this._scriptCallbackService,
-  ) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
-      _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService);
+    this._scriptCallbackService, {
+    PendingTransactionVerifier? pendingTransactionVerifier,
+  }) : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
+       _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService),
+       _pendingTransactionVerifier =
+           pendingTransactionVerifier ??
+           PendingTransactionVerifier(_utxoRepository, _transactionRecordService.ownInputIndexes);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<FetchScriptTransactionResult> fetchScriptTransaction(
@@ -106,16 +112,34 @@ class TransactionSyncService {
 
     try {
       // 3. 트랜잭션 상세 정보 조회
-      final FetchedTransactionDetails fetchedTransactionDetails = await _fetchTransactionDetails(
+      final FetchedTransactionDetails fetched = await _fetchTransactionDetails(
         newTxHashes,
         txFetchResults,
         _electrumService,
       );
 
-      // 4. 트랜잭션 레코드 생성 및 저장
+      // 3-1. 미확정 거래의 이전 거래를 먼저 받는다(거래 번호 확인). 서명 확인과 거래 기록이 같은 이전 거래를 쓴다
+      // 내 입력의 서명이 확인되지 않은 미확정 거래는 넣지도, UTXO 상태에 반영하지도 않는다(다음 동기화에서 다시 확인)
+      final parents = {for (final tx in fetched.fetchedTransactions) tx.transactionHash: tx};
+      final pendingTransactions =
+          fetched.fetchedTransactions.where((tx) => unconfirmedFetchedTxHashes.contains(tx.transactionHash)).toList();
+      await _fetchPreviousTransactions(pendingTransactions, parents);
+      final skipped = await _findUnverifiedPendingTransactions(walletId, pendingTransactions, parents);
+      final FetchedTransactionDetails fetchedTransactionDetails = (
+        fetchedTransactions: fetched.fetchedTransactions.where((tx) => !skipped.contains(tx.transactionHash)).toList(),
+        txBlockHeightMap: fetched.txBlockHeightMap,
+        blockTimestampMap: fetched.blockTimestampMap,
+      );
+
+      // 4. 트랜잭션 레코드 생성 및 저장. 미확정 거래는 서명을 확인한 것과 같은 이전 거래로만 만든다(다시 받지 않음)
       final List<TransactionRecord> txRecords = await _transactionRecordService.createTransactionRecords(
         walletId,
         fetchedTransactionDetails,
+        previousTxs: parents.values.toList(),
+        resolvedPreviousTxs: {
+          for (final tx in pendingTransactions)
+            tx.transactionHash: PendingTransactionVerifier.previousTransactionsOf(tx, parents),
+        },
         now: now,
       );
       final unconfirmedRecords = txRecords.where((record) => record.blockHeight <= 0).toList();
@@ -149,11 +173,19 @@ class TransactionSyncService {
         await _transactionRepository.addAllTransactions(walletId, confirmedRecords);
       }
 
-      // 8. 마무리 단계
-      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess, processingStates: processingStates);
+      // 8. 마무리 단계. 넣지 않은 거래는 완료로 두지 않아 다음 동기화에서 다시 확인하고, 이 주소의 UTXO 조회도 기다리지 않는다
+      await _finalizeTransactionFetch(
+        walletId,
+        newTxHashes.difference(skipped),
+        inBatchProcess,
+        processingStates: processingStates,
+      );
 
       return (
-        txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(),
+        txHashes: [
+          for (final tx in txFetchResults)
+            if (!skipped.contains(tx.transactionHash)) tx.transactionHash,
+        ],
         coSpentAddresses: rbfCpfpResult.coSpentAddresses,
       );
     } finally {
@@ -219,6 +251,40 @@ class TransactionSyncService {
       txBlockHeightMap: txBlockHeightMap,
       blockTimestampMap: blockTimestampMap,
     );
+  }
+
+  /// 3-1. 미확정 거래마다 이전 거래를 받아(getPreviousTransactions, 거래 번호 확인) [parents]에 넣는다. 같은 묶음에 있는 것은 다시 받지 않는다.
+  /// 거래 기록도 이것으로만 만드므로 요청이 늘지 않는다
+  Future<void> _fetchPreviousTransactions(
+    List<Transaction> pendingTransactions,
+    Map<String, Transaction> parents,
+  ) async {
+    final batch = parents.values.toList();
+    final previous = await Future.wait(
+      pendingTransactions.map((tx) => _electrumService.getPreviousTransactions(tx, existingTxList: batch)),
+    );
+    for (final previousTx in previous.expand((txs) => txs)) {
+      parents[previousTx.transactionHash] = previousTx;
+    }
+  }
+
+  /// 3-1. 서버가 보여 준 미확정 거래 중 내 입력의 서명이 확인되지 않은 것(거래 번호만 기록한다)
+  Future<Set<String>> _findUnverifiedPendingTransactions(
+    int walletId,
+    List<Transaction> pendingTransactions,
+    Map<String, Transaction> parents,
+  ) async {
+    final results = await Future.wait(
+      pendingTransactions.map((tx) => _pendingTransactionVerifier.check(walletId, tx, parents)),
+    );
+    final skipped = <String>{};
+    for (final (index, result) in results.indexed) {
+      if (result == PendingTransactionCheck.ok) continue;
+      final txHash = pendingTransactions[index].transactionHash;
+      skipped.add(txHash);
+      Logger.error('[$walletId] Pending transaction $txHash not stored: ${result.name}');
+    }
+    return skipped;
   }
 
   /// 4. UTXO 상태 업데이트 및 RBF/CPFP 처리
@@ -369,6 +435,12 @@ class TransactionSyncService {
         unconfirmedTx = Transaction.parse(
           await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash),
         );
+      } on FormatException {
+        // 서버가 요청한 번호와 다른 거래(또는 깨진 원문)를 돌려줌. 서버 응답을 믿을 수 없으니 내 기록은 지우지 않는다
+        Logger.error(
+          '[$walletId] Transaction ${localUnconfirmedTxRecord.transactionHash} kept: unexpected server response',
+        );
+        continue;
       } catch (e) {
         // 언컨펌 트랜잭션을 다시 조회해서 실패한 경우 대체된 것으로 간주
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');

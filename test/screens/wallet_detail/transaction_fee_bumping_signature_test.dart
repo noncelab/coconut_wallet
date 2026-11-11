@@ -42,6 +42,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import '../../mock/transaction_mock.dart';
 import '../../repository/realm/test_realm_manager.dart';
 
 /// 서버(ElectrumService)만 가짜. 기록 조회·거래 원문·이전 거래·블록 시각을 정해진 값으로 돌려준다
@@ -315,7 +316,8 @@ class _Scenario {
     ),
   ]);
 
-  /// 서버가 받기 주소 0의 기록으로 [pending]을 보여 줄 때의 실제 동기화
+  /// 서버가 받기 주소 0의 기록으로 [pending]을 보여 줄 때의 동기화. 대기 거래 서명 확인이 생기기 전 앱처럼
+  /// 확인 없이 저장한다(업데이트 전에 이미 저장된 기록)
   Future<void> sync(Transaction pending, String status) async {
     server.rawByHash[pending.transactionHash] = pending.serialize();
     server.historyByAddress[receive0] = [
@@ -329,6 +331,7 @@ class _Scenario {
       _State(),
       utxos,
       ScriptCallbackService(),
+      pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
     ).fetchScriptTransaction(
       wallet,
       ScriptStatus(

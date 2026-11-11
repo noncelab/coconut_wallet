@@ -19,11 +19,22 @@ class TransactionRecordService {
 
   TransactionRecordService(this._electrumService, this._addressRepository);
 
-  /// 트랜잭션 레코드를 생성합니다.
+  /// 거래 기록이 "내 입력"(보냄)으로 세는 입력 번호. [processTransactionDetails]와 같은 계산이라 이전 거래가 하나라도 빠지면 세지 않는다
+  Set<int> ownInputIndexes(int walletId, Transaction tx, List<Transaction> previousTxs) {
+    // 이전 거래가 모두 있으면 입력마다 하나씩 입력 순서대로 들어 있고, 하나라도 빠지면 비어 있다
+    final inputs = processTransactionDetails(tx, previousTxs, walletId).inputAddressList;
+    return {
+      for (final (index, input) in inputs.indexed)
+        if (_addressRepository.containsAddress(walletId, input.address)) index,
+    };
+  }
+
+  /// 트랜잭션 레코드를 생성합니다. [resolvedPreviousTxs]에 있는 거래는 그 이전 거래로만 만듭니다(다시 받지 않음)
   Future<List<TransactionRecord>> createTransactionRecords(
     int walletId,
     FetchedTransactionDetails fetchedTransactionDetails, {
     List<Transaction> previousTxs = const [],
+    Map<String, List<Transaction>> resolvedPreviousTxs = const {},
     DateTime? now,
   }) async {
     return Future.wait(
@@ -36,23 +47,26 @@ class TransactionRecordService {
           tx,
           blockTimestamp: blockTimestamp,
           previousTxs: previousTxs,
+          resolvedPreviousTxs: resolvedPreviousTxs[tx.transactionHash],
           now: now,
         );
       }),
     );
   }
 
-  /// 단일 트랜잭션 레코드를 생성합니다.
+  /// 단일 트랜잭션 레코드를 생성합니다. [resolvedPreviousTxs]가 있으면 그 이전 거래로만 만듭니다(다시 받지 않음)
   Future<TransactionRecord> createTransactionRecord(
     int walletId,
     Transaction tx, {
     BlockTimestamp? blockTimestamp,
     List<Transaction> previousTxs = const [],
+    List<Transaction>? resolvedPreviousTxs,
     DateTime? now,
   }) async {
     now ??= DateTime.now();
 
-    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    final prevTxs =
+        resolvedPreviousTxs ?? await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
     return TransactionRecord.fromTransactions(
