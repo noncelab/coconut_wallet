@@ -154,7 +154,7 @@ void main() {
     expect(painter.track, WalletHealthColors.base.gaugeTrack);
   });
 
-  testWidgets('checking dims the previous fill and says "검사 중…"', (tester) async {
+  testWidgets('checking dims the previous fill and says "점검 중…"', (tester) async {
     await _pump(tester, scoredReport(score: 86), isChecking: true);
     expect(_text(t.wallet_health.summary.checking), findsOneWidget);
     expect(_painter(tester).fillOpacity, closeTo(0.35, 1e-9));

@@ -30,7 +30,7 @@ class SafetyStatusWidgetView extends StatelessWidget {
     final wide = span == HomeSpan.wide;
     final hasProvider = context.select<SafetyProvider?, bool>((safety) => safety != null);
     if (!hasProvider) return const SizedBox.shrink();
-    // 보고서 비교는 evaluatedAt을 빼므로(결과가 같으면 같은 보고서) "마지막 검사" 시각이 바뀌어도 다시 그리게 시각을 같이 고른다
+    // 보고서 비교는 evaluatedAt을 빼므로(결과가 같으면 같은 보고서) "마지막 점검" 시각이 바뀌어도 다시 그리게 시각을 같이 고른다
     final (report, _) = context.select<SafetyProvider?, (WalletHealthReport?, DateTime?)>(
       (safety) => (safety?.report, safety?.report?.evaluatedAt),
     );
@@ -46,7 +46,7 @@ class SafetyStatusWidgetView extends StatelessWidget {
     final health = context.walletHealthColors;
     final actionStyle = CoconutTypography.body3_12_Bold.copyWith(color: health.critical);
     Text line(String text) => Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: detailStyle);
-    // 2×2 아래 줄은 좁아서 시간만, 4×2는 "마지막 검사 · 시간"
+    // 2×2 아래 줄은 좁아서 시간만, 4×2는 "마지막 점검 · 시간"
     final checked = line(wide ? t.wallet_health.summary.last_checked(time: time) : time);
 
     // 지갑 없음 안내는 여러 줄이 될 수 있어, 2×2에서는 아래 고정 줄이 아니라 제목과 함께 줄어드는 열에 둔다

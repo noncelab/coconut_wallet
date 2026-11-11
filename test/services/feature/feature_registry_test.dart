@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:coconut_wallet/services/feature/safety_features.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -91,6 +92,13 @@ void main() {
     expect(registry.search('지갑 복원하기').first.item.id, FeatureIds.walletAddHot);
     expect(registry.search('keystone').first.item.id, FeatureIds.walletAddWatchOnly);
     expect(registry.search('xpub').first.item.id, FeatureIds.walletAddWatchOnly);
+  });
+
+  // T3-10: 버튼이 "다시 점검하기"가 되어 검색어에 "다시 점검"을 더했다. 이전 말 "다시 검사"로도 그대로 찾는다
+  test('T3-10 searching 다시 점검 or the old 다시 검사 finds the safety check', () {
+    for (final query in ['다시 점검', '다시 검사']) {
+      expect(registry.search(query).first.item.id, SafetyFeatureIds.safetyCheck, reason: query);
+    }
   });
 
   test('wordlist, glossary, my wallets and memo management are shortcuts that need no wallet', () {

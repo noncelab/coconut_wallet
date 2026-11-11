@@ -274,7 +274,7 @@ void main() {
     }
   });
 
-  // T3-04: "다시 검사하기"는 보이는 126×34 그대로, 위 6·아래 8까지 눌린다(누름 126×48). 화면 읽기에는 48 높이 버튼 하나
+  // T3-04: "다시 점검하기"는 보이는 126×34 그대로, 위 6·아래 8까지 눌린다(누름 126×48). 화면 읽기에는 48 높이 버튼 하나
   testWidgets(
     'T3-04 check again keeps its 34-high look, answers taps 5 px outside it and reads as one 48-high button',
     (tester) async {
@@ -324,6 +324,16 @@ void main() {
       semantics.dispose();
     },
   );
+
+  // T3-10: 한국어 동작어는 화면 이름("지갑 점검")과 같은 "점검"으로(다섯 곳). 다른 언어는 그대로
+  test('T3-10 Korean check action, progress, last-checked line and check toasts say 점검', () {
+    final ko = AppLocale.ko.buildSync().wallet_health;
+    expect(ko.summary.check_again, '다시 점검하기');
+    expect(ko.summary.checking, '점검 중…');
+    expect(ko.summary.last_checked(time: '방금'), '마지막 점검 · 방금');
+    expect(ko.toast.checked_offline, '연결이 없어 저장된 데이터로 점검했어요');
+    expect(ko.toast.check_failed, '점검하지 못했어요. 잠시 후 다시 시도해 주세요');
+  });
 
   testWidgets('C6: the passed value sits at the right end of its row', (tester) async {
     await _pump(

@@ -419,7 +419,7 @@ class SafetyPressRow extends StatelessWidget {
   }
 }
 
-/// 머리 카드: 게이지 · 다시 검사(지갑 없음이면 지갑 추가) · 마지막 검사 · 점검 지갑 수 · 오프라인
+/// 머리 카드: 게이지 · 다시 점검(지갑 없음이면 지갑 추가) · 마지막 점검 · 점검 지갑 수 · 오프라인
 class WalletHealthHeaderCard extends StatelessWidget {
   const WalletHealthHeaderCard({
     super.key,
@@ -457,7 +457,7 @@ class WalletHealthHeaderCard extends StatelessWidget {
       child: Column(
         children: [
           HealthGauge(report: report, isChecking: isChecking),
-          // 다시 검사하기는 누름 여백(위 6·아래 8)이 이 간격을 대신한다(T3-04)
+          // 다시 점검하기는 누름 여백(위 6·아래 8)이 이 간격을 대신한다(T3-04)
           if (noWallet) CoconutLayout.spacing_150h,
           noWallet
               ? _AddWalletButton(onTap: onAddWallet)

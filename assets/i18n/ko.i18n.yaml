@@ -2184,7 +2184,7 @@ wallet_health:
   safety_check: "지갑 점검"
   feature:
     safety_check_short: "지갑 점검"
-    safety_check_search: "지갑 점검, 지갑 상태, 안전 점검, wallet health, 점수, 보안, 안전, 백업, 앱 잠금, 점검, 다시 검사, 모르는 거래"
+    safety_check_search: "지갑 점검, 지갑 상태, 안전 점검, wallet health, 점수, 보안, 안전, 백업, 앱 잠금, 점검, 다시 검사, 다시 점검, 모르는 거래"
   first_hint:
     title: "지갑 상태를 여기서 확인하세요"
     description: "점수와 확인할 항목을 보여 줘요"
@@ -2254,9 +2254,9 @@ wallet_health:
     no_wallet: "지갑을 추가하면 점검을 시작해요"
     a11y: "지갑 점검 위젯, ${status}"
   summary:
-    check_again: "다시 검사하기"
-    checking: "검사 중…"
-    last_checked: "마지막 검사 · ${time}"
+    check_again: "다시 점검하기"
+    checking: "점검 중…"
+    last_checked: "마지막 점검 · ${time}"
     no_issues_found: "점검 이상 없음"
     items_need_attention(cardinal):
       one: "확인 필요 1건"
@@ -2338,8 +2338,8 @@ wallet_health:
     mempool_dropped: "거래가 멤풀에서 사라졌어요 · 다음 동기화 때 다시 확인해요"
     recommended_progress: "${total}개 중 ${done}개 완료"
   toast:
-    checked_offline: "연결이 없어 저장된 데이터로 검사했어요"
-    check_failed: "검사하지 못했어요. 잠시 후 다시 시도해 주세요"
+    checked_offline: "연결이 없어 저장된 데이터로 점검했어요"
+    check_failed: "점검하지 못했어요. 잠시 후 다시 시도해 주세요"
   evidence:
     verified: "검증됨"
     completed_by_you: "직접 확인함"
