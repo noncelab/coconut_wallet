@@ -222,6 +222,15 @@ class ElectrumService {
   }
 
   Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
+    final transaction = await _fetchTransaction(txHash, verbose: verbose, timeout: timeout);
+    // 요청한 거래 번호와 다른 거래는 쓰지 않음(verbose 응답은 거래 원문이 아닌 JSON이라 제외)
+    if (verbose != true && Transaction.parse(transaction).transactionHash != txHash) {
+      throw FormatException('Received a different transaction for $txHash');
+    }
+    return transaction;
+  }
+
+  Future<String> _fetchTransaction(String txHash, {bool? verbose, required Duration timeout}) async {
     try {
       var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
         // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
