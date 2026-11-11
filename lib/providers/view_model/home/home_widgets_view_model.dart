@@ -41,6 +41,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final Map<FiatCode, Timer> _closesRetryTimers = {};
   final Map<FiatCode, Duration> _closesRetryDelays = {};
   static const _closesRetryMaxDelay = Duration(minutes: 10);
+
+  /// 종가를 받은 UTC 날짜. 종가는 UTC 날짜로 마감되므로 날짜가 바뀌면 그 통화의 종가를 다시 받는다.
+  final Map<FiatCode, DateTime> _closesUtcDay = {};
   static const priceWaitLimit = Duration(seconds: 10);
 
   final Map<String, Object?> _cache = {};
@@ -94,10 +97,8 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   /// 오래 오지 않으면(오프라인 등) 기다리지 않고 값 없음으로 보여 준다.
   bool isPriceLoading(FiatCode fiatCode) => priceOf(fiatCode) == null && !_priceWaitExpired;
 
-  bool isDailyClosesLoading(FiatCode fiatCode) {
-    _closesOf(fiatCode);
-    return _loadingCloses.contains(fiatCode);
-  }
+  /// 처음 받을 때만 로딩이다. 날짜가 바뀌어 다시 받는 동안은 받아 둔 종가를 그대로 보여 준다.
+  bool isDailyClosesLoading(FiatCode fiatCode) => _closesOf(fiatCode) == null && _loadingCloses.contains(fiatCode);
 
   void _onDataChanged() {
     _cache.clear();
@@ -174,17 +175,23 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     return price == null ? null : FiatUtil.calculateFiatAmount(sats, price);
   }
 
+  /// 앱을 켜 둔 채 UTC 자정(한국 오전 9시)을 넘기면 새로 마감된 종가를 다시 받는다.
+  /// 기기 현지 날짜로 비우는 [_cache]와 경계가 달라서 여기서 UTC 날짜를 따로 비교한다.
   List<double>? _closesOf(FiatCode fiatCode) {
     final closes = _dailyCloses[fiatCode];
     final isWaitingToRetry =
         _failedClosesAtReceivedAt.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
-    if (closes == null && !isWaitingToRetry && _loadingCloses.add(fiatCode)) {
-      unawaited(_loadCloses(fiatCode));
+    final utcNow = _now().toUtc();
+    final utcDay = DateTime.utc(utcNow.year, utcNow.month, utcNow.day);
+    // 처음이거나 UTC 날짜가 바뀌었으면 받는다. 실패 뒤에는 기존 재시도 규칙(거래소: 간격 늘림, CoinGecko: 새 시세)을 따른다
+    final isStale = closes != null && _closesUtcDay[fiatCode] != utcDay;
+    if ((closes == null || isStale) && !isWaitingToRetry && _loadingCloses.add(fiatCode)) {
+      unawaited(_loadCloses(fiatCode, utcDay));
     }
     return closes;
   }
 
-  Future<void> _loadCloses(FiatCode fiatCode) async {
+  Future<void> _loadCloses(FiatCode fiatCode, DateTime utcDay) async {
     List<double>? closes;
     try {
       closes = await _historicalPriceService.fetchDailyCloses(fiatCode);
@@ -195,8 +202,10 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     _loadingCloses.remove(fiatCode);
     if (closes != null && closes.isNotEmpty) {
       _dailyCloses[fiatCode] = closes;
+      _closesUtcDay[fiatCode] = utcDay;
       _closesRetryDelays.remove(fiatCode);
     } else if (fiatCode.hasExchangeSource) {
+      // 실패하면 받아 둔 종가는 그대로 두고 재시도한다
       _scheduleClosesRetry(fiatCode);
     } else {
       _failedClosesAtReceivedAt[fiatCode] = _priceProvider.priceReceivedAt(fiatCode);
