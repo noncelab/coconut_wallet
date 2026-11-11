@@ -278,12 +278,16 @@ class TransactionSyncService {
       pendingTransactions.map((tx) => _pendingTransactionVerifier.check(walletId, tx, parents)),
     );
     final skipped = <String>{};
+    final invalid = <String>[];
     for (final (index, result) in results.indexed) {
       if (result == PendingTransactionCheck.ok) continue;
       final txHash = pendingTransactions[index].transactionHash;
       skipped.add(txHash);
+      if (result == PendingTransactionCheck.invalid) invalid.add(txHash);
       Logger.error('[$walletId] Pending transaction $txHash not stored: ${result.name}');
     }
+    // 서명이 틀린 것만 알린다(이전 거래를 못 받은 경우는 다음 동기화에서 다시 확인)
+    if (invalid.isNotEmpty) _stateManager.addUnverifiedPendingTransactions(walletId, invalid);
     return skipped;
   }
 

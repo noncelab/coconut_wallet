@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/app/deep_link/deep_link_listener.dart';
+import 'package:coconut_wallet/app/unverified_transaction/unverified_transaction_listener.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:provider/provider.dart';
@@ -141,7 +142,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     child:
                         _appEntryFlow != AppEntryFlow.main
                             ? currentChild
-                            : AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
+                            : AppGuard(
+                              child: DeepLinkListener(
+                                navigatorKey: _navigatorKey,
+                                child: UnverifiedTransactionListener(navigatorKey: _navigatorKey, child: currentChild),
+                              ),
+                            ),
                   ),
                 );
               },

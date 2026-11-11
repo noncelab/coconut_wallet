@@ -2139,3 +2139,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
+unverified_transaction_dialog:
+  title: "サーバーから無効な取引が届きました"
+  description: "署名が無効な取引のため、履歴には追加していません。別のサーバーに切り替えてください。"
+  change_server: "サーバーを変更"

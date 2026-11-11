@@ -187,6 +187,13 @@ class IsolateStateManager implements StateManagerInterface {
     _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletFetchCompleted, [walletId, count]));
   }
 
+  @override
+  void addUnverifiedPendingTransactions(int walletId, List<String> txHashes) {
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.addUnverifiedPendingTransactions, [walletId, txHashes]),
+    );
+  }
+
   bool _isWalletAnySyncing(int walletId) {
     final walletInfo = _registeredWallets[walletId];
     if (walletInfo == null) {

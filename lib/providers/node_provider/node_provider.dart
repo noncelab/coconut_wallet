@@ -68,6 +68,10 @@ class NodeProvider extends ChangeNotifier {
   final _resyncProgressController = StreamController<Map<int, ResyncProgress>>.broadcast();
   final _fetchProgressController = StreamController<Map<int, WalletFetchProgress>>.broadcast();
   final _currentBlockController = StreamController<BlockTimestamp?>.broadcast();
+  final _unverifiedTransactionController = StreamController<List<String>>.broadcast();
+
+  /// 내 코인을 쓰지만 서명이 맞지 않아 동기화가 넣지 않은 미확정 거래 번호
+  Stream<List<String>> get unverifiedPendingTransactionStream => _unverifiedTransactionController.stream;
 
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
   Timer? _blockUpdateTimer;
@@ -396,6 +400,7 @@ class NodeProvider extends ChangeNotifier {
       _walletStateController,
       _resyncProgressController,
       _fetchProgressController,
+      unverifiedTransactionController: _unverifiedTransactionController,
     );
   }
 
@@ -1094,6 +1099,7 @@ class NodeProvider extends ChangeNotifier {
     _resyncProgressController.close();
     _fetchProgressController.close();
     _currentBlockController.close();
+    _unverifiedTransactionController.close();
 
     super.dispose();
   }

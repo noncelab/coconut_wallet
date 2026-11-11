@@ -2142,3 +2142,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
+unverified_transaction_dialog:
+  title: "Invalid transaction from server"
+  description: "This transaction isn't correctly signed, so we left it out of your history. Please switch to another server."
+  change_server: "Change server"

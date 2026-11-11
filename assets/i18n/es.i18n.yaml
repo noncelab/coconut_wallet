@@ -2142,3 +2142,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
+unverified_transaction_dialog:
+  title: "Transacción no válida del servidor"
+  description: "La firma de esta transacción no es válida, así que no se añadió al historial. Cambia a otro servidor."
+  change_server: "Cambiar servidor"

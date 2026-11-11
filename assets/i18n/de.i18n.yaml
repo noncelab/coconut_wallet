@@ -2147,3 +2147,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "Einzeln anzeigen"
 wallet_selection_grid: "Zusammen anzeigen"
+unverified_transaction_dialog:
+  title: "Ungültige Transaktion vom Server"
+  description: "Diese Transaktion hat eine ungültige Signatur und wurde nicht zum Verlauf hinzugefügt. Bitte wechseln Sie zu einem anderen Server."
+  change_server: "Server wechseln"

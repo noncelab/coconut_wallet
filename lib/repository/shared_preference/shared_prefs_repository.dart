@@ -374,6 +374,18 @@ class SharedPrefsRepository {
     );
   }
 
+  /// 서명이 맞지 않아 넣지 않았다고 이미 알린 미확정 거래 번호
+  List<String> getShownUnverifiedTransactionIds() =>
+      _sharedPrefs.getStringList(SharedPrefKeys.kShownUnverifiedTransactionIds) ?? const [];
+
+  Future<void> addShownUnverifiedTransactionIds(Iterable<String> txHashes) async {
+    final ids = [...getShownUnverifiedTransactionIds().where((id) => !txHashes.contains(id)), ...txHashes];
+    await _sharedPrefs.setStringList(
+      SharedPrefKeys.kShownUnverifiedTransactionIds,
+      ids.length > 100 ? ids.sublist(ids.length - 100) : ids,
+    );
+  }
+
   bool hasUnacknowledgedOlderToAfterBackupUpdate(int walletId) {
     return getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate().contains(walletId);
   }

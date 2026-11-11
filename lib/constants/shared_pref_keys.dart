@@ -117,6 +117,9 @@ class SharedPrefKeys {
   static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
       'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
 
+  // 서명이 맞지 않아 넣지 않았다고 이미 알린 미확정 거래 번호(최근 100개)
+  static const String kShownUnverifiedTransactionIds = 'SHOWN_UNVERIFIED_TRANSACTION_IDS';
+
   /// 비밀번호 분실 시 초기화 대상
   /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
   /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.
