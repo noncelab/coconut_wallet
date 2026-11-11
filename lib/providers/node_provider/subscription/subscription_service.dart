@@ -208,8 +208,12 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
-    await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
-    walletItem.subscribedScriptMap.clear();
+    try {
+      await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
+    } finally {
+      // 콜백은 이미 지워졌으므로 서버 해제가 실패해도 목록을 비워야 다음 구독이 다시 붙는다.
+      walletItem.subscribedScriptMap.clear();
+    }
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
     return Result.success(true);
   }
@@ -222,8 +226,16 @@ class SubscriptionService {
       return;
     }
 
-    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
-    walletItem.subscribedScriptMap.remove(script);
+    try {
+      await _electrumService.unsubscribeScriptForWallet(
+        walletItem.walletBase.addressType,
+        address,
+        walletId: walletItem.id,
+      );
+    } finally {
+      // 콜백은 이미 지워졌으므로 서버 해제가 실패해도 목록에서 빼야 다음 subscribeAddress가 실제로 다시 구독한다.
+      walletItem.subscribedScriptMap.remove(script);
+    }
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
 
@@ -477,7 +489,11 @@ class SubscriptionService {
 
     await Future.wait(
       addressesToUnsubscribe.map((address) {
-        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+        return _electrumService.unsubscribeScriptForWallet(
+          walletItem.walletBase.addressType,
+          address,
+          walletId: walletItem.id,
+        );
       }),
     );
   }
