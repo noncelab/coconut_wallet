@@ -784,119 +784,127 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: context.coconutColors.popupBackground,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+        // 계산서 글자는 1.2배까지만 키운다(거래 카드·M37 팝업·M20과 같은 규칙, A-C2): 큰 글자에서 계산서가 화면을 넘지 않게
+        return MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: context.coconutColors.popupBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                // 1.2배 상한에서도 작은 화면(320×568 등)에서는 계산서가 화면보다 길 수 있어 그때는 스크롤한다(A-C2).
+                // 닫기 버튼도 함께 움직여 계산서 글자 위에 겹치지 않는다
+                child: SingleChildScrollView(
+                  child: Stack(
                     children: [
-                      RepaintBoundary(
-                        key: _billCaptureKey,
-                        child: Container(
-                          color: context.coconutColors.popupBackground,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CoconutLayout.spacing_1000h,
-                              Align(
-                                alignment: Alignment.center,
-                                child: Text(
-                                  t.utility.p2p_calculator.transaction_bill,
-                                  style: CoconutTypography.heading3_21_Bold,
-                                ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RepaintBoundary(
+                            key: _billCaptureKey,
+                            child: Container(
+                              color: context.coconutColors.popupBackground,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CoconutLayout.spacing_1000h,
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      t.utility.p2p_calculator.transaction_bill,
+                                      style: CoconutTypography.heading3_21_Bold,
+                                    ),
+                                  ),
+                                  CoconutLayout.spacing_900h,
+                                  // 입력값
+                                  _buildBillRow(
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.fiatCode.code
+                                        : _viewModel.currentUnit.symbol,
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _formatFiatResultForDisplay(input)
+                                        : _viewModel.formatSatsResult(input),
+                                    canCopy: true,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // 결과값
+                                  _buildBillRow(
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.currentUnit.symbol
+                                        : _viewModel.fiatCode.code,
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.formatSatsResult(result)
+                                        : _formatFiatResultForDisplay(result),
+                                    canCopy: true,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                                    child: Divider(color: context.coconutColors.primaryText.withAlpha(50), height: 1),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.bill_created_at,
+                                    billCreatedAtString,
+                                    valueLineHeight: 1.0,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.reference_price,
+                                    '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
+                                  ),
+                                  const SizedBox(height: 2),
+                                  _buildBillSubLine(priceSourceStr),
+                                  const SizedBox(height: 20),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.transaction_premium,
+                                    '$premiumRateValueStr %',
+                                    valueLineHeight: 1.0,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  _buildBillSubLine(
+                                    '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
+                                  ),
+                                  CoconutLayout.spacing_800h,
+                                ],
                               ),
-                              CoconutLayout.spacing_900h,
-                              // 입력값
-                              _buildBillRow(
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.fiatCode.code
-                                    : _viewModel.currentUnit.symbol,
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _formatFiatResultForDisplay(input)
-                                    : _viewModel.formatSatsResult(input),
-                                canCopy: true,
-                              ),
-                              const SizedBox(height: 8),
-                              // 결과값
-                              _buildBillRow(
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.currentUnit.symbol
-                                    : _viewModel.fiatCode.code,
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.formatSatsResult(result)
-                                    : _formatFiatResultForDisplay(result),
-                                canCopy: true,
-                              ),
-                              const SizedBox(height: 24),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 15),
-                                child: Divider(color: context.coconutColors.primaryText.withAlpha(50), height: 1),
-                              ),
-                              const SizedBox(height: 24),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.bill_created_at,
-                                billCreatedAtString,
-                                valueLineHeight: 1.0,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.reference_price,
-                                '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
-                              ),
-                              const SizedBox(height: 2),
-                              _buildBillSubLine(priceSourceStr),
-                              const SizedBox(height: 20),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.transaction_premium,
-                                '$premiumRateValueStr %',
-                                valueLineHeight: 1.0,
-                              ),
-                              const SizedBox(height: 2),
-                              _buildBillSubLine(
-                                '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
-                              ),
-                              CoconutLayout.spacing_800h,
-                            ],
+                            ),
+                          ),
+                          _buildBillActions(
+                            btcPriceStr,
+                            priceSourceStr,
+                            fiatAmountStr,
+                            btcAmountStr,
+                            billCreatedAtString,
+                            premiumRateStr,
+                            premiumAmountStr,
+                            premiumSatsStr,
+                            _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
+                          ),
+                          CoconutLayout.spacing_500h,
+                        ],
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          color: context.coconutColors.primaryText,
+                          icon: SvgPicture.asset(
+                            CommonActionIconPath.close,
+                            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                           ),
                         ),
                       ),
-                      _buildBillActions(
-                        btcPriceStr,
-                        priceSourceStr,
-                        fiatAmountStr,
-                        btcAmountStr,
-                        billCreatedAtString,
-                        premiumRateStr,
-                        premiumAmountStr,
-                        premiumSatsStr,
-                        _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
-                      ),
-                      CoconutLayout.spacing_500h,
                     ],
                   ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      color: context.coconutColors.primaryText,
-                      icon: SvgPicture.asset(
-                        CommonActionIconPath.close,
-                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -917,7 +925,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Text(text, style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.mutedText)),
+          // 출처·시각이 남은 폭보다 길면 오른쪽 끝선에 맞춰 줄을 바꾼다(A-C2)
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.end,
+              style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.mutedText),
+            ),
+          ),
         ],
       ),
     );
