@@ -40,6 +40,7 @@ import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
 import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -3026,6 +3027,244 @@ void main() {
       });
     }
 
+    testWidgets('turning on the saving reminder asks for permission and schedules it with the plan frequency', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      final card = find.byKey(const Key('goal-reminder-card'));
+      await tester.ensureVisible(card);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        t.hodl_insights.goal_reminder_off,
+      );
+
+      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        t.hodl_insights.goal_reminder_summary_weekly(weekday: t.hodl_insights.goal_reminder_weekdays[0], time: '21:00'),
+      );
+      expect(reminders.scheduled.last.$1.enabled, isTrue);
+      expect(reminders.scheduled.last.$2, GoalPlanCycle.weekly);
+      expect(reminders.scheduled.last.$3.title, t.hodl_insights.goal_reminder_notification_title);
+      // 계획이 있으면 주기는 계획을 따른다는 안내만 보이고 여기서 고르지 않는다.
+      expect(find.byKey(const Key('goal-reminder-cycle')), findsOneWidget);
+      expect(find.byKey(const Key('goal-reminder-cycle-options')), findsNothing);
+      // 금액은 기본으로 숨긴다.
+      expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
+
+      await tester.ensureVisible(find.byKey(const ValueKey('goal-reminder-weekday-5')));
+      await tester.tap(find.byKey(const ValueKey('goal-reminder-weekday-5')));
+      await tester.pumpAndSettle();
+      expect(reminders.scheduled.last.$1.weekday, DateTime.friday);
+
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-switch')));
+      expect(find.byKey(const Key('goal-reminder-amount-disabled-reason')), findsNothing);
+      await tester.tap(find.byKey(const Key('goal-reminder-amount-switch')));
+      await tester.pumpAndSettle();
+      expect(reminders.scheduled.last.$3.body, contains('BTC'));
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-preview-body'))).data,
+        reminders.scheduled.last.$3.body,
+      );
+
+      // 모으기 계획 주기를 매월로 바꾸면 알림도 매월로 다시 예약한다.
+      await tester.ensureVisible(find.byKey(const ValueKey('goal-plan-cycle-monthly')));
+      await tester.tap(find.byKey(const ValueKey('goal-plan-cycle-monthly')));
+      await tester.pumpAndSettle();
+      expect(reminders.scheduled.last.$2, GoalPlanCycle.monthly);
+      expect(find.byKey(const Key('goal-reminder-day')), findsOneWidget);
+
+      final saved = GoalReminderSettings.fromJsonString(
+        SharedPrefsRepository().getString(SharedPrefKeys.kGoalReminder),
+      );
+      expect(saved.enabled, isTrue);
+      expect(saved.weekday, DateTime.friday);
+      expect(saved.showAmount, isTrue);
+
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.pumpAndSettle();
+      expect(reminders.cancels, greaterThan(0));
+      await _close(tester);
+    });
+
+    testWidgets('a denied notification permission shows a popup that opens the device settings', (tester) async {
+      final reminders = _useFakeReminders(grant: false);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.pumpAndSettle();
+
+      final popup = find.byKey(const Key('goal-reminder-permission-popup'));
+      expect(popup, findsOneWidget);
+      // 팝업은 한글 단어가 줄 중간에서 끊기지 않게 글자 사이에 보이지 않는 문자를 넣으므로 접근성 라벨로 찾는다.
+      Finder popupText(String text) => find.descendant(
+        of: popup,
+        matching: find.byWidgetPredicate((w) => w is Text && (w.data == text || w.semanticsLabel == text)),
+      );
+      expect(popupText(t.hodl_insights.goal_reminder_permission_popup_title), findsOneWidget);
+      await tester.tap(find.descendant(of: popup, matching: find.text(t.hodl_insights.goal_reminder_open_settings)));
+      await tester.pumpAndSettle();
+      expect(popup, findsNothing);
+      expect(reminders.settingsOpened, 1);
+
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        t.hodl_insights.goal_reminder_off,
+      );
+      expect(reminders.scheduled.where((entry) => entry.$1.enabled), isEmpty);
+
+      // 팝업을 닫아도 카드의 안내에서 다시 설정을 열 수 있다.
+      expect(find.byKey(const Key('goal-reminder-permission-denied')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('goal-reminder-open-settings')));
+      await tester.pump();
+      expect(reminders.settingsOpened, 2);
+
+      // 취소하면 설정을 열지 않는다.
+      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.pumpAndSettle();
+      await tester.tap(popupText(t.cancel));
+      await tester.pumpAndSettle();
+      expect(popup, findsNothing);
+      expect(reminders.settingsOpened, 2);
+      await _close(tester);
+    });
+
+    testWidgets('without a saving plan the amount option is off and says why', (tester) async {
+      _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [2])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('goal-plan-card')), findsNothing);
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.pumpAndSettle();
+
+      // 모으기 계획이 없으니 '계획을 따라요' 안내 대신 여기서 주기를 고른다.
+      expect(find.byKey(const Key('goal-reminder-cycle')), findsNothing);
+      expect(find.byKey(const Key('goal-reminder-cycle-options')), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const ValueKey('goal-reminder-cycle-monthly')));
+      await tester.tap(find.byKey(const ValueKey('goal-reminder-cycle-monthly')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-reminder-day')), findsOneWidget);
+      expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCycle), GoalPlanCycle.monthly.name);
+
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-option')));
+      expect(find.text(t.hodl_insights.goal_reminder_amount_disabled_no_goal), findsOneWidget);
+      // 안내 아이콘은 문구 첫 줄의 세로 가운데에 있다.
+      final reasonText = tester.getRect(find.text(t.hodl_insights.goal_reminder_amount_disabled_no_goal));
+      final iconBox = tester.getRect(find.byKey(const Key('goal-reminder-amount-disabled-icon')));
+      final icon = tester.getRect(
+        find.descendant(of: find.byKey(const Key('goal-reminder-amount-disabled-icon')), matching: find.byType(Icon)),
+      );
+      expect(iconBox.top, closeTo(reasonText.top, 0.5));
+      expect(icon.center.dy, closeTo(iconBox.center.dy, 0.5));
+      final amountSwitch = find.byKey(const Key('goal-reminder-amount-switch'));
+      expect(
+        find.ancestor(of: amountSwitch, matching: find.byWidgetPredicate((w) => w is IgnorePointer && w.ignoring)),
+        findsOneWidget,
+      );
+      await _close(tester);
+    });
+
+    group('opening the goal amount screen from a reminder', () {
+      late NavigatorState navigator;
+      var created = 0;
+
+      Future<void> openHome(WidgetTester tester) async {
+        created = 0;
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          disableAnimations: true,
+          screen:
+              (_) => Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    navigator = Navigator.of(context);
+                    return const Center(child: Text('HOME', key: Key('reminder-test-home')));
+                  },
+                ),
+              ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      Future<void> tapReminder(WidgetTester tester) async {
+        unawaited(
+          GoalAmountScreen.pushFromReminder(navigator, () {
+            created++;
+            return HodlInsightsViewModel(_widgetsViewModel!, initialSection: HodlInsightsSection.goal);
+          }),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('stacks Hodl Insights under the goal screen so back returns through insights', (tester) async {
+        _useFakeReminders();
+        await openHome(tester);
+        await tapReminder(tester);
+        expect(find.byType(GoalAmountScreen), findsOneWidget);
+        expect(find.byType(HodlInsightsScreen, skipOffstage: false), findsOneWidget);
+
+        navigator.pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(GoalAmountScreen), findsNothing);
+        expect(find.byType(HodlInsightsScreen), findsOneWidget);
+        expect(find.byKey(const Key('hodl-insights-goal-card')), findsOneWidget);
+
+        navigator.pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(HodlInsightsScreen), findsNothing);
+        expect(find.byKey(const Key('reminder-test-home')), findsOneWidget);
+        await _close(tester);
+      });
+
+      testWidgets('does not open a second goal screen when one is already open', (tester) async {
+        _useFakeReminders();
+        await openHome(tester);
+        await tapReminder(tester);
+        await tapReminder(tester);
+        expect(created, 1);
+        expect(find.byType(GoalAmountScreen, skipOffstage: false), findsOneWidget);
+        expect(find.byType(HodlInsightsScreen, skipOffstage: false), findsOneWidget);
+        await _close(tester);
+      });
+
+      testWidgets('closes a sheet open over the goal screen instead of stacking another one', (tester) async {
+        _useFakeReminders();
+        await openHome(tester);
+        await tapReminder(tester);
+        await tester.tap(find.byKey(const Key('goal-amount-edit')));
+        await tester.pumpAndSettle();
+        expect(find.byType(WidgetConfigureSheet), findsOneWidget);
+
+        await tapReminder(tester);
+        expect(find.byType(WidgetConfigureSheet), findsNothing);
+        expect(created, 1);
+        expect(find.byType(GoalAmountScreen), findsOneWidget);
+        await _close(tester);
+      });
+    });
+
     testWidgets('a goal on one wallet among selected wallets still shows no chips', (tester) async {
       await _openWidgetsTab(
         tester,
@@ -4364,3 +4603,49 @@ class _SelectionPreferences extends Fake implements SharedPrefsRepository {
 /// 모으기 계획 날짜 표시(yyyy.MM.dd)
 String _dotted(DateTime date) =>
     '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+
+class _FakeReminderScheduler implements GoalReminderScheduler {
+  bool grant;
+  final List<(GoalReminderSettings, GoalPlanCycle, GoalReminderContent)> scheduled = [];
+  int cancels = 0;
+  int settingsOpened = 0;
+
+  _FakeReminderScheduler({this.grant = true});
+
+  @override
+  Future<bool?> hasPermission() async => grant;
+
+  @override
+  Future<bool> requestPermission() async => grant;
+
+  @override
+  Future<void> schedule(GoalReminderSettings settings, GoalPlanCycle cycle, GoalReminderContent content) async =>
+      scheduled.add((settings, cycle, content));
+
+  @override
+  Future<void> cancel() async => cancels++;
+
+  @override
+  Future<void> openSettings() async => settingsOpened++;
+
+  final StreamController<void> tapController = StreamController<void>.broadcast();
+  bool launchedFromTap = false;
+
+  @override
+  Stream<void> get taps => tapController.stream;
+
+  @override
+  Future<bool> consumeLaunchTap() async {
+    final launched = launchedFromTap;
+    launchedFromTap = false;
+    return launched;
+  }
+}
+
+_FakeReminderScheduler _useFakeReminders({bool grant = true}) {
+  final previous = GoalReminderScheduler.instance;
+  final fake = _FakeReminderScheduler(grant: grant);
+  GoalReminderScheduler.instance = fake;
+  addTearDown(() => GoalReminderScheduler.instance = previous);
+  return fake;
+}

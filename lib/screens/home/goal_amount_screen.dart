@@ -4,18 +4,28 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:provider/provider.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
+import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart' show walletBalanceHistoryFlight;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/text/label_value_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/goal_reminder_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/cupertino.dart' show CupertinoIcons, CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -52,17 +62,112 @@ class GoalAmountScreen extends StatefulWidget {
     ),
   );
 
+  /// 지금 열려 있는 목표 수량 화면의 route. 알림을 눌렀을 때 같은 화면을 또 쌓지 않으려고 기억한다.
+  static final List<Route<dynamic>> _openRoutes = [];
+
+  /// 모으기 알림을 눌러 들어올 때. 홈 위젯 데이터 없이 인사이트에서 저장한 지갑 선택으로 연다.
+  static Future<void> openFromReminder(NavigatorState navigator, BuildContext context) {
+    final nodeProvider = context.read<NodeProvider>();
+    return pushFromReminder(
+      navigator,
+      () => HodlInsightsViewModel(
+        HomeWidgetsViewModel(
+          walletProvider: context.read<WalletProvider>(),
+          preferenceProvider: context.read<PreferenceProvider>(),
+          priceProvider: context.read<PriceProvider>(),
+          targetSatsOf: SharedPrefsRepository().getWalletTargetSats,
+          walletUpdates: Listenable.merge([nodeProvider, nodeProvider.currentBlockNotifier]),
+          usesFakeBalance: false,
+        ),
+        initialSection: HodlInsightsSection.goal,
+        selectionRepository: SharedPrefsRepository(),
+      ),
+    );
+  }
+
+  /// 지금 화면 위에 호들 인사이트 → 목표 수량을 쌓는다. 뒤로가기를 누르면 인사이트(목표 카드)로,
+  /// 한 번 더 누르면 알림을 누르기 전 화면으로 돌아간다. 보던 화면을 닫지 않으므로 입력 중이던 내용도 남는다.
+  /// 목표 수량 화면이 이미 열려 있으면 새로 쌓지 않고, 그 위에 열린 시트·팝업만 닫아 그 화면으로 돌아간다.
+  static Future<void> pushFromReminder(NavigatorState navigator, HodlInsightsViewModel Function() createViewModel) {
+    final open = _openRoutes.where((route) => route.isActive && route.navigator == navigator).lastOrNull;
+    if (open != null) {
+      navigator.popUntil((route) => route == open);
+      return Future<void>.value();
+    }
+    final viewModel = createViewModel();
+    navigator.push<void>(
+      CupertinoPageRoute(
+        settings: const RouteSettings(name: HodlInsightsScreen.routeName),
+        builder:
+            (_) => ChangeNotifierProvider<HodlInsightsViewModel>(
+              // 목표 수량 화면도 이 모델을 쓰므로 인사이트 화면이 닫힐 때 함께 정리한다.
+              create: (_) => viewModel,
+              lazy: false,
+              child: const HodlInsightsScreen(),
+            ),
+      ),
+    );
+    return navigator.push<void>(
+      CupertinoPageRoute(
+        settings: const RouteSettings(name: routeName),
+        builder: (_) => GoalAmountScreen(viewModel: viewModel),
+      ),
+    );
+  }
+
   @override
   State<GoalAmountScreen> createState() => _GoalAmountScreenState();
 }
 
-class _GoalAmountScreenState extends State<GoalAmountScreen> {
+class _GoalAmountScreenState extends State<GoalAmountScreen> with WidgetsBindingObserver {
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (identical(route, _route)) return;
+    if (_route != null) GoalAmountScreen._openRoutes.remove(_route);
+    _route = route;
+    if (route != null) GoalAmountScreen._openRoutes.add(route);
+  }
+
+  /// 모으기 계획과 모으기 알림. 알림은 계획의 주기와 이번에 모을 수량을 따른다.
   late final GoalPlanController _plan = GoalPlanController();
+  late final GoalReminderController _reminder = GoalReminderController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _reminder.refreshPermission();
+  }
+
+  /// 기기 설정에서 알림을 바꾸고 돌아오면 권한을 다시 확인한다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _reminder.refreshPermission();
+  }
 
   @override
   void dispose() {
+    if (_route != null) GoalAmountScreen._openRoutes.remove(_route);
+    WidgetsBinding.instance.removeObserver(this);
     _plan.dispose();
+    _reminder.dispose();
     super.dispose();
+  }
+
+  /// 그린 뒤에 예약을 지금 계획·설정에 맞춘다. 내용이 같으면 다시 예약하지 않는다.
+  void _syncReminder(int? amountSats) {
+    final settings = _reminder.settings;
+    final content = GoalReminderContent.of(
+      _plan.cycle,
+      amount: settings.showAmount && amountSats != null ? _text(amountSats) : null,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _reminder.sync(_plan.cycle, content);
+    });
   }
 
   HodlInsightsViewModel get viewModel => widget.viewModel;
@@ -93,7 +198,7 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return ListenableBuilder(
-      listenable: Listenable.merge([viewModel, _plan]),
+      listenable: Listenable.merge([viewModel, _plan, _reminder]),
       builder: (context, _) {
         // 범위는 늘 목표를 정한 지갑 전체(합산 기준). 같은 계정은 한 번, 목표가 다르면 큰 목표(결정 ⑦).
         // 지갑 하나씩은 아래 '지갑별 목표'가 지갑마다 따로 보여 준다.
@@ -101,6 +206,10 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
         final targeted = GoalAmountSummary.targetedOf(viewModel.goalShares);
         final multiple = targeted.length > 1;
         final goal = sum.goal;
+        // 모으기 계획이 있을 때만(목표가 있고 아직 못 채움) 이번에 모을 수량이 있다.
+        final remaining = goal == null ? 0 : goal.target - goal.balance;
+        final amountSats = remaining > 0 ? _plan.perInstallment(remaining, viewModel.data.now) : null;
+        _syncReminder(amountSats);
         return Scaffold(
           backgroundColor: colors.homeBackground,
           appBar: CoconutAppBar.build(
@@ -198,6 +307,17 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
                     amountOnHold: sum.hasUnsettledAccounts,
                   ),
                 ],
+                CoconutLayout.spacing_400h,
+                GoalReminderCard(
+                  reminder: _reminder,
+                  plan: _plan,
+                  amountSats: amountSats,
+                  amountUnavailableReason:
+                      goal == null
+                          ? t.hodl_insights.goal_reminder_amount_disabled_no_goal
+                          : t.hodl_insights.goal_reminder_amount_disabled_reached,
+                  amountText: _text,
+                ),
               ],
             ),
           ),

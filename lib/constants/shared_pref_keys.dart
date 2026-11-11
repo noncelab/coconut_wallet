@@ -43,6 +43,9 @@ class SharedPrefKeys {
   /// 모으기 계획의 모으는 날짜(1~28일, 매월).
   static const String kGoalPlanDay = 'GOAL_PLAN_DAY';
 
+  /// 모으기 알림 설정(JSON): 켜짐, 시각, 요일·날짜, 수량 표시
+  static const String kGoalReminder = 'GOAL_REMINDER';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -158,6 +161,7 @@ class SharedPrefKeys {
     kGoalPlanDeadline,
     kGoalPlanWeekday,
     kGoalPlanDay,
+    kGoalReminder,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

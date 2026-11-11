@@ -6,6 +6,9 @@ import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/goal_amount_screen.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +19,11 @@ class DeepLinkListener extends StatefulWidget {
 
   const DeepLinkListener({super.key, required this.navigatorKey, required this.child});
 
+  /// 모으기 알림을 눌렀을 때 여는 화면. 테스트에서 바꿔 끼운다.
+  @visibleForTesting
+  static Future<void> Function(NavigatorState navigator, BuildContext context) openGoalAmount =
+      GoalAmountScreen.openFromReminder;
+
   @override
   State<DeepLinkListener> createState() => _DeepLinkListenerState();
 }
@@ -25,6 +33,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   static const Duration _duplicateUriWindow = Duration(seconds: 2);
 
   late final AppLifecycleListener _appLifecycleListener;
+  StreamSubscription<void>? _reminderTaps;
   bool _isHandlingBitcoinUri = false;
   String? _recentBitcoinUri;
   DateTime? _recentBitcoinUriHandledAt;
@@ -42,7 +51,26 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingBitcoinUri();
+      _listenGoalReminderTaps();
     });
+  }
+
+  /// 모으기 알림을 누르면 목표 수량 화면을 연다.
+  /// 이 위젯은 잠금을 푼 뒤(메인 흐름)에 만들어지므로, 알림으로 앱을 켰으면 잠금을 푼 다음에 연다.
+  Future<void> _listenGoalReminderTaps() async {
+    final scheduler = GoalReminderScheduler.instance;
+    _reminderTaps = scheduler.taps.listen((_) => _openGoalAmount());
+    try {
+      if (await scheduler.consumeLaunchTap()) _openGoalAmount();
+    } catch (error) {
+      Logger.error('Failed to read the notification that launched the app: $error');
+    }
+  }
+
+  void _openGoalAmount() {
+    final navigator = widget.navigatorKey.currentState;
+    if (!mounted || navigator == null) return;
+    unawaited(DeepLinkListener.openGoalAmount(navigator, context));
   }
 
   Future<void> _consumePendingBitcoinUri() async {
@@ -94,6 +122,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   void dispose() {
     _osChannel.setMethodCallHandler(null);
     _appLifecycleListener.dispose();
+    _reminderTaps?.cancel();
     super.dispose();
   }
 
