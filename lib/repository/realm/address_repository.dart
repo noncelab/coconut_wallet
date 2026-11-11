@@ -638,6 +638,19 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
+  /// 사용 인덱스보다 앞인데 아직 사용 표시가 없는 주소(구멍)를 조회한다.
+  /// 앱을 다시 켜면 잔액이 남은 사용 주소와 사용 인덱스 뒤 gap만 구독하므로,
+  /// 구멍에 나중에 들어온 돈은 휴면 재확인에서만 찾을 수 있다.
+  List<WalletAddress> getUnusedAddressesBelowUsedIndex(int walletId) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) return [];
+    final realmWalletAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isUsed == false AND ((isChange == false AND index < $1) OR (isChange == true AND index < $2)) SORT(index ASC)',
+      [walletId, realmWalletBase.usedReceiveIndex, realmWalletBase.usedChangeIndex],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
   /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
   List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
     final pendingAddresses = <String>{};

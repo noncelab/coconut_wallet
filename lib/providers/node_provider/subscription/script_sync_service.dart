@@ -74,8 +74,8 @@ class ScriptSyncService {
     await _unsubscribeAddress(walletItem, address);
   }
 
-  /// dormant 주소(실시간 구독에서 제외된, 과거 사용됐지만 잔액이 없던 주소)들의 잔액을 배치로
-  /// 다시 확인한다. 재사용이나 리오그로 잔액이 다시 생긴 주소가 있으면 재구독한다.
+  /// dormant 주소(실시간 구독에서 제외된, 과거 사용됐지만 잔액이 없던 주소)와 구멍(사용 인덱스 앞의 미사용 주소)의
+  /// 잔액을 배치로 다시 확인한다. 재사용이나 리오그, 구멍 입금으로 잔액이 생긴 주소가 있으면 재구독한다.
   /// 짧은 시간 안에 여러 화면에서 중복 호출되는 것을 막기 위해 지갑별로 스로틀한다.
   Future<void> syncDormantAddresses(WalletItemBase walletItem) async {
     final lastSyncAt = _lastDormantSyncAt[walletItem.id];
@@ -84,7 +84,10 @@ class ScriptSyncService {
     }
     _lastDormantSyncAt[walletItem.id] = DateTime.now();
 
-    final dormantAddresses = _addressRepository.getDormantUsedAddresses(walletItem.id);
+    final dormantAddresses = [
+      ..._addressRepository.getDormantUsedAddresses(walletItem.id),
+      ..._addressRepository.getUnusedAddressesBelowUsedIndex(walletItem.id),
+    ];
     if (dormantAddresses.isEmpty) {
       return;
     }
@@ -107,8 +110,12 @@ class ScriptSyncService {
     await _balanceSyncService.fetchScriptBalanceBatch(walletItem, dormantScriptStatuses);
 
     for (final addr in dormantAddresses) {
-      if (_addressRepository.isAddressDormant(walletItem.id, addr.address)) {
+      if (!_addressRepository.isAddressActive(walletItem.id, addr.address)) {
         continue;
+      }
+      // 구멍에서 찾은 주소는 사용됨으로 표시해야 다음 실행부터 활성 주소로 구독된다.
+      if (!addr.isUsed) {
+        await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
       }
 
       await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
