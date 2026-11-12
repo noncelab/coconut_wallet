@@ -245,7 +245,8 @@ class _AssistAddWalletScreenState extends State<AssistAddWalletScreen> with Rout
     }
     final allowed = SafetyAssist.destinations(
       incidentWallet: widget.sourceWallet,
-      wallets: [widget.sourceWallet, wallet],
+      // 전체 목록으로 본다: 다른 제외 지갑(열린 사건·사용 주의 등)과 같은 시드·키인 새 지갑도 여기서 걸러진다
+      wallets: walletProvider.walletItemList,
       safetyState: context.read<SafetyProvider?>()?.state,
     ).any((d) => d.wallet?.id == id);
     if (!allowed) {

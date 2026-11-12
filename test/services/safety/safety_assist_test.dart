@@ -732,6 +732,103 @@ void main() {
     });
   });
 
+  // M08(맥스 11/12): 끝나지 않은 사건(감지·대응 중)이 있는 지갑은 위급이 아니어도(도둑 거래가 대체·사라짐) 모든 "옮길 곳"에서
+  // 빠지고, 같은 시드 지갑도 함께 빠진다. 사건이 끝나면(내가 한 거래로 확인 · 대응 완료) 다시 고를 수 있다. Assist 목록·직접 입력
+  // 확인·비상 목적지 목록·"지금 이동" 마지막 확인이 모두 [SafetyAssist.destinations] → [SafetyAssist.unsafeWalletIds]를 쓴다
+  group('M08: 열린 사건 지갑은 위급이 아니어도 목적지에서 빠지고, 사건이 끝나면 다시 고를 수 있음', () {
+    late SinglesigWalletItem incident, savings, savingsCopy, other;
+    late _Wallets wallets;
+    setUp(() {
+      incident = _single(1, 1, hot: true);
+      savings = _single(2, 6, hot: true); // 사건이 열린 지갑
+      savingsCopy = _single(3, 6, accountIndex: 1); // 같은 시드(MFP)
+      other = _single(4, 8);
+      wallets = _Wallets([incident, savings, savingsCopy, other]);
+    });
+    final at = DateTime(2026, 11, 1);
+    SafetyState withIncident(IncidentState state, IncidentTxState txState) => SafetyState.initial().copyWith(
+      incidents: [SafetyIncident(walletId: 2, txid: _attackTxid, detectedAt: at, state: state, txState: txState)],
+    );
+    Set<int> picks(SafetyState state) => {
+      for (final d in SafetyAssist.destinations(
+        incidentWallet: incident,
+        wallets: wallets.walletItemList,
+        safetyState: state,
+      ))
+        if (d.wallet != null) d.wallet!.id,
+    };
+    // 고른 지갑을 마지막에 다시 확인(직접 입력 확인 · 지금 이동이 쓰는 검사)
+    DestinationProblem? confirm(int walletId, SafetyState state) {
+      final address = (wallets.walletItemList.firstWhere((w) => w.id == walletId) as SinglesigWalletItem).walletBase
+          .getAddress(0);
+      wallets.owned[walletId] = {address};
+      return SafetyAssist.checkDestination(
+        wallets,
+        incidentWallet: incident,
+        address: address,
+        walletId: walletId,
+        safetyState: state,
+      );
+    }
+
+    test('사건 없음: 같은 시드 사본까지 모두 고를 수 있음', () {
+      expect(picks(SafetyState.initial()), {2, 3, 4});
+    });
+
+    for (final txState in [IncidentTxState.replaced, IncidentTxState.dropped]) {
+      for (final state in [IncidentState.detected, IncidentState.responding]) {
+        test('${state.name}·${txState.name}(열림, 위급 아님): 그 지갑과 같은 시드 사본은 빠지고 다른 지갑은 그대로', () {
+          final s = withIncident(state, txState);
+          expect(s.incidents.single.isCritical, isFalse);
+          expect(picks(s), {4});
+          expect(confirm(2, s), DestinationProblem.excludedWallet);
+          expect(confirm(3, s), DestinationProblem.excludedWallet);
+          expect(confirm(4, s), isNull);
+        });
+      }
+    }
+
+    for (final state in [IncidentState.recognized, IncidentState.completed]) {
+      test('사건이 끝나면(${state.name}) 다시 고를 수 있음', () {
+        final s = withIncident(state, IncidentTxState.replaced);
+        expect(picks(s), {2, 3, 4});
+        expect(confirm(2, s), isNull);
+      });
+    }
+
+    test('직접 입력 주소도 같은 규칙: 열린 사건 지갑의 주소는 거절, 만들어 둔 목록 밖 주소는 도출 검사가 잡고, 사건이 끝나면 통과', () async {
+      final open = withIncident(IncidentState.responding, IncidentTxState.replaced);
+      final closed = withIncident(IncidentState.completed, IncidentTxState.replaced);
+      final listed = savings.walletBase.getAddress(0);
+      final deep = savings.walletBase.getAddress(40); // 지갑이 아직 만들지 않은 주소(소유 목록 밖)
+      wallets.owned[2] = {listed};
+      DestinationProblem? manual(String address, SafetyState s) =>
+          SafetyAssist.checkDestination(wallets, incidentWallet: incident, address: address, safetyState: s);
+      Future<bool> derived(SafetyState s) => SafetyAssist.derivesFromExcludedWallet(
+        wallets,
+        incidentWallet: incident,
+        address: deep,
+        safetyState: s,
+        depth: 50,
+      );
+
+      expect(manual(listed, open), DestinationProblem.excludedOwner);
+      expect(manual(deep, open), isNull, reason: '만들어 둔 목록 밖 주소는 도출 검사가 맡는다');
+      expect(await derived(open), isTrue);
+      expect(manual(listed, closed), isNull);
+      expect(await derived(closed), isFalse);
+    });
+
+    for (final txState in [IncidentTxState.pending, IncidentTxState.confirmed]) {
+      test('위급 사건(${txState.name})은 지금처럼 빠짐', () {
+        final s = withIncident(IncidentState.detected, txState);
+        expect(s.incidents.single.isCritical, isTrue);
+        expect(picks(s), {4});
+        expect(confirm(2, s), DestinationProblem.excludedWallet);
+      });
+    }
+  });
+
   test('AH3: 백업 대상은 실제로 받은 지갑(만든 시각·다시 시작과 무관)', () {
     final incident = _single(1, 1);
     final first = _single(9, 8, hot: true); // 먼저 만들고 안 쓴 지갑

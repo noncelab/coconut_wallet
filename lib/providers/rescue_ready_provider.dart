@@ -156,7 +156,7 @@ class RescueReadyProvider extends ChangeNotifier {
     return address == null ? null : shortenAddress(address);
   }
 
-  /// 목적지 시트 후보(UI_SPEC §10.7·§10.8, Assist와 같은 순서). 이 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑은
+  /// 목적지 시트 후보(UI_SPEC §10.7·§10.8, Assist와 같은 순서). 이 지갑·같은 니모닉·사용 주의·열린 사건·검증 불일치 지갑은
   /// 빠진다. "볼트에서 새 지갑"은 안내 → 지갑 추가 스캔을 거친 뒤 그 지갑을 목적지로 저장한다(화면이 맡는다)
   List<AssistDestination> destinationOptions(int walletId) {
     final source = _walletById(walletId);
@@ -169,9 +169,11 @@ class RescueReadyProvider extends ChangeNotifier {
         safetyState: state,
         rescueDestination: state.rescue[walletId]?.destination,
       ))
-        // 받기 주소를 제외 지갑도 가진 지갑(같은 디스크립터의 핫·보기 전용 사본)도 보이지 않게 같은 검사를 한다
-        if (d.wallet == null ||
-            _target(source, RescueDestination(walletId: d.wallet!.id, setAt: _now()), state) != null)
+        // 지갑 줄과 저장해 둔 직접 입력 주소 줄은 상태·저장·지금 이동과 같은 검사를 한다: 받기 주소를 제외 지갑도 가진 지갑
+        // (같은 디스크립터의 핫·보기 전용 사본)이나, 주인이 제외 지갑이 된 저장 주소는 보이지 않는다(미리 골라지지도 않는다)
+        if ((d.wallet == null && d.address == null) ||
+            _target(source, RescueDestination(walletId: d.wallet?.id, address: d.address, setAt: _now()), state) !=
+                null)
           d,
     ];
   }
@@ -267,7 +269,7 @@ class RescueReadyProvider extends ChangeNotifier {
   }
 
   /// 보낼 주소(Safety Assist와 같은 마지막 확인). 지갑 목적지는 지금 받기 주소, 직접 입력은 지금 네트워크 주소로 정규화.
-  /// 이 주소를 가진 지갑이 하나라도 이 지갑·같은 MFP·같은 키·사용 주의·위급 사건·검증 불일치(와 같은 키) 지갑이면 null.
+  /// 이 주소를 가진 지갑이 하나라도 이 지갑·같은 MFP·같은 키·사용 주의·열린 사건·검증 불일치(와 같은 키) 지갑이면 null.
   /// 초안·상태·저장·지금 이동이 모두 이 검사를 쓴다. 만들어 둔 주소 목록 밖은 [derivesFromExcludedWallet]가 저장·이동 때 본다
   ({String address, WalletItemBase? wallet})? _target(WalletItemBase source, RescueDestination d, SafetyState state) =>
       SafetyAssist.verifiedTarget(_wallets, source: source, destination: d, state: state);

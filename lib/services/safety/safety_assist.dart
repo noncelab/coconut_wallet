@@ -59,7 +59,7 @@ enum DestinationProblem {
   /// 형식이 틀렸거나 지금 네트워크 주소가 아님
   invalidAddress,
 
-  /// 고른 지갑이 지워졌거나 이제는 제외 대상(같은 시드·사용 주의·위급 사건·검증 불일치 등)
+  /// 고른 지갑이 지워졌거나 이제는 제외 대상(같은 시드·사용 주의·열린 사건·검증 불일치 등)
   excludedWallet,
 
   /// 주소의 주인이 사고 지갑이거나 제외 대상 지갑
@@ -84,7 +84,7 @@ typedef SafetyVerification = ({DateTime at, SafetyVerifiedBy by});
 /// 서명·전송하지 않는다. 확인 화면(sendConfirm) 이후는 기존 흐름 그대로다
 abstract final class SafetyAssist {
   /// 사고 지갑 자신, 같은 MFP·같은 계정 키(또는 같은 디스크립터) 지갑, [cautionWalletIds]는 빠진다.
-  /// [safetyState]를 주면 [unsafeWalletIds] 규칙(사용 주의·위급 사건·검증 불일치)도 적용한다(구출·비상 이동 공통 규칙).
+  /// [safetyState]를 주면 [unsafeWalletIds] 규칙(사용 주의·열린 사건·검증 불일치)도 적용한다(구출·비상 이동 공통 규칙).
   /// 비상 목적지가 있으면 맨 위, 같은 섹션 안에서는 MFP 있는 지갑이 먼저
   static List<AssistDestination> destinations({
     required WalletItemBase incidentWallet,
@@ -136,7 +136,7 @@ abstract final class SafetyAssist {
     ];
   }
 
-  /// 목적지로 쓰면 안 되는 지갑: 사용 주의, 자기 위급 사건이 열린 지갑, 지금 디스크립터 기준 검증이 불일치인 지갑
+  /// 목적지로 쓰면 안 되는 지갑: 사용 주의, 끝나지 않은 사건(감지·대응 중, 위급이 아니어도)이 있는 지갑, 지금 디스크립터 기준 검증이 불일치인 지갑
   /// (보기 전용·탭루트 mismatch·confirmedMismatch, 다중서명 BSMS 불일치 = 바꿔치기 위험). 검증 안 한 지갑은 고를 수 있다.
   /// 해시는 엔진과 같은 규칙(지갑 디스크립터의 [WalletVerification.descriptorHash]). 디스크립터가 바뀐 기록은 무시
   /// 제외 지갑과 같은 시드(MFP)·같은 계정 키를 쓰는 지갑(예: 사용 주의 핫월렛의 보기 전용 사본)도 함께 뺀다
@@ -144,7 +144,7 @@ abstract final class SafetyAssist {
     final direct = {
       ...state.cautionWalletIds,
       for (final i in state.incidents)
-        if (i.isCritical) i.walletId,
+        if (i.isOpen) i.walletId,
       for (final w in wallets)
         if (_verificationMismatch(state, w)) w.id,
     };
@@ -352,7 +352,7 @@ abstract final class SafetyAssist {
     return problem == null ? (address: AssistAddress.normalize(address), wallet: wallet) : null;
   }
 
-  /// 직접 입력·저장된 주소가 제외 지갑(사고·같은 시드·사용 주의·위급 사건·검증 불일치)에서 나온 주소인지,
+  /// 직접 입력·저장된 주소가 제외 지갑(사고·같은 시드·사용 주의·열린 사건·검증 불일치)에서 나온 주소인지,
   /// 각 지갑의 받기·잔돈 주소를 앞에서부터 [depth]개씩 직접 도출해 확인한다(Grok §5: 만들어 둔 주소 목록 밖도).
   /// 무거워서 별도 isolate에서 돌리고 확인할 때 한 번만 부른다. 핫월렛·보기 전용 모두(공개키로 도출)
   /// ponytail: 받기·잔돈 앞 [depth]개(기본 1,000)보다 뒤 인덱스 주소는 못 잡는다(lead 승인 한계). 필요하면 지갑이 쓴 최대 인덱스 + 여유로

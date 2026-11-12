@@ -278,6 +278,7 @@ void main() {
     FakeEntitlementService? premium,
     Map<int, WatchOnlyVerification> verifications = const {},
     bool withIncident = true,
+    List<SafetyIncident> incidents = const [],
     String? responseTxid,
     Map<int, WalletBaseline> baselines = const {},
     _Preferences? preferences,
@@ -307,6 +308,7 @@ void main() {
               guideStep: 2,
               responseTxid: responseTxid,
             ),
+          ...incidents,
         ],
         rescue: rescue,
         watchOnlyVerifications: verifications,
@@ -599,6 +601,61 @@ void main() {
     await tester.tap(find.byKey(const Key('safety-result-button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-assist-review')), findsOneWidget);
+  });
+
+  testWidgets('새 지갑 추가: 열린 사건(확인 전 대체됨)이 있는 다른 지갑과 같은 시드인 새 지갑은 거절(M08)', (tester) async {
+    // 지갑 4는 사고 지갑이 아니고 사건도 위급이 아니다(대체됨). 새 지갑 5는 지갑 4와 시드가 같다(계정만 다름).
+    // 사고 지갑과 새 지갑만 보면 지갑 4를 몰라 통과시키므로, 전체 지갑 목록으로 봐야 걸러진다
+    final sameSeedAsOpen = SinglesigWalletItem(
+      id: 5,
+      name: 'Same seed as 4',
+      colorIndex: 0,
+      iconIndex: 0,
+      descriptor: SingleSignatureVault.fromEntropy(Uint8List.fromList(List.filled(16, 4)), accountIndex: 1).descriptor,
+    );
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      wallets: [incident, destination, _wallet(4, 4), sameSeedAsOpen],
+      incidents: [
+        SafetyIncident(
+          walletId: 4,
+          txid: 'b2' * 32,
+          detectedAt: DateTime(2026, 10, 20),
+          txState: IncidentTxState.replaced,
+        ),
+      ],
+    );
+    final session = AssistSession(wallet: incident, incidentTxids: const [], entryPoint: SendEntryPoint.home)
+      ..remaining = SweepBuilder.plan(
+        wallet: incident,
+        utxos: [_utxo(incident, 1, 50000)],
+        conflicts: const [],
+        fastFeeRate: 2,
+      );
+    Navigator.of(env.host()).push(
+      assistRoute(
+        'add-wallet',
+        AssistAddWalletScreen(
+          sourceWallet: session.wallet,
+          onAdded:
+              (context, wallet) => Navigator.of(
+                context,
+              ).pushReplacement(assistRoute('wallet-added', AssistWalletAddedScreen(session: session, wallet: wallet))),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pumpAndSettle();
+    env.wallets.events.add(WalletAdded(5));
+    await tester.pump();
+    Navigator.of(env.host()).pop();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-assist-add-same-seed')), findsOneWidget);
+    expect(find.byKey(const Key('safety-assist-wallet-added')), findsNothing);
   });
 
   testWidgets('지금 이동: 직전에 바뀐 비상 목적지로 보낸다(예전 상태 값은 안 씀)', (tester) async {

@@ -481,6 +481,69 @@ void main() {
       await expectLater(p.setDestination(1, RescueDestination(walletId: 8, setAt: clock)), throwsArgumentError);
     });
 
+    // M08(맥스 11/12): 도둑 거래가 대체됐어도 사건이 열려 있으면 그 지갑은 비상 목적지에서 빠진다. 준비된 초안이 있어도 버리고
+    // 지금 이동을 막으며, 사건이 끝나면 다시 준비된다
+    test('M08: 준비된 초안이 있어도 목적지 지갑에 사건이 열리면(대체됨) 지금 이동을 막고, 사건이 끝나면 다시 준비된다', () async {
+      setRescue(1, toVault());
+      final critical = SafetyIncident(walletId: 1, txid: _attackTxid, detectedAt: clock); // 지금 이동이 보이는 사고
+      SafetyIncident onDestination(IncidentState state) => SafetyIncident(
+        walletId: 2,
+        txid: 'b2' * 32,
+        detectedAt: clock,
+        state: state,
+        txState: IncidentTxState.replaced,
+      );
+      store.state = store.state.copyWith(incidents: [critical]);
+      final p = build(interval: Duration.zero);
+      await syncCompleted();
+      expect(p.statusOf(1), RescueStatus.ready);
+      expect(p.canMoveNow(1), isTrue);
+
+      store.state = store.state.copyWith(incidents: [critical, onDestination(IncidentState.responding)]);
+      await syncCompleted();
+      expect(p.statusOf(1), RescueStatus.invalidDestination);
+      expect(p.drafts[1], isNull, reason: '목적지를 다시 정해야 하는 지갑의 초안은 쓰지 않는다(지금 이동 버튼이 사라진다)');
+      expect(p.canMoveNow(1), isFalse);
+      expect(p.destinationOptions(1).map((o) => o.wallet?.id), isNot(contains(2)));
+
+      store.state = store.state.copyWith(incidents: [critical, onDestination(IncidentState.completed)]);
+      await syncCompleted();
+      expect(p.destinationOptions(1).map((o) => o.wallet?.id), contains(2));
+      expect(p.statusOf(1), RescueStatus.ready);
+      expect(p.canMoveNow(1), isTrue);
+    });
+
+    // M08 리뷰(Codex P2): 직접 입력해 저장한 주소의 주인 지갑에 사건이 열리면 그 주소 줄도 후보에서 빠지고 미리 골라지지 않는다.
+    // 주인이 괜찮으면 그대로 보인다
+    test('M08: 저장해 둔 직접 입력 주소의 주인 지갑에 사건이 열리면 그 주소 줄도 후보에서 빠진다', () {
+      final address = vault.walletBase.getAddress(0);
+      wallets.owners[address] = {2};
+      setRescue(1, RescueDestination(address: address, setAt: DateTime(2026, 10, 20)));
+      bool offered(RescueReadyProvider p) =>
+          p.destinationOptions(1).any((o) => o.address == address && o.isRescueDestination);
+
+      final fine = build();
+      expect(fine.statusOf(1), isNot(RescueStatus.invalidDestination));
+      expect(offered(fine), isTrue);
+      fine.dispose();
+      provider = null;
+
+      store.state = store.state.copyWith(
+        incidents: [
+          SafetyIncident(
+            walletId: 2,
+            txid: _attackTxid,
+            detectedAt: DateTime(2026, 10, 20),
+            state: IncidentState.responding,
+            txState: IncidentTxState.replaced,
+          ),
+        ],
+      );
+      final open = build();
+      expect(open.statusOf(1), RescueStatus.invalidDestination);
+      expect(offered(open), isFalse);
+    });
+
     test('디스크립터가 바뀐(오래된) 불일치 기록은 미검증으로 보고 고를 수 있다', () {
       store.state = store.state.copyWith(
         watchOnlyVerifications: {2: _verification(vault, VerificationResult.mismatch, descriptorHash: 'stale')},

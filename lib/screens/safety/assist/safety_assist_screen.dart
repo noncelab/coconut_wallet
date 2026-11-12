@@ -934,7 +934,7 @@ class AssistDestinationScreen extends StatelessWidget {
       actionText: t.next,
       fieldKey: const Key('safety-assist-address-field'),
       actionKey: const Key('safety-assist-address-confirm'),
-      // 사고 지갑·같은 니모닉·사용 주의·위급 사건·검증 불일치 지갑의 주소는 직접 입력으로도 받지 않는다(넘길 때도 다시 확인)
+      // 사고 지갑·같은 니모닉·사용 주의·열린 사건·검증 불일치 지갑의 주소는 직접 입력으로도 받지 않는다(넘길 때도 다시 확인)
       validate: (address) {
         final format = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
         if (format != null) return format.message;
