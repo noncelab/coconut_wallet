@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,7 +19,7 @@ class MempoolApi {
             ? DEFAULT_EXPLORER_URL_MAINNET
             : networkType == NetworkType.testnet
             ? DEFAULT_EXPLORER_URL_TESTNET
-            : DEFAULT_EXPLORER_URL_REGTEST;
+            : CoconutWalletApp.kMempoolHost;
     return Uri.parse(mempoolApi);
   }
 

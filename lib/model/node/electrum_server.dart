@@ -11,6 +11,15 @@ class ElectrumServer {
 
   const ElectrumServer(this.host, this.port, this.ssl, {this.pinnedCertFingerprint});
 
+  /// `tcp://host:port` 또는 `ssl://host:port`
+  factory ElectrumServer.fromUrl(String url) {
+    final uri = Uri.parse(url);
+    if ((uri.scheme != 'tcp' && uri.scheme != 'ssl') || uri.host.isEmpty || !uri.hasPort) {
+      throw FormatException('Expected tcp://host:port or ssl://host:port', url);
+    }
+    return ElectrumServer(uri.host, uri.port, uri.scheme == 'ssl');
+  }
+
   factory ElectrumServer.custom(String host, int port, bool ssl, {String? pinnedCertFingerprint}) {
     return ElectrumServer(
       host,

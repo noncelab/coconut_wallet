@@ -70,6 +70,8 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
     int? watchOnlyWalletIdToConvert,
+    String? arkSeedHex,
+    bool restoreArk = false,
   }) async {
     addCallCount++;
     addedWallet = wallet;

@@ -84,6 +84,9 @@ class SharedPrefKeys {
   /// 목표 수량 사용 안 함 여부 (지갑별)
   static String walletTargetDisabled(int walletId) => 'WALLET_TARGET_DISABLED_$walletId';
 
+  /// 만료 직전 아크 자동 갱신 끔 여부 (지갑별, 기본은 켬)
+  static String walletArkAutoRefreshOff(int walletId) => 'WALLET_ARK_AUTO_REFRESH_OFF_$walletId';
+
   /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
   static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";
 

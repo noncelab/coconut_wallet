@@ -220,3 +220,4 @@ rust/trezor-connect-rs/target/
 
 # Local regtest stack (contrib/regtest/regtest.sh)
 contrib/regtest/.faucet-secrets/
+regtest.local.json

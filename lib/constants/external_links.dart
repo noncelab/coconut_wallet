@@ -31,5 +31,5 @@ const DEFAULT_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet';
 
 /// Fee Service
 const FEE_SERVICE_URL_MAINNET = 'https://mempool.space/api/v1/fees/precise';
-const FEE_SERVICE_URL_REGTEST = 'https://regtest-mempool.coconut.onl/api/v1/fees/recommended';
+const FEE_SERVICE_PATH_REGTEST = '/api/v1/fees/recommended';
 const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet/api/v1/fees/precise';

@@ -52,18 +52,57 @@ first build compiles it from source.
 
 ## Pointing the app at the stack
 
-In `regtest.env` (`10.0.2.2` is the host machine as seen from the Android emulator):
+Pass the stack's addresses as build defines, not in `regtest.env`. Release builds
+never pass them, so they always ship with Ark off.
 
-```env
-NETWORK_TYPE=regtest
-MEMPOOL_URL=http://10.0.2.2:8082
-ELECTRUM_SERVER=tcp://10.0.2.2:50001
-# Ark (bark): the Ark server and the Esplora API bark uses as its chain source
-ARK_SERVER_URL=http://10.0.2.2:3535
-ARK_ESPLORA_URL=http://10.0.2.2:3002
+```bash
+cp contrib/regtest/regtest.local.example.json regtest.local.json   # repo root, git-ignored
+fvm flutter run --flavor regtest --dart-define-from-file=regtest.local.json
 ```
 
-Leave `API_HOST` unset: Coconut's hosted faucet pays out on its own chain, not this one.
+`10.0.2.2` is the host machine as seen from the Android emulator. For a phone on
+the same Wi-Fi, change the addresses in `regtest.local.json` to the Mac's LAN IP.
+Ark turns on only when both `ARK_SERVER_URL` and `ARK_ESPLORA_URL` are set, and
+only regtest builds read these values.
+
+The app's own test-coin button pays out on Coconut's hosted regtest chain, not
+this one; use the commands below instead.
+
+### On a phone
+
+1. Put the phone and the Mac on the same Wi-Fi and look up the Mac's LAN IP:
+
+   ```bash
+   ipconfig getifaddr en0
+   ```
+
+2. Check that the phone reaches the stack's ports; all should be `open`. If not, check the Mac's firewall.
+
+   ```bash
+   for p in 3535 3002 50001 8082; do adb -s <serial> shell "toybox nc -z -w 3 <Mac IP> $p && echo $p open || echo $p closed"; done
+   ```
+
+3. Replace `10.0.2.2` in `regtest.local.json` with the Mac's IP and run:
+
+   ```bash
+   fvm flutter run -d <serial> --flavor regtest --dart-define-from-file=regtest.local.json
+   ```
+
+Before installing:
+
+- If the regtest app already on the phone is signed with a different certificate, installing removes it
+  along with its wallets. Debug builds share the debug certificate and just replace it. Compare:
+
+  ```bash
+  adb -s <serial> pull "$(adb -s <serial> shell pm path onl.coconut.wallet.regtest | head -1 | sed 's/package://' | tr -d '\r')" installed.apk
+  apksigner verify --print-certs installed.apk | grep SHA-256
+  apksigner verify --print-certs build/app/outputs/flutter-apk/app-regtest-debug.apk | grep SHA-256
+  ```
+
+- Opening a build with Ark upgrades the Realm database (10 → 11). An older app installed afterwards may
+  not open it, and its data may have to be wiped.
+- A phone that is asleep or locked can't start the app, so a test waits without starting. Keep the
+  screen on and unlocked.
 
 ## Common tasks
 

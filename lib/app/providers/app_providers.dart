@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/ark_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -57,6 +59,7 @@ List<SingleChildWidget> buildAppProviders({
       create: (context) => WalletRepository(context.read<RealmManager>(), context.read<TransactionDraftRepository>()),
     ),
     Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
+    Provider<ArkRepository>(create: (context) => ArkRepository(context.read<RealmManager>())),
     Provider<WalletPreferencesRepository>(
       create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
     ),
@@ -119,6 +122,11 @@ List<SingleChildWidget> buildAppProviders({
           });
           return nodeProvider;
         },
+      ),
+      ChangeNotifierProvider<ArkProvider>(
+        // 아크 잔액을 WalletProvider 표시 잔액에 더하므로 즉시 생성
+        lazy: false,
+        create: (context) => ArkProvider(context.read<WalletProvider>(), context.read<ArkRepository>()),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

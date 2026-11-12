@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -11,7 +12,7 @@ class FeeService {
           ? FEE_SERVICE_URL_MAINNET
           : NetworkType.currentNetworkType == NetworkType.testnet
           ? FEE_SERVICE_URL_TESTNET
-          : FEE_SERVICE_URL_REGTEST;
+          : '${CoconutWalletApp.kMempoolHost}$FEE_SERVICE_PATH_REGTEST';
 
   /// 멤풀 및 블록스트림 API에서 수수료 정보 수집
   Future<RecommendedFee?> getRecommendedFees() async {

@@ -1,0 +1,7 @@
+[package]
+name = "bark"
+namespace = "bark"
+
+[bindings.dart]
+cdylib_name = "bark_ffi"
+package_name = "bark_bitcoin"

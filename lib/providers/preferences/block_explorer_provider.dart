@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -30,7 +31,7 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String get blockExplorerUrl {
     if (NetworkType.currentNetworkType == NetworkType.regtest) {
-      return DEFAULT_EXPLORER_URL_REGTEST;
+      return CoconutWalletApp.kMempoolHost;
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {

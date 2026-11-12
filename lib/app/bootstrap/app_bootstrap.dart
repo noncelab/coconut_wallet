@@ -4,6 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/bootstrap/localization_bootstrap.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/firebase_options.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -79,6 +81,18 @@ class AppBootstrap {
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
     CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
     NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
+    _applyLocalRegtestStack();
+  }
+
+  /// 로컬 regtest 스택 주소(contrib/regtest), `--dart-define-from-file`로만 전달
+  static void _applyLocalRegtestStack() {
+    if (CoconutWalletApp.kNetworkType != NetworkType.regtest) return;
+    const mempoolUrl = String.fromEnvironment('MEMPOOL_URL');
+    const electrumServer = String.fromEnvironment('ELECTRUM_SERVER');
+    if (mempoolUrl.isNotEmpty) CoconutWalletApp.kMempoolHost = mempoolUrl;
+    if (electrumServer.isNotEmpty) DefaultElectrumServer.regtestOverride = ElectrumServer.fromUrl(electrumServer);
+    CoconutWalletApp.kArkServerUrl = const String.fromEnvironment('ARK_SERVER_URL');
+    CoconutWalletApp.kArkEsploraUrl = const String.fromEnvironment('ARK_ESPLORA_URL');
   }
 
   static Future<void> _initializeFirebase() async {

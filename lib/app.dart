@@ -3,6 +3,7 @@ import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
@@ -30,8 +31,12 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 enum AppEntryFlow { splash, main, pinCheck }
 
 class CoconutWalletApp extends StatefulWidget {
-  static late String kMempoolHost;
+  static String kMempoolHost = DEFAULT_EXPLORER_URL_REGTEST;
   static late String kFaucetHost;
+
+  /// 아크 서버·Esplora 주소, 비어 있으면 아크 꺼짐
+  static String kArkServerUrl = '';
+  static String kArkEsploraUrl = '';
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 

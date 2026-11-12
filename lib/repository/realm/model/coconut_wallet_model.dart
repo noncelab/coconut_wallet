@@ -30,6 +30,9 @@ final realmAllSchemas = [
   RealmTransactionMemo.schema,
   RealmWalletPreferences.schema,
   RealmTransactionDraft.schema,
+  RealmArkWalletState.schema,
+  RealmArkVtxo.schema,
+  RealmArkMovement.schema,
 ];
 
 @RealmModel()
@@ -290,4 +293,63 @@ class _RealmTransactionDraft {
   late String? bitcoinUnit;
   late List<String> selectedUtxoIds;
   late String? txWaitingForSign;
+}
+
+/// 핫월렛 아크(bark) 데이터의 마지막 동기화 사본, 잠긴 상태에서 화면 표시용
+@RealmModel()
+class _RealmArkWalletState {
+  @PrimaryKey()
+  late int walletId;
+  late int spendableSats;
+  late int pendingInRoundSats;
+  late int pendingBoardSats;
+  late int pendingExitSats;
+  late int pendingLightningSendSats;
+  late int claimableLightningReceiveSats;
+  late String? address;
+  late int? addressIndex;
+  late String recoveryStateName;
+  late String recoveryDescription;
+  late DateTime? lastSyncedAt;
+}
+
+@RealmModel()
+class _RealmArkVtxo {
+  @PrimaryKey()
+  late String id; // walletId:vtxoId
+  @Indexed()
+  late int walletId;
+  late String vtxoId;
+  late int amountSats;
+  late int expiryHeight;
+  late String kind;
+  late bool isLocked;
+  late int exitDepth;
+}
+
+@RealmModel()
+class _RealmArkMovement {
+  @PrimaryKey()
+  late String id; // walletId:movementId
+  @Indexed()
+  late int walletId;
+  late int movementId;
+  late String status;
+  late String subsystemName;
+  late String subsystemKind;
+  late String metadataJson;
+  late int intendedBalanceSats;
+  late int effectiveBalanceSats;
+  late int offchainFeeSats;
+  late List<String> sentTo;
+  late List<String> receivedOn;
+  late List<String> inputVtxoIds;
+  late List<String> outputVtxoIds;
+  late List<String> exitedVtxoIds;
+  late DateTime createdAt;
+  late DateTime updatedAt;
+  late DateTime? completedAt;
+  late String? paymentHash;
+  late String? lightningInvoice;
+  late String? lightningOffer;
 }

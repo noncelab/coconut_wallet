@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -91,6 +92,7 @@ class _AppGuardState extends State<AppGuard> {
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
   late WalletProvider _walletProvider;
+  late ArkProvider _arkProvider;
   late ConnectivityProvider _connectivityProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
@@ -107,6 +109,7 @@ class _AppGuardState extends State<AppGuard> {
     _priceProvider = Provider.of<PriceProvider>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    _arkProvider = Provider.of<ArkProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
 
@@ -147,6 +150,7 @@ class _AppGuardState extends State<AppGuard> {
           _priceProvider.initWebSocketService();
         }
         _handleNodeProviderReconnect(resumeCheck);
+        _arkProvider.onResume();
         for (final wallet in _walletProvider.walletItemList) {
           unawaited(_nodeProvider.syncDormantAddresses(wallet));
         }
@@ -156,6 +160,7 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.paused:
         _resumePolicy.onPaused();
+        _arkProvider.onPause();
         if (_isPaused) break;
         setState(() {
           _isPaused = true;

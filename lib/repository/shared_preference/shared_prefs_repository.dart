@@ -245,6 +245,16 @@ class SharedPrefsRepository {
     await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
   }
 
+  bool isWalletArkAutoRefreshOn(int walletId) => !getBool(SharedPrefKeys.walletArkAutoRefreshOff(walletId));
+
+  Future<void> setWalletArkAutoRefreshOn(int walletId, bool on) async {
+    await setBool(SharedPrefKeys.walletArkAutoRefreshOff(walletId), !on);
+  }
+
+  Future<void> removeWalletArkAutoRefresh(int walletId) async {
+    await deleteSharedPrefsWithKey(SharedPrefKeys.walletArkAutoRefreshOff(walletId));
+  }
+
   /// 지갑별 마지막 재동기화 완료 시각------------------------------------------------
   DateTime? getWalletLastResyncTimestamp(int walletId) {
     final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);

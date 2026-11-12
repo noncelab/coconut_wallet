@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -172,6 +173,11 @@ class AuthProvider extends ChangeNotifier {
     _pinLength = 0;
 
     await _secureStorageService.deleteAll();
+    try {
+      await ArkWalletService().wipeAll();
+    } catch (error) {
+      Logger.error('Failed to wipe Ark wallets: $error');
+    }
     await _sharedPrefs.deleteMultipleKeys(SharedPrefKeys.keysToReset);
     await WalletBackgroundPhotoStore().deleteAll();
     await checkDeviceBiometrics();
