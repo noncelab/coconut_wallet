@@ -2159,8 +2159,6 @@ ark:
     paid: "Recibido"
     received_over_lightning: "Recibido por Lightning"
     you_receive: "Recibes $amount (comisión $fee)"
-    received_title: "Recibido"
-    waiting_confirmation: "Esperando confirmación"
   request:
     bitcoin_address: "Dirección bitcoin"
     ark_address: "Dirección Ark"

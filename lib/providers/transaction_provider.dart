@@ -12,9 +12,6 @@ class TransactionProvider extends ChangeNotifier {
   TransactionRecord? get transaction => _transaction;
   List<TransactionRecord> get txList => _txList;
 
-  List<TransactionRecord> getTransactionRecordList(int walletId) =>
-      _transactionRepository.getTransactionRecordList(walletId);
-
   ({int receiving, int sending}) getPendingAmounts(int walletId) => _transactionRepository.getPendingAmounts(walletId);
 
   TransactionProvider(this._transactionRepository);

@@ -2156,8 +2156,6 @@ ark:
     paid: "受け取り完了"
     received_over_lightning: "Lightningで受け取りました"
     you_receive: "${amount}を受け取ります(手数料 $fee)"
-    received_title: "受け取りました"
-    waiting_confirmation: "承認待ち"
   request:
     bitcoin_address: "ビットコインアドレス"
     ark_address: "Arkアドレス"

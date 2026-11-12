@@ -2159,8 +2159,6 @@ ark:
     paid: "Received"
     received_over_lightning: "Received over Lightning"
     you_receive: "You receive $amount (fee $fee)"
-    received_title: "Received"
-    waiting_confirmation: "Waiting for confirmation"
   request:
     bitcoin_address: "Bitcoin address"
     ark_address: "Ark address"

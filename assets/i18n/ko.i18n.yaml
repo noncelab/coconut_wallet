@@ -2165,8 +2165,6 @@ ark:
     paid: "받기 완료"
     received_over_lightning: "라이트닝으로 받았어요"
     you_receive: "${amount}를 받아요 (수수료 $fee)"
-    received_title: "받았어요"
-    waiting_confirmation: "승인 대기 중"
   request:
     bitcoin_address: "비트코인 주소"
     ark_address: "아크 주소"
