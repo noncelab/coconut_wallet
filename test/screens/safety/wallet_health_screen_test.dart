@@ -906,8 +906,8 @@ void main() {
   });
 
   // M36: 합계가 정확히 77.5인 구성(핫 0.05 · 보기 전용 1.8 · 다중서명 4 BTC, 합성 지갑)은 머리 점수가 78이고,
-  // "점수 계산 방법" 표의 합계 77.5와 맞는다(소수 오차로 77이 되지 않는다)
-  testWidgets('M36 an exact 77.5 total shows 78 in the header, matching the About table total', (tester) async {
+  // "점수 계산 방법" 표의 최종 점수 줄도 78이다(소수 오차로 77이 되지 않는다)
+  testWidgets('M36 an exact 77.5 total shows 78 in the header and in the About final score row', (tester) async {
     final received = f.tx('r', type: TransactionType.received, height: 900);
     final report = SafetyEngine.evaluate(
       f.inputs(
@@ -941,9 +941,11 @@ void main() {
     expect(_inGauge('78'), findsOneWidget);
     await tester.tap(find.byKey(const Key('wallet-health-info')));
     await tester.pumpAndSettle();
+    // M14: 표의 마지막 줄은 반올림한 합계가 아니라 머리와 같은 최종 점수다
+    expect(tester.widget<Text>(find.byKey(const Key('wallet-health-formula-final'))).data, '78');
     expect(
       find.descendant(of: find.byKey(const Key('wallet-health-about-sheet')), matching: _text('77.5')),
-      findsOneWidget,
+      findsNothing,
     );
   });
 
@@ -965,7 +967,7 @@ void main() {
     }
     expect(_textContaining('pts'), findsNothing);
     // 비중은 포함 점검 카드 제목 옆, 계산식은 점수 × 비중 = 기여와 합계(최종 점수)
-    expect(_text('45%'), findsOneWidget);
+    expect(_text('45.0%'), findsOneWidget);
     expect(_text(t.wallet_health.about.formula_title), findsOneWidget);
     expect(_textContaining('80 × '), findsOneWidget);
     expect(_text(t.wallet_health.about.formula_total), findsOneWidget);
@@ -977,13 +979,16 @@ void main() {
     expect(_text(t.wallet_health.about.wallets_title), findsNothing);
   });
 
-  testWidgets('a capped score shows the cap below the weighted total', (tester) async {
+  // M14: 상한은 따로 한 줄, 마지막 줄은 최종 점수(report.score)
+  testWidgets('a capped score shows the cap as its own row, then the final score', (tester) async {
     await _pump(tester, scoredReport(score: 74, scoreCap: 74));
     await tester.tap(find.byKey(const Key('wallet-health-info')));
     await tester.pumpAndSettle();
     expect(_text(t.wallet_health.about.formula_total), findsOneWidget);
     expect(_text(t.wallet_health.about.formula_cap), findsOneWidget);
-    expect(_text('74.0'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('wallet-health-formula-cap'))).data, '74');
+    expect(tester.widget<Text>(find.byKey(const Key('wallet-health-formula-final'))).data, '74');
+    expect(_text('74.0'), findsNothing);
   });
 
   testWidgets('category card scrolls to and briefly highlights its review rows instead of opening a sheet', (

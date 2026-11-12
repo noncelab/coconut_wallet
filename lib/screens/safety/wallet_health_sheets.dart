@@ -382,16 +382,25 @@ class _IncludedBox extends StatelessWidget {
                 colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
               ),
               CoconutLayout.spacing_200w,
+              // 제목이 먼저 줄 너비를 다 쓰고 비중은 남는 자리에(모자라면 아랫줄): 비중 때문에 제목이 단어 중간에서 끊기지 않게
               Expanded(
-                child: Text(
-                  safetyKoText(safetyCategoryName(category)),
-                  style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  children: [
+                    Text(
+                      safetyKoText(safetyCategoryName(category)),
+                      textWidthBasis: TextWidthBasis.longestLine,
+                      style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                    ),
+                    if (percent > 0)
+                      Text(
+                        '${percent.toStringAsFixed(1)}%',
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                      ),
+                  ],
                 ),
               ),
-              if (percent > 0) ...[
-                CoconutLayout.spacing_200w,
-                Text('${percent.round()}%', style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-              ],
             ],
           ),
           CoconutLayout.spacing_200h,
@@ -437,7 +446,7 @@ class _IncludedBox extends StatelessWidget {
   }
 }
 
-/// 카테고리 점수 × 비중 = 기여, 아래에 합계(최종 점수)
+/// 카테고리 점수 × 비중 = 기여(근삿값). 아래에 상한(있을 때)과 최종 점수(report.score)
 class _ScoreFormula extends StatelessWidget {
   const _ScoreFormula({required this.report});
 
@@ -452,19 +461,31 @@ class _ScoreFormula extends StatelessWidget {
     final bold = CoconutTypography.body3_12_Bold.setColor(colors.primaryText);
     const order = [SafetyCategory.recovery, SafetyCategory.activity, SafetyCategory.app, SafetyCategory.privacy];
     final cap = report.scoreCap;
-    Widget row(String name, String formula, String result, {TextStyle? nameStyle, TextStyle? resultStyle}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 5, child: Text(safetyKoText(name), style: nameStyle ?? style)),
-          CoconutLayout.spacing_200w,
-          Expanded(flex: 4, child: Text(formula, textAlign: TextAlign.end, style: muted)),
-          CoconutLayout.spacing_200w,
-          SizedBox(width: 40, child: Text(result, textAlign: TextAlign.end, style: resultStyle ?? style)),
-        ],
-      ),
-    );
+    Widget row(String name, String formula, String result, {TextStyle? nameStyle, TextStyle? resultStyle, Key? key}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 계산식이 없는 줄(상한·최종 점수)은 이름이 계산식 칸까지 쓴다(긴 이름이 단어 중간에서 끊기지 않게)
+              Expanded(flex: formula.isEmpty ? 9 : 5, child: Text(safetyKoText(name), style: nameStyle ?? style)),
+              if (formula.isNotEmpty) ...[
+                CoconutLayout.spacing_200w,
+                Expanded(flex: 4, child: Text(formula, textAlign: TextAlign.end, style: muted)),
+              ],
+              CoconutLayout.spacing_200w,
+              // 숫자는 한 줄로 두고, 큰 글자에서 칸보다 넓으면 그만큼만 줄인다("45.0"이 "45." / "0"으로 갈라지지 않게)
+              SizedBox(
+                width: 40,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(result, key: key, style: resultStyle ?? style),
+                ),
+              ),
+            ],
+          ),
+        );
     return _Box(
       radius: 16,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -476,20 +497,20 @@ class _ScoreFormula extends StatelessWidget {
                   ? row(safetyCategoryName(category), s.formula_not_scored, '—', nameStyle: muted, resultStyle: muted)
                   : row(
                     safetyCategoryName(category),
-                    '${c.score} × ${c.weightPercent.round()}%',
+                    '${c.score} × ${c.weightPercent.toStringAsFixed(1)}%',
                     (c.score! * c.weightPercent / 100).toStringAsFixed(1),
                   ),
           Divider(color: colors.divider, height: 16),
+          // 비중·기여는 반올림해 보여 주는 근삿값이라 더해 보지 않고, 마지막 줄에 엔진의 최종 점수를 그대로 둔다(상한은 따로)
+          if (cap != null) row(s.formula_cap, '', '$cap', key: const Key('wallet-health-formula-cap')),
           row(
             s.formula_total,
             '',
-            report.categories.values
-                .fold<double>(0, (sum, c) => sum + (c.score ?? 0) * c.weightPercent / 100)
-                .toStringAsFixed(1),
-            nameStyle: cap == null ? bold : style,
-            resultStyle: cap == null ? bold : style,
+            '${report.score}',
+            nameStyle: bold,
+            resultStyle: bold,
+            key: const Key('wallet-health-formula-final'),
           ),
-          if (cap != null) row(s.formula_cap, '', cap.toStringAsFixed(1), nameStyle: bold, resultStyle: bold),
         ],
       ),
     );
