@@ -469,6 +469,25 @@ class ArkProvider extends ChangeNotifier {
         !isAutoRefreshOn(walletId);
   }
 
+  /// [vtxoId]를 만든 내역부터 그 입력을 만든 내역으로 거슬러 올라간 이력, 최근 것이 먼저
+  List<ArkMovement> vtxoHistory(int walletId, String vtxoId) {
+    final movements = snapshot(walletId)?.movements ?? const <ArkMovement>[];
+    final result = <ArkMovement>[];
+    final seen = <int>{};
+    var frontier = {vtxoId};
+    while (frontier.isNotEmpty && result.length < 50) {
+      final next = <String>{};
+      for (final movement in movements) {
+        if (seen.contains(movement.id) || !movement.outputVtxoIds.any(frontier.contains)) continue;
+        seen.add(movement.id);
+        result.add(movement);
+        next.addAll(movement.inputVtxoIds);
+      }
+      frontier = next;
+    }
+    return result..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
   bool isAutoRefreshOn(int walletId) {
     try {
       return _sharedPrefs.isWalletArkAutoRefreshOn(walletId);

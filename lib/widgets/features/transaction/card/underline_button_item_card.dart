@@ -10,6 +10,9 @@ class UnderlineButtonItemCard extends StatelessWidget {
   final VoidCallback? onTapUnderlineButton;
   final bool? showDivider;
 
+  /// 라벨 바로 옆에 붙는 위젯(인포 아이콘 등)
+  final Widget? labelTrailing;
+
   const UnderlineButtonItemCard({
     super.key,
     required this.label,
@@ -17,6 +20,7 @@ class UnderlineButtonItemCard extends StatelessWidget {
     this.underlineButtonLabel,
     this.onTapUnderlineButton,
     this.showDivider = true,
+    this.labelTrailing,
   });
 
   @override
@@ -34,6 +38,7 @@ class UnderlineButtonItemCard extends StatelessWidget {
                 label,
                 style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText, height: 1.0),
               ),
+              if (labelTrailing != null) labelTrailing!,
               CoconutLayout.spacing_100w,
               if (underlineButtonLabel != null)
                 Expanded(

@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
@@ -32,5 +33,19 @@ String? arkActivityText(ArkActivity activity) {
     ArkMovementStatus.pending => t.ark.activity.refresh_pending,
     ArkMovementStatus.failed || ArkMovementStatus.canceled => t.ark.activity.refresh_failed,
     _ => t.ark.activity.refresh_done,
+  };
+}
+
+/// 거래 목록과 같은 상태 문구(받기 완료, 보내기 완료, 갱신 완료 등)
+String activityStatusText(WalletActivity activity) {
+  if (activity is ArkActivity) {
+    final label = arkActivityText(activity);
+    if (label != null) return label;
+  }
+  return switch (activity.status) {
+    TransactionStatus.receiving => t.status_receiving,
+    TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
+    TransactionStatus.sent || TransactionStatus.self => t.status_sent,
+    _ => t.status_received,
   };
 }

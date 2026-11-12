@@ -212,13 +212,7 @@ class _MovementDetails extends StatelessWidget {
           CoconutLayout.spacing_400h,
           UnderlineButtonItemCard(
             label: t.ark.movement.status,
-            child: Text(
-              activity.label == ArkActivityLabel.refresh
-                  ? arkActivityText(activity)!
-                  : '${arkActivityLabelText(activity.label) ?? _kindText(movement)} · ${arkRailText(activity.rail)} · '
-                      '${_statusText(movement.status)}',
-              style: valueStyle,
-            ),
+            child: Text(activityStatusText(activity), style: valueStyle),
           ),
           UnderlineButtonItemCard(
             label: t.ark.movement.fee,
@@ -230,7 +224,13 @@ class _MovementDetails extends StatelessWidget {
               child: Text(DateTimeUtil.formatTimestamp(movement.completedAt!).join(' '), style: valueStyle),
             ),
           for (final (label, value) in copyable)
-            UnderlineButtonItemCard(label: label, child: CopyTextContainer(text: value, textStyle: valueStyle)),
+            UnderlineButtonItemCard(
+              label: label,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: CopyTextContainer(text: value, textStyle: valueStyle),
+              ),
+            ),
           if (onchainTx != null && !hasLinkedTx)
             ..._buildOnchainTx(context, onchainTx!)
           else if (linkedTxid != null)
@@ -427,14 +427,4 @@ class _MovementDetails extends StatelessWidget {
       ),
     );
   }
-
-  static String _statusText(ArkMovementStatus status) => switch (status) {
-    ArkMovementStatus.pending => t.ark.movement.pending,
-    ArkMovementStatus.successful => t.ark.movement.successful,
-    ArkMovementStatus.failed => t.ark.movement.failed,
-    ArkMovementStatus.canceled => t.ark.movement.canceled,
-  };
-
-  static String _kindText(ArkMovement movement) =>
-      movement.effectiveBalanceSats > 0 ? t.ark.movement.received : t.ark.movement.sent;
 }
