@@ -128,9 +128,19 @@ void main() {
         (const Locale('fr', 'MC'), FiatCode.EUR), // EU 밖, 통화 협정
         (const Locale('fr', 'BL'), FiatCode.EUR), // EU 밖, 프랑스 해외 영토
         (const Locale('sq', 'XK'), FiatCode.EUR), // EU 밖, 협정 없이 사용
-        (const Locale('de', 'CH'), FiatCode.USD), // 유로를 쓰지 않는다
-        (const Locale('da', 'DK'), FiatCode.USD), // EU 회원국이지만 유로를 쓰지 않는다
-        (const Locale('en', 'IN'), FiatCode.USD),
+        (const Locale('de', 'CH'), FiatCode.CHF), // 유로를 쓰지 않는다
+        (const Locale('da', 'DK'), FiatCode.DKK), // EU 회원국이지만 유로를 쓰지 않는다
+        (const Locale('en', 'IN'), FiatCode.INR),
+        // 지원하는 통화면 그 지역의 통화로 정한다.
+        (const Locale('th', 'TH'), FiatCode.THB),
+        (const Locale('en', 'TH'), FiatCode.THB),
+        (const Locale('en', 'GB'), FiatCode.GBP),
+        (const Locale('vi', 'VN'), FiatCode.VND),
+        (const Locale('en', 'AU'), FiatCode.AUD),
+        (const Locale('en', 'LS'), FiatCode.ZAR), // 레소토: CLDR의 주 통화가 랜드
+        // 그 지역의 통화를 지원하지 않으면 USD
+        (const Locale('ar', 'EG'), FiatCode.USD), // 이집트 파운드
+        (const Locale('dz', 'BT'), FiatCode.USD), // 부탄: 주 통화는 눌트룸(인도 루피는 주 통화가 아님)
         (const Locale('en', 'US'), FiatCode.USD),
         (const Locale('ko', 'US'), FiatCode.USD), // 언어보다 지역이 먼저다
         // 지역이 없으면 언어로 정한다.
@@ -145,6 +155,15 @@ void main() {
           expect(defaultFiatForLocale(locale), expected);
         });
       }
+
+      test('CoinGecko로 받는 통화는 모두 어느 지역의 기본 통화다', () {
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        final reached = {
+          for (final a in letters.split(''))
+            for (final b in letters.split('')) defaultFiatForLocale(Locale('en', '$a$b')),
+        };
+        expect(FiatCode.values.where((fiat) => !fiat.hasExchangeSource).toSet().difference(reached), isEmpty);
+      });
     });
   });
 }
