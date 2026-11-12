@@ -160,19 +160,20 @@ class _TransactionSafetyBannerState extends State<TransactionSafetyBanner> {
         title: strings.dropped_title,
         // "다음 동기화 때 다시 확인"이 해결처럼 들리지 않게, 남은 위급 출금이 있으면 알리고 알림 목록으로
         body: hasOtherOutgoing ? '${strings.dropped_body}\n${strings.dropped_other_outgoing}' : strings.dropped_body,
-        // 그다음 대응 중이던 사건은 가이드를 이어 갈 길을 남긴다
+        // 그다음 대응 중이던 사건은 가이드를 이어 갈 길을, 확인 전 사건은 이 거래를 검토할 길을 남긴다(확인 전에 대체돼도
+        // "내 거래예요"로 닫을 수 있게. 열린 사건의 지갑은 옮길 곳에서 빠진다, M08)
         linkText:
             hasOtherOutgoing
                 ? strings.view_alerts
                 : responding
                 ? strings.continue_guide
-                : null,
+                : strings.review,
         onLink:
             hasOtherOutgoing
                 ? () => SafetyAlertsScreen.open(context)
                 : responding
                 ? () => SecurityGuide.resume(context, incident.id)
-                : null,
+                : () => showRecognizeSheet(context, incident),
       ),
     };
   }

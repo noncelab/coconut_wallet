@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
+import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
 import 'package:coconut_wallet/widgets/features/safety/transaction_safety_banner.dart';
@@ -35,7 +36,9 @@ void main() {
       ('recognized', testIncident(state: IncidentState.recognized), colors.successSurface, false),
       ('responding', testIncident(state: IncidentState.responding, guideStep: 2), colors.dangerSurface, true),
       ('completed', testIncident(state: IncidentState.completed), colors.surface, true), // 가이드 다시 보기
-      ('info', testIncident(txState: IncidentTxState.dropped), colors.surface, false),
+      // 확인 전에 거래가 사라지거나 대체된 정보 배너에도 "이 거래 검토"(M08 후속)
+      ('info', testIncident(txState: IncidentTxState.dropped), colors.surface, true),
+      ('info', testIncident(txState: IncidentTxState.replaced), colors.surface, true),
     ];
     // D5: 대응 중이어도 거래가 사라지면 중립 정보 배너(가이드를 이어 갈 링크는 남김)
     for (final txState in [IncidentTxState.dropped, IncidentTxState.replaced]) {
@@ -53,10 +56,13 @@ void main() {
         expect(find.byKey(const Key('transaction-safety-banner-info')), findsOneWidget);
         expect(tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner)).background, colors.surface);
         expect(findText(t.safety_guide.tx_banner.continue_guide), findsOneWidget);
+        expect(findText(t.safety_guide.tx_banner.review), findsNothing, reason: '대응 중이면 가이드 링크만');
       });
     }
     for (final (name, incident, background, hasLink) in cases) {
-      testWidgets('${variant.name} $name banner', (tester) async {
+      // 정보 배너는 사라짐·대체 두 경우라 이름에 거래 상태를 붙인다(실패를 구분하고 하나만 돌릴 수 있게)
+      final label = incident.txState == IncidentTxState.pending ? name : '$name (${incident.txState.name})';
+      testWidgets('${variant.name} $label banner', (tester) async {
         await tester.pumpWidget(
           safetyTestApp(
             origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)),
@@ -84,6 +90,7 @@ void main() {
     expect(find.byKey(const Key('transaction-safety-banner-info')), findsOneWidget);
     expect(findTextContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsOneWidget);
 
+    expect(findText(t.safety_guide.tx_banner.review), findsNothing, reason: '남은 위급 출금이 있으면 알림 보기만');
     await tester.tap(findText(t.safety_guide.tx_banner.view_alerts));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('safety-alerts-screen')), findsOneWidget);
@@ -99,5 +106,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(findTextContaining(t.safety_guide.tx_banner.dropped_other_outgoing), findsNothing);
     expect(findText(t.safety_guide.tx_banner.view_alerts), findsNothing);
+  });
+
+  // M08 후속(리뷰 지적 1): 확인 전에 거래가 대체되면(정보 배너) 그 거래를 검토할 길이 없어 사건이 열린 채 남고, 지갑이 계속
+  // "옮길 곳"에서 빠졌다. 이제 "이 거래 검토" → 인지 시트 → "내 거래예요"로 닫고, 그러면 다시 목적지로 고를 수 있다
+  testWidgets('a detected incident whose transaction was replaced can be reviewed and closed from its banner', (
+    tester,
+  ) async {
+    final safety = fixedSafety(incidents: [testIncident(txState: IncidentTxState.replaced)]);
+    await tester.pumpWidget(
+      safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('transaction-safety-banner-info')), findsOneWidget);
+    expect(SafetyAssist.unsafeWalletIds(safety.state, const []), contains(kWalletId), reason: '열린 사건이라 목적지에서 빠짐');
+
+    await tester.tap(findText(t.safety_guide.tx_banner.review));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('incident-recognize-yes')));
+    await tester.pumpAndSettle();
+
+    expect(safety.state.incidents.single.state, IncidentState.recognized);
+    expect(SafetyAssist.unsafeWalletIds(safety.state, const []), isNot(contains(kWalletId)));
+    await settleToasts(tester);
+  });
+
+  // 같은 링크에서 "모르는 거래예요"를 고르면 대응 중이 되고(열린 사건) 지갑은 계속 목적지에서 빠진다. 배너에는 가이드 링크만 남는다
+  testWidgets('a replaced incident marked as not mine from its banner moves to responding and stays excluded', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final safety = fixedSafety(incidents: [testIncident(txState: IncidentTxState.replaced)]);
+    await tester.pumpWidget(
+      safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.safety_guide.tx_banner.review));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('incident-recognize-no')));
+    await tester.pumpAndSettle();
+
+    expect(safety.state.incidents.single.state, IncidentState.responding);
+    expect(SafetyAssist.unsafeWalletIds(safety.state, const []), contains(kWalletId));
+    expect(findText(t.safety_guide.unknown.what_to_do), findsOneWidget, reason: '다음 안내(지금 할 일)');
+    expect(findText(t.safety_guide.tx_banner.continue_guide), findsOneWidget);
+    expect(findText(t.safety_guide.tx_banner.review), findsNothing);
+  });
+
+  // 시트를 그냥 닫으면(뒤로 가기) 아무것도 바뀌지 않는다: 감지 그대로, 목적지 제외 그대로, 링크 그대로
+  testWidgets('closing the review sheet opened from a replaced banner changes nothing', (tester) async {
+    final safety = fixedSafety(incidents: [testIncident(txState: IncidentTxState.replaced)]);
+    final before = safety.state;
+    await tester.pumpWidget(
+      safetyTestApp(origin(child: const TransactionSafetyBanner(walletId: kWalletId, txHash: kTxid)), safety: safety),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(findText(t.safety_guide.tx_banner.review));
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byKey(const Key('incident-recognize-yes')))).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('incident-recognize-yes')), findsNothing);
+    expect(safety.state, before);
+    expect(SafetyAssist.unsafeWalletIds(safety.state, const []), contains(kWalletId));
+    expect(findText(t.safety_guide.tx_banner.review), findsOneWidget);
   });
 }
