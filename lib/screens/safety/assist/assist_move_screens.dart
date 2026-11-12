@@ -80,7 +80,9 @@ class _AssistNewHotWalletScreenState extends State<AssistNewHotWalletScreen> {
       SweepBuilder.build(widget.session.plan, wallet: widget.session.wallet, destination: address);
       await advance();
       await advance();
-      if (!mounted) return;
+      // 이 화면이 맨 위일 때만 검토로 바꾼다. 진행 중에 뒤로 갔으면 닫히는 전환 동안은 mounted라, 바꾸면 그 아래 목적지 화면이
+      // 검토로 바뀌었다(pushReplacement는 맨 위 화면을 바꾼다)
+      if (!mounted || ModalRoute.isCurrentOf(context) != true) return;
       vibrateLight();
       unawaited(
         Navigator.of(context).pushReplacement(
@@ -98,8 +100,9 @@ class _AssistNewHotWalletScreenState extends State<AssistNewHotWalletScreen> {
     }
   }
 
+  /// 페이월·기기 비밀번호 안내를 닫은 뒤라 보통은 이 화면이 맨 위다. 아니면(이미 떠났다) 다른 화면을 닫지 않는다
   void _leave() {
-    if (mounted) Navigator.of(context).pop();
+    if (mounted && ModalRoute.isCurrentOf(context) == true) Navigator.of(context).pop();
   }
 
   @override

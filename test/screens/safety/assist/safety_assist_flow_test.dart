@@ -19,6 +19,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
+import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -35,6 +36,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/safety/conflict_analyzer.dart';
+import 'package:coconut_wallet/services/safety/safety_assist.dart';
 import 'package:coconut_wallet/services/safety/sweep_builder.dart';
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -46,12 +48,27 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show formatHomeRelativeTime;
 import 'package:coconut_wallet/widgets/features/safety/safety_address_entry_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
+import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:loader_overlay/loader_overlay.dart';
+import 'package:lottie/lottie.dart';
 import '../../../analytics/screen_view_recorder.dart';
+import '../../../mock/utxo_mock.dart';
+import '../../../repository/realm/test_realm_manager.dart';
 
 /// R1(한국어 단어 안 줄바꿈 막기)의 이음 문자를 빼고 비교한다. 공용 부품이 글을 감싸는지와 무관하게 같은 글을 찾는다
 String _plain(String text) => text.replaceAll('\u2060', '');
@@ -140,6 +157,30 @@ class _Wallets extends Fake implements WalletProvider {
 
   @override
   Stream<WalletLifecycleEvent> get lifecycleEvents => events.stream;
+
+  /// Assist 진행 화면의 새 핫월렛 만들기(비밀은 테스트용 SecureStorage에)
+  @override
+  Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
+
+  @override
+  Future<SinglesigWalletItem> addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
+    required DateTime createdAt,
+    int? watchOnlyWalletIdToConvert,
+  }) async {
+    final added = SinglesigWalletItem(
+      id: 9,
+      name: wallet.name,
+      colorIndex: 0,
+      iconIndex: 0,
+      descriptor: wallet.descriptor,
+    );
+    wallets.add(added);
+    return added;
+  }
 }
 
 class _Rescue extends Fake implements RescueReadyProvider {
@@ -174,9 +215,13 @@ class _Analyzer extends Fake implements ConflictAnalyzer {
   List<SweepConflict> result;
   int calls = 0;
 
+  /// 있으면 분석이 이것을 기다린다(검토의 마지막 확인 중에 사용자가 뒤로 가는 경합)
+  Completer<void>? gate;
+
   @override
   Future<List<SweepConflict>> analyze(int walletId, List<String> incidentTxids) async {
     calls++;
+    await gate?.future;
     return result;
   }
 }
@@ -215,10 +260,13 @@ class _Auth extends ChangeNotifier implements AuthProvider {
   bool get canCheckBiometrics => false;
   @override
   bool get isSetBiometrics => false;
+
+  /// 있으면 기기 비밀번호 확인이 이것을 기다린다(없으면 바로 '있음')
+  Completer<bool>? passcodeGate;
   @override
   Future<bool> isDevicePasscodeSet() async {
     passcodeChecks++;
-    return true;
+    return passcodeGate?.future ?? true;
   }
 
   @override
@@ -239,6 +287,33 @@ class _TxRepo extends Fake implements TransactionRepository {
 class _ThrowingNode extends Fake implements NodeProvider {
   @override
   Future<Result<String>> broadcast(Transaction signedTx) => throw StateError('never broadcast');
+}
+
+/// 실제 전송 화면(BroadcastingScreen)이 쓰는 노드: 연결돼 있고, 전송은 [sent]가 끝날 때 끝난다
+class _BroadcastNode extends Fake implements NodeProvider {
+  final sent = Completer<Result<String>>();
+  int broadcasts = 0;
+  @override
+  String get host => 'localhost';
+  @override
+  Future<Result<BlockTimestamp>> getLatestBlock() async => Result.success(BlockTimestamp(100, DateTime(2026)));
+  @override
+  Future<bool> reconnectWithoutWaitingForSync() async => true;
+  @override
+  Future<Result<String>> broadcast(Transaction signedTx) {
+    broadcasts++;
+    return sent.future;
+  }
+}
+
+class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
+  @override
+  bool get isInternetOn => true;
+}
+
+class _Prices extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
 }
 
 void main() {
@@ -285,6 +360,8 @@ void main() {
     double textScale = 1,
     RescueDraftSummary? rescueDraft,
     ScreenViewRecorder? recorder,
+    NodeProvider? node,
+    List<SingleChildWidget> extraProviders = const [],
   }) async {
     final auth = _Auth();
     final rescueProvider =
@@ -323,7 +400,7 @@ void main() {
           InheritedProvider<WalletProvider>.value(value: walletProvider),
           Provider<AnalyticsService>.value(value: recorder ?? _Analytics()),
           if (rescueProvider != null) InheritedProvider<RescueReadyProvider>.value(value: rescueProvider),
-          InheritedProvider<NodeProvider>.value(value: _ThrowingNode()),
+          InheritedProvider<NodeProvider>.value(value: node ?? _ThrowingNode()),
           ChangeNotifierProvider<PreferenceProvider>.value(value: preferences ?? _Preferences()),
           ChangeNotifierProvider<AuthProvider>.value(value: auth),
           ChangeNotifierProvider<TransactionProvider>.value(value: TransactionProvider(_TxRepo())),
@@ -332,6 +409,7 @@ void main() {
           Provider<EntitlementService>.value(
             value: premium ?? FakeEntitlementService(initial: const PremiumState(PremiumStatus.active)),
           ),
+          ...extraProviders,
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),
@@ -1033,6 +1111,281 @@ void main() {
       expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
     });
   }
+
+  /// 사용자가 검토에서 뒤로 간다. 닫히는 전환 동안 검토는 아직 mounted다
+  Future<void> userBack(WidgetTester tester) async {
+    ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-review'))))!.navigator!.pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  // 검토에서 확인을 누른 뒤 마지막 확인(코인·충돌 다시 읽기)을 기다리는 사이 사용자가 뒤로 가면, 그 뒤 확인이 끝나도 떠난 검토가
+  // 한 화면을 더 닫거나(목적지 거절·옮길 것 없음: 흐름을 연 화면까지 닫혔다) 보내기 확인을 띄우면(유효: 연 화면 위에 떴다) 안 된다
+  for (final outcome in ['rejected', 'nothing left', 'valid']) {
+    testWidgets('지금 이동: 검토의 마지막 확인을 기다리는 중 뒤로 가면 흐름을 연 화면에 남는다($outcome)', (tester) async {
+      final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+      final opener = await pushOpener(tester, env.host());
+      SafetyAssistFlow.moveNow(
+        opener,
+        walletId: 1,
+        destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+      );
+      await tester.pumpAndSettle();
+      env.analyzer.gate = Completer<void>();
+      if (outcome == 'rejected') await env.safety.setCaution(2, true);
+      if (outcome == 'nothing left') env.wallets.utxos.clear();
+      await tester.tap(find.byKey(const Key('safety-guide-button')));
+      await tester.pump();
+      await userBack(tester);
+      env.analyzer.gate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('opener'), findsOneWidget, reason: '흐름을 연 화면은 그대로');
+      expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)), reason: '떠난 검토는 보내기 확인을 띄우지 않는다');
+      await tester.pump(const Duration(seconds: 4)); // 고치기 전에는 거절 토스트가 떴다
+    });
+  }
+
+  testWidgets('사건 대응: 검토의 마지막 확인을 기다리는 중 뒤로 가면 목적지 화면에 남는다', (tester) async {
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-assist-destination-wallet-2')));
+    await tester.pumpAndSettle();
+    env.analyzer.gate = Completer<void>();
+    await env.safety.setCaution(2, true);
+    await tester.tap(find.byKey(const Key('safety-guide-button')));
+    await tester.pump();
+    await userBack(tester);
+    env.analyzer.gate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('safety-assist-destination')), findsOneWidget, reason: '목적지 화면에 남는다');
+    await tester.pump(const Duration(seconds: 4));
+  });
+
+  // 직접 입력 주소는 마지막에 제외 지갑에서 도출되는지 실제 Isolate.run으로 확인한다. 그 사이 뒤로 가면, 거절이든(그 아래 화면을
+  // 하나 더 닫았다) 통과든(보내기 확인을 띄웠다) 떠난 검토는 아무것도 하지 않는다
+  for (final (name, derives) in [('rejected', true), ('valid', false)]) {
+    testWidgets('지금 이동: 직접 입력 주소의 도출 검사를 기다리는 중 뒤로 가면 흐름을 연 화면에 남는다($name)', (tester) async {
+      final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+      final opener = await pushOpener(tester, env.host());
+      final openerRoute = ModalRoute.of(opener)!;
+      // 거절: 사고 지갑의 아직 만들지 않은 주소. 통과: 이 기기에 없는 지갑의 주소
+      final address = (derives ? incident : _wallet(9, 9)).walletBase.getAddress(3);
+      SafetyAssistFlow.moveNow(
+        opener,
+        walletId: 1,
+        destination: RescueDestination(address: address, setAt: DateTime(2026, 10, 20)),
+      );
+      await tester.pumpAndSettle();
+      final review = ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-review'))))!;
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('safety-guide-button'))); // 검사가 실제 isolate에서 시작된다
+        review.navigator!.pop(); // 검사 중에 사용자가 뒤로
+      });
+      // 앱에서처럼 먼저 흐름이 닫혀(맨 위였다) 연 화면이 맨 위가 된 뒤에 검사 결과가 닿게 한다(가짜 시계가 멈춰 검토는 닫히는 중)
+      await tester.pump();
+      expect(openerRoute.isCurrent, isTrue);
+      await tester.runAsync(() async {
+        // 같은 검사를 한 번 더 돌려 끝날 때까지 기다린 뒤(먼저 시작한 검토 쪽이 먼저 끝난다) 결과가 닿을 시간을 조금 둔다
+        final result = await SafetyAssist.derivesFromExcludedWallet(
+          env.wallets,
+          incidentWallet: incident,
+          address: address,
+          safetyState: env.safety.state,
+        );
+        expect(result, derives);
+        for (var i = 0; i < 50 && openerRoute.isActive && !env.pushed.contains(AppRouteNames.sendConfirm); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+      });
+      await tester.pumpAndSettle();
+
+      expect(openerRoute.isActive, isTrue, reason: '흐름을 연 화면은 그대로');
+      expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)), reason: '떠난 검토는 보내기 확인을 띄우지 않는다');
+      await tester.pump(const Duration(seconds: 4));
+    });
+  }
+
+  // 검토가 끝난 뒤 흐름은 자기 화면만 닫는다. 그냥 뒤로 가면 흐름이 맨 위라 닫고, popUntil처럼 여러 화면을 한꺼번에 치우면
+  // 흐름은 아직 mounted지만 맨 위가 아니라 닫지 않는다(고치기 전에는 흐름을 연 화면까지 닫았다)
+  for (final mode in ['back', 'popUntil']) {
+    testWidgets('지금 이동: 검토가 $mode로 닫히면 흐름만 닫히고 연 화면은 남는다', (tester) async {
+      final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+      final opener = await pushOpener(tester, env.host());
+      final openerRoute = ModalRoute.of(opener)!;
+      final moving = SafetyAssistFlow.moveNow(
+        opener,
+        walletId: 1,
+        destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+      );
+      await tester.pumpAndSettle();
+      final review = ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-review'))))!;
+      if (mode == 'back') {
+        review.navigator!.pop();
+      } else {
+        review.navigator!.popUntil((route) => route == openerRoute);
+      }
+      await tester.pumpAndSettle();
+      await moving;
+
+      expect(find.text('opener'), findsOneWidget);
+      expect(find.byKey(const Key('safety-assist-review')), findsNothing);
+      expect(find.byKey(const Key('safety-assist-unavailable')), findsNothing, reason: '흐름은 닫혔다');
+    });
+  }
+
+  // 새 핫월렛을 만든 뒤 진행 단계(300ms × 4)를 도는 중 사용자가 뒤로 가면, 닫히는 진행 화면이 마지막에 검토로 바꿔 끼우며
+  // 그 아래 목적지 화면을 검토로 바꿨다(pushReplacement는 맨 위 화면을 바꾼다)
+  testWidgets('새 핫월렛: 진행 단계 중 뒤로 가면 목적지 화면에 남는다', (tester) async {
+    FlutterSecureStorage.setMockInitialValues({});
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // 남은 비트코인 옮기기 → 목적지
+    await tester.pumpAndSettle();
+    final newHot = find.byKey(const Key('safety-assist-destination-new-hot'));
+    await tester.scrollUntilVisible(newHot, 200);
+    await tester.tap(newHot);
+    await tester.pump();
+    // 지갑 재료는 실제 isolate(compute)에서 만든다
+    for (var i = 0; i < 200 && env.wallets.wallets.length < 3; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(env.wallets.wallets.length, 3, reason: '새 핫월렛을 만들었다');
+    await tester.pump(const Duration(milliseconds: 900)); // 진행 단계 넷 중 셋
+    final progress = ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-move-progress'))))!;
+    progress.navigator!.pop(); // 마지막 단계 중 사용자가 뒤로(닫히는 전환 0.5초 동안 진행 화면은 아직 mounted)
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('safety-assist-destination')), findsOneWidget, reason: '목적지 화면에 남는다');
+    expect(find.byKey(const Key('safety-assist-review')), findsNothing, reason: '떠난 진행 화면이 검토를 띄우지 않는다');
+  });
+
+  // 새 핫월렛: 기기 비밀번호를 확인하는(수 ms) 사이 뒤로 가고 비밀번호가 없다고 나오면, 떠난 진행 화면은 안내를 띄우지 않는다
+  // (고치기 전: 안내가 아래 목적지 화면 위에 떴고, 진행 화면이 사라진 뒤 그 [닫기]가 예외를 냈다)
+  testWidgets('새 핫월렛: 기기 비밀번호 확인 중 뒤로 가면 비밀번호 안내를 띄우지 않는다', (tester) async {
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    env.auth.passcodeGate = Completer<bool>();
+    env.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // 남은 비트코인 옮기기 → 목적지
+    await tester.pumpAndSettle();
+    final newHot = find.byKey(const Key('safety-assist-destination-new-hot'));
+    await tester.scrollUntilVisible(newHot, 200);
+    await tester.tap(newHot);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700)); // 진행 화면, 기기 비밀번호 확인 대기
+    expect(env.auth.passcodeChecks, 1);
+    ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-move-progress'))))!.navigator!.pop(); // 사용자가 뒤로
+    await tester.pump();
+    env.auth.passcodeGate!.complete(false); // 기기 비밀번호 없음
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text(t.go_to_settings), findsNothing, reason: '떠난 진행 화면은 비밀번호 안내를 띄우지 않는다');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-assist-destination')), findsOneWidget, reason: '목적지 화면에 남는다');
+  });
+
+  // 지금 이동으로 실제로 보내면 전송 화면이 보내기 완료로 넘어가며(pushAndRemoveUntil) 흐름의 화면들을 한꺼번에 치운다. 이때
+  // 검토를 기다리던 흐름이 아직 mounted라 자기 자리를 닫으려 하면, 이미 맨 위가 된 보내기 완료 화면을 닫는다
+  testWidgets('지금 이동: 실제 전송이 끝나면 보내기 완료 화면이 남는다', (tester) async {
+    final realm = TestRealmManager();
+    addTearDown(realm.dispose);
+    await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
+    final node = _BroadcastNode();
+    final recorder = ScreenViewRecorder();
+    final utxoRepository = UtxoRepository(realm);
+    final tags = UtxoTagProvider(utxoRepository);
+    addTearDown(tags.dispose);
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [],
+      node: node,
+      recorder: recorder,
+      extraProviders: [
+        ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity()),
+        ChangeNotifierProvider<PriceProvider>.value(value: _Prices()),
+        ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
+        Provider<UtxoRepository>.value(value: utxoRepository),
+        Provider<TransactionDraftRepository>.value(value: TransactionDraftRepository(realm)),
+      ],
+    );
+    final opener = await pushOpener(tester, env.host());
+    SafetyAssistFlow.moveNow(
+      opener,
+      walletId: 1,
+      destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // 검토 → 보내기 확인
+    await tester.pumpAndSettle();
+    expect(env.pushed.last, AppRouteNames.sendConfirm);
+
+    // 보내기 확인에서 서명한 뒤처럼 서명된 거래로 실제 전송 화면을 연다(지금 이동은 홈에서 시작한 보내기)
+    final vault = SingleSignatureVault.fromEntropy(Uint8List.fromList(List.filled(16, 1)));
+    final inputHash = 'c' * 64;
+    final tx = Transaction.withInputsAndOutputs(
+      [TransactionInput.forPayment(inputHash, 0, sequence: 0xfffffffd)],
+      [
+        TransactionOutput.forPayment(
+          999000,
+          vault.getAddress(1, isChange: true),
+          derivationPath: '${vault.derivationPath}/1/1',
+          isChangeOutput: true,
+        ),
+      ],
+      AddressType.p2wpkh,
+    );
+    tx.utxoList.add(Utxo(inputHash, 0, 1000000, '${vault.derivationPath}/0/0'));
+    tx.changeAddressDerivationPath = '${vault.derivationPath}/1/1';
+    final psbt = Psbt.fromTransaction(tx, vault);
+    final signed = Psbt.parse(vault.addSignatureToPsbt(psbt.serialize())).getSignedTransaction(AddressType.p2wpkh);
+    realm.realm.write(
+      () => realm.realm.add(
+        UtxoMock.createUnspentRealmUtxo(walletId: 1, address: vault.getAddress(0), transactionHash: inputHash),
+      ),
+    );
+    expect(env.sendInfo.sendEntryPoint, SendEntryPoint.home);
+    env.sendInfo
+      ..setWalletId(1)
+      ..setTxWaitingForSign(psbt.serialize())
+      ..setSignedResult(signed.serialize());
+    unawaited(
+      Navigator.of(
+        env.host(),
+      ).push(MaterialPageRoute<void>(builder: (_) => const LoaderOverlay(child: BroadcastingScreen()))),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.tap(find.text(t.broadcasting_screen.btn_submit));
+    for (var frame = 0; frame < 30 && node.broadcasts == 0; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(node.broadcasts, 1);
+    node.sent.complete(Result.success(signed.transactionHash));
+    // 전송 뒤 Realm 기록은 실제 비동기 시간이 필요하다
+    var opened = false;
+    for (var attempt = 0; attempt < 100 && !opened; attempt++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      opened = find.byType(BroadcastingCompleteScreen).evaluate().isNotEmpty;
+    }
+    expect(opened, isTrue, reason: '보내기 완료 화면이 열렸다');
+    final complete = ModalRoute.of(tester.element(find.byType(BroadcastingCompleteScreen)))!;
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(complete.isActive, isTrue, reason: '흐름이 보내기 완료 화면을 닫지 않는다');
+    expect(find.byType(BroadcastingCompleteScreen), findsOneWidget);
+    expect(recorder.names.last, AppRouteNames.broadcastingComplete, reason: '마지막으로 보인 화면');
+  });
 
   testWidgets('Grok §4: 수수료 API 값이 비정상이면 노드 추정으로 계산하고 검토에 알림', (tester) async {
     final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], fastFee: 5000);

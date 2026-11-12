@@ -418,8 +418,9 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> with SelfLoggedScr
         AssistReviewScreen(session: _session, destination: destination, recalculated: _session.feeRecalculated),
       ),
     );
-    // 지금 이동은 검토에서 돌아오면 흐름을 닫는다(전송했으면 보내기 완료 화면이 이미 비움)
-    if (mounted) Navigator.of(context).pop();
+    // 지금 이동은 검토에서 돌아오면 흐름을 닫는다. 이 화면이 맨 위일 때만: 보내기 완료(pushAndRemoveUntil)나 popUntil이 여러
+    // 화면을 한꺼번에 치우면 검토가 끝난 시점에 이 화면은 아직 mounted지만 맨 위가 아니다(닫으면 새로 뜬 완료 화면이 닫혔다)
+    if (mounted && ModalRoute.isCurrentOf(context) == true) Navigator.of(context).pop();
   }
 
   Future<void> _choose({required bool replace}) async {
@@ -1012,6 +1013,10 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
 
   bool _floorFeeHigh(SweepPlan plan) => SweepFee.isExcessive(plan) && SweepFee.isFloorExempt(plan);
 
+  /// 이 검토가 맨 위가 아니다: 사용자가 이미 뒤로 갔다(닫히는 전환 동안은 mounted라 mounted만으로는 모른다). 떠난 검토가
+  /// 닫으면 그 아래 화면이 하나 더 닫히고, 보내기 확인을 띄우면 흐름을 연 화면 위에 뜬다
+  bool get _notOnTop => ModalRoute.isCurrentOf(context) != true;
+
   Future<void> _confirm() async {
     if (_opening) return;
     final session = widget.session;
@@ -1025,7 +1030,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
     try {
       // 넘기기 직전에 UTXO·충돌을 다시 읽는다. 달라졌으면 바뀐 내용을 보여 주고 다시 승인받는다(AH2)
       final changed = await session.refresh(context);
-      if (!mounted) return;
+      if (!mounted || _notOnTop) return;
       if (changed == null) {
         _warn(t.premium.protect.none_remaining);
         Navigator.of(context).pop();
@@ -1046,7 +1051,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
           )) {
         throw const AssistDestinationRejected(DestinationProblem.excludedOwner);
       }
-      if (!mounted) return;
+      if (!mounted || _notOnTop) return;
       await SafetyAssist.openConfirm(
         context,
         wallet: session.wallet,
@@ -1057,7 +1062,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
         incidentId: session.incidentId,
       );
     } on AssistDestinationRejected catch (e) {
-      if (!mounted) return;
+      if (!mounted || _notOnTop) return;
       _warn(
         e.problem == DestinationProblem.invalidAddress
             ? t.errors.address_error.invalid

@@ -57,7 +57,9 @@ abstract final class WalletAddActions {
     context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: restore);
     final authProvider = context.read<AuthProvider>();
     final isDevicePasscodeSet = await authProvider.isDevicePasscodeSet();
-    if (!context.mounted) return false;
+    // 확인하는 사이 사용자가 이 화면을 떠났으면 안내를 띄우거나 이어 가지 않는다. 닫히는 전환 동안은 mounted라 맨 위인지도 본다
+    // (떠난 화면이 띄운 안내는 그 화면이 사라진 뒤 [닫기]가 예외를 냈다). 부르는 곳은 모두 사용자가 방금 누른 맨 위 화면이다
+    if (!context.mounted || ModalRoute.isCurrentOf(context) != true) return false;
     if (isDevicePasscodeSet) return true;
 
     await showConfirmDialog(
