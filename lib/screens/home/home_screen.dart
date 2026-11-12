@@ -107,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isFeatureAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
       legacyFakeBalanceActive: context.read<PreferenceProvider>().isFakeBalanceActive,
       legacyBalanceHidden: context.read<PreferenceProvider>().isBalanceHidden,
+      priceProvider: context.read<PriceProvider>(),
       walletListChanges: context.read<WalletProvider>().walletItemListNotifier,
       addWalletHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed),
       onAddWalletHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAddWalletHintDismissed, true),

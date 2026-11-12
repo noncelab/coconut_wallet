@@ -109,8 +109,6 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
-  @override
-  int? get bitcoinPriceKrw => null;
 }
 
 class _Explorer extends Fake with ChangeNotifier implements BlockExplorerProvider {}
