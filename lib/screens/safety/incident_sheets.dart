@@ -108,7 +108,7 @@ Future<bool> markIncidentRecognized(BuildContext context, String incidentId, {bo
   final incident = provider?.state.incidents.firstWhereOrNull((i) => i.id == incidentId);
   // 끝난 사건(가이드 다시 보기)은 바꾸지 않는다. 사건이 없으면 기준점 검토 항목
   if (provider == null || (incident != null && !incident.isOpen)) return false;
-  if (askShared && !await confirmSharedRecognition(context, incidentId)) return false;
+  if (askShared && !await confirmSharedRecognition(context, incidentId, review: incident == null)) return false;
   if (!context.mounted) return false;
   try {
     if (!await safetySaved(context, () => provider.recognizeIncident(incidentId))) return false;
@@ -128,8 +128,9 @@ Future<bool> markIncidentRecognized(BuildContext context, String incidentId, {bo
 }
 
 /// 같은 거래가 다른 지갑에도 열려 있으면 그 지갑의 알림도 함께 닫힌다는 것을 묻는다(레드팀 §6).
-/// 다른 지갑이 없거나 "함께 표시하기"면 true, 취소면 false(아무것도 바꾸지 않는다)
-Future<bool> confirmSharedRecognition(BuildContext context, String incidentId) async {
+/// 다른 지갑이 없거나 "함께 표시하기"면 true, 취소면 false(아무것도 바꾸지 않는다).
+/// [review]면 기준점 검토 항목이라 분석 이름도 검토 쪽이다(T5-07, 인지 시트와 같은 규칙)
+Future<bool> confirmSharedRecognition(BuildContext context, String incidentId, {required bool review}) async {
   final state = context.read<SafetyProvider?>()?.state;
   if (state == null) return true;
   final separator = incidentId.indexOf(':'); // 사건 id = '지갑:txid'
@@ -151,7 +152,9 @@ Future<bool> confirmSharedRecognition(BuildContext context, String incidentId) a
   final strings = t.safety_guide.recognize;
   final confirmed = await showDialog<bool>(
     context: context,
-    routeSettings: const RouteSettings(name: '/incident/recognize-shared-dialog'),
+    routeSettings: RouteSettings(
+      name: review ? '/wallet-health/review/recognize-shared-dialog' : '/incident/recognize-shared-dialog',
+    ),
     builder:
         (dialogContext) => CoconutPopup(
           key: const Key('incident-recognize-shared'),
@@ -184,10 +187,11 @@ Future<void> showRecognizeSheet(BuildContext context, SafetyIncident incident) a
   final baseline =
       safety?.incidentFor(incident.walletId, incident.txid) == null ? safety?.state.baselines[incident.walletId] : null;
   final review = t.wallet_health.review;
-  final body = switch (baseline) {
-    final b? when b.unexpectedSelfTxids.contains(incident.txid) => review.self_transfer.body,
-    final b? when b.pendingSentAtBaseline.contains(incident.txid) => review.recent_at_add.body,
-    _ => t.safety_guide.recognize.body,
+  // 기준점 검토면 설명도 분석 화면 이름도 검토 쪽이다. 사건 대응 퍼널의 /incident/recognize와 섞지 않는다(T5-07)
+  final (body, isReview) = switch (baseline) {
+    final b? when b.unexpectedSelfTxids.contains(incident.txid) => (review.self_transfer.body, true),
+    final b? when b.pendingSentAtBaseline.contains(incident.txid) => (review.recent_at_add.body, true),
+    _ => (t.safety_guide.recognize.body, false),
   };
   final unit = context.read<PreferenceProvider?>()?.currentUnit ?? BitcoinUnit.btc;
   final facts =
@@ -201,11 +205,12 @@ Future<void> showRecognizeSheet(BuildContext context, SafetyIncident incident) a
   final recognized = await CommonBottomSheets.showBottomSheet<bool>(
     context: context,
     title: t.wallet_health.critical.review_transaction,
-    screenName: '/incident/recognize',
+    screenName: isReview ? '/wallet-health/review/recognize' : '/incident/recognize',
     showDragHandle: true,
     child: _RecognizeSheet(
       key: sheetKey,
       incidentId: incident.id,
+      review: isReview,
       body: body,
       facts: facts,
       signedElsewhere: wallet != null && !wallet.hasLocalKey,
@@ -272,12 +277,16 @@ class _RecognizeSheet extends StatelessWidget {
   const _RecognizeSheet({
     super.key,
     required this.incidentId,
+    required this.review,
     required this.body,
     this.facts,
     required this.signedElsewhere,
   });
 
   final String incidentId;
+
+  /// 기준점 검토 항목(사건 아님). 같은 거래 확인 팝업의 분석 이름을 검토 쪽으로 남긴다
+  final bool review;
   final String body;
   final ({String amount, List<String> recipients})? facts;
 
@@ -315,7 +324,9 @@ class _RecognizeSheet extends StatelessWidget {
             backgroundColor: colors.surfaceBottomSheetElevated,
             // 다른 지갑에도 같은 거래가 있으면 시트 위에서 묻고, 취소하면 이 시트에 남는다
             onTap: () async {
-              if (await confirmSharedRecognition(context, incidentId) && context.mounted) Navigator.pop(context, true);
+              if (await confirmSharedRecognition(context, incidentId, review: review) && context.mounted) {
+                Navigator.pop(context, true);
+              }
             },
           ),
           CoconutLayout.spacing_200h,
