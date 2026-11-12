@@ -169,6 +169,11 @@ class ArkProvider extends ChangeNotifier {
         .fold<int>(0, (sum, vtxo) => sum + vtxo.amountSats);
   }
 
+  /// 온체인으로 빼낼 수 있는 아크 잔액: 만료 VTXO까지 포함(오프보딩·갱신은 서버가 받아 주면 가능)
+  int offboardableSats(int walletId) => (snapshot(walletId)?.vtxos ?? const [])
+      .where((vtxo) => !vtxo.isLocked && !isRefreshingVtxo(vtxo.id))
+      .fold<int>(0, (sum, vtxo) => sum + vtxo.amountSats);
+
   bool get hasHotWalletWithArkFunds => _walletProvider.walletItemList.any((wallet) => totalSats(wallet.id) > 0);
 
   bool isOpen(int walletId) {

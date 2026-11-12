@@ -2158,7 +2158,7 @@ ark:
   expiry:
     notice: "Ein Teil deines Ark-Guthabens läuft bald ab. Bitte erneuern."
     urgent: "Ein Teil deines Ark-Guthabens läuft gleich ab. Jetzt erneuern."
-    expired: "Der Server hat abgelaufenes Guthaben zurückgeholt. Erneuern bringt es zurück."
+    expired: "Server hat Abgelaufenes eingezogen. Erneuern holt es zurück."
     locked: "Ein Teil deines Ark-Guthabens muss erneuert werden. Entsperre zuerst Ark."
   toast:
     receiving_onchain(wallet, amount): "$amount wird on-chain in $wallet empfangen"
@@ -2313,6 +2313,11 @@ ark:
     bitcoin_address: "Bitcoin-Adresse"
     ark_address: "Ark-Adresse"
   send:
+    not_enough_ark_move: "Zu wenig Ark · Erst On-Chain zu Ark verschieben"
+    offboard: "Aus Ark an Bitcoin-Adresse"
+    offboard_all: "Alles aus Ark an Bitcoin-Adresse"
+    needs_refresh: "Abgelaufenes Guthaben erst erneuern"
+    refresh_action: "Erneuern"
     own_wallet: "Nicht an dieselbe Wallet"
     max_onchain: "Alles On-Chain"
     max_ark: "Alles Ark"
@@ -2329,7 +2334,7 @@ ark:
     send_failed: "Senden fehlgeschlagen"
     locked: "Entsperre zuerst Ark"
     ark_wallet_only: "Nur mit Ark-Wallets möglich"
-    onchain_only: "Mehrere Empfänger nur mit Bitcoin-Adressen"
+    onchain_only: "Mehrere Empfänger: nur Bitcoin-Adressen"
     not_enough_ark: "Ark-Guthaben reicht nicht"
     estimate_failed: "Gebühr nicht berechenbar"
   request_problem:

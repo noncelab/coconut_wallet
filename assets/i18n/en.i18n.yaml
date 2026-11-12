@@ -2308,6 +2308,11 @@ ark:
     bitcoin_address: "Bitcoin address"
     ark_address: "Ark address"
   send:
+    not_enough_ark_move: "Not enough Ark · Move on-chain funds to Ark first"
+    offboard: "Sending from Ark to a Bitcoin address"
+    offboard_all: "Sending all Ark balance to a Bitcoin address"
+    needs_refresh: "Refresh expired balance to use it"
+    refresh_action: "Refresh"
     own_wallet: "Can't send to this wallet itself"
     max_onchain: "All on-chain"
     max_ark: "All Ark"

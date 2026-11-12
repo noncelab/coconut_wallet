@@ -2153,7 +2153,7 @@ ark:
   expiry:
     notice: "Parte de tu saldo Ark caduca pronto. Renuévalo."
     urgent: "Parte de tu saldo Ark está a punto de caducar. Renuévalo ahora."
-    expired: "El servidor reclamó el saldo caducado. Renuévalo para recuperarlo."
+    expired: "Saldo caducado reclamado. Renuévalo para recuperarlo."
     locked: "Parte de tu saldo Ark necesita renovarse. Desbloquea Ark primero."
   toast:
     receiving_onchain(wallet, amount): "Recibiendo $amount on-chain en $wallet"
@@ -2308,6 +2308,11 @@ ark:
     bitcoin_address: "Dirección bitcoin"
     ark_address: "Dirección Ark"
   send:
+    not_enough_ark_move: "Saldo Ark insuficiente · Mueve fondos on-chain a Ark"
+    offboard: "De Ark a una dirección Bitcoin"
+    offboard_all: "Todo Ark a una dirección Bitcoin"
+    needs_refresh: "Renueva el saldo caducado para usarlo"
+    refresh_action: "Renovar"
     own_wallet: "No puedes enviarte a esta billetera"
     max_onchain: "Todo on-chain"
     max_ark: "Todo Ark"
@@ -2320,11 +2325,11 @@ ark:
     source_ark: "Ark"
     sending: "Enviando"
     pending_title: "En proceso"
-    pending_description: "Aparecerá en tu historial al terminar"
+    pending_description: "Aparecerá en tu historial"
     send_failed: "No se pudo enviar"
     locked: "Desbloquea Ark primero"
     ark_wallet_only: "Solo con billeteras con Ark"
-    onchain_only: "Varios destinatarios: solo direcciones Bitcoin"
+    onchain_only: "Varios: solo direcciones Bitcoin"
     not_enough_ark: "Saldo Ark insuficiente"
     estimate_failed: "No se pudo calcular la comisión"
   request_problem:

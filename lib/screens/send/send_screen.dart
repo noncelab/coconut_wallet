@@ -1230,7 +1230,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, (String, bool, bool, int?, ArkSendRoute?)>(
+    return Selector<SendViewModel, (String, bool, bool, int?, ArkSendRoute?, bool)>(
       selector:
           (_, vm) => (
             vm.finalErrorMessage,
@@ -1238,10 +1238,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             vm.isFeeRateLowerThanMin,
             vm.unintendedDustFee,
             vm.arkRoute,
+            vm.arkShortfallNeedsRefresh,
           ),
       builder: (context, data, child) {
         debugPrint('vm.unintendedDustFee: ${data.$4}');
-        final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee, arkRoute) = data;
+        final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee, arkRoute, needsRefresh) =
+            data;
         final isHotWallet =
             _viewModel.selectedWalletItem?.hasLocalKey == true &&
             _viewModel.selectedWalletItem?.hotWalletMetadata != null;
@@ -1293,6 +1295,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               onButtonClicked: () {
                 FocusScope.of(context).unfocus();
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
+                if (needsRefresh) {
+                  Navigator.pushNamed(
+                    context,
+                    AppRouteNames.vtxoList,
+                    arguments: VtxoListRouteArgs(id: _viewModel.selectedWalletId, startRefresh: true),
+                  );
+                  return;
+                }
                 if (arkRoute != null) {
                   _payFromArk(arkRoute);
                   return;
@@ -1311,11 +1321,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 }
               },
               isActive:
+                  needsRefresh ||
                   !_isHotWalletSigning &&
-                  !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                  isReadyToSend &&
-                  finalErrorMessage.isEmpty,
-              text: arkRoute != null ? t.send : (isHotWallet ? t.sign : t.next),
+                      !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                      isReadyToSend &&
+                      finalErrorMessage.isEmpty,
+              text:
+                  needsRefresh
+                      ? t.ark.send.refresh_action
+                      : (arkRoute != null ? t.send : (isHotWallet ? t.sign : t.next)),
             ),
           ],
         );
@@ -1664,31 +1678,58 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildSourceChoice(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          _buildFeeRowLabel(t.ark.send.source),
-          const Spacer(),
-          Selector<SendViewModel, SendSource>(
-            selector: (_, viewModel) => viewModel.selectedSource,
-            builder: (context, source, _) {
-              return SizedBox(
-                width: 160,
-                child: CoconutSegmentedControl(
-                  selectedColor: context.coconutColors.segmentedControlSelected,
-                  segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
-                  selectedTextColor: context.coconutColors.segmentedControlSelectedText,
-                  unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
-                  isSelected: [source == SendSource.onchain, source == SendSource.ark],
-                  onPressed: (index) => _viewModel.setSource(index == 0 ? SendSource.onchain : SendSource.ark),
-                  children: [Text(t.ark.send.source_onchain), Text(t.ark.send.source_ark)],
-                ),
-              );
-            },
+    return Selector<SendViewModel, SendSource>(
+      selector: (_, viewModel) => viewModel.selectedSource,
+      builder: (context, source, _) {
+        Widget option(SendSource value, String label, int sats) {
+          final isSelected = source == value;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _viewModel.setSource(value),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  CoconutCheckbox(
+                    isSelected: isSelected,
+                    onChanged: (_) => _viewModel.setSource(value),
+                    width: 14,
+                    color: context.coconutColors.iconPrimary,
+                    unSelectedColor: context.coconutColors.iconPrimary,
+                    inactiveColor: context.coconutColors.iconDisabled,
+                  ),
+                  CoconutLayout.spacing_150w,
+                  Expanded(
+                    child: Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
+                  ),
+                  Text(
+                    _viewModel.currentUnit.displayBitcoinAmount(sats, withUnit: true),
+                    style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.coconutColors.border, width: 1),
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
           ),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFeeRowLabel(t.ark.send.source),
+              CoconutLayout.spacing_100h,
+              option(SendSource.onchain, t.ark.send.source_onchain, _viewModel.balance),
+              option(SendSource.ark, t.ark.send.source_ark, _viewModel.arkSendableSats),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1729,7 +1770,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
               CoconutLayout.spacing_200h,
               Text(
-                fee == 0 ? t.ark.send.fee_free_description : t.ark.send.from_ark,
+                route.rail == ArkPaymentRail.onchain
+                    ? (_viewModel.isArkMaxMode ? t.ark.send.offboard_all : t.ark.send.offboard)
+                    : fee == 0
+                    ? t.ark.send.fee_free_description
+                    : t.ark.send.from_ark,
                 style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
               ),
               if (route.rail == ArkPaymentRail.lightningAddress) ...[

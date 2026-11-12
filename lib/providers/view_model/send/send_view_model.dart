@@ -324,6 +324,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       notifyListeners();
     });
   }
+
   int? _arkFee;
   bool _isEstimatingArkFee = false;
   bool _arkFeeFailed = false;
@@ -338,6 +339,23 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool get isArkLocked => isArkWallet && !_arkProvider!.isOpen(_selectedWalletItem!.id);
   int get arkSendableSats => isArkWallet ? _arkProvider!.sendableSats(_selectedWalletItem!.id) : 0;
+  int get arkOffboardableSats => isArkWallet ? _arkProvider!.offboardableSats(_selectedWalletItem!.id) : 0;
+
+  /// 아크·라이트닝으로 보낼 아크 잔액은 모자라지만 온체인 잔액이면 충분할 때(아크로 옮겨야 함)
+  bool get _onchainCouldCover {
+    final route = arkRoute;
+    if (route == null || route.rail == ArkPaymentRail.onchain) return false;
+    final amount = _amountSatsAt(0) ?? 0;
+    return amount > 0 && amount < balance;
+  }
+
+  /// 아크 잔액이 모자라지만 만료된 잔액을 갱신하면 보낼 수 있을 때
+  bool get arkShortfallNeedsRefresh {
+    if (arkRoute == null || _isArkMaxMode || _isAmountSumExceedsBalance.isNotError) return false;
+    final amount = _amountSatsAt(0) ?? 0;
+    return amount + (_arkFee ?? 0) <= arkOffboardableSats;
+  }
+
   int? get arkFee => _arkFee;
   bool get isEstimatingArkFee => _isEstimatingArkFee;
   int? get arkPaymentAmountSats => _amountSatsAt(0);
@@ -361,7 +379,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   /// 아크·라이트닝 경로가 없는 비트코인 주소에 두 잔액 모두 보낼 수 있을 때
   bool get canChooseSource {
-    if (!isArkWallet || _recipientList.length != 1 || _isMaxMode || _isArkMaxMode) return false;
+    if (!isArkWallet || _recipientList.length != 1 || _isMaxMode || _isArkMaxMode || !_isUtxoSelectionAuto) {
+      return false;
+    }
     final request = _requestAt(0);
     final amount = _amountSatsAt(0);
     if (request == null || request.bitcoinAddress == null || amount == null) return false;
@@ -390,7 +410,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         invoiceHasAmount: offchain.rail == ArkPaymentRail.lightningInvoice && request.invoiceAmountSats != null,
       );
     }
-    if (address == null || amount == null || !arkFits) return null;
+    if (address == null || amount == null || !arkFits || !_isUtxoSelectionAuto) return null;
     if (canChooseSource) return selectedSource == SendSource.ark ? ArkSendRoute(ArkPaymentRail.onchain, address) : null;
     return amount >= balance ? ArkSendRoute(ArkPaymentRail.onchain, address) : null;
   }
@@ -407,6 +427,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       ].join(' · '),
       PaymentRequestKind.lightningAddress => t.ark.request.lightning_address,
       PaymentRequestKind.bip321 => t.ark.request.payment_request,
+      PaymentRequestKind.bitcoinAddress => t.ark.request.bitcoin_address,
       _ => null,
     };
   }
@@ -425,14 +446,15 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     final single = _recipientList.length == 1;
     final hasOnchain = balance > 0;
     final hasArk = single && arkSendableSats > 0;
+    final hasOffboardable = single && arkOffboardableSats > 0;
     if (request == null) {
-      if (hasOnchain || !hasArk) return const [SendSource.onchain];
+      if (hasOnchain || !hasOffboardable) return const [SendSource.onchain];
       return const [SendSource.ark];
     }
     if (request.amountSats != null) return const [];
     return [
-      if (request.bitcoinAddress != null && (hasOnchain || !hasArk)) SendSource.onchain,
-      if ((request.bitcoinAddress != null || request.arkAddress != null) && hasArk) SendSource.ark,
+      if (request.bitcoinAddress != null && (hasOnchain || !hasOffboardable)) SendSource.onchain,
+      if ((request.bitcoinAddress != null && hasOffboardable) || (request.arkAddress != null && hasArk)) SendSource.ark,
     ];
   }
 
@@ -479,7 +501,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   /// 아크 모두 보내기: 수수료를 뺀 금액을 받는 사람 금액으로
   void _applyArkMaxAmount() {
     final fee = _arkFee;
-    final sats = fee == null ? 0 : arkSendableSats - fee;
+    final base = arkRoute?.rail == ArkPaymentRail.onchain ? arkOffboardableSats : arkSendableSats;
+    final sats = fee == null ? 0 : base - fee;
     final text =
         fee == null || sats <= 0
             ? ''
@@ -498,7 +521,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _scheduleArkFeeEstimate() {
     final route = arkRoute;
-    final amount = _isArkMaxMode ? (arkSendableSats > 0 ? arkSendableSats : null) : _amountSatsAt(0);
+    final maxBase = route?.rail == ArkPaymentRail.onchain ? arkOffboardableSats : arkSendableSats;
+    final amount = _isArkMaxMode ? (maxBase > 0 ? maxBase : null) : _amountSatsAt(0);
     if (route == null || amount == null || isArkLocked) {
       _arkFeeTimer?.cancel();
       _arkFee = null;
@@ -1054,7 +1078,12 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       } else if (isArkLocked) {
         message = t.ark.send.locked;
       } else if (_isAmountSumExceedsBalance.isError) {
-        message = t.ark.send.not_enough_ark;
+        message =
+            arkShortfallNeedsRefresh
+                ? t.ark.send.needs_refresh
+                : _onchainCouldCover
+                ? t.ark.send.not_enough_ark_move
+                : t.ark.send.not_enough_ark;
       } else if (_arkFeeFailed) {
         message = t.ark.send.estimate_failed;
       }
