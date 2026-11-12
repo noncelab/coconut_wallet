@@ -2199,6 +2199,7 @@ ark:
     state: "状態"
     state_locked: "処理中です"
     state_refreshing: "更新待ち · サーバー処理後に新しい有効期限になります"
+    state_refresh_failed: "更新が完了しませんでした · もう一度更新してください"
     kind: "種類"
     exit_depth: "出金段階"
     vtxo_id: "VTXO ID"
@@ -2253,6 +2254,9 @@ ark:
     vtxos_exited: "VTXOs exited"
   activity:
     refresh: "Refresh"
+    refresh_pending: "更新リクエスト中"
+    refresh_done: "更新完了"
+    refresh_failed: "更新失敗"
     moved_to_ark: "Moved off-chain"
     moved_onchain: "Moved on-chain"
     exit: "Exit"

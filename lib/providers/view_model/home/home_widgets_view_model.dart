@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -302,6 +303,10 @@ class HomeWidgetsViewModel extends ChangeNotifier {
               arkMovementId: switch (activity) {
                 OnchainActivity() => null,
                 ArkActivity(:final movement) => movement.id,
+              },
+              label: switch (activity) {
+                OnchainActivity() => null,
+                ArkActivity() => arkActivityText(activity),
               },
             ),
       ];

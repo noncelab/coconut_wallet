@@ -16,6 +16,9 @@ class HomeRecentTransaction {
   final ArkRail? rail;
   final int? arkMovementId;
 
+  /// 받기·보내기 대신 보여 줄 아크 내역 이름(갱신 등)
+  final String? label;
+
   const HomeRecentTransaction({
     required this.walletId,
     required this.walletName,
@@ -26,6 +29,7 @@ class HomeRecentTransaction {
     this.txHash,
     this.rail,
     this.arkMovementId,
+    this.label,
   });
 }
 

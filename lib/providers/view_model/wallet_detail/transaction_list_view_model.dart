@@ -180,6 +180,37 @@ class TransactionListViewModel extends ChangeNotifier {
     return _activityList!;
   }
 
+  /// 아크를 켠 지갑만 경로 필터를 보여 줌
+  bool get showsRailFilter => _arkProvider?.supportsArkById(_walletId) ?? false;
+
+  ArkRail? _railFilter;
+  ArkRail? get railFilter => _railFilter;
+
+  List<WalletActivity>? _visibleActivityList;
+  List<WalletActivity>? _visibleSource;
+
+  /// 경로 필터를 적용한 목록, 필터가 없으면 [activityList] 그대로
+  List<WalletActivity> get visibleActivityList {
+    final all = activityList;
+    final rail = _railFilter;
+    if (rail == null || !showsRailFilter) return all;
+    if (_visibleActivityList == null || !identical(_visibleSource, all)) {
+      _visibleSource = all;
+      _visibleActivityList = List.unmodifiable(all.where((activity) => activity.rail == rail));
+    }
+    return _visibleActivityList!;
+  }
+
+  int activityCountOf(ArkRail? rail) =>
+      rail == null ? activityList.length : activityList.where((activity) => activity.rail == rail).length;
+
+  void setRailFilter(ArkRail? rail) {
+    if (_railFilter == rail) return;
+    _railFilter = rail;
+    _visibleActivityList = null;
+    notifyListeners();
+  }
+
   int get walletId => _walletId;
   WalletItemBase get walletListBaseItem => _walletListBaseItem;
   String get walletName => _walletName;

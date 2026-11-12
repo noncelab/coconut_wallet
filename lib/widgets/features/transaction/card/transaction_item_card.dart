@@ -77,7 +77,7 @@ class TransactionItemCard extends StatelessWidget {
       default:
         return const SizedBox.shrink(); // fallback
     }
-    return _buildIconStatus(context, iconPath, iconColor, statusText, boundedLabel: boundedLabel);
+    return _buildIconStatus(context, iconPath, iconColor, _arkLabelText ?? statusText, boundedLabel: boundedLabel);
   }
 
   Widget _buildIconStatus(
@@ -126,7 +126,13 @@ class TransactionItemCard extends StatelessWidget {
     );
   }
 
+  String? get _arkLabelText => switch (activity) {
+    ArkActivity() => arkActivityText(activity as ArkActivity),
+    OnchainActivity() => null,
+  };
+
   String? _statusText() {
+    if (_arkLabelText case final label?) return label;
     switch (status) {
       case TransactionStatus.received:
         return t.status_received;

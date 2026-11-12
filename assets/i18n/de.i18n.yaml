@@ -2207,6 +2207,7 @@ ark:
     state: "Status"
     state_locked: "Wird verarbeitet"
     state_refreshing: "Wartet auf Erneuerung · Neues Ablaufdatum nach Verarbeitung"
+    state_refresh_failed: "Erneuerung nicht abgeschlossen · Bitte erneut erneuern"
     kind: "Typ"
     exit_depth: "Ausstiegstiefe"
     vtxo_id: "VTXO-ID"
@@ -2261,6 +2262,9 @@ ark:
     vtxos_exited: "VTXOs exited"
   activity:
     refresh: "Refresh"
+    refresh_pending: "Erneuerung angefragt"
+    refresh_done: "Erneuert"
+    refresh_failed: "Erneuerung fehlgeschlagen"
     moved_to_ark: "Moved off-chain"
     moved_onchain: "Moved on-chain"
     exit: "Exit"

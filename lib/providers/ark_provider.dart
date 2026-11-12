@@ -82,6 +82,11 @@ class ArkProvider extends ChangeNotifier {
   late final Map<String, DateTime> _refreshingVtxoIds = _loadRefreshingVtxoIds();
   static const _refreshWaitLimit = Duration(minutes: 10);
 
+  /// 갱신을 요청했지만 서버 처리가 끝나지 않고 대기에서 빠진 VTXO
+  final Set<String> _failedRefreshVtxoIds = {};
+
+  bool isRefreshFailedVtxo(String vtxoId) => _failedRefreshVtxoIds.contains(vtxoId);
+
   /// bark가 알려 주는 지갑별 라운드 대기 VTXO
   final Map<int, Set<String>> _pendingRoundVtxoIds = {};
 
@@ -312,7 +317,9 @@ class ArkProvider extends ChangeNotifier {
     _pendingRoundVtxoIds[walletId] = pending;
     for (final id in incomplete) {
       _refreshingVtxoIds.remove(id);
+      _failedRefreshVtxoIds.add(id);
     }
+    _failedRefreshVtxoIds.removeWhere((id) => !vtxoIds.contains(id) && (snapshot(walletId)?.vtxos.isNotEmpty ?? false));
     _refreshingVtxoIds.removeWhere((id, _) => pending.contains(id));
     _saveRefreshingVtxoIds();
     if (incomplete.isNotEmpty) refreshIncomplete.value = (walletId: walletId, count: incomplete.length);
@@ -541,6 +548,7 @@ class ArkProvider extends ChangeNotifier {
     final now = DateTime.now();
     for (final id in vtxoIds) {
       _refreshingVtxoIds[id] = now;
+      _failedRefreshVtxoIds.remove(id);
     }
     _saveRefreshingVtxoIds();
   }

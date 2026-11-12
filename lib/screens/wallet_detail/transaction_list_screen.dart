@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_filter_widgets.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/screens/ark/ark_movement_detail_screen.dart';
@@ -96,7 +98,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               isRefreshing: _isPullToRefreshing || data.item5,
                               onPressedUnitToggle: _toggleUnit,
                               onBackPressed: () => Navigator.pop(context),
-                              refreshButton: WalletRefreshIndicator(isRefreshing: _isPullToRefreshing),
+                              refreshButton: WalletRefreshIndicator(
+                                isRefreshing:
+                                    _isPullToRefreshing ||
+                                    (data.item5 && context.read<TransactionListViewModel>().showsRailFilter),
+                              ),
                             ),
                           );
                         },
@@ -115,6 +121,50 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                     ),
                       ),
                       _buildTxListLabel(),
+                      Selector<TransactionListViewModel, (bool, ArkRail?, int)>(
+                        selector:
+                            (_, viewModel) => (
+                              viewModel.showsRailFilter,
+                              viewModel.railFilter,
+                              viewModel.activityList.length,
+                            ),
+                        builder: (context, data, _) {
+                          if (!data.$1) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                          final viewModel = context.read<TransactionListViewModel>();
+                          return SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _RailFilterBarDelegate(
+                              revision: Object.hash(data.$2, data.$3),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      for (final (index, rail)
+                                          in <ArkRail?>[
+                                            null,
+                                            ArkRail.onchain,
+                                            ArkRail.ark,
+                                            ArkRail.lightning,
+                                          ].indexed) ...[
+                                        if (index > 0) CoconutLayout.spacing_100w,
+                                        AnimatedUtxoFilterChip(
+                                          key: Key('transaction-list-rail-${rail?.name ?? 'all'}'),
+                                          label: rail == null ? t.all : arkRailText(rail),
+                                          count: viewModel.activityCountOf(rail),
+                                          isSelected: data.$2 == rail,
+                                          onTap: () => viewModel.setRailFilter(rail),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
                       SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
@@ -151,10 +201,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
       child: Selector<TransactionListViewModel, Tuple2<int, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
+        selector:
+            (_, viewModel) =>
+                Tuple2(viewModel.showsRailFilter ? -1 : viewModel.txList.length, viewModel.isWalletSyncing),
         builder: (_, data, __) {
           final txCount = data.item1;
           final isWalletSyncing = data.item2;
+          if (txCount < 0) return const SizedBox.shrink();
 
           return Padding(
             key: _txListLabelWidgetKey,
@@ -466,7 +519,8 @@ class TransactionList extends StatefulWidget {
 
 class _TransactionListState extends State<TransactionList> {
   late List<WalletActivity> _displayedTxList = [];
-  final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
+  GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
+  ArkRail? _displayedRail;
   final Duration _duration = const Duration(milliseconds: 1200);
 
   @override
@@ -476,14 +530,16 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<TransactionListViewModel, Tuple2<List<WalletActivity>, bool>>(
-      selector: (_, viewModel) => Tuple2(viewModel.activityList, viewModel.isWalletSyncing),
+    return Selector<TransactionListViewModel, Tuple3<List<WalletActivity>, bool, ArkRail?>>(
+      selector:
+          (_, viewModel) => Tuple3(viewModel.visibleActivityList, viewModel.isWalletSyncing, viewModel.railFilter),
       builder: (_, data, __) {
         final txList = data.item1;
         final isWalletSyncing = data.item2;
-        if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
+        final rail = data.item3;
+        if (rail != _displayedRail || !listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleTransactionListUpdate(txList);
+            _handleTransactionListUpdate(txList, rail);
           });
         }
         if (txList.isNotEmpty) return _buildSliverAnimatedList(_displayedTxList);
@@ -503,8 +559,17 @@ class _TransactionListState extends State<TransactionList> {
     return true;
   }
 
-  Future<void> _handleTransactionListUpdate(List<WalletActivity> txList) async {
+  Future<void> _handleTransactionListUpdate(List<WalletActivity> txList, ArkRail? rail) async {
+    if (rail != _displayedRail) {
+      setState(() {
+        _displayedRail = rail;
+        _displayedTxList = List.from(txList);
+        _txListKey = GlobalKey<SliverAnimatedListState>();
+      });
+      return;
+    }
     final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
+    final previousList = _displayedTxList;
 
     const Duration animationDuration = Duration(milliseconds: 100);
     final oldTxMap = {for (var tx in _displayedTxList) tx.key: tx};
@@ -534,7 +599,7 @@ class _TransactionListState extends State<TransactionList> {
       await Future.delayed(animationDuration);
       _txListKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildRemoveTransactionItem(_displayedTxList[index], animation),
+        (context, animation) => _buildRemoveTransactionItem(previousList[index], animation),
         duration: _duration,
       );
     }
@@ -617,4 +682,56 @@ class _TransactionListState extends State<TransactionList> {
       ),
     );
   }
+}
+
+/// 아크 지갑 거래 내역의 경로 칩, 스크롤하면 위에 붙고 아래로 그라데이션
+class _RailFilterBarDelegate extends SliverPersistentHeaderDelegate {
+  const _RailFilterBarDelegate({required this.child, required this.revision});
+
+  static const _extent = 48.0;
+  static const _gradientHeight = 24.0;
+
+  final Widget child;
+  final int revision;
+
+  @override
+  double get minExtent => _extent;
+
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final colors = context.coconutColors;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(child: ColoredBox(color: colors.background, child: child)),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: -_gradientHeight,
+          height: _gradientHeight,
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: overlapsContent ? 1 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [colors.background, colors.background.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _RailFilterBarDelegate oldDelegate) => revision != oldDelegate.revision;
 }

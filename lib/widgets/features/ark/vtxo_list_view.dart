@@ -25,8 +25,14 @@ String vtxoExpiryText(ArkVtxo vtxo, BlockTimestamp? tip) {
       : t.ark.vtxo.estimated_expiry(date: formattedDateTime);
 }
 
-String? vtxoExpiryStatusText(ArkVtxo vtxo, BlockTimestamp? tip, {bool isRefreshing = false}) {
+String? vtxoExpiryStatusText(
+  ArkVtxo vtxo,
+  BlockTimestamp? tip, {
+  bool isRefreshing = false,
+  bool refreshFailed = false,
+}) {
   if (isRefreshing) return t.ark.vtxo.state_refreshing;
+  if (refreshFailed) return t.ark.vtxo.state_refresh_failed;
   if (vtxo.isLocked) return t.ark.vtxo.state_locked;
   if (tip == null) return null;
   final blocks = vtxo.expiryHeight - tip.height;
@@ -127,7 +133,12 @@ class VtxoListRow extends StatelessWidget {
     final enabled = !isSelecting || !vtxo.isLocked;
     final isRefreshDue = tip != null && vtxo.expiryHeight - tip!.height <= 0;
     final isRefreshing = context.readArkProviderOrNull()?.isRefreshingVtxo(vtxo.id) ?? false;
-    final statusText = vtxoExpiryStatusText(vtxo, tip, isRefreshing: isRefreshing);
+    final statusText = vtxoExpiryStatusText(
+      vtxo,
+      tip,
+      isRefreshing: isRefreshing,
+      refreshFailed: context.readArkProviderOrNull()?.isRefreshFailedVtxo(vtxo.id) ?? false,
+    );
     final showsDueDot =
         !isSelecting &&
         !vtxo.isLocked &&

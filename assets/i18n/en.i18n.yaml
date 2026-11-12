@@ -2202,6 +2202,7 @@ ark:
     state: "State"
     state_locked: "Processing"
     state_refreshing: "Waiting to refresh · New expiry date after the server processes it"
+    state_refresh_failed: "Refresh didn't complete · Please refresh again"
     kind: "Type"
     exit_depth: "Exit depth"
     vtxo_id: "VTXO ID"
@@ -2256,6 +2257,9 @@ ark:
     vtxos_exited: "VTXOs exited"
   activity:
     refresh: "Refresh"
+    refresh_pending: "Refresh requested"
+    refresh_done: "Refreshed"
+    refresh_failed: "Refresh failed"
     moved_to_ark: "Moved off-chain"
     moved_onchain: "Moved on-chain"
     exit: "Exit"

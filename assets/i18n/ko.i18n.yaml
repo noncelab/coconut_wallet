@@ -2208,6 +2208,7 @@ ark:
     state: "상태"
     state_locked: "처리 중이에요"
     state_refreshing: "갱신 대기 중 · 서버 처리 후 새 만료일로 바뀌어요"
+    state_refresh_failed: "갱신이 완료되지 않았어요 · 다시 갱신해 주세요"
     kind: "종류"
     exit_depth: "출금 단계"
     vtxo_id: "VTXO ID"
@@ -2262,6 +2263,9 @@ ark:
     vtxos_exited: "출금한 VTXO"
   activity:
     refresh: "갱신"
+    refresh_pending: "갱신 요청 중"
+    refresh_done: "갱신 완료"
+    refresh_failed: "갱신 실패"
     moved_to_ark: "오프체인으로 이동"
     moved_onchain: "온체인으로 이동"
     exit: "출금"

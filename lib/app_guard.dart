@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/wallet/incoming_payment_watcher.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
@@ -154,6 +156,12 @@ class _AppGuardState extends State<AppGuard> {
       level: CoconutToastLevel.warning,
       text: t.ark.vtxo.refresh_incomplete(wallet: _walletProvider.getWalletById(event.walletId).name),
       seconds: 5,
+      actionText: t.confirm,
+      onAction:
+          () => widget.navigatorKey?.currentState?.pushNamed(
+            AppRouteNames.vtxoList,
+            arguments: VtxoListRouteArgs(id: event.walletId, startRefresh: true),
+          ),
     );
   }
 

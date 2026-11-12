@@ -215,12 +215,14 @@ class _TransactionRow extends StatelessWidget {
           TransactionType.sent => TransactionStatus.sent,
           _ => TransactionStatus.self,
         };
-    final statusText = switch (status) {
-      TransactionStatus.received => t.status_received,
-      TransactionStatus.receiving => t.status_receiving,
-      TransactionStatus.sent || TransactionStatus.self => t.status_sent,
-      TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
-    };
+    final statusText =
+        tx.label ??
+        switch (status) {
+          TransactionStatus.received => t.status_received,
+          TransactionStatus.receiving => t.status_receiving,
+          TransactionStatus.sent || TransactionStatus.self => t.status_sent,
+          TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
+        };
     final plainStatusLabel = Text(
       statusText,
       maxLines: 1,

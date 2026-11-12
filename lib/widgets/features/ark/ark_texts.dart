@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 
 String formatSats(BitcoinUnit unit, int sats) =>
@@ -21,5 +22,15 @@ String? arkActivityLabelText(ArkActivityLabel? label) {
     ArkActivityLabel.exit => texts.exit,
     ArkActivityLabel.failed => texts.failed,
     ArkActivityLabel.canceled => texts.canceled,
+  };
+}
+
+/// 목록·최근 거래·상세에서 같은 이름을 쓰도록, 갱신은 진행 상태까지 담음
+String? arkActivityText(ArkActivity activity) {
+  if (activity.label != ArkActivityLabel.refresh) return arkActivityLabelText(activity.label);
+  return switch (activity.movement.status) {
+    ArkMovementStatus.pending => t.ark.activity.refresh_pending,
+    ArkMovementStatus.failed || ArkMovementStatus.canceled => t.ark.activity.refresh_failed,
+    _ => t.ark.activity.refresh_done,
   };
 }

@@ -213,8 +213,10 @@ class _MovementDetails extends StatelessWidget {
           UnderlineButtonItemCard(
             label: t.ark.movement.status,
             child: Text(
-              '${arkActivityLabelText(activity.label) ?? _kindText(movement)} · ${arkRailText(activity.rail)} · '
-              '${_statusText(movement.status)}',
+              activity.label == ArkActivityLabel.refresh
+                  ? arkActivityText(activity)!
+                  : '${arkActivityLabelText(activity.label) ?? _kindText(movement)} · ${arkRailText(activity.rail)} · '
+                      '${_statusText(movement.status)}',
               style: valueStyle,
             ),
           ),
