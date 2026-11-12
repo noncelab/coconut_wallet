@@ -93,7 +93,8 @@ class _SafetyAddressEntryState extends State<SafetyAddressEntry> {
   }
 
   Future<void> _scan() async {
-    final scanned = await showAddressScannerBottomSheet(context, title: t.premium.destination.enter_address);
+    // 스캐너 안에 "주소 QR 코드를 스캔해 주세요"가 있어 제목은 비운다(주소 검색·UTXO 합치기와 같음)
+    final scanned = await showAddressScannerBottomSheet(context, title: '');
     if (scanned == null || !mounted) return;
     _controller.text = AssistAddress.normalize(scanned); // bitcoin: URI면 주소만
     _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
@@ -131,7 +132,7 @@ class _SafetyAddressEntryState extends State<SafetyAddressEntry> {
             clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
             onClear: () => setState(_controller.clear),
             suffixIconAsset: CommonActionIconPath.scan,
-            suffixSemanticLabel: t.premium.destination.enter_address,
+            suffixSemanticLabel: t.send_address_screen.text2,
             suffixIconColor: colors.primaryText,
             onSuffixPressed: _scan,
             isError: error != null,
