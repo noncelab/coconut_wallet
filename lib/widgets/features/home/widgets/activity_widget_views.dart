@@ -207,7 +207,7 @@ class _TransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final sign = tx.amount >= 0 ? '+' : '-';
+    final sign = tx.amount == 0 ? '' : (tx.amount > 0 ? '+ ' : '- ');
     final status =
         tx.status ??
         switch (tx.type) {
@@ -256,7 +256,7 @@ class _TransactionRow extends StatelessWidget {
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerRight,
       child: Text(
-        '$sign ${amountText(tx.amount.abs())}',
+        '$sign${amountText(tx.amount.abs())}',
         style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
       ),
     );

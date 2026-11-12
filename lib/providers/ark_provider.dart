@@ -139,7 +139,22 @@ class ArkProvider extends ChangeNotifier {
   ArkBalance? balance(int walletId) => snapshot(walletId)?.balance;
 
   /// The Ark part of the wallet's total balance, 0 without Ark.
-  int totalSats(int walletId) => balance(walletId)?.total ?? 0;
+  int totalSats(int walletId) {
+    final balance = this.balance(walletId);
+    if (balance == null) return 0;
+    return balance.total - _doubleCountedInRound(walletId, balance);
+  }
+
+  /// bark 0.7.1은 서버가 아직 라운드에 넣지 않은 갱신 입력 VTXO를 쓸 수 있는 잔액과
+  /// 라운드 처리 중 양쪽에 셈(#29). 갱신 대기 VTXO 중 잠기지 않은 것의 금액만큼 뺌.
+  /// 이 상태는 `pendingRoundInputVtxos`에 나오지 않아 앱이 기억한 요청 목록도 씀
+  int _doubleCountedInRound(int walletId, ArkBalance balance) {
+    if (balance.pendingInRound == 0) return 0;
+    final overlap = (snapshot(walletId)?.vtxos ?? const [])
+        .where((vtxo) => isRefreshingVtxo(vtxo.id) && !vtxo.isLocked)
+        .fold<int>(0, (sum, vtxo) => sum + vtxo.amountSats);
+    return overlap < balance.pendingInRound ? overlap : balance.pendingInRound;
+  }
 
   bool get hasHotWalletWithArkFunds => _walletProvider.walletItemList.any((wallet) => totalSats(wallet.id) > 0);
 
@@ -209,7 +224,7 @@ class ArkProvider extends ChangeNotifier {
   }
 
   /// 아크 잔액이 남아 있으면 끌 수 없음
-  bool canTurnOff(int walletId) => supportsArkById(walletId) && (balance(walletId)?.total ?? 0) == 0;
+  bool canTurnOff(int walletId) => supportsArkById(walletId) && totalSats(walletId) == 0;
 
   /// [walletId]의 아크를 끄고 bark 데이터와 캐시를 지움
   Future<void> turnOff(int walletId) async {

@@ -333,7 +333,7 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
                                   pinned: true,
                                   delegate: VtxoListHeaderDelegate(
                                     topPadding: MediaQuery.paddingOf(context).top,
-                                    totalSats: snapshot?.balance.total ?? 0,
+                                    totalSats: arkProvider.totalSats(widget.id),
                                     unit: _unit,
                                     onBackPressed: () => Navigator.pop(context),
                                     onUnitPressed: () => setState(() => _unit = _unit.next),

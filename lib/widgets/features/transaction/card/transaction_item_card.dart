@@ -153,7 +153,7 @@ class TransactionItemCard extends StatelessWidget {
     final colors = context.coconutColors;
     final amountString = currentUnit.displayBitcoinAmount(activity.displayAmount);
     final isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
-    final amountLabel = '${isReceived ? '+' : ''}$amountString';
+    final amountLabel = '${isReceived && activity.displayAmount != 0 ? '+' : ''}$amountString';
     final amountStyle = CoconutTypography.body1_16_Number.setColor(colors.primaryText);
     final timeStyle = CoconutTypography.body3_12
         .setColor(colors.tertiaryText)
@@ -206,7 +206,7 @@ class TransactionItemCard extends StatelessWidget {
   Widget _buildAmount(BuildContext context) {
     final String amountString = currentUnit.displayBitcoinAmount(activity.displayAmount);
     final bool isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
-    final String prefix = isReceived ? '+' : '';
+    final String prefix = isReceived && activity.displayAmount != 0 ? '+' : '';
 
     return Expanded(
       child: FittedBox(

@@ -58,6 +58,7 @@ class _FakeArkWalletService extends Fake implements ArkWalletService {
   final Set<String> onDisk = {};
   final List<String> calls = [];
   ArkSnapshot nextSnapshot = createArkSnapshot();
+  List<String> pendingRoundIds = [];
   Object? syncRoundsError;
   Completer<void>? syncRoundsGate;
   Object? moveError;
@@ -165,6 +166,9 @@ class _FakeArkWalletService extends Fake implements ArkWalletService {
   @override
   Future<void> refreshDelegated(String fingerprint, List<String> vtxoIds) async =>
       calls.add('refreshDelegated(${vtxoIds.join(',')})');
+
+  @override
+  Future<List<String>> pendingRoundVtxoIds(String fingerprint) async => pendingRoundIds;
 
   @override
   Future<ArkSnapshot> snapshot(String fingerprint, {String? address, int? addressIndex}) async {
@@ -319,6 +323,48 @@ void main() {
     expect(arkService.calls, ['delete']);
     expect(arkProvider.supportsArkById(1), isFalse);
     expect(arkRepository.getSnapshot(1), isNull);
+  });
+
+  test('a refresh input the server has not picked up yet is counted once (#29)', () async {
+    arkService.openWallets.add(_fingerprint.toLowerCase());
+    arkService.nextSnapshot = createArkSnapshot(
+      balance: const ArkBalance(
+        spendable: 50000,
+        pendingInRound: 49970,
+        pendingBoard: 0,
+        pendingExit: 0,
+        pendingLightningSend: 0,
+        claimableLightningReceive: 0,
+      ),
+      vtxos: [createArkVtxo(id: 'refreshing:0')],
+    );
+    arkService.pendingRoundIds = ['refreshing:0'];
+
+    await arkProvider.syncNow(1);
+
+    expect(arkProvider.balance(1)!.total, 99970);
+    expect(arkProvider.totalSats(1), 50000);
+    expect(arkProvider.isRefreshingVtxo('refreshing:0'), isTrue);
+  });
+
+  test('once the round locks the input, nothing is subtracted', () async {
+    arkService.openWallets.add(_fingerprint.toLowerCase());
+    arkService.nextSnapshot = createArkSnapshot(
+      balance: const ArkBalance(
+        spendable: 0,
+        pendingInRound: 49970,
+        pendingBoard: 0,
+        pendingExit: 0,
+        pendingLightningSend: 0,
+        claimableLightningReceive: 0,
+      ),
+      vtxos: [createArkVtxo(id: 'refreshing:0', isLocked: true)],
+    );
+    arkService.pendingRoundIds = ['refreshing:0'];
+
+    await arkProvider.syncNow(1);
+
+    expect(arkProvider.totalSats(1), 49970);
   });
 
   test('VTXOs within the notice window are due, others are not', () async {

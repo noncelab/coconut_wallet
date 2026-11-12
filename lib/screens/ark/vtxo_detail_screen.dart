@@ -269,7 +269,11 @@ class _VtxoStateChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SvgPicture.asset(
-                  isLocked ? CommonSecurityIconPath.lock : CommonSecurityIconPath.unlock,
+                  isRefreshing
+                      ? CommonActionIconPath.arrowReload
+                      : isLocked
+                      ? CommonSecurityIconPath.lock
+                      : CommonSecurityIconPath.unlock,
                   width: 14,
                   height: 14,
                   colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
