@@ -205,6 +205,9 @@ Future<void> _openWidgetsTab(
   bool cupertinoShell = false,
   Color? sourceMarkerColor,
   DateTime? dataNow,
+
+  /// 테스트 중에 바꿀 수 있는 시계. 없으면 [dataNow]로 고정한다.
+  DateTime Function()? clock,
   Map<int, WalletBackground> walletBackgrounds = const {},
   bool gestureGuideDismissed = true,
   int? Function(int walletId)? targetSatsOf,
@@ -225,7 +228,7 @@ Future<void> _openWidgetsTab(
   addTearDown(appearances.dispose);
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
-  final now = dataNow ?? DateTime.now();
+  final now = clock?.call() ?? dataNow ?? DateTime.now();
   final wallets =
       walletList ?? [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createMultiSigWalletItem(id: 2)];
   final transactions = [
@@ -269,7 +272,7 @@ Future<void> _openWidgetsTab(
         priceProvider: _Prices(available: pricesAvailable),
         targetSatsOf: targetSatsOf ?? (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
-        now: dataNow == null ? null : () => dataNow,
+        now: clock ?? (dataNow == null ? null : () => dataNow),
       );
   Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
   if (sourceMarkerColor != null) {
@@ -2586,14 +2589,11 @@ void main() {
       await tester.tap(find.byKey(const Key('goal-plan-date-done')));
       await tester.pumpAndSettle();
 
-      final saved = DateTime.parse(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCustomDate));
+      final saved = DateTime.parse(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanDeadline));
       expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanPeriod), GoalPlanPeriod.custom.name);
-      expect(until(), contains('${saved.year}.${saved.month}.${saved.day}'));
+      expect(until(), contains(_dotted(saved)));
       expect(find.descendant(of: custom, matching: find.text(t.hodl_insights.goal_plan_custom)), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(const Key('goal-plan-custom-date-text'))).data,
-        '${saved.year}.${saved.month}.${saved.day}',
-      );
+      expect(tester.widget<Text>(find.byKey(const Key('goal-plan-custom-date-text'))).data, _dotted(saved));
       await tester.tap(find.byKey(const Key('goal-plan-custom-date')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('goal-plan-date-picker')), findsOneWidget);
@@ -2604,21 +2604,50 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
       await tester.pumpAndSettle();
-      expect(until(), contains('${saved.year}.${saved.month}.${saved.day}'));
+      expect(until(), contains(_dotted(saved)));
 
       // 고른 날이 지나면 기본 기간(3개월)으로 돌아간다.
       Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
       await tester.pumpAndSettle();
-      await SharedPrefsRepository().setString(SharedPrefKeys.kGoalPlanCustomDate, DateTime(2000).toIso8601String());
+      await SharedPrefsRepository().setString(SharedPrefKeys.kGoalPlanDeadline, '2000-01-01');
       await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
       await tester.pumpAndSettle();
-      final fallback = GoalPlanMath.deadline(today, GoalPlanPeriod.threeMonths);
-      expect(until(), contains('${fallback.year}.${fallback.month}.${fallback.day}'));
+      final fallback = GoalPlanMath.presetDeadline(today, GoalPlanPeriod.threeMonths);
+      expect(until(), contains(_dotted(fallback)));
       expect(find.byKey(const Key('goal-plan-custom-date')), findsNothing);
       Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
       await tester.pumpAndSettle();
       await _close(tester);
     });
+
+    // 자정을 넘긴 뒤 시세·잔액 갱신 없이(화면을 다시 그리기 전에) 처음 누르는 경우
+    for (final tap in ['goal-plan-period-sixMonths', 'goal-plan-period-custom']) {
+      testWidgets('the first tap after midnight uses the new day ($tap)', (tester) async {
+        var clock = DateTime(2026, 11, 12, 23, 59);
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          disableAnimations: true,
+          clock: () => clock,
+          screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+        );
+        await tester.pumpAndSettle();
+        expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanDeadline), '2027-02-12');
+
+        clock = DateTime(2026, 11, 13, 0, 1);
+        await tester.tap(find.byKey(ValueKey(tap)));
+        await tester.pumpAndSettle();
+        if (tap == 'goal-plan-period-custom') {
+          final picker = tester.widget<CupertinoDatePicker>(find.byKey(const Key('goal-plan-date-picker')));
+          expect(picker.minimumDate, DateTime(2026, 11, 14));
+          Navigator.of(tester.element(find.byKey(const Key('goal-plan-date-picker')))).pop();
+          await tester.pumpAndSettle();
+        } else {
+          expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanDeadline), '2027-05-13');
+        }
+        await _close(tester);
+      });
+    }
 
     testWidgets('a goal on one wallet among selected wallets still shows no chips', (tester) async {
       await _openWidgetsTab(
@@ -3954,3 +3983,7 @@ class _SelectionPreferences extends Fake implements SharedPrefsRepository {
     await gate.future;
   }
 }
+
+/// 모으기 계획 날짜 표시(yyyy.MM.dd)
+String _dotted(DateTime date) =>
+    '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';

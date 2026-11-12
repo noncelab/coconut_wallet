@@ -54,8 +54,10 @@ class GoalSegmentsBar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final fillWidth = constraints.maxWidth * fill;
-            final gaps = singleColor != null ? 0.0 : segmentGap * (filled.length - 1).clamp(0, filled.length);
-            final usable = (fillWidth - gaps).clamp(0.0, double.infinity);
+            // 채운 폭이 좁으면 간격도 그만큼 줄인다. 간격 합이 채운 폭을 넘으면 넘침이 난다.
+            final gapCount = singleColor != null ? 0 : (filled.length - 1).clamp(0, filled.length);
+            final gap = gapCount == 0 ? 0.0 : (fillWidth / gapCount).clamp(0.0, segmentGap);
+            final usable = (fillWidth - gap * gapCount).clamp(0.0, double.infinity);
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -73,7 +75,7 @@ class GoalSegmentsBar extends StatelessWidget {
                           Expanded(key: const ValueKey('goal-segment-combined'), child: ColoredBox(color: singleColor!))
                         else
                           for (var i = 0; i < filled.length; i++) ...[
-                            if (i > 0) const SizedBox(width: segmentGap),
+                            if (i > 0) SizedBox(width: gap),
                             SizedBox(
                               key: ValueKey('goal-segment-${filled[i].walletId}'),
                               width: balance <= 0 ? 0 : usable * filled[i].balance / balance,
@@ -237,6 +239,7 @@ class GoalAmountSummary extends StatelessWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
+              // Wrap은 항목에 자기 폭까지만 준다. 넘치는 이름은 줄여 보여 주고 비율은 늘 보인다.
               for (final share in targeted)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -250,8 +253,17 @@ class GoalAmountSummary extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        share.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        // 지갑 이름은 한글일 수 있어 숫자 글꼴이 아닌 본문 글꼴로 쓴다.
+                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryTextStrong),
+                      ),
+                    ),
                     Text(
-                      '${share.name} ${formatGoalPercent(goal.balance <= 0 ? 0 : share.balance / goal.balance)}',
+                      ' ${formatGoalPercent(goal.balance <= 0 ? 0 : share.balance / goal.balance)}',
                       style: CoconutTypography.caption_10_Number.copyWith(color: colors.secondaryTextStrong),
                     ),
                   ],

@@ -34,8 +34,8 @@ class SharedPrefKeys {
   static const String kGoalPlanPeriod = 'GOAL_PLAN_PERIOD';
   static const String kGoalPlanCycle = 'GOAL_PLAN_CYCLE';
 
-  /// 모으기 계획 기간을 직접 고른 날(yyyy-MM-dd)
-  static const String kGoalPlanCustomDate = 'GOAL_PLAN_CUSTOM_DATE';
+  /// 모으기 계획의 마감일(yyyy-MM-dd). 기간을 고른 날 정해 계속 쓴다.
+  static const String kGoalPlanDeadline = 'GOAL_PLAN_DEADLINE';
 
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
@@ -149,7 +149,7 @@ class SharedPrefKeys {
     kHodlInsightsWalletIds,
     kGoalPlanPeriod,
     kGoalPlanCycle,
-    kGoalPlanCustomDate,
+    kGoalPlanDeadline,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

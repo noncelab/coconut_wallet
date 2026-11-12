@@ -59,7 +59,7 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
   /// 칩을 눌러 합산에서 뺀 지갑. 이 화면에 있는 동안만 유지한다.
   final Set<int> _excluded = {};
 
-  late final GoalPlanController _plan = GoalPlanController(today: viewModel.data.now);
+  late final GoalPlanController _plan = GoalPlanController();
 
   @override
   void dispose() {
@@ -216,7 +216,7 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
                   GoalPlanCard(
                     controller: _plan,
                     remainingSats: goal.target - goal.balance,
-                    today: viewModel.data.now,
+                    clock: () => viewModel.data.now,
                     amountText: _text,
                     fiatText: _fiat,
                   ),
