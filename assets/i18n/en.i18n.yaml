@@ -2142,6 +2142,14 @@ wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
 
 ark:
+  notification:
+    channel_name: "Ark expiry"
+    channel_description: "Reminds you to refresh Ark balance before it expires"
+    title: "Refresh your Ark balance"
+    body_week(wallet): "Ark balance in $wallet expires within a week. Open the app to refresh it."
+    body_day(wallet): "Ark balance in $wallet expires within a day. Open the app to refresh it now."
+    body_soon(wallet): "Ark balance in $wallet expires soon. Open the app to refresh it."
+    body_urgent(wallet): "Ark balance in $wallet is about to expire. Open the app to refresh it now."
   expiry:
     notice: "Some Ark balance expires soon. Please refresh it."
     urgent: "Some Ark balance is about to expire. Refresh it now."
@@ -2306,9 +2314,10 @@ ark:
     payments: "Send and receive bitcoin quickly with Ark addresses or Lightning invoices, at lower fees than on-chain."
     memory: "A wallet using Ark keeps its private key in the app's memory. Keep large amounts in a wallet without Ark or in a watch-only wallet."
     server: "Ark funds move through the Ark server. If the server has a problem, your Ark balance can't be used for a while."
-    expiry: "Ark funds expire after a set period. Refresh them before they expire, which costs a fee."
+    expiry: "Ark balance expires after a set period. Open the app and refresh it for a fee before then, or the Ark server can take the balance."
+    notification: "We'll ask for notification permission to remind you before expiry. These are local notifications scheduled on this device, not sent from a server."
     auto_refresh_title: "Auto refresh"
-    auto_refresh_description: "Refreshes automatically and pays the fee when expiry is near"
+    auto_refresh_description: "Refreshes balance near expiry for a fee when you open the app. If you don't, the server can reclaim it after expiry."
     auto_refresh_off_warning: "With auto refresh off, you need to refresh before expiry yourself. If you don't, the Ark server can take this balance after it expires."
     fee_title: "Fees"
     fee_ark: "Send and receive with Ark addresses"
@@ -2330,7 +2339,8 @@ ark:
     onchain: "On-chain"
     ark: "Ark"
   wallet_info:
-    show_breakdown: "Show on-chain and Ark balances"
+    show_breakdown: "Show balances separately"
+    show_breakdown_description: "Shows on-chain and Ark balances separately. Lightning is part of Ark."
     section: "Ark"
     turn_off_title: "Turn off Ark?"
     turn_off_description: "This wallet's Ark transaction history will be removed from this device."

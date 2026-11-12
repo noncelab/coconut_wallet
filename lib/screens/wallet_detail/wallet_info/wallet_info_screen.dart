@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
@@ -467,15 +468,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         onPressed: () => _setArkOn(viewModel, !viewModel.isArkOn),
       ),
       if (viewModel.isArkOn) ...[
-        _walletInfoMenu(
-          title: t.ark.consent.auto_refresh_title,
-          trailing: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
-          onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
-        ),
-        _walletInfoMenu(
+        _toggleRowWithDescription(
           title: t.ark.wallet_info.show_breakdown,
-          trailing: toggle(viewModel.showsBalanceBreakdown, viewModel.setBalanceBreakdown),
+          description: t.ark.wallet_info.show_breakdown_description,
+          toggle: toggle(viewModel.showsBalanceBreakdown, viewModel.setBalanceBreakdown),
           onPressed: () => viewModel.setBalanceBreakdown(!viewModel.showsBalanceBreakdown),
+        ),
+        _toggleRowWithDescription(
+          title: t.ark.consent.auto_refresh_title,
+          description: t.ark.consent.auto_refresh_description,
+          toggle: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
+          onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
         ),
       ],
     ];
@@ -1219,6 +1222,47 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   /// 지갑 정보의 한 줄. 높이가 같고, 화살표나 [trailing]이 없으면 값이 오른쪽 끝에 붙는다.
+  /// 제목·설명을 왼쪽에, 스위치를 세로 가운데에 두는 줄(핫월렛 추가 화면과 같은 배치)
+  Widget _toggleRowWithDescription({
+    required String title,
+    required String description,
+    required Widget toggle,
+    required VoidCallback onPressed,
+  }) {
+    final colors = context.coconutColors;
+    return ShrinkAnimationButton(
+      onPressed: onPressed,
+      defaultColor: Colors.transparent,
+      pressedOverlayColor: colors.primaryText,
+      pressedOverlayOpacity: 0.08,
+      borderRadius: 12,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+                  CoconutLayout.spacing_100h,
+                  Text(
+                    LocaleSettings.currentLocale == AppLocale.ko
+                        ? TextUtils.preventLineBreakInsideWords(description)
+                        : description,
+                    style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: _trailingGap),
+            toggle,
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _walletInfoMenu({
     required String title,
     VoidCallback? onPressed,

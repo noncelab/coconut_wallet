@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -96,6 +97,7 @@ class AppGuard extends StatefulWidget {
 }
 
 class _AppGuardState extends State<AppGuard> {
+  StreamSubscription<String>? _notificationTaps;
   late final IncomingPaymentWatcher _incomingPaymentWatcher;
   late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
@@ -137,12 +139,28 @@ class _AppGuardState extends State<AppGuard> {
     _screenListener.watch();
 
     _arkProvider.refreshIncomplete.addListener(_showRefreshIncomplete);
+    _notificationTaps = LocalNotificationService.instance.taps.listen(_onNotificationTap);
+    unawaited(
+      LocalNotificationService.instance.consumeLaunchPayload().then((payload) {
+        if (payload != null) _onNotificationTap(payload);
+      }),
+    );
 
     _incomingPaymentWatcher = IncomingPaymentWatcher(
       walletProvider: _walletProvider,
       arkProvider: _arkProvider,
       onReceived: _showIncomingPayment,
     )..start();
+  }
+
+  void _onNotificationTap(String payload) {
+    if (!payload.startsWith(ArkProvider.arkExpiryPayloadPrefix)) return;
+    final walletId = int.tryParse(payload.substring(ArkProvider.arkExpiryPayloadPrefix.length));
+    if (walletId == null) return;
+    widget.navigatorKey?.currentState?.pushNamed(
+      AppRouteNames.vtxoList,
+      arguments: VtxoListRouteArgs(id: walletId, startRefresh: true),
+    );
   }
 
   void _showRefreshIncomplete() {
@@ -332,6 +350,7 @@ class _AppGuardState extends State<AppGuard> {
   void dispose() {
     _incomingPaymentWatcher.stop();
     _arkProvider.refreshIncomplete.removeListener(_showRefreshIncomplete);
+    _notificationTaps?.cancel();
     _lifecycleListener.dispose();
     _screenListener.dispose();
     super.dispose();

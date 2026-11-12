@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -131,6 +132,7 @@ List<SingleChildWidget> buildAppProviders({
               context.read<WalletProvider>(),
               context.read<ArkRepository>(),
               currentBlock: context.read<NodeProvider>().currentBlockNotifier,
+              notifications: LocalNotificationService.instance,
             ),
       ),
       if (isFirebaseAnalyticsUsed)

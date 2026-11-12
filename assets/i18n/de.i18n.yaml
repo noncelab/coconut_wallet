@@ -2147,6 +2147,14 @@ wallet_selection_carousel: "Einzeln anzeigen"
 wallet_selection_grid: "Zusammen anzeigen"
 
 ark:
+  notification:
+    channel_name: "Ark-Ablauf"
+    channel_description: "Erinnert dich, Ark-Guthaben vor dem Ablauf zu erneuern"
+    title: "Erneuere dein Ark-Guthaben"
+    body_week(wallet): "Ark-Guthaben in $wallet läuft innerhalb einer Woche ab. Öffne die App, um es zu erneuern."
+    body_day(wallet): "Ark-Guthaben in $wallet läuft innerhalb eines Tages ab. Öffne jetzt die App, um es zu erneuern."
+    body_soon(wallet): "Ark-Guthaben in $wallet läuft bald ab. Öffne die App, um es zu erneuern."
+    body_urgent(wallet): "Ark-Guthaben in $wallet läuft gleich ab. Öffne jetzt die App, um es zu erneuern."
   expiry:
     notice: "Ein Teil deines Ark-Guthabens läuft bald ab. Bitte erneuern."
     urgent: "Ein Teil deines Ark-Guthabens läuft gleich ab. Jetzt erneuern."
@@ -2311,9 +2319,10 @@ ark:
     payments: "Sende und empfange Bitcoin schnell mit Ark-Adressen oder Lightning-Rechnungen, mit niedrigeren Gebühren als on-chain."
     memory: "Eine Wallet mit Ark behält ihren privaten Schlüssel im Speicher der App. Bewahre größere Beträge in einer Wallet ohne Ark oder in einer Watch-only-Wallet auf."
     server: "Ark-Guthaben werden über den Ark-Server bewegt. Hat der Server ein Problem, kannst du dein Ark-Guthaben eine Zeit lang nicht nutzen."
-    expiry: "Ark-Guthaben laufen nach einer festen Zeit ab. Du musst sie vor dem Ablauf gegen eine Gebühr erneuern."
+    expiry: "Ark-Guthaben läuft nach einer festen Zeit ab. Öffne vorher die App und erneuere es gegen eine Gebühr, sonst kann der Ark-Server das Guthaben übernehmen."
+    notification: "Wir fragen nach der Mitteilungsberechtigung, um dich vor dem Ablauf zu erinnern. Es sind lokale Mitteilungen, die auf diesem Gerät geplant und nicht von einem Server gesendet werden."
     auto_refresh_title: "Automatische Erneuerung"
-    auto_refresh_description: "Erneuert automatisch und zahlt die Gebühr, wenn der Ablauf naht"
+    auto_refresh_description: "Beim Öffnen der App wird bald ablaufendes Guthaben gegen Gebühr erneuert. Sonst kann der Server es zurückholen."
     auto_refresh_off_warning: "Ohne automatische Erneuerung musst du selbst vor dem Ablauf erneuern. Sonst kann der Ark-Server dieses Guthaben nach dem Ablauf einziehen."
     fee_title: "Gebühren"
     fee_ark: "Mit Ark-Adressen senden und empfangen"
@@ -2335,7 +2344,8 @@ ark:
     onchain: "On-chain"
     ark: "Ark"
   wallet_info:
-    show_breakdown: "On-chain- und Ark-Guthaben getrennt anzeigen"
+    show_breakdown: "Guthaben getrennt anzeigen"
+    show_breakdown_description: "Zeigt On-Chain und Ark getrennt. Lightning zählt zu Ark."
     section: "Ark"
     turn_off_title: "Ark ausschalten?"
     turn_off_description: "Der Ark-Transaktionsverlauf dieser Wallet wird von diesem Gerät entfernt."

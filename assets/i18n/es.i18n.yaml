@@ -2142,6 +2142,14 @@ wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
 
 ark:
+  notification:
+    channel_name: "Caducidad de Ark"
+    channel_description: "Te avisa para renovar el saldo Ark antes de que caduque"
+    title: "Renueva tu saldo Ark"
+    body_week(wallet): "El saldo Ark de $wallet caduca en una semana. Abre la app para renovarlo."
+    body_day(wallet): "El saldo Ark de $wallet caduca en un día. Abre la app ahora para renovarlo."
+    body_soon(wallet): "El saldo Ark de $wallet caduca pronto. Abre la app para renovarlo."
+    body_urgent(wallet): "El saldo Ark de $wallet está por caducar. Abre la app ahora para renovarlo."
   expiry:
     notice: "Parte de tu saldo Ark caduca pronto. Renuévalo."
     urgent: "Parte de tu saldo Ark está a punto de caducar. Renuévalo ahora."
@@ -2306,9 +2314,10 @@ ark:
     payments: "Envía y recibe bitcoin rápido con direcciones Ark o facturas Lightning, con comisiones más bajas que on-chain."
     memory: "Una billetera que usa Ark mantiene su clave privada en la memoria de la app. Guarda las cantidades grandes en una billetera sin Ark o en una billetera de solo lectura."
     server: "Los fondos de Ark se mueven a través del servidor Ark. Si el servidor tiene un problema, no podrás usar tu saldo de Ark por un tiempo."
-    expiry: "Los fondos de Ark caducan tras un período fijo. Hay que renovarlos antes de que caduquen, pagando una comisión."
+    expiry: "El saldo Ark caduca tras un periodo. Antes de eso, abre la app y renuévalo pagando una comisión, o el servidor Ark puede quedarse con el saldo."
+    notification: "Pediremos permiso de notificaciones para avisarte antes del vencimiento. Son notificaciones locales programadas en este dispositivo, no enviadas desde un servidor."
     auto_refresh_title: "Renovación automática"
-    auto_refresh_description: "Renueva automáticamente y paga la comisión cuando se acerca la caducidad"
+    auto_refresh_description: "Al abrir la app se renueva el saldo por caducar, con comisión. Si no, el servidor puede reclamarlo."
     auto_refresh_off_warning: "Si desactivas la renovación automática, debes renovar tú antes de la caducidad. Si no lo haces, el servidor Ark puede quedarse con este saldo cuando caduque."
     fee_title: "Comisiones"
     fee_ark: "Enviar y recibir con direcciones Ark"
@@ -2330,7 +2339,8 @@ ark:
     onchain: "On-chain"
     ark: "Ark"
   wallet_info:
-    show_breakdown: "Mostrar saldos on-chain y Ark por separado"
+    show_breakdown: "Mostrar saldos por separado"
+    show_breakdown_description: "Muestra on-chain y Ark por separado. Lightning cuenta como Ark."
     section: "Ark"
     turn_off_title: "¿Desactivar Ark?"
     turn_off_description: "El historial de transacciones Ark de esta billetera se eliminará de este dispositivo."

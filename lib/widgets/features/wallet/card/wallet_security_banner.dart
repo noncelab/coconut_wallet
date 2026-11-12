@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -91,6 +92,10 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
     super.dispose();
   }
 
+  /// 한국어는 글자 단위로 줄이 바뀌어 "요."만 내려가지 않도록 낱말 단위로 끊음
+  String _keepKoreanWords(String text) =>
+      LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(text) : text;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
@@ -126,24 +131,31 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(top: 12),
-                              child: SvgPicture.asset(
-                                CommonStateIconPath.triangleWarning,
-                                width: 16,
-                                height: 16,
-                                colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                              child: SizedBox.square(
+                                dimension: 16,
+                                child: Center(
+                                  child: SvgPicture.asset(
+                                    CommonStateIconPath.triangleWarning,
+                                    width: 14,
+                                    height: 14,
+                                    colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                                padding: const EdgeInsets.only(top: 12, bottom: 12),
                                 child: Text(
-                                  content is String
-                                      ? content
-                                      : mnemonic
-                                      ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-                                      : t.wallet_home_screen.app_lock_warning.title,
-                                  style: CoconutTypography.body3_12_Bold.copyWith(color: foreground),
+                                  _keepKoreanWords(
+                                    content is String
+                                        ? content
+                                        : mnemonic
+                                        ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                                        : t.wallet_home_screen.app_lock_warning.title,
+                                  ),
+                                  style: CoconutTypography.body3_12_Bold.copyWith(color: foreground, height: 16 / 12),
                                 ),
                               ),
                             ),

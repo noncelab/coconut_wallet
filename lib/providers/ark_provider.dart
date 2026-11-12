@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'dart:async';
 
@@ -39,13 +42,16 @@ class ArkProvider extends ChangeNotifier {
     ArkWalletService? arkWalletService,
     SharedPrefsRepository? sharedPrefsRepository,
     ValueListenable<BlockTimestamp?>? currentBlock,
+    LocalNotificationService? notifications,
     this.syncInterval = const Duration(seconds: 60),
     this.fastSyncInterval = const Duration(seconds: 5),
     bool startTimer = true,
   }) : _currentBlock = currentBlock,
+       _notifications = notifications,
        _arkWalletService = arkWalletService ?? ArkWalletService(),
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
+    _currentBlock?.addListener(_onCurrentBlockChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
     _walletProvider.setOffchainMovementsSource(
       (walletId) => supportsArkById(walletId) ? snapshot(walletId)?.movements ?? const [] : null,
@@ -70,6 +76,12 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, Future<bool>> _opening = {};
   final Map<int, DateTime> _lastSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
+
+  /// 앱이 꺼져 있어도 만료 전에 알리는 로컬 알림, 테스트 등에서는 없음
+  final LocalNotificationService? _notifications;
+  final Map<int, String> _scheduledExpiryKeys = {};
+  static const _expiryNotificationIdBase = 72000;
+  static const arkExpiryPayloadPrefix = 'ark_expiry:';
 
   /// 만료까지 남은 블록 계산에 쓰는 현재 블록, 노드 동기화가 갱신함
   final ValueListenable<BlockTimestamp?>? _currentBlock;
@@ -352,6 +364,83 @@ class ArkProvider extends ChangeNotifier {
       cacheRevision.value++;
     }
     await _autoRefreshIfOverdue(walletId, fingerprint, tip);
+    await _scheduleExpiryNotifications(walletId, tip);
+  }
+
+  /// 만료 1,008블록·144블록 전(메인넷 약 7일·1일)에 앱을 열어 갱신하라고 알림
+  ({int height, DateTime at})? _firstSeenBlock;
+  ({int height, DateTime at})? _lastSeenBlock;
+
+  /// 메인넷은 10분, 그 밖의 네트워크는 앱이 본 블록 높이 변화로 잰 간격
+  Duration get _blockInterval {
+    const mainnet = Duration(minutes: 10);
+    if (NetworkType.currentNetworkType == NetworkType.mainnet) return mainnet;
+    final first = _firstSeenBlock;
+    final last = _lastSeenBlock;
+    if (first == null || last == null || last.height - first.height < 3) return mainnet;
+    return last.at.difference(first.at) ~/ (last.height - first.height);
+  }
+
+  void _onCurrentBlockChanged() {
+    final height = _currentBlock?.value?.height;
+    if (height == null) return;
+    final now = DateTime.now();
+    _firstSeenBlock ??= (height: height, at: now);
+    if (_lastSeenBlock?.height != height) _lastSeenBlock = (height: height, at: now);
+  }
+
+  Future<void> _scheduleExpiryNotifications(int walletId, int? tip) async {
+    final notifications = _notifications;
+    if (notifications == null || tip == null) return;
+    final expiries = [
+      for (final vtxo in snapshot(walletId)?.vtxos ?? const [])
+        if (!isRefreshingVtxo(vtxo.id)) vtxo.expiryHeight,
+    ];
+    final earliest = expiries.isEmpty ? null : expiries.reduce((a, b) => a < b ? a : b);
+    final key = '$earliest:${_blockInterval.inSeconds}';
+    if (_scheduledExpiryKeys[walletId] == key) return;
+    _scheduledExpiryKeys[walletId] = key;
+    final ids = [_expiryNotificationIdBase + walletId * 2, _expiryNotificationIdBase + walletId * 2 + 1];
+    try {
+      for (final id in ids) {
+        await notifications.cancel(id);
+      }
+      if (earliest == null) return;
+      final walletName = _findWallet(walletId)?.name ?? '';
+      final isMainnet = NetworkType.currentNetworkType == NetworkType.mainnet;
+      DateTime atBlocksBefore(int blocks) => DateTime.now().add(_blockInterval * (earliest - tip - blocks));
+      final plans = [
+        (
+          ids[0],
+          atBlocksBefore(ArkRefreshDue.noticeBlocks),
+          isMainnet
+              ? t.ark.notification.body_week(wallet: walletName)
+              : t.ark.notification.body_soon(wallet: walletName),
+        ),
+        (
+          ids[1],
+          atBlocksBefore(ArkRefreshDue.urgentBlocks),
+          isMainnet
+              ? t.ark.notification.body_day(wallet: walletName)
+              : t.ark.notification.body_urgent(wallet: walletName),
+        ),
+      ];
+      for (final (id, at, body) in plans) {
+        if (!at.isAfter(DateTime.now())) continue;
+        await notifications.schedule(
+          id: id,
+          channelId: 'ark_expiry',
+          channelName: t.ark.notification.channel_name,
+          channelDescription: t.ark.notification.channel_description,
+          title: t.ark.notification.title,
+          body: body,
+          payload: '$arkExpiryPayloadPrefix$walletId',
+          at: at,
+        );
+      }
+    } catch (error) {
+      Logger.error('ArkProvider: failed to schedule expiry notifications of wallet $walletId: $error');
+    }
   }
 
   bool isAutoRefreshOn(int walletId) {
@@ -745,6 +834,7 @@ class ArkProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _currentBlock?.removeListener(_onCurrentBlockChanged);
     refreshIncomplete.dispose();
     _timer?.cancel();
     _walletProvider.walletItemListNotifier.removeListener(_onWalletListChanged);

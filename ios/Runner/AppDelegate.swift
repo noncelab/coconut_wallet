@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import UserNotifications
 import LocalAuthentication
 
 @main
@@ -21,6 +22,8 @@ import LocalAuthentication
     }
     GeneratedPluginRegistrant.register(with: flutterEngine)
     configurePlatformChannels(messenger: flutterEngine.binaryMessenger)
+    // 로컬 알림(flutter_local_notifications): 앱이 앞에 있을 때도 알림을 보여 주고 탭을 앱으로 넘긴다.
+    UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
 
     if let url = launchOptions?[.url] as? URL {
       handleBitcoinUri(url, notifyDart: false)

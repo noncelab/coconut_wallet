@@ -2139,6 +2139,14 @@ wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
 
 ark:
+  notification:
+    channel_name: "Ark期限通知"
+    channel_description: "Ark残高の期限切れ前に更新をお知らせします"
+    title: "Ark残高を更新してください"
+    body_week(wallet): "$walletのArk残高が1週間以内に期限切れになります。アプリを開いて更新してください。"
+    body_day(wallet): "$walletのArk残高が1日以内に期限切れになります。今すぐアプリを開いて更新してください。"
+    body_soon(wallet): "$walletのArk残高がまもなく期限切れになります。アプリを開いて更新してください。"
+    body_urgent(wallet): "$walletのArk残高が期限切れ間近です。今すぐアプリを開いて更新してください。"
   expiry:
     notice: "まもなく期限切れになるArk残高があります。更新してください。"
     urgent: "期限切れ間近のArk残高があります。今すぐ更新してください。"
@@ -2303,9 +2311,10 @@ ark:
     payments: "ArkアドレスやLightningインボイスでビットコインを素早く送受信できます。オンチェーンより手数料が安くなります。"
     memory: "Arkを使うウォレットは秘密鍵がアプリのメモリに残り続けます。大きな金額はArkをオフにしたウォレットか閲覧専用ウォレットに保管してください。"
     server: "Arkの残高はArkサーバーを通じて送受信されます。サーバーに問題が起きると、しばらくArkの残高を使えません。"
-    expiry: "Arkの残高は一定期間が過ぎると期限切れになります。期限前に手数料を払って更新する必要があります。"
+    expiry: "Ark残高は一定期間が過ぎると期限切れになります。期限前にアプリを開いて手数料を払い更新してください。そのままにするとArkサーバーが残高を回収できます。"
+    notification: "期限切れ前にお知らせするため、通知の許可をお願いします。通知はサーバーから送られるものではなく、この端末で予約するローカル通知です。"
     auto_refresh_title: "自動更新"
-    auto_refresh_description: "期限が近づくと手数料を払って自動で更新します"
+    auto_refresh_description: "アプリを開くと期限間近の残高を手数料を払って更新します。開かないと期限切れ後にサーバーが回収できます。"
     auto_refresh_off_warning: "自動更新をオフにすると、期限前にご自身で更新する必要があります。更新しないと、期限切れ後にArkサーバーがこの残高を回収できます。"
     fee_title: "手数料"
     fee_ark: "Arkアドレスで送受信"
@@ -2327,7 +2336,8 @@ ark:
     onchain: "オンチェーン"
     ark: "Ark"
   wallet_info:
-    show_breakdown: "オンチェーンとArkの残高を分けて表示"
+    show_breakdown: "残高を分けて表示"
+    show_breakdown_description: "オンチェーンとArkの残高を分けて表示します。LightningはArkに含まれます。"
     section: "Ark"
     turn_off_title: "Arkをオフにしますか？"
     turn_off_description: "このウォレットのArk取引履歴がこの端末から削除されます。"

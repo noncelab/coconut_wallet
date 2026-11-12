@@ -1,12 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/ark/ark_fee_guide.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
@@ -37,7 +38,10 @@ Future<ArkConsent?> showArkConsentSheet(
           scrollController: scrollController,
           feeGuide: feeGuide,
           initialAutoRefresh: initialAutoRefresh,
-          onAgree: (consent) => Navigator.pop(context, consent),
+          onAgree: (consent) {
+            Navigator.pop(context, consent);
+            unawaited(LocalNotificationService.instance.requestPermission().catchError((_) => false));
+          },
         ),
   );
 }
@@ -89,6 +93,7 @@ class _ArkConsentSheetState extends State<ArkConsentSheet> {
                 t.ark.consent.memory,
                 t.ark.consent.server,
                 t.ark.consent.expiry,
+                t.ark.consent.notification,
               ])
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -136,24 +141,39 @@ class _ArkConsentSheetState extends State<ArkConsentSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SingleButton(
+          GestureDetector(
             key: const ValueKey('ark-consent-auto-refresh'),
-            title: t.ark.consent.auto_refresh_title,
-            titleStyle: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
-            subtitle: t.ark.consent.auto_refresh_description,
-            isVerticalSubtitle: true,
-            subtitleStyle: CoconutTypography.body3_12.setColor(colors.secondaryText),
-            customPadding: EdgeInsets.zero,
-            backgroundColor: Colors.transparent,
-            onPressed: () => setState(() => _autoRefresh = !_autoRefresh),
-            rightElement: CoconutSwitch(
-              isOn: _autoRefresh,
-              scale: 0.75,
-              activeTrackColor: colors.switchActiveTrack,
-              activeThumbColor: colors.switchActiveThumb,
-              inactiveTrackColor: colors.switchInactiveTrack,
-              inactiveThumbColor: colors.switchInactiveThumb,
-              onChanged: (value) => setState(() => _autoRefresh = value),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _autoRefresh = !_autoRefresh),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.ark.consent.auto_refresh_title,
+                        style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
+                      ),
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        t.ark.consent.auto_refresh_description,
+                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+                CoconutLayout.spacing_300w,
+                CoconutSwitch(
+                  isOn: _autoRefresh,
+                  scale: 0.75,
+                  activeTrackColor: colors.switchActiveTrack,
+                  activeThumbColor: colors.switchActiveThumb,
+                  inactiveTrackColor: colors.switchInactiveTrack,
+                  inactiveThumbColor: colors.switchInactiveThumb,
+                  onChanged: (value) => setState(() => _autoRefresh = value),
+                ),
+              ],
             ),
           ),
           if (!_autoRefresh) ...[
