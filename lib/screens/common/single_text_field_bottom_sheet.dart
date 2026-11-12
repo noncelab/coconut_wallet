@@ -36,6 +36,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     this.toggleDescription,
     this.initiallyEnabled = true,
     this.submitValidator,
+    this.description,
   });
 
   final String? originalText;
@@ -79,6 +80,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
 
   /// 완료 버튼을 눌렀을 때 실행할 검증 함수. 오류 문구를 반환하면 시트를 닫지 않고 입력창 아래에 표시합니다.
   final String? Function(String text)? submitValidator;
+  final String? description;
 
   /// 커스텀 child를 그대로 감싸 시트 띄우기(필요 시).
   static Future<T?> showBottomSheet<T>({
@@ -122,6 +124,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     String? toggleDescription,
     bool initiallyEnabled = true,
     String? Function(String text)? submitValidator,
+    String? description,
     required R Function(String currentText, String originalText) resultBuilder,
   }) {
     final original = originalText ?? '';
@@ -153,6 +156,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         toggleDescription: toggleDescription,
         initiallyEnabled: initiallyEnabled,
         submitValidator: submitValidator,
+        description: description,
         resultBuilder: (currentText) => resultBuilder(currentText, original),
       ),
     );
@@ -381,6 +385,16 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
           const SizedBox(height: 16),
         ],
         IgnorePointer(ignoring: !_isEnabled, child: Opacity(opacity: _isEnabled ? 1 : 0.4, child: field)),
+        if (widget.description case final description?) ...[
+          CoconutLayout.spacing_300h,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(description, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+            ),
+          ),
+        ],
       ],
     );
 

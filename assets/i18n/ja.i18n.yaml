@@ -2139,6 +2139,30 @@ wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
 
 ark:
+  receive:
+    requested_amount(amount): "受け取る金額 $amount"
+    amount_description: "この金額は1つのQRに含まれ、ビットコインアドレス・Ark・Lightningのどれで受け取っても同じ金額が適用されます"
+    mode_bitcoin: "ビットコインアドレス"
+    mode_unified: "Ark・Lightning込み"
+    lightning_invoice: "Lightningインボイス"
+    preparing_ark: "Arkアドレスを準備中…"
+    unlock_ark: "ロックを解除するとArkとLightningを追加します"
+    set_amount_for_invoice: "下の「金額設定」で金額を決めるとLightningインボイスが追加されます"
+    creating_invoice: "インボイスを作成中…"
+    invoice_failed: "インボイスを作成できませんでした: $error"
+    add_invoice: "Lightningインボイスを追加"
+    unlock_invoice: "ロックを解除するとLightningインボイスを追加します"
+    add: "追加"
+    paid: "受け取り完了"
+    received_over_lightning: "Lightningで受け取りました"
+    you_receive: "${amount}を受け取ります(手数料 $fee)"
+    received_title: "受け取りました"
+    waiting_confirmation: "承認待ち"
+  request:
+    bitcoin_address: "ビットコインアドレス"
+    ark_address: "Arkアドレス"
+  send:
+    unlock: "ロック解除"
   unlock:
     action: "Arkのロックを解除"
     passphrase_description: "Arkを使うにはこのウォレットのパスフレーズが必要です。アプリを再起動するまで再度求めません。"

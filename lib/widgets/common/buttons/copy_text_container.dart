@@ -21,6 +21,9 @@ class CopyTextContainer extends StatefulWidget {
   final bool isAddress;
   final EdgeInsets? padding;
 
+  /// 값이 있으면 본문 탭은 이 동작, 복사는 복사 아이콘으로만
+  final VoidCallback? onTextTap;
+
   const CopyTextContainer({
     super.key,
     required this.text,
@@ -35,6 +38,7 @@ class CopyTextContainer extends StatefulWidget {
     this.showButton = true,
     this.isAddress = false,
     this.padding,
+    this.onTextTap,
   });
   @override
   State<CopyTextContainer> createState() => _CopyTextContainerState();
@@ -76,12 +80,11 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           _buttonColor = colors.surfaceMuted;
           _iconColor = colors.iconPrimary;
         });
-
-        await ClipboardCopyUtil.copyWithToast(
-          context,
-          text: widget.copyText ?? widget.text,
-          toastMessage: widget.toastMsg,
-        );
+        if (widget.onTextTap case final onTextTap?) {
+          onTextTap();
+          return;
+        }
+        await _copy();
       },
       onTapDown: (details) {
         setState(() {
@@ -117,15 +120,18 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
                 ],
 
                 if (widget.showButton)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                      color: _buttonColor,
-                    ),
-                    child: SvgPicture.asset(
-                      CommonActionIconPath.copy,
-                      colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+                  GestureDetector(
+                    onTap: widget.onTextTap == null ? null : _copy,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                        color: _buttonColor,
+                      ),
+                      child: SvgPicture.asset(
+                        CommonActionIconPath.copy,
+                        colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+                      ),
                     ),
                   ),
               ],
@@ -142,6 +148,9 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       ),
     );
   }
+
+  Future<void> _copy() =>
+      ClipboardCopyUtil.copyWithToast(context, text: widget.copyText ?? widget.text, toastMessage: widget.toastMsg);
 
   Widget _buildTextContent() {
     if (widget.textRichText != null) {

@@ -2148,6 +2148,30 @@ wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
 
 ark:
+  receive:
+    requested_amount(amount): "받을 금액 $amount"
+    amount_description: "이 금액이 QR 하나에 함께 담겨 비트코인 주소·아크·라이트닝 어느 쪽으로 받든 같은 금액이 적용돼요"
+    mode_bitcoin: "비트코인 주소"
+    mode_unified: "아크·라이트닝 포함"
+    lightning_invoice: "라이트닝 인보이스"
+    preparing_ark: "아크 주소를 준비하는 중…"
+    unlock_ark: "잠금을 해제하면 아크와 라이트닝을 추가해요"
+    set_amount_for_invoice: "하단 ‘금액 입력하기’ 버튼을 눌러 금액을 정하면 라이트닝 인보이스가 추가돼요"
+    creating_invoice: "인보이스를 만드는 중…"
+    invoice_failed: "인보이스를 만들지 못했어요: $error"
+    add_invoice: "라이트닝 인보이스 추가하기"
+    unlock_invoice: "잠금을 해제하면 라이트닝 인보이스를 추가해요"
+    add: "추가하기"
+    paid: "받기 완료"
+    received_over_lightning: "라이트닝으로 받았어요"
+    you_receive: "${amount}를 받아요 (수수료 $fee)"
+    received_title: "받았어요"
+    waiting_confirmation: "승인 대기 중"
+  request:
+    bitcoin_address: "비트코인 주소"
+    ark_address: "아크 주소"
+  send:
+    unlock: "잠금 해제"
   unlock:
     action: "아크 잠금 해제"
     passphrase_description: "아크를 쓰려면 이 지갑의 패스프레이즈가 필요해요. 앱을 다시 켜기 전까지는 다시 묻지 않아요."

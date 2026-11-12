@@ -17,6 +17,10 @@ class QrCodeInfo extends StatefulWidget {
   final EdgeInsets qrPadding;
   final IQrViewDataHandler? qrViewDataHandler;
 
+  /// Whether to show [qrData] (or [displayText]) with a copy button under the QR. Off when the
+  /// caller lays out its own rows, e.g. one per payment method of a unified receive code.
+  final bool showCopyText;
+
   const QrCodeInfo({
     super.key,
     required this.qrData,
@@ -29,6 +33,7 @@ class QrCodeInfo extends StatefulWidget {
     this.qrInternalPadding,
     this.qrViewDataHandler,
     this.qrPadding = const EdgeInsets.all(12),
+    this.showCopyText = true,
   });
 
   @override
@@ -53,17 +58,19 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
             qrPadding: widget.qrPadding,
           ),
         ),
-        const SizedBox(height: 32),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: CopyTextContainer(
-            text: widget.displayText ?? widget.qrData,
-            copyText: widget.qrData,
-            textStyle: widget.textStyle ?? CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-            isAddress: widget.isAddress,
-            padding: const EdgeInsets.all(20),
+        if (widget.showCopyText) ...[
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CopyTextContainer(
+              text: widget.displayText ?? widget.qrData,
+              copyText: widget.qrData,
+              textStyle: widget.textStyle ?? CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              isAddress: widget.isAddress,
+              padding: const EdgeInsets.all(20),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

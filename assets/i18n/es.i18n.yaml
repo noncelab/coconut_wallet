@@ -2142,6 +2142,30 @@ wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
 
 ark:
+  receive:
+    requested_amount(amount): "Importe solicitado: $amount"
+    amount_description: "Este importe va en un solo QR, así que se aplica tanto si te pagan a la dirección bitcoin, por Ark o por Lightning"
+    mode_bitcoin: "Dirección bitcoin"
+    mode_unified: "Con Ark y Lightning"
+    lightning_invoice: "Factura Lightning"
+    preparing_ark: "Preparando una dirección Ark…"
+    unlock_ark: "Desbloquea para añadir Ark y Lightning"
+    set_amount_for_invoice: "Toca «establecer importe» abajo para añadir una factura Lightning"
+    creating_invoice: "Creando una factura…"
+    invoice_failed: "No se pudo crear la factura: $error"
+    add_invoice: "Añadir una factura Lightning"
+    unlock_invoice: "Desbloquea para añadir una factura Lightning"
+    add: "Añadir"
+    paid: "Recibido"
+    received_over_lightning: "Recibido por Lightning"
+    you_receive: "Recibes $amount (comisión $fee)"
+    received_title: "Recibido"
+    waiting_confirmation: "Esperando confirmación"
+  request:
+    bitcoin_address: "Dirección bitcoin"
+    ark_address: "Dirección Ark"
+  send:
+    unlock: "Desbloquear"
   unlock:
     action: "Desbloquear Ark"
     passphrase_description: "Ark necesita la frase de contraseña de esta billetera. No se te volverá a pedir hasta que reinicies la app."

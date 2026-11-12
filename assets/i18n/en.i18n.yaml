@@ -2142,6 +2142,30 @@ wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
 
 ark:
+  receive:
+    requested_amount(amount): "Requesting $amount"
+    amount_description: "This amount goes into the single QR, so it applies whether you're paid to the Bitcoin address, Ark or Lightning"
+    mode_bitcoin: "Bitcoin address"
+    mode_unified: "With Ark & Lightning"
+    lightning_invoice: "Lightning invoice"
+    preparing_ark: "Preparing an Ark address…"
+    unlock_ark: "Unlock to add Ark and Lightning"
+    set_amount_for_invoice: "Tap ‘Set amount’ below to add a Lightning invoice"
+    creating_invoice: "Creating an invoice…"
+    invoice_failed: "Could not create an invoice: $error"
+    add_invoice: "Add a Lightning invoice"
+    unlock_invoice: "Unlock to add a Lightning invoice"
+    add: "Add"
+    paid: "Received"
+    received_over_lightning: "Received over Lightning"
+    you_receive: "You receive $amount (fee $fee)"
+    received_title: "Received"
+    waiting_confirmation: "Waiting for confirmation"
+  request:
+    bitcoin_address: "Bitcoin address"
+    ark_address: "Ark address"
+  send:
+    unlock: "Unlock"
   unlock:
     action: "Unlock Ark"
     passphrase_description: "Ark needs this wallet's passphrase. You won't be asked again until you restart the app."

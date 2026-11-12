@@ -22,6 +22,7 @@ class Bip21AmountBottomSheet {
     required BitcoinUnit currentUnit,
     required int? initialAmountSats,
     required String screenName,
+    String? description,
   }) {
     final initialText = BalanceFormatUtil.formatSatsToBip21InputText(
       currentUnit: currentUnit,
@@ -36,7 +37,8 @@ class Bip21AmountBottomSheet {
       placeholder: t.address_list_screen.enter_receive_amount,
       keyboardType: currentUnit.isBtcUnit ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
       visibleTextLimit: false,
-      collapsedHeight: 240,
+      collapsedHeight: description == null ? 240 : 280,
+      description: description,
       textInputFormatters:
           currentUnit.isBtcUnit ? [const BtcAmountInputFormatter()] : [const SatoshiAmountInputFormatter()],
       completeEnabledWhen: (current, original) => current != original,
