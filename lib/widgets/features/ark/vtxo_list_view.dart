@@ -149,7 +149,7 @@ class VtxoListRow extends StatelessWidget {
       key: const Key('vtxo-refresh-due-dot'),
       width: 6,
       height: 6,
-      decoration: BoxDecoration(color: colors.warning, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: isRefreshDue ? colors.danger : colors.warning, shape: BoxShape.circle),
     );
     final selectionIcon = SvgPicture.asset(
       CommonFormIconPath.circleCheck,
@@ -201,7 +201,7 @@ class VtxoListRow extends StatelessWidget {
                         children: [
                           if (isRefreshDue) ...[
                             SvgPicture.asset(
-                              CommonStateIconPath.circleWarning,
+                              CommonStateIconPath.triangleWarning,
                               width: 14,
                               height: 14,
                               colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),

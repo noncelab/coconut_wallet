@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/widgets/features/ark/ark_refresh_badge.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_carousel_indicator.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -250,6 +251,7 @@ class _WalletStackViewState extends State<WalletStackView> {
       size: widget.size,
       balanceDisplay: widget.balanceTextOf?.call(wallet),
       secondaryText: widget.secondaryTextOf?.call(wallet),
+      statusBadge: ArkRefreshBadge(walletId: wallet.id),
     );
   }
 

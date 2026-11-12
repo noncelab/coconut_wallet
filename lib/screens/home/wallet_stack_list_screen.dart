@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_wallet/widgets/features/ark/ark_refresh_badge.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
@@ -298,6 +299,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
               size: WalletCardSize.wide,
               balanceDisplay: viewModel.balanceText(wallet),
               balanceAtEnd: true,
+              statusBadge: ArkRefreshBadge(walletId: wallet.id),
               onPressed: () => _openWallet(wallet),
             ),
           ),
@@ -516,6 +518,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         size: WalletCardSize.small,
         balanceDisplay: viewModel.balanceText(wallet),
         secondaryText: last == null ? null : formatHomeRelativeTime(last, DateTime.now()),
+        statusBadge: ArkRefreshBadge(walletId: wallet.id),
       ),
     );
     return HeroMode(

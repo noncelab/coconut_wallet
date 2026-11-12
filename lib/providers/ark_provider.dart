@@ -443,6 +443,17 @@ class ArkProvider extends ChangeNotifier {
     }
   }
 
+  /// 홈 지갑 카드에 경고를 띄울 만큼 갱신이 급한지: 만료, 144블록 안, 또는 자동 갱신을 끈 채 1,008블록 안
+  bool needsRefreshAttention(int walletId) {
+    if (!supportsArkById(walletId)) return false;
+    final due = refreshDue(walletId);
+    if (!due.isDue) return false;
+    final blocksLeft = due.blocksLeft;
+    return due.isExpired ||
+        (blocksLeft != null && blocksLeft <= ArkRefreshDue.urgentBlocks) ||
+        !isAutoRefreshOn(walletId);
+  }
+
   bool isAutoRefreshOn(int walletId) {
     try {
       return _sharedPrefs.isWalletArkAutoRefreshOn(walletId);
