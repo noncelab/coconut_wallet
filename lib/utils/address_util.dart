@@ -114,7 +114,7 @@ String buildBip21Uri(String address, {int? amount, Map<String, String>? paramete
   return 'bitcoin:$normalizedAddress?$query';
 }
 
-String buildBip21UriFromWalletAddress(WalletAddress walletAddress, {int? amount, Map<String, String>? parameters}) {
+String buildPaymentUriFromWalletAddress(WalletAddress walletAddress, {int? amount, Map<String, String>? parameters}) {
   return buildBip21Uri(walletAddress.address, amount: amount, parameters: parameters);
 }
 

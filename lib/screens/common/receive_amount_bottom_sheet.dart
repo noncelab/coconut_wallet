@@ -7,17 +7,17 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:flutter/material.dart';
 
-/// [Bip21AmountBottomSheet]에서 사용되는 결과 DTO
-class Bip21AmountBottomSheetResult {
+/// [ReceiveAmountBottomSheet]에서 사용되는 결과 DTO
+class ReceiveAmountBottomSheetResult {
   final bool didEdit;
   final int? amountInSats;
 
-  const Bip21AmountBottomSheetResult({required this.didEdit, required this.amountInSats});
+  const ReceiveAmountBottomSheetResult({required this.didEdit, required this.amountInSats});
 }
 
 /// BIP21 금액 입력 BottomSheet 공통 호출 유틸
-class Bip21AmountBottomSheet {
-  static Future<Bip21AmountBottomSheetResult?> show({
+class ReceiveAmountBottomSheet {
+  static Future<ReceiveAmountBottomSheetResult?> show({
     required BuildContext context,
     required BitcoinUnit currentUnit,
     required int? initialAmountSats,
@@ -29,7 +29,7 @@ class Bip21AmountBottomSheet {
       initialAmountSats: initialAmountSats,
     );
 
-    return SingleTextFieldBottomSheet.showWithResult<Bip21AmountBottomSheetResult>(
+    return SingleTextFieldBottomSheet.showWithResult<ReceiveAmountBottomSheetResult>(
       context: context,
       title: t.address_list_screen.set_amount,
       screenName: screenName,
@@ -62,7 +62,7 @@ class Bip21AmountBottomSheet {
               : null,
       resultBuilder: (currentText, originalText) {
         final sats = BalanceFormatUtil.parseAmountTextToSats(currentUnit: currentUnit, inputText: currentText);
-        return Bip21AmountBottomSheetResult(didEdit: currentText != originalText, amountInSats: sats);
+        return ReceiveAmountBottomSheetResult(didEdit: currentText != originalText, amountInSats: sats);
       },
     );
   }

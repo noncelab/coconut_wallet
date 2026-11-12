@@ -101,7 +101,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     );
   }
 
-  /// Bip21AmountBottomSheet처럼 Done 클릭 시 결과를 반환하는 단일 입력 시트.
+  /// ReceiveAmountBottomSheet처럼 Done 클릭 시 결과를 반환하는 단일 입력 시트.
   static Future<R?> showWithResult<R>({
     required BuildContext context,
     required String title,

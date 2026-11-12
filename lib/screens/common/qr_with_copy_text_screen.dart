@@ -15,7 +15,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
-import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/receive_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -261,7 +261,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         showBottomActions: widget.showBottomActions,
         shareButtonKey: _shareButtonKey,
         onEnterAmountTap: () async {
-          final result = await Bip21AmountBottomSheet.show(
+          final result = await ReceiveAmountBottomSheet.show(
             context: context,
             currentUnit: currentUnit,
             initialAmountSats: _amountInSats,

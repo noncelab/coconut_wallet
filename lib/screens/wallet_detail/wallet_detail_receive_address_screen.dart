@@ -29,7 +29,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
-import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/receive_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
@@ -113,7 +113,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       if (_showsUnified && _invoice != null && !_isInvoicePaid) 'lightning': _invoice!.invoice,
     };
     if (_enteredReceiveAmountSats == null && parameters.isEmpty) return _receiveAddress!.address;
-    return buildBip21UriFromWalletAddress(
+    return buildPaymentUriFromWalletAddress(
       _receiveAddress!,
       amount: _enteredReceiveAmountSats,
       parameters: parameters.isEmpty ? null : parameters,
@@ -247,7 +247,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
 
   Future<void> _onEnterAmountTap() async {
     final preferenceProvider = context.read<PreferenceProvider>();
-    final result = await Bip21AmountBottomSheet.show(
+    final result = await ReceiveAmountBottomSheet.show(
       context: context,
       currentUnit: preferenceProvider.currentUnit,
       initialAmountSats: _enteredReceiveAmountSats,
