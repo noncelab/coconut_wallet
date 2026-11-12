@@ -22,6 +22,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_header.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
@@ -104,8 +105,8 @@ void main() {
   tearDown(() => manager.dispose());
 
   // 보내는 중인 거래가 있으면 UTXO 목록 머리글의 BTC 합계가 바로 아래 법정화폐 줄(지갑 잔액)과 달랐다.
-  // 지갑 잔액(confirmed + unconfirmed)은 보내는 중인 UTXO를 빼고 받는 중인 UTXO를 더하므로, 머리글 합계도
-  // 보내는 중(outgoing)인 UTXO만 빼고 더해 잔액과 같아야 한다. 보내는 중인 UTXO는 목록에 그대로 남는다
+  // 머리글 BTC와 법정화폐 줄은 같은 지갑 잔액(confirmed + unconfirmed)을 보여 준다. 보내는 중인 UTXO는 목록에 그대로 남는다.
+  // 동기화 중에는 잔액이 먼저 저장되고 UTXO 목록은 나중에 바뀌므로, 목록 합계가 아니라 잔액을 써야 두 줄이 늘 같다
   for (final (name, utxos, balance) in [
     ('normal', [_utxo(300000), _utxo(200000)], Balance(500000, 0)),
     ('pending receive', [_utxo(300000), _utxo(50000, status: UtxoStatus.incoming)], Balance(300000, 50000)),
@@ -118,6 +119,8 @@ void main() {
       ],
       Balance(500000, -1000),
     ),
+    // 잔액은 새로 받는 70,000을 이미 세지만 UTXO 목록은 아직 동기화 전(합계 500,000)
+    ('stale UTXO list, balance already updated', [_utxo(300000), _utxo(200000)], Balance(500000, 70000)),
   ]) {
     testWidgets('$name: the header total equals the wallet balance that its fiat line shows', (tester) async {
       final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -165,6 +168,10 @@ void main() {
               .join();
       final space = expected.lastIndexOf(' ');
       expect(shown, expected.substring(0, space) + expected.substring(space + 1));
+      // 요약 차트에 넘기는 합계도 같은 잔액이다(이 화면에서는 차트 머리를 그리지 않는다)
+      final chart = find.byType(UtxoSummaryChart);
+      expect(chart, findsOneWidget);
+      expect(tester.widget<UtxoSummaryChart>(chart).totalSats, balance.total);
     });
   }
 }
