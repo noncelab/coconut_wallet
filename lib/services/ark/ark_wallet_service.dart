@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart';
@@ -329,6 +330,62 @@ class ArkWalletService {
       if (error != null) throw ArkPaymentException(error, movementId: movementId);
       return movementId;
     });
+  }
+
+  bark.FeeSchedule? _feeSchedule;
+
+  /// 아크 서버 수수료표, 열린 지갑이 없으면 임시 지갑으로 읽고 앱 실행 동안 재사용
+  Future<bark.FeeSchedule?> feeSchedule() async {
+    if (!isEnabled) return null;
+    final cached = _feeSchedule;
+    if (cached != null) return cached;
+    for (final wallet in _openWallets.values) {
+      final info = await wallet.arkInfo();
+      if (info != null) return _feeSchedule = info.feeSchedule;
+    }
+    return _feeSchedule = await _probeFeeSchedule();
+  }
+
+  /// 무작위 키 임시 지갑, 아크 지갑 폴더 밖에 만들고 바로 삭제
+  Future<bark.FeeSchedule?> _probeFeeSchedule() async {
+    final datadir = Directory(
+      '${(await getTemporaryDirectory()).path}/bark-probe/${DateTime.now().microsecondsSinceEpoch}',
+    );
+    final random = Random.secure();
+    final seedHex = List.generate(64, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+    bark.Wallet? wallet;
+    try {
+      await datadir.create(recursive: true);
+      wallet = await bark.Wallet.open(
+        network: _network(),
+        mnemonicOrSeed: seedHex,
+        config: bark.Config(
+          serverAddress: CoconutWalletApp.kArkServerUrl,
+          esploraAddress: CoconutWalletApp.kArkEsploraUrl,
+          daemonManualSync: true,
+        ),
+        args: bark.WalletOpenArgs(
+          datadir: datadir.path,
+          createIfNotExists: true,
+          createWithoutServer: false,
+          skipRecovery: true,
+        ),
+      );
+      for (var attempt = 0; attempt < 10; attempt++) {
+        final info = await wallet.arkInfo();
+        if (info != null) return info.feeSchedule;
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+      return null;
+    } catch (error) {
+      Logger.error('ArkWalletService: failed to read the fee schedule: $error');
+      return null;
+    } finally {
+      if (wallet != null) await _close(wallet);
+      try {
+        if (await datadir.exists()) await datadir.delete(recursive: true);
+      } catch (_) {}
+    }
   }
 
   Future<void> _open(String fingerprint, String seedHex, {required bool create, required bool runRecovery}) async {

@@ -10,6 +10,9 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_create_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -55,6 +58,7 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
   bool? backupVerified;
   bool? enterPassphraseWhenSigning;
   DateTime? createdAt;
+  String? arkSeedHex;
 
   @override
   List<WalletItemBase> get walletItemList => List.unmodifiable(_wallets);
@@ -79,6 +83,7 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
     this.backupVerified = backupVerified;
     this.enterPassphraseWhenSigning = enterPassphraseWhenSigning;
     this.createdAt = createdAt;
+    this.arkSeedHex = arkSeedHex;
     if (addError != null) throw addError!;
     return SinglesigWalletItem(
       id: 7,
@@ -87,6 +92,19 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
       iconIndex: wallet.iconIndex,
       descriptor: wallet.descriptor,
     );
+  }
+}
+
+class _FakeArkWalletService extends Fake implements ArkWalletService {
+  int seedCalls = 0;
+
+  @override
+  bool get isEnabled => true;
+
+  @override
+  Future<String?> seedForHotWallet(Uint8List mnemonic, Uint8List passphrase) async {
+    seedCalls++;
+    return 'ark-seed';
   }
 }
 
@@ -406,6 +424,60 @@ void main() {
         throwsStateError,
       );
       expect(secretRepository.deleteCallCount, 1);
+      viewModel.dispose();
+    });
+  });
+
+  group('HotWalletCreateViewModel 아크', () {
+    late SharedPrefsRepository sharedPrefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPrefs = SharedPrefsRepository();
+      // ignore: deprecated_member_use_from_same_package
+      sharedPrefs.setSharedPreferencesForTest(await SharedPreferences.getInstance());
+    });
+
+    Future<HotWalletCreateResult> create(HotWalletCreateViewModel viewModel) => viewModel.createWallet(
+      walletName: 'Ark Hot Wallet',
+      colorIndex: 0,
+      iconIndex: 0,
+      mnemonicWordCount: 12,
+      passphrase: '',
+      enterPassphraseWhenSigning: false,
+    );
+
+    test('아크를 켜지 않으면 아크 시드를 넘기지 않는다', () async {
+      final walletProvider = _FakeWalletProvider();
+      final arkService = _FakeArkWalletService();
+      final viewModel = HotWalletCreateViewModel(
+        walletProvider,
+        secretRepository: _FakeSecretRepository(),
+        arkWalletService: arkService,
+        sharedPrefsRepository: sharedPrefs,
+      );
+
+      (await create(viewModel)).clearSensitiveBytes();
+
+      expect(arkService.seedCalls, 0);
+      expect(walletProvider.arkSeedHex, isNull);
+      viewModel.dispose();
+    });
+
+    test('아크를 켜면 아크 시드를 넘기고 자동 갱신 선택을 저장한다', () async {
+      final walletProvider = _FakeWalletProvider();
+      final viewModel = HotWalletCreateViewModel(
+        walletProvider,
+        secretRepository: _FakeSecretRepository(),
+        arkWalletService: _FakeArkWalletService(),
+        sharedPrefsRepository: sharedPrefs,
+      );
+      viewModel.setArk(useArk: true, autoRefresh: false);
+
+      (await create(viewModel)).clearSensitiveBytes();
+
+      expect(walletProvider.arkSeedHex, 'ark-seed');
+      expect(sharedPrefs.isWalletArkAutoRefreshOn(7), isFalse);
       viewModel.dispose();
     });
   });

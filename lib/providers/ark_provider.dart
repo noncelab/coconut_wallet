@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/model/ark/ark_balance.dart';
 import 'package:coconut_wallet/model/ark/ark_board.dart';
+import 'package:coconut_wallet/model/ark/ark_fee_guide.dart';
 import 'package:coconut_wallet/model/ark/ark_lightning_invoice.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/model/ark/ark_payment.dart';
@@ -181,6 +182,12 @@ class ArkProvider extends ChangeNotifier {
     _lastSync.remove(walletId);
     cacheRevision.value++;
     _notify();
+  }
+
+  /// 아크 서버 수수료표, 서버에 닿지 못하면 null
+  Future<ArkFeeGuide?> feeGuide() async {
+    final schedule = await _arkWalletService.feeSchedule();
+    return schedule == null ? null : ArkFeeGuide.fromSchedule(schedule);
   }
 
   /// 마지막 동기화 기준 갱신이 필요한 VTXO

@@ -1,4 +1,7 @@
 import 'package:coconut_wallet/widgets/common/text/mfp_text.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_consent_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/ark_option_section.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -692,7 +695,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
           ],
         ),
       ),
-      passphraseOptions: _buildPassphraseSection(viewModel),
+      passphraseOptions: _buildOptions(viewModel),
       walletNameField: _buildWalletNameField(),
     );
   }
@@ -864,7 +867,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     return MnemonicInputSection(
       scrollController: _scrollController,
       mnemonicInput: _buildMnemonicGrid(viewModel),
-      passphraseOptions: _buildPassphraseSection(viewModel),
+      passphraseOptions: _buildOptions(viewModel),
       walletNameField: _buildWalletNameField(),
       overlay: _isWordCountDropdownVisible ? _buildWordCountDropdown() : null,
     );
@@ -1096,6 +1099,37 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
         ),
       ),
     );
+  }
+
+  Widget _buildOptions(HotWalletRestoreViewModel viewModel) {
+    if (!viewModel.isArkAvailable) return _buildPassphraseSection(viewModel);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPassphraseSection(viewModel),
+        CoconutLayout.spacing_400h,
+        ArkOptionSection(
+          isEnabled: viewModel.useArk,
+          autoRefresh: viewModel.arkAutoRefresh,
+          onEnabledChanged: (value) => _setUseArk(viewModel, value),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _setUseArk(HotWalletRestoreViewModel viewModel, bool value) async {
+    FocusScope.of(context).unfocus();
+    if (!value) {
+      viewModel.setArk(useArk: false);
+      return;
+    }
+    final consent = await showArkConsentSheet(
+      context,
+      loadFeeGuide: context.read<ArkProvider>().feeGuide,
+      initialAutoRefresh: viewModel.arkAutoRefresh,
+    );
+    if (consent == null) return;
+    viewModel.setArk(useArk: true, autoRefresh: consent.autoRefresh);
   }
 
   Widget _buildPassphraseSection(HotWalletRestoreViewModel viewModel) {

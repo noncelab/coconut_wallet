@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
@@ -23,6 +24,8 @@ import 'package:coconut_wallet/utils/wallet_name_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_consent_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/ark_option_section.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -186,6 +189,14 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                               _buildNameField(),
                               CoconutLayout.spacing_600h,
                               _buildAdvancedSettings(),
+                              if (_viewModel.isArkAvailable) ...[
+                                CoconutLayout.spacing_400h,
+                                ArkOptionSection(
+                                  isEnabled: _viewModel.useArk,
+                                  autoRefresh: _viewModel.arkAutoRefresh,
+                                  onEnabledChanged: _setUseArk,
+                                ),
+                              ],
                               CoconutLayout.spacing_600h,
                             ],
                           ),
@@ -710,6 +721,21 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         );
       }
     }
+  }
+
+  Future<void> _setUseArk(bool value) async {
+    FocusScope.of(context).unfocus();
+    if (!value) {
+      _viewModel.setArk(useArk: false);
+      return;
+    }
+    final consent = await showArkConsentSheet(
+      context,
+      loadFeeGuide: context.read<ArkProvider>().feeGuide,
+      initialAutoRefresh: _viewModel.arkAutoRefresh,
+    );
+    if (consent == null) return;
+    _viewModel.setArk(useArk: true, autoRefresh: consent.autoRefresh);
   }
 
   void _setStorePassphrase(bool value) {

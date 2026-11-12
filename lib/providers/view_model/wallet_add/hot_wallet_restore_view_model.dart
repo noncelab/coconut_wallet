@@ -7,6 +7,8 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter/foundation.dart';
 
@@ -42,11 +44,31 @@ String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase, Stri
 }
 
 class HotWalletRestoreViewModel extends ChangeNotifier {
-  HotWalletRestoreViewModel({HotWalletSecretRepository? secretRepository})
-    : _secretRepository = secretRepository ?? HotWalletSecretRepository(),
-      _words = List.filled(12, '');
+  HotWalletRestoreViewModel({
+    HotWalletSecretRepository? secretRepository,
+    ArkWalletService? arkWalletService,
+    SharedPrefsRepository? sharedPrefsRepository,
+  }) : _secretRepository = secretRepository ?? HotWalletSecretRepository(),
+       _arkWalletService = arkWalletService ?? ArkWalletService(),
+       _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository(),
+       _words = List.filled(12, '');
 
   final HotWalletSecretRepository _secretRepository;
+  final ArkWalletService _arkWalletService;
+  final SharedPrefsRepository _sharedPrefs;
+  bool _useArk = false;
+  bool _arkAutoRefresh = true;
+
+  bool get isArkAvailable => _arkWalletService.isEnabled;
+  bool get useArk => _useArk;
+  bool get arkAutoRefresh => _arkAutoRefresh;
+
+  void setArk({required bool useArk, bool autoRefresh = true}) {
+    _useArk = useArk && isArkAvailable;
+    _arkAutoRefresh = autoRefresh;
+    _notifySafely();
+  }
+
   int _wordCount = 12;
   List<String> _words;
   int? _activeWordIndex;
@@ -311,6 +333,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
           passphraseCopy.fillRange(0, passphraseCopy.length, 0);
         }
       }
+      final arkSeedHex = _useArk ? await _arkWalletService.seedForHotWallet(mnemonic, passphrase) : null;
       return await walletProvider.runHotWalletLifecycleOperation(() async {
         try {
           final enterPassphraseWhenSigning = _usePassphrase && _enterPassphraseWhenSigning;
@@ -331,14 +354,18 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
           } finally {
             passphraseToStore.fillRange(0, passphraseToStore.length, 0);
           }
-          return await walletProvider.addHotWallet(
+          final addedWallet = await walletProvider.addHotWallet(
             wallet,
             secureStorageKey: storageKey,
             backupVerified: true,
             enterPassphraseWhenSigning: enterPassphraseWhenSigning,
             createdAt: DateTime.now(),
             watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
+            arkSeedHex: arkSeedHex,
+            restoreArk: true,
           );
+          if (arkSeedHex != null) await _sharedPrefs.setWalletArkAutoRefreshOn(addedWallet.id, _arkAutoRefresh);
+          return addedWallet;
         } catch (_) {
           secretCleanupHandledUnderLock = true;
           await _secretRepository.delete(storageKey).catchError((_) {});

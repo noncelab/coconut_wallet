@@ -1,4 +1,7 @@
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -31,6 +34,8 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
   bool? backupVerified;
   int? convertedWalletId;
   Object? addError;
+  String? arkSeedHex;
+  bool? restoreArk;
 
   @override
   Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
@@ -50,6 +55,8 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
     this.enterPassphraseWhenSigning = enterPassphraseWhenSigning;
     this.backupVerified = backupVerified;
     convertedWalletId = watchOnlyWalletIdToConvert;
+    this.arkSeedHex = arkSeedHex;
+    this.restoreArk = restoreArk;
     await gate.future;
     if (addError != null) throw addError!;
     return SinglesigWalletItem(
@@ -113,6 +120,14 @@ class _NameConflictProvider extends Fake implements WalletProvider {
     validationCalls++;
     return desiredName == wallet.name ? null : desiredName;
   }
+}
+
+class _FakeArkWalletService extends Fake implements ArkWalletService {
+  @override
+  bool get isEnabled => true;
+
+  @override
+  Future<String?> seedForHotWallet(Uint8List mnemonic, Uint8List passphrase) async => 'ark-seed';
 }
 
 void main() {
@@ -368,5 +383,27 @@ void main() {
       expect(walletProvider.enterPassphraseWhenSigning, isFalse);
       expect(viewModel.isRestoring, isFalse);
     });
+  });
+
+  test('아크를 켜고 복원하면 bark 복구 모드로 아크 시드를 넘기고 자동 갱신 선택을 저장한다', () async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPrefs = SharedPrefsRepository();
+    // ignore: deprecated_member_use_from_same_package
+    sharedPrefs.setSharedPreferencesForTest(await SharedPreferences.getInstance());
+    final provider = _GatedWalletProvider()..gate.complete();
+    final model = HotWalletRestoreViewModel(
+      secretRepository: _RecordingSecretRepository(),
+      arkWalletService: _FakeArkWalletService(),
+      sharedPrefsRepository: sharedPrefs,
+    );
+    addTearDown(model.dispose);
+    model.applyWords(0, [...List.filled(11, 'abandon'), 'about']);
+    model.setArk(useArk: true, autoRefresh: true);
+
+    await model.restore(walletProvider: provider, walletName: 'Ark restore');
+
+    expect(provider.arkSeedHex, 'ark-seed');
+    expect(provider.restoreArk, isTrue);
+    expect(sharedPrefs.isWalletArkAutoRefreshOn(1), isTrue);
   });
 }

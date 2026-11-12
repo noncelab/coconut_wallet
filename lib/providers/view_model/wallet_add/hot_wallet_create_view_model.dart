@@ -5,6 +5,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter/foundation.dart';
 
@@ -63,18 +65,35 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     HotWalletSecretRepository? secretRepository,
     HotWalletMaterialGenerator? materialGenerator,
     DateTime Function()? now,
+    ArkWalletService? arkWalletService,
+    SharedPrefsRepository? sharedPrefsRepository,
   }) : _secretRepository = secretRepository ?? HotWalletSecretRepository(), // 테스트코드에서 사용하기 위해 저장소,생성기 주입
        _materialGenerator = materialGenerator ?? _generateHotWalletMaterialInIsolate,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _arkWalletService = arkWalletService ?? ArkWalletService(),
+       _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository();
 
   final WalletProvider _walletProvider;
   final HotWalletSecretRepository _secretRepository;
   final HotWalletMaterialGenerator _materialGenerator;
   final DateTime Function() _now;
+  final ArkWalletService _arkWalletService;
+  final SharedPrefsRepository _sharedPrefs;
   bool _isCreating = false;
   bool _disposed = false;
+  bool _useArk = false;
+  bool _arkAutoRefresh = true;
 
   bool get isCreating => _isCreating;
+  bool get isArkAvailable => _arkWalletService.isEnabled;
+  bool get useArk => _useArk;
+  bool get arkAutoRefresh => _arkAutoRefresh;
+
+  void setArk({required bool useArk, bool autoRefresh = true}) {
+    _useArk = useArk && isArkAvailable;
+    _arkAutoRefresh = autoRefresh;
+    if (!_disposed) notifyListeners();
+  }
 
   bool isWalletNameDuplicated(String walletName) {
     final trimmedName = walletName.trim();
@@ -114,6 +133,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
         generatorPassphrase.fillRange(0, generatorPassphrase.length, 0);
       }
       mnemonic = material.mnemonic;
+      final arkSeedHex = _useArk ? await _arkWalletService.seedForHotWallet(mnemonic, passphraseBytes) : null;
 
       return await _walletProvider.runHotWalletLifecycleOperation(() async {
         try {
@@ -142,7 +162,9 @@ class HotWalletCreateViewModel extends ChangeNotifier {
             backupVerified: false,
             enterPassphraseWhenSigning: enterPassphraseWhenSigning,
             createdAt: _now(),
+            arkSeedHex: arkSeedHex,
           );
+          if (arkSeedHex != null) await _sharedPrefs.setWalletArkAutoRefreshOn(addedWallet.id, _arkAutoRefresh);
 
           return HotWalletCreateResult(
             walletId: addedWallet.id,
