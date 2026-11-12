@@ -95,6 +95,7 @@ class _AppGuardState extends State<AppGuard> {
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
   final BackgroundResumePolicy _resumePolicy = BackgroundResumePolicy();
+  int _lifecycleGeneration = 0;
   late final AppLifecycleListener _lifecycleListener;
 
   /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
@@ -126,6 +127,8 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   Future<void> _handleAppLifecycleState(AppLifecycleState state) async {
+    final generation = ++_lifecycleGeneration;
+
     /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
     if (Platform.isAndroid && !_isFirstInactiveSkipped) {
       _isFirstInactiveSkipped = true;
@@ -134,17 +137,18 @@ class _AppGuardState extends State<AppGuard> {
     Logger.log('AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
-        final resumeCheck = _resumePolicy.onResumed();
         await _connectivityProvider.refreshConnectivity();
+        if (!mounted || generation != _lifecycleGeneration) return;
+        final resumeCheck = _resumePolicy.onResumed();
         if (_isPaused) {
           setState(() {
             _isPaused = false;
           });
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.initWebSocketService(force: true);
+          _priceProvider.resumePriceSources(force: true);
         } else {
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.initWebSocketService();
+          _priceProvider.resumePriceSources();
         }
         _handleNodeProviderReconnect(resumeCheck);
         for (final wallet in _walletProvider.walletItemList) {
@@ -156,11 +160,12 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.paused:
         _resumePolicy.onPaused();
-        if (_isPaused) break;
-        setState(() {
-          _isPaused = true;
-        });
-        _priceProvider.disposeWebSocketService();
+        if (!_isPaused) {
+          setState(() {
+            _isPaused = true;
+          });
+        }
+        _priceProvider.pausePriceSources();
         _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:

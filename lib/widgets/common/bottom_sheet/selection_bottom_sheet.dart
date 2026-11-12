@@ -11,6 +11,7 @@ class SelectionItem<T> {
   final TextStyle? subtitleStyle;
   final T value;
   final VoidCallback onTap;
+  final String? sectionTitle;
 
   SelectionItem({
     required this.title,
@@ -19,6 +20,7 @@ class SelectionItem<T> {
     this.subtitleStyle,
     required this.value,
     required this.onTap,
+    this.sectionTitle,
   });
 }
 
@@ -27,6 +29,8 @@ class SelectionBottomSheet<T> extends StatelessWidget {
   final List<SelectionItem<T>> items;
   final T selectedValue;
   final String? headerText;
+  final ScrollController? scrollController;
+  final bool showAppBar;
 
   const SelectionBottomSheet({
     super.key,
@@ -34,6 +38,8 @@ class SelectionBottomSheet<T> extends StatelessWidget {
     required this.items,
     required this.selectedValue,
     this.headerText,
+    this.scrollController,
+    this.showAppBar = true,
   });
 
   @override
@@ -41,8 +47,10 @@ class SelectionBottomSheet<T> extends StatelessWidget {
     final colors = context.coconutColors;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true),
+      appBar:
+          showAppBar ? CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true) : null,
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
         children: [
           if (headerText != null)
@@ -66,6 +74,18 @@ class SelectionBottomSheet<T> extends StatelessWidget {
       final item = items[i];
       final isSelected = item.value == selectedValue;
 
+      final sectionTitle = item.sectionTitle;
+      if (sectionTitle != null) {
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? Sizes.size8 : Sizes.size24, bottom: Sizes.size4),
+            child: Text(sectionTitle, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+          ),
+        );
+      } else if (i > 0) {
+        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
+      }
+
       widgets.add(
         SelectableSettingsRow(
           title: item.title,
@@ -76,10 +96,6 @@ class SelectionBottomSheet<T> extends StatelessWidget {
           onTap: item.onTap,
         ),
       );
-
-      if (i < items.length - 1) {
-        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
-      }
     }
 
     return widgets;

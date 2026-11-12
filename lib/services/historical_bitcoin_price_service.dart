@@ -16,7 +16,34 @@ class HistoricalBitcoinPriceService {
       FiatCode.USD => _fetchBinanceDailyCloses('BTCUSDT'),
       FiatCode.EUR => _fetchBinanceDailyCloses('BTCEUR'),
       FiatCode.JPY => _fetchBitflyerDailyCloses(),
+      _ => _fetchCoinGeckoDailyCloses(fiatCode),
     };
+  }
+
+  // CoinGecko 무료 API는 days>90 요청만 일별 데이터를 주므로 100일을 받아 날짜별 종가로 정리한다.
+  Future<List<double>> _fetchCoinGeckoDailyCloses(FiatCode fiatCode) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart',
+      queryParameters: {'vs_currency': fiatCode.vsCurrency, 'days': 100},
+    );
+    final prices = response.data?['prices'];
+    return closedDailyClosesFromCoinGecko(prices is List ? prices : const []);
+  }
+
+  /// CoinGecko market_chart 응답([ms, 가격], …)에서 마감된 날의 종가만 오래된 날부터
+  /// UTC 00:00 지점이 직전 날의 종가이며, 자정이 아닌 마지막 지점(현재 시세)은 제외한다.
+  static List<double> closedDailyClosesFromCoinGecko(List<dynamic> prices) {
+    const dayMilliseconds = 86400000;
+    final closes = <({int dayStart, double close})>[];
+    for (final point in prices) {
+      if (point is! List || point.length < 2) continue;
+      final millis = (point[0] as num?)?.toInt();
+      final price = (point[1] as num?)?.toDouble();
+      if (millis == null || price == null || millis % dayMilliseconds != 0) continue;
+      closes.add((dayStart: millis - dayMilliseconds, close: price));
+    }
+    closes.sort((a, b) => a.dayStart.compareTo(b.dayStart));
+    return [for (final day in closes.skip(closes.length > 32 ? closes.length - 32 : 0)) day.close];
   }
 
   // bitFlyer 공개 API에는 일봉이 없어, bitFlyer 웹 차트가 쓰는 비공식 주소를 쓴다. 바뀌면 실패하고 값 없음으로 처리된다.

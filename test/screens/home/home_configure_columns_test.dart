@@ -82,6 +82,8 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
+  void setHomeWidgetFiats(Iterable<FiatCode> fiats) {}
+  @override
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => 100000000;
 }
 

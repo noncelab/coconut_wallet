@@ -3,11 +3,9 @@ import 'package:coconut_wallet/model/utxo/utxo_filter.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const int _walletId = 1;
@@ -32,17 +30,6 @@ class _UtxoTagProvider extends Fake implements UtxoTagProvider {
 
   @override
   List<UtxoTag> getUtxoTagList(int walletId) => tagsByUtxoId.values.expand((tags) => tags).toSet().toList();
-}
-
-class _PriceProvider extends Fake implements PriceProvider {
-  @override
-  int? get bitcoinPriceKrw => null;
-
-  @override
-  void addListener(VoidCallback listener) {}
-
-  @override
-  void removeListener(VoidCallback listener) {}
 }
 
 class _PreferenceProvider extends Fake implements PreferenceProvider {
@@ -81,7 +68,6 @@ void main() {
         taggedSmall.utxoId: [tag],
         taggedLocked.utxoId: [tag],
       }),
-      _PriceProvider(),
       _PreferenceProvider(),
       true,
       _walletId,
