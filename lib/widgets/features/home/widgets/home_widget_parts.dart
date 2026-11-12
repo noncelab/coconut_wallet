@@ -7,6 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
+import 'package:coconut_wallet/utils/dash_path.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -459,6 +460,9 @@ class HomeSparkline extends StatelessWidget {
   /// 손가락으로 짚은 점. 세로 안내선과 점을 그린다.
   final int? selectedIndex;
 
+  /// 값이 있으면 선을 이 간격의 점선으로
+  final List<double>? dashPattern;
+
   const HomeSparkline({
     super.key,
     required this.values,
@@ -467,6 +471,7 @@ class HomeSparkline extends StatelessWidget {
     this.selectedIndex,
     this.minimum,
     this.maximum,
+    this.dashPattern,
   });
 
   /// [index]번째 값이 [size] 안에서 그려지는 위치
@@ -490,6 +495,7 @@ class HomeSparkline extends StatelessWidget {
         minimum: minimum?.toDouble(),
         maximum: maximum?.toDouble(),
         guideColor: context.coconutColors.tertiaryText,
+        dashPattern: dashPattern,
       ),
       size: Size.infinite,
     );
@@ -552,6 +558,7 @@ class _SparklinePainter extends CustomPainter {
 
   final int? selectedIndex;
   final Color? guideColor;
+  final List<double>? dashPattern;
 
   _SparklinePainter(
     this.values,
@@ -561,6 +568,7 @@ class _SparklinePainter extends CustomPainter {
     this.guideColor,
     this.minimum,
     this.maximum,
+    this.dashPattern,
   });
 
   @override
@@ -588,7 +596,7 @@ class _SparklinePainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, strokeWidth * 1.5),
     );
     canvas.drawPath(
-      path,
+      dashPath(path, dashPattern),
       Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -611,6 +619,7 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter oldDelegate) =>
+      oldDelegate.dashPattern != dashPattern ||
       oldDelegate.minimum != minimum ||
       oldDelegate.maximum != maximum ||
       oldDelegate.color != color ||

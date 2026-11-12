@@ -767,7 +767,7 @@ wallet_balance_history_screen:
   transactions_label: "Transactions"
   flow_count: "${count} tx"
   flow_summary: "${count} tx · ${amount}"
-  no_wallets: "No wallets to show at this point"
+  no_wallets: "No balance at this point"
 
 wallet_connect_screen:
   guide_bitbox02:

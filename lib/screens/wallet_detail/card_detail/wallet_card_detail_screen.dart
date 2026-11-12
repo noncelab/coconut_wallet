@@ -523,7 +523,14 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       balancePeriod: HomeWidgetPeriod.week,
     );
     try {
-      await WalletBalanceHistoryScreen.open(context, insights);
+      await WalletBalanceHistoryScreen.open(
+        context,
+        insights,
+        initialRail:
+            viewModel.showsBalanceBreakdownOf(viewModel.focusedWallet)
+                ? _balanceRails[viewModel.focusedWallet.id] ?? 0
+                : 0,
+      );
     } finally {
       insights.dispose();
     }

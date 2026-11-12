@@ -895,7 +895,7 @@ wallet_balance_history_screen:
   transactions_label: "Transaktionen"
   flow_count: "${count} Tx"
   flow_summary: "${count} Tx · ${amount}"
-  no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
+  no_wallets: "Zu diesem Zeitpunkt kein Guthaben"
 
 # lib/screens/review
 negative_feedback_screen:

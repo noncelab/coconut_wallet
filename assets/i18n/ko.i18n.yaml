@@ -895,7 +895,7 @@ wallet_balance_history_screen:
   transactions_label: "트랜잭션"
   flow_count: "${count}회"
   flow_summary: "${count}회 · ${amount}"
-  no_wallets: "이 시점에 표시할 지갑이 없어요"
+  no_wallets: "이 시점에 잔액이 없어요"
 
 # lib/screens/review
 negative_feedback_screen:

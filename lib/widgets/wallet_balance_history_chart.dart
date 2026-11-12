@@ -7,6 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_balance_history_point.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/utils/dash_path.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -398,7 +399,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
         ]),
     );
     canvas.drawPath(
-      _dashed(chartPath, dashPattern),
+      dashPath(chartPath, dashPattern),
       Paint()
         ..color = lineColor
         ..style = PaintingStyle.stroke
@@ -418,22 +419,4 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
         oldDelegate.lineColor != lineColor ||
         oldDelegate.targetColor != targetColor;
   }
-}
-
-Path _dashed(Path source, List<double>? pattern) {
-  if (pattern == null || pattern.length < 2) return source;
-  final result = Path();
-  for (final metric in source.computeMetrics()) {
-    var distance = 0.0;
-    var draw = true;
-    var index = 0;
-    while (distance < metric.length) {
-      final length = pattern[index % pattern.length];
-      if (draw) result.addPath(metric.extractPath(distance, distance + length), Offset.zero);
-      distance += length;
-      draw = !draw;
-      index++;
-    }
-  }
-  return result;
 }

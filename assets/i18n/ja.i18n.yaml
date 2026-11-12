@@ -766,7 +766,7 @@ wallet_balance_history_screen:
   transactions_label: "取引"
   flow_count: "${count}件"
   flow_summary: "${count}件 · ${amount}"
-  no_wallets: "この時点で表示できるウォレットはありません"
+  no_wallets: "この時点の残高はありません"
 
 wallet_connect_screen:
   guide_bitbox02:

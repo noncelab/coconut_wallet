@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_edge_painter.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -62,21 +63,30 @@ class WalletBalanceHistoryScreen extends StatefulWidget {
   /// 호들 인사이트 잔액 카드에서 열면 그 카드 높이. 그래프 카드가 같은 자리, 같은 크기로 이어진다.
   final double? cardHeight;
 
-  const WalletBalanceHistoryScreen({super.key, required this.viewModel, this.cardHeight});
+  /// 처음 고를 잔액 칩: 0 전체, 1 온체인, 2 아크
+  final int initialRail;
 
-  static Future<void> open(BuildContext context, HodlInsightsViewModel viewModel, {double? cardHeight}) =>
-      Navigator.of(context).push<void>(
-        PageRouteBuilder<void>(
-          settings: const RouteSettings(name: routeName),
-          opaque: false,
-          transitionDuration: const Duration(milliseconds: 450),
-          reverseTransitionDuration: const Duration(milliseconds: 400),
-          pageBuilder: (_, __, ___) => WalletBalanceHistoryScreen(viewModel: viewModel, cardHeight: cardHeight),
-          transitionsBuilder:
-              (_, animation, __, child) =>
-                  FadeTransition(opacity: animation.drive(CurveTween(curve: Curves.easeOutCubic)), child: child),
-        ),
-      );
+  const WalletBalanceHistoryScreen({super.key, required this.viewModel, this.cardHeight, this.initialRail = 0});
+
+  static Future<void> open(
+    BuildContext context,
+    HodlInsightsViewModel viewModel, {
+    double? cardHeight,
+    int initialRail = 0,
+  }) => Navigator.of(context).push<void>(
+    PageRouteBuilder<void>(
+      settings: const RouteSettings(name: routeName),
+      opaque: false,
+      transitionDuration: const Duration(milliseconds: 450),
+      reverseTransitionDuration: const Duration(milliseconds: 400),
+      pageBuilder:
+          (_, __, ___) =>
+              WalletBalanceHistoryScreen(viewModel: viewModel, cardHeight: cardHeight, initialRail: initialRail),
+      transitionsBuilder:
+          (_, animation, __, child) =>
+              FadeTransition(opacity: animation.drive(CurveTween(curve: Curves.easeOutCubic)), child: child),
+    ),
+  );
 
   @override
   State<WalletBalanceHistoryScreen> createState() => _WalletBalanceHistoryScreenState();
@@ -103,7 +113,24 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
 
   HodlInsightsViewModel get vm => widget.viewModel;
   List<DateTime> get _dates => HomeWidgetMath.lastDays(_today, _days);
-  List<int> get _balances => vm.data.dailyBalances(walletIds: _walletIds, days: _days, asOf: _today);
+  late int _rail = widget.initialRail;
+
+  /// 지갑 하나이고 그 지갑이 잔액 나눠 보기를 켰을 때만
+  int? get _railWalletId {
+    if (!_singleWalletScope) return null;
+    final id = _walletIds?.single ?? vm.data.wallets.single.id;
+    return (context.readArkProviderOrNull()?.showsBalanceBreakdown(id) ?? false) ? id : null;
+  }
+
+  int get _activeRail => _railWalletId == null ? 0 : _rail;
+
+  List<int> get _balances {
+    final walletId = _railWalletId;
+    if (walletId == null || _rail == 0) {
+      return vm.data.dailyBalances(walletIds: _walletIds, days: _days, asOf: _today);
+    }
+    return vm.data.dailyRailBalances(walletId, ark: _rail == 2, days: _days, asOf: _today);
+  }
 
   // 지갑 상세 화면이서 전이하거나 앱에 추가된 지갑이 1개일 때
   bool get _singleWalletScope {
@@ -261,6 +288,33 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
           padding: const EdgeInsets.only(top: 8, bottom: 12),
           child: Column(
             children: [
+              if (_railWalletId != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      for (final (index, label)
+                          in [t.ark.balance.total, t.ark.balance.onchain, t.ark.balance.ark].indexed)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            key: Key('balance-history-rail-$index'),
+                            onTap: () => setState(() => _rail = index),
+                            child: CoconutChip(
+                              minWidth: 40,
+                              color: index == _rail ? colors.surfaceInfoChip : Colors.transparent,
+                              borderColor: index == _rail ? colors.surfaceInfoChip : colors.divider,
+                              label: label,
+                              labelSize: 12,
+                              labelColor: index == _rail ? colors.primaryText : colors.secondaryText,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -480,6 +534,11 @@ class _WalletBalanceHistoryScreenState extends State<WalletBalanceHistoryScreen>
                             ),
                             Positioned.fill(
                               child: HomeSparkline(
+                                dashPattern: switch (_activeRail) {
+                                  1 => const [8, 4],
+                                  2 => const [3, 3],
+                                  _ => null,
+                                },
                                 values: values,
                                 selectedIndex: localSelected,
                                 minimum: minimum,
