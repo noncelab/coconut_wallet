@@ -798,12 +798,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   color: context.coconutColors.popupBackground,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                // 1.2배 상한에서도 작은 화면(320×568 등)에서는 계산서가 화면보다 길 수 있어 그때는 스크롤한다(A-C2).
-                // 닫기 버튼도 함께 움직여 계산서 글자 위에 겹치지 않는다
-                child: SingleChildScrollView(
-                  child: Stack(
-                    children: [
-                      Column(
+                child: Stack(
+                  children: [
+                    // 1.2배 상한에서도 작은 화면(320×568 등)에서는 계산서가 화면보다 길 수 있어 그때는 내용만 스크롤한다(A-C2)
+                    SingleChildScrollView(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           RepaintBoundary(
@@ -890,20 +889,34 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                           CoconutLayout.spacing_500h,
                         ],
                       ),
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          color: context.coconutColors.primaryText,
-                          icon: SvgPicture.asset(
-                            CommonActionIconPath.close,
-                            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                          ),
+                    ),
+                    // 시트 머리: 닫기 버튼은 위에 고정하고, 내용은 머리 아래로 지나가게 머리 자리를 시트 색으로 덮는다.
+                    // 머리 높이는 계산서 위 빈 여백(spacing_1000h)과 같아 내리기 전 모습은 그대로다
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: ColoredBox(
+                        key: const Key('p2p-bill-close-header'),
+                        color: context.coconutColors.popupBackground,
+                        child: CoconutLayout.spacing_1000h,
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        // 화면 읽기에 "닫기"로 읽힌다
+                        tooltip: t.close,
+                        color: context.coconutColors.primaryText,
+                        icon: SvgPicture.asset(
+                          CommonActionIconPath.close,
+                          colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
