@@ -2551,7 +2551,7 @@ wallet_health:
     meaning_title: "Qué significa"
     meaning_body: "La puntuación se calcula con los datos de la billetera que Coconut Wallet puede revisar. Una puntuación alta no garantiza que tu billetera esté a salvo."
     no_score_body: "Tu puntuación aparecerá cuando añadas una billetera y haya suficientes revisiones."
-    min_coverage: "La puntuación aparece cuando se pueden revisar al menos 2 de las 4 categorías."
+    min_coverage: "La puntuación aparece cuando una billetera tiene bitcoin o historial de transacciones y se pueden revisar al menos 2 de las 4 categorías. Las revisiones que hagas antes también cuentan en cada categoría."
     formula_title: "Cómo se calcula tu puntuación"
     formula_total: "Total"
     formula_not_scored: "Sin puntuación"

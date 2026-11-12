@@ -2551,7 +2551,7 @@ wallet_health:
     meaning_title: "What this score means"
     meaning_body: "Your Wallet Health Score is calculated from the wallet data Coconut Wallet can check. A high score doesn't guarantee your wallet is safe."
     no_score_body: "Your score appears after you add a wallet and enough checks can run."
-    min_coverage: "A score is shown once at least 2 of the 4 categories can be checked."
+    min_coverage: "A score is shown once a wallet has bitcoin or transaction history and at least 2 of the 4 categories can be checked. Checks you do before then still count in each category."
     formula_title: "How your score is calculated"
     formula_total: "Total"
     formula_not_scored: "Not scored"

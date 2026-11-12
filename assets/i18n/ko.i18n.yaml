@@ -2557,7 +2557,7 @@ wallet_health:
     meaning_title: "점수의 의미"
     meaning_body: "지갑 상태 점수는 코코넛 월렛이 확인할 수 있는 지갑 데이터로 계산해요. 점수가 높다고 해서 지갑의 안전이 보장되는 것은 아니에요."
     no_score_body: "지갑을 추가하고 점검할 수 있는 항목이 충분해지면 점수가 생겨요."
-    min_coverage: "점수는 4개 영역 중 2개 이상을 점검할 수 있을 때 표시돼요."
+    min_coverage: "점수는 지갑에 비트코인이나 거래 기록이 있고, 4개 영역 중 2개 이상을 점검할 수 있을 때 표시돼요. 그 전에 한 점검도 영역별 결과에 반영돼요."
     formula_title: "점수 계산 방법"
     formula_total: "합계"
     formula_not_scored: "점수 없음"

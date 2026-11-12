@@ -2556,7 +2556,7 @@ wallet_health:
     meaning_title: "Was die Bewertung bedeutet"
     meaning_body: "Die Bewertung wird aus den Wallet-Daten berechnet, die Coconut Wallet prüfen kann. Eine hohe Bewertung garantiert nicht, dass deine Wallet sicher ist."
     no_score_body: "Deine Bewertung erscheint, sobald du eine Wallet hinzufügst und genug Prüfungen möglich sind."
-    min_coverage: "Eine Bewertung erscheint, sobald mindestens 2 der 4 Bereiche geprüft werden können."
+    min_coverage: "Eine Bewertung erscheint, sobald eine Wallet Bitcoin oder einen Transaktionsverlauf hat und mindestens 2 der 4 Bereiche geprüft werden können. Prüfungen, die du vorher machst, zählen trotzdem im jeweiligen Bereich."
     formula_title: "So wird deine Bewertung berechnet"
     formula_total: "Gesamt"
     formula_not_scored: "Keine Bewertung"
