@@ -116,7 +116,7 @@ class SafetyInputsCollector {
       }
       final currentTxids = txs.map((tx) => tx.txid).toSet();
       final trackedTxStates = <String, IncidentTxState>{};
-      for (final incident in state.incidents.where((incident) => incident.walletId == id && incident.isOpen)) {
+      for (final incident in state.incidents.where((incident) => incident.walletId == id)) {
         if (!currentTxids.contains(incident.txid)) {
           final row = _wallets.getTransactionRecord(id, incident.txid);
           trackedTxStates[incident.txid] =

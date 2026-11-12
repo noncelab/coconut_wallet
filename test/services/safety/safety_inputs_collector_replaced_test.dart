@@ -104,4 +104,23 @@ void main() {
     wallets.replaced.remove('x');
     expect(collect(state).wallets.single.trackedTxStates, {'x': IncidentTxState.dropped});
   });
+
+  // M05: 인지함·완료로 닫은 사건도 목록에서 사라진 거래를 계속 따라간다
+  test('closed incidents keep tracking a tx that left the list', () {
+    final state = SafetyState(
+      incidents: [
+        SafetyIncident(walletId: 1, txid: 'x', detectedAt: DateTime(2026)).recognize(DateTime(2026)),
+        SafetyIncident(
+          walletId: 1,
+          txid: 'y',
+          detectedAt: DateTime(2026),
+        ).respond(IncidentResponseMode.free).complete(DateTime(2026)),
+      ],
+    );
+    wallets.replaced['x'] = safetyTx('x', height: 101);
+    expect(collect(state).wallets.single.trackedTxStates, {
+      'x': IncidentTxState.confirmed,
+      'y': IncidentTxState.dropped,
+    });
+  });
 }

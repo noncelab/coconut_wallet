@@ -399,14 +399,37 @@ void main() {
       expect(detect([wallet(1)], state: withIncident(incident)).txStates, isEmpty);
     });
 
-    test('closed incidents are left alone', () {
-      final recognized = incident.recognize(testNow);
-      expect(
-        detect([
+    // M05: 인지함·완료로 닫은 사건도 거래 상태는 따라간다. 사건 상태와 해결 시각은 그대로이고 위급이 되지 않는다
+    test('closed incidents follow the tx state but stay closed and never critical', () {
+      for (final closed in [
+        incident.recognize(testNow),
+        incident.respond(IncidentResponseMode.free).complete(testNow),
+      ]) {
+        expect(
+          detect([
+            wallet(1, txs: [tx('x', height: 1001)]),
+          ], state: withIncident(closed)).txStates,
+          {'1:x': IncidentTxState.confirmed},
+          reason: closed.state.name,
+        );
+        final dropped = detect([
           wallet(1, tracked: {'x': IncidentTxState.dropped}),
-        ], state: withIncident(recognized)).txStates,
-        isEmpty,
-      );
+        ], state: withIncident(closed));
+        expect(dropped.txStates, {'1:x': IncidentTxState.dropped}, reason: closed.state.name);
+        final after = dropped.applyTo(withIncident(closed)).incidents.single;
+        expect(
+          (after.txState, after.state, after.resolvedAt),
+          (IncidentTxState.dropped, closed.state, closed.resolvedAt),
+        );
+        expect(after.isCritical, isFalse);
+        expect(
+          detect([
+            wallet(1, settled: false, tracked: {'x': IncidentTxState.dropped}),
+          ], state: withIncident(closed)).txStates,
+          isEmpty,
+          reason: 'still syncing: a missing tx is not judged yet',
+        );
+      }
     });
   });
 

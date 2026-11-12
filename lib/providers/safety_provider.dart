@@ -136,6 +136,9 @@ class SafetyProvider extends ChangeNotifier {
   (String, int, bool, String?)? _observedServer;
   final Set<String> _vibratedIncidents = {};
 
+  /// 평가 루프가 알린 횟수. 사용자 변경·지갑 삭제는 바뀐 상태가 들어간 뒤 그 refresh가 이미 알렸으면 다시 알리지 않는다
+  int _evaluationNotices = 0;
+
   WalletHealthReport? get report => _report;
   bool get isChecking => _isChecking;
   SafetyState get state => _state;
@@ -251,8 +254,11 @@ class SafetyProvider extends ChangeNotifier {
     final previous = _state;
     _state = _store.load();
     final previousReport = _report;
+    final notices = _evaluationNotices;
     await refresh();
-    if (!_disposed && previous != _state && previousReport == _report) notifyListeners();
+    if (!_disposed && _evaluationNotices == notices && previous != _state && previousReport == _report) {
+      notifyListeners();
+    }
   }
 
   Future<void> refresh() {
@@ -283,6 +289,7 @@ class SafetyProvider extends ChangeNotifier {
         _state = _store!.load();
         var inputs = _collector!.collect(state: _state, now: _now(), appUpdate: _appUpdate, serverCert: _serverCert);
         final delta = IncidentDetector.detect(inputs);
+        final incidentsBefore = _state.incidents;
         if (!delta.isEmpty) {
           await _store.update(delta.applyTo);
           if (_disposed) return;
@@ -293,9 +300,13 @@ class SafetyProvider extends ChangeNotifier {
         for (final incident in next.criticalIncidents) {
           if (_vibratedIncidents.add(incident.id)) vibrateForIncident();
         }
-        final changed = next != _report;
+        // 닫은 사건의 거래 상태는 리포트에 없어서, 사건만 바뀌어도 한 번 알린다(열린 지난 알림·완료 요약이 따라오게)
+        final changed = next != _report || !listEquals(incidentsBefore, _state.incidents);
         _report = next;
-        if (changed) notifyListeners();
+        if (changed) {
+          _evaluationNotices++;
+          notifyListeners();
+        }
       }
     } finally {
       _refreshFuture = null;
@@ -396,8 +407,11 @@ class SafetyProvider extends ChangeNotifier {
             ? change(_state)
             : await (confirmed ? _store.updateConfirmed(change, onLateSave: _followStore) : _store.update(change));
     if (_disposed) return;
+    final notices = _evaluationNotices;
     await refresh();
-    if (!_disposed && previous != _state && previousReport == _report) notifyListeners();
+    if (!_disposed && _evaluationNotices == notices && previous != _state && previousReport == _report) {
+      notifyListeners();
+    }
   }
 
   /// 사용자 동작의 저장이 상한(3초)을 넘겨 실패로 알린 뒤 늦게 저장됐다: 저장소의 확인된 상태로 맞추고 알린다

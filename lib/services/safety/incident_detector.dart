@@ -120,8 +120,9 @@ abstract final class IncidentDetector {
         }
       }
 
+      // 닫은(인지함·완료) 사건도 거래 상태는 따라간다. 상태만 바꾸므로 다시 열리거나 위급이 되지 않는다
       for (final incident in state.incidents) {
-        if (incident.walletId != w.id || !incident.isOpen) continue;
+        if (incident.walletId != w.id) continue;
         final txState = _txState(incident, w, txById[incident.txid]);
         if (txState != incident.txState) txStates[incident.id] = txState;
       }

@@ -5,6 +5,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/safety/safety_check.dart';
 import 'package:coconut_wallet/model/safety/safety_incident.dart';
@@ -24,6 +25,7 @@ import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/services/safety/safety_inputs_collector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/screens/safety/safety_alerts_screen.dart';
 import 'package:coconut_wallet/screens/safety/security_guide_screen.dart';
 
 import '../repository/realm/test_realm_manager.dart';
@@ -472,6 +474,82 @@ void main() {
     expect(store.state.recognizedTxids, {'known'});
     expect(provider.incidentFor(1, 'known')!.isOpen, isFalse);
     expect(provider.incidentFor(1, 'missing'), isNull);
+  });
+  // M05: 인지함으로 닫은 사건의 거래 상태는 리포트에 없다. 그 상태만 바뀌어도 한 번 알려야 열린 화면이 따라온다
+  testWidgets('a closed incident whose transaction confirms notifies once though the report is unchanged', (
+    tester,
+  ) async {
+    store.state = SafetyState(incidents: [incident('known')]);
+    wallets.records[1] = [safetyTx('known')];
+    create(tester);
+    await settle(tester);
+    await provider.recognizeIncident('1:known');
+    final report = provider.report;
+    var notifications = 0;
+    provider.addListener(() => notifications++);
+    wallets.records[1] = [safetyTx('known', height: 900)];
+    await provider.refresh();
+    expect(provider.incidentFor(1, 'known')!.txState, IncidentTxState.confirmed);
+    expect(provider.report, report);
+    expect(notifications, 1);
+    await provider.refresh();
+    expect(notifications, 1);
+  });
+  testWidgets('an open alerts screen moves a closed incident from pending to confirmed', (tester) async {
+    guide.usePhoneSize(tester);
+    store.state = SafetyState(incidents: [incident('known')]);
+    wallets.records[1] = [safetyTx('known')];
+    create(tester);
+    await settle(tester);
+    await provider.recognizeIncident('1:known');
+    await tester.pumpWidget(guide.safetyTestApp(const SafetyAlertsScreen(), safety: provider, wallets: wallets));
+    await tester.pumpAndSettle();
+    final txStates = t.wallet_health.incident.tx_state;
+    expect(guide.findTextContaining(txStates.unconfirmed), findsOneWidget);
+    wallets.records[1] = [safetyTx('known', height: 900)];
+    await provider.refresh();
+    await tester.pump();
+    expect(guide.findTextContaining(txStates.unconfirmed), findsNothing);
+    expect(guide.findTextContaining(txStates.confirmed), findsOneWidget);
+  });
+  // 사용자 저장(홈 안내 닫기)과 닫힌 사건의 거래 상태 갱신이 같은 refresh에 함께 들어가도 같은 최종 상태로 두 번 알리지 않는다
+  testWidgets('a user save that lands with a closed incident tx update notifies once', (tester) async {
+    store.state = SafetyState(incidents: [incident('known')]);
+    wallets.records[1] = [safetyTx('known')];
+    create(tester);
+    await settle(tester);
+    await provider.recognizeIncident('1:known');
+    final report = provider.report;
+    var notifications = 0;
+    provider.addListener(() => notifications++);
+    wallets.records[1] = [safetyTx('known', height: 900)];
+    await provider.dismissHomeHint();
+    expect(provider.state.hintDismissed, isTrue);
+    expect(provider.incidentFor(1, 'known')!.txState, IncidentTxState.confirmed);
+    expect(provider.report, report);
+    expect(notifications, 1);
+  });
+  // 지갑 삭제 정리도 같다: 그 refresh가 닫힌 사건 갱신으로 이미 알렸으면 정리 뒤에 다시 알리지 않는다
+  testWidgets('removing a wallet while a closed incident tx updates notifies once', (tester) async {
+    wallets.walletItemListNotifier.value = [safetyWallet(hot: true), safetyWallet(id: 2)];
+    store.state = SafetyState(incidents: [incident('known')]);
+    wallets.records[1] = [safetyTx('known')];
+    create(tester);
+    await settle(tester);
+    await provider.recognizeIncident('1:known');
+    await provider.setCaution(2, true);
+    final report = provider.report;
+    var notifications = 0;
+    provider.addListener(() => notifications++);
+    wallets.records[1] = [safetyTx('known', height: 900)];
+    wallets.events.add(const WalletRemoved(2));
+    await tester.pump();
+    await settle(tester);
+    expect(store.removed, [2]);
+    expect(provider.isCaution(2), isFalse);
+    expect(provider.incidentFor(1, 'known')!.txState, IncidentTxState.confirmed);
+    expect(provider.report, report);
+    expect(notifications, 1);
   });
   testWidgets('recognizing a shared transaction closes every open incident across wallets', (tester) async {
     wallets.walletItemListNotifier.value = [safetyWallet(hot: true), safetyWallet(id: 2)];
