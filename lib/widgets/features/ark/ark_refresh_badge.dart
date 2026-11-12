@@ -1,11 +1,9 @@
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-/// 지갑 카드에 붙는 아크 갱신 경고, 갱신이 급할 때만 보임
+/// 지갑 카드 아이콘 모서리에 붙는 아크 만료 안내 점. 지갑 상세 배너가 있을 때만, 같은 색(만료 빨강, 그 외 노랑)
 class ArkRefreshBadge extends StatelessWidget {
   const ArkRefreshBadge({super.key, required this.walletId});
 
@@ -19,13 +17,16 @@ class ArkRefreshBadge extends StatelessWidget {
     } on ProviderNotFoundException {
       return const SizedBox.shrink();
     }
-    if (!ark.needsRefreshAttention(walletId)) return const SizedBox.shrink();
-    return SvgPicture.asset(
-      CommonStateIconPath.triangleWarning,
+    final notice = ark.refreshNotice(walletId);
+    if (notice == null) return const SizedBox.shrink();
+    return Container(
       key: ValueKey('ark-refresh-badge-$walletId'),
-      width: 14,
-      height: 14,
-      colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: notice.isDanger ? context.coconutColors.danger : context.coconutColors.warning,
+        shape: BoxShape.circle,
+      ),
     );
   }
 }

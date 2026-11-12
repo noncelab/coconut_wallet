@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/ark/ark_payment.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -93,7 +95,12 @@ class PaymentRequest {
   static PaymentRequest parse(String input, NetworkType network) {
     final raw = input.trim();
     final lower = raw.toLowerCase();
-    if (raw.isEmpty) return PaymentRequest._(kind: PaymentRequestKind.unknown, raw: raw, problem: PaymentRequestProblem.nothingEntered);
+    if (raw.isEmpty)
+      return PaymentRequest._(
+        kind: PaymentRequestKind.unknown,
+        raw: raw,
+        problem: PaymentRequestProblem.nothingEntered,
+      );
     if (lower.startsWith('bitcoin:')) return _parseBip321(raw, network);
 
     final withoutScheme = lower.startsWith('lightning:') ? raw.substring('lightning:'.length) : raw;
@@ -115,6 +122,68 @@ class PaymentRequest {
       );
     }
     return PaymentRequest._(kind: PaymentRequestKind.unknown, raw: raw, problem: PaymentRequestProblem.unknown);
+  }
+
+  /// [lightningInvoice]에 담긴 메모(BOLT11 `d` 필드)
+  String? get invoiceDescription => lightningInvoice == null ? null : bolt11Description(lightningInvoice!);
+
+  static const _bech32Charset = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
+  /// BOLT11 인보이스의 메모(`d` 필드), 없거나 형식이 틀리면 null. 체크섬·서명은 검사하지 않음
+  static String? bolt11Description(String invoice) {
+    final bytes = _bolt11Field(invoice, 13);
+    if (bytes == null) return null;
+    try {
+      final text = utf8.decode(bytes).trim();
+      return text.isEmpty ? null : text;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// BOLT11 인보이스의 결제 해시(`p` 필드, hex), 없거나 형식이 틀리면 null
+  static String? bolt11PaymentHash(String invoice) {
+    final bytes = _bolt11Field(invoice, 1);
+    if (bytes == null || bytes.length != 32) return null;
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// BOLT11 태그 필드 [type]의 값을 바이트로
+  static List<int>? _bolt11Field(String invoice, int type) {
+    final lower = invoice.toLowerCase().replaceFirst(RegExp(r'^lightning:'), '');
+    final separator = lower.lastIndexOf('1');
+    if (separator < 0) return null;
+    final data = <int>[];
+    for (final char in lower.substring(separator + 1).split('')) {
+      final value = _bech32Charset.indexOf(char);
+      if (value < 0) return null;
+      data.add(value);
+    }
+    // 타임스탬프 7자, 서명 104자, 체크섬 6자
+    final end = data.length - 104 - 6;
+    var i = 7;
+    while (i + 3 <= end) {
+      final fieldType = data[i];
+      final length = data[i + 1] * 32 + data[i + 2];
+      i += 3;
+      if (i + length > end) return null;
+      if (fieldType == type) {
+        final bytes = <int>[];
+        var accumulator = 0;
+        var bits = 0;
+        for (final value in data.sublist(i, i + length)) {
+          accumulator = ((accumulator << 5) | value) & 0xfff;
+          bits += 5;
+          if (bits >= 8) {
+            bits -= 8;
+            bytes.add((accumulator >> bits) & 0xff);
+          }
+        }
+        return bytes;
+      }
+      i += length;
+    }
+    return null;
   }
 
   /// The amount of a BOLT11 invoice in sats (rounded up from msat), or null when amountless or

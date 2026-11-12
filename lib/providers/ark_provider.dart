@@ -20,6 +20,7 @@ import 'package:coconut_wallet/repository/realm/ark_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -112,6 +113,10 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, ArkBoardFunding> _boardFunding = {};
   ArkBoardTerms? _boardTerms;
   final Map<int, int> _fastSync = {};
+
+  /// 만든 인보이스가 결제되면 바로 수령하도록, 지갑별로 기다리는 결제 해시와 기한
+  final Map<int, Map<String, DateTime>> _awaitedInvoices = {};
+  static const _invoiceWatch = Duration(hours: 1);
   Timer? _timer;
   bool _isForeground = true;
   bool _disposed = false;
@@ -154,6 +159,14 @@ class ArkProvider extends ChangeNotifier {
         .where((vtxo) => isRefreshingVtxo(vtxo.id) && !vtxo.isLocked)
         .fold<int>(0, (sum, vtxo) => sum + vtxo.amountSats);
     return overlap < balance.pendingInRound ? overlap : balance.pendingInRound;
+  }
+
+  /// 아크·라이트닝으로 보낼 수 있는 잔액: 잠기지 않고 갱신 중이 아니며 만료되지 않은 VTXO
+  int sendableSats(int walletId) {
+    final tip = _currentBlock?.value?.height ?? _walletProvider.currentBlockHeightNotifier.value?.height;
+    return (snapshot(walletId)?.vtxos ?? const [])
+        .where((vtxo) => !vtxo.isLocked && !isRefreshingVtxo(vtxo.id) && (tip == null || vtxo.expiryHeight > tip))
+        .fold<int>(0, (sum, vtxo) => sum + vtxo.amountSats);
   }
 
   bool get hasHotWalletWithArkFunds => _walletProvider.walletItemList.any((wallet) => totalSats(wallet.id) > 0);
@@ -317,6 +330,7 @@ class ArkProvider extends ChangeNotifier {
           cacheRevision.value++;
         }
       }
+      _pruneAwaitedInvoices(walletId);
       await _updatePendingRound(walletId, fingerprint);
       await _updateRefreshDue(walletId, fingerprint);
     } catch (error) {
@@ -459,14 +473,17 @@ class ArkProvider extends ChangeNotifier {
   }
 
   /// 홈 지갑 카드에 경고를 띄울 만큼 갱신이 급한지: 만료, 144블록 안, 또는 자동 갱신을 끈 채 1,008블록 안
-  bool needsRefreshAttention(int walletId) {
-    if (!supportsArkById(walletId)) return false;
+  /// 보여 줄 아크 만료 안내 단계, 없으면 null. 지갑 상세 배너와 지갑 카드 점이 같은 기준을 씀
+  ArkRefreshNotice? refreshNotice(int walletId) {
+    if (!supportsArkById(walletId)) return null;
     final due = refreshDue(walletId);
-    if (!due.isDue) return false;
+    if (!due.isDue) return null;
+    if (due.isExpired) return ArkRefreshNotice.expired;
     final blocksLeft = due.blocksLeft;
-    return due.isExpired ||
-        (blocksLeft != null && blocksLeft <= ArkRefreshDue.urgentBlocks) ||
-        !isAutoRefreshOn(walletId);
+    if (blocksLeft != null && blocksLeft <= ArkRefreshDue.urgentBlocks) return ArkRefreshNotice.urgent;
+    if (!isOpen(walletId) && !isOpening(walletId)) return ArkRefreshNotice.locked;
+    if (isAutoRefreshOn(walletId)) return null;
+    return ArkRefreshNotice.notice;
   }
 
   /// [vtxoId]를 만든 내역부터 그 입력을 만든 내역으로 거슬러 올라간 이력, 최근 것이 먼저
@@ -623,10 +640,11 @@ class ArkProvider extends ChangeNotifier {
 
   /// Creates a BOLT11 invoice for [amountSats] (bark can't make amountless ones). The payment is
   /// claimed by the wallet's next sync, so keep [setFastSync] on while waiting for it.
-  Future<ArkLightningInvoice> createLightningInvoice(int walletId, int amountSats) async {
+  Future<ArkLightningInvoice> createLightningInvoice(int walletId, int amountSats, {String? memo}) async {
     final fingerprint = _requireFingerprint(walletId);
     final fee = await _arkWalletService.estimateLightningReceiveFee(fingerprint, amountSats);
-    final invoice = await _arkWalletService.createLightningInvoice(fingerprint, amountSats);
+    final invoice = await _arkWalletService.createLightningInvoice(fingerprint, amountSats, description: memo);
+    _awaitedInvoices.putIfAbsent(walletId, () => {})[invoice.paymentHash] = DateTime.now().add(_invoiceWatch);
     return ArkLightningInvoice(
       invoice: invoice.invoice,
       paymentHash: invoice.paymentHash,
@@ -685,6 +703,50 @@ class ArkProvider extends ChangeNotifier {
       _failedRefreshVtxoIds.remove(id);
     }
     _saveRefreshingVtxoIds();
+  }
+
+  /// [walletId]가 발급한 아크 주소이거나 아직 받지 않은 자기 인보이스면 true
+  Future<bool> isOwnPaymentRequest(int walletId, PaymentRequest request) async {
+    final fingerprint = _fingerprint(walletId);
+    if (fingerprint == null || !_arkWalletService.isOpen(fingerprint)) return false;
+    try {
+      if (request.lightningInvoice case final invoice?) {
+        final hash = PaymentRequest.bolt11PaymentHash(invoice);
+        if (hash != null &&
+            (_awaitedInvoices[walletId]?.containsKey(hash) == true ||
+                (await _arkWalletService.pendingLightningReceiveHashes(fingerprint)).contains(hash))) {
+          return true;
+        }
+      }
+      if (request.arkAddress case final address?) {
+        final lastIndex = snapshot(walletId)?.addressIndex ?? 0;
+        final issued = await _arkWalletService.issuedAddresses(fingerprint, lastIndex);
+        return issued.any((own) => own.toLowerCase() == address.toLowerCase());
+      }
+    } catch (error) {
+      Logger.error('ArkProvider: own payment request check failed: $error');
+    }
+    return false;
+  }
+
+  /// 라이트닝 주소로 보낼 때 붙인 메모, bark가 기록하지 않아 기기에 보관
+  String? paymentMemo(int walletId, int movementId) => _loadPaymentMemos()['$walletId:$movementId'];
+
+  void _savePaymentMemo(int walletId, int movementId, String memo) {
+    try {
+      final memos = _loadPaymentMemos()..['$walletId:$movementId'] = memo;
+      unawaited(_sharedPrefs.setStringAndConfirm(SharedPrefKeys.kArkPaymentMemos, jsonEncode(memos)));
+    } catch (_) {}
+  }
+
+  Map<String, String> _loadPaymentMemos() {
+    try {
+      final raw = _sharedPrefs.getStringOrNull(SharedPrefKeys.kArkPaymentMemos);
+      if (raw == null || raw.isEmpty) return {};
+      return (jsonDecode(raw) as Map<String, dynamic>).map((key, value) => MapEntry(key, value as String));
+    } catch (_) {
+      return {};
+    }
   }
 
   Map<String, DateTime> _loadRefreshingVtxoIds() {
@@ -749,6 +811,7 @@ class ArkProvider extends ChangeNotifier {
     required String destination,
     required int amountSats,
     bool invoiceHasAmount = false,
+    String? comment,
   }) async {
     final fingerprint = _requireFingerprint(walletId);
     final isLightning = rail == ArkPaymentRail.lightningInvoice || rail == ArkPaymentRail.lightningAddress;
@@ -756,7 +819,7 @@ class ArkProvider extends ChangeNotifier {
       for (var attempt = 0; ; attempt++) {
         if (isLightning) await _syncChainTipIgnoringFailure(fingerprint);
         try {
-          return switch (rail) {
+          final movementId = switch (rail) {
             ArkPaymentRail.ark => await _arkWalletService.sendArkoorPayment(fingerprint, destination, amountSats),
             ArkPaymentRail.lightningInvoice => await _arkWalletService.payLightningInvoice(
               fingerprint,
@@ -767,9 +830,14 @@ class ArkProvider extends ChangeNotifier {
               fingerprint,
               destination,
               amountSats,
+              comment: comment,
             ),
             ArkPaymentRail.onchain => await _arkWalletService.sendOnchainTracked(fingerprint, destination, amountSats),
           };
+          if (comment != null && comment.isNotEmpty && movementId != null) {
+            _savePaymentMemo(walletId, movementId, comment);
+          }
+          return movementId;
         } on ArkPaymentException catch (error) {
           // The server rejects a Lightning payment whose HTLC expiry, set from the wallet's chain
           // tip, is more than a block behind its own. Nothing was locked, so retry after a sync.
@@ -807,6 +875,19 @@ class ArkProvider extends ChangeNotifier {
     }
   }
 
+  /// 수령했거나 실패했거나 기한이 지난 인보이스는 그만 기다림
+  void _pruneAwaitedInvoices(int walletId) {
+    final awaited = _awaitedInvoices[walletId];
+    if (awaited == null) return;
+    final now = DateTime.now();
+    final finished = {
+      for (final movement in snapshot(walletId)?.movements ?? const [])
+        if (movement.paymentHash != null && movement.status != ArkMovementStatus.pending) movement.paymentHash!,
+    };
+    awaited.removeWhere((hash, until) => now.isAfter(until) || finished.contains(hash));
+    if (awaited.isEmpty) _awaitedInvoices.remove(walletId);
+  }
+
   void onPause() {
     _isForeground = false;
     _timer?.cancel();
@@ -835,7 +916,7 @@ class ArkProvider extends ChangeNotifier {
       final last = _lastSync[wallet.id];
       if (last == null || now.difference(last) >= syncInterval) {
         unawaited(syncNow(wallet.id));
-      } else if (_fastSync.containsKey(wallet.id)) {
+      } else if (_fastSync.containsKey(wallet.id) || _awaitedInvoices.containsKey(wallet.id)) {
         unawaited(syncNow(wallet.id, withRounds: false));
       }
     }

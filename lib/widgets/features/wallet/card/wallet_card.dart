@@ -187,7 +187,12 @@ class WalletCard extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon() => iconOf(wallet, appearance);
+  /// 지갑 아이콘, [statusBadge]는 아이콘 오른쪽 위 모서리에 얹음
+  Widget _buildIcon() {
+    final icon = iconOf(wallet, appearance);
+    if (statusBadge == null) return icon;
+    return Stack(clipBehavior: Clip.none, children: [icon, Positioned(top: -1, right: -1, child: statusBadge!)]);
+  }
 
   /// 이름 아래 줄(MFP나 정족수). 좁으면 줄어든다.
   Widget _buildSubtitleRow(BuildContext context, ({String text, Key key})? subtitle) {
@@ -261,7 +266,6 @@ class WalletCard extends StatelessWidget {
                 children: [_buildName(context), _buildSubtitleRow(context, subtitle)],
               ),
             ),
-            if (statusBadge != null) statusBadge!,
             CoconutLayout.spacing_200w,
             Flexible(
               child: Container(
@@ -330,7 +334,6 @@ class WalletCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (statusBadge != null) ...[const SizedBox(width: 4), statusBadge!],
           ],
         ),
         Expanded(

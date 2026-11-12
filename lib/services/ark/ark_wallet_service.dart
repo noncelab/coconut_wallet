@@ -167,6 +167,17 @@ class ArkWalletService {
   /// Reads everything Coconut caches. Keeps [address] (the one already shown to the user) until
   /// a movement has received on it, and only then derives a new one, so restores stay inside
   /// bark's key gap limit.
+  /// 0번부터 [lastIndex]번까지 이 지갑이 발급한 아크 주소
+  Future<List<String>> issuedAddresses(String fingerprint, int lastIndex) => withWallet(fingerprint, (wallet) async {
+    return [for (var index = 0; index <= lastIndex; index++) await wallet.peekAddress(index: index)];
+  });
+
+  /// 아직 받지 않은 라이트닝 인보이스의 결제 해시
+  Future<Set<String>> pendingLightningReceiveHashes(String fingerprint) => withWallet(
+    fingerprint,
+    (wallet) async => {for (final receive in await wallet.pendingLightningReceives()) receive.paymentHash.toLowerCase()},
+  );
+
   Future<ArkSnapshot> snapshot(String fingerprint, {String? address, int? addressIndex}) {
     return withWallet(fingerprint, (wallet) async {
       final balance = ArkBalance.fromBark(await wallet.balance());
@@ -194,8 +205,11 @@ class ArkWalletService {
     });
   }
 
-  Future<bark.LightningInvoice> createLightningInvoice(String fingerprint, int amountSats) =>
-      withWallet(fingerprint, (wallet) => wallet.bolt11Invoice(amountSats: amountSats, description: null, token: null));
+  Future<bark.LightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) =>
+      withWallet(
+        fingerprint,
+        (wallet) => wallet.bolt11Invoice(amountSats: amountSats, description: description, token: null),
+      );
 
   Future<void> cancelLightningReceive(String fingerprint, String paymentHash) =>
       withWallet(fingerprint, (wallet) => wallet.cancelLightningReceive(paymentHash: paymentHash));
@@ -304,15 +318,16 @@ class ArkWalletService {
   );
 
   /// Starts paying a Lightning address. Returns the id of the movement it created.
-  Future<int?> payLightningAddress(String fingerprint, String lightningAddress, int amountSats) => _payTracked(
-    fingerprint,
-    (wallet) => wallet.payLightningAddress(
-      lightningAddress: lightningAddress,
-      amountSats: amountSats,
-      comment: null,
-      wait: false,
-    ),
-  );
+  Future<int?> payLightningAddress(String fingerprint, String lightningAddress, int amountSats, {String? comment}) =>
+      _payTracked(
+        fingerprint,
+        (wallet) => wallet.payLightningAddress(
+          lightningAddress: lightningAddress,
+          amountSats: amountSats,
+          comment: comment,
+          wait: false,
+        ),
+      );
 
   /// Pays [amountSats] on-chain to [address] from the Ark balance. Returns the id of the
   /// movement it created.

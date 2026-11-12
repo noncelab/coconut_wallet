@@ -7,11 +7,13 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/ark/ark_payment.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -23,8 +25,10 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
@@ -35,7 +39,11 @@ enum AddressError {
   none,
   invalid,
   invalidNetworkAddress,
-  duplicated;
+  duplicated,
+  unsupportedRequest,
+  arkWalletOnly,
+  onchainOnly,
+  ownWallet;
 
   bool get isError => this != AddressError.none;
   bool get isNotError => this == AddressError.none;
@@ -58,6 +66,14 @@ enum AddressError {
             throw "Unknown network type";
           }
         }
+      case AddressError.unsupportedRequest:
+        return t.errors.address_error.invalid;
+      case AddressError.arkWalletOnly:
+        return t.ark.send.ark_wallet_only;
+      case AddressError.onchainOnly:
+        return t.ark.send.onchain_only;
+      case AddressError.ownWallet:
+        return t.ark.send.own_wallet;
       case AddressError.none:
         return "";
     }
@@ -86,8 +102,33 @@ enum AmountError {
   }
 }
 
+/// 비트코인 주소에 두 잔액 모두 보낼 수 있을 때 사용자가 고르는 잔액
+enum SendSource { onchain, ark }
+
+/// 아크 잔액에서 보내는 경로
+class ArkSendRoute {
+  const ArkSendRoute(this.rail, this.destination, {this.invoiceHasAmount = false});
+
+  final ArkPaymentRail rail;
+  final String destination;
+  final bool invoiceHasAmount;
+
+  bool get isLightning => rail == ArkPaymentRail.lightningInvoice || rail == ArkPaymentRail.lightningAddress;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ArkSendRoute &&
+      other.rail == rail &&
+      other.destination == destination &&
+      other.invoiceHasAmount == invoiceHasAmount;
+
+  @override
+  int get hashCode => Object.hash(rail, destination, invoiceHasAmount);
+}
+
 class SendViewModel extends ChangeNotifier with FeeRateMixin {
   final WalletProvider _walletProvider;
+  final ArkProvider? _arkProvider;
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
@@ -219,7 +260,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   num get _dustLimitDenominator => (_currentUnit.isBasedOnSatoshi ? 1 : 1e8);
   int get _dustThreshold =>
       _selectedWalletItem != null ? _selectedWalletItem!.walletType.addressType.dustThreshold : DustThresholds.p2wsh;
-  bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
+  bool get isAmountDisabled => (_isMaxMode || _isArkMaxMode) && _currentIndex == lastIndex;
   bool get isEstimatedFeeGreaterThanBalance => balance < (_estimatedFee ?? 0);
   bool get hasValidRecipient => validRecipientList.isNotEmpty;
 
@@ -244,7 +285,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   Map<String, int> get recipientMap {
     final Map<String, int> recipientMap = {};
     for (final recipient in validRecipientList) {
-      recipientMap[recipient.address] = _currentUnit.toSatoshi(double.parse(recipient.amount));
+      recipientMap[_onchainAddressOf(recipient.address)] = _currentUnit.toSatoshi(double.parse(recipient.amount));
     }
     return recipientMap;
   }
@@ -261,7 +302,253 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool _hasUnvalidatedInput = false;
 
+  SendSource? _chosenSource;
+  bool _isArkMaxMode = false;
+  bool get isArkMaxMode => _isArkMaxMode;
+
+  /// 라이트닝 주소로 보낼 때 함께 보내는 메모
+  String lightningComment = '';
+
+  /// 받는 사람 문자열별 "이 지갑 자신의 아크 주소·인보이스인지" 확인 결과
+  final Map<String, bool> _ownRequestChecks = {};
+
+  void _checkOwnRequest(String address, PaymentRequest request) {
+    if (_ownRequestChecks.containsKey(address) || !isArkWallet) return;
+    if (request.arkAddress == null && request.lightningInvoice == null) return;
+    _ownRequestChecks[address] = false;
+    final walletId = _selectedWalletItem!.id;
+    _arkProvider!.isOwnPaymentRequest(walletId, request).then((isOwn) {
+      if (_isDisposed || !isOwn || walletId != selectedWalletId) return;
+      _ownRequestChecks[address] = true;
+      _validateRecipientInputs();
+      notifyListeners();
+    });
+  }
+  int? _arkFee;
+  bool _isEstimatingArkFee = false;
+  bool _arkFeeFailed = false;
+  ArkSendRoute? _estimatedRoute;
+  int? _estimatedAmount;
+  Timer? _arkFeeTimer;
+
+  bool get isArkWallet {
+    final wallet = _selectedWalletItem;
+    return wallet != null && _arkProvider != null && _arkProvider.supportsArk(wallet);
+  }
+
+  bool get isArkLocked => isArkWallet && !_arkProvider!.isOpen(_selectedWalletItem!.id);
+  int get arkSendableSats => isArkWallet ? _arkProvider!.sendableSats(_selectedWalletItem!.id) : 0;
+  int? get arkFee => _arkFee;
+  bool get isEstimatingArkFee => _isEstimatingArkFee;
+  int? get arkPaymentAmountSats => _amountSatsAt(0);
+  SendSource get selectedSource => _chosenSource ?? SendSource.onchain;
+
+  PaymentRequest? _requestAt(int index) {
+    final address = _recipientList[index].address.trim();
+    return address.isEmpty ? null : PaymentRequest.parse(address, NetworkType.currentNetworkType);
+  }
+
+  int? _amountSatsAt(int index) {
+    final amount = double.tryParse(_recipientList[index].amount);
+    return amount == null || amount <= 0 ? null : _currentUnit.toSatoshi(amount);
+  }
+
+  /// BIP321로 받은 주소면 그 안의 비트코인 주소
+  String _onchainAddressOf(String address) {
+    if (!address.toLowerCase().startsWith('bitcoin:')) return address;
+    return PaymentRequest.parse(address, NetworkType.currentNetworkType).bitcoinAddress ?? address;
+  }
+
+  /// 아크·라이트닝 경로가 없는 비트코인 주소에 두 잔액 모두 보낼 수 있을 때
+  bool get canChooseSource {
+    if (!isArkWallet || _recipientList.length != 1 || _isMaxMode || _isArkMaxMode) return false;
+    final request = _requestAt(0);
+    final amount = _amountSatsAt(0);
+    if (request == null || request.bitcoinAddress == null || amount == null) return false;
+    if (request.arkOptions.any((option) => option.rail != ArkPaymentRail.onchain)) return false;
+    return amount < balance && amount <= arkSendableSats;
+  }
+
+  /// 아크 잔액에서 보낼 때의 경로, 온체인으로 보내면 null
+  ArkSendRoute? get arkRoute {
+    if (!isArkWallet || _recipientList.length != 1 || _isMaxMode) return null;
+    final request = _requestAt(0);
+    if (request == null || !request.isPayable) return null;
+    if (_isArkMaxMode) {
+      if (request.arkAddress != null) return ArkSendRoute(ArkPaymentRail.ark, request.arkAddress!);
+      if (request.bitcoinAddress != null) return ArkSendRoute(ArkPaymentRail.onchain, request.bitcoinAddress!);
+      return null;
+    }
+    final amount = _amountSatsAt(0);
+    final arkFits = amount == null || amount <= arkSendableSats;
+    final offchain = request.arkOptions.where((option) => option.rail != ArkPaymentRail.onchain).firstOrNull;
+    final address = request.bitcoinAddress;
+    if (offchain != null && (arkFits || address == null)) {
+      return ArkSendRoute(
+        offchain.rail,
+        offchain.destination,
+        invoiceHasAmount: offchain.rail == ArkPaymentRail.lightningInvoice && request.invoiceAmountSats != null,
+      );
+    }
+    if (address == null || amount == null || !arkFits) return null;
+    if (canChooseSource) return selectedSource == SendSource.ark ? ArkSendRoute(ArkPaymentRail.onchain, address) : null;
+    return amount >= balance ? ArkSendRoute(ArkPaymentRail.onchain, address) : null;
+  }
+
+  /// 주소란 아래에 보여 줄 받는 사람 종류, 비트코인 주소는 null
+  String? requestKindLabel(int index) {
+    if (!isArkWallet || index < 0 || index >= _recipientList.length) return null;
+    final request = _requestAt(index);
+    return switch (request?.kind) {
+      PaymentRequestKind.arkAddress => t.ark.request.ark_address,
+      PaymentRequestKind.lightningInvoice => [
+        t.ark.receive.lightning_invoice,
+        if (request!.invoiceDescription case final memo?) memo,
+      ].join(' · '),
+      PaymentRequestKind.lightningAddress => t.ark.request.lightning_address,
+      PaymentRequestKind.bip321 => t.ark.request.payment_request,
+      _ => null,
+    };
+  }
+
+  /// 금액이 담긴 라이트닝 인보이스는 금액을 고칠 수 없음
+  bool isAmountLocked(int index) {
+    if (!isArkWallet || index < 0 || index >= _recipientList.length) return false;
+    final request = _requestAt(index);
+    return request?.kind == PaymentRequestKind.lightningInvoice && request?.invoiceAmountSats != null;
+  }
+
+  /// 모두 보내기로 쓸 수 있는 잔액, 잔액이 있는 쪽만
+  List<SendSource> maxSources(int index) {
+    if (!isArkWallet || index < 0 || index >= _recipientList.length) return const [SendSource.onchain];
+    final request = _requestAt(index);
+    final single = _recipientList.length == 1;
+    final hasOnchain = balance > 0;
+    final hasArk = single && arkSendableSats > 0;
+    if (request == null) {
+      if (hasOnchain || !hasArk) return const [SendSource.onchain];
+      return const [SendSource.ark];
+    }
+    if (request.amountSats != null) return const [];
+    return [
+      if (request.bitcoinAddress != null && (hasOnchain || !hasArk)) SendSource.onchain,
+      if ((request.bitcoinAddress != null || request.arkAddress != null) && hasArk) SendSource.ark,
+    ];
+  }
+
+  void setArkMaxMode(bool isEnabled) {
+    if (_isArkMaxMode == isEnabled) return;
+    if (isEnabled && _isMaxMode) setMaxMode(false);
+    _isArkMaxMode = isEnabled;
+    _recipientList[lastIndex].amount = '';
+    if (_currentIndex == lastIndex) _onAmountTextUpdate('');
+    _arkFee = null;
+    _estimatedRoute = null;
+    _estimatedAmount = null;
+    _validateRecipientInputs();
+    vibrateLight();
+    notifyListeners();
+  }
+
+  /// 받는 사람이 바뀌어 지금 모두 보내기 잔액으로 보낼 수 없으면 다른 잔액의 모두 보내기로 옮김
+  void _reconcileMaxMode() {
+    if (!isArkWallet || _recipientList.isEmpty) return;
+    if (_requestAt(lastIndex)?.isPayable == false) return;
+    final sources = maxSources(lastIndex);
+    if (_isMaxMode && !sources.contains(SendSource.onchain)) {
+      _isMaxMode = false;
+      _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
+      _isArkMaxMode = sources.contains(SendSource.ark);
+      _arkFee = null;
+      _estimatedRoute = null;
+      _estimatedAmount = null;
+      _recipientList[lastIndex].amount = '';
+      if (_currentIndex == lastIndex) _onAmountTextUpdate('');
+    } else if (_isArkMaxMode && !sources.contains(SendSource.ark)) {
+      _isArkMaxMode = false;
+      _recipientList[lastIndex].amount = '';
+      if (_currentIndex == lastIndex) _onAmountTextUpdate('');
+      if (sources.contains(SendSource.onchain)) {
+        _isMaxMode = true;
+        _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
+        _isFeeSubtractedFromSendAmount = true;
+      }
+    }
+  }
+
+  /// 아크 모두 보내기: 수수료를 뺀 금액을 받는 사람 금액으로
+  void _applyArkMaxAmount() {
+    final fee = _arkFee;
+    final sats = fee == null ? 0 : arkSendableSats - fee;
+    final text =
+        fee == null || sats <= 0
+            ? ''
+            : (_currentUnit.isBasedOnSatoshi ? sats.toString() : UnitUtil.convertSatoshiToBitcoinString(sats));
+    _recipientList[lastIndex].amount = text;
+    if (_currentIndex == lastIndex) _onAmountTextUpdate(text);
+  }
+
+  void setSource(SendSource source) {
+    if (selectedSource == source) return;
+    _chosenSource = source;
+    vibrateLight();
+    _validateRecipientInputs();
+    notifyListeners();
+  }
+
+  void _scheduleArkFeeEstimate() {
+    final route = arkRoute;
+    final amount = _isArkMaxMode ? (arkSendableSats > 0 ? arkSendableSats : null) : _amountSatsAt(0);
+    if (route == null || amount == null || isArkLocked) {
+      _arkFeeTimer?.cancel();
+      _arkFee = null;
+      _isEstimatingArkFee = false;
+      _arkFeeFailed = false;
+      return;
+    }
+    if (route == _estimatedRoute && amount == _estimatedAmount && (_arkFee != null || _isEstimatingArkFee)) return;
+    _arkFeeTimer?.cancel();
+    _arkFee = null;
+    _arkFeeFailed = false;
+    _isEstimatingArkFee = true;
+    _estimatedRoute = route;
+    _estimatedAmount = amount;
+    final walletId = _selectedWalletItem!.id;
+    _arkFeeTimer = Timer(const Duration(milliseconds: 300), () async {
+      int? fee;
+      try {
+        fee =
+            _isArkMaxMode && route.rail == ArkPaymentRail.onchain
+                ? await _arkProvider!.estimateMoveOnchainFee(walletId, route.destination)
+                : await _arkProvider!.estimatePaymentFee(
+                  walletId,
+                  route.rail,
+                  destination: route.destination,
+                  amountSats: amount,
+                );
+        Logger.log('SendViewModel: Ark fee ${route.rail.name} $amount sats = $fee');
+      } catch (error) {
+        Logger.error('SendViewModel: Ark fee estimate failed: $error');
+      }
+      if (_isDisposed || _estimatedRoute != route || _estimatedAmount != amount) return;
+      _arkFee = fee;
+      _arkFeeFailed = fee == null;
+      _isEstimatingArkFee = false;
+      if (_isArkMaxMode) _applyArkMaxAmount();
+      _updateAmountValidationState();
+    });
+  }
+
   bool get isReadyToSend {
+    if (arkRoute case final route?) {
+      return !_hasUnvalidatedInput &&
+          !isArkLocked &&
+          _recipientList.single.isInputValid &&
+          _isAmountSumExceedsBalance.isNotError &&
+          _arkFee != null &&
+          _estimatedRoute == route &&
+          (_isArkMaxMode || _estimatedAmount == _amountSatsAt(0));
+    }
     if (isWalletSyncing) return false;
     if (_hasUnvalidatedInput) return false;
     if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
@@ -326,8 +613,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     int? walletId,
     SendEntryPoint sendEntryPoint,
     this._transactionDraftId,
-    List<UtxoState>? selectedUtxoList,
-  ) {
+    List<UtxoState>? selectedUtxoList, {
+    ArkProvider? arkProvider,
+  }) : _arkProvider = arkProvider {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
     _currentUnit = _preferenceProvider.currentUnit;
@@ -450,6 +738,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   @override
   void dispose() {
     _isDisposed = true;
+    _arkFeeTimer?.cancel();
     _walletSyncWatcher.dispose();
     super.dispose();
   }
@@ -703,6 +992,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     if (_isMaxMode == isEnabled) return;
 
     _isMaxMode = isEnabled;
+    if (_isMaxMode) _isArkMaxMode = false;
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
@@ -726,6 +1016,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void addRecipient() {
+    _isArkMaxMode = false;
     final newList = [..._recipientList, RecipientInfo(address: '', amount: '')];
     _recipientList = newList;
     _updateFinalErrorMessage();
@@ -755,6 +1046,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _updateFinalErrorMessage() {
     String message = "";
+    if (arkRoute != null) {
+      final addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
+      if (addressErrorIndex != -1) {
+        final recipient = _recipientList[addressErrorIndex];
+        message = recipient.requestProblemText ?? recipient.addressError.getMessage();
+      } else if (isArkLocked) {
+        message = t.ark.send.locked;
+      } else if (_isAmountSumExceedsBalance.isError) {
+        message = t.ark.send.not_enough_ark;
+      } else if (_arkFeeFailed) {
+        message = t.ark.send.estimate_failed;
+      }
+      _finalErrorMessage = message;
+      notifyListeners();
+      return;
+    }
     // [전체] 충분하지 않은 Balance 입력 > [수신자] dust 보다 적은 금액을 입력 > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] 주소에 에러가 있는 경우 > 최소값보다 낮은 수수료 입력
     if (_isAmountSumExceedsBalance.isError) {
       message = _isAmountSumExceedsBalance.getMessage(currentUnit, dustThreshold: _dustThreshold);
@@ -765,7 +1072,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     } else if (_recipientList.any((r) => r.addressError.isError)) {
       int addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
       if (addressErrorIndex != -1) {
-        message = _recipientList[addressErrorIndex].addressError.getMessage();
+        final recipient = _recipientList[addressErrorIndex];
+        message = recipient.requestProblemText ?? recipient.addressError.getMessage();
       }
     } else if (_txBuildResult?.exception != null && _recipientList.every((r) => r.isInputValid)) {
       // 모든 수신자 카드 amount, address가 유효한 경우에만 메시지 보여주기
@@ -819,6 +1127,13 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _recipientList[recipientIndex].address = text;
     if (text.isEmpty) {
       _txBuildResult = null;
+    }
+    if (recipientIndex == lastIndex) _reconcileMaxMode();
+    if (isAmountLocked(recipientIndex)) {
+      final sats = _requestAt(recipientIndex)!.invoiceAmountSats!;
+      _recipientList[recipientIndex].amount =
+          _currentUnit.isBasedOnSatoshi ? sats.toString() : UnitUtil.convertSatoshiToBitcoinString(sats);
+      if (_currentIndex == recipientIndex) _onAmountTextUpdate(_recipientList[recipientIndex].amount);
     }
     _invalidateRecipientCalculation();
   }
@@ -887,6 +1202,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   void onKeyTap(String newInput) {
     if (_currentIndex == _recipientList.length) return;
+    if (isAmountLocked(_currentIndex)) return;
     if (newInput == ',') newInput = '.';
     if (_currentUnit.isBasedOnSatoshi && newInput == '.') return;
 
@@ -944,6 +1260,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   // 입력 방식과 포커스 이동 여부에 관계없이 검증 및 수수료 상태를 갱신한다.
   void _validateRecipientInputs() {
     _hasUnvalidatedInput = false;
+    _reconcileMaxMode();
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: i);
@@ -951,6 +1268,12 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     }
     checkAndSetDuplicationError();
     _showFeeBoard = _showFeeBoard || hasValidRecipient;
+    _scheduleArkFeeEstimate();
+    if (arkRoute != null) {
+      _txBuildResult = null;
+      _updateAmountValidationState();
+      return;
+    }
     _buildTransaction();
   }
 
@@ -1001,6 +1324,12 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _updateIsAmountSumExceedsBalance(double amountSum) {
+    if (arkRoute != null) {
+      final amount = _isArkMaxMode ? 0 : (_amountSatsAt(0) ?? 0);
+      _isAmountSumExceedsBalance =
+          amount > 0 && amount + (_arkFee ?? 0) > arkSendableSats ? AmountError.insufficientBalance : AmountError.none;
+      return;
+    }
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
     double balanceInUnit = balance / _dustLimitDenominator;
     _isAmountSumExceedsBalance =
@@ -1010,6 +1339,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   void _validateOneAmount(int recipientIndex) {
     assert(recipientIndex != -1);
     final recipient = recipientList[recipientIndex];
+    if (arkRoute != null) {
+      recipient.minimumAmountError = AmountError.none;
+      return;
+    }
     if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
       if (double.parse(recipient.amount) <= _dustThreshold / _dustLimitDenominator) {
         recipient.minimumAmountError = AmountError.minimumAmount;
@@ -1068,6 +1401,35 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   bool validateAddress(String address, int recipientIndex) {
     if (!_isValidRecipientIndex(recipientIndex, 'validateAddress')) return false;
 
+    _recipientList[recipientIndex].requestProblemText = null;
+    final request = address.trim().isEmpty ? null : PaymentRequest.parse(address, NetworkType.currentNetworkType);
+    switch (request?.kind) {
+      case PaymentRequestKind.arkAddress ||
+          PaymentRequestKind.lightningInvoice ||
+          PaymentRequestKind.lightningAddress ||
+          PaymentRequestKind.bip321:
+        final AddressError error;
+        if (!isArkWallet && (request!.kind != PaymentRequestKind.bip321 || request.bitcoinAddress == null)) {
+          error = AddressError.arkWalletOnly;
+        } else if (_ownRequestChecks[address] == true && request!.bitcoinAddress == null) {
+          error = AddressError.ownWallet;
+        } else if (_recipientList.length > 1 && request!.bitcoinAddress == null) {
+          error = AddressError.onchainOnly;
+        } else {
+          error = AddressError.none;
+          _checkOwnRequest(address, request!);
+        }
+        _setAddressError(error, recipientIndex);
+        return error.isNotError;
+      case PaymentRequestKind.unsupported:
+        _recipientList[recipientIndex].requestProblemText = paymentRequestProblemText(request!);
+        _setAddressError(AddressError.unsupportedRequest, recipientIndex);
+        _updateFinalErrorMessage();
+        return false;
+      default:
+        break;
+    }
+
     AddressValidationError? error = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
 
     switch (error) {
@@ -1096,7 +1458,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
     final double amountSumExceptLast = _amountSumExceptLast;
     final int maxBalanceInSats = balance - _currentUnit.toSatoshi(amountSumExceptLast);
-    final String lastRecipientAddress = normalizeAddress(_recipientList[lastIndex].address);
+    final String lastRecipientAddress = normalizeAddress(_onchainAddressOf(_recipientList[lastIndex].address));
 
     normalizedMap[lastRecipientAddress] = maxBalanceInSats;
     return normalizedMap;
@@ -1109,7 +1471,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
     // 모두 보내기 모드가 아니고 수수료 수신자 부담 옵션을 활성화한 경우, 마지막 수신자의 amount에서 수수료를 뺀다. (보기용)
     if (!_isMaxMode && _isFeeSubtractedFromSendAmount) {
-      String lastRecipientAddress = _recipientList[lastIndex].address;
+      String lastRecipientAddress = _onchainAddressOf(_recipientList[lastIndex].address);
       recipientMapInBtc[lastRecipientAddress] =
           (recipientMapInBtc[lastRecipientAddress]! - UnitUtil.convertSatoshiToBitcoin(estimatedFeeInSats!))
               .roundTo8Digits();
@@ -1207,6 +1569,7 @@ class RecipientInfo {
   String amount;
   AddressError addressError;
   AmountError minimumAmountError; // 전송량이 적은 경우
+  String? requestProblemText;
 
   RecipientInfo({
     this.address = '',

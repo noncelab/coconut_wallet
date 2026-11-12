@@ -133,17 +133,14 @@ class WalletCardDetailViewModel extends ChangeNotifier {
   ({String text, bool danger, bool needsUnlock, bool beforeBackup})? arkExpiryNoticeOf(WalletItemBase wallet) {
     final ark = _arkProvider;
     if (ark == null || !ark.supportsArk(wallet)) return null;
-    final due = ark.refreshDue(wallet.id);
-    if (!due.isDue) return null;
     final locked = isArkLocked(wallet);
-    if (due.isExpired) return (text: t.ark.expiry.expired, danger: true, needsUnlock: locked, beforeBackup: true);
-    final blocksLeft = due.blocksLeft;
-    if (blocksLeft != null && blocksLeft <= ArkRefreshDue.urgentBlocks) {
-      return (text: t.ark.expiry.urgent, danger: false, needsUnlock: locked, beforeBackup: true);
-    }
-    if (locked) return (text: t.ark.expiry.locked, danger: false, needsUnlock: true, beforeBackup: false);
-    if (ark.isAutoRefreshOn(wallet.id)) return null;
-    return (text: t.ark.expiry.notice, danger: false, needsUnlock: false, beforeBackup: false);
+    return switch (ark.refreshNotice(wallet.id)) {
+      null => null,
+      ArkRefreshNotice.expired => (text: t.ark.expiry.expired, danger: true, needsUnlock: locked, beforeBackup: true),
+      ArkRefreshNotice.urgent => (text: t.ark.expiry.urgent, danger: false, needsUnlock: locked, beforeBackup: true),
+      ArkRefreshNotice.locked => (text: t.ark.expiry.locked, danger: false, needsUnlock: true, beforeBackup: false),
+      ArkRefreshNotice.notice => (text: t.ark.expiry.notice, danger: false, needsUnlock: false, beforeBackup: false),
+    };
   }
 
   bool isArkLocked(WalletItemBase wallet) {

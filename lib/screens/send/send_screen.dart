@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+
+import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'dart:ui' as ui;
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
@@ -45,6 +47,8 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/model/ark/ark_payment.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_view_model.dart';
@@ -56,6 +60,7 @@ import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
+import 'package:coconut_wallet/screens/send/ark_payment_screen.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -64,6 +69,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -189,6 +195,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   ui.FlutterView? _flutterView;
 
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _lightningCommentController = TextEditingController();
+  final FocusNode _lightningCommentFocusNode = FocusNode();
   final FocusNode _amountFocusNode = FocusNode();
 
   // 배치 트랜잭션 드래그 가이드
@@ -228,6 +236,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
       widget.selectedUtxoList,
+      arkProvider: context.readArkProviderOrNull(),
     );
     _lastExcludedUtxoNonce = _viewModel.excludedUtxoNonce;
     _viewModel.addListener(_onUtxoExcludedBySync);
@@ -399,6 +408,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _feeRateController.dispose();
     _feeRateFocusNode.dispose();
     _amountController.dispose();
+    _lightningCommentController.dispose();
+    _lightningCommentFocusNode.dispose();
     _amountFocusNode.dispose();
 
     for (var focusNode in _addressFocusNodeList) {
@@ -755,20 +766,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.5),
                 )
               else if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _SendOptionButton(
-                  label: isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText,
-                  onPressed: _onUtxoSelectionModeButtonPressed,
-                  backgroundColor:
-                      isUtxoSelectionAuto || selectedUtxoListLength == 0
-                          ? context.coconutColors.surfaceButton
-                          : context.coconutColors.brandAccentBackground,
-                  textColor:
-                      isUtxoSelectionAuto
-                          ? context.coconutColors.surfaceButtonText
-                          : selectedUtxoListLength == 0
-                          ? context.coconutColors.surfaceButtonText
-                          : context.coconutColors.brandAccentForeground,
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.5),
+                Selector<SendViewModel, bool>(
+                  selector: (_, viewModel) => viewModel.arkRoute != null,
+                  builder: (context, isArkRoute, child) => isArkRoute ? const SizedBox.shrink() : child!,
+                  child: _SendOptionButton(
+                    label: isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText,
+                    onPressed: _onUtxoSelectionModeButtonPressed,
+                    backgroundColor:
+                        isUtxoSelectionAuto || selectedUtxoListLength == 0
+                            ? context.coconutColors.surfaceButton
+                            : context.coconutColors.brandAccentBackground,
+                    textColor:
+                        isUtxoSelectionAuto
+                            ? context.coconutColors.surfaceButtonText
+                            : selectedUtxoListLength == 0
+                            ? context.coconutColors.surfaceButtonText
+                            : context.coconutColors.brandAccentForeground,
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.5),
+                  ),
                 ),
             ],
           );
@@ -1215,11 +1230,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, (String, bool, bool, int?)>(
-      selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
+    return Selector<SendViewModel, (String, bool, bool, int?, ArkSendRoute?)>(
+      selector:
+          (_, vm) => (
+            vm.finalErrorMessage,
+            vm.isReadyToSend,
+            vm.isFeeRateLowerThanMin,
+            vm.unintendedDustFee,
+            vm.arkRoute,
+          ),
       builder: (context, data, child) {
         debugPrint('vm.unintendedDustFee: ${data.$4}');
-        final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
+        final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee, arkRoute) = data;
         final isHotWallet =
             _viewModel.selectedWalletItem?.hasLocalKey == true &&
             _viewModel.selectedWalletItem?.hotWalletMetadata != null;
@@ -1271,6 +1293,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               onButtonClicked: () {
                 FocusScope.of(context).unfocus();
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
+                if (arkRoute != null) {
+                  _payFromArk(arkRoute);
+                  return;
+                }
                 if (mounted) {
                   _viewModel.saveSendInfo();
                   if (isHotWallet) {
@@ -1289,11 +1315,51 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
                   isReadyToSend &&
                   finalErrorMessage.isEmpty,
-              text: isHotWallet ? t.sign : t.next,
+              text: arkRoute != null ? t.send : (isHotWallet ? t.sign : t.next),
             ),
           ],
         );
       },
+    );
+  }
+
+  bool _isSendStart(Route<dynamic> route) =>
+      widget.sendEntryPoint == SendEntryPoint.walletDetail
+          ? route.settings.name == AppRouteNames.walletDetail || route.isFirst
+          : route.isFirst;
+
+  Future<void> _payFromArk(ArkSendRoute route) async {
+    final walletId = _viewModel.selectedWalletId;
+    final amount = _viewModel.arkPaymentAmountSats;
+    final offboardsAll = _viewModel.isArkMaxMode && route.rail == ArkPaymentRail.onchain;
+    if (amount == null) return;
+    if (!await FlutterHotWalletAuthenticator(context).authenticate() || !mounted) return;
+    final arkProvider = context.read<ArkProvider>();
+    Future<ArkPaymentStart> pay() async {
+      if (offboardsAll) {
+        await arkProvider.moveOnchain(walletId, route.destination);
+        return const ArkPaymentStart(isDone: true);
+      }
+      final movementId = await arkProvider.pay(
+        walletId,
+        route.rail,
+        destination: route.destination,
+        amountSats: amount,
+        invoiceHasAmount: route.invoiceHasAmount,
+        comment: route.rail == ArkPaymentRail.lightningAddress ? _viewModel.lightningComment : null,
+      );
+      return ArkPaymentStart(movementId: movementId, isDone: !route.isLightning);
+    }
+
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        settings: const RouteSettings(name: '/ark-payment'),
+        transitionDuration: const Duration(milliseconds: 280),
+        pageBuilder: (_, __, ___) => ArkPaymentScreen(walletId: walletId, pay: pay, isSendStart: _isSendStart),
+        transitionsBuilder:
+            (_, animation, __, child) =>
+                FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
+      ),
     );
   }
 
@@ -1582,6 +1648,118 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeBoard(BuildContext context) {
+    return Selector<SendViewModel, (ArkSendRoute?, bool)>(
+      selector: (_, viewModel) => (viewModel.arkRoute, viewModel.canChooseSource),
+      builder: (context, data, child) {
+        final (arkRoute, canChooseSource) = data;
+        return Column(
+          children: [
+            if (canChooseSource) _buildSourceChoice(context),
+            arkRoute != null ? _buildArkFeeBoard(context, arkRoute) : child!,
+          ],
+        );
+      },
+      child: _buildOnchainFeeBoard(context),
+    );
+  }
+
+  Widget _buildSourceChoice(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          _buildFeeRowLabel(t.ark.send.source),
+          const Spacer(),
+          Selector<SendViewModel, SendSource>(
+            selector: (_, viewModel) => viewModel.selectedSource,
+            builder: (context, source, _) {
+              return SizedBox(
+                width: 160,
+                child: CoconutSegmentedControl(
+                  selectedColor: context.coconutColors.segmentedControlSelected,
+                  segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                  selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                  unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
+                  isSelected: [source == SendSource.onchain, source == SendSource.ark],
+                  onPressed: (index) => _viewModel.setSource(index == 0 ? SendSource.onchain : SendSource.ark),
+                  children: [Text(t.ark.send.source_onchain), Text(t.ark.send.source_ark)],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArkFeeBoard(BuildContext context, ArkSendRoute route) {
+    return Selector<SendViewModel, (int?, bool)>(
+      selector: (_, viewModel) => (viewModel.arkFee, viewModel.isEstimatingArkFee),
+      builder: (context, data, _) {
+        final (fee, isEstimating) = data;
+        return Container(
+          padding: const EdgeInsets.only(left: 16, right: 14, top: 16, bottom: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.coconutColors.border, width: 1),
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildFeeRowLabel(t.send_screen.estimated_fee),
+                  CoconutLayout.spacing_200w,
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        isEstimating
+                            ? t.ark.vtxo.estimating_fee
+                            : fee == null
+                            ? '-'
+                            : fee == 0
+                            ? t.ark.send.fee_free
+                            : '${fee.toThousandsSeparatedString()} sats',
+                        style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              CoconutLayout.spacing_200h,
+              Text(
+                fee == 0 ? t.ark.send.fee_free_description : t.ark.send.from_ark,
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
+              ),
+              if (route.rail == ArkPaymentRail.lightningAddress) ...[
+                CoconutLayout.spacing_300h,
+                CoconutTextField(
+                  controller: _lightningCommentController,
+                  focusNode: _lightningCommentFocusNode,
+                  onChanged: (text) => _viewModel.lightningComment = text.trim(),
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  placeholderText: t.ark.receive.memo_placeholder,
+                  backgroundColor: context.coconutColors.inputSurface,
+                  isLengthVisible: false,
+                  maxLength: 100,
+                  maxLines: 1,
+                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                  onClear: () {
+                    _lightningCommentController.clear();
+                    _viewModel.lightningComment = '';
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOnchainFeeBoard(BuildContext context) {
     return Column(
       children: [
         Selector<SendViewModel, Tuple5<bool, int?, int, bool, bool>>(
@@ -2081,14 +2259,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       CoconutLayout.spacing_200h,
-                      Selector<SendViewModel, Tuple3<int, bool, bool>>(
+                      Selector<SendViewModel, Tuple5<int, bool, bool, String, bool>>(
                         selector:
-                            (_, viewModel) =>
-                                Tuple3(viewModel.lastIndex, viewModel.isMaxMode, viewModel.isUtxoSelectionAuto),
+                            (_, viewModel) => Tuple5(
+                              viewModel.lastIndex,
+                              viewModel.isMaxMode,
+                              viewModel.isUtxoSelectionAuto,
+                              viewModel.maxSources(index).map((source) => source.name).join(','),
+                              viewModel.isArkMaxMode,
+                            ),
                         builder: (context, data, child) {
-                          final isLastIndex = index == data.item1;
+                          final sources = _viewModel.maxSources(index);
+                          final isLastIndex = index == data.item1 && sources.isNotEmpty;
                           final isMaxMode = data.item2;
                           final isUtxoSelectionAuto = data.item3;
+                          final isArkMaxMode = data.item5;
+                          String withCancel(String text, bool isOn) =>
+                              !isOn ? text : (!hasEnglishWordOrder ? '$text ${t.cancel}' : '${t.cancel} $text');
 
                           return MediaQuery(
                             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
@@ -2099,16 +2286,50 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    _SendOptionButton(
-                                      iconPath: FeatureSettingsIconPath.broom,
-                                      iconWidth: 16,
-                                      iconAlpha: 0.5,
-                                      label: maxButtonText,
-                                      onPressed: () {
-                                        _viewModel.setMaxMode(!isMaxMode);
-                                        _clearFocus();
-                                      },
-                                    ),
+                                    if (sources.length == 2) ...[
+                                      _SendOptionButton(
+                                        iconPath: FeatureSettingsIconPath.broom,
+                                        iconWidth: 16,
+                                        iconAlpha: 0.5,
+                                        label: withCancel(t.ark.send.max_onchain, isMaxMode),
+                                        onPressed: () {
+                                          _viewModel.setMaxMode(!isMaxMode);
+                                          _clearFocus();
+                                        },
+                                      ),
+                                      CoconutLayout.spacing_200w,
+                                      _SendOptionButton(
+                                        iconPath: FeatureSettingsIconPath.broom,
+                                        iconWidth: 16,
+                                        iconAlpha: 0.5,
+                                        label: withCancel(t.ark.send.max_ark, isArkMaxMode),
+                                        onPressed: () {
+                                          _viewModel.setArkMaxMode(!isArkMaxMode);
+                                          _clearFocus();
+                                        },
+                                      ),
+                                    ] else if (sources.firstOrNull == SendSource.ark)
+                                      _SendOptionButton(
+                                        iconPath: FeatureSettingsIconPath.broom,
+                                        iconWidth: 16,
+                                        iconAlpha: 0.5,
+                                        label: withCancel(maxButtonBaseText, isArkMaxMode),
+                                        onPressed: () {
+                                          _viewModel.setArkMaxMode(!isArkMaxMode);
+                                          _clearFocus();
+                                        },
+                                      )
+                                    else
+                                      _SendOptionButton(
+                                        iconPath: FeatureSettingsIconPath.broom,
+                                        iconWidth: 16,
+                                        iconAlpha: 0.5,
+                                        label: maxButtonText,
+                                        onPressed: () {
+                                          _viewModel.setMaxMode(!isMaxMode);
+                                          _clearFocus();
+                                        },
+                                      ),
                                     AnimatedSwitcher(
                                       duration: const Duration(milliseconds: 220),
                                       transitionBuilder: (child, animation) {
@@ -2216,28 +2437,48 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Selector<SendViewModel, int>(
-                      selector: (_, viewModel) => viewModel.recipientList.length,
-                      builder: (context, data, child) {
-                        if (!_viewModel.isBatchMode) return const SizedBox();
-                        return FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: CoconutUnderlinedButton(
-                            text: t.send_screen.delete,
-                            onTap: () {
-                              _deleteAddressField(_viewModel.currentIndex);
-                              _viewModel.deleteRecipient();
-                              _setDropdownMenuVisiblility(false);
-                            },
-                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
-                            padding: EdgeInsets.zero,
-                          ),
-                        );
-                      },
-                    ),
+                  child: Row(
+                    children: [
+                      Selector<SendViewModel, String?>(
+                        selector: (_, viewModel) => viewModel.requestKindLabel(index),
+                        builder: (context, label, _) {
+                          if (label == null) return const SizedBox.shrink();
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                label,
+                                style: CoconutTypography.body3_12_Bold.setColor(
+                                  context.coconutColors.secondaryTextStrong,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const Spacer(),
+                      Selector<SendViewModel, int>(
+                        selector: (_, viewModel) => viewModel.recipientList.length,
+                        builder: (context, data, child) {
+                          if (!_viewModel.isBatchMode) return const SizedBox();
+                          return FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: CoconutUnderlinedButton(
+                              text: t.send_screen.delete,
+                              onTap: () {
+                                _deleteAddressField(_viewModel.currentIndex);
+                                _viewModel.deleteRecipient();
+                                _setDropdownMenuVisiblility(false);
+                              },
+                              textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryTextStrong),
+                              padding: EdgeInsets.zero,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -2732,6 +2973,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _applyIncomingBitcoinUri(String scannedData, int index) {
+    final request = PaymentRequest.parse(scannedData, NetworkType.currentNetworkType);
+    if (_viewModel.isArkWallet && request.kind == PaymentRequestKind.bip321 && request.hasArkOrLightning) {
+      _addressControllerList[index].text = scannedData.trim();
+      _viewModel.setAddressText(scannedData.trim(), index);
+      if (request.amountSats != null) {
+        final amountText =
+            _viewModel.currentUnit.isBasedOnSatoshi
+                ? request.amountSats!.toString()
+                : UnitUtil.convertSatoshiToBitcoin(request.amountSats!).toString();
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
+        _viewModel.setAmountText(request.amountSats!, index, validate: false);
+      }
+      _viewModel.validateAllFieldsOnFocusLost();
+      return;
+    }
     if (scannedData.toLowerCase().startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
       _addressControllerList[index].text = bip21Data.address;

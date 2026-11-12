@@ -28,3 +28,13 @@ class ArkRefreshDue {
 
   bool get isExpired => (blocksLeft ?? 1) <= 0;
 }
+
+/// 지갑 상세 배너와 지갑 카드 점이 함께 쓰는 아크 만료 안내 단계
+enum ArkRefreshNotice {
+  expired,
+  urgent,
+  locked,
+  notice;
+
+  bool get isDanger => this == ArkRefreshNotice.expired;
+}

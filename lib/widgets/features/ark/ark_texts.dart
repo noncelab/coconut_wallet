@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 
 String formatSats(BitcoinUnit unit, int sats) =>
     unit.displayBitcoinAmount(sats, withUnit: true, shouldCheckZero: true, defaultWhenZero: '0 ${unit.symbol}');
@@ -47,5 +48,21 @@ String activityStatusText(WalletActivity activity) {
     TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
     TransactionStatus.sent || TransactionStatus.self => t.status_sent,
     _ => t.status_received,
+  };
+}
+
+/// 보낼 수 없는 결제 요청의 이유
+String? paymentRequestProblemText(PaymentRequest request) {
+  final texts = t.ark.request_problem;
+  return switch (request.problem) {
+    null || PaymentRequestProblem.nothingEntered => null,
+    PaymentRequestProblem.unknown || PaymentRequestProblem.invalidBitcoinAddress => t.errors.address_error.invalid,
+    PaymentRequestProblem.bolt12 => texts.bolt12,
+    PaymentRequestProblem.lnurl => texts.lnurl,
+    PaymentRequestProblem.invoiceNetwork => texts.invoice_network,
+    PaymentRequestProblem.arkNetwork => texts.ark_network,
+    PaymentRequestProblem.requiredParameter => texts.required_parameter(name: request.problemDetail ?? ''),
+    PaymentRequestProblem.invalidAmount => texts.invalid_amount,
+    PaymentRequestProblem.noMethod => texts.no_method,
   };
 }
