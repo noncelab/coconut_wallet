@@ -169,13 +169,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           curve: Curves.easeOut,
         );
       });
-    } else {
-      // 포커스를 잃었을 때 - BTC 단위면 readable 형식으로 변환 (소수부 4자리씩 공백)
-      if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        final currentInput = _viewModel.inputAmount;
-        if (currentInput != null && currentInput > 0) {
-          final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: false);
+    }
+    if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
+      final currentInput = _viewModel.inputAmount;
+      if (currentInput != null && currentInput > 0) {
+        final formatted = _formatBtcAmountText(currentInput);
 
+        if (_inputController.text != formatted) {
           _isUpdatingController = true;
           _inputController.value = TextEditingValue(
             text: formatted,
@@ -183,12 +183,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           );
           _isUpdatingController = false;
         }
-      } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
-        _stripTrailingZeroDecimalOnFocusLost();
       }
+    } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
+      _stripTrailingZeroDecimalOnFocusLost();
     }
     setState(() {});
   }
+
+  String _formatBtcAmountText(int sats) =>
+      _inputFocusNode.hasFocus ? BalanceFormatUtil.formatSatoshiToBtcInputText(sats) : _viewModel.formatBtc(sats);
 
   /// 소수점 구분자 뒤 소수부가 비어있거나 전부 0이면(예: "50.", "50.0", "50.00")
   /// 포커스 아웃 시 소수점 이하를 통째로 제거한다.
@@ -244,21 +247,29 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   List<TextInputFormatter> _amountInputFormatters() {
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      final decimalDigits = _viewModel.fiatCode.decimalDigits;
-      return decimalDigits > 0
-          ? [FiatAmountInputFormatter(decimalPlaces: decimalDigits)]
-          : [FilteringTextInputFormatter.digitsOnly];
+      return [FiatAmountInputFormatter(decimalPlaces: _viewModel.fiatCode.decimalDigits)];
     }
     if (!_viewModel.currentUnit.isBasedOnSatoshi) {
       return [const BtcAmountInputFormatter()];
     }
+    // sats·BIP-177: develop과 같은 digitsOnly. develop의 SatoshiAmountInputFormatter는 숫자가 없는 입력을 그대로
+    // 돌려줘 빈 칸에 기호가 남고, 쉼표 소수점 설정에서 커서가 앞으로 튄다.
     return [FilteringTextInputFormatter.digitsOnly];
   }
 
   void _handleAmountInputChanged(String value) {
     if (_isUpdatingController) return; // 무한 루프 방지
 
-    final sanitized = _sanitizeInput(value, _amountInputAllowsDecimal);
+    final String sanitized;
+    if (_amountInputAllowsDecimal) {
+      sanitized = _sanitizeInput(value);
+    } else {
+      // 소수 0자리 통화 칸은 '1000.0'처럼 소수점·부호·지수가 섞인 입력을 거부한다(숫자만 남기면 10000으로 커진다).
+      // sats·BIP-177 칸은 develop처럼 형식기(digitsOnly)가 먼저 숫자만 남겨서 여기서 거부되지 않는다('1000.0' → 10,000).
+      final digits = _strictIntegerDigits(value);
+      if (digits == null) return;
+      sanitized = digits;
+    }
 
     if (sanitized.isEmpty) {
       _viewModel.setInputAmount(null);
@@ -288,7 +299,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   void _handleResultInputChanged(String value) {
     final decimal = _resultIsFiat ? _viewModel.fiatCode.decimalDigits > 0 : !_viewModel.currentUnit.isBasedOnSatoshi;
-    final sanitized = _sanitizeInput(value, decimal);
+    final sanitized = decimal ? _sanitizeInput(value) : _strictIntegerDigits(value);
+    if (sanitized == null) return;
     if (sanitized.isEmpty) {
       _viewModel.setResultAmount(null);
       _isUpdatingController = true;
@@ -342,12 +354,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       }
     }
 
-    // decimalDigits==0인 통화(KRW/JPY)는 입력 필드에 digitsOnly 포매터만 붙어 있어
-    // 그룹 구분자(,)를 스스로 넣어주지 않으므로 매 입력마다 직접 그룹 포맷을 적용해야 한다.
-    // decimalDigits>0인 통화(USD/EUR)는 FiatAmountInputFormatter가 이미 타이핑 중에
-    // 그룹/소수점을 실시간으로 처리하므로, 프로그래매틱 갱신(Quick Add 등)일 때만 갱신한다.
-    if (fiatCode.decimalDigits == 0 || shouldUpdateController) {
-      final formatted = _formatFiatInputText(fiatText);
+    // 정수 통화도 FiatAmountInputFormatter가 그룹과 selection/composing을 만든다.
+    // 표시가 같으면 컨트롤러를 다시 쓰지 않는다. 소수 통화는 퀵 애드처럼 문자열이 다를 때만 갱신한다.
+    final formatted = _formatFiatInputText(fiatText);
+    final updateDisplay = fiatCode.decimalDigits == 0 ? formatted != _inputController.text : shouldUpdateController;
+    if (updateDisplay) {
       _isUpdatingController = true;
       _inputController.value = TextEditingValue(
         text: formatted,
@@ -453,6 +464,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _viewModel.setInputAmount(sats);
 
     final formatted = sats.toThousandsSeparatedString();
+    if (_inputController.text == formatted) return;
     _isUpdatingController = true;
     _inputController.value = TextEditingValue(
       text: formatted,
@@ -615,8 +627,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       _isUpdatingController = true;
 
       if (prevIsBasedOnSatoshi && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = _viewModel.formatBtc(currentInput);
+        final formatted = _formatBtcAmountText(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -660,8 +671,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           selection: TextSelection.collapsed(offset: formatted.length),
         );
       } else {
-        // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
-        final formatted = _viewModel.formatBtc(result);
+        final formatted = _formatBtcAmountText(result);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -672,23 +682,36 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = false;
   }
 
-  String _sanitizeInput(String value, bool allowDecimal) {
-    if (!allowDecimal) {
-      return value.replaceAll(RegExp(r'[^0-9]'), '');
-    } else {
-      final normalizedValue = normalizeNumTextForNumParsing(value);
-      final buffer = StringBuffer();
-      bool dotSeen = false;
-      for (final ch in normalizedValue.split('')) {
-        if (ch == '.' && !dotSeen) {
-          buffer.write('.');
-          dotSeen = true;
-        } else if (RegExp(r'[0-9]').hasMatch(ch)) {
-          buffer.write(ch);
-        }
+  /// 소수 입력만 정규화한다. 정수 필드의 소수점·부호·지수는 [_strictIntegerDigits]가 거부한다.
+  String _sanitizeInput(String value) {
+    final normalizedValue = normalizeNumTextForNumParsing(value);
+    final buffer = StringBuffer();
+    bool dotSeen = false;
+    for (final ch in normalizedValue.split('')) {
+      if (ch == '.' && !dotSeen) {
+        buffer.write('.');
+        dotSeen = true;
+      } else if (RegExp(r'[0-9]').hasMatch(ch)) {
+        buffer.write(ch);
       }
-      return buffer.toString();
     }
+    return buffer.toString();
+  }
+
+  /// 그룹 구분자만 제거한 정수면 그 숫자열을 반환한다. 소수점, 부호, 지수, 깨진 그룹은 null이다.
+  String? _strictIntegerDigits(String value) {
+    final grouping = NumberFormatConfig.instance.groupingSeparator;
+    final decimal = NumberFormatConfig.instance.decimalSeparator;
+    if (value.contains(decimal)) return null;
+    final alternate = decimal == '.' ? ',' : '.';
+    if (grouping != alternate && value.contains(alternate)) return null;
+    if (value.contains(grouping)) {
+      final grouped = RegExp('^[0-9]{1,3}(?:${RegExp.escape(grouping)}[0-9]{3})*\$');
+      if (!grouped.hasMatch(value)) return null;
+    }
+    final digits = value.replaceAll(grouping, '');
+    if (!RegExp(r'^[0-9]*$').hasMatch(digits)) return null;
+    return digits;
   }
 
   String formatResultAmount(int result) {
