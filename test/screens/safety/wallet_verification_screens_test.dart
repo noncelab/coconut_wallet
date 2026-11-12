@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -29,6 +28,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/services/safety/wallet_verification.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -275,37 +275,31 @@ void main() {
           expect(tester.takeException(), isNull);
         });
 
-        testWidgets('missing fingerprint shows a neutral guide until a result replaces it', (tester) async {
-          final copy = t.wallet_health.watch_only_verify;
-          wallets.walletItemList.add(
-            SinglesigWalletItem(
-              id: 3,
-              name: 'Wallet without fingerprint',
-              colorIndex: 0,
-              iconIndex: 0,
-              descriptor:
-                  Descriptor.parse(
-                    single.descriptor
-                        .split('#')
-                        .first
-                        .replaceFirst(
-                          RegExp(r'\[[A-Fa-f0-9]{8}/'),
-                          '[${WalletAddService.masterFingerprintPlaceholder}/',
-                        ),
-                    ignoreChecksum: true,
-                  ).serialize(),
-            ),
+        // M16: MFP가 없어도 QR 비교는 MFP를 쓰지 않으므로 "자동으로 비교할 수 없어요" 배너를 두지 않는다
+        SinglesigWalletItem addWalletWithoutFingerprint() {
+          final wallet = SinglesigWalletItem(
+            id: 3,
+            name: 'Wallet without fingerprint',
+            colorIndex: 0,
+            iconIndex: 0,
+            descriptor:
+                Descriptor.parse(
+                  single.descriptor
+                      .split('#')
+                      .first
+                      .replaceFirst(RegExp(r'\[[A-Fa-f0-9]{8}/'), '[${WalletAddService.masterFingerprintPlaceholder}/'),
+                  ignoreChecksum: true,
+                ).serialize(),
           );
+          wallets.walletItemList.add(wallet);
+          return wallet;
+        }
+
+        testWidgets('missing fingerprint shows no banner and can still be confirmed by hand', (tester) async {
+          final copy = t.wallet_health.watch_only_verify;
+          expect(isWalletWithoutMfp(addWalletWithoutFingerprint()), isTrue);
           await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 3));
-          expect(_text(copy.no_mfp_title), findsOneWidget);
-          expect(_text(copy.no_mfp), findsOneWidget);
-          await tester.ensureVisible(find.byType(SafetyStatusBanner));
-          await tester.pumpAndSettle();
-          final banner = tester.widget<SafetyStatusBanner>(find.byType(SafetyStatusBanner));
-          final colors = resolveCoconutThemeExtension(variant: theme).colors;
-          expect(banner.background, colors.surface);
-          expect(banner.iconPath, CommonStateIconPath.circleInfo);
-          expect(banner.iconColor, colors.iconSecondary);
+          expect(find.byType(SafetyStatusBanner), findsNothing);
           expect(safety.watch, isEmpty);
           await tester.tap(_text(copy.compared_manually));
           await tester.pumpAndSettle();
@@ -314,9 +308,21 @@ void main() {
           expect(safety.watch.single.id, 3);
           expect(safety.watch.single.method, VerificationMethod.user);
           expect(safety.watch.single.result, VerificationResult.match);
-          expect(_text(copy.no_mfp_title), findsNothing);
           expect(_text(copy.user_confirmed_title), findsOneWidget);
           expect(find.byType(SafetyStatusBanner), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('missing fingerprint still matches a receive address by QR', (tester) async {
+          final wallet = addWalletWithoutFingerprint();
+          await mount(tester, theme, const WatchOnlyVerificationScreen(walletId: 3));
+          await startScan(tester, t.wallet_health.watch_only_verify.scan);
+          await capture(tester, wallet.walletBase.getAddress(3));
+          expect(safety.watch.single.id, 3);
+          expect(safety.watch.single.result, VerificationResult.match);
+          expect(safety.watch.single.method, VerificationMethod.qr);
+          expect(safety.watch.single.index, 3);
+          expect(_text(t.wallet_health.watch_only_verify.match_at_index(index: 3)), findsOneWidget);
           expect(tester.takeException(), isNull);
         });
 

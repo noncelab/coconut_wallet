@@ -2595,8 +2595,6 @@ wallet_health:
     scan_again: "다시 스캔"
     error_not_address: "주소 QR이 아니에요. 서명 기기에서 받기 주소를 띄운 뒤 다시 스캔해 주세요."
     error_network: "다른 네트워크의 주소예요."
-    no_mfp_title: "자동으로 비교할 수 없는 지갑이에요"
-    no_mfp: "기기 화면에서 주소를 직접 비교해 주세요."
   save_failed: "결과를 저장하지 못했어요. 다시 시도해 주세요."
   bsms_verify:
     title: "BSMS 백업 검증"

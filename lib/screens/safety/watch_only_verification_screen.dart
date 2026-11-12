@@ -15,7 +15,6 @@ import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/features/safety/safety_common_widgets.dart';
@@ -170,7 +169,6 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
     final manual = _result == VerificationResult.match && _method == VerificationMethod.user;
     final complete = _result == VerificationResult.match || confirmedMismatch;
     final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
-    final fingerprintMissing = isWalletWithoutMfp(wallet);
     return Scaffold(
       key: const Key('watch-only-verification-screen'),
       backgroundColor: colors.background,
@@ -220,14 +218,6 @@ class _WatchOnlyVerificationScreenState extends State<WatchOnlyVerificationScree
                         ),
                       ),
                       CoconutLayout.spacing_400h,
-                      if (fingerprintMissing && _result == null)
-                        SafetyStatusBanner(
-                          background: colors.surface,
-                          iconPath: CommonStateIconPath.circleInfo,
-                          iconColor: colors.iconSecondary,
-                          title: copy.no_mfp_title,
-                          body: copy.no_mfp,
-                        ),
                       AnimatedSwitcher(
                         duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
                         child:

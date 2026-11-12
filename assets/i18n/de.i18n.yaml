@@ -2594,8 +2594,6 @@ wallet_health:
     scan_again: "Erneut scannen"
     error_not_address: "Das ist kein Adress-QR. Zeige auf deinem Signiergerät eine Empfangsadresse an und scanne erneut."
     error_network: "Diese Adresse gehört zu einem anderen Netzwerk."
-    no_mfp_title: "Diese Wallet kann nicht automatisch verglichen werden"
-    no_mfp: "Vergleiche die Adresse selbst auf dem Gerätebildschirm."
   save_failed: "Ergebnis konnte nicht gespeichert werden. Versuche es erneut."
   bsms_verify:
     title: "BSMS-Backup prüfen"

@@ -2589,8 +2589,6 @@ wallet_health:
     scan_again: "Escanear de nuevo"
     error_not_address: "Este no es un QR de dirección. Muestra una dirección de recepción en tu dispositivo y vuelve a escanear."
     error_network: "Esta dirección es de otra red."
-    no_mfp_title: "Esta billetera no se puede comparar automáticamente"
-    no_mfp: "Compara tú la dirección en la pantalla del dispositivo."
   save_failed: "No se pudo guardar el resultado. Inténtalo de nuevo."
   bsms_verify:
     title: "Verificar copia BSMS"

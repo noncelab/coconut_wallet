@@ -2586,8 +2586,6 @@ wallet_health:
     scan_again: "再スキャン"
     error_not_address: "アドレスのQRではありません。署名デバイスで受取アドレスを表示してから、もう一度スキャンしてください。"
     error_network: "別のネットワークのアドレスです。"
-    no_mfp_title: "自動では比較できないウォレットです"
-    no_mfp: "デバイスの画面でアドレスを直接比べてください。"
   save_failed: "結果を保存できませんでした。もう一度お試しください。"
   bsms_verify:
     title: "BSMSバックアップの検証"
