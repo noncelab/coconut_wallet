@@ -2177,7 +2177,11 @@ ark:
     fee_unavailable: "아크 서버에 연결하지 못해 수수료를 불러오지 못했어요."
     fee_note: "수수료는 아크 서버가 정하고 바뀔 수 있어요. 직접 실행할 때는 정확한 금액을 먼저 보여 드리고, 자동 갱신 수수료는 거래 내역에서 확인할 수 있어요."
     agree: "동의하고 켜기"
+  balance:
+    onchain: "온체인"
+    ark: "아크"
   wallet_info:
+    show_breakdown: "온체인·아크 잔액 나눠 보기"
     section: "아크"
     turn_off_title: "아크를 끌까요?"
     turn_off_description: "이 지갑의 아크 거래 내역이 기기에서 지워져요."

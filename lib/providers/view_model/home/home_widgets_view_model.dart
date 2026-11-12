@@ -147,7 +147,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   int balanceOf(int walletId) =>
       isFakeBalance
           ? _preferenceProvider.getFakeBalance(walletId).round()
-          : _walletProvider.getWalletBalance(walletId).total;
+          : _walletProvider.getDisplayBalance(walletId);
 
   int totalBalance([List<int>? walletIds]) => _idsOf(walletIds).fold(0, (sum, id) => sum + balanceOf(id));
 

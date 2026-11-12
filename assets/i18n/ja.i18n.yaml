@@ -2168,7 +2168,11 @@ ark:
     fee_unavailable: "Arkサーバーに接続できず、手数料を読み込めませんでした。"
     fee_note: "手数料はArkサーバーが決め、変わることがあります。ご自身で実行するときは正確な金額を先にお知らせし、自動更新の手数料は取引履歴で確認できます。"
     agree: "同意してオンにする"
+  balance:
+    onchain: "オンチェーン"
+    ark: "Ark"
   wallet_info:
+    show_breakdown: "オンチェーンとArkの残高を分けて表示"
     section: "Ark"
     turn_off_title: "Arkをオフにしますか？"
     turn_off_description: "このウォレットのArk取引履歴がこの端末から削除されます。"

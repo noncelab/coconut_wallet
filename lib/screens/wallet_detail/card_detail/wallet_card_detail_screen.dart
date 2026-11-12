@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_security_banner.dart';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
+import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/backup_analytics.dart';
@@ -116,9 +119,28 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       preferenceProvider: context.read<PreferenceProvider>(),
       priceProvider: context.read<PriceProvider>(),
       appearanceProvider: context.readWalletAppearance(),
+      arkProvider: context.readArkProviderOrNull(),
     );
     _pagePosition.value = _viewModel.focusedIndex.toDouble();
     _scrollController.addListener(_updateCollapseProgress);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openArkAfterArrival());
+  }
+
+  /// 화면 전환이 끝난 뒤 아크 잠금 해제를 요청
+  Future<void> _openArkAfterArrival() async {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation != null && animation.status != AnimationStatus.completed) {
+      final arrived = Completer<void>();
+      void onStatus(AnimationStatus status) {
+        if (status == AnimationStatus.completed && !arrived.isCompleted) arrived.complete();
+      }
+
+      animation.addStatusListener(onStatus);
+      await arrived.future;
+      animation.removeStatusListener(onStatus);
+    }
+    await _openArkForFocusedWallet();
   }
 
   @override
@@ -142,6 +164,14 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     if (_recentFocusStarted) return;
     _recentFocusStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) => _focusRecentTransactions());
+  }
+
+  /// 아크를 켠 지갑은 이번 실행에서 처음 볼 때 한 번 인증받아 bark 지갑을 엶
+  Future<void> _openArkForFocusedWallet() async {
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    final walletId = _viewModel.focusedWallet.id;
+    if (!(context.readArkProviderOrNull()?.shouldAutoUnlock(walletId) ?? false)) return;
+    await openArkWalletForSession(context, walletId);
   }
 
   Future<void> _focusRecentTransactions() async {
@@ -346,6 +376,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                   onFocusChanged: (wallet) {
                     vibrateExtraLight();
                     viewModel.focusWallet(wallet.id);
+                    _openArkForFocusedWallet();
                     widget.onFocusChanged?.call(wallet.id);
                   },
                   onScrollActivityChanged: (moving) => _carouselMoving.value = moving,
@@ -368,7 +399,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                         alignment: Alignment.topCenter,
                         child: IgnorePointer(
                           ignoring:
-                              !viewModel.focusedWallet.hasLocalKey || viewModel.balanceOf(viewModel.focusedWallet) <= 0,
+                              !viewModel.focusedWallet.hasLocalKey ||
+                              viewModel.onchainBalanceOf(viewModel.focusedWallet) <= 0,
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
                             switchInCurve: Curves.easeInOut,
@@ -385,7 +417,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                                   child: ScaleTransition(scale: animation, child: child),
                                 ),
                             child:
-                                viewModel.focusedWallet.hasLocalKey && viewModel.balanceOf(viewModel.focusedWallet) > 0
+                                viewModel.focusedWallet.hasLocalKey &&
+                                        viewModel.onchainBalanceOf(viewModel.focusedWallet) > 0
                                     ? KeyedSubtree(
                                       key: const Key('wallet-detail-vault-visible'),
                                       child: _buildMoveToVault(context),
@@ -638,6 +671,12 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       borderRadius: BorderRadius.zero,
       appearance: viewModel.appearanceOf(wallet),
       balance: viewModel.balanceOf(wallet),
+      breakdown:
+          viewModel.showsBalanceBreakdownOf(wallet)
+              ? (onchain: viewModel.onchainBalanceOf(wallet), ark: viewModel.arkBalanceOf(wallet))
+              : null,
+      onchainPending: viewModel.onchainPendingOf(wallet),
+      arkPending: viewModel.arkPendingOf(wallet),
       unit: viewModel.unit,
       onBalanceTap: viewModel.toggleUnit,
       actions: WalletDetailCardAction.standard(
@@ -645,7 +684,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         onSend: _openSend,
         onOrganize: _openOrganizer,
         onChart: onChart,
-        hasBalance: viewModel.balanceOf(wallet) > 0,
+        hasBalance: viewModel.onchainBalanceOf(wallet) > 0,
       ),
     );
   }

@@ -68,6 +68,12 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
       savedPalette = (iconIndex, colorIndex);
   @override
   Balance getWalletBalance(int walletId) => balance;
+
+  @override
+  int getDisplayBalance(int walletId) => getWalletBalance(walletId).total;
+
+  @override
+  int offchainBalance(int walletId) => 0;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

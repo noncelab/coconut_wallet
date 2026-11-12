@@ -15,6 +15,8 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 /// The Ark (bark) side of hot wallets, for the UI.
 ///
@@ -40,6 +42,7 @@ class ArkProvider extends ChangeNotifier {
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
+    cacheRevision.addListener(_walletProvider.notifyOffchainBalanceChanged);
     if (isEnabled) unawaited(_loadArkWallets());
     if (startTimer && isEnabled) _startTimer();
   }
@@ -298,6 +301,22 @@ class ArkProvider extends ChangeNotifier {
     } catch (_) {
       return true;
     }
+  }
+
+  /// 지갑 화면에 온체인·아크 잔액을 나눠 보여 줄지
+  bool showsBalanceBreakdown(int walletId) {
+    if (!supportsArkById(walletId)) return false;
+    try {
+      return _sharedPrefs.isWalletBalanceBreakdown(walletId);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> setBalanceBreakdown(int walletId, bool shown) async {
+    await _sharedPrefs.setWalletBalanceBreakdown(walletId, shown);
+    cacheRevision.value++;
+    _notify();
   }
 
   Future<void> setAutoRefreshOn(int walletId, bool on) async {
@@ -622,7 +641,19 @@ class ArkProvider extends ChangeNotifier {
     _timer?.cancel();
     _walletProvider.walletItemListNotifier.removeListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(null);
+    cacheRevision.removeListener(_walletProvider.notifyOffchainBalanceChanged);
     cacheRevision.dispose();
     super.dispose();
+  }
+}
+
+extension ArkProviderContext on BuildContext {
+  /// 아크 프로바이더가 없는 구성(테스트 등)에서는 null
+  ArkProvider? readArkProviderOrNull() {
+    try {
+      return Provider.of<ArkProvider>(this, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
   }
 }

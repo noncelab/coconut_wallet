@@ -43,6 +43,9 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
   void setOffchainBalanceSource(int Function(int walletId)? offchainBalanceOf) {}
 
   @override
+  void notifyOffchainBalanceChanged() {}
+
+  @override
   final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier = ValueNotifier(null);
 }
 

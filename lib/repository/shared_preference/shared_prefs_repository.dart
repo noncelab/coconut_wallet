@@ -245,6 +245,16 @@ class SharedPrefsRepository {
     await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
   }
 
+  bool isWalletBalanceBreakdown(int walletId) => getBool(SharedPrefKeys.walletBalanceBreakdown(walletId));
+
+  Future<void> setWalletBalanceBreakdown(int walletId, bool shown) async {
+    await setBool(SharedPrefKeys.walletBalanceBreakdown(walletId), shown);
+  }
+
+  Future<void> removeWalletBalanceBreakdown(int walletId) async {
+    await deleteSharedPrefsWithKey(SharedPrefKeys.walletBalanceBreakdown(walletId));
+  }
+
   bool isWalletArkAutoRefreshOn(int walletId) => !getBool(SharedPrefKeys.walletArkAutoRefreshOff(walletId));
 
   Future<void> setWalletArkAutoRefreshOn(int walletId, bool on) async {

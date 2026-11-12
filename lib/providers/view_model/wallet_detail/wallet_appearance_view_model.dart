@@ -147,10 +147,8 @@ class WalletAppearanceViewModel extends ChangeNotifier {
 
   File? photoFileOf(WalletPhotoBackground photo) => _appearanceProvider.photoFileOf(photo);
 
-  String get balanceText => _preferenceProvider.currentUnit.displayBitcoinAmount(
-    _walletProvider.getWalletBalance(walletId).total,
-    withUnit: true,
-  );
+  String get balanceText =>
+      _preferenceProvider.currentUnit.displayBitcoinAmount(_walletProvider.getDisplayBalance(walletId), withUnit: true);
 
   void selectPreviewSize(WalletCardSize size) {
     if (_previewSize == size) return;

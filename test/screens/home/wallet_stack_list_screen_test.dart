@@ -47,6 +47,12 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   Balance getWalletBalance(int walletId) => Balance(walletId * 100000000, 0);
 
   @override
+  int getDisplayBalance(int walletId) => getWalletBalance(walletId).total;
+
+  @override
+  int offchainBalance(int walletId) => 0;
+
+  @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => const [];
 
   @override

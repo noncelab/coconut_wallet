@@ -163,7 +163,13 @@ class WalletProvider extends ChangeNotifier {
   }
 
   /// 화면에 보이는 잔액(sats), 온체인 합계 + 아크 캐시 합계. 보내기·수수료·볼트 로직은 [getWalletBalance] 사용
-  int getDisplayBalance(int walletId) => getWalletBalance(walletId).total + (_offchainBalanceOf?.call(walletId) ?? 0);
+  int getDisplayBalance(int walletId) => getWalletBalance(walletId).total + offchainBalance(walletId);
+
+  /// 아크 캐시 잔액(sats), 아크가 없으면 0
+  int offchainBalance(int walletId) => _offchainBalanceOf?.call(walletId) ?? 0;
+
+  /// 아크 캐시가 바뀌어 화면 잔액을 다시 그려야 할 때
+  void notifyOffchainBalanceChanged() => notifyListeners();
 
   Map<int, int> fetchDisplayBalanceMap() {
     return {for (var wallet in _walletItemList) wallet.id: getDisplayBalance(wallet.id)};
@@ -351,6 +357,7 @@ class WalletProvider extends ChangeNotifier {
       () => _sharedPrefsRepository.removeWalletTargetSats(walletId),
       () => _sharedPrefsRepository.removeWalletTargetDisabled(walletId),
       () => _sharedPrefsRepository.removeWalletArkAutoRefresh(walletId),
+      () => _sharedPrefsRepository.removeWalletBalanceBreakdown(walletId),
       () => _sharedPrefsRepository.removeFaucetHistory(walletId),
     ];
     for (final operation in operations) {

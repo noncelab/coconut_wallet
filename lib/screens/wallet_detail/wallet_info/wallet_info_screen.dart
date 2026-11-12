@@ -307,7 +307,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             Provider.of<WalletProvider>(context, listen: false),
             Provider.of<NodeProvider>(context, listen: false),
             widget.walletType,
-            arkProvider: _arkProviderOrNull(context),
+            arkProvider: context.readArkProviderOrNull(),
           ),
       child: Consumer<WalletInfoViewModel>(
         builder: (innerContext, viewModel, child) {
@@ -367,7 +367,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   _MnemonicBackupButton(
                     key: _mnemonicBackupButtonKey,
                     isBackupVerified: hotWalletMetadata?.backupVerified ?? false,
-                    showWarning: viewModel.walletBalance.total > 0 && !(hotWalletMetadata?.backupVerified ?? false),
+                    showWarning: viewModel.totalBalance > 0 && !(hotWalletMetadata?.backupVerified ?? false),
                     backupVerifiedAt: hotWalletMetadata?.backupVerifiedAt,
                     onPressed: () => _showMnemonicBackup(viewModel),
                   ),
@@ -449,15 +449,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  /// 아크 프로바이더가 없는 구성(테스트 등)에서는 아크 섹션을 숨김
-  ArkProvider? _arkProviderOrNull(BuildContext context) {
-    try {
-      return Provider.of<ArkProvider>(context, listen: false);
-    } on ProviderNotFoundException {
-      return null;
-    }
-  }
-
   List<Widget> _buildArkRows(WalletInfoViewModel viewModel) {
     final colors = context.coconutColors;
     Widget toggle(bool isOn, ValueChanged<bool> onChanged) => CoconutSwitch(
@@ -475,12 +466,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         trailing: toggle(viewModel.isArkOn, (on) => _setArkOn(viewModel, on)),
         onPressed: () => _setArkOn(viewModel, !viewModel.isArkOn),
       ),
-      if (viewModel.isArkOn)
+      if (viewModel.isArkOn) ...[
         _walletInfoMenu(
           title: t.ark.consent.auto_refresh_title,
           trailing: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
           onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
         ),
+        _walletInfoMenu(
+          title: t.ark.wallet_info.show_breakdown,
+          trailing: toggle(viewModel.showsBalanceBreakdown, viewModel.setBalanceBreakdown),
+          onPressed: () => viewModel.setBalanceBreakdown(!viewModel.showsBalanceBreakdown),
+        ),
+      ],
     ];
   }
 
@@ -1040,7 +1037,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showDeleteWalletDialog(WalletInfoViewModel viewModel) async {
-    final shouldConfirmBackup = viewModel.walletItemBase.hasLocalKey && viewModel.walletBalance.total > 0;
+    final shouldConfirmBackup = viewModel.walletItemBase.hasLocalKey && viewModel.totalBalance > 0;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {

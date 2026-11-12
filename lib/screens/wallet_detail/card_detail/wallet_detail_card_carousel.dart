@@ -2,6 +2,7 @@ import 'dart:ui' show lerpDouble;
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -279,6 +280,12 @@ class WalletDetailCard extends StatelessWidget {
   final WalletItemBase wallet;
   final WalletAppearance appearance;
   final int balance;
+
+  /// 온체인·아크로 나눠 보여 줄 때만 값이 있음
+  final ({int onchain, int ark})? breakdown;
+
+  final ({bool receiving, bool sending}) onchainPending;
+  final ({bool receiving, bool sending}) arkPending;
   final BitcoinUnit unit;
   final VoidCallback? onBalanceTap;
   final List<WalletDetailCardAction> actions;
@@ -289,11 +296,27 @@ class WalletDetailCard extends StatelessWidget {
     required this.wallet,
     required this.appearance,
     required this.balance,
+    this.breakdown,
+    this.onchainPending = (receiving: false, sending: false),
+    this.arkPending = (receiving: false, sending: false),
     required this.unit,
     required this.actions,
     this.onBalanceTap,
     this.borderRadius = const BorderRadius.all(Radius.circular(28)),
   });
+
+  List<Widget> _pendingIcons(({bool receiving, bool sending}) pending, String source) => [
+    for (final (isIncoming, isPending) in [(true, pending.receiving), (false, pending.sending)])
+      if (isPending) ...[
+        const SizedBox(width: 4),
+        PendingTransactionLottieIcon(
+          key: Key('wallet-detail-card-pending-$source-${isIncoming ? 'receiving' : 'sending'}'),
+          isIncoming: isIncoming,
+          size: 12,
+          backgroundAlpha: 0,
+        ),
+      ],
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -332,31 +355,68 @@ class WalletDetailCard extends StatelessWidget {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: onBalanceTap,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: BitcoinAmountUnit(
-                        currentUnit: unit,
-                        unitStyle: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
-                        child: AnimatedBalance(
-                          key: const Key('wallet-detail-card-balance'),
-                          prevValue: balance,
-                          value: balance,
-                          duration: 400,
-                          currentUnit: unit,
-                          textStyle: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: BitcoinAmountUnit(
+                            currentUnit: unit,
+                            unitStyle: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
+                            child: AnimatedBalance(
+                              key: const Key('wallet-detail-card-balance'),
+                              prevValue: balance,
+                              value: balance,
+                              duration: 400,
+                              currentUnit: unit,
+                              textStyle: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FiatPrice(
+                              satoshiAmount: balance,
+                              textStyle: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
+                            ),
+                            if (breakdown == null)
+                              ..._pendingIcons((
+                                receiving: onchainPending.receiving || arkPending.receiving,
+                                sending: onchainPending.sending || arkPending.sending,
+                              ), 'total'),
+                          ],
+                        ),
+                        if (breakdown case final parts?) ...[
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              key: const Key('wallet-detail-card-balance-breakdown'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${t.ark.balance.onchain} ${unit.displayBitcoinAmount(parts.onchain, withUnit: true)}',
+                                  style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
+                                ),
+                                ..._pendingIcons(onchainPending, 'onchain'),
+                                Text(
+                                  '  ·  ${t.ark.balance.ark} ${unit.displayBitcoinAmount(parts.ark, withUnit: true)}',
+                                  style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
+                                ),
+                                ..._pendingIcons(arkPending, 'ark'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    FiatPrice(
-                      satoshiAmount: balance,
-                      textStyle: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
+                  ),
                 ),
               ),
             ),

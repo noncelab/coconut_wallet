@@ -11,6 +11,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/utils/legible_color_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -230,21 +231,36 @@ class _TransactionRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            TransactionStatusGradientMask(
-              enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
-              child: SvgPicture.asset(
-                TransactionUtil.getStatusIconAsset(status),
-                key: ValueKey('recent-transactions-icon-${status.name}'),
-                fit: BoxFit.fill,
+            if (status == TransactionStatus.receiving || status == TransactionStatus.sending)
+              SizedBox(
                 width: 30,
                 height: 30,
-                colorFilter: ColorFilter.mode(switch (status) {
-                  TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                  TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                  _ => colors.iconPrimary,
-                }, BlendMode.srcIn),
+                child: Center(
+                  child: PendingTransactionLottieIcon(
+                    key: ValueKey('recent-transactions-icon-${status.name}'),
+                    isIncoming: status == TransactionStatus.receiving,
+                    size: 11,
+                    padding: const EdgeInsets.all((28 - 11) / 2),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              )
+            else
+              TransactionStatusGradientMask(
+                enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+                child: SvgPicture.asset(
+                  TransactionUtil.getStatusIconAsset(status),
+                  key: ValueKey('recent-transactions-icon-${status.name}'),
+                  fit: BoxFit.fill,
+                  width: 30,
+                  height: 30,
+                  colorFilter: ColorFilter.mode(switch (status) {
+                    TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                    TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                    _ => colors.iconPrimary,
+                  }, BlendMode.srcIn),
+                ),
               ),
-            ),
             const SizedBox(width: 8),
             Expanded(
               child:

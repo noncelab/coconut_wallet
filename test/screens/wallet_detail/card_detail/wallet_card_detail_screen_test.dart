@@ -78,6 +78,12 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   WalletItemBase getWalletById(int id) => wallets.firstWhere((wallet) => wallet.id == id);
   @override
   Balance getWalletBalance(int walletId) => Balance(balances[walletId] ?? walletId * 10000000, 0);
+
+  @override
+  int getDisplayBalance(int walletId) => getWalletBalance(walletId).total;
+
+  @override
+  int offchainBalance(int walletId) => 0;
   @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions;
   @override
@@ -91,6 +97,8 @@ class _Transactions extends Fake with ChangeNotifier implements TransactionProvi
   void initTxList(int walletId) => loadedWalletIds.add(walletId);
   @override
   List<TransactionRecord> get txList => const [];
+  @override
+  ({int receiving, int sending}) getPendingAmounts(int walletId) => (receiving: 0, sending: 0);
 }
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
@@ -662,7 +670,7 @@ void main() {
 
   testWidgets('section headers open the UTXO overview and transaction list', (tester) async {
     walletProvider.utxos = [mapRealmToUtxoState(UtxoMock.createMockUtxo(walletId: 1, address: 'a', amount: 1000))];
-    walletProvider.transactions = [TransactionMock.createMockTransactionRecord()];
+    walletProvider.transactions = [TransactionMock.createMockTransactionRecord(blockHeight: 100)];
     await pump(tester);
 
     await tester.tap(

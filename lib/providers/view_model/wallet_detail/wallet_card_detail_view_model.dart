@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
@@ -26,6 +27,7 @@ class WalletCardDetailViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final PreferenceProvider _preferenceProvider;
   final WalletAppearanceProvider? _appearanceProvider;
+  final ArkProvider? _arkProvider;
   final List<int>? _walletIds;
   final HomeWidgetsViewModel widgets;
 
@@ -42,8 +44,10 @@ class WalletCardDetailViewModel extends ChangeNotifier {
     required PreferenceProvider preferenceProvider,
     required PriceProvider priceProvider,
     WalletAppearanceProvider? appearanceProvider,
+    ArkProvider? arkProvider,
     List<int>? walletIds,
   }) : _walletProvider = walletProvider,
+       _arkProvider = arkProvider,
        _transactionProvider = transactionProvider,
        _nodeProvider = nodeProvider,
        _preferenceProvider = preferenceProvider,
@@ -93,9 +97,31 @@ class WalletCardDetailViewModel extends ChangeNotifier {
   WalletAppearance appearanceOf(WalletItemBase wallet) =>
       _appearanceProvider?.appearanceOf(wallet) ?? WalletAppearance.of(wallet);
 
-  int balanceOf(WalletItemBase wallet) =>
+  /// 화면에 보이는 합계 잔액, 온체인 + 아크
+  int balanceOf(WalletItemBase wallet) => onchainBalanceOf(wallet) + arkBalanceOf(wallet);
+
+  int onchainBalanceOf(WalletItemBase wallet) =>
       _nodeProvider.state.registeredWallets[wallet.id]?.balanceSnapshot ??
       _walletProvider.getWalletBalance(wallet.id).total;
+
+  int arkBalanceOf(WalletItemBase wallet) => _walletProvider.offchainBalance(wallet.id);
+
+  ({bool receiving, bool sending}) onchainPendingOf(WalletItemBase wallet) {
+    final amounts = _transactionProvider.getPendingAmounts(wallet.id);
+    return (receiving: amounts.receiving > 0, sending: amounts.sending > 0);
+  }
+
+  /// 라운드 처리 중인 갱신은 제외
+  ({bool receiving, bool sending}) arkPendingOf(WalletItemBase wallet) {
+    final ark = _arkProvider?.balance(wallet.id);
+    if (ark == null) return (receiving: false, sending: false);
+    return (
+      receiving: ark.claimableLightningReceive + ark.pendingBoard > 0,
+      sending: ark.pendingLightningSend + ark.pendingExit > 0,
+    );
+  }
+
+  bool showsBalanceBreakdownOf(WalletItemBase wallet) => _arkProvider?.showsBalanceBreakdown(wallet.id) ?? false;
 
   String balanceText(WalletItemBase wallet) => _unit.displayBitcoinAmount(balanceOf(wallet));
 

@@ -2171,7 +2171,11 @@ ark:
     fee_unavailable: "No se pudo conectar con el servidor Ark para cargar las comisiones."
     fee_note: "El servidor Ark fija las comisiones y puede cambiarlas. Cuando actúas tú, verás antes el monto exacto; las comisiones de la renovación automática aparecen en tu historial."
     agree: "Aceptar y activar"
+  balance:
+    onchain: "On-chain"
+    ark: "Ark"
   wallet_info:
+    show_breakdown: "Mostrar saldos on-chain y Ark por separado"
     section: "Ark"
     turn_off_title: "¿Desactivar Ark?"
     turn_off_description: "El historial de transacciones Ark de esta billetera se eliminará de este dispositivo."

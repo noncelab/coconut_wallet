@@ -2176,7 +2176,11 @@ ark:
     fee_unavailable: "Der Ark-Server war nicht erreichbar, die Gebühren konnten nicht geladen werden."
     fee_note: "Der Ark-Server legt die Gebühren fest und kann sie ändern. Wenn du selbst handelst, siehst du vorher den genauen Betrag; Gebühren der automatischen Erneuerung stehen im Verlauf."
     agree: "Zustimmen und einschalten"
+  balance:
+    onchain: "On-chain"
+    ark: "Ark"
   wallet_info:
+    show_breakdown: "On-chain- und Ark-Guthaben getrennt anzeigen"
     section: "Ark"
     turn_off_title: "Ark ausschalten?"
     turn_off_description: "Der Ark-Transaktionsverlauf dieser Wallet wird von diesem Gerät entfernt."

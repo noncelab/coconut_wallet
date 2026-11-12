@@ -209,7 +209,7 @@ class TransactionListViewModel extends ChangeNotifier {
   }
 
   int _getBalance() {
-    return _walletProvider.getWalletBalance(_walletId).total;
+    return _walletProvider.getDisplayBalance(_walletId);
   }
 
   // balance, transaction만 고려

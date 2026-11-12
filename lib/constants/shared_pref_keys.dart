@@ -84,6 +84,9 @@ class SharedPrefKeys {
   /// 목표 수량 사용 안 함 여부 (지갑별)
   static String walletTargetDisabled(int walletId) => 'WALLET_TARGET_DISABLED_$walletId';
 
+  /// 지갑 화면에 온체인·아크 잔액을 나눠 보여 줄지 (지갑별)
+  static String walletBalanceBreakdown(int walletId) => 'WALLET_BALANCE_BREAKDOWN_$walletId';
+
   /// 만료 직전 아크 자동 갱신 끔 여부 (지갑별, 기본은 켬)
   static String walletArkAutoRefreshOff(int walletId) => 'WALLET_ARK_AUTO_REFRESH_OFF_$walletId';
 

@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
@@ -20,6 +21,27 @@ class TransactionRepository extends BaseRepository {
 
   /// 거래 객체 전체를 변환하지 않고 지갑 사용 이력의 존재만 확인한다.
   bool hasTransactionHistory(int walletId) => realm.query<RealmTransaction>('walletId == $walletId').isNotEmpty;
+
+  /// 미확인 거래의 받는 중·보내는 중 합계(sats), RBF로 대체된 거래 제외
+  ({int receiving, int sending}) getPendingAmounts(int walletId) {
+    final transactions = realm.query<RealmTransaction>(
+      'walletId == $walletId AND replaceByTransactionHash == null AND blockHeight == 0',
+    );
+    var receiving = 0;
+    var sending = 0;
+    for (final transaction in transactions) {
+      switch (TransactionTypeExtension.fromString(transaction.transactionType)) {
+        case TransactionType.sent:
+        case TransactionType.self:
+          sending += transaction.amount.abs();
+        case TransactionType.received:
+          receiving += transaction.amount;
+        default:
+          break;
+      }
+    }
+    return (receiving: receiving, sending: sending);
+  }
 
   /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {

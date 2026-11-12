@@ -2171,7 +2171,11 @@ ark:
     fee_unavailable: "Couldn't reach the Ark server to load its fees."
     fee_note: "The Ark server sets the fees and may change them. When you act yourself, you see the exact amount first; auto refresh fees show in your transaction history."
     agree: "Agree and turn on"
+  balance:
+    onchain: "On-chain"
+    ark: "Ark"
   wallet_info:
+    show_breakdown: "Show on-chain and Ark balances"
     section: "Ark"
     turn_off_title: "Turn off Ark?"
     turn_off_description: "This wallet's Ark transaction history will be removed from this device."

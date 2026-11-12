@@ -64,7 +64,7 @@ class WalletStackListViewModel extends ChangeNotifier {
   }
 
   String balanceText(WalletItemBase wallet) => _preferenceProvider.currentUnit.displayBitcoinAmount(
-    _walletProvider.getWalletBalance(wallet.id).total,
+    _walletProvider.getDisplayBalance(wallet.id),
     withUnit: true,
   );
 
