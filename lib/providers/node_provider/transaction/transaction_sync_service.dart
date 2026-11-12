@@ -118,12 +118,12 @@ class TransactionSyncService {
         _electrumService,
       );
 
-      // 3-1. 미확정 거래의 이전 거래를 먼저 받는다(거래 번호 확인). 서명 확인과 거래 기록이 같은 이전 거래를 쓴다
+      // 3-1. 확정·미확정 거래의 이전 거래를 함께 먼저 받는다(거래 번호 확인). 서명 확인과 거래 기록이 같은 이전 거래를 쓴다
       // 내 입력의 서명이 확인되지 않은 미확정 거래는 넣지도, UTXO 상태에 반영하지도 않는다(다음 동기화에서 다시 확인)
       final parents = {for (final tx in fetched.fetchedTransactions) tx.transactionHash: tx};
       final pendingTransactions =
           fetched.fetchedTransactions.where((tx) => unconfirmedFetchedTxHashes.contains(tx.transactionHash)).toList();
-      await _fetchPreviousTransactions(pendingTransactions, parents);
+      await _fetchPreviousTransactions(fetched.fetchedTransactions, parents);
       final skipped = await _findUnverifiedPendingTransactions(walletId, pendingTransactions, parents);
       final FetchedTransactionDetails fetchedTransactionDetails = (
         fetchedTransactions: fetched.fetchedTransactions.where((tx) => !skipped.contains(tx.transactionHash)).toList(),
@@ -131,13 +131,12 @@ class TransactionSyncService {
         blockTimestampMap: fetched.blockTimestampMap,
       );
 
-      // 4. 트랜잭션 레코드 생성 및 저장. 미확정 거래는 서명을 확인한 것과 같은 이전 거래로만 만든다(다시 받지 않음)
+      // 4. 트랜잭션 레코드 생성 및 저장. 3-1에서 받은 이전 거래로만 만든다(다시 받지 않음). 미확정 거래는 서명을 확인한 것과 같은 이전 거래다
       final List<TransactionRecord> txRecords = await _transactionRecordService.createTransactionRecords(
         walletId,
         fetchedTransactionDetails,
-        previousTxs: parents.values.toList(),
         resolvedPreviousTxs: {
-          for (final tx in pendingTransactions)
+          for (final tx in fetchedTransactionDetails.fetchedTransactions)
             tx.transactionHash: PendingTransactionVerifier.previousTransactionsOf(tx, parents),
         },
         now: now,
@@ -253,17 +252,23 @@ class TransactionSyncService {
     );
   }
 
-  /// 3-1. 미확정 거래마다 이전 거래를 받아(getPreviousTransactions, 거래 번호 확인) [parents]에 넣는다. 같은 묶음에 있는 것은 다시 받지 않는다.
-  /// 거래 기록도 이것으로만 만드므로 요청이 늘지 않는다
-  Future<void> _fetchPreviousTransactions(
-    List<Transaction> pendingTransactions,
-    Map<String, Transaction> parents,
-  ) async {
-    final batch = parents.values.toList();
+  /// 3-1. 거래마다 이전 거래를 받아(getPreviousTransactions, 거래 번호 확인) [parents]에 넣는다. 같은 묶음에 있는 것은 다시 받지 않는다.
+  /// 확정·미확정 거래의 요청을 함께 시작해 한 번만 기다리고, 거래 기록을 만들 때 다시 받지 않는다.
+  /// 묶음의 거래는 그 거래의 입력이 가리키는 것만 넘긴다(넘겨받은 거래마다 거래 번호를 다시 계산하므로, 묶음 전체를 넘기면 묶음 크기의 제곱이 된다)
+  Future<void> _fetchPreviousTransactions(List<Transaction> transactions, Map<String, Transaction> parents) async {
     final previous = await Future.wait(
-      pendingTransactions.map((tx) => _electrumService.getPreviousTransactions(tx, existingTxList: batch)),
+      transactions.map(
+        (tx) => _electrumService.getPreviousTransactions(
+          tx,
+          existingTxList: [
+            for (final hash in {for (final input in tx.inputs) input.transactionHash})
+              if (parents[hash] case final parent?) parent,
+          ],
+        ),
+      ),
     );
-    for (final previousTx in previous.expand((txs) => txs)) {
+    // 결과에는 입력마다 같은 이전 거래 객체가 다시 들어 있으므로, 객체마다 한 번만 거래 번호를 계산한다
+    for (final previousTx in Set<Transaction>.identity()..addAll(previous.expand((txs) => txs))) {
       parents[previousTx.transactionHash] = previousTx;
     }
   }
