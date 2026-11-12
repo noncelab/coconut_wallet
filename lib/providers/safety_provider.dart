@@ -585,7 +585,7 @@ class SafetyProvider extends ChangeNotifier {
     }
   }
 
-  @visibleForTesting
+  /// 시작 화면 업데이트 팝업도 같은 비교를 쓴다
   static AppUpdateStatus compareAppVersions(String current, String latest) {
     // shortcut: 정식 배포 버전만 비교, 시험판 배포를 지원하면 SemVer 비교로 확장
     final pattern = RegExp(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(?:\+[0-9]+)?$');

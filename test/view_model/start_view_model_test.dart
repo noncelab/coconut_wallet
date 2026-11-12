@@ -125,7 +125,7 @@ void main() {
       expect(viewModel.canUpdate, isTrue);
     });
 
-    test('does not flag an update when the major version is unchanged', () async {
+    test('flags an update when only the minor or patch version is newer', () async {
       final viewModel = StartViewModel(
         FakeVisibilityProvider(),
         FakeAuthProvider(),
@@ -138,7 +138,7 @@ void main() {
 
       await viewModel.ensureVersionChecked();
 
-      expect(viewModel.canUpdate, isFalse);
+      expect(viewModel.canUpdate, isTrue);
     });
 
     test('completes without throwing when the version check fails', () async {

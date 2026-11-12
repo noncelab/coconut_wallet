@@ -5,8 +5,10 @@ import 'package:coconut_wallet/analytics/user_cohort_analytics.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/model/safety/safety_inputs.dart';
 import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
@@ -109,11 +111,9 @@ class StartViewModel extends ChangeNotifier {
         String currentVersion = _packageInfo.version;
         String newVersion = response.latestVersion;
         Logger.log('currentVersion : $currentVersion\nnewVersion : $newVersion');
-        if (currentVersion.isNotEmpty && newVersion.isNotEmpty) {
-          // 메이저 버전이 다를 경우만 판별
-          if (int.tryParse(currentVersion.split('.')[0])! < int.tryParse(newVersion.split('.')[0])!) {
-            _canUpdate = await _shouldShowUpdateDialog();
-          }
+        // 스토어 버전이 더 새로우면 패치·마이너·메이저 모두 띄운다(지갑 점검과 같은 비교)
+        if (SafetyProvider.compareAppVersions(currentVersion, newVersion) == AppUpdateStatus.available) {
+          _canUpdate = await _shouldShowUpdateDialog();
         }
       }
     } catch (e) {
