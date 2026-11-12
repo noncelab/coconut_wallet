@@ -119,6 +119,16 @@ class _WalletStackViewState extends State<WalletStackView> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(WalletStackView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 끌던 중에 한 장이 되면 카드·표시의 끌기 인식이 사라져 끝 알림이 오지 않는다. 여기서 끝내야 다시 두 장이 돼도 표시가 꺼진다
+    if (_pageCount < 2 && (_cardDragDistance != null || _indicatorDragDistance != null)) {
+      _indicatorDragDistance = null;
+      _endCardDrag();
+    }
+  }
+
   void _showIndicator() {
     _hideIndicator?.cancel();
     if (!_indicatorVisible) setState(() => _indicatorVisible = true);
@@ -277,6 +287,8 @@ class _WalletStackViewState extends State<WalletStackView> {
   Widget build(BuildContext context) {
     final wallets = widget.wallets;
     if (wallets.isEmpty) return _emptyCard(context);
+    // 넘길 카드가 없으면 가로 드래그를 받지 않아 홈 스와이프(All Features)가 지나간다
+    final pageable = _pageCount > 1;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: widget.onOpen == null && widget.onPressed == null && widget.onAddPressed == null ? null : _onTap,
@@ -332,10 +344,10 @@ class _WalletStackViewState extends State<WalletStackView> {
                     child: GestureDetector(
                       key: Key('${widget.keyPrefix}-card-slider'),
                       behavior: HitTestBehavior.opaque,
-                      onHorizontalDragStart: _startCardDrag,
-                      onHorizontalDragUpdate: _updateCardDrag,
-                      onHorizontalDragEnd: (_) => _endCardDrag(),
-                      onHorizontalDragCancel: _endCardDrag,
+                      onHorizontalDragStart: pageable ? _startCardDrag : null,
+                      onHorizontalDragUpdate: pageable ? _updateCardDrag : null,
+                      onHorizontalDragEnd: pageable ? (_) => _endCardDrag() : null,
+                      onHorizontalDragCancel: pageable ? _endCardDrag : null,
                       child: PageView.builder(
                         key: Key('${widget.keyPrefix}-pager'),
                         controller: _controller,
