@@ -254,11 +254,20 @@ class VtxoListRow extends StatelessWidget {
                           ),
                           if (statusText != null) ...[
                             const SizedBox(height: 2),
-                            Text(
-                              statusText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: CoconutTypography.caption_10.setColor(colors.tertiaryText),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(right: showsDueDot ? 8 : 0),
+                                  child: Text(
+                                    statusText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CoconutTypography.caption_10.setColor(colors.tertiaryText),
+                                  ),
+                                ),
+                                if (showsDueDot) Positioned(top: 0, right: 0, child: dueDot),
+                              ],
                             ),
                           ],
                         ],
