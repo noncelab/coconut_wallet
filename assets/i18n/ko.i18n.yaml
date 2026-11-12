@@ -2148,6 +2148,11 @@ wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
 
 ark:
+  unlock:
+    action: "아크 잠금 해제"
+    passphrase_description: "아크를 쓰려면 이 지갑의 패스프레이즈가 필요해요. 앱을 다시 켜기 전까지는 다시 묻지 않아요."
+    pin_title: "아크를 쓰려면 비밀번호를 눌러주세요"
+    biometrics_reason: "아크를 쓰려면 인증해 주세요"
   option:
     title: "아크 함께 쓰기"
     description: "비트코인을 아크와 라이트닝으로 빠르게 주고받아요"

@@ -22,12 +22,16 @@ class HotWalletPassphraseInputSheet extends StatefulWidget {
     required this.showIncorrectError,
     required this.onAuthenticationStarted,
     required this.onPassphraseInputResumed,
+    this.description,
+    this.buttonText,
   });
 
   final bool requiresAuthentication;
   final bool showIncorrectError;
   final Future<void> Function() onAuthenticationStarted;
   final VoidCallback onPassphraseInputResumed;
+  final String? description;
+  final String? buttonText;
 
   @override
   State<HotWalletPassphraseInputSheet> createState() => _HotWalletPassphraseInputSheetState();
@@ -106,6 +110,10 @@ class _HotWalletPassphraseInputSheetState extends State<HotWalletPassphraseInput
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.description case final description?) ...[
+                Text(description, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
+                CoconutLayout.spacing_400h,
+              ],
               CoconutTextField(
                 key: const ValueKey('hot-wallet-passphrase-input'),
                 controller: _controller,
@@ -135,7 +143,7 @@ class _HotWalletPassphraseInputSheetState extends State<HotWalletPassphraseInput
               ),
               CoconutLayout.spacing_500h,
               InlineActionButton(
-                text: t.sign,
+                text: widget.buttonText ?? t.sign,
                 isActive: _controller.text.isNotEmpty && !_isSubmitting,
                 onPressed: _complete,
               ),

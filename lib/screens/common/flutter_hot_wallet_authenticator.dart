@@ -7,23 +7,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FlutterHotWalletAuthenticator implements HotWalletAuthenticator {
-  const FlutterHotWalletAuthenticator(this.context);
+  const FlutterHotWalletAuthenticator(this.context, {this.pinTitle, this.biometricsReason});
 
   final BuildContext context;
+  final String? pinTitle;
+  final String? biometricsReason;
 
   @override
   Future<bool> authenticate() async {
     final authProvider = context.read<AuthProvider>();
     if (!authProvider.isAuthEnabled) return true;
 
-    if (await authProvider.isBiometricsAuthValid()) return true;
+    if (await authProvider.isBiometricsAuthValid(localizedReason: biometricsReason)) return true;
     if (!context.mounted) return false;
 
     final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
       context: context,
       screenName: AnalyticsScreenNames.hotWalletAuthSheet,
       heightRatio: 0.9,
-      child: const PinCheckScreen(allowBiometrics: false),
+      child: PinCheckScreen(allowBiometrics: false, title: pinTitle),
     );
     return pinVerified == true;
   }

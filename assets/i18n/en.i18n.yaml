@@ -2142,6 +2142,11 @@ wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
 
 ark:
+  unlock:
+    action: "Unlock Ark"
+    passphrase_description: "Ark needs this wallet's passphrase. You won't be asked again until you restart the app."
+    pin_title: "Enter your password to use Ark"
+    biometrics_reason: "Authenticate to use Ark"
   option:
     title: "Use Ark too"
     description: "Send and receive bitcoin quickly with Ark and Lightning"

@@ -43,7 +43,7 @@ class ArkProvider extends ChangeNotifier {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
     cacheRevision.addListener(_walletProvider.notifyOffchainBalanceChanged);
-    if (isEnabled) unawaited(_loadArkWallets());
+    if (isEnabled) arkWalletsLoaded = _loadArkWallets();
     if (startTimer && isEnabled) _startTimer();
   }
 
@@ -63,6 +63,9 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, DateTime> _lastSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
   final Set<String> _arkOnFingerprints = {};
+
+  /// 아크를 켠 지갑 목록을 다 읽었을 때 완료
+  Future<void> arkWalletsLoaded = Future.value();
   final Set<int> _autoRefreshing = {};
   final Map<int, String> _syncErrors = {};
   final Set<int> _declined = {};
@@ -605,7 +608,7 @@ class ArkProvider extends ChangeNotifier {
     _snapshots.removeWhere((id, _) => !ids.contains(id));
     _lastSync.removeWhere((id, _) => !ids.contains(id));
     _refreshDue.removeWhere((id, _) => !ids.contains(id));
-    if (isEnabled) unawaited(_loadArkWallets());
+    if (isEnabled) arkWalletsLoaded = _loadArkWallets();
     _declined.removeWhere((id) => !ids.contains(id));
     // A wallet created or restored just now is open but has nothing cached yet.
     if (_isForeground) _tick();

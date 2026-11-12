@@ -679,6 +679,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       arkPending: viewModel.arkPendingOf(wallet),
       unit: viewModel.unit,
       onBalanceTap: viewModel.toggleUnit,
+      onUnlockArk:
+          viewModel.isArkLocked(wallet) ? () => openArkWalletForSession(context, wallet.id, userInitiated: true) : null,
       actions: WalletDetailCardAction.standard(
         onReceive: _openReceive,
         onSend: _openSend,

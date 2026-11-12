@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
@@ -33,6 +36,43 @@ Future<bool> openArkWalletForSession(BuildContext context, int walletId, {bool u
   return arkProvider.open(walletId, () => unlockArkSeed(context, wallet));
 }
 
+/// 앱 진입 인증을 통과한 뒤 패스프레이즈가 필요 없는 아크 지갑을 모두 엶
+Future<void> openArkWalletsAfterAppEntrance(BuildContext context) async {
+  final arkProvider = context.readArkProviderOrNull();
+  if (arkProvider == null) return;
+  final walletProvider = context.read<WalletProvider>();
+  final loadState = walletProvider.walletLoadStateNotifier;
+  if (loadState.value != WalletLoadState.loadCompleted) {
+    final loaded = Completer<void>();
+    void onChanged() {
+      if (loadState.value == WalletLoadState.loadCompleted && !loaded.isCompleted) loaded.complete();
+    }
+
+    loadState.addListener(onChanged);
+    await loaded.future;
+    loadState.removeListener(onChanged);
+  }
+  await arkProvider.arkWalletsLoaded;
+  for (final wallet in walletProvider.walletItemList) {
+    final metadata = wallet.hotWalletMetadata;
+    if (metadata == null || metadata.enterPassphraseWhenSigning || !arkProvider.shouldAutoUnlock(wallet.id)) continue;
+    unawaited(arkProvider.open(wallet.id, () => _seedAfterAuthentication(metadata.secureStorageKey)));
+  }
+}
+
+Future<String?> _seedAfterAuthentication(String secureStorageKey) async {
+  final plaintext = await AppGuard.runWithoutPrivacyScreen(
+    () => HotWalletSecretRepository().unlockAfterAuthentication(secureStorageKey),
+  );
+  final passphrase = Uint8List.fromList(plaintext.passphrase);
+  try {
+    return await ArkWalletService().seedForHotWallet(plaintext.mnemonic, passphrase);
+  } finally {
+    plaintext.wipe();
+    passphrase.fillRange(0, passphrase.length, 0);
+  }
+}
+
 /// Unlocks the hot wallet's seed (authentication, plus the passphrase for "enter passphrase
 /// when signing" wallets) and derives its Ark seed. Returns null when the user cancels.
 Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async {
@@ -57,6 +97,8 @@ Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async
             showIncorrectError: showIncorrectError,
             onAuthenticationStarted: () async {},
             onPassphraseInputResumed: () {},
+            description: t.ark.unlock.passphrase_description,
+            buttonText: t.confirm,
           ),
         );
         if (entered == null) return null;
@@ -76,7 +118,13 @@ Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async
       plaintext = unlocked;
       return await ArkWalletService().seedForHotWallet(unlocked.mnemonic, passphrase);
     } else {
-      final unlockService = HotWalletUnlockService(authenticator: FlutterHotWalletAuthenticator(context));
+      final unlockService = HotWalletUnlockService(
+        authenticator: FlutterHotWalletAuthenticator(
+          context,
+          pinTitle: t.ark.unlock.pin_title,
+          biometricsReason: t.ark.unlock.biometrics_reason,
+        ),
+      );
       plaintext = await AppGuard.runWithoutPrivacyScreen(() => unlockService.unlock(metadata.secureStorageKey));
       if (plaintext == null) return null;
       final unlocked = plaintext;

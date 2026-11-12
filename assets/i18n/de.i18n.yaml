@@ -2147,6 +2147,11 @@ wallet_selection_carousel: "Einzeln anzeigen"
 wallet_selection_grid: "Zusammen anzeigen"
 
 ark:
+  unlock:
+    action: "Ark entsperren"
+    passphrase_description: "Ark braucht die Passphrase dieser Wallet. Bis zum Neustart der App wirst du nicht erneut gefragt."
+    pin_title: "Gib dein Passwort ein, um Ark zu nutzen"
+    biometrics_reason: "Authentifiziere dich, um Ark zu nutzen"
   option:
     title: "Ark mitnutzen"
     description: "Bitcoin schnell mit Ark und Lightning senden und empfangen"

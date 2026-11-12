@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:coconut_wallet/widgets/common/buttons/custom_underlined_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// 지갑 상세 위쪽의 가로 카드 휠. 가운데 카드 양옆으로 이웃 카드의 기울어진 가장자리가 보인다.
@@ -288,6 +289,9 @@ class WalletDetailCard extends StatelessWidget {
   final ({bool receiving, bool sending}) arkPending;
   final BitcoinUnit unit;
   final VoidCallback? onBalanceTap;
+
+  /// 아크가 잠겨 있을 때만 값이 있음
+  final VoidCallback? onUnlockArk;
   final List<WalletDetailCardAction> actions;
   final BorderRadius borderRadius;
 
@@ -302,6 +306,7 @@ class WalletDetailCard extends StatelessWidget {
     required this.unit,
     required this.actions,
     this.onBalanceTap,
+    this.onUnlockArk,
     this.borderRadius = const BorderRadius.all(Radius.circular(28)),
   });
 
@@ -409,6 +414,32 @@ class WalletDetailCard extends StatelessWidget {
                                   style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
                                 ),
                                 ..._pendingIcons(arkPending, 'ark'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (onUnlockArk case final unlock?) ...[
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            key: const Key('wallet-detail-card-unlock-ark'),
+                            behavior: HitTestBehavior.opaque,
+                            onTap: unlock,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.asset(
+                                  CommonSecurityIconPath.lock,
+                                  width: 12,
+                                  height: 12,
+                                  colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
+                                ),
+                                const SizedBox(width: 4),
+                                CustomUnderlinedButton(
+                                  text: t.ark.unlock.action,
+                                  onTap: unlock,
+                                  padding: EdgeInsets.zero,
+                                  defaultColor: colors.secondaryText,
+                                ),
                               ],
                             ),
                           ),

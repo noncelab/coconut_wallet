@@ -14,7 +14,8 @@ class PinCheckScreen extends StatefulWidget {
   final bool appEntrance;
   final Function? onComplete;
   final bool allowBiometrics;
-  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete, this.allowBiometrics = true});
+  final String? title;
+  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete, this.allowBiometrics = true, this.title});
 
   @override
   State<PinCheckScreen> createState() => _PinCheckScreenState();
@@ -196,7 +197,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         PinInputPad(
           key: _pinInputScreenKey,
           appBarVisible: !widget.appEntrance,
-          title: widget.appEntrance ? '' : t.pin_check_screen.text,
+          title: widget.appEntrance ? '' : widget.title ?? t.pin_check_screen.text,
           initOptionVisible: widget.appEntrance,
           pin: pin,
           errorMessage: errorMessage,

@@ -55,8 +55,8 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// 생체인증 성공했는지 여부 반환
-  Future<bool> isBiometricsAuthValid() async {
-    return isBiometricsAuthEnabled && await authenticateWithBiometrics();
+  Future<bool> isBiometricsAuthValid({String? localizedReason}) async {
+    return isBiometricsAuthEnabled && await authenticateWithBiometrics(localizedReason: localizedReason);
   }
 
   /// 기기 잠금 비밀번호(PIN, 패턴, 비밀번호)가 설정되어 있는지 확인
@@ -110,11 +110,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// 생체인증 진행 후 성공 여부 반환
-  Future<bool> authenticateWithBiometrics({bool isSave = false}) async {
+  Future<bool> authenticateWithBiometrics({bool isSave = false, String? localizedReason}) async {
     bool authenticated = false;
     try {
       authenticated = await _auth.authenticate(
-        localizedReason: t.bio_auth_required,
+        localizedReason: localizedReason ?? t.bio_auth_required,
         options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
       );
 

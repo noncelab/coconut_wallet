@@ -66,6 +66,7 @@ class WalletCardDetailViewModel extends ChangeNotifier {
     _detail = _createDetail(initialWalletId);
     _walletProvider.addListener(_onWalletsChanged);
     _appearanceProvider?.addListener(notifyListeners);
+    _arkProvider?.addListener(notifyListeners);
     widgets.addListener(notifyListeners);
   }
 
@@ -119,6 +120,11 @@ class WalletCardDetailViewModel extends ChangeNotifier {
       receiving: ark.claimableLightningReceive + ark.pendingBoard > 0,
       sending: ark.pendingLightningSend + ark.pendingExit > 0,
     );
+  }
+
+  bool isArkLocked(WalletItemBase wallet) {
+    final ark = _arkProvider;
+    return ark != null && ark.supportsArk(wallet) && !ark.isOpen(wallet.id) && !ark.isOpening(wallet.id);
   }
 
   bool showsBalanceBreakdownOf(WalletItemBase wallet) => _arkProvider?.showsBalanceBreakdown(wallet.id) ?? false;
@@ -183,6 +189,7 @@ class WalletCardDetailViewModel extends ChangeNotifier {
     _disposed = true;
     _walletProvider.removeListener(_onWalletsChanged);
     _appearanceProvider?.removeListener(notifyListeners);
+    _arkProvider?.removeListener(notifyListeners);
     widgets.removeListener(notifyListeners);
     widgets.dispose();
     _detail.removeListener(notifyListeners);
