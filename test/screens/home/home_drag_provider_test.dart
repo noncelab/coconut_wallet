@@ -20,6 +20,8 @@ class _Widgets extends ChangeNotifier implements HomeWidgetsViewModel {
   bool isWalletDataLoading = false;
   @override
   List<WalletItemBase> get wallets => const [];
+  @override
+  bool get isFakeBalance => false;
   bool disposed = false;
   bool get retainsListeners => hasListeners;
 

@@ -46,6 +46,8 @@ class _Home extends Fake with ChangeNotifier implements HomeWidgetsViewModel {
   int balanceOf(int id) => 0;
   @override
   DateTime? lastTransactionTime(int id) => null;
+  @override
+  bool get isFakeBalance => false;
 }
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {

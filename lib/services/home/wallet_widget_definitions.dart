@@ -102,8 +102,9 @@ class WalletStackDefinition extends HomeItemDefinition {
           isWide
               ? (wallet) => viewModel.unit.displayBitcoinAmount(viewModel.balanceOf(wallet.id), withUnit: true)
               : null,
+      // 가짜 잔액이면 실제 마지막 거래 시각도 숨긴다(사용 기간을 숨기는 것과 같은 이유)
       secondaryTextOf:
-          isWide
+          isWide || viewModel.isFakeBalance
               ? null
               : (wallet) {
                 final last = viewModel.lastTransactionTime(wallet.id);
