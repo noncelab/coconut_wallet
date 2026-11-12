@@ -147,6 +147,7 @@ class CoconutToast {
     CoconutToastLevel level = CoconutToastLevel.info,
     String? actionText,
     VoidCallback? onAction,
+    OverlayState? overlay,
   }) {
     if (removePrevToast && _currentToastOverlay != null) {
       try {
@@ -158,6 +159,8 @@ class CoconutToast {
       return;
     }
 
+    final targetOverlay = overlay ?? Overlay.maybeOf(context, rootOverlay: true);
+    if (targetOverlay == null) return;
     _isToastVisible = true;
     late OverlayEntry overlayEntry;
     overlayEntry = OverlayEntry(
@@ -198,7 +201,7 @@ class CoconutToast {
           ),
     );
 
-    Overlay.of(context, rootOverlay: true).insert(overlayEntry);
+    targetOverlay.insert(overlayEntry);
     _currentToastOverlay = overlayEntry;
   }
 

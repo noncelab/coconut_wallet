@@ -2139,6 +2139,11 @@ wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
 
 ark:
+  toast:
+    receiving_onchain(wallet, amount): "$walletにオンチェーンで$amountを受け取り中です"
+    received_onchain(wallet, amount): "$walletにオンチェーンで$amountが入金されました"
+    received_ark(wallet, amount): "$walletにArkで$amountが入金されました"
+    received_lightning(wallet, amount): "$walletにLightningで$amountが入金されました"
   movement:
     gone: "This movement is no longer in the Ark history."
     status: "Status"

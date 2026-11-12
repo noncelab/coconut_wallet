@@ -2142,6 +2142,11 @@ wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
 
 ark:
+  toast:
+    receiving_onchain(wallet, amount): "Receiving $amount on-chain in $wallet"
+    received_onchain(wallet, amount): "$amount arrived on-chain in $wallet"
+    received_ark(wallet, amount): "$amount arrived via Ark in $wallet"
+    received_lightning(wallet, amount): "$amount arrived via Lightning in $wallet"
   movement:
     gone: "This movement is no longer in the Ark history."
     status: "Status"

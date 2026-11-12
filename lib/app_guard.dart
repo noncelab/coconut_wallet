@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/services/wallet/incoming_payment_watcher.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -81,13 +84,17 @@ class AppGuard extends StatefulWidget {
   }
 
   final Widget child;
-  const AppGuard({super.key, required this.child});
+  const AppGuard({super.key, required this.child, this.navigatorKey});
+
+  /// 입금 토스트를 띄울 화면 층(Overlay)을 찾는 데 씀
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
   State<AppGuard> createState() => _AppGuardState();
 }
 
 class _AppGuardState extends State<AppGuard> {
+  late final IncomingPaymentWatcher _incomingPaymentWatcher;
   late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
@@ -126,6 +133,34 @@ class _AppGuardState extends State<AppGuard> {
       );
     });
     _screenListener.watch();
+
+    _incomingPaymentWatcher = IncomingPaymentWatcher(
+      walletProvider: _walletProvider,
+      arkProvider: _arkProvider,
+      onReceived: _showIncomingPayment,
+    )..start();
+  }
+
+  void _showIncomingPayment(IncomingPayment payment) {
+    final overlay = widget.navigatorKey?.currentState?.overlay;
+    final overlayContext = widget.navigatorKey?.currentContext;
+    if (!mounted || overlay == null || overlayContext == null) return;
+    final wallet = _walletProvider.getWalletById(payment.walletId).name;
+    final amount = context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(payment.amount, withUnit: true);
+    CoconutToast.showToast(
+      context: overlayContext,
+      overlay: overlay,
+      isVisibleIcon: true,
+      iconPath: FeatureTransactionIconPath.txReceived,
+      iconSize: 16,
+      text: switch (payment.rail) {
+        ArkRail.onchain when payment.isPending => t.ark.toast.receiving_onchain(wallet: wallet, amount: amount),
+        ArkRail.onchain => t.ark.toast.received_onchain(wallet: wallet, amount: amount),
+        ArkRail.ark => t.ark.toast.received_ark(wallet: wallet, amount: amount),
+        ArkRail.lightning => t.ark.toast.received_lightning(wallet: wallet, amount: amount),
+      },
+      seconds: 4,
+    );
   }
 
   Future<void> _handleAppLifecycleState(AppLifecycleState state) async {
@@ -271,6 +306,7 @@ class _AppGuardState extends State<AppGuard> {
 
   @override
   void dispose() {
+    _incomingPaymentWatcher.stop();
     _lifecycleListener.dispose();
     _screenListener.dispose();
     super.dispose();

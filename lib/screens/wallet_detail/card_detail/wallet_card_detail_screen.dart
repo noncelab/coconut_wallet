@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/services/wallet/incoming_payment_watcher.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_security_banner.dart';
 import 'dart:math' as math;
 
@@ -169,6 +170,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   /// 아크를 켠 지갑은 이번 실행에서 처음 볼 때 한 번 인증받아 bark 지갑을 엶
   Future<void> _openArkForFocusedWallet() async {
+    if (mounted) IncomingPaymentWatcher.visibleWalletId.value = _viewModel.focusedWallet.id;
     if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
     final walletId = _viewModel.focusedWallet.id;
     if (!(context.readArkProviderOrNull()?.shouldAutoUnlock(walletId) ?? false)) return;
@@ -216,6 +218,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   @override
   void dispose() {
+    IncomingPaymentWatcher.visibleWalletId.value = null;
     _arrivalAnimation?.removeStatusListener(_onArrivalStatus);
     _recentHighlightController.dispose();
     _scrollController.dispose();

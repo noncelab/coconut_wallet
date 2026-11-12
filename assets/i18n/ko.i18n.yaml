@@ -2148,6 +2148,11 @@ wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
 
 ark:
+  toast:
+    receiving_onchain(wallet, amount): "$wallet에 온체인으로 $amount를 받는 중이에요"
+    received_onchain(wallet, amount): "$wallet에 온체인으로 $amount가 들어왔어요"
+    received_ark(wallet, amount): "$wallet에 아크로 $amount가 들어왔어요"
+    received_lightning(wallet, amount): "$wallet에 라이트닝으로 $amount가 들어왔어요"
   movement:
     gone: "이 내역은 더 이상 아크 기록에 없어요."
     status: "상태"
@@ -2190,7 +2195,7 @@ ark:
     lightning_invoice: "라이트닝 인보이스"
     preparing_ark: "아크 주소를 준비하는 중…"
     unlock_ark: "잠금을 해제하면 아크와 라이트닝을 추가해요"
-    set_amount_for_invoice: "하단 ‘금액 입력하기’ 버튼을 눌러 금액을 정하면 라이트닝 인보이스가 추가돼요"
+    set_amount_for_invoice: "아래 ‘금액 입력하기’ 버튼을 눌러 금액을 정하면 라이트닝 인보이스가 추가돼요"
     creating_invoice: "인보이스를 만드는 중…"
     invoice_failed: "인보이스를 만들지 못했어요: $error"
     add_invoice: "라이트닝 인보이스 추가하기"
