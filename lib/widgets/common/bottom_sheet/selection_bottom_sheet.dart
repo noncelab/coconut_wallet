@@ -45,13 +45,15 @@ class SelectionBottomSheet<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    // 목록을 끝까지 내려도 마지막 줄이 아래 시스템 영역(탐색 막대·홈 표시줄)에 가리지 않게 그만큼 띄운다.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: colors.background,
       appBar:
           showAppBar ? CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true) : null,
       body: ListView(
         controller: scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+        padding: EdgeInsets.fromLTRB(Sizes.size16, 0, Sizes.size16, bottomInset),
         children: [
           if (headerText != null)
             Align(
