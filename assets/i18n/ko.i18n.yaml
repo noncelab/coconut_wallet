@@ -601,6 +601,7 @@ wallet_home_screen:
     watch_only_type: "보기 전용"
     remove_watch_only: "기존 보기 전용 지갑 삭제하기"
     remove_hot_wallet: "기존 핫월렛 삭제하기"
+    remove_hot_wallet_warning: "이 기기에 저장된 니모닉이 삭제돼요. 백업하지 않았다면 되돌릴 수 없어요."
     scan_seed_qr: "Seed QR 스캔"
     enter_mnemonic: "니모닉 직접 입력"
     seed_qr_guide: "Seed QR 코드를 스캔해 주세요. (21x21 또는 25x25)"

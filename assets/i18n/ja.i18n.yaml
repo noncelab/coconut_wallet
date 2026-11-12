@@ -600,6 +600,7 @@ wallet_home_screen:
     watch_only_type: "閲覧専用"
     remove_watch_only: "既存の閲覧専用ウォレットを削除する"
     remove_hot_wallet: "既存のホットウォレットを削除する"
+    remove_hot_wallet_warning: "このデバイスに保存されたニーモニックが削除されます。バックアップしていない場合、元に戻せません。"
     scan_seed_qr: "Seed QRをスキャン"
     enter_mnemonic: "ニーモニックを直接入力"
     seed_qr_guide: "Seed QRコードをスキャンしてください。(21x21または25x25)"

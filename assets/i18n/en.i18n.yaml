@@ -601,6 +601,7 @@ wallet_home_screen:
     watch_only_type: "Watch-only"
     remove_watch_only: "Remove the existing watch-only wallet"
     remove_hot_wallet: "Remove the existing hot wallet"
+    remove_hot_wallet_warning: "The mnemonic phrase stored on this device will be deleted. If you haven't backed it up, this can't be undone."
     scan_seed_qr: "Scan Seed QR"
     enter_mnemonic: "Enter mnemonic"
     seed_qr_guide: "Scan your Seed QR code. (21x21 or 25x25)"

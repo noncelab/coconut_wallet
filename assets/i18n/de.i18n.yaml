@@ -601,6 +601,7 @@ wallet_home_screen:
     watch_only_type: "Watch-only"
     remove_watch_only: "Vorhandene Watch-only-Wallet entfernen"
     remove_hot_wallet: "Vorhandene Hot Wallet entfernen"
+    remove_hot_wallet_warning: "Die auf diesem Gerät gespeicherte Mnemonik wird gelöscht. Wenn du sie nicht gesichert hast, lässt sich das nicht rückgängig machen."
     scan_seed_qr: "Seed QR scannen"
     enter_mnemonic: "Mnemonik eingeben"
     seed_qr_guide: "Scanne deinen Seed-QR-Code. (21x21 oder 25x25)"

@@ -74,7 +74,7 @@ class BuiltinHomeWidget extends HomeItemDefinition {
   }
 }
 
-/// 위젯 설정의 지갑 범위. 없으면 전체 지갑(합계 제외 지갑 빼고).
+/// 위젯 설정의 지갑 범위. 없으면 전체 지갑.
 List<int>? walletIdsOf(HomeItem item) => HomeWidgetSettings.fromConfiguration(item.configuration).walletIds;
 
 HomeWidgetSettings _settingsOf(HomeItem item) => HomeWidgetSettings.fromConfiguration(item.configuration);

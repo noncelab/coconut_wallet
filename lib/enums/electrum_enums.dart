@@ -22,7 +22,9 @@ enum DefaultElectrumServer {
     2,
     false,
   ),
-  nunchuk(ElectrumServer('mainnet.nunchuk.io', 51001, false), 'NUNCHUK', 3, false),
+  // 주소·잔액 조회가 통신 경로에 보이지 않게, 같은 서버의 암호화 포트(52002)로 접속한다(이전 51001은 평문).
+  // 공인 CA(Let's Encrypt) 인증서라 약 90일마다 바뀌므로 지문을 고정하지 않고 표준 검증을 쓴다.
+  nunchuk(ElectrumServer('mainnet.nunchuk.io', 52002, true), 'NUNCHUK', 3, false),
   acinq(ElectrumServer('electrum.acinq.co', 50002, true), 'ACINQ', 4, false),
   // 기존 mainnet.foundationdevices.com / electrum1.bluewallet.io 는 CA 인증서의 CN이 도메인과 달라 표준 검증에 실패
   // 실제 응답하는 인증서 도메인으로 접속 주소 업데이트
