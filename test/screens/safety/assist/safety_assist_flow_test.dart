@@ -928,6 +928,112 @@ void main() {
     expect(env.pushed.last, AppRouteNames.sendConfirm);
   });
 
+  /// 흐름을 여는 화면(비상 이동 준비 화면 자리). 흐름이 닫힌 뒤 이 화면이 남아 있어야 한다(두 번 닫히면 사라진다)
+  Future<BuildContext> pushOpener(WidgetTester tester, BuildContext host) async {
+    late BuildContext opener;
+    unawaited(
+      Navigator.of(host).push(
+        MaterialPageRoute<void>(
+          builder: (context) {
+            opener = context;
+            return const Scaffold(body: Text('opener'));
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return opener;
+  }
+
+  // 지금 이동에서 다시 확인한 비상 목적지가 그사이 무효가 됐으면(사고·같은 시드·사용 주의, 여기서는 지워짐) 조용히 멈추지 않고
+  // "목적지를 다시 정해 주세요"를 알린 뒤 흐름만 닫는다(검토 화면이 거절할 때와 같은 방식). M08로 빠지는 지갑이 늘어 더 자주 생긴다
+  testWidgets('지금 이동: 수수료를 받는 사이 목적지가 무효가 되면 알리고 닫는다', (tester) async {
+    final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+    final opener = await pushOpener(tester, env.host());
+    final fee = Completer<double?>();
+    SafetyAssistFlow.fastFeeRateOverride = () => fee.future;
+    SafetyAssistFlow.moveNow(
+      opener,
+      walletId: 1,
+      destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // 분석 → 수수료 조회에서 기다림
+    env.wallets.wallets.remove(destination);
+    fee.complete(3);
+    await tester.pumpAndSettle();
+
+    expect(_koText(t.premium.rescue.destination_invalid), findsOneWidget);
+    expect(find.byKey(const Key('safety-assist-unavailable')), findsNothing, reason: '흐름을 닫는다');
+    expect(find.text('opener'), findsOneWidget, reason: '흐름을 연 화면은 남는다(한 번만 닫힘)');
+    expect(find.byKey(const Key('safety-assist-review')), findsNothing);
+    expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
+    await tester.pump(const Duration(seconds: 4)); // 토스트
+  });
+
+  testWidgets('지금 이동: 대체가 막힌 화면에서 남은 비트코인 옮기기를 누를 때 목적지가 무효면 알리고 닫는다', (tester) async {
+    final env = await pump(
+      tester,
+      utxos: [_utxo(incident, 1, 50000)],
+      conflicts: const [SweepConflict(txid: _attackTxid, fee: 1410, vSize: 141, signalsRbf: true, confirmed: true)],
+    );
+    final opener = await pushOpener(tester, env.host());
+    SafetyAssistFlow.moveNow(
+      opener,
+      walletId: 1,
+      destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-assist-unavailable')), findsOneWidget);
+    env.wallets.wallets.remove(destination);
+    await tester.tap(find.byKey(const Key('safety-guide-button'))); // 남은 비트코인 옮기기
+    await tester.pumpAndSettle();
+
+    expect(_koText(t.premium.rescue.destination_invalid), findsOneWidget);
+    expect(find.byKey(const Key('safety-assist-unavailable')), findsNothing, reason: '흐름을 닫는다');
+    expect(find.text('opener'), findsOneWidget, reason: '흐름을 연 화면은 남는다(한 번만 닫힘)');
+    expect(find.byKey(const Key('safety-assist-review')), findsNothing);
+    expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
+    await tester.pump(const Duration(seconds: 4)); // 토스트
+  });
+
+  // 분석 마지막 대기 중 사용자가 뒤로 가면, 닫히는 전환 동안 흐름 화면은 아직 mounted다. 그때 분석이 끝나도 흐름을 연 화면을
+  // 한 번 더 닫거나(목적지 무효) 그 위에 검토를 띄우면(목적지 유효) 안 된다(Codex·Claude 리뷰 재현)
+  for (final invalid in [true, false]) {
+    testWidgets('지금 이동: 분석 마지막 대기 중 뒤로 가면 흐름을 연 화면에 그대로 남는다(목적지 ${invalid ? '무효' : '유효'})', (tester) async {
+      final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const []);
+      final opener = await pushOpener(tester, env.host());
+      final fee = Completer<double?>();
+      SafetyAssistFlow.fastFeeRateOverride = () => fee.future;
+      final moving = SafetyAssistFlow.moveNow(
+        opener,
+        walletId: 1,
+        destination: RescueDestination(walletId: 2, setAt: DateTime(2026, 10, 20)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600)); // 분석 → 수수료 조회에서 기다림
+      final flow = ModalRoute.of(tester.element(find.byKey(const Key('safety-assist-analyzing'))))!;
+      if (invalid) env.wallets.wallets.remove(destination);
+      fee.complete(3);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 250)); // 마지막 단계 대기 중
+      flow.navigator!.pop(); // 사용자가 뒤로
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250)); // 닫히는 전환(0.5초) 중에 분석이 끝난다
+      // 경합 구간: 이미 맨 위가 아닌 흐름이 아직 그려지고 있고(mounted), 분석이 끝나 다음 단계를 그렸다
+      expect(flow.isCurrent, isFalse);
+      expect(find.byKey(const Key('safety-assist-unavailable')), findsOneWidget);
+      await tester.pumpAndSettle();
+      await moving;
+
+      expect(find.byKey(const Key('safety-assist-review')), findsNothing, reason: '떠난 흐름이 검토를 띄우지 않는다');
+      expect(find.text('opener'), findsOneWidget, reason: '흐름을 연 화면은 그대로');
+      expect(_koText(t.premium.rescue.destination_invalid), findsNothing, reason: '이미 떠난 흐름은 알리지도 않는다');
+      expect(env.pushed, isNot(contains(AppRouteNames.sendConfirm)));
+    });
+  }
+
   testWidgets('Grok §4: 수수료 API 값이 비정상이면 노드 추정으로 계산하고 검토에 알림', (tester) async {
     final env = await pump(tester, utxos: [_utxo(incident, 1, 50000)], conflicts: const [], fastFee: 5000);
     SafetyAssistFlow.nodeFeeRateOverride = () async => 3;

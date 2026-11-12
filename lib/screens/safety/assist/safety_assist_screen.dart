@@ -399,8 +399,17 @@ class _AssistHomeScreenState extends State<_AssistHomeScreen> with SelfLoggedScr
   }
 
   Future<void> _moveToRescueDestination() async {
+    // 이 화면이 맨 위일 때만 이어 간다. 사용자가 이미 뒤로 갔어도 닫히는 전환 동안은 mounted라, 여기서 닫거나 검토를 띄우면
+    // 흐름을 연 화면이 한 번 더 닫히거나 그 위에 검토가 뜬다(분석은 이 화면의 한 단계라 평소에는 이 화면이 맨 위다)
+    if (ModalRoute.isCurrentOf(context) != true) return;
     final destination = resolveRescueDestination(context, _session);
-    if (destination == null) return;
+    if (destination == null) {
+      // 그사이 목적지가 무효가 됐다(사고·같은 시드·사용 주의·검증 불일치·지워짐, 직접 입력 주소면 그 주인이 제외 지갑).
+      // 조용히 멈추지 않고 알린 뒤 닫아 목적지를 다시 정하게 한다(검토 화면이 거절할 때와 같은 방식)
+      _warnToast(context, t.premium.rescue.destination_invalid);
+      Navigator.of(context).pop();
+      return;
+    }
     _session.replace = _session.canReplace;
     if (!_session.replace && !_session.hasRemaining) return;
     await Navigator.of(context).push(
@@ -700,6 +709,18 @@ class AssistTarget {
   final bool isNewWallet;
 
   String get label => wallet?.name ?? shortAddress(address);
+}
+
+/// 경고 토스트(진동 + 경고 아이콘). Assist 화면들이 같이 쓴다
+void _warnToast(BuildContext context, String text) {
+  vibrateLightDouble();
+  CoconutToast.showToast(
+    context: context,
+    isVisibleIcon: true,
+    iconPath: CommonStateIconPath.triangleWarning,
+    text: text,
+    level: CoconutToastLevel.warning,
+  );
 }
 
 String shortAddress(String address) =>
@@ -1074,16 +1095,7 @@ class _AssistReviewScreenState extends State<AssistReviewScreen> {
     _updated = true;
   });
 
-  void _warn(String text) {
-    vibrateLightDouble();
-    CoconutToast.showToast(
-      context: context,
-      isVisibleIcon: true,
-      iconPath: CommonStateIconPath.triangleWarning,
-      text: text,
-      level: CoconutToastLevel.warning,
-    );
-  }
+  void _warn(String text) => _warnToast(context, text);
 
   @override
   Widget build(BuildContext context) {
