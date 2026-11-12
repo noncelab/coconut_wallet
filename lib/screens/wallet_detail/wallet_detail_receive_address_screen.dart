@@ -46,6 +46,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   WalletItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
   int? _enteredReceiveAmountSats;
+  String _receiveMemo = '';
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
   late final ArkProvider _arkProvider;
@@ -173,7 +174,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     if (!mounted || walletId != selectedWalletId || amount != _enteredReceiveAmountSats) return;
     setState(() => _isCreatingInvoice = true);
     try {
-      final invoice = await _arkProvider.createLightningInvoice(walletId, amount);
+      final memo = _receiveMemo.isEmpty ? null : _receiveMemo;
+      final invoice = await _arkProvider.createLightningInvoice(walletId, amount, memo: memo);
       if (!mounted || walletId != selectedWalletId || amount != _enteredReceiveAmountSats) return;
       setState(() => _invoice = invoice);
     } catch (error) {
@@ -190,11 +192,13 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       currentUnit: preferenceProvider.currentUnit,
       initialAmountSats: _enteredReceiveAmountSats,
       description: _showsUnified ? t.ark.receive.amount_description : null,
+      initialMemo: _isArkWallet ? _receiveMemo : null,
       screenName: AnalyticsScreenNames.receiveAddressSetAmountSheet,
     );
     if (!mounted || result == null || !result.didEdit) return;
     setState(() {
       _enteredReceiveAmountSats = result.amountInSats;
+      _receiveMemo = result.amountInSats == null ? '' : result.memo;
     });
     await _createInvoice();
   }
@@ -365,9 +369,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
         if (_enteredReceiveAmountSats case final amount?) ...[
           CoconutLayout.spacing_300h,
           Text(
-            t.ark.receive.requested_amount(
-              amount: context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(amount, withUnit: true),
-            ),
+            [
+              t.ark.receive.requested_amount(
+                amount: context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(amount, withUnit: true),
+              ),
+              if (_receiveMemo.isNotEmpty && _isArkWallet) _receiveMemo,
+            ].join(' · '),
             key: const Key('receive-requested-amount'),
             textAlign: TextAlign.center,
             style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),

@@ -1,5 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
-import 'package:coconut_lib/coconut_lib.dart' show Transaction;
+import 'package:coconut_lib/coconut_lib.dart' show NetworkType, Transaction;
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/extensions/num_extensions.dart';
@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/services/mempool_transaction_service.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_input_output_card.dart';
@@ -28,7 +29,6 @@ import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -182,6 +182,16 @@ class _MovementDetails extends StatelessWidget {
   final BitcoinUnit unit;
   final VoidCallback onToggleUnit;
 
+  /// 인보이스·아크 주소·라이트닝 주소면 그 종류를, 비트코인 주소면 [fallback]을 이름으로
+  String _destinationLabel(String value, String fallback) {
+    return switch (PaymentRequest.parse(value, NetworkType.currentNetworkType).kind) {
+      PaymentRequestKind.lightningInvoice => t.ark.movement.lightning_invoice,
+      PaymentRequestKind.arkAddress => t.ark.request.ark_address,
+      PaymentRequestKind.lightningAddress => t.ark.request.lightning_address,
+      _ => fallback,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final activity = ArkActivity(movement);
@@ -191,14 +201,28 @@ class _MovementDetails extends StatelessWidget {
     final hasLinkedTx =
         linkedTxid != null && context.read<TransactionProvider>().getTransactionRecord(walletId, linkedTxid) != null;
     final copyable = <(String, String)>[
-      for (final destination in movement.sentToDestinations) (t.ark.movement.sent_to, destination.value),
-      for (final destination in movement.receivedOnDestinations) (t.ark.movement.received_on, destination.value),
-      // A Lightning send's destination is already its invoice.
-      if (movement.lightningInvoice != null &&
-          !movement.sentToDestinations.any((d) => d.value == movement.lightningInvoice))
-        (t.ark.movement.lightning_invoice, movement.lightningInvoice!),
+      for (final destination in movement.sentToDestinations)
+        (_destinationLabel(destination.value, t.ark.movement.sent_to), destination.value),
+      for (final destination in movement.receivedOnDestinations)
+        (_destinationLabel(destination.value, t.ark.movement.received_on), destination.value),
+      // 보낸·받은 주소에 이미 인보이스가 있으면 다시 보여 주지 않음
+      if (movement.lightningInvoice case final invoice?
+          when ![
+            ...movement.sentToDestinations,
+            ...movement.receivedOnDestinations,
+          ].any((d) => d.value.toLowerCase() == invoice.toLowerCase()))
+        (t.ark.movement.lightning_invoice, invoice),
       if (movement.paymentHash != null) (t.ark.movement.payment_hash, movement.paymentHash!),
     ];
+    final invoice =
+        movement.lightningInvoice ??
+        [
+          ...movement.sentToDestinations,
+          ...movement.receivedOnDestinations,
+        ].map((destination) => destination.value).where((value) => value.toLowerCase().startsWith('ln')).firstOrNull;
+    final memo =
+        (invoice == null ? null : PaymentRequest.bolt11Description(invoice)) ??
+        context.readArkProviderOrNull()?.paymentMemo(walletId, movement.id);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
@@ -208,21 +232,20 @@ class _MovementDetails extends StatelessWidget {
           CoconutLayout.spacing_500h,
           _buildAmount(context),
           CoconutLayout.spacing_400h,
-          if (movement.isPending) ...[_buildPending(context), CoconutLayout.spacing_400h],
           CoconutLayout.spacing_400h,
           UnderlineButtonItemCard(
             label: t.ark.movement.status,
             child: Text(activityStatusText(activity), style: valueStyle),
           ),
+          if (memo != null)
+            UnderlineButtonItemCard(
+              label: t.ark.movement.memo,
+              child: Text(memo, style: CoconutTypography.body2_14.setColor(colors.primaryText)),
+            ),
           UnderlineButtonItemCard(
             label: t.ark.movement.fee,
             child: Text(formatSats(unit, movement.offchainFeeSats), style: valueStyle),
           ),
-          if (movement.completedAt != null)
-            UnderlineButtonItemCard(
-              label: t.ark.movement.completed_at,
-              child: Text(DateTimeUtil.formatTimestamp(movement.completedAt!).join(' '), style: valueStyle),
-            ),
           for (final (label, value) in copyable)
             UnderlineButtonItemCard(
               label: label,
@@ -380,34 +403,6 @@ class _MovementDetails extends StatelessWidget {
           FiatPrice(
             satoshiAmount: amount.abs(),
             textStyle: CoconutTypography.body2_14_Number.setColor(color.withValues(alpha: 0.7)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The transaction detail screen's pending box.
-  Widget _buildPending(BuildContext context) {
-    final colors = context.coconutColors;
-    final isIncoming = movement.effectiveBalanceSats > 0;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border.all(width: 1, color: colors.feeBumpingHistoryLine),
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      padding: const EdgeInsets.all(10),
-      child: Row(
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: PendingTransactionLottieIcon(isIncoming: isIncoming, size: 24),
-          ),
-          Expanded(
-            child: Text(
-              isIncoming ? t.status_receiving : t.status_sending,
-              style: CoconutTypography.body2_14.setColor(colors.primaryText).copyWith(fontWeight: FontWeight.w500),
-            ),
           ),
         ],
       ),

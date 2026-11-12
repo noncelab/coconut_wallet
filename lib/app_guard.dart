@@ -189,11 +189,23 @@ class _AppGuardState extends State<AppGuard> {
     if (!mounted || overlay == null || overlayContext == null) return;
     final wallet = _walletProvider.getWalletById(payment.walletId).name;
     final amount = context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(payment.amount, withUnit: true);
+    void openActivity() => widget.navigatorKey?.currentState?.pushNamed(
+      AppRouteNames.walletDetail,
+      arguments: WalletDetailRouteArgs(
+        id: payment.walletId,
+        focusRecentTransactions: true,
+        focusedTransactionHash: payment.key,
+      ),
+    );
     CoconutToast.showToast(
       context: overlayContext,
       overlay: overlay,
       isVisibleIcon: true,
-      iconPath: FeatureTransactionIconPath.txReceived,
+      iconPath: switch (payment.rail) {
+        ArkRail.onchain => CommonStateIconPath.onchain,
+        ArkRail.ark => CommonStateIconPath.ark,
+        ArkRail.lightning => CommonStateIconPath.lightning,
+      },
       iconSize: 16,
       text: switch (payment.rail) {
         ArkRail.onchain when payment.isPending => t.ark.toast.receiving_onchain(wallet: wallet, amount: amount),
@@ -201,7 +213,10 @@ class _AppGuardState extends State<AppGuard> {
         ArkRail.ark => t.ark.toast.received_ark(wallet: wallet, amount: amount),
         ArkRail.lightning => t.ark.toast.received_lightning(wallet: wallet, amount: amount),
       },
-      seconds: 4,
+      seconds: 10,
+      actionText: t.view,
+      onAction: openActivity,
+      onTap: openActivity,
     );
   }
 

@@ -31,6 +31,9 @@ class HomeRecentTransaction {
     this.arkMovementId,
     this.label,
   });
+
+  /// [WalletActivity.key]와 같은 값, 강조할 거래를 찾을 때 씀
+  String? get activityKey => txHash ?? (arkMovementId == null ? null : 'ark:$arkMovementId');
 }
 
 /// Transaction Activity 위젯

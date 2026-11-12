@@ -4,7 +4,7 @@ import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/foundation.dart';
 
-typedef IncomingPayment = ({int walletId, ArkRail rail, int amount, bool isPending});
+typedef IncomingPayment = ({int walletId, String key, ArkRail rail, int amount, bool isPending});
 
 /// 감시를 시작한 뒤에 생긴 입금만 알림, 잠금 해제 뒤 늦게 불러온 예전 아크 내역은 제외
 class IncomingPaymentWatcher {
@@ -44,6 +44,7 @@ class IncomingPaymentWatcher {
         if (visibleWalletId.value == wallet.id) continue;
         onReceived((
           walletId: wallet.id,
+          key: activity.key,
           rail: activity.rail,
           amount: activity.displayAmount,
           isPending: activity.isPending,

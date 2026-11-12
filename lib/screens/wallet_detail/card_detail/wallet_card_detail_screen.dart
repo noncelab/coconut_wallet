@@ -193,7 +193,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     final hash = _focusedTransactionHash;
-    final matched = hash != null && _viewModel.recentTransactions.any((tx) => tx.txHash == hash);
+    final matched = hash != null && _viewModel.recentTransactions.any((tx) => tx.activityKey == hash);
     final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     if (!matched) return;
     if (reduceMotion) {

@@ -147,6 +147,7 @@ class CoconutToast {
     CoconutToastLevel level = CoconutToastLevel.info,
     String? actionText,
     VoidCallback? onAction,
+    VoidCallback? onTap,
     OverlayState? overlay,
   }) {
     if (removePrevToast && _currentToastOverlay != null) {
@@ -190,11 +191,12 @@ class CoconutToast {
                   level: level,
                   actionText: actionText,
                   onAction: onAction,
+                  onTap: onTap,
                   onDismiss: () {
                     overlayEntry.remove();
                     _currentToastOverlay = null;
                   },
-                  duration: seconds <= 5 ? seconds : 5,
+                  duration: seconds <= 10 ? seconds : 10,
                 ),
               ),
             ),
@@ -256,12 +258,14 @@ class _CoconutToastWidget extends StatefulWidget {
     this.iconPath,
     this.actionText,
     this.onAction,
+    this.onTap,
   });
 
   final BuildContext context;
   final String text;
   final String? actionText;
   final VoidCallback? onAction;
+  final VoidCallback? onTap;
   final bool isVisibleIcon;
   final int duration;
   final VoidCallback onDismiss;
@@ -335,6 +339,13 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
             child: Opacity(opacity: _fadeAnimation.value, child: child),
           ),
       child: GestureDetector(
+        onTap:
+            widget.onTap == null
+                ? null
+                : () {
+                  widget.onTap!();
+                  _startFadeOut();
+                },
         onVerticalDragUpdate: (details) {
           if ((details.primaryDelta ?? 0) < -5) {
             _startFadeOut();

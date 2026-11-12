@@ -54,7 +54,7 @@ class RecentTransactionsView extends StatelessWidget {
 
   Widget _highlightRow(BuildContext context, HomeRecentTransaction tx, Widget child) {
     final animation = highlightAnimation;
-    if (highlightedTxHash == null || tx.txHash != highlightedTxHash || animation == null) return child;
+    if (highlightedTxHash == null || tx.activityKey != highlightedTxHash || animation == null) return child;
     return AnimatedBuilder(
       animation: animation,
       child: child,
