@@ -188,14 +188,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     safeNotifyListeners();
   }
 
-  void _setPreviousTransactionIndex(int newIndex) {
-    _previousTransactionIndex = newIndex;
-  }
-
-  void _setSelectedTransactionIndex(int newIndex) {
-    _selectedTransactionIndex = newIndex;
-  }
-
   void updateProvider() {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
@@ -204,15 +196,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
       if (updatedTx == null) return;
 
-      TransactionRecord currentTx = transactionList!.first;
-      if (updatedTx.blockHeight != currentTx.blockHeight ||
-          updatedTx.transactionHash != currentTx.transactionHash ||
-          updatedTx.transactionType != currentTx.transactionType ||
-          updatedTx.inputAddressList.length != currentTx.inputAddressList.length) {
-        _setPreviousTransactionIndex(0);
-        _setSelectedTransactionIndex(0);
-        _initTransactionList();
-      }
+      // 연 거래로 묶음을 지금 기록에서 다시 만들어 보이는 목록과 비교한다(다시 만들어도 고른 거래는 유지). 0번(가장 최근 대체)과
+      // 비교하면 대체된 거래로 연 화면은 갱신될 때마다 0번으로 돌아갔고, 연 거래만 보면 새 대체·이력 삭제·관련 거래 확정을 놓친다
+      final shown = _transactionList;
+      if (shown == null || !_sameRecords(_chainOf(updatedTx), shown)) _initTransactionList();
     }
     safeNotifyListeners();
   }
@@ -222,20 +209,19 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (result) {
       final updatedTx = _txProvider.getTransactionRecord(_walletId, _txHash);
       if (updatedTx == null) return false;
-      _transactionList![0] = updatedTx;
+      // 메모는 연 거래에 저장하므로 목록에서도 그 거래 자리만 바꾼다(0번은 연 거래가 아닐 수 있다)
+      final index = _transactionList!.indexWhere((tx) => tx.transactionHash == _txHash);
+      if (index >= 0) _transactionList![index] = updatedTx;
       safeNotifyListeners();
     }
     return result;
   }
 
+  /// 연 거래의 메모(저장도 연 거래에 한다). 없으면 묶음에서 가장 최근 거래의 메모
   String? fetchTransactionMemo() {
-    for (var transaction in _transactionList!) {
-      // transactionList를 순회하면서 가장 최근의 txMemo값을 반환
-      if (transaction.memo != null) {
-        return transaction.memo!;
-      }
-    }
-    return null;
+    final list = _transactionList!;
+    return list.where((tx) => tx.transactionHash == _txHash).firstOrNull?.memo ??
+        list.map((tx) => tx.memo).nonNulls.firstOrNull;
   }
 
   void _initTransactionList() {
@@ -250,14 +236,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (currentTransaction.inputAddressList.isEmpty && !_isFetchingFromMempool) {
       _checkCoinbase();
       _fetchTransactionFromMempoolAndUpdate();
-      _transactionList = [currentTransaction];
+      _setTransactionList([currentTransaction]);
       _syncFeeHistoryList();
       _syncTransactionStatus();
       safeNotifyListeners();
       return;
     }
-
-    _transactionList = [currentTransaction];
 
     debugPrint('🚀 [Transaction Initialization] 🚀');
     debugPrint('----------------------------------------');
@@ -268,37 +252,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}',
     );
 
-    // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
-    if ((currentTransaction.transactionType == TransactionType.sent ||
-            currentTransaction.transactionType == TransactionType.self) &&
-        currentTransaction.rbfHistoryList != null &&
-        currentTransaction.rbfHistoryList!.isNotEmpty) {
-      debugPrint('🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
-      debugPrint('----------------------------------------');
-
-      for (var rbfTx in currentTransaction.rbfHistoryList!) {
-        if (rbfTx.transactionHash == currentTransaction.transactionHash) {
-          continue;
-        }
-        var rbfTxTransaction = _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
-        if (rbfTxTransaction == null) {
-          debugPrint('❌ RBF Transaction IS NULL');
-          continue;
-        }
-        _transactionList!.add(rbfTxTransaction);
-      }
-
-      _transactionList!.sort((a, b) => b.feeRate.compareTo(a.feeRate));
-      debugPrint('🚨 _transactionList : ${_transactionList!.map((s) => s.feeRate)}');
-    } else if (currentTransaction.transactionType == TransactionType.received &&
-        currentTransaction.cpfpHistory != null) {
-      debugPrint('🔹 CPFP History: ${_transactionList?[_selectedTransactionIndex].cpfpHistory}');
-      debugPrint('----------------------------------------');
-      _transactionList = [
-        _txProvider.getTransactionRecord(_walletId, currentTransaction.cpfpHistory!.parentTransactionHash)!,
-        _txProvider.getTransactionRecord(_walletId, currentTransaction.cpfpHistory!.childTransactionHash)!,
-      ];
-    }
+    _setTransactionList(_chainOf(currentTransaction));
 
     debugPrint('📌 Updated Transaction List Length: ${_transactionList!.length}');
     debugPrint('----------------------------------------');
@@ -332,6 +286,54 @@ class TransactionDetailViewModel extends ChangeNotifier {
     _syncFeeHistoryList();
     _syncTransactionStatus();
     safeNotifyListeners();
+  }
+
+  /// 연 거래와 같은 묶음의 기록. 수수료 대체 묶음은 수수료율 높은 순(0번 = 가장 최근 대체, 수수료 올리기가 쓰는 거래)이라
+  /// 연 거래가 0번이 아닐 수 있다. 받은 거래의 CPFP는 부모·자식 순. 입력을 모르는 동안은 연 거래만(멤풀 보정 뒤 다시 만든다)
+  List<TransactionRecord> _chainOf(TransactionRecord current) {
+    if (current.inputAddressList.isEmpty) return [current];
+    final type = current.transactionType;
+    final rbfHistory = current.rbfHistoryList;
+    if ((type == TransactionType.sent || type == TransactionType.self) && rbfHistory != null && rbfHistory.isNotEmpty) {
+      return [
+        current,
+        for (final rbf in rbfHistory)
+          if (rbf.transactionHash != current.transactionHash)
+            if (_txProvider.getTransactionRecord(_walletId, rbf.transactionHash) case final tx?) tx,
+      ]..sort((a, b) => b.feeRate.compareTo(a.feeRate));
+    }
+    final cpfp = current.cpfpHistory;
+    if (type == TransactionType.received && cpfp != null) {
+      final parent = _txProvider.getTransactionRecord(_walletId, cpfp.parentTransactionHash);
+      final child = _txProvider.getTransactionRecord(_walletId, cpfp.childTransactionHash);
+      // 갱신 때마다 다시 읽으므로 한쪽 기록이 없어도 멈추지 않고 연 거래만 보여 준다
+      if (parent != null && child != null) return [parent, child];
+    }
+    return [current];
+  }
+
+  /// 같은 거래가 같은 순서이고 확정 높이·유형·입력 수가 같은지(입력은 멤풀 보정으로 채워진다)
+  static bool _sameRecords(List<TransactionRecord> a, List<TransactionRecord> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].transactionHash != b[i].transactionHash ||
+          a[i].blockHeight != b[i].blockHeight ||
+          a[i].transactionType != b[i].transactionType ||
+          a[i].inputAddressList.length != b[i].inputAddressList.length) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// 목록을 바꾸고 고를 거래를 다시 찾는다: 고르던 거래 → 연 거래 → 0번. 대체된 거래로 열면(알림·Wallet Health의 사건 거래)
+  /// 연 거래가 0번이 아니다
+  void _setTransactionList(List<TransactionRecord> list) {
+    final keep = _transactionList?.elementAtOrNull(_selectedTransactionIndex)?.transactionHash;
+    int indexOf(String? hash) => list.indexWhere((tx) => tx.transactionHash == hash);
+    final index = [indexOf(keep), indexOf(_txHash)].firstWhere((i) => i >= 0, orElse: () => 0);
+    _transactionList = list;
+    _selectedTransactionIndex = _previousTransactionIndex = index;
   }
 
   void _syncFeeHistoryList() {
@@ -511,15 +513,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (updatedTxResult.isSuccess) {
       Logger.log('onRefresh: getTransactionRecord success');
       await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
-      _setPreviousTransactionIndex(0);
-      _setSelectedTransactionIndex(0);
-      _initTransactionList();
+      _initTransactionList(); // 고른 거래는 그대로(사라졌으면 연 거래)
     } else {
       Logger.error(
         'onRefresh: getTransactionRecord failed - error: ${updatedTxResult.error}, falling back to mempool API',
       );
-      _setPreviousTransactionIndex(0);
-      _setSelectedTransactionIndex(0);
       await _fetchTransactionFromMempoolAndUpdate();
       safeNotifyListeners();
     }

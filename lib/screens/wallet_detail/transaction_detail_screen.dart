@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/routes/route_observer.dart';
 import 'dart:async';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -64,11 +65,15 @@ class TransactionDetailScreen extends StatefulWidget {
 
   const TransactionDetailScreen({super.key, required this.id, required this.txHash});
 
+  /// 보낸 새 거래의 기록을 기다리는 시간을 테스트가 넘길 수 있게
+  @visibleForTesting
+  static DateTime Function() now = DateTime.now;
+
   @override
   State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
 }
 
-class _TransactionDetailScreenState extends State<TransactionDetailScreen> with TickerProviderStateMixin {
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> with TickerProviderStateMixin, RouteAware {
   static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   Timer? _timer; // timeGap을 최신화 하기 위한 타이머
   late TransactionDetailViewModel _viewModel;
@@ -101,9 +106,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
-        _viewModel.setTransactionStatus(
-          TransactionUtil.getStatus(_viewModel.transactionList![_viewModel.selectedTransactionIndex]),
-        );
+        _viewModel.addListener(_onViewModelChanged);
+        // 기록이 아직 없으면(방금 보낸 거래 등) 목록이 비어 있다. 기록이 생기면 갱신이 목록과 상태를 만든다
+        final list = _viewModel.transactionList;
+        if (list != null && list.isNotEmpty) {
+          _viewModel.setTransactionStatus(TransactionUtil.getStatus(list[_viewModel.selectedTransactionIndex]));
+        }
 
         _updateAnimation();
         return _viewModel;
@@ -178,6 +186,80 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     );
   }
 
+  /// 보낸 수수료 올리기의 새 거래. 보내기 완료 화면에 가려 있는 동안, 또는 그 거래가 아직 이 기기에 저장되지 않은 동안 남겨 두고
+  /// 이 상세가 맨 위이고 기록이 생겼을 때 그 거래의 상세로 바꾼다. 보내기 성공과 저장은 따로 일어난다
+  String? _sentFeeBumpTxid;
+  DateTime? _sentFeeBumpUntil;
+  bool _sentFeeBumpCheckScheduled = false;
+
+  /// ponytail: 이 상세가 다시 보인 뒤 저장을 이만큼만 기다린다(완료 화면에서 메모·태그를 오래 써도 그 시간은 세지 않는다).
+  /// 넘으면 지금 상세에 남는다(묶음이 갱신되면 칩으로 새 거래를 고를 수 있다)
+  static const _sentFeeBumpWait = Duration(minutes: 1);
+  ModalRoute<void>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _route && route != null) {
+      if (_route != null) routeObserver.unsubscribe(this);
+      _route = route;
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  /// 위 화면(보내기 완료)이 닫혀 이 상세가 다시 보인다
+  @override
+  void didPopNext() => _scheduleSentFeeBumpCheck();
+
+  /// 기록이 바뀌었다(갱신은 빌드 중에 알리므로 다음 프레임에 본다)
+  void _onViewModelChanged() => _scheduleSentFeeBumpCheck();
+
+  void _scheduleSentFeeBumpCheck() {
+    if (_sentFeeBumpTxid == null || _sentFeeBumpCheckScheduled) return;
+    _sentFeeBumpCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sentFeeBumpCheckScheduled = false;
+      _trySwapToSent();
+    });
+  }
+
+  /// 보낸 새 거래의 상세로 바꿀 수 있으면 바꾼다: 이 상세가 맨 위이고 그 거래의 기록이 이 기기에 있을 때만(없는 기록으로 상세를
+  /// 열면 아무것도 보여 줄 수 없다). 다시 보인 뒤 기다리는 시간이 지나면 그만둔다
+  void _trySwapToSent() {
+    final txHash = _sentFeeBumpTxid;
+    if (txHash == null || !mounted || ModalRoute.isCurrentOf(context) != true) return;
+    // 기다림은 이 상세가 다시 보인 때부터 센다
+    final until = _sentFeeBumpUntil ??= TransactionDetailScreen.now().add(_sentFeeBumpWait);
+    if (TransactionDetailScreen.now().isAfter(until)) {
+      _sentFeeBumpTxid = null;
+      return;
+    }
+    if (context.read<TransactionProvider>().getTransactionRecord(widget.id, txHash) == null) return;
+    _sentFeeBumpTxid = null;
+    _replaceWithTransaction(txHash);
+  }
+
+  /// 이 상세에서 보낸 수수료 올리기 뒤: 이 상세를 새 거래의 상세로 바꾼다(애니메이션 없이 제자리에서). 그러면 처음 고른 거래와
+  /// 메모가 새 거래로 맞는다. 다른 갱신(외부 대체·복구)은 고르던 거래를 그대로 둔다
+  void _replaceWithTransaction(String txHash) {
+    final navigator = Navigator.of(context);
+    final current = ModalRoute.of(context);
+    final args = current?.settings.arguments;
+    final next = navigator.widget.onGenerateRoute?.call(
+      RouteSettings(
+        name: AppRouteNames.transactionDetail,
+        arguments: TransactionDetailRouteArgs(
+          id: widget.id,
+          txHash: txHash,
+          purpose: args is TransactionDetailRouteArgs ? args.purpose : null,
+        ),
+      ),
+    );
+    if (current == null || next == null) return;
+    navigator.replace(oldRoute: current, newRoute: next);
+  }
+
   Future<void> _onRefresh(TransactionDetailViewModel viewModel) async {
     if (_isPullToRefreshing) return;
 
@@ -200,8 +282,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     if (_timer != null) {
       _timer = null;
     }
+    routeObserver.unsubscribe(this);
     _animationController.dispose();
     _viewModel.showDialogNotifier.removeListener(_showDialogListener);
+    _viewModel.removeListener(_onViewModelChanged);
     _viewModel.clearTransationList();
     super.dispose();
   }
@@ -500,7 +584,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         return;
                       }
 
-                      Navigator.pushNamed(
+                      RbfSentHandoff.take(); // 앞선 다른 흐름이 남긴 값은 버린다
+                      await Navigator.pushNamed(
                         context,
                         AppRouteNames.transactionFeeBumping,
                         arguments: TransactionFeeBumpingRouteArgs(
@@ -510,6 +595,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           walletName: _viewModel.getWalletName(),
                         ),
                       );
+                      // 수수료 올리기를 보냈을 때만(취소·실패가 아니면) 이 상세를 보낸 새 거래의 상세로 바꾼다. 보통은 보내기 완료 화면이
+                      // 위에 떠 있어 이 상세가 다시 보일 때 바꾼다(가려진 채 만들면 레이아웃 전이라 입출력 카드가 크기를 읽다 깨진다)
+                      final sent = RbfSentHandoff.take();
+                      if (sent == null || !mounted) return;
+                      _sentFeeBumpTxid = sent;
+                      _sentFeeBumpUntil = null; // 이 상세가 다시 보일 때부터 센다
+                      _trySwapToSent();
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),

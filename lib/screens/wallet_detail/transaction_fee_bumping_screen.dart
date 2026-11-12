@@ -49,6 +49,22 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 enum FeeBumpingType { rbf, cpfp }
 
+/// RBF로 보낸 새 거래. 보내기 화면이 성공했을 때만 남긴다(취소·실패는 남기지 않음). 거래 상세에서 시작한 수수료 올리기면 그
+/// 상세가 수수료 올리기 화면이 닫힐 때 받아 가 새 거래의 상세로 바뀐다. 다른 RBF(Assist의 충돌 대체 이동)는 받는 곳이 없어 남은 채로
+/// 있다가 다음 수수료 올리기가 시작할 때 버려진다. 수수료 올리기 화면의 push Future가 끝난 것만으로는 성공인지 모른다(보내기 완료가
+/// pushAndRemoveUntil로 치워도 끝난다)
+abstract final class RbfSentHandoff {
+  static String? _txid;
+
+  static void note(String txid) => _txid = txid;
+
+  static String? take() {
+    final txid = _txid;
+    _txid = null;
+    return txid;
+  }
+}
+
 class TransactionFeeBumpingScreen extends StatefulWidget {
   final TransactionRecord transaction;
   final FeeBumpingType feeBumpingType;

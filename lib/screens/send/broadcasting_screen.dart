@@ -43,6 +43,8 @@ import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:coconut_wallet/widgets/features/send/tag_inheritance_dialog.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart'
+    show FeeBumpingType, RbfSentHandoff;
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -198,6 +200,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
   void _goToBroadcastingComplete() {
     if (_phase == _BroadcastingPhase.left) return;
     _phase = _BroadcastingPhase.left;
+    // RBF로 보냈으면 새 거래를 남긴다. 거래 상세에서 시작한 수수료 올리기면 그 상세가 받아 새 거래의 상세로 바뀐다
+    if (_viewModel.feeBumpingType == FeeBumpingType.rbf) RbfSentHandoff.note(_viewModel.signedTx!.transactionHash);
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder<void>(
         settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),

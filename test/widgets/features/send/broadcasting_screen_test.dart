@@ -10,7 +10,9 @@ import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -26,6 +28,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
@@ -67,7 +70,13 @@ class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
 }
 
-class _Transactions extends Fake with ChangeNotifier implements TransactionProvider {}
+class _Transactions extends Fake with ChangeNotifier implements TransactionProvider {
+  /// 수수료 올리기로 보낼 때 올리는 원래 거래(아직 대기 중)
+  @override
+  TransactionRecord? transaction;
+  @override
+  bool hasTransactionConfirmed(int walletId, String txHash) => false;
+}
 
 class _Node extends Fake with ChangeNotifier implements NodeProvider {
   int broadcasts = 0;
@@ -126,7 +135,13 @@ void main() {
 
   List<String> tagIds(String utxoId) => repository.getUtxoTagsByTxHash(1, utxoId).value.map((tag) => tag.id).toList();
 
-  Future<void> open(WidgetTester tester, {int count = 2, bool seedInput = true, bool pushed = false}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    int count = 2,
+    bool seedInput = true,
+    bool pushed = false,
+    FeeBumpingType? feeBumpingType,
+  }) async {
     // Asset I/O must finish outside the fake clock before the send animation can start.
     await tester.runAsync(() => AssetLottie(TransactionLottiePath.checkSpinning).load());
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
@@ -152,7 +167,26 @@ void main() {
         SendInfoProvider()
           ..setWalletId(1)
           ..setTxWaitingForSign(psbt.serialize())
-          ..setSignedResult(signed.serialize());
+          ..setSignedResult(signed.serialize())
+          ..setFeeBumpingType(feeBumpingType);
+    final transactions =
+        _Transactions()
+          ..transaction =
+              feeBumpingType == null
+                  ? null
+                  : TransactionRecord(
+                    _hash,
+                    DateTime(2026),
+                    0,
+                    TransactionType.sent,
+                    null,
+                    -1000,
+                    100,
+                    [],
+                    [],
+                    141,
+                    DateTime(2026),
+                  );
     manager.realm.write(() {
       if (seedInput) {
         manager.realm.add(
@@ -179,7 +213,7 @@ void main() {
           ChangeNotifierProvider<ConnectivityProvider>(create: (_) => _Connectivity()),
           ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
           ChangeNotifierProvider<NodeProvider>.value(value: node),
-          ChangeNotifierProvider<TransactionProvider>(create: (_) => _Transactions()),
+          ChangeNotifierProvider<TransactionProvider>.value(value: transactions),
           ChangeNotifierProvider<UtxoTagProvider>.value(value: tags),
           Provider<UtxoRepository>.value(value: repository),
           Provider<TransactionDraftRepository>.value(value: TransactionDraftRepository(manager)),
@@ -492,4 +526,22 @@ void main() {
     expect(find.textContaining('missingorspent'), findsNothing);
     await tester.pump(const Duration(seconds: 1));
   });
+
+  // F1: 거래 상세에서 시작한 수수료 올리기(RBF)를 보내면 그 상세가 보낸 새 거래의 상세로 바뀌도록 새 거래를 남긴다.
+  // 실패한 보내기와 일반 보내기는 남기지 않는다
+  for (final (name, type, success) in [
+    ('an RBF send', FeeBumpingType.rbf, true),
+    ('a failed RBF send', FeeBumpingType.rbf, false),
+    ('a plain send', null, true),
+  ]) {
+    testWidgets('$name ${type != null && success ? 'leaves' : 'leaves no'} sent txid for the transaction detail', (
+      tester,
+    ) async {
+      RbfSentHandoff.take();
+      await open(tester, count: 0, feeBumpingType: type);
+      await tapSend(tester);
+      await finish(tester, success: success);
+      expect(RbfSentHandoff.take(), type != null && success ? transactionHash : isNull);
+    });
+  }
 }
