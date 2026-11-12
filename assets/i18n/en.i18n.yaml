@@ -2153,7 +2153,7 @@ ark:
   expiry:
     notice: "Some Ark balance expires soon. Please refresh it."
     urgent: "Some Ark balance is about to expire. Refresh it now."
-    expired: "Some Ark balance has expired. Refresh it before the server reclaims it."
+    expired: "The server reclaimed expired balance. Refresh to get it back."
     locked: "Some Ark balance needs a refresh. Unlock Ark first."
   toast:
     receiving_onchain(wallet, amount): "Receiving $amount on-chain in $wallet"

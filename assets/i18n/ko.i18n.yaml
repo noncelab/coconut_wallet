@@ -2159,7 +2159,7 @@ ark:
   expiry:
     notice: "곧 만료되는 아크 잔액이 있어요. 갱신해 주세요."
     urgent: "만료가 임박한 아크 잔액이 있어요. 지금 갱신해 주세요."
-    expired: "만료된 아크 잔액이 있어요. 서버가 회수하기 전에 갱신해 주세요."
+    expired: "서버가 만료된 잔액을 회수했어요. 갱신하면 돌려받을 수 있어요."
     locked: "갱신이 필요한 아크 잔액이 있어요. 잠금을 해제해 주세요."
   toast:
     receiving_onchain(wallet, amount): "$wallet에 온체인으로 $amount를 받는 중이에요"

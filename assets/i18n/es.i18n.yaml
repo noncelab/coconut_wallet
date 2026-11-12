@@ -2153,7 +2153,7 @@ ark:
   expiry:
     notice: "Parte de tu saldo Ark caduca pronto. Renuévalo."
     urgent: "Parte de tu saldo Ark está a punto de caducar. Renuévalo ahora."
-    expired: "Parte de tu saldo Ark ha caducado. Renuévalo antes de que el servidor lo reclame."
+    expired: "El servidor reclamó el saldo caducado. Renuévalo para recuperarlo."
     locked: "Parte de tu saldo Ark necesita renovarse. Desbloquea Ark primero."
   toast:
     receiving_onchain(wallet, amount): "Recibiendo $amount on-chain en $wallet"

@@ -2150,7 +2150,7 @@ ark:
   expiry:
     notice: "まもなく期限切れになるArk残高があります。更新してください。"
     urgent: "期限切れ間近のArk残高があります。今すぐ更新してください。"
-    expired: "期限切れのArk残高があります。サーバーに回収される前に更新してください。"
+    expired: "期限切れの残高をサーバーが回収しました。更新すると取り戻せます。"
     locked: "更新が必要なArk残高があります。ロックを解除してください。"
   toast:
     receiving_onchain(wallet, amount): "$walletにオンチェーンで$amountを受け取り中です"

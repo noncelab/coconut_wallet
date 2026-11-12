@@ -2158,7 +2158,7 @@ ark:
   expiry:
     notice: "Ein Teil deines Ark-Guthabens läuft bald ab. Bitte erneuern."
     urgent: "Ein Teil deines Ark-Guthabens läuft gleich ab. Jetzt erneuern."
-    expired: "Ein Teil deines Ark-Guthabens ist abgelaufen. Erneuere es, bevor der Server es zurückholt."
+    expired: "Der Server hat abgelaufenes Guthaben zurückgeholt. Erneuern bringt es zurück."
     locked: "Ein Teil deines Ark-Guthabens muss erneuert werden. Entsperre zuerst Ark."
   toast:
     receiving_onchain(wallet, amount): "$amount wird on-chain in $wallet empfangen"
