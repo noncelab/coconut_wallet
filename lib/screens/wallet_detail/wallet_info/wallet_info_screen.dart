@@ -1,4 +1,9 @@
 import 'package:coconut_wallet/screens/home/wallet_add/connected/hardware_wallet_connect_mode.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
+import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_consent_sheet.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'dart:io';
@@ -302,6 +307,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             Provider.of<WalletProvider>(context, listen: false),
             Provider.of<NodeProvider>(context, listen: false),
             widget.walletType,
+            arkProvider: _arkProviderOrNull(context),
           ),
       child: Consumer<WalletInfoViewModel>(
         builder: (innerContext, viewModel, child) {
@@ -331,6 +337,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   right: 16,
                   child: Align(alignment: Alignment.topLeft, child: _buildMfpTooltip(context, viewModel)),
                 ),
+              if (viewModel.isArkBusy) const CoconutLoadingOverlay(applyFullScreen: true),
             ],
           );
         },
@@ -373,6 +380,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                     ),
                   ),
               ]),
+            if (viewModel.canUseArk) _section(t.ark.wallet_info.section, _buildArkRows(viewModel)),
             _section(t.wallet_info_screen.section_details, _buildDetailRows(context, viewModel)),
             if (viewModel.isBitBox02Wallet || viewModel.isTrezorWallet)
               _section(t.wallet_info_screen.connected_hardware_wallet.title, _buildHardwareWalletRows(viewModel)),
@@ -440,6 +448,103 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
     );
   }
+
+  /// 아크 프로바이더가 없는 구성(테스트 등)에서는 아크 섹션을 숨김
+  ArkProvider? _arkProviderOrNull(BuildContext context) {
+    try {
+      return Provider.of<ArkProvider>(context, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  List<Widget> _buildArkRows(WalletInfoViewModel viewModel) {
+    final colors = context.coconutColors;
+    Widget toggle(bool isOn, ValueChanged<bool> onChanged) => CoconutSwitch(
+      isOn: isOn,
+      scale: 0.75,
+      activeTrackColor: colors.switchActiveTrack,
+      activeThumbColor: colors.switchActiveThumb,
+      inactiveTrackColor: colors.switchInactiveTrack,
+      inactiveThumbColor: colors.switchInactiveThumb,
+      onChanged: onChanged,
+    );
+    return [
+      _walletInfoMenu(
+        title: t.ark.option.title,
+        trailing: toggle(viewModel.isArkOn, (on) => _setArkOn(viewModel, on)),
+        onPressed: () => _setArkOn(viewModel, !viewModel.isArkOn),
+      ),
+      if (viewModel.isArkOn)
+        _walletInfoMenu(
+          title: t.ark.consent.auto_refresh_title,
+          trailing: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
+          onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
+        ),
+    ];
+  }
+
+  Future<void> _setArkOn(WalletInfoViewModel viewModel, bool on) async {
+    if (viewModel.isArkBusy || on == viewModel.isArkOn) return;
+    if (on) {
+      final consent = await showArkConsentSheet(context, loadFeeGuide: context.read<ArkProvider>().feeGuide);
+      if (consent == null || !mounted) return;
+      try {
+        await viewModel.turnOnArk(
+          () => unlockArkSeed(context, viewModel.walletItemBase),
+          autoRefresh: consent.autoRefresh,
+        );
+      } catch (error) {
+        Logger.error('WalletInfoScreen: turning on Ark failed: $error');
+        if (mounted) await _showArkMessage(t.alert.error_occurs, t.ark.wallet_info.turn_on_failed);
+      }
+      return;
+    }
+    if (!viewModel.canTurnOffArk) {
+      await _showArkMessage(t.ark.wallet_info.has_funds_title, t.ark.wallet_info.has_funds_description);
+      return;
+    }
+    final confirmed = await _confirmArk(
+      t.ark.wallet_info.turn_off_title,
+      t.ark.wallet_info.turn_off_description,
+      t.ark.wallet_info.turn_off,
+    );
+    if (confirmed && mounted) await viewModel.turnOffArk();
+  }
+
+  Future<void> _setArkAutoRefresh(WalletInfoViewModel viewModel, bool on) async {
+    if (on) {
+      await viewModel.setArkAutoRefresh(true);
+      return;
+    }
+    final confirmed = await _confirmArk(
+      t.ark.wallet_info.auto_refresh_off_title,
+      t.ark.consent.auto_refresh_off_warning,
+      t.ark.wallet_info.turn_off,
+    );
+    if (confirmed && mounted) await viewModel.setArkAutoRefresh(false);
+  }
+
+  Future<bool> _confirmArk(String title, String description, String confirmText) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: title,
+            description: description,
+            onTapRight: () => Navigator.of(dialogContext).pop(true),
+            onTapLeft: () => Navigator.of(dialogContext).pop(false),
+            rightButtonText: confirmText,
+            rightButtonColor: context.coconutColors.dangerText,
+            leftButtonText: t.cancel,
+          ),
+    );
+    return confirmed == true;
+  }
+
+  Future<void> _showArkMessage(String title, String description) =>
+      showInfoDialog(context, context.read<PreferenceProvider>().language, title, description, buttonText: t.confirm);
 
   List<Widget> _buildDetailRows(BuildContext context, WalletInfoViewModel viewModel) {
     final wallet = viewModel.walletItemBase;

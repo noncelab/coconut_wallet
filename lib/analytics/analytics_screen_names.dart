@@ -81,6 +81,7 @@ class AnalyticsScreenNames {
   static const String hotWalletAppLockGuideSheet = 'hot-wallet-app-lock-guide-sheet';
   static const String hotWalletAppearanceSettingsSheet = 'hot-wallet-appearance-settings-sheet';
   static const String arkConsentSheet = 'ark-consent-sheet';
+  static const String arkUnlockPassphraseSheet = 'ark-unlock-passphrase-sheet';
   static const String trezorBleConnectResumeSheet = 'trezor-ble-connect-resume-sheet';
   static const String trezorUsbConnectResumeSheet = 'trezor-usb-connect-resume-sheet';
   static const String trezorBleConnectSheet = 'trezor-ble-connect-sheet';

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -47,9 +48,61 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   final WalletType _walletType;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, this._walletType) {
+  WalletInfoViewModel(
+    this._walletId,
+    this._authProvider,
+    this._walletProvider,
+    this._nodeProvider,
+    this._walletType, {
+    ArkProvider? arkProvider,
+  }) : _arkProvider = arkProvider {
     _loadWalletData();
     _walletProvider.addListener(_onWalletProviderChanged);
+    _arkProvider?.addListener(_safeNotifyListeners);
+  }
+
+  final ArkProvider? _arkProvider;
+  bool _isArkBusy = false;
+
+  bool get canUseArk => _arkProvider?.canUseArk(_walletItemBase) ?? false;
+  bool get isArkOn => _arkProvider?.supportsArkById(_walletId) ?? false;
+  bool get isArkAutoRefreshOn => _arkProvider?.isAutoRefreshOn(_walletId) ?? true;
+  bool get canTurnOffArk => _arkProvider?.canTurnOff(_walletId) ?? false;
+  bool get isArkBusy => _isArkBusy;
+
+  /// 사용자가 취소하면 false
+  Future<bool> turnOnArk(Future<String?> Function() unlockSeed, {required bool autoRefresh}) async {
+    final arkProvider = _arkProvider;
+    if (arkProvider == null) return false;
+    _setArkBusy(true);
+    try {
+      final turnedOn = await arkProvider.turnOn(_walletId, unlockSeed);
+      if (turnedOn) await arkProvider.setAutoRefreshOn(_walletId, autoRefresh);
+      return turnedOn;
+    } finally {
+      _setArkBusy(false);
+    }
+  }
+
+  Future<void> turnOffArk() async {
+    final arkProvider = _arkProvider;
+    if (arkProvider == null) return;
+    _setArkBusy(true);
+    try {
+      await arkProvider.turnOff(_walletId);
+    } finally {
+      _setArkBusy(false);
+    }
+  }
+
+  Future<void> setArkAutoRefresh(bool on) async {
+    await _arkProvider?.setAutoRefreshOn(_walletId, on);
+    _safeNotifyListeners();
+  }
+
+  void _setArkBusy(bool busy) {
+    _isArkBusy = busy;
+    _safeNotifyListeners();
   }
 
   void _onWalletProviderChanged() {
@@ -407,6 +460,7 @@ class WalletInfoViewModel extends ChangeNotifier {
     _disposed = true;
     _syncWalletStateSubscription?.cancel();
     _walletProvider.removeListener(_onWalletProviderChanged);
+    _arkProvider?.removeListener(_safeNotifyListeners);
 
     super.dispose();
   }
