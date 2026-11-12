@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 
@@ -16,6 +17,18 @@ class BroadcastingRouteArgs {
 class ReceiveAddressRouteArgs {
   final int id;
   const ReceiveAddressRouteArgs({required this.id});
+}
+
+class VtxoListRouteArgs {
+  final int id;
+  final bool startRefresh;
+  const VtxoListRouteArgs({required this.id, this.startRefresh = false});
+}
+
+class VtxoDetailRouteArgs {
+  final int id;
+  final ArkVtxo vtxo;
+  const VtxoDetailRouteArgs({required this.id, required this.vtxo});
 }
 
 class AddressListRouteArgs {

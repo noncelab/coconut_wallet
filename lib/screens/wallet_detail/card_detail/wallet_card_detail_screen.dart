@@ -21,6 +21,7 @@ import 'package:coconut_wallet/constants/wallet_skins.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -45,6 +46,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/utxo_summary_view.dart';
+import 'package:coconut_wallet/widgets/features/ark/vtxo_list_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card_background.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
@@ -486,6 +488,31 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                         ),
                         radius: 20,
                       ),
+                      if (viewModel.supportsArk) ...[
+                        const SizedBox(height: 24),
+                        _sectionHeader(
+                          context,
+                          key: const Key('wallet-detail-vtxo-header'),
+                          title: t.ark.vtxo.section_title(count: viewModel.vtxoCount),
+                          onMore: _openVtxoList,
+                        ),
+                        SizedBox(
+                          height: 216,
+                          child: _lifted(
+                            ValueListenableBuilder(
+                              valueListenable: context.read<NodeProvider>().currentBlockNotifier,
+                              builder:
+                                  (context, tip, _) => VtxoPreviewList(
+                                    vtxos: viewModel.vtxos,
+                                    unit: viewModel.unit,
+                                    tip: tip,
+                                    onSelected: _openVtxoDetail,
+                                  ),
+                            ),
+                            radius: 20,
+                          ),
+                        ),
+                      ],
                       SizedBox(height: MediaQuery.paddingOf(context).bottom + 40),
                     ],
                   ),
@@ -937,6 +964,14 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   void _openUtxoOverview() {
     _logAction(WalletDetailAction.utxoOverview);
     Navigator.pushNamed(context, AppRouteNames.utxoOverview, arguments: UtxoOverviewRouteArgs(id: _walletId));
+  }
+
+  void _openVtxoList() {
+    Navigator.pushNamed(context, AppRouteNames.vtxoList, arguments: VtxoListRouteArgs(id: _walletId));
+  }
+
+  void _openVtxoDetail(ArkVtxo vtxo) {
+    Navigator.pushNamed(context, AppRouteNames.vtxoDetail, arguments: VtxoDetailRouteArgs(id: _walletId, vtxo: vtxo));
   }
 
   void _openTransaction(HomeRecentTransaction tx) {

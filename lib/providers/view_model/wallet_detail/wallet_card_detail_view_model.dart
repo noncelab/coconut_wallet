@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
+import 'package:coconut_wallet/model/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
@@ -139,6 +140,16 @@ class WalletCardDetailViewModel extends ChangeNotifier {
       HomeWidgetMath.balanceHistoryPeriod(widgets.transactionRecordsOf(_focusedWalletId), widgets.now);
 
   int get utxoCount => _walletProvider.getUtxoList(_focusedWalletId).length;
+
+  bool get supportsArk => _arkProvider?.supportsArk(focusedWallet) ?? false;
+
+  int get vtxoCount => _arkProvider?.snapshot(_focusedWalletId)?.vtxos.length ?? 0;
+
+  List<ArkVtxo> get vtxos {
+    final items = [...?_arkProvider?.snapshot(_focusedWalletId)?.vtxos];
+    items.sort((a, b) => a.expiryHeight.compareTo(b.expiryHeight));
+    return items;
+  }
 
   List<HomeRecentTransaction> get recentTransactions => widgets.recentTransactions(walletIds: [_focusedWalletId]);
 

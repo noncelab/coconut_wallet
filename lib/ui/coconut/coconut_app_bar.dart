@@ -27,6 +27,7 @@ class CoconutAppBar {
     bool isLeadingVisible = true,
     bool showSubLabel = false,
     bool isBackButton = false,
+    bool isCloseButton = false,
     bool hasBackDropFilter = false,
     double? height,
     VoidCallback? onTitlePressed,
@@ -72,7 +73,7 @@ class CoconutAppBar {
     final leading = _AppBarLeading(
       iconKey: faucetIconKey,
       assetName:
-          (isBottom && !isBackButton) || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
+          isCloseButton || (isBottom && !isBackButton) || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
               ? CommonActionIconPath.close
               : CommonNavigationIconPath.arrowBack,
       iconColor: resolvedForegroundColor,
