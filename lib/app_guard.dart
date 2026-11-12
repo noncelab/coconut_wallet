@@ -134,11 +134,27 @@ class _AppGuardState extends State<AppGuard> {
     });
     _screenListener.watch();
 
+    _arkProvider.refreshIncomplete.addListener(_showRefreshIncomplete);
+
     _incomingPaymentWatcher = IncomingPaymentWatcher(
       walletProvider: _walletProvider,
       arkProvider: _arkProvider,
       onReceived: _showIncomingPayment,
     )..start();
+  }
+
+  void _showRefreshIncomplete() {
+    final event = _arkProvider.refreshIncomplete.value;
+    final overlay = widget.navigatorKey?.currentState?.overlay;
+    final overlayContext = widget.navigatorKey?.currentContext;
+    if (event == null || !mounted || overlay == null || overlayContext == null) return;
+    CoconutToast.showToast(
+      context: overlayContext,
+      overlay: overlay,
+      level: CoconutToastLevel.warning,
+      text: t.ark.vtxo.refresh_incomplete(wallet: _walletProvider.getWalletById(event.walletId).name),
+      seconds: 5,
+    );
   }
 
   void _showIncomingPayment(IncomingPayment payment) {
@@ -307,6 +323,7 @@ class _AppGuardState extends State<AppGuard> {
   @override
   void dispose() {
     _incomingPaymentWatcher.stop();
+    _arkProvider.refreshIncomplete.removeListener(_showRefreshIncomplete);
     _lifecycleListener.dispose();
     _screenListener.dispose();
     super.dispose();

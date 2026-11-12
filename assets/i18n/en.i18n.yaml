@@ -527,10 +527,10 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   unbacked_hot_wallet_warning:
-    title: "Your mnemonic isn't backed up"
+    title: "Your mnemonic isn't backed up."
     description: "If you don't back it up now, you could lose your bitcoin forever"
   app_lock_warning:
-    title: "Set an app password"
+    title: "Set an app password."
     description: "Set an app lock to keep your wallet safe"
   view_all_wallets: "View All Wallets"
   wallet_filter:
@@ -2142,6 +2142,11 @@ wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
 
 ark:
+  expiry:
+    notice: "Some Ark balance expires soon. Please refresh it."
+    urgent: "Some Ark balance is about to expire. Refresh it now."
+    expired: "Some Ark balance has expired. Refresh it before the server reclaims it."
+    locked: "Some Ark balance needs a refresh. Unlock Ark first."
   toast:
     receiving_onchain(wallet, amount): "Receiving $amount on-chain in $wallet"
     received_onchain(wallet, amount): "$amount arrived on-chain in $wallet"
@@ -2179,14 +2184,24 @@ ark:
     refresh_n(count): "Refresh $count"
     refreshing: "Refreshing…"
     refresh_title(count): "Refresh $count VTXOs?"
-    refresh_description(fee): "The selected VTXOs will be renewed with new expiry dates. You do not need to keep the app open. Fee: $fee"
+    refresh_description(fee): "The selected VTXOs will be renewed with new expiry dates. You do not need to keep the app open.\nFee: $fee"
     none_due: "No VTXOs need refreshing now."
-    refresh_scheduled: "Refresh requested for the next round"
-    refresh_failed(error): "Could not refresh: $error"
+    refresh_scheduled: "Refresh requested. Please wait a few minutes for the server to process it."
+    already_refreshing: "A refresh is already requested. Please wait for the server to process it."
+    refresh_incomplete(wallet): "The Ark refresh in $wallet didn't complete. Please refresh again."
+    refresh_requesting: "Requesting a refresh"
+    refresh_requested_title: "Refresh requested"
+    refresh_requested_description: "The server takes a few minutes to process it.\nThe new expiry date applies once it's done."
+    refresh_request_failed_title: "Couldn't request the refresh"
+    refresh_request_failed_description: "Please try again in a moment."
+    refresh_requested_summary(count, fee): "${count} VTXOs · Fee $fee"
+    refresh_retry: "Try again"
+    refresh_failed(error): "Couldn't request the refresh. Please try again in a moment."
     detail_title: "VTXO"
     expiry: "Expiry"
     state: "State"
-    state_locked: "In use by another operation"
+    state_locked: "Processing"
+    state_refreshing: "Waiting to refresh · New expiry date after the server processes it"
     kind: "Type"
     exit_depth: "Exit depth"
     vtxo_id: "VTXO ID"

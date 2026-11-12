@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'dart:async';
 
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/model/ark/ark_balance.dart';
 import 'package:coconut_wallet/model/ark/ark_board.dart';
 import 'package:coconut_wallet/model/ark/ark_fee_guide.dart';
@@ -35,10 +38,12 @@ class ArkProvider extends ChangeNotifier {
     this._arkRepository, {
     ArkWalletService? arkWalletService,
     SharedPrefsRepository? sharedPrefsRepository,
+    ValueListenable<BlockTimestamp?>? currentBlock,
     this.syncInterval = const Duration(seconds: 60),
     this.fastSyncInterval = const Duration(seconds: 5),
     bool startTimer = true,
-  }) : _arkWalletService = arkWalletService ?? ArkWalletService(),
+  }) : _currentBlock = currentBlock,
+       _arkWalletService = arkWalletService ?? ArkWalletService(),
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
@@ -65,10 +70,23 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, Future<bool>> _opening = {};
   final Map<int, DateTime> _lastSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
+
+  /// 만료까지 남은 블록 계산에 쓰는 현재 블록, 노드 동기화가 갱신함
+  final ValueListenable<BlockTimestamp?>? _currentBlock;
   final Set<String> _arkOnFingerprints = {};
 
   /// 아크를 켠 지갑 목록을 다 읽었을 때 완료
   Future<void> arkWalletsLoaded = Future.value();
+
+  /// 갱신을 요청한 VTXO와 요청 시각, 새 VTXO로 바뀌거나 [_refreshWaitLimit]이 지나면 지움
+  late final Map<String, DateTime> _refreshingVtxoIds = _loadRefreshingVtxoIds();
+  static const _refreshWaitLimit = Duration(minutes: 10);
+
+  /// bark가 알려 주는 지갑별 라운드 대기 VTXO
+  final Map<int, Set<String>> _pendingRoundVtxoIds = {};
+
+  /// 갱신을 기다리던 VTXO가 새 VTXO로 바뀌지 않고 대기에서 빠졌을 때(서버 처리 실패)
+  final ValueNotifier<({int walletId, int count})?> refreshIncomplete = ValueNotifier(null);
   final Set<int> _autoRefreshing = {};
   final Map<int, String> _syncErrors = {};
   final Set<int> _declined = {};
@@ -262,9 +280,12 @@ class ArkProvider extends ChangeNotifier {
       if (previous == null || !previous.hasSameContent(next)) {
         if (await _arkRepository.saveSnapshot(walletId, next)) {
           _snapshots[walletId] = next;
+          _refreshingVtxoIds.removeWhere((id, _) => !next.vtxos.any((vtxo) => vtxo.id == id) || !isRefreshingVtxo(id));
+          _saveRefreshingVtxoIds();
           cacheRevision.value++;
         }
       }
+      await _updatePendingRound(walletId, fingerprint);
       await _updateRefreshDue(walletId, fingerprint);
     } catch (error) {
       Logger.error('ArkProvider: failed to refresh the Ark cache of wallet $walletId: $error');
@@ -276,8 +297,30 @@ class ArkProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _updatePendingRound(int walletId, String fingerprint) async {
+    final Set<String> pending;
+    try {
+      pending = (await _arkWalletService.pendingRoundVtxoIds(fingerprint)).toSet();
+    } catch (error) {
+      Logger.error('ArkProvider: failed to read pending round VTXOs of wallet $walletId: $error');
+      return;
+    }
+    final previous = _pendingRoundVtxoIds[walletId] ?? const <String>{};
+    final vtxoIds = {for (final vtxo in snapshot(walletId)?.vtxos ?? const []) vtxo.id};
+    final incomplete = previous.where((id) => !pending.contains(id) && vtxoIds.contains(id)).toList();
+    if (setEquals(previous, pending) && incomplete.isEmpty) return;
+    _pendingRoundVtxoIds[walletId] = pending;
+    for (final id in incomplete) {
+      _refreshingVtxoIds.remove(id);
+    }
+    _refreshingVtxoIds.removeWhere((id, _) => pending.contains(id));
+    _saveRefreshingVtxoIds();
+    if (incomplete.isNotEmpty) refreshIncomplete.value = (walletId: walletId, count: incomplete.length);
+    cacheRevision.value++;
+  }
+
   Future<void> _updateRefreshDue(int walletId, String fingerprint) async {
-    final tip = _walletProvider.currentBlockHeightNotifier.value?.height;
+    final tip = _currentBlock?.value?.height ?? _walletProvider.currentBlockHeightNotifier.value?.height;
     final vtxos = snapshot(walletId)?.vtxos ?? const [];
     final expiries = vtxos.map((vtxo) => vtxo.expiryHeight);
     final next = ArkRefreshDue(
@@ -286,7 +329,10 @@ class ArkProvider extends ChangeNotifier {
               ? const []
               : [
                 for (final vtxo in vtxos)
-                  if (!vtxo.isLocked && vtxo.expiryHeight - tip <= ArkRefreshDue.noticeBlocks) vtxo.id,
+                  if (!vtxo.isLocked &&
+                      !isRefreshingVtxo(vtxo.id) &&
+                      vtxo.expiryHeight - tip <= ArkRefreshDue.noticeBlocks)
+                    vtxo.id,
               ],
       firstExpiryHeight: expiries.isEmpty ? null : expiries.reduce((a, b) => a < b ? a : b),
       tipHeight: tip,
@@ -337,10 +383,11 @@ class ArkProvider extends ChangeNotifier {
     try {
       final requiredHeight = await _arkWalletService.nextRequiredRefreshHeight(fingerprint);
       if (requiredHeight == null || tip < requiredHeight) return;
-      final overdue = await _arkWalletService.vtxoIdsToRefresh(fingerprint);
+      final overdue = withoutRefreshing(await _arkWalletService.vtxoIdsToRefresh(fingerprint));
       if (overdue.isEmpty) return;
       Logger.log('ArkProvider: auto-refreshing ${overdue.length} VTXOs of wallet $walletId near expiry');
       await _arkWalletService.refreshDelegated(fingerprint, overdue);
+      _markRefreshing(overdue);
     } catch (error) {
       Logger.error('ArkProvider: auto refresh of wallet $walletId failed: $error');
     } finally {
@@ -477,8 +524,54 @@ class ArkProvider extends ChangeNotifier {
 
   /// Refreshes [vtxoIds] in a delegated round: the server completes it without the app staying
   /// online, and the new VTXOs arrive with a later sync.
+  /// 갱신을 요청해 라운드를 기다리는 VTXO
+  bool isRefreshingVtxo(String vtxoId) {
+    if (_pendingRoundVtxoIds.values.any((ids) => ids.contains(vtxoId))) return true;
+    final requestedAt = _refreshingVtxoIds[vtxoId];
+    return requestedAt != null && DateTime.now().difference(requestedAt) < _refreshWaitLimit;
+  }
+
+  /// 이미 갱신을 요청해 기다리는 VTXO를 빼서 수수료가 두 번 나가지 않게 함
+  List<String> withoutRefreshing(List<String> vtxoIds) => [
+    for (final id in vtxoIds)
+      if (!isRefreshingVtxo(id)) id,
+  ];
+
+  void _markRefreshing(List<String> vtxoIds) {
+    final now = DateTime.now();
+    for (final id in vtxoIds) {
+      _refreshingVtxoIds[id] = now;
+    }
+    _saveRefreshingVtxoIds();
+  }
+
+  Map<String, DateTime> _loadRefreshingVtxoIds() {
+    try {
+      final raw = _sharedPrefs.getStringOrNull(SharedPrefKeys.kArkRefreshingVtxos);
+      if (raw == null || raw.isEmpty) return {};
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return {for (final entry in decoded.entries) entry.key: DateTime.fromMillisecondsSinceEpoch(entry.value as int)};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _saveRefreshingVtxoIds() {
+    try {
+      unawaited(
+        _sharedPrefs.setStringAndConfirm(
+          SharedPrefKeys.kArkRefreshingVtxos,
+          jsonEncode({for (final entry in _refreshingVtxoIds.entries) entry.key: entry.value.millisecondsSinceEpoch}),
+        ),
+      );
+    } catch (_) {}
+  }
+
   Future<void> refreshDelegated(int walletId, List<String> vtxoIds) async {
-    await _arkWalletService.refreshDelegated(_requireFingerprint(walletId), vtxoIds);
+    final ids = withoutRefreshing(vtxoIds);
+    if (ids.isEmpty) return;
+    await _arkWalletService.refreshDelegated(_requireFingerprint(walletId), ids);
+    _markRefreshing(ids);
     await syncNow(walletId, withRounds: false);
   }
 
@@ -644,6 +737,7 @@ class ArkProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    refreshIncomplete.dispose();
     _timer?.cancel();
     _walletProvider.walletItemListNotifier.removeListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(null);

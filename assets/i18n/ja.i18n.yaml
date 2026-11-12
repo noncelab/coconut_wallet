@@ -526,10 +526,10 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   unbacked_hot_wallet_warning:
-    title: "ニーモニックがバックアップされていません"
+    title: "ニーモニックがバックアップされていません。"
     description: "今バックアップしないと、ビットコインを永久に失う可能性があります"
   app_lock_warning:
-    title: "アプリのパスワードを設定してください"
+    title: "アプリのパスワードを設定してください。"
     description: "アプリロックを設定してウォレットを安全に保護してください"
   view_all_wallets: "マイウォレット一覧"
   wallet_filter:
@@ -2139,6 +2139,11 @@ wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
 
 ark:
+  expiry:
+    notice: "まもなく期限切れになるArk残高があります。更新してください。"
+    urgent: "期限切れ間近のArk残高があります。今すぐ更新してください。"
+    expired: "期限切れのArk残高があります。サーバーに回収される前に更新してください。"
+    locked: "更新が必要なArk残高があります。ロックを解除してください。"
   toast:
     receiving_onchain(wallet, amount): "$walletにオンチェーンで$amountを受け取り中です"
     received_onchain(wallet, amount): "$walletにオンチェーンで$amountが入金されました"
@@ -2176,14 +2181,24 @@ ark:
     refresh_n(count): "$count件を更新"
     refreshing: "更新中…"
     refresh_title(count): "VTXOを$count件更新しますか？"
-    refresh_description(fee): "選択したVTXOを有効期限が新しく設定されたVTXOに更新します。アプリを開いたままにする必要はありません。手数料: $fee"
+    refresh_description(fee): "選択したVTXOを有効期限が新しく設定されたVTXOに更新します。アプリを開いたままにする必要はありません。\n手数料: $fee"
     none_due: "現在、更新が必要なVTXOはありません。"
-    refresh_scheduled: "次のラウンドでの更新を依頼しました"
-    refresh_failed(error): "更新できませんでした: $error"
+    refresh_scheduled: "更新をリクエストしました。サーバーの処理まで数分お待ちください。"
+    already_refreshing: "すでに更新をリクエストしています。サーバーの処理をお待ちください。"
+    refresh_incomplete(wallet): "$walletのArk更新が完了しませんでした。もう一度更新してください。"
+    refresh_requesting: "更新をリクエストしています"
+    refresh_requested_title: "更新をリクエストしました"
+    refresh_requested_description: "サーバーの処理に数分かかります。\n処理されると新しい有効期限になります。"
+    refresh_request_failed_title: "更新をリクエストできませんでした"
+    refresh_request_failed_description: "しばらくしてからもう一度お試しください。"
+    refresh_requested_summary(count, fee): "VTXO ${count}件 · 手数料 $fee"
+    refresh_retry: "再試行"
+    refresh_failed(error): "更新をリクエストできませんでした。しばらくしてからもう一度お試しください。"
     detail_title: "VTXO"
     expiry: "有効期限"
     state: "状態"
-    state_locked: "別の処理で使用中"
+    state_locked: "処理中です"
+    state_refreshing: "更新待ち · サーバー処理後に新しい有効期限になります"
     kind: "種類"
     exit_depth: "出金段階"
     vtxo_id: "VTXO ID"

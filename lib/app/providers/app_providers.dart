@@ -126,7 +126,12 @@ List<SingleChildWidget> buildAppProviders({
       ChangeNotifierProvider<ArkProvider>(
         // 아크 잔액을 WalletProvider 표시 잔액에 더하므로 즉시 생성
         lazy: false,
-        create: (context) => ArkProvider(context.read<WalletProvider>(), context.read<ArkRepository>()),
+        create:
+            (context) => ArkProvider(
+              context.read<WalletProvider>(),
+              context.read<ArkRepository>(),
+              currentBlock: context.read<NodeProvider>().currentBlockNotifier,
+            ),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

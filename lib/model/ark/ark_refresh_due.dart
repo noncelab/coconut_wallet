@@ -7,6 +7,9 @@ class ArkRefreshDue {
   /// 만료 알림 시작, 메인넷 약 7일 전
   static const noticeBlocks = 1008;
 
+  /// 이 블록 수 안이면 강하게 안내, bark 자체 갱신 기한(메인넷 약 1일)
+  static const urgentBlocks = 144;
+
   /// 알림 구간에 들어온 VTXO
   final List<String> vtxoIds;
 

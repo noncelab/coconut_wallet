@@ -8,7 +8,6 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
-import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
@@ -81,7 +80,6 @@ Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async
   Uint8List? passphrase;
   try {
     if (metadata.enterPassphraseWhenSigning) {
-      final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
       var showIncorrectError = false;
       while (true) {
         if (!context.mounted) return null;
@@ -93,7 +91,7 @@ Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async
           showDragHandle: true,
           backgroundColor: context.coconutColors.surfaceBottomSheet,
           child: HotWalletPassphraseInputSheet(
-            requiresAuthentication: requiresAuthentication,
+            requiresAuthentication: false,
             showIncorrectError: showIncorrectError,
             onAuthenticationStarted: () async {},
             onPassphraseInputResumed: () {},
@@ -111,7 +109,6 @@ Future<String?> unlockArkSeed(BuildContext context, WalletItemBase wallet) async
         entered.fillRange(0, entered.length, 0);
         showIncorrectError = true;
       }
-      // The passphrase sheet has already authenticated the user.
       final unlocked = await AppGuard.runWithoutPrivacyScreen(
         () => HotWalletSecretRepository().unlockAfterAuthentication(metadata.secureStorageKey),
       );

@@ -453,6 +453,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                                 amountText: viewModel.amountText,
                                 now: DateTime.now(),
                                 showWalletName: false,
+                                horizontalPadding: 20,
                                 onTransactionSelected: _openTransaction,
                                 highlightedTxHash: _focusedTransactionHash,
                                 highlightAnimation: _recentHighlightController,
@@ -920,16 +921,27 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   Widget _buildSecurityWarning(WalletDetailViewModel detail, {ValueChanged<double>? onHeightChanged}) {
     final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
     final warning = detail.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
+    final expiryNotice = _viewModel.arkExpiryNoticeOf(_viewModel.focusedWallet);
+    final arkNotice =
+        expiryNotice != null &&
+                (expiryNotice.beforeBackup || warning != WalletDetailSecurityWarningType.unbackedHotWallet)
+            ? expiryNotice
+            : null;
     return ValueListenableBuilder<bool>(
       valueListenable: _carouselMoving,
       builder:
           (context, moving, _) => WalletSecurityBanner(
             warning: warning,
+            text: arkNotice?.text,
+            danger: arkNotice?.danger ?? false,
+            closable: arkNotice == null,
             walletId: detail.walletId,
             moving: moving,
             onHeightChanged: onHeightChanged,
             onTap:
-                warning == WalletDetailSecurityWarningType.unbackedHotWallet
+                arkNotice != null
+                    ? () => _onArkExpiryBannerTapped(needsUnlock: arkNotice.needsUnlock)
+                    : warning == WalletDetailSecurityWarningType.unbackedHotWallet
                     ? _onBackupBannerTapped
                     : _openAppLockSettings,
             onClosed: () {
@@ -937,6 +949,17 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
               detail.dismissSecurityWarning(warning);
             },
           ),
+    );
+  }
+
+  Future<void> _onArkExpiryBannerTapped({required bool needsUnlock}) async {
+    final walletId = _viewModel.focusedWallet.id;
+    if (needsUnlock && !await openArkWalletForSession(context, walletId, userInitiated: true)) return;
+    if (!mounted) return;
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.vtxoList,
+      arguments: VtxoListRouteArgs(id: walletId, startRefresh: true),
     );
   }
 

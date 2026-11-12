@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/ark/ark_refresh_due.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/model/ark/ark_vtxo.dart';
@@ -125,6 +127,23 @@ class WalletCardDetailViewModel extends ChangeNotifier {
       receiving: ark.claimableLightningReceive + ark.pendingBoard > 0,
       sending: ark.pendingLightningSend + ark.pendingExit > 0,
     );
+  }
+
+  /// 지갑 상세 배너로 보여 줄 아크 만료 안내, 없으면 null
+  ({String text, bool danger, bool needsUnlock, bool beforeBackup})? arkExpiryNoticeOf(WalletItemBase wallet) {
+    final ark = _arkProvider;
+    if (ark == null || !ark.supportsArk(wallet)) return null;
+    final due = ark.refreshDue(wallet.id);
+    if (!due.isDue) return null;
+    final locked = isArkLocked(wallet);
+    if (due.isExpired) return (text: t.ark.expiry.expired, danger: true, needsUnlock: locked, beforeBackup: true);
+    final blocksLeft = due.blocksLeft;
+    if (blocksLeft != null && blocksLeft <= ArkRefreshDue.urgentBlocks) {
+      return (text: t.ark.expiry.urgent, danger: false, needsUnlock: locked, beforeBackup: true);
+    }
+    if (locked) return (text: t.ark.expiry.locked, danger: false, needsUnlock: true, beforeBackup: false);
+    if (ark.isAutoRefreshOn(wallet.id)) return null;
+    return (text: t.ark.expiry.notice, danger: false, needsUnlock: false, beforeBackup: false);
   }
 
   bool isArkLocked(WalletItemBase wallet) {

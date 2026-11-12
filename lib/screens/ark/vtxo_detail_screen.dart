@@ -184,7 +184,13 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
           label: t.ark.vtxo.vtxo_id,
           child: CopyTextContainer(text: vtxo.id, textStyle: valueStyle),
         ),
-        UnderlineButtonItemCard(label: t.ark.vtxo.state, child: _VtxoStateChip(isLocked: vtxo.isLocked)),
+        UnderlineButtonItemCard(
+          label: t.ark.vtxo.state,
+          child: _VtxoStateChip(
+            isLocked: vtxo.isLocked,
+            isRefreshing: context.readArkProviderOrNull()?.isRefreshingVtxo(vtxo.id) ?? false,
+          ),
+        ),
         UnderlineButtonItemCard(
           label: t.ark.vtxo.expiry,
           underlineButtonLabel: canRefresh ? t.ark.vtxo.refresh_button : '',
@@ -242,9 +248,10 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
 
 /// Spendable or locked, in the UTXO detail's lock-status chip.
 class _VtxoStateChip extends StatelessWidget {
-  const _VtxoStateChip({required this.isLocked});
+  const _VtxoStateChip({required this.isLocked, this.isRefreshing = false});
 
   final bool isLocked;
+  final bool isRefreshing;
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +277,11 @@ class _VtxoStateChip extends StatelessWidget {
                 CoconutLayout.spacing_100w,
                 Flexible(
                   child: Text(
-                    isLocked ? t.ark.vtxo.state_locked : t.ark.vtxo.spendable,
+                    isRefreshing
+                        ? t.ark.vtxo.state_refreshing
+                        : isLocked
+                        ? t.ark.vtxo.state_locked
+                        : t.ark.vtxo.spendable,
                     style: CoconutTypography.body3_12.copyWith(color: color, height: 1.2),
                   ),
                 ),

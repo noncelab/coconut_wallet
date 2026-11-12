@@ -89,6 +89,7 @@ class SharedPrefKeys {
 
   /// 만료 직전 아크 자동 갱신 끔 여부 (지갑별, 기본은 켬)
   static String walletArkAutoRefreshOff(int walletId) => 'WALLET_ARK_AUTO_REFRESH_OFF_$walletId';
+  static const String kArkRefreshingVtxos = 'ARK_REFRESHING_VTXOS';
 
   /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
   static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";

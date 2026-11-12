@@ -527,10 +527,10 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen:
   unbacked_hot_wallet_warning:
-    title: "Deine Mnemonik ist nicht gesichert"
+    title: "Deine Mnemonik ist nicht gesichert."
     description: "Wenn du sie jetzt nicht sicherst, könntest du deine Bitcoin für immer verlieren"
   app_lock_warning:
-    title: "Lege ein App-Passwort fest"
+    title: "Lege ein App-Passwort fest."
     description: "Richte eine App-Sperre ein, um deine Wallet sicher zu schützen"
   view_all_wallets: "Alle Wallets anzeigen"
   wallet_filter:
@@ -2147,6 +2147,11 @@ wallet_selection_carousel: "Einzeln anzeigen"
 wallet_selection_grid: "Zusammen anzeigen"
 
 ark:
+  expiry:
+    notice: "Ein Teil deines Ark-Guthabens läuft bald ab. Bitte erneuern."
+    urgent: "Ein Teil deines Ark-Guthabens läuft gleich ab. Jetzt erneuern."
+    expired: "Ein Teil deines Ark-Guthabens ist abgelaufen. Erneuere es, bevor der Server es zurückholt."
+    locked: "Ein Teil deines Ark-Guthabens muss erneuert werden. Entsperre zuerst Ark."
   toast:
     receiving_onchain(wallet, amount): "$amount wird on-chain in $wallet empfangen"
     received_onchain(wallet, amount): "$amount on-chain in $wallet eingegangen"
@@ -2184,14 +2189,24 @@ ark:
     refresh_n(count): "$count erneuern"
     refreshing: "Wird erneuert…"
     refresh_title(count): "$count VTXOs erneuern?"
-    refresh_description(fee): "Die ausgewählten VTXOs werden mit einem neuen Ablaufdatum erneuert. Die App muss nicht geöffnet bleiben. Gebühr: $fee"
+    refresh_description(fee): "Die ausgewählten VTXOs werden mit einem neuen Ablaufdatum erneuert. Die App muss nicht geöffnet bleiben.\nGebühr: $fee"
     none_due: "Zurzeit müssen keine VTXOs erneuert werden."
-    refresh_scheduled: "Erneuerung für die nächste Runde angefordert"
-    refresh_failed(error): "Erneuerung fehlgeschlagen: $error"
+    refresh_scheduled: "Erneuerung angefragt. Bitte warte einige Minuten, bis der Server sie verarbeitet."
+    already_refreshing: "Erneuerung bereits angefragt. Bitte warte auf die Verarbeitung durch den Server."
+    refresh_incomplete(wallet): "Die Ark-Erneuerung in $wallet wurde nicht abgeschlossen. Bitte erneut erneuern."
+    refresh_requesting: "Erneuerung wird angefragt"
+    refresh_requested_title: "Erneuerung angefragt"
+    refresh_requested_description: "Der Server braucht einige Minuten.\nDanach gilt das neue Ablaufdatum."
+    refresh_request_failed_title: "Erneuerung konnte nicht angefragt werden"
+    refresh_request_failed_description: "Bitte versuche es gleich noch einmal."
+    refresh_requested_summary(count, fee): "${count} VTXOs · Gebühr $fee"
+    refresh_retry: "Erneut versuchen"
+    refresh_failed(error): "Erneuerung konnte nicht angefragt werden. Bitte versuche es gleich noch einmal."
     detail_title: "VTXO"
     expiry: "Ablauf"
     state: "Status"
-    state_locked: "Von einem anderen Vorgang verwendet"
+    state_locked: "Wird verarbeitet"
+    state_refreshing: "Wartet auf Erneuerung · Neues Ablaufdatum nach Verarbeitung"
     kind: "Typ"
     exit_depth: "Ausstiegstiefe"
     vtxo_id: "VTXO-ID"

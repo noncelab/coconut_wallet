@@ -1,4 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
+import 'package:coconut_wallet/model/ark/ark_refresh_due.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -23,7 +25,8 @@ String vtxoExpiryText(ArkVtxo vtxo, BlockTimestamp? tip) {
       : t.ark.vtxo.estimated_expiry(date: formattedDateTime);
 }
 
-String? vtxoExpiryStatusText(ArkVtxo vtxo, BlockTimestamp? tip) {
+String? vtxoExpiryStatusText(ArkVtxo vtxo, BlockTimestamp? tip, {bool isRefreshing = false}) {
+  if (isRefreshing) return t.ark.vtxo.state_refreshing;
   if (vtxo.isLocked) return t.ark.vtxo.state_locked;
   if (tip == null) return null;
   final blocks = vtxo.expiryHeight - tip.height;
@@ -56,7 +59,7 @@ class VtxoPreviewList extends StatelessWidget {
     }
     final shown = vtxos.take(rows).toList();
     final emptyRows = rows - shown.length;
-    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 16), height: 1, color: colors.divider);
+    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 20), height: 1, color: colors.divider);
     return HomeWidgetCard(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: LayoutBuilder(
@@ -122,8 +125,21 @@ class VtxoListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final enabled = !isSelecting || !vtxo.isLocked;
-    final statusText = vtxoExpiryStatusText(vtxo, tip);
     final isRefreshDue = tip != null && vtxo.expiryHeight - tip!.height <= 0;
+    final isRefreshing = context.readArkProviderOrNull()?.isRefreshingVtxo(vtxo.id) ?? false;
+    final statusText = vtxoExpiryStatusText(vtxo, tip, isRefreshing: isRefreshing);
+    final showsDueDot =
+        !isSelecting &&
+        !vtxo.isLocked &&
+        !isRefreshing &&
+        tip != null &&
+        vtxo.expiryHeight - tip!.height <= ArkRefreshDue.noticeBlocks;
+    final dueDot = Container(
+      key: const Key('vtxo-refresh-due-dot'),
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(color: colors.warning, shape: BoxShape.circle),
+    );
     final selectionIcon = SvgPicture.asset(
       CommonFormIconPath.circleCheck,
       width: 20,
@@ -182,13 +198,22 @@ class VtxoListRow extends StatelessWidget {
                             const SizedBox(width: 4),
                           ],
                           Flexible(
-                            child: Text(
-                              statusText,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: CoconutTypography.body2_14_Number
-                                  .setColor(colors.secondaryText)
-                                  .copyWith(height: 1),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(right: showsDueDot ? 8 : 0),
+                                  child: Text(
+                                    statusText,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CoconutTypography.body2_14_Number
+                                        .setColor(colors.secondaryText)
+                                        .copyWith(height: 1),
+                                  ),
+                                ),
+                                if (showsDueDot) Positioned(top: 0, right: 0, child: dueDot),
+                              ],
                             ),
                           ),
                         ],
@@ -201,7 +226,7 @@ class VtxoListRow extends StatelessWidget {
             : SizedBox(
               height: height,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
                     if (isSelecting) ...[selectionIcon, const SizedBox(width: 8)],

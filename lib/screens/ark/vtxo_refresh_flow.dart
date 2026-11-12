@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
@@ -16,10 +17,23 @@ Future<bool> refreshVtxosWithConfirmation(
   required BitcoinUnit unit,
   VoidCallback? onRefreshStarted,
   VoidCallback? onRefreshFinished,
+  ValueChanged<int>? onConfirmed,
+  ValueChanged<Object>? onFailed,
+  bool showsToast = true,
 }) async {
-  if (ids.isEmpty) return false;
   final arkProvider = context.read<ArkProvider>();
-  void toast(String text) => CoconutToast.showBottomToast(context: context, text: text);
+  ids = arkProvider.withoutRefreshing(ids);
+  if (ids.isEmpty) {
+    CoconutToast.showToast(context: context, text: t.ark.vtxo.already_refreshing);
+    return false;
+  }
+  final navigator = Navigator.of(context, rootNavigator: true);
+  void toast(String text) {
+    final overlay = navigator.overlay;
+    if (!navigator.mounted || overlay == null) return;
+    CoconutToast.showToast(context: navigator.context, overlay: overlay, text: text);
+  }
+
   try {
     final fee = await arkProvider.estimateRefreshFee(walletId, ids);
     if (!context.mounted) return false;
@@ -29,16 +43,19 @@ Future<bool> refreshVtxosWithConfirmation(
       description: t.ark.vtxo.refresh_description(fee: formatSats(unit, fee)),
     );
     if (!confirmed || !context.mounted) return false;
+    onConfirmed?.call(fee);
     onRefreshStarted?.call();
     try {
       await arkProvider.refreshDelegated(walletId, ids);
     } finally {
       onRefreshFinished?.call();
     }
-    if (context.mounted) toast(t.ark.vtxo.refresh_scheduled);
+    if (showsToast) toast(t.ark.vtxo.refresh_scheduled);
     return true;
   } catch (error) {
-    if (context.mounted) toast(t.ark.vtxo.refresh_failed(error: '$error'));
+    Logger.error('VTXO refresh failed: $error');
+    onFailed?.call(error);
+    if (showsToast) toast(t.ark.vtxo.refresh_failed);
     return false;
   }
 }

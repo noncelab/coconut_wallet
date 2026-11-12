@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
 import 'package:coconut_wallet/screens/ark/vtxo_refresh_flow.dart';
+import 'package:coconut_wallet/screens/ark/vtxo_refresh_result_view.dart';
 import 'package:coconut_wallet/screens/ark/vtxo_list_header.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_filter_widgets.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -44,6 +45,9 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
   late final ArkProvider _arkProvider;
   late BitcoinUnit _unit;
   bool _isSelecting = false;
+  VtxoRefreshPhase? _refreshPhase;
+  int _refreshedCount = 0;
+  String? _refreshFeeText;
   bool _isRefreshing = false;
   bool _isEstimatingFee = false;
   int? _estimatedRefreshFee;
@@ -82,10 +86,13 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
             ? const <String>[]
             : [
               for (final vtxo in _arkProvider.snapshot(widget.id)?.vtxos ?? const <ArkVtxo>[])
-                if (!vtxo.isLocked && vtxo.expiryHeight - tip <= ArkRefreshDue.noticeBlocks) vtxo.id,
+                if (!vtxo.isLocked &&
+                    !_arkProvider.isRefreshingVtxo(vtxo.id) &&
+                    vtxo.expiryHeight - tip <= ArkRefreshDue.noticeBlocks)
+                  vtxo.id,
             ];
     if (due.isEmpty) {
-      CoconutToast.showBottomToast(context: context, text: t.ark.vtxo.none_due);
+      CoconutToast.showToast(context: context, text: t.ark.vtxo.none_due);
       return;
     }
     setState(() {
@@ -98,10 +105,19 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
         ..addAll(due);
     });
     if (!await _ensureOpen() || !mounted) {
-      if (mounted) _stopSelecting();
+      if (mounted) _exitSelecting();
       return;
     }
     await _estimateSelectedFee();
+  }
+
+  /// 지갑 상세 배너에서 바로 갱신으로 들어왔으면 목록을 거치지 않고 지갑 상세로 돌아감
+  void _exitSelecting() {
+    if (widget.startRefresh) {
+      Navigator.pop(context);
+      return;
+    }
+    _stopSelecting();
   }
 
   void _stopSelecting() => setState(() {
@@ -146,19 +162,40 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
   }
 
   Future<void> _confirmRefresh() async {
+    final ids = _selectedIds.toList();
     final scheduled = await refreshVtxosWithConfirmation(
       context,
       walletId: widget.id,
-      ids: _selectedIds.toList(),
+      ids: ids,
       unit: _unit,
-      onRefreshStarted: () {
-        if (mounted) setState(() => _isRefreshing = true);
+      showsToast: false,
+      onConfirmed: (fee) {
+        if (!mounted) return;
+        setState(() {
+          _refreshPhase = VtxoRefreshPhase.requesting;
+          _refreshedCount = ids.length;
+          _refreshFeeText = _unit.displayBitcoinAmount(fee, withUnit: true);
+        });
       },
-      onRefreshFinished: () {
-        if (mounted) setState(() => _isRefreshing = false);
+      onFailed: (_) {
+        if (mounted && _refreshPhase != null) setState(() => _refreshPhase = VtxoRefreshPhase.failed);
       },
     );
-    if (scheduled && mounted) _stopSelecting();
+    if (scheduled && mounted) setState(() => _refreshPhase = VtxoRefreshPhase.requested);
+  }
+
+  void _closeRefreshResult() {
+    if (widget.startRefresh) {
+      Navigator.pop(context);
+      return;
+    }
+    setState(() => _refreshPhase = null);
+    _stopSelecting();
+  }
+
+  void _retryRefresh() {
+    setState(() => _refreshPhase = null);
+    _confirmRefresh();
   }
 
   void _toggleTooltip() {
@@ -229,6 +266,23 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
             .fold<int>(0, (total, vtxo) => total + vtxo.amountSats);
         final isOpen = arkProvider.isOpen(widget.id);
         final isBusy = arkProvider.isOpening(widget.id) || arkProvider.isSyncing(widget.id);
+        if (_refreshPhase case final phase?) {
+          return PopScope(
+            canPop: phase != VtxoRefreshPhase.requesting,
+            child: Scaffold(
+              backgroundColor: context.coconutColors.background,
+              body: SafeArea(
+                child: VtxoRefreshResultView(
+                  phase: phase,
+                  count: _refreshedCount,
+                  feeText: _refreshFeeText,
+                  onDone: _closeRefreshResult,
+                  onRetry: _retryRefresh,
+                ),
+              ),
+            ),
+          );
+        }
         return GestureDetector(
           onTap: () => setState(() => _isTooltipVisible = false),
           child: Stack(
@@ -241,7 +295,7 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
                           context: context,
                           title: t.ark.vtxo.select_title,
                           isCloseButton: true,
-                          onBackPressed: _stopSelecting,
+                          onBackPressed: _exitSelecting,
                         )
                         : null,
                 body: Stack(
@@ -367,7 +421,7 @@ class _VtxoListScreenState extends State<VtxoListScreen> {
                         leftText: t.cancel,
                         rightText:
                             _isRefreshing ? t.ark.vtxo.refreshing : t.ark.vtxo.refresh_n(count: _selectedIds.length),
-                        leftButtonClicked: _isRefreshing ? () {} : _stopSelecting,
+                        leftButtonClicked: _isRefreshing ? () {} : _exitSelecting,
                         rightButtonClicked: _confirmRefresh,
                         isRightButtonActive: !_isRefreshing && _selectedIds.isNotEmpty,
                       ),

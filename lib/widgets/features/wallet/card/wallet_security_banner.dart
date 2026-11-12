@@ -17,12 +17,20 @@ class WalletSecurityBanner extends StatefulWidget {
   final VoidCallback onClosed;
   final ValueChanged<double>? onHeightChanged;
 
+  /// 값이 있으면 [warning] 대신 이 문구로 표시
+  final String? text;
+  final bool danger;
+  final bool closable;
+
   const WalletSecurityBanner({
     super.key,
     required this.warning,
     required this.walletId,
     this.moving = false,
     required this.onTap,
+    this.text,
+    this.danger = false,
+    this.closable = true,
     required this.onClosed,
     this.onHeightChanged,
   });
@@ -33,14 +41,16 @@ class WalletSecurityBanner extends StatefulWidget {
 
 class _WalletSecurityBannerState extends State<WalletSecurityBanner> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  WalletDetailSecurityWarningType? _content;
+  Object? _content;
   int? _walletId;
   double _contentHeight = 40;
 
   void _reportHeight() =>
       widget.onHeightChanged?.call(_contentHeight * Curves.easeInOutCubic.transform(_controller.value));
 
-  bool get _shouldShow => !widget.moving && widget.warning != null;
+  bool get _shouldShow => !widget.moving && (widget.text != null || widget.warning != null);
+
+  Object? get _target => widget.text ?? widget.warning;
 
   @override
   void initState() {
@@ -54,7 +64,7 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
   }
 
   void _show() {
-    _content = widget.warning;
+    _content = _target;
     _walletId = widget.walletId;
     _controller.forward();
   }
@@ -62,7 +72,7 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
   @override
   void didUpdateWidget(covariant WalletSecurityBanner oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_shouldShow || _walletId != widget.walletId || _content != widget.warning) {
+    if (!_shouldShow || _walletId != widget.walletId || _content != _target) {
       if (_controller.isDismissed) {
         if (_shouldShow) _show();
       } else {
@@ -88,12 +98,15 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
       animation: _controller,
       builder: (context, _) {
         final mnemonic = _content == WalletDetailSecurityWarningType.unbackedHotWallet;
+        final content = _content;
+        final background = widget.danger ? colors.danger : colors.appLockWarningBackground;
+        final foreground = widget.danger ? colors.iconOnDanger : colors.appLockWarningForeground;
         return ClipRect(
           child: SizeTransition(
             sizeFactor: _controller.drive(CurveTween(curve: Curves.easeInOutCubic)),
             axisAlignment: -1,
             child: ColoredBox(
-              color: colors.appLockWarningBackground,
+              color: background,
               child: IgnorePointer(
                 ignoring: !_shouldShow || _controller.status == AnimationStatus.reverse,
                 child: SizeReportingWidget(
@@ -103,46 +116,56 @@ class _WalletSecurityBannerState extends State<WalletSecurityBanner> with Single
                   },
                   child: Material(
                     key: const Key('wallet-security-banner'),
-                    color: colors.appLockWarningBackground,
+                    color: background,
                     child: InkWell(
                       onTap: widget.onTap,
                       child: Padding(
                         padding: const EdgeInsets.only(left: 20, right: 4),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SvgPicture.asset(
-                              CommonStateIconPath.triangleWarning,
-                              width: 16,
-                              height: 16,
-                              colorFilter: ColorFilter.mode(colors.appLockWarningForeground, BlendMode.srcIn),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: SvgPicture.asset(
+                                CommonStateIconPath.triangleWarning,
+                                width: 16,
+                                height: 16,
+                                colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.only(top: 12, bottom: 8),
                                 child: Text(
-                                  mnemonic
+                                  content is String
+                                      ? content
+                                      : mnemonic
                                       ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
                                       : t.wallet_home_screen.app_lock_warning.title,
-                                  style: CoconutTypography.body3_12.copyWith(color: colors.appLockWarningForeground),
+                                  style: CoconutTypography.body3_12_Bold.copyWith(color: foreground),
                                 ),
                               ),
                             ),
-                            Theme(
-                              data: Theme.of(context).copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                              child: CoconutIconButton(
-                                key: const Key('wallet-security-banner-close'),
-                                onPressed: widget.onClosed,
-                                constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-                                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                                icon: SvgPicture.asset(
-                                  CommonActionIconPath.close,
-                                  width: 16,
-                                  height: 16,
-                                  colorFilter: ColorFilter.mode(colors.appLockWarningForeground, BlendMode.srcIn),
+                            if (!widget.closable) const SizedBox(width: 16, height: 40),
+                            if (widget.closable)
+                              Theme(
+                                data: Theme.of(
+                                  context,
+                                ).copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                child: CoconutIconButton(
+                                  key: const Key('wallet-security-banner-close'),
+                                  onPressed: widget.onClosed,
+                                  constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                                  icon: SvgPicture.asset(
+                                    CommonActionIconPath.close,
+                                    width: 16,
+                                    height: 16,
+                                    colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

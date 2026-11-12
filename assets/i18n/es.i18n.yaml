@@ -528,10 +528,10 @@ pin_check_screen:
 #lib/screens/home
 wallet_home_screen:
   unbacked_hot_wallet_warning:
-    title: "Tu frase mnemónica no tiene copia de seguridad"
+    title: "Tu frase mnemónica no tiene copia de seguridad."
     description: "Si no la guardas ahora, podrías perder tus bitcoins para siempre"
   app_lock_warning:
-    title: "Configura una contraseña para la aplicación"
+    title: "Configura una contraseña para la aplicación."
     description: "Configura el bloqueo de la aplicación para proteger tu billetera"
   view_all_wallets: "Ver todas mis billeteras"
   wallet_filter:
@@ -2142,6 +2142,11 @@ wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
 
 ark:
+  expiry:
+    notice: "Parte de tu saldo Ark caduca pronto. Renuévalo."
+    urgent: "Parte de tu saldo Ark está a punto de caducar. Renuévalo ahora."
+    expired: "Parte de tu saldo Ark ha caducado. Renuévalo antes de que el servidor lo reclame."
+    locked: "Parte de tu saldo Ark necesita renovarse. Desbloquea Ark primero."
   toast:
     receiving_onchain(wallet, amount): "Recibiendo $amount on-chain en $wallet"
     received_onchain(wallet, amount): "Llegaron $amount on-chain a $wallet"
@@ -2179,14 +2184,24 @@ ark:
     refresh_n(count): "Renovar $count"
     refreshing: "Renovando…"
     refresh_title(count): "¿Renovar $count VTXO?"
-    refresh_description(fee): "Los VTXO seleccionados se renovarán con nuevas fechas de vencimiento. No necesitas mantener la aplicación abierta. Comisión: $fee"
+    refresh_description(fee): "Los VTXO seleccionados se renovarán con nuevas fechas de vencimiento. No necesitas mantener la aplicación abierta.\nComisión: $fee"
     none_due: "No hay VTXO que necesiten renovación ahora."
-    refresh_scheduled: "Renovación solicitada para la próxima ronda"
-    refresh_failed(error): "No se pudo renovar: $error"
+    refresh_scheduled: "Renovación solicitada. Espera unos minutos a que el servidor la procese."
+    already_refreshing: "Ya se solicitó la renovación. Espera a que el servidor la procese."
+    refresh_incomplete(wallet): "La renovación Ark de $wallet no se completó. Renueva de nuevo."
+    refresh_requesting: "Solicitando la renovación"
+    refresh_requested_title: "Renovación solicitada"
+    refresh_requested_description: "El servidor tarda unos minutos en procesarla.\nLa nueva fecha de vencimiento se aplica al terminar."
+    refresh_request_failed_title: "No se pudo solicitar la renovación"
+    refresh_request_failed_description: "Inténtalo de nuevo en un momento."
+    refresh_requested_summary(count, fee): "${count} VTXO · Comisión $fee"
+    refresh_retry: "Reintentar"
+    refresh_failed(error): "No se pudo solicitar la renovación. Inténtalo de nuevo en un momento."
     detail_title: "VTXO"
     expiry: "Vencimiento"
     state: "Estado"
-    state_locked: "En uso por otra operación"
+    state_locked: "Procesando"
+    state_refreshing: "Esperando renovación · Nueva fecha tras el procesamiento del servidor"
     kind: "Tipo"
     exit_depth: "Profundidad de salida"
     vtxo_id: "ID de VTXO"

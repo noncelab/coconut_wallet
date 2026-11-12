@@ -206,6 +206,12 @@ class ArkWalletService {
   Future<List<String>> vtxoIdsToRefresh(String fingerprint) =>
       withWallet(fingerprint, (wallet) async => (await wallet.getVtxosToRefresh()).map((vtxo) => vtxo.id).toList());
 
+  /// 진행 중인 라운드에 입력으로 들어간 VTXO, 갱신을 요청해 서버 처리를 기다리는 VTXO
+  Future<List<String>> pendingRoundVtxoIds(String fingerprint) => withWallet(
+    fingerprint,
+    (wallet) async => (await wallet.pendingRoundInputVtxos()).map((vtxo) => vtxo.id).toList(),
+  );
+
   Future<int?> nextRequiredRefreshHeight(String fingerprint) =>
       withWallet(fingerprint, (wallet) => wallet.getNextRequiredRefreshBlockheight());
 

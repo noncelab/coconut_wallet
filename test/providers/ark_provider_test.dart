@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
+import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/ark/ark_board.dart';
 import 'package:coconut_wallet/model/ark/ark_payment.dart';
@@ -41,6 +42,9 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
 
   @override
   void setOffchainBalanceSource(int Function(int walletId)? offchainBalanceOf) {}
+
+  @override
+  void setOffchainMovementsSource(List<ArkMovement>? Function(int walletId)? offchainMovementsOf) {}
 
   @override
   void notifyOffchainBalanceChanged() {}

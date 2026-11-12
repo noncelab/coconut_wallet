@@ -527,10 +527,10 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   unbacked_hot_wallet_warning:
-    title: "니모닉을 백업해주세요"
+    title: "니모닉을 백업해주세요."
     description: "지금 백업하지 않으면 비트코인을 영원히 잃을 수 있어요"
   app_lock_warning:
-    title: "앱 비밀번호를 설정해 주세요"
+    title: "앱 비밀번호를 설정해 주세요."
     description: "앱 잠금을 설정해 지갑을 안전하게 보호하세요"
   view_all_wallets: "내 지갑 전체보기"
   wallet_filter:
@@ -2148,6 +2148,11 @@ wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
 
 ark:
+  expiry:
+    notice: "곧 만료되는 아크 잔액이 있어요. 갱신해 주세요."
+    urgent: "만료가 임박한 아크 잔액이 있어요. 지금 갱신해 주세요."
+    expired: "만료된 아크 잔액이 있어요. 서버가 회수하기 전에 갱신해 주세요."
+    locked: "갱신이 필요한 아크 잔액이 있어요. 잠금을 해제해 주세요."
   toast:
     receiving_onchain(wallet, amount): "$wallet에 온체인으로 $amount를 받는 중이에요"
     received_onchain(wallet, amount): "$wallet에 온체인으로 $amount가 들어왔어요"
@@ -2185,14 +2190,24 @@ ark:
     refresh_n(count): "$count개 갱신"
     refreshing: "갱신하는 중…"
     refresh_title(count): "VTXO $count개를 갱신할까요?"
-    refresh_description(fee): "선택한 VTXO를 만료일이 새로 설정된 VTXO로 갱신해요. 앱을 계속 켜 둘 필요는 없어요. 수수료: $fee"
+    refresh_description(fee): "선택한 VTXO를 만료일이 새로 설정된 VTXO로 갱신해요. 앱을 계속 켜 둘 필요는 없어요.\n수수료: $fee"
     none_due: "지금 갱신할 VTXO가 없어요."
-    refresh_scheduled: "다음 라운드에 갱신하도록 요청했어요"
-    refresh_failed(error): "갱신하지 못했어요: $error"
+    refresh_scheduled: "갱신을 요청했어요. 서버가 처리할 때까지 몇 분 정도 기다려 주세요."
+    already_refreshing: "이미 갱신을 요청했어요. 서버가 처리할 때까지 기다려 주세요."
+    refresh_incomplete(wallet): "$wallet의 아크 갱신이 완료되지 않았어요. 다시 갱신해 주세요."
+    refresh_requesting: "갱신을 요청하는 중이에요"
+    refresh_requested_title: "갱신을 요청했어요"
+    refresh_requested_description: "서버가 처리할 때까지 몇 분 정도 걸려요.\n처리되면 새 만료일로 바뀌어요."
+    refresh_request_failed_title: "갱신을 요청하지 못했어요"
+    refresh_request_failed_description: "잠시 후 다시 시도해 주세요."
+    refresh_requested_summary(count, fee): "VTXO ${count}개 · 수수료 $fee"
+    refresh_retry: "다시 시도"
+    refresh_failed(error): "갱신을 요청하지 못했어요. 잠시 후 다시 시도해 주세요."
     detail_title: "VTXO"
     expiry: "만료"
     state: "상태"
-    state_locked: "다른 작업에서 사용 중"
+    state_locked: "처리 중이에요"
+    state_refreshing: "갱신 대기 중 · 서버 처리 후 새 만료일로 바뀌어요"
     kind: "종류"
     exit_depth: "출금 단계"
     vtxo_id: "VTXO ID"

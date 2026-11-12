@@ -29,6 +29,9 @@ class RecentTransactionsView extends StatelessWidget {
   final String? emptyMessage;
   final String? highlightedTxHash;
   final Animation<double>? highlightAnimation;
+
+  /// 줄 좌우 여백, 지갑 상세 카드는 다른 섹션과 맞춰 20
+  final double horizontalPadding;
   final void Function(int walletId)? onTransactionTap;
 
   /// 지갑 하나만 보여 주는 곳(지갑 상세)에서 거래 자체를 열 때 쓴다. 있으면 [onTransactionTap]보다 먼저 쓴다.
@@ -46,6 +49,7 @@ class RecentTransactionsView extends StatelessWidget {
     this.emptyMessage,
     this.highlightedTxHash,
     this.highlightAnimation,
+    this.horizontalPadding = 16,
   });
 
   Widget _highlightRow(BuildContext context, HomeRecentTransaction tx, Widget child) {
@@ -94,11 +98,16 @@ class RecentTransactionsView extends StatelessWidget {
             children: [
               for (final (index, tx) in transactions.indexed) ...[
                 if (index > 0)
-                  Container(margin: const EdgeInsets.symmetric(horizontal: 16), height: 1, color: colors.divider),
+                  Container(
+                    margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    height: 1,
+                    color: colors.divider,
+                  ),
                 _highlightRow(
                   context,
                   tx,
                   _TransactionRow(
+                    horizontalPadding: horizontalPadding,
                     key: ValueKey('recent-transactions-row-$index'),
                     tx: tx,
                     amountText: amountText,
@@ -121,7 +130,8 @@ class RecentTransactionsView extends StatelessWidget {
     }
     final shown = transactions.take(rows).toList();
     final emptyRows = rows - shown.length;
-    Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 16), height: 1, color: colors.divider);
+    Widget divider() =>
+        Container(margin: EdgeInsets.symmetric(horizontal: horizontalPadding), height: 1, color: colors.divider);
     return HomeWidgetCard(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: LayoutBuilder(
@@ -136,6 +146,7 @@ class RecentTransactionsView extends StatelessWidget {
                   context,
                   tx,
                   _TransactionRow(
+                    horizontalPadding: horizontalPadding,
                     key: ValueKey('recent-transactions-row-$index'),
                     tx: tx,
                     amountText: amountText,
@@ -174,6 +185,7 @@ class RecentTransactionsView extends StatelessWidget {
 }
 
 class _TransactionRow extends StatelessWidget {
+  final double horizontalPadding;
   final HomeRecentTransaction tx;
   final String Function(int sats) amountText;
   final DateTime now;
@@ -182,6 +194,7 @@ class _TransactionRow extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _TransactionRow({
+    this.horizontalPadding = 16,
     super.key,
     required this.tx,
     required this.amountText,
@@ -252,7 +265,7 @@ class _TransactionRow extends StatelessWidget {
     final row = SizedBox(
       height: height,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: Row(
           children: [
             if (status == TransactionStatus.receiving || status == TransactionStatus.sending)
