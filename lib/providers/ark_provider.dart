@@ -42,6 +42,9 @@ class ArkProvider extends ChangeNotifier {
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
+    _walletProvider.setOffchainMovementsSource(
+      (walletId) => supportsArkById(walletId) ? snapshot(walletId)?.movements ?? const [] : null,
+    );
     cacheRevision.addListener(_walletProvider.notifyOffchainBalanceChanged);
     if (isEnabled) arkWalletsLoaded = _loadArkWallets();
     if (startTimer && isEnabled) _startTimer();
@@ -644,6 +647,7 @@ class ArkProvider extends ChangeNotifier {
     _timer?.cancel();
     _walletProvider.walletItemListNotifier.removeListener(_onWalletListChanged);
     _walletProvider.setOffchainBalanceSource(null);
+    _walletProvider.setOffchainMovementsSource(null);
     cacheRevision.removeListener(_walletProvider.notifyOffchainBalanceChanged);
     cacheRevision.dispose();
     super.dispose();

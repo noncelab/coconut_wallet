@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_wallet/app/router/app_route_names.dart';
-import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
+import 'package:coconut_wallet/screens/ark/ark_movement_detail_screen.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -20,7 +20,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -268,6 +268,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       Provider.of<PriceProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
+      arkProvider: context.readArkProviderOrNull(),
     );
 
     if (Platform.isIOS) {
@@ -464,7 +465,7 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
-  late List<TransactionRecord> _displayedTxList = [];
+  late List<WalletActivity> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
@@ -475,8 +476,8 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<TransactionListViewModel, Tuple2<List<TransactionRecord>, bool>>(
-      selector: (_, viewModel) => Tuple2(viewModel.txList, viewModel.isWalletSyncing),
+    return Selector<TransactionListViewModel, Tuple2<List<WalletActivity>, bool>>(
+      selector: (_, viewModel) => Tuple2(viewModel.activityList, viewModel.isWalletSyncing),
       builder: (_, data, __) {
         final txList = data.item1;
         final isWalletSyncing = data.item2;
@@ -492,34 +493,34 @@ class _TransactionListState extends State<TransactionList> {
   }
 
   // 내부 필드가 변경된 경우 감지(memo, amount, blockHeight 등)
-  bool _deepEquals(List<TransactionRecord> a, List<TransactionRecord> b) {
+  bool _deepEquals(List<WalletActivity> a, List<WalletActivity> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i].contentHashCode != b[i].contentHashCode) {
+      if (a[i].contentHash != b[i].contentHash) {
         return false;
       }
     }
     return true;
   }
 
-  Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
+  Future<void> _handleTransactionListUpdate(List<WalletActivity> txList) async {
     final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
 
     const Duration animationDuration = Duration(milliseconds: 100);
-    final oldTxMap = {for (var tx in _displayedTxList) tx.transactionHash: tx};
-    final newTxMap = {for (var tx in txList) tx.transactionHash: tx};
+    final oldTxMap = {for (var tx in _displayedTxList) tx.key: tx};
+    final newTxMap = {for (var tx in txList) tx.key: tx};
 
     final List<int> insertedIndexes = [];
     final List<int> removedIndexes = [];
 
     for (int i = 0; i < txList.length; i++) {
-      if (!oldTxMap.containsKey(txList[i].transactionHash)) {
+      if (!oldTxMap.containsKey(txList[i].key)) {
         insertedIndexes.add(i);
       }
     }
 
     for (int i = 0; i < _displayedTxList.length; i++) {
-      if (!newTxMap.containsKey(_displayedTxList[i].transactionHash)) {
+      if (!newTxMap.containsKey(_displayedTxList[i].key)) {
         removedIndexes.add(i);
       }
     }
@@ -547,7 +548,7 @@ class _TransactionListState extends State<TransactionList> {
     }
   }
 
-  Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {
+  Widget _buildSliverAnimatedList(List<WalletActivity> txList) {
     return SliverAnimatedList(
       key: _txListKey,
       initialItemCount: txList.length,
@@ -559,7 +560,7 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Widget _buildTransactionItem(TransactionRecord tx, Animation<double> animation, bool isLastItem) {
+  Widget _buildTransactionItem(WalletActivity tx, Animation<double> animation, bool isLastItem) {
     return Column(
       children: [
         SlideTransition(
@@ -567,18 +568,13 @@ class _TransactionListState extends State<TransactionList> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: TransactionItemCard(
-              key: Key(tx.transactionHash),
-              tx: tx,
+              key: Key(tx.key),
+              activity: tx,
+              showsRail: context.readArkProviderOrNull()?.supportsArkById(widget.walldtId) ?? false,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               currentUnit: widget._currentUnit,
               id: widget.walldtId,
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRouteNames.transactionDetail,
-                  arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
-                );
-              },
+              onPressed: () => openWalletActivityDetail(context, widget.walldtId, tx),
             ),
           ),
         ),
@@ -587,7 +583,7 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Widget _buildRemoveTransactionItem(TransactionRecord tx, Animation<double> animation) {
+  Widget _buildRemoveTransactionItem(WalletActivity tx, Animation<double> animation) {
     var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
 
     return FadeTransition(
@@ -597,18 +593,13 @@ class _TransactionListState extends State<TransactionList> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: TransactionItemCard(
-            key: Key(tx.transactionHash),
-            tx: tx,
+            key: Key(tx.key),
+            activity: tx,
+            showsRail: context.readArkProviderOrNull()?.supportsArkById(widget.walldtId) ?? false,
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
             currentUnit: widget._currentUnit,
             id: widget.walldtId,
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRouteNames.transactionDetail,
-                arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
-              );
-            },
+            onPressed: () => openWalletActivityDetail(context, widget.walldtId, tx),
           ),
         ),
       ),

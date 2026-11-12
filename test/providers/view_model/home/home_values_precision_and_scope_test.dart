@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -72,6 +73,14 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
   @override
   int offchainBalance(int walletId) => 0;
+
+  @override
+  bool hasOffchainHistory(int walletId) => false;
+
+  @override
+  List<WalletActivity> getWalletActivities(int walletId) => [
+    for (final tx in getTransactionRecordList(walletId)) OnchainActivity(tx),
+  ];
 
   @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions[walletId] ?? const [];

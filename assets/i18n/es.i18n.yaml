@@ -2142,6 +2142,40 @@ wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
 
 ark:
+  movement:
+    gone: "This movement is no longer in the Ark history."
+    status: "Status"
+    pending: "Pending"
+    successful: "Completed"
+    failed: "Failed"
+    canceled: "Canceled"
+    sent: "Sent"
+    received: "Received"
+    fee: "Ark fee"
+    completed_at: "Completed"
+    sent_to: "Sent to"
+    received_on: "Received on"
+    lightning_invoice: "Lightning invoice"
+    payment_hash: "Payment hash"
+    onchain_tx: "On-chain transaction"
+    view_transaction: "View transaction"
+    technical: "bark details"
+    movement_id: "Movement id"
+    subsystem: "Subsystem"
+    vtxos_spent: "VTXOs spent"
+    vtxos_created: "VTXOs created"
+    vtxos_exited: "VTXOs exited"
+  activity:
+    refresh: "Refresh"
+    moved_to_ark: "Moved off-chain"
+    moved_onchain: "Moved on-chain"
+    exit: "Exit"
+    failed: "Failed"
+    canceled: "Canceled"
+  rail:
+    onchain: "On-chain"
+    ark: "Ark"
+    lightning: "Lightning"
   receive:
     requested_amount(amount): "Importe solicitado: $amount"
     amount_description: "Este importe va en un solo QR, así que se aplica tanto si te pagan a la dirección bitcoin, por Ark o por Lightning"
@@ -2199,6 +2233,7 @@ ark:
     fee_note: "El servidor Ark fija las comisiones y puede cambiarlas. Cuando actúas tú, verás antes el monto exacto; las comisiones de la renovación automática aparecen en tu historial."
     agree: "Aceptar y activar"
   balance:
+    total: "Total"
     onchain: "On-chain"
     ark: "Ark"
   wallet_info:

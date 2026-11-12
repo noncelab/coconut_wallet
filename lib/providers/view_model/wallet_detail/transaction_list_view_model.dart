@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -82,6 +84,9 @@ class TransactionListViewModel extends ChangeNotifier {
     return NetworkStatus.online;
   }
 
+  final ArkProvider? _arkProvider;
+  List<WalletActivity>? _activityList;
+  List<TransactionRecord>? _activityTxSource;
   late int _balance;
   int get balance => _balance;
 
@@ -100,10 +105,12 @@ class TransactionListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._preferenceProvider,
-    this._nodeProvider,
-  ) : _syncWalletStateStream = _nodeProvider.getWalletStateStream(_walletId),
-      _nodeSyncStateStream = _nodeProvider.syncStateStream,
-      _fetchProgressStream = _nodeProvider.getWalletFetchProgressStream(_walletId) {
+    this._nodeProvider, {
+    ArkProvider? arkProvider,
+  }) : _arkProvider = arkProvider,
+       _syncWalletStateStream = _nodeProvider.getWalletStateStream(_walletId),
+       _nodeSyncStateStream = _nodeProvider.syncStateStream,
+       _fetchProgressStream = _nodeProvider.getWalletFetchProgressStream(_walletId) {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -122,6 +129,7 @@ class TransactionListViewModel extends ChangeNotifier {
 
     // WalletProvider 변경 감지 리스너
     _walletProvider.addListener(_onWalletProviderChanged);
+    _arkProvider?.cacheRevision.addListener(_onArkCacheChanged);
 
     // UpbitConnectModel 변경 감지 리스너
     _priceProvider.addListener(_updateBitcoinPrice);
@@ -157,6 +165,20 @@ class TransactionListViewModel extends ChangeNotifier {
   String get receiveAddress => _receiveAddress.address;
 
   List<TransactionRecord> get txList => _txProvider.txList;
+
+  /// The listed history: on-chain transactions merged with the hot wallet's Ark movements. The
+  /// same list instance is returned until either source changes, so the list widget's diff
+  /// doesn't loop.
+  List<WalletActivity> get activityList {
+    final transactions = _txProvider.txList;
+    if (_activityList == null || !identical(_activityTxSource, transactions)) {
+      _activityTxSource = transactions;
+      _activityList = List.unmodifiable(
+        WalletActivity.merge(transactions, _arkProvider?.snapshot(_walletId)?.movements ?? const []),
+      );
+    }
+    return _activityList!;
+  }
 
   int get walletId => _walletId;
   WalletItemBase get walletListBaseItem => _walletListBaseItem;
@@ -208,8 +230,16 @@ class TransactionListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The header shows on-chain plus, for a hot wallet with Ark, the cached Ark balance.
   int _getBalance() {
     return _walletProvider.getDisplayBalance(_walletId);
+  }
+
+  void _onArkCacheChanged() {
+    _activityList = null;
+    _balance = _getBalance();
+    _fiatPriceString = _priceProvider.getFiatPrice(_balance);
+    notifyListeners();
   }
 
   // balance, transaction만 고려
@@ -294,6 +324,7 @@ class TransactionListViewModel extends ChangeNotifier {
     _walletProvider.removeListener(_onWalletProviderChanged);
     _priceProvider.removeListener(_updateBitcoinPrice);
     _txProvider.removeListener(_onTransactionProviderChanged);
+    _arkProvider?.cacheRevision.removeListener(_onArkCacheChanged);
     super.dispose();
   }
 

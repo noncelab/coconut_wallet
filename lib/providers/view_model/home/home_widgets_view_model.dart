@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
@@ -12,8 +13,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show Color;
 import 'package:tuple/tuple.dart';
@@ -205,6 +206,46 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     );
   }
 
+  /// 온체인 거래와 아크 내역의 잔액 변화
+  List<({DateTime time, int amount})> balanceChangesOf(int walletId) {
+    final today = now;
+    return _cached('changes:$walletId:${today.year}-${today.month}-${today.day}', () {
+      if (!_walletProvider.hasOffchainHistory(walletId)) {
+        return [for (final tx in transactionRecordsOf(walletId)) (time: tx.timestamp, amount: tx.amount)];
+      }
+      return [
+        for (final activity in _walletProvider.getWalletActivities(walletId))
+          switch (activity) {
+            OnchainActivity(:final tx) => (time: tx.timestamp, amount: tx.amount),
+            ArkActivity() => (time: activity.time, amount: activity.amount),
+          },
+      ];
+    });
+  }
+
+  /// 아크를 켠 지갑의 온체인·아크 잔액을 따로 거꾸로 계산
+  List<int> dailyRailBalances(int walletId, {required bool ark, required int days, DateTime? asOf}) {
+    final today = (asOf ?? now).toLocal();
+    return _cached('rail:$walletId:$ark:$days:${today.year}-${today.month}-${today.day}', () {
+      final changes =
+          [
+            for (final activity in _walletProvider.getWalletActivities(walletId))
+              switch (activity) {
+                OnchainActivity(:final tx) when !ark => (time: tx.timestamp, amount: tx.amount),
+                ArkActivity(:final linkedTx) when ark => (
+                  time: activity.time,
+                  amount: activity.amount - (linkedTx?.amount ?? 0),
+                ),
+                ArkActivity(:final linkedTx?) when !ark => (time: linkedTx.timestamp, amount: linkedTx.amount),
+                _ => null,
+              },
+          ].nonNulls.toList();
+      final current =
+          ark ? _walletProvider.offchainBalance(walletId) : _walletProvider.getWalletBalance(walletId).total;
+      return HomeWidgetMath.dailyBalancesFromChanges(changes, current, today, days);
+    });
+  }
+
   List<int> dailyBalances({List<int>? walletIds, int days = defaultDays, DateTime? asOf}) {
     final ids = _idsOf(walletIds);
     final today = (asOf ?? now).toLocal();
@@ -218,7 +259,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
         );
       }
       final perWallet = [
-        for (final id in ids) HomeWidgetMath.dailyBalances(transactionRecordsOf(id), balanceOf(id), today, days),
+        for (final id in ids) HomeWidgetMath.dailyBalancesFromChanges(balanceChangesOf(id), balanceOf(id), today, days),
       ];
       return [for (var i = 0; i < days; i++) perWallet.fold(0, (sum, balances) => sum + balances[i])];
     });
@@ -242,15 +283,26 @@ class HomeWidgetsViewModel extends ChangeNotifier {
       }
       final all = [
         for (final id in ids)
-          for (final tx in _walletProvider.getTransactionRecordList(id))
+          for (final activity in _walletProvider.getWalletActivities(id))
             HomeRecentTransaction(
               walletId: id,
               walletName: names[id] ?? '',
-              amount: tx.amount,
-              time: tx.timestamp,
-              type: tx.transactionType,
-              status: TransactionUtil.getStatus(tx),
-              txHash: tx.transactionHash,
+              amount: activity.displayAmount,
+              time: activity.time,
+              type: switch (activity) {
+                OnchainActivity(:final tx) => tx.transactionType,
+                ArkActivity() => activity.amount >= 0 ? TransactionType.received : TransactionType.sent,
+              },
+              status: activity.status,
+              txHash: switch (activity) {
+                OnchainActivity(:final tx) => tx.transactionHash,
+                ArkActivity() => null,
+              },
+              rail: _walletProvider.hasOffchainHistory(id) ? activity.rail : null,
+              arkMovementId: switch (activity) {
+                OnchainActivity() => null,
+                ArkActivity(:final movement) => movement.id,
+              },
             ),
       ];
       bool pending(HomeRecentTransaction tx) =>

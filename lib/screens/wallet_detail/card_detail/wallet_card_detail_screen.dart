@@ -98,6 +98,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   late final AnalyticsService _analyticsService;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _recentTransactionsKey = GlobalKey();
+  final Map<int, int> _balanceRails = {};
   late final AnimationController _recentHighlightController;
   Animation<double>? _arrivalAnimation;
   bool _recentFocusStarted = false;
@@ -531,12 +532,18 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
   Widget _buildBalanceHistory(WalletCardDetailViewModel viewModel, WalletItemBase wallet, VoidCallback onBack) {
     final colors = context.coconutColors;
     final dates = HomeWidgetMath.lastDays(viewModel.widgets.now, HomeWidgetPeriod.week.days);
-    final balances = viewModel.widgets.dailyBalances(
-      walletIds: [wallet.id],
-      days: dates.length,
-      asOf: viewModel.widgets.now,
-    );
-    final target = viewModel.widgets.savingsGoal(walletIds: [wallet.id])?.target;
+    final showsRails = viewModel.showsBalanceBreakdownOf(wallet);
+    final rail = showsRails ? _balanceRails[wallet.id] ?? 0 : 0;
+    final balances =
+        rail == 0
+            ? viewModel.widgets.dailyBalances(walletIds: [wallet.id], days: dates.length, asOf: viewModel.widgets.now)
+            : viewModel.widgets.dailyRailBalances(
+              wallet.id,
+              ark: rail == 2,
+              days: dates.length,
+              asOf: viewModel.widgets.now,
+            );
+    final target = rail == 0 ? viewModel.widgets.savingsGoal(walletIds: [wallet.id])?.target : null;
     final hasTarget = target != null && target > 0;
     final balance = viewModel.balanceOf(wallet);
     final progress = hasTarget ? balance / target * 100 : 0.0;
@@ -550,11 +557,43 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (showsRails) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Row(
+                  children: [
+                    for (final (index, label)
+                        in [t.ark.balance.total, t.ark.balance.onchain, t.ark.balance.ark].indexed)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          key: Key('wallet-detail-chart-rail-$index'),
+                          onTap: () => setState(() => _balanceRails[wallet.id] = index),
+                          child: CoconutChip(
+                            minWidth: 40,
+                            color: index == rail ? colors.surfaceInfoChip : Colors.transparent,
+                            borderColor: index == rail ? colors.surfaceInfoChip : colors.divider,
+                            label: label,
+                            labelSize: 12,
+                            labelColor: index == rail ? colors.primaryText : colors.secondaryText,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              CoconutLayout.spacing_200h,
+            ],
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 16),
                 child: WalletBalanceHistoryChart(
                   key: ValueKey(wallet.id),
+                  dashPattern: switch (rail) {
+                    1 => const [8, 4],
+                    2 => const [3, 3],
+                    _ => null,
+                  },
                   points: [
                     for (var i = 0; i < dates.length; i++)
                       WalletBalanceHistoryPoint(timestamp: dates[i], balance: balances[i]),
@@ -892,7 +931,17 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
 
   void _openTransaction(HomeRecentTransaction tx) {
     final txHash = tx.txHash;
-    if (txHash == null) return;
+    if (txHash == null) {
+      final movementId = tx.arkMovementId;
+      if (movementId == null) return;
+      _logAction(WalletDetailAction.txDetail);
+      Navigator.pushNamed(
+        context,
+        AppRouteNames.arkMovementDetail,
+        arguments: ArkMovementDetailRouteArgs(id: _walletId, movementId: movementId),
+      );
+      return;
+    }
     _logAction(WalletDetailAction.txDetail);
     Navigator.pushNamed(
       context,

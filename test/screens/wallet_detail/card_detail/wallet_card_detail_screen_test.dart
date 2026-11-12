@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/screens/wallet_detail/card_detail/wallet_detail_card_carousel.dart';
 import 'dart:async';
 import 'package:shimmer/shimmer.dart';
@@ -84,6 +85,14 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
   @override
   int offchainBalance(int walletId) => 0;
+
+  @override
+  bool hasOffchainHistory(int walletId) => false;
+
+  @override
+  List<WalletActivity> getWalletActivities(int walletId) => [
+    for (final tx in getTransactionRecordList(walletId)) OnchainActivity(tx),
+  ];
   @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions;
   @override

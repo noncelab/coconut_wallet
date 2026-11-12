@@ -20,6 +20,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -485,7 +486,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                   delay: Duration(milliseconds: entry.$1 * 100),
                   padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
                   child: TransactionItemCard(
-                    tx: entry.$2,
+                    activity: OnchainActivity(entry.$2),
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                     borderRadius: CoconutStyles.radius_200,
                     currentUnit: viewModel.currentUnit,

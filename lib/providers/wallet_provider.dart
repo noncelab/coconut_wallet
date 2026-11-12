@@ -25,6 +25,8 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/model/ark/ark_movement.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/migration/taproot_legacy_inheritance_migration.dart';
@@ -62,6 +64,7 @@ class WalletProvider extends ChangeNotifier {
   late final Future<void> Function(int) _saveWalletCount;
   Future<void> Function(WalletItemBase)? _unsubscribeWallet;
   int Function(int walletId)? _offchainBalanceOf;
+  List<ArkMovement>? Function(int walletId)? _offchainMovementsOf;
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletItemBase>> walletItemListNotifier;
@@ -167,6 +170,17 @@ class WalletProvider extends ChangeNotifier {
 
   /// 아크 캐시 잔액(sats), 아크가 없으면 0
   int offchainBalance(int walletId) => _offchainBalanceOf?.call(walletId) ?? 0;
+
+  /// 아크 캐시 내역을 [getWalletActivities]에 합치는 출처
+  void setOffchainMovementsSource(List<ArkMovement>? Function(int walletId)? offchainMovementsOf) {
+    _offchainMovementsOf = offchainMovementsOf;
+  }
+
+  /// 온체인 거래와 아크 내역을 합친 지갑 내역
+  bool hasOffchainHistory(int walletId) => _offchainMovementsOf?.call(walletId) != null;
+
+  List<WalletActivity> getWalletActivities(int walletId) =>
+      WalletActivity.merge(getTransactionRecordList(walletId), _offchainMovementsOf?.call(walletId) ?? const []);
 
   /// 아크 캐시가 바뀌어 화면 잔액을 다시 그려야 할 때
   void notifyOffchainBalanceChanged() => notifyListeners();

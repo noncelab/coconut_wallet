@@ -6,7 +6,8 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -17,7 +18,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionItemCard extends StatelessWidget {
-  final TransactionRecord tx;
+  final WalletActivity activity;
+
+  /// 아크를 켠 지갑이면 경로 칩 표시
+  final bool showsRail;
   final BitcoinUnit currentUnit;
   final int id;
   final Function onPressed;
@@ -30,7 +34,8 @@ class TransactionItemCard extends StatelessWidget {
 
   TransactionItemCard({
     super.key,
-    required this.tx,
+    required this.activity,
+    this.showsRail = false,
     required this.currentUnit,
     required this.id,
     required this.onPressed,
@@ -39,7 +44,7 @@ class TransactionItemCard extends StatelessWidget {
     this.compact = false,
     this.backgroundColor,
   }) {
-    status = TransactionUtil.getStatus(tx);
+    status = activity.status;
   }
 
   Widget _buildStatus(BuildContext context, {bool boundedLabel = false}) {
@@ -102,7 +107,22 @@ class TransactionItemCard extends StatelessWidget {
     final label = Text(statusString, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [icon, CoconutLayout.spacing_200w, if (boundedLabel) Expanded(child: label) else label],
+      children: [
+        icon,
+        CoconutLayout.spacing_200w,
+        if (boundedLabel) Expanded(child: label) else label,
+        if (showsRail) ...[
+          CoconutLayout.spacing_100w,
+          CoconutChip(
+            minWidth: 32,
+            color: context.coconutColors.surfaceInfoChip,
+            borderColor: context.coconutColors.surfaceInfoChip,
+            label: arkRailText(activity.rail),
+            labelSize: 10,
+            labelColor: context.coconutColors.primaryText,
+          ),
+        ],
+      ],
     );
   }
 
@@ -125,7 +145,7 @@ class TransactionItemCard extends StatelessWidget {
 
   Widget _buildCompact(BuildContext context, List<String> transactionTimeStamp) {
     final colors = context.coconutColors;
-    final amountString = currentUnit.displayBitcoinAmount(tx.amount);
+    final amountString = currentUnit.displayBitcoinAmount(activity.displayAmount);
     final isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
     final amountLabel = '${isReceived ? '+' : ''}$amountString';
     final amountStyle = CoconutTypography.body1_16_Number.setColor(colors.primaryText);
@@ -178,7 +198,7 @@ class TransactionItemCard extends StatelessWidget {
   }
 
   Widget _buildAmount(BuildContext context) {
-    final String amountString = currentUnit.displayBitcoinAmount(tx.amount);
+    final String amountString = currentUnit.displayBitcoinAmount(activity.displayAmount);
     final bool isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
     final String prefix = isReceived ? '+' : '';
 
@@ -218,7 +238,7 @@ class TransactionItemCard extends StatelessWidget {
         ),
         CoconutLayout.spacing_100w,
         Text(
-          TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 20),
+          TextUtils.ellipsisIfLonger(activity.memo!, maxLength: 20),
           style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
         ),
       ],
@@ -227,7 +247,7 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp = DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
+    List<String>? transactionTimeStamp = DateTimeUtil.formatTimestamp(activity.time.toLocal());
     final colors = context.coconutColors;
     return ShrinkAnimationButton(
       onPressed: () {
@@ -254,7 +274,7 @@ class TransactionItemCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
                     ),
-                    if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
+                    if (activity.memo != null && activity.memo!.isNotEmpty) _buildMemo(context),
                   ],
                 ),
       ),

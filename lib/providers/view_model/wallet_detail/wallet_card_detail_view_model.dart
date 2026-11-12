@@ -58,7 +58,11 @@ class WalletCardDetailViewModel extends ChangeNotifier {
          preferenceProvider: preferenceProvider,
          priceProvider: priceProvider,
          targetSatsOf: SharedPrefsRepository().getWalletTargetSats,
-         walletUpdates: Listenable.merge([nodeProvider, nodeProvider.currentBlockNotifier]),
+         walletUpdates: Listenable.merge([
+           nodeProvider,
+           nodeProvider.currentBlockNotifier,
+           if (arkProvider != null) arkProvider.cacheRevision,
+         ]),
          usesFakeBalance: false,
        ) {
     _unit = preferenceProvider.currentUnit;

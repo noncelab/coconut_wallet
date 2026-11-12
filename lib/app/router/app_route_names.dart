@@ -29,6 +29,7 @@ class AppRouteNames {
   static const String signedPsbtScanner = '/signed-psbt-scanner';
   static const String taprootWalletBackupData = '/taproot-wallet-backup-data';
   static const String transactionDetail = '/transaction-detail';
+  static const String arkMovementDetail = '/ark-movement-detail';
   static const String transactionList = '/transaction-list';
   static const String transactionDraft = '/transaction-draft';
   static const String transactionFeeBumping = '/transaction-fee-bumping';

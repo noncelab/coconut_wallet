@@ -2139,6 +2139,40 @@ wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
 
 ark:
+  movement:
+    gone: "This movement is no longer in the Ark history."
+    status: "Status"
+    pending: "Pending"
+    successful: "Completed"
+    failed: "Failed"
+    canceled: "Canceled"
+    sent: "Sent"
+    received: "Received"
+    fee: "Ark fee"
+    completed_at: "Completed"
+    sent_to: "Sent to"
+    received_on: "Received on"
+    lightning_invoice: "Lightning invoice"
+    payment_hash: "Payment hash"
+    onchain_tx: "On-chain transaction"
+    view_transaction: "View transaction"
+    technical: "bark details"
+    movement_id: "Movement id"
+    subsystem: "Subsystem"
+    vtxos_spent: "VTXOs spent"
+    vtxos_created: "VTXOs created"
+    vtxos_exited: "VTXOs exited"
+  activity:
+    refresh: "Refresh"
+    moved_to_ark: "Moved off-chain"
+    moved_onchain: "Moved on-chain"
+    exit: "Exit"
+    failed: "Failed"
+    canceled: "Canceled"
+  rail:
+    onchain: "オンチェーン"
+    ark: "Ark"
+    lightning: "Lightning"
   receive:
     requested_amount(amount): "受け取る金額 $amount"
     amount_description: "この金額は1つのQRに含まれ、ビットコインアドレス・Ark・Lightningのどれで受け取っても同じ金額が適用されます"
@@ -2196,6 +2230,7 @@ ark:
     fee_note: "手数料はArkサーバーが決め、変わることがあります。ご自身で実行するときは正確な金額を先にお知らせし、自動更新の手数料は取引履歴で確認できます。"
     agree: "同意してオンにする"
   balance:
+    total: "合計"
     onchain: "オンチェーン"
     ark: "Ark"
   wallet_info:

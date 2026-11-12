@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutChip, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/utils/legible_color_util.dart';
@@ -207,12 +208,35 @@ class _TransactionRow extends StatelessWidget {
       TransactionStatus.sent || TransactionStatus.self => t.status_sent,
       TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
     };
-    final statusLabel = Text(
+    final plainStatusLabel = Text(
       statusText,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: CoconutTypography.body3_12.copyWith(color: colors.primaryText, height: 1),
     );
+    final rail = tx.rail;
+    final statusLabel =
+        rail == null
+            ? plainStatusLabel
+            : Row(
+              children: [
+                Flexible(child: plainStatusLabel),
+                const SizedBox(width: 4),
+                CoconutChip(
+                  key: ValueKey('recent-transactions-rail-${rail.name}'),
+                  minWidth: 32,
+                  color: colors.surfaceInfoChip,
+                  borderColor: colors.surfaceInfoChip,
+                  label: switch (rail) {
+                    ArkRail.onchain => t.ark.rail.onchain,
+                    ArkRail.ark => t.ark.rail.ark,
+                    ArkRail.lightning => t.ark.rail.lightning,
+                  },
+                  labelSize: 10,
+                  labelColor: colors.primaryText,
+                ),
+              ],
+            );
     final amountLabel = FittedBox(
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerRight,

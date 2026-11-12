@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 
@@ -11,6 +12,10 @@ class HomeRecentTransaction {
   final TransactionStatus? status;
   final String? txHash;
 
+  /// 받은·보낸 경로, 아크를 켠 지갑만 값이 있음
+  final ArkRail? rail;
+  final int? arkMovementId;
+
   const HomeRecentTransaction({
     required this.walletId,
     required this.walletName,
@@ -19,6 +24,8 @@ class HomeRecentTransaction {
     required this.type,
     this.status,
     this.txHash,
+    this.rail,
+    this.arkMovementId,
   });
 }
 

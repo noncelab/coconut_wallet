@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
@@ -99,6 +100,14 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
   @override
   int offchainBalance(int walletId) => 0;
+
+  @override
+  bool hasOffchainHistory(int walletId) => false;
+
+  @override
+  List<WalletActivity> getWalletActivities(int walletId) => [
+    for (final tx in getTransactionRecordList(walletId)) OnchainActivity(tx),
+  ];
 
   @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions;

@@ -325,3 +325,9 @@ class LabelExportRouteArgs {
   final int? id;
   const LabelExportRouteArgs({this.id});
 }
+
+class ArkMovementDetailRouteArgs {
+  final int id;
+  final int movementId;
+  const ArkMovementDetailRouteArgs({required this.id, required this.movementId});
+}

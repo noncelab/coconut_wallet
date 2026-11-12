@@ -39,6 +39,7 @@ import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -123,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       walletUpdates: Listenable.merge([
         context.read<NodeProvider>(),
         context.read<NodeProvider>().currentBlockNotifier,
+        if (context.readArkProviderOrNull() case final ark?) ark.cacheRevision,
       ]),
     );
   }

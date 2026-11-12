@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/constants/wallet_skins.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -74,6 +75,14 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
 
   @override
   int offchainBalance(int walletId) => 0;
+
+  @override
+  bool hasOffchainHistory(int walletId) => false;
+
+  @override
+  List<WalletActivity> getWalletActivities(int walletId) => [
+    for (final tx in getTransactionRecordList(walletId)) OnchainActivity(tx),
+  ];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -54,13 +54,27 @@ class HomeWidgetMath {
   }
 
   /// 각 날의 마지막 잔액
-  static List<int> dailyBalances(List<TransactionRecord> transactions, int currentBalance, DateTime now, int days) {
+  static List<int> dailyBalances(List<TransactionRecord> transactions, int currentBalance, DateTime now, int days) =>
+      dailyBalancesFromChanges(
+        [for (final tx in transactions) (time: tx.timestamp, amount: tx.amount)],
+        currentBalance,
+        now,
+        days,
+      );
+
+  /// 잔액 변화(시각, 금액) 목록으로 날짜별 잔액을 거꾸로 계산
+  static List<int> dailyBalancesFromChanges(
+    List<({DateTime time, int amount})> changes,
+    int currentBalance,
+    DateTime now,
+    int days,
+  ) {
     final daysList = lastDays(now, days);
     if (daysList.isEmpty) return [];
     final ends = [for (final day in daysList) DateTime(day.year, day.month, day.day + 1).microsecondsSinceEpoch];
     final deltas = List<int>.filled(daysList.length + 1, 0);
-    for (final tx in transactions) {
-      final timestamp = tx.timestamp.microsecondsSinceEpoch;
+    for (final change in changes) {
+      final timestamp = change.time.microsecondsSinceEpoch;
       var first = 0;
       var last = ends.length;
       // A transaction is subtracted from every day whose end is <= its timestamp.
@@ -74,8 +88,8 @@ class HomeWidgetMath {
           last = middle;
         }
       }
-      deltas[0] += tx.amount;
-      deltas[first] -= tx.amount;
+      deltas[0] += change.amount;
+      deltas[first] -= change.amount;
     }
     var futureAmount = 0;
     return [for (var i = 0; i < daysList.length; i++) currentBalance - (futureAmount += deltas[i])];

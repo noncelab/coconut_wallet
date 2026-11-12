@@ -44,6 +44,9 @@ class WalletBalanceHistoryChart extends StatefulWidget {
   final BitcoinUnit? axisUnit;
   final bool cardPresentation;
 
+  /// 값이 있으면 선을 이 간격(그리기, 비우기)의 점선으로
+  final List<double>? dashPattern;
+
   const WalletBalanceHistoryChart({
     super.key,
     required this.points,
@@ -51,6 +54,7 @@ class WalletBalanceHistoryChart extends StatefulWidget {
     this.targetSats,
     this.axisUnit,
     this.cardPresentation = false,
+    this.dashPattern,
   });
 
   @override
@@ -100,6 +104,7 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
               progress: Curves.easeOutCubic.transform(_controller.value),
               lineColor: context.coconutColors.homeChartLine,
               targetColor: context.coconutColors.secondaryText,
+              dashPattern: widget.dashPattern,
             ),
             size: Size.infinite,
           ),
@@ -321,6 +326,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
   final double progress;
   final Color lineColor;
   final Color targetColor;
+  final List<double>? dashPattern;
 
   const _WalletBalanceHistoryPainter({
     required this.points,
@@ -328,6 +334,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
     required this.lineColor,
     required this.targetColor,
     this.targetSats,
+    this.dashPattern,
   });
 
   @override
@@ -391,7 +398,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
         ]),
     );
     canvas.drawPath(
-      chartPath,
+      _dashed(chartPath, dashPattern),
       Paint()
         ..color = lineColor
         ..style = PaintingStyle.stroke
@@ -407,7 +414,26 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
     return oldDelegate.progress != progress ||
         oldDelegate.points != points ||
         oldDelegate.targetSats != targetSats ||
+        oldDelegate.dashPattern != dashPattern ||
         oldDelegate.lineColor != lineColor ||
         oldDelegate.targetColor != targetColor;
   }
+}
+
+Path _dashed(Path source, List<double>? pattern) {
+  if (pattern == null || pattern.length < 2) return source;
+  final result = Path();
+  for (final metric in source.computeMetrics()) {
+    var distance = 0.0;
+    var draw = true;
+    var index = 0;
+    while (distance < metric.length) {
+      final length = pattern[index % pattern.length];
+      if (draw) result.addPath(metric.extractPath(distance, distance + length), Offset.zero);
+      distance += length;
+      draw = !draw;
+      index++;
+    }
+  }
+  return result;
 }

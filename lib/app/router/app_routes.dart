@@ -51,6 +51,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_resync/wallet_resync_screen.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/screens/ark/ark_movement_detail_screen.dart';
 import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
@@ -105,6 +106,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         ),
     AppRouteNames.addressSearch:
         (context) => _buildScreenWithArgs<AddressSearchRouteArgs>(context, (args) => AddressSearchScreen(id: args.id)),
+    AppRouteNames.arkMovementDetail:
+        (context) => _buildLoadingScreenWithArgs<ArkMovementDetailRouteArgs>(
+          context,
+          (args) => ArkMovementDetailScreen(id: args.id, movementId: args.movementId),
+        ),
     AppRouteNames.transactionDetail:
         (context) => _buildScreenWithArgs<TransactionDetailRouteArgs>(
           context,
