@@ -22,7 +22,11 @@ typedef _HotWalletSigningArguments =
       String expectedExtendedPublicKey,
       String networkType,
       String unsignedPsbt,
+      _PsbtFinalization? finalization,
     });
+
+/// How a payjoin PSBT is finalized after signing.
+typedef _PsbtFinalization = ({bool allowFinalizedForeignInputs, bool keepDerivations, bool verifyForeignInputs});
 
 typedef _HotWalletPassphraseValidationArguments =
     ({
@@ -40,7 +44,33 @@ class HotWalletSigningService {
 
   final HotWalletSecretRepository _secretRepository;
 
-  Future<String> sign(HotWalletSigningRequest request) async {
+  Future<String> sign(HotWalletSigningRequest request) => _sign(request, null);
+
+  /// Signs the PSBT and finalizes the inputs it signed, for a payjoin.
+  ///
+  /// With [allowFinalizedForeignInputs] the PSBT may carry inputs the other
+  /// party already finalized; they are left as they are. A payjoin sender's
+  /// Original keeps its derivations ([keepDerivations]) because payjoin
+  /// copies them into the receiver's proposal, where the wallet needs them to
+  /// recognise its inputs.
+  ///
+  /// The finalized PSBT is checked by extracting the transaction, which
+  /// verifies every input's signature. A payjoin receiver passes false for
+  /// [verifyForeignInputs]: the sender's inputs it is shown carry the
+  /// Original's signatures, which do not cover the proposal. Our own
+  /// signatures are verified when they are finalized either way.
+  Future<String> signAndFinalize(
+    HotWalletSigningRequest request, {
+    required bool allowFinalizedForeignInputs,
+    required bool keepDerivations,
+    bool verifyForeignInputs = true,
+  }) => _sign(request, (
+    allowFinalizedForeignInputs: allowFinalizedForeignInputs,
+    keepDerivations: keepDerivations,
+    verifyForeignInputs: verifyForeignInputs,
+  ));
+
+  Future<String> _sign(HotWalletSigningRequest request, _PsbtFinalization? finalization) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(request.storageKey);
     Uint8List? mnemonicCopy;
     Uint8List? passphraseCopy;
@@ -62,6 +92,7 @@ class HotWalletSigningService {
         expectedExtendedPublicKey: request.expectedExtendedPublicKey,
         unsignedPsbt: request.unsignedPsbt,
         networkType: NetworkType.currentNetworkType.toString(),
+        finalization: finalization,
       ));
     } finally {
       mnemonicCopy?.fillRange(0, mnemonicCopy.length, 0);
@@ -131,9 +162,19 @@ String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
     if (vault.keyStore.extendedPublicKey.serialize() != arguments.expectedExtendedPublicKey) {
       throw StateError('The signer does not match this wallet');
     }
-    final signedPsbt = vault.addSignatureToPsbt(arguments.unsignedPsbt);
-    Psbt.parse(signedPsbt).getSignedTransaction(addressType);
-    return signedPsbt;
+    final finalization = arguments.finalization;
+    if (finalization == null) {
+      final signedPsbt = vault.addSignatureToPsbt(arguments.unsignedPsbt);
+      Psbt.parse(signedPsbt).getSignedTransaction(addressType);
+      return signedPsbt;
+    }
+    final signedPsbt = vault.addSignatureToPsbt(
+      arguments.unsignedPsbt,
+      allowFinalizedForeignInputs: finalization.allowFinalizedForeignInputs,
+    );
+    final finalized = Psbt.parse(signedPsbt).finalizeInputs(keepDerivations: finalization.keepDerivations);
+    if (finalization.verifyForeignInputs) finalized.getSignedTransaction(addressType);
+    return finalized.serialize();
   } finally {
     vault?.keyStore.wipeSeed();
     arguments.mnemonic.fillRange(0, arguments.mnemonic.length, 0);

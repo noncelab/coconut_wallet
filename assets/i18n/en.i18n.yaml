@@ -2141,3 +2141,21 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
+
+payjoin:
+  contacting_receiver: "Contacting the receiver"
+  waiting_for_receiver: "Waiting for the receiver"
+  waiting_description: "The receiver can add one of their coins to this transaction. Keep this screen open."
+  receiver_added_input: "The receiver added an input"
+  send_without_payjoin: "Send without Payjoin"
+  sent_as_payjoin: "Sent as Payjoin"
+  sent_without_payjoin: "Sent without Payjoin"
+  receive_title: "Payjoin"
+  receive_description: "Add one of your coins to the sender's transaction. This preserves privacy for both of you."
+  receive_waiting: "Waiting for the sender"
+  receive_needs_signature: "Waiting for your signature"
+  receive_proposal_sent: "Your input was added. Waiting for the sender to broadcast."
+  receive_done_payjoin: "Received as Payjoin"
+  receive_done_fallback: "Received without Payjoin"
+  receive_closed: "Payjoin session ended"
+  receive_unavailable: "Couldn't reach the Payjoin directory"

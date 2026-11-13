@@ -137,6 +137,7 @@ class TransactionRecordService {
       selfOutputCount,
       tx.inputs.length,
       tx.outputs.length,
+      netAmount: amount,
     );
 
     return TransactionDetails(
@@ -148,21 +149,19 @@ class TransactionRecordService {
     );
   }
 
-  TransactionType determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
-    if (selfInputCount == 0) {
-      return TransactionType.received;
-    }
-
-    if (selfOutputCount < outputCount) {
-      return TransactionType.sent;
-    }
-
-    if (selfOutputCount == outputCount && selfInputCount == inputCount) {
-      return TransactionType.self;
-    }
-
-    return TransactionType.received;
-  }
+  TransactionType determineTransactionType(
+    int selfInputCount,
+    int selfOutputCount,
+    int inputCount,
+    int outputCount, {
+    int? netAmount,
+  }) => transactionTypeOf(
+    selfInputCount: selfInputCount,
+    selfOutputCount: selfOutputCount,
+    inputCount: inputCount,
+    outputCount: outputCount,
+    netAmount: netAmount,
+  );
 
   /// 트랜잭션 레코드를 조회합니다.
   Future<Result<TransactionRecord>> getTransactionRecord(WalletItemBase walletItem, String txHash) async {
@@ -337,4 +336,31 @@ class TransactionRecordService {
 
     return results;
   }
+}
+
+/// Whether a transaction sent from, received into or stayed within a wallet.
+///
+/// [netAmount] is what the wallet's outputs gain minus what its inputs spend.
+/// A payjoin receiver (BIP 78, BIP 77) adds one of its own inputs to the
+/// sender's transaction, so the transaction spends some of our coins and
+/// pays others; it still received when the wallet ends up with more.
+TransactionType transactionTypeOf({
+  required int selfInputCount,
+  required int selfOutputCount,
+  required int inputCount,
+  required int outputCount,
+  int? netAmount,
+}) {
+  if (selfInputCount == 0) return TransactionType.received;
+  if (selfInputCount < inputCount && netAmount != null && netAmount > 0) return TransactionType.received;
+  if (selfOutputCount < outputCount) return TransactionType.sent;
+  if (selfOutputCount == outputCount && selfInputCount == inputCount) return TransactionType.self;
+  return TransactionType.received;
+}
+
+/// Whether a transaction spends this wallet's inputs together with inputs of
+/// another wallet, as a payjoin does.
+bool spendsCounterpartyInputs(Iterable<String> inputAddresses, {required bool Function(String address) isOurs}) {
+  final owned = inputAddresses.map(isOurs).toList();
+  return owned.contains(true) && owned.contains(false);
 }

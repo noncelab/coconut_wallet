@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -23,6 +24,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_session_manager.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -60,6 +62,7 @@ List<SingleChildWidget> buildAppProviders({
     Provider<WalletPreferencesRepository>(
       create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
     ),
+    Provider<PayjoinSessionRepository>(create: (context) => PayjoinSessionRepository(context.read<RealmManager>())),
     ChangeNotifierProvider(create: (_) => ElectrumServerProvider()),
     ChangeNotifierProvider(create: (_) => BlockExplorerProvider()),
     ChangeNotifierProvider(
@@ -119,6 +122,15 @@ List<SingleChildWidget> buildAppProviders({
           });
           return nodeProvider;
         },
+      ),
+      ChangeNotifierProvider<PayjoinSessionManager>(
+        lazy: false,
+        create:
+            (context) => PayjoinSessionManager(
+              sessions: context.read<PayjoinSessionRepository>(),
+              wallets: context.read<WalletProvider>(),
+              node: context.read<NodeProvider>(),
+            ),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

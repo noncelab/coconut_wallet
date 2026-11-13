@@ -180,7 +180,7 @@ void main() {
       await tester.pumpWidget(host(false));
       final data = tester.getSemantics(find.byType(TextButton)).getSemanticsData();
       expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.isEnabled, isFalse);
+      expect(data.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
       expect(data.hasAction(SemanticsAction.tap), isFalse);
       await tester.tap(find.text('Next'));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);

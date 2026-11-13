@@ -456,7 +456,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Visibility(
-                  visible: _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
+                  visible:
+                      !_viewModel.hasCounterpartyInputs(tx) &&
+                      (_viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2),
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,

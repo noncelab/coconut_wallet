@@ -17,10 +17,12 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_send_attempt.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -96,6 +98,22 @@ class _NodeProvider extends Fake implements NodeProvider {
     await lookingUp?.future;
     return transactionFound ? Result.success('raw') : Result.failure(ErrorCodes.nodeUnknown);
   }
+}
+
+/// Ends with [outcome], or throws when it is null.
+class _Attempt extends Fake implements PayjoinSendAttempt {
+  final PayjoinSendOutcome? outcome;
+
+  _Attempt(this.outcome);
+
+  @override
+  Future<PayjoinSendOutcome> run({
+    required int walletId,
+    required String bip21,
+    required String signedOriginalPsbt,
+    required String originalTxHex,
+    required double feeRateSatPerVb,
+  }) async => outcome ?? (throw StateError('the directory is unreachable'));
 }
 
 class _TransactionProvider extends Fake implements TransactionProvider {
@@ -506,6 +524,83 @@ void main() {
     expect(viewModel.isBroadcastResultUnknown, isTrue);
     expect(viewModel.isBroadcastDispatched, isFalse);
     expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+  });
+
+  group('payjoin send session', () {
+    const sessionId = 'payjoin-send';
+    late PayjoinSessionRepository sessions;
+
+    setUp(() {
+      sessions = PayjoinSessionRepository(manager)..create(id: sessionId, walletId: 1, role: PayjoinRole.send);
+    });
+
+    bool isOpen() => sessions.openSessions(role: PayjoinRole.send).any((session) => session.id == sessionId);
+
+    test('closes with the broadcast txid once the node accepts the transaction', () async {
+      await initialize();
+      viewModel.settlePayjoinSessionOnAccept(sessions, sessionId);
+
+      expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+
+      expect(isOpen(), isFalse);
+      expect(sessions.readValue(sessionId, PayjoinSendValues.broadcastTxid), viewModel.signedTx!.transactionHash);
+    });
+
+    test('stays open when the node rejects the transaction', () async {
+      node.fails = true;
+      await initialize();
+      viewModel.settlePayjoinSessionOnAccept(sessions, sessionId);
+
+      expect((await viewModel.broadcast(inheritedTagIds: const []))!.isFailure, isTrue);
+
+      expect(isOpen(), isTrue);
+      expect(sessions.readValue(sessionId, PayjoinSendValues.broadcastTxid), isNull);
+    });
+
+    test('a receiver that does not join leaves the Original to send, and its acceptance closes the session', () async {
+      await initialize();
+      sendInfo.setPayjoinUri('bitcoin:tb1qreceiver?pj=https://example.com/pj');
+      final original = viewModel.signedTx!.transactionHash;
+
+      final sentAsPayjoin = await viewModel.attemptPayjoin(
+        sessions,
+        _Attempt(const PayjoinSendFallsBack(sessionId, 'the receiver did not answer in time')),
+        signProposal: (_) => throw StateError('there is no proposal to sign'),
+      );
+
+      expect(sentAsPayjoin, isFalse);
+      expect(viewModel.signedTx!.transactionHash, original);
+      expect(isOpen(), isTrue);
+      expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+      expect(isOpen(), isFalse);
+      expect(sessions.readValue(sessionId, PayjoinSendValues.broadcastTxid), original);
+    });
+
+    test('an attempt that fails sends the Original', () async {
+      await initialize();
+      sendInfo.setPayjoinUri('bitcoin:tb1qreceiver?pj=https://example.com/pj');
+      final original = viewModel.signedTx!.transactionHash;
+
+      final sentAsPayjoin = await viewModel.attemptPayjoin(
+        sessions,
+        _Attempt(null),
+        signProposal: (_) => throw StateError('there is no proposal to sign'),
+      );
+
+      expect(sentAsPayjoin, isFalse);
+      expect(viewModel.signedTx!.transactionHash, original);
+    });
+
+    test('closes when an unanswered broadcast turns out to have reached the node', () async {
+      node.broadcastErrors.add(ErrorCodes.nodeIsolateError);
+      node.transactionFound = true;
+      await initialize();
+      viewModel.settlePayjoinSessionOnAccept(sessions, sessionId);
+
+      expect((await viewModel.broadcast(inheritedTagIds: const []))!.isSuccess, isTrue);
+
+      expect(isOpen(), isFalse);
+    });
   });
 
   test('a node rejection is reported as is without checking or resending', () async {

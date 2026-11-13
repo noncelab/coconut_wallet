@@ -2147,3 +2147,21 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
+
+payjoin:
+  contacting_receiver: "받는 사람에게 연결 중"
+  waiting_for_receiver: "받는 사람을 기다리는 중"
+  waiting_description: "받는 사람이 이 거래에 자신의 코인을 하나 더할 수 있어요. 이 화면을 열어 두세요."
+  receiver_added_input: "받는 사람이 입력을 추가했어요"
+  send_without_payjoin: "Payjoin 없이 보내기"
+  sent_as_payjoin: "Payjoin으로 보냈어요"
+  sent_without_payjoin: "Payjoin 없이 보냈어요"
+  receive_title: "Payjoin"
+  receive_description: "보내는 사람의 거래에 내 코인 하나를 더해요. 두 사람 모두의 프라이버시를 지켜요."
+  receive_waiting: "보내는 사람을 기다리는 중"
+  receive_needs_signature: "서명을 기다리는 중"
+  receive_proposal_sent: "내 입력을 추가했어요. 보내는 사람이 전송하기를 기다리는 중이에요."
+  receive_done_payjoin: "Payjoin으로 받았어요"
+  receive_done_fallback: "Payjoin 없이 받았어요"
+  receive_closed: "Payjoin 세션이 끝났어요"
+  receive_unavailable: "Payjoin 디렉터리에 연결하지 못했어요"

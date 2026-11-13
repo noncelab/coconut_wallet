@@ -108,7 +108,7 @@ void main() {
       );
       final data = tester.getSemantics(find.byType(CoconutUnderlinedButton)).getSemanticsData();
       expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.isEnabled, active);
+      expect(data.flagsCollection.isEnabled.toBoolOrNull(), active);
       expect(data.hasAction(SemanticsAction.tap), active);
       await tester.tap(find.text('Action'));
       await tester.pump();
