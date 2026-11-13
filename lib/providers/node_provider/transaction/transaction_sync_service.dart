@@ -435,7 +435,19 @@ class TransactionSyncService {
     required Set<String> confirmedTxHashes,
   }) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+    // 내 RBF 대체 거래로 대체된 거래. 아래 원문 조회를 기다리는 동안 다른 주소 처리가 어떤 거래를 확정으로 저장해도
+    // 대체로 보지 않도록, 미확정 목록과 같은 시점에(첫 await 전에) 구한다
+    final replacedTxs = unconfirmedTxs
+        .map((record) => record.transactionHash)
+        .toSet()
+        .difference(
+          _transactionRepository
+              .getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true)
+              .map((record) => record.transactionHash)
+              .toSet(),
+        );
     final toDeleteTxs = <String>[];
+    final keptUnfetched = <String>{};
 
     for (final localUnconfirmedTxRecord in unconfirmedTxs) {
       if (confirmedTxHashes.contains(localUnconfirmedTxRecord.transactionHash)) continue;
@@ -457,6 +469,7 @@ class TransactionSyncService {
           if (_isSpentByConfirmed(walletId, localUnconfirmedTxRecord.transactionHash, newTxs, confirmedTxHashes)) {
             toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
           } else {
+            keptUnfetched.add(localUnconfirmedTxRecord.transactionHash);
             Logger.error(
               '[$walletId] Transaction ${localUnconfirmedTxRecord.transactionHash} kept: could not fetch ($e)',
             );
@@ -494,6 +507,28 @@ class TransactionSyncService {
           break;
         }
       }
+    }
+
+    // 이번에 지우는 거래와 내 RBF 대체 거래로 대체된 거래는 무효다. 그 출력을 쓰던 내 거래가 원문도 받지 못했으면 함께 지운다
+    // (부모가 무효면 자식도 무효). 후손까지 따라가고, 대체 때 이미 지운 것으로 표시된 출력의 연결도 본다.
+    // 이번 회차에 확정된 거래는 전에 대체됨으로 표시됐어도 유효하다(확정 기록은 이 정리 뒤에 저장된다)
+    final invalidParents = {...toDeleteTxs, ...replacedTxs}.difference(confirmedTxHashes);
+    final orphanedParents = <String>{};
+    for (var found = true; found;) {
+      found = false;
+      for (final utxo in _utxoRepository.getUtxoStateListIncludingDeleted(walletId)) {
+        final child = utxo.spentByTransactionHash;
+        if (keptUnfetched.contains(child) && invalidParents.contains(utxo.transactionHash)) {
+          keptUnfetched.remove(child);
+          toDeleteTxs.add(child!);
+          invalidParents.add(child);
+          orphanedParents.add(utxo.transactionHash);
+          found = true;
+        }
+      }
+    }
+    if (orphanedParents.isNotEmpty) {
+      await _transactionRepository.deleteOrphanedCpfpTransaction(walletId, orphanedParents);
     }
 
     if (toDeleteTxs.isNotEmpty) {

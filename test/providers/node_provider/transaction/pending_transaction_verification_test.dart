@@ -425,11 +425,12 @@ void main() {
     });
 
     group('빨리 받기(CPFP)', () {
+      late Transaction foreignFunding;
       late Transaction incoming;
       late Transaction child;
 
       setUp(() async {
-        final foreignFunding = fundingTransaction([(foreign.getAddress(0), 80000)], 92);
+        foreignFunding = fundingTransaction([(foreign.getAddress(0), 80000)], 92);
         incoming = Transaction.withInputsAndOutputs(
           [TransactionInput.forPayment(foreignFunding.transactionHash, 0)],
           [
@@ -491,6 +492,107 @@ void main() {
         expect(wallet.txs.getTransactionRecord(walletId, child.transactionHash)?.blockHeight, 0);
         expect(wallet.coin(incoming.transactionHash, 0)?.spentByTransactionHash, child.transactionHash);
         expect(wallet.snapshot()['cpfp'], ['${incoming.transactionHash}>${child.transactionHash}']);
+      });
+
+      /// 자식을 넣고 그 출력(받기 주소 1, 48,902 sats)을 받는 중 코인으로 둔다
+      Future<({int index})> syncChild() async {
+        wallet.publish([child]);
+        await wallet.sync([history(incoming, 0), history(child, 0)]);
+        final childOut = wallet.unspent(child, 0, index: 1);
+        await wallet.sync([history(child, 0)], unspentList: childOut, index: 1);
+        expect(wallet.coin(child.transactionHash, childOut.single.txPos)?.amount, 48902);
+        return (index: childOut.single.txPos);
+      }
+
+      // PR #789 마지막 확인(Fable) 1: 정리 단계가 자식 원문을 기다리는 사이 다른 주소 처리가 부모를 확정으로 저장하면,
+      // 확정된 부모를 대체된 거래로 보고 유효한 내 자식을 지웠음
+      for (final childConfirmed in [false, true]) {
+        test('정리 단계가 내 자식 원문을 기다리는 사이 다른 주소 처리가 부모를 확정으로 저장해도'
+            '(자식${childConfirmed ? '도 확정' : '은 미확정'}), 자식 원문 조회가 한 번 실패한 것만으로 자식을 지우지 않는다', () async {
+          await syncChild();
+          final other = _paidToMe(wallet, 2, 96);
+          var fired = false;
+          wallet.server.transactionSource = (txHash) async {
+            // 정리 단계(_cleanupOrphanedUnconfirmedTransactions)가 자식 원문을 요청할 때만 끼어든다
+            if (txHash == child.transactionHash &&
+                !fired &&
+                StackTrace.current.toString().contains('_cleanupOrphanedUnconfirmedTransactions')) {
+              fired = true;
+              await wallet.syncTransactionsOnly([history(incoming, 101), history(child, childConfirmed ? 101 : 0)]);
+              throw StateError('timeout $txHash');
+            }
+            return wallet.server.rawByHash[txHash] ?? (throw StateError('unavailable $txHash'));
+          };
+
+          await wallet.syncTransactionsOnly([history(other, 0)], index: 2);
+
+          expect(fired, isTrue, reason: 'the cleanup step asked for the child');
+          expect(wallet.txs.getTransactionRecord(walletId, incoming.transactionHash)?.blockHeight, 101);
+          expect(
+            wallet.txs.getTransactionRecord(walletId, child.transactionHash)?.blockHeight,
+            childConfirmed ? 101 : 0,
+          );
+        });
+      }
+
+      // PR #789 재리뷰 1: 부모가 바뀌어 무효가 된 내 자식의 출력이 받는 중 코인으로, CPFP 기록과 함께 남았음
+      for (final seenUnconfirmedFirst in [true, false]) {
+        test('보낸 사람이 부모를 RBF로 바꾸면(대체 거래를 ${seenUnconfirmedFirst ? '미확정으로 먼저 봄' : '확정으로 처음 봄'}), '
+            '원문을 못 받는 내 자식과 그 출력·CPFP 기록을 정리한다', () async {
+          final childOut = await syncChild();
+          final replacement = Transaction.withInputsAndOutputs(
+            [TransactionInput.forPayment(foreignFunding.transactionHash, 0)],
+            [
+              TransactionOutput.forPayment(49000, wallet.address(0)),
+              TransactionOutput.forPayment(29900, foreign.getAddress(1)),
+            ],
+            AddressType.p2wpkh,
+          );
+          signP2wpkhInput(replacement, 0, foreignFunding.outputs.single, _receiveKey(foreign, 0));
+          wallet.publish([replacement]);
+          wallet.server.rawByHash
+            ..remove(incoming.transactionHash)
+            ..remove(child.transactionHash);
+          if (seenUnconfirmedFirst) {
+            await wallet.sync([history(replacement, 0)], unspentList: wallet.unspent(replacement, 0));
+          }
+
+          await wallet.syncBatch([
+            (
+              history: [history(replacement, 101)],
+              unspent: wallet.unspent(replacement, 101),
+              index: 0,
+              isChange: false,
+            ),
+            (history: [], unspent: [], index: 1, isChange: false),
+          ]);
+
+          expect(wallet.coin(replacement.transactionHash, 0)?.status, UtxoStatus.unspent);
+          expect(wallet.txs.getTransactionRecord(walletId, child.transactionHash), isNull);
+          expect(wallet.coin(child.transactionHash, childOut.index), isNull);
+          expect(wallet.snapshot()['cpfp'], isEmpty);
+        });
+      }
+
+      test('부모와 자식 원문을 잠깐 못 받아 자식까지 지웠어도, 둘이 확정되면 자식 기록과 출력 코인이 돌아온다', () async {
+        final childOut = await syncChild();
+        final rawParent = wallet.server.rawByHash.remove(incoming.transactionHash)!;
+        final rawChild = wallet.server.rawByHash.remove(child.transactionHash)!;
+        final other = _paidToMe(wallet, 2, 96);
+        await wallet.sync([history(other, 0)], unspentList: wallet.unspent(other, 0, index: 2), index: 2);
+        expect(
+          wallet.txs.getTransactionRecord(walletId, child.transactionHash),
+          isNull,
+          reason: 'removed with the parent',
+        );
+
+        wallet.server.rawByHash[incoming.transactionHash] = rawParent;
+        wallet.server.rawByHash[child.transactionHash] = rawChild;
+        await wallet.sync([history(incoming, 101), history(child, 101)]);
+        await wallet.sync([history(child, 101)], unspentList: wallet.unspent(child, 101, index: 1), index: 1);
+
+        expect(wallet.txs.getTransactionRecord(walletId, child.transactionHash)?.blockHeight, 101);
+        expect(wallet.coin(child.transactionHash, childOut.index)?.status, UtxoStatus.unspent);
       });
     });
 
@@ -848,6 +950,147 @@ void main() {
       expect(wallet.txs.getTransactionRecord(walletId, conflict.transactionHash)?.blockHeight, 101);
       expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash), isNull);
     });
+
+    /// A(내 결제)의 잔돈을 쓰는 내 다음 결제를 만들어 넣고, 그 잔돈 출력(받는 중)을 돌려준다
+    Future<({Transaction tx, int changeIndex})> spendChangeOf(
+      Transaction parent,
+      int parentChange,
+      int childChange,
+    ) async {
+      final parentOut = wallet.unspent(parent, 0, index: parentChange, isChange: true);
+      final child = signer.pay(
+        [wallet.coin(parent.transactionHash, parentOut.single.txPos)!],
+        {shop: 20000},
+        changeIndex: childChange,
+      );
+      wallet.publish([child]);
+      await wallet.sync([history(parent, 0), history(child, 0)], index: parentChange, isChange: true);
+      final childOut = wallet.unspent(child, 0, index: childChange, isChange: true);
+      await wallet.sync([history(child, 0)], unspentList: childOut, index: childChange, isChange: true);
+      expect(wallet.coin(child.transactionHash, childOut.single.txPos)?.status, UtxoStatus.incoming, reason: 'setup');
+      return (tx: child, changeIndex: childOut.single.txPos);
+    }
+
+    Future<void> syncOwnChange() =>
+        wallet.sync([history(own, 0)], unspentList: wallet.unspent(own, 0, isChange: true), isChange: true);
+
+    // PR #789 재리뷰 1·푸시 전 리뷰 2: 무효가 된 A의 잔돈을 쓰던 내 다음 결제 C가 받는 중 출력과 함께 남았음.
+    // A를 대체한 내 거래 B를 미확정으로 먼저 보면, A는 대체됨으로 남고 A의 출력은 이미 지운 것으로 표시된다
+    for (final (pendingFirst, viaBatch) in [(false, false), (true, false), (true, true)]) {
+      test('A의 잔돈을 쓰는 내 다음 결제 C가 있을 때 A의 입력을 쓰는 B가 '
+          '${pendingFirst ? '미확정으로 먼저(${viaBatch ? '전체 동기화' : '주소 이벤트'}) 오면' : '확정으로 처음 오면'}, '
+          '원문을 못 받는 C와 그 출력을 정리한다', () async {
+        await syncOwnChange();
+        final next = await spendChangeOf(own, 0, 1);
+        expect(wallet.coin(next.tx.transactionHash, next.changeIndex)?.amount, 49436);
+        final conflict = signer.pay([coin], {shop: 25000}, feeRate: 5, changeIndex: 2);
+        wallet.publish([conflict]);
+        wallet.server.rawByHash
+          ..remove(own.transactionHash)
+          ..remove(next.tx.transactionHash);
+
+        if (pendingFirst && viaBatch) {
+          await wallet.syncBatch([
+            (history: [history(deposit, 100), history(conflict, 0)], unspent: [], index: 0, isChange: false),
+            (history: [], unspent: [], index: 0, isChange: true),
+            (history: [], unspent: [], index: 1, isChange: true),
+          ]);
+        } else if (pendingFirst) {
+          await wallet.sync([history(deposit, 100), history(conflict, 0)]);
+        }
+        if (pendingFirst) {
+          expect(
+            wallet.txs
+                .getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true)
+                .map((r) => r.transactionHash),
+            [conflict.transactionHash],
+            reason: 'A is kept as replaced, C is gone',
+          );
+          expect(wallet.snapshot()['rbf'], contains('${own.transactionHash}>${conflict.transactionHash}'));
+          expect(wallet.coin(next.tx.transactionHash, next.changeIndex), isNull);
+        }
+        await wallet.syncBatch([
+          (history: [history(deposit, 100), history(conflict, 101)], unspent: [], index: 0, isChange: false),
+          (history: [], unspent: [], index: 0, isChange: true),
+          (history: [], unspent: [], index: 1, isChange: true),
+          (
+            history: [history(conflict, 101)],
+            unspent: wallet.unspent(conflict, 101, index: 2, isChange: true),
+            index: 2,
+            isChange: true,
+          ),
+        ]);
+
+        if (!pendingFirst) {
+          expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash), isNull);
+        }
+        expect(wallet.txs.getTransactionRecord(walletId, next.tx.transactionHash), isNull);
+        expect(wallet.coin(next.tx.transactionHash, next.changeIndex), isNull);
+      });
+    }
+
+    test('A를 대체한 내 거래를 미확정으로 먼저 보면, A 잔돈을 쓰는 C와 C 잔돈을 쓰는 D까지 원문을 못 받으면 함께 정리한다', () async {
+      await syncOwnChange();
+      final next = await spendChangeOf(own, 0, 1);
+      final last = await spendChangeOf(next.tx, 1, 3);
+      final conflict = signer.pay([coin], {shop: 25000}, feeRate: 5, changeIndex: 2);
+      wallet.publish([conflict]);
+      for (final tx in [own, next.tx, last.tx]) {
+        wallet.server.rawByHash.remove(tx.transactionHash);
+      }
+
+      await wallet.sync([history(deposit, 100), history(conflict, 0)]);
+
+      for (final child in [next, last]) {
+        expect(wallet.txs.getTransactionRecord(walletId, child.tx.transactionHash), isNull);
+        expect(wallet.coin(child.tx.transactionHash, child.changeIndex), isNull);
+      }
+      expect(wallet.snapshot()['cpfp'], isEmpty);
+      expect(wallet.snapshot()['rbf'], contains('${own.transactionHash}>${conflict.transactionHash}'));
+    });
+
+    // PR #789 마지막 확인(GPT) 1: 내 대체 거래 B를 본 뒤 B가 아니라 원래 A가 확정되면, A의 확정 기록은 정리 단계 뒤에 저장되므로
+    // 정리 단계는 A를 아직 '대체됨'으로 보고, 그 회차에 원문을 못 받은 A의 후속 결제 C를 지웠음. 다시 켠 경우는 DB를 다시 열고
+    // 처리 기록을 비운 뒤 받기 주소만 동기화한다(처리 기록이 비면 잔돈 주소 동기화가 원문 없는 C를 다시 받으려다 실패한다)
+    for (final restart in [false, true]) {
+      test('내 대체 거래를 본 뒤 원래 A가 확정되면(${restart ? '앱을 다시 켠 뒤' : '같은 세션'}), 그 회차에 원문을 못 받은 A의 후속 결제 C를 지우지 않는다', () async {
+        await syncOwnChange();
+        final next = await spendChangeOf(own, 0, 1);
+        final replacement = signer.pay([coin], {shop: 30000}, feeRate: 10, changeIndex: 2);
+        wallet.publish([replacement]);
+        wallet.server.rawByHash.remove(own.transactionHash);
+        await wallet.sync([history(deposit, 100), history(replacement, 0)]);
+        expect(
+          wallet.txs.getTransactionRecord(walletId, next.tx.transactionHash),
+          isNotNull,
+          reason: 'C kept (raw still served)',
+        );
+        wallet.server.rawByHash.remove(replacement.transactionHash);
+        if (restart) {
+          wallet.realm.reopen();
+          wallet.callbacks = ScriptCallbackService();
+        }
+        wallet.publish([own]);
+        wallet.server.rawByHash.remove(next.tx.transactionHash);
+
+        await wallet.sync([history(deposit, 100), history(own, 101)]);
+        if (!restart) {
+          await wallet.syncBatch([
+            (history: [history(own, 101), history(next.tx, 0)], unspent: [], index: 0, isChange: true),
+            (
+              history: [history(next.tx, 0)],
+              unspent: wallet.unspent(next.tx, 0, index: 1, isChange: true),
+              index: 1,
+              isChange: true,
+            ),
+          ]);
+        }
+
+        expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 101);
+        expect(wallet.txs.getTransactionRecord(walletId, next.tx.transactionHash)?.blockHeight, 0);
+        expect(wallet.coin(next.tx.transactionHash, next.changeIndex)?.status, UtxoStatus.incoming);
+      });
+    }
   });
 
   group('3. 서버 동작: 연결 끊김 (p2wpkh 핫 지갑)', () {

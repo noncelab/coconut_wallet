@@ -385,6 +385,13 @@ class UtxoRepository extends BaseRepository {
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
   }
 
+  /// 지운 것으로 표시된 UTXO까지 포함한 목록. 지운 출력에 남은 쓴 거래 연결을 따라갈 때 쓴다
+  List<UtxoState> getUtxoStateListIncludingDeleted(int walletId) {
+    realm.refresh();
+    final realmUtxos = realm.query<RealmUtxo>(r'walletId == $0', [walletId]);
+    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+  }
+
   // 특정 상태의 UTXO 목록만 조회
   List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
     realm.refresh();

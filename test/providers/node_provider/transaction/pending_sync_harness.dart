@@ -419,6 +419,15 @@ class SyncedWallet {
     await callbacks.registerTransactionDependency(item, status, result.txHashes);
   }
 
+  /// 주소 하나의 거래 동기화만 전체 동기화처럼 돌린다(UTXO 조회 없음). 다른 처리 사이에 끼워 넣는 순서를 만들 때 쓴다
+  Future<void> syncTransactionsOnly(List<GetTxHistoryRes> historyList, {int index = 0, bool isChange = false}) =>
+      _transactionSync().fetchScriptTransaction(
+        item,
+        _serve(historyList, const [], index, isChange),
+        inBatchProcess: true,
+        now: DateTime(2026, 11, 11),
+      );
+
   /// 전체 동기화(ScriptSyncService.syncBatchScriptStatusList)의 거래·UTXO 단계와 같은 순서로 여러 주소를 처리한다:
   /// 모든 주소의 거래 → 모든 주소의 UTXO → 보내는 중 코인 만들기 → 기록 없는 코인 정리. 잔액·구독 단계는 없다
   Future<void> syncBatch(

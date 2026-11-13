@@ -11,7 +11,7 @@ import 'package:realm/realm.dart';
 class TestRealmManager implements RealmManager {
   static int _instanceCounter = 0;
 
-  final Realm _realm;
+  Realm _realm;
 
   // path 없이 Configuration.inMemory()를 쓰면 모든 인스턴스가 이름 없는 같은 in-memory DB를 공유한다.
   // 이 공유 범위는 Dart isolate가 아니라 "실행 중인 프로세스 전체"라서, flutter test가
@@ -29,6 +29,13 @@ class TestRealmManager implements RealmManager {
 
   @override
   Realm get realm => _realm;
+
+  /// 앱을 다시 켠 것처럼 같은 DB를 새 연결로 다시 연다. in-memory DB는 연결이 하나라도 열려 있어야 남으므로 새 연결을 먼저 연다
+  void reopen() {
+    final reopened = Realm(_realm.config);
+    _realm.close();
+    _realm = reopened;
+  }
 
   @override
   Set<int> get migratedWalletIds => const <int>{};
