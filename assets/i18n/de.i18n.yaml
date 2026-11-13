@@ -303,7 +303,7 @@ hodl_insights:
   goal_reminder_amount_disabled_no_goal: "Es gibt keinen Sparplan, daher keine Menge zum Anzeigen. Lege eine Zielmenge fest, um dies zu aktivieren"
   goal_reminder_amount_disabled_reached: "Du hast dein Ziel bereits erreicht, es gibt nichts mehr zu sparen"
   goal_reminder_off_reached: "Erinnerungen sind aus, weil du dein Ziel erreicht hast"
-  goal_reminder_off_deadline: "Erinnerungen sind aus, weil das Zieldatum vorbei ist"
+  goal_reminder_off_deadline: "Erinnerungen sind aus, weil das Zieldatum erreicht ist"
   goal_reminder_off_no_goal: "Erinnerungen sind aus, weil es kein Ziel gibt"
   goal_reminder_until: "Erinnerungen kommen bis zum Tag vor dem Zieldatum (${date})"
   goal_reminder_until_booked: "Erinnerungen sind bis ${booked} geplant. Beim Öffnen der App gehen sie bis ${date} weiter, dem Tag vor dem Zieldatum"

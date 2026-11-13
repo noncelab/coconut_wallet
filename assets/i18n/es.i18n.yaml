@@ -304,7 +304,7 @@ hodl_insights:
   goal_reminder_amount_disabled_no_goal: "No hay plan de ahorro, así que no hay cantidad que mostrar. Define una cantidad objetivo para activarlo"
   goal_reminder_amount_disabled_reached: "Ya alcanzaste tu objetivo, así que no queda nada por ahorrar"
   goal_reminder_off_reached: "Los recordatorios se desactivaron porque alcanzaste tu objetivo"
-  goal_reminder_off_deadline: "Los recordatorios se desactivaron porque pasó la fecha objetivo"
+  goal_reminder_off_deadline: "Los recordatorios se desactivaron porque llegó la fecha objetivo"
   goal_reminder_off_no_goal: "Los recordatorios se desactivaron porque no hay objetivo"
   goal_reminder_until: "Los recordatorios llegan hasta el día antes de la fecha límite (${date})"
   goal_reminder_until_booked: "Los recordatorios están programados hasta el ${booked}. Al abrir la app, siguen hasta el ${date}, el día antes de la fecha límite"

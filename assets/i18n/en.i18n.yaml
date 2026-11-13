@@ -303,7 +303,7 @@ hodl_insights:
   goal_reminder_amount_disabled_no_goal: "There's no saving plan, so no amount to show. Set a goal amount to turn this on"
   goal_reminder_amount_disabled_reached: "You've already reached your goal, so there's nothing left to save"
   goal_reminder_off_reached: "Reminders are off because you reached your goal"
-  goal_reminder_off_deadline: "Reminders are off because the goal date passed"
+  goal_reminder_off_deadline: "Reminders are off because the goal date arrived"
   goal_reminder_off_no_goal: "Reminders are off because there's no goal"
   goal_reminder_until: "Reminders come until the day before the deadline (${date})"
   goal_reminder_until_booked: "Reminders are set until ${booked}. Opening the app keeps them going until ${date}, the day before the deadline"

@@ -302,7 +302,7 @@ hodl_insights:
   goal_reminder_amount_disabled_no_goal: "積立計画がないため数量を表示できません。目標数量を設定するとオンにできます"
   goal_reminder_amount_disabled_reached: "目標をすでに達成したため、積み立てる数量がありません"
   goal_reminder_off_reached: "目標を達成したので通知をオフにしました"
-  goal_reminder_off_deadline: "目標日を過ぎたので通知をオフにしました"
+  goal_reminder_off_deadline: "目標日になったので通知をオフにしました"
   goal_reminder_off_no_goal: "目標がないので通知をオフにしました"
   goal_reminder_until: "通知は期限の前日（${date}）まで届きます"
   goal_reminder_until_booked: "${booked}まで通知を予約しています。アプリを開くと、期限の前日の${date}まで続けて予約します"

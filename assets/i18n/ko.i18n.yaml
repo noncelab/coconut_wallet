@@ -303,7 +303,7 @@ hodl_insights:
   goal_reminder_amount_disabled_no_goal: "모으기 계획이 없어 수량을 보여 줄 수 없어요. 목표 수량을 정하면 켤 수 있어요"
   goal_reminder_amount_disabled_reached: "목표를 이미 채워서 모을 수량이 없어요"
   goal_reminder_off_reached: "목표를 채워서 알림을 껐어요"
-  goal_reminder_off_deadline: "목표 날짜가 지나 알림을 껐어요"
+  goal_reminder_off_deadline: "목표 날짜가 되어 알림을 껐어요"
   goal_reminder_off_no_goal: "목표가 없어 알림을 껐어요"
   goal_reminder_until: "알림은 마감일 전날(${date})까지 와요"
   goal_reminder_until_booked: "${booked}까지 알림을 걸어 두었어요. 앱을 열면 마감일 전날인 ${date}까지 이어서 걸어요"
