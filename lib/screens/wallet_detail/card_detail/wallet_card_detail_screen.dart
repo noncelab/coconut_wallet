@@ -503,7 +503,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       days: dates.length,
       asOf: viewModel.widgets.now,
     );
-    final target = viewModel.widgets.savingsGoal(walletIds: [wallet.id])?.target;
+    final target = viewModel.widgets.targetOf(wallet.id);
     final hasTarget = target != null && target > 0;
     final balance = viewModel.balanceOf(wallet);
     final progress = hasTarget ? balance / target * 100 : 0.0;

@@ -80,6 +80,16 @@ import 'package:tuple/tuple.dart';
 import '../../mock/utxo_mock.dart';
 import '../../mock/wallet_mock.dart';
 
+/// 지갑 잔액을 바꿔 보는 테스트용(확인 전 입금, 같은 계정 잔액 차이 등). 테스트마다 비운다.
+final Map<int, Balance> _testBalances = {};
+
+/// 보내는 중인(확인 전 송금에 쓰인) UTXO. 주지 않으면 없음
+final Map<int, List<UtxoState>> _testOutgoing = {};
+
+/// 확인 전 입출금이 남은 주소가 있는 지갑, 그 값을 읽지 못하는 지갑(F1)
+final Set<int> _testPending = {};
+final Set<int> _testPendingReadFails = {};
+
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   final List<WalletItemBase> wallets;
   final List<TransactionRecord> transactions;
@@ -100,7 +110,7 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   List<WalletItemBase> get walletItemList => wallets;
 
   @override
-  Balance getWalletBalance(int walletId) => Balance(walletId * 10000000, 0);
+  Balance getWalletBalance(int walletId) => _testBalances[walletId] ?? Balance(walletId * 10000000, 0);
 
   @override
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions;
@@ -120,6 +130,16 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   List<UtxoState> getUtxoList(int walletId) => [
     mapRealmToUtxoState(UtxoMock.createMockUtxo(walletId: walletId, address: 'a$walletId', amount: 20000000)),
   ];
+
+  @override
+  List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) =>
+      utxoStatus == UtxoStatus.outgoing ? _testOutgoing[walletId] ?? const [] : const [];
+
+  @override
+  bool hasUnconfirmedAddress(int walletId) {
+    if (_testPendingReadFails.contains(walletId)) throw StateError('address table unavailable');
+    return _testPending.contains(walletId);
+  }
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
@@ -211,10 +231,25 @@ Future<void> _openWidgetsTab(
   Map<int, WalletBackground> walletBackgrounds = const {},
   bool gestureGuideDismissed = true,
   int? Function(int walletId)? targetSatsOf,
+
+  /// 지갑마다 마지막 동기화가 성공으로 끝났는지. 없으면 모두 성공
+  bool Function(int walletId)? isWalletSynced,
+
+  /// 주면 모든 지갑의 잔액(같은 계정 지갑은 동기화가 끝나면 잔액이 같다)
+  int? sameAccountBalance,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  addTearDown(_testBalances.clear);
+  addTearDown(_testOutgoing.clear);
+  addTearDown(_testPending.clear);
+  addTearDown(_testPendingReadFails.clear);
+  if (sameAccountBalance != null) {
+    for (final wallet in walletList ?? const <WalletItemBase>[]) {
+      _testBalances[wallet.id] = Balance(sameAccountBalance, 0);
+    }
+  }
   SharedPreferences.setMockInitialValues({SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: gestureGuideDismissed});
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   final appearanceRepository = WalletAppearanceRepository(prefs);
@@ -273,6 +308,7 @@ Future<void> _openWidgetsTab(
         targetSatsOf: targetSatsOf ?? (id) => id == 1 ? 100000000 : null,
         historicalPriceService: _History(),
         now: clock ?? (dataNow == null ? null : () => dataNow),
+        isWalletSynced: isWalletSynced,
       );
   Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
   if (sourceMarkerColor != null) {

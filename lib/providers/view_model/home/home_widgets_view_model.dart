@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -12,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:flutter/foundation.dart';
@@ -30,6 +33,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final int? Function(int walletId) _targetSatsOf;
   final DateTime Function() _now;
   final Listenable? _walletUpdates;
+  final bool Function(int walletId)? _isWalletSynced;
 
   final Map<FiatCode, List<double>> _dailyCloses = {};
   final Set<FiatCode> _loadingCloses = {};
@@ -60,9 +64,11 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     HistoricalBitcoinPriceService? historicalPriceService,
     DateTime Function()? now,
     Listenable? walletUpdates,
+    bool Function(int walletId)? isWalletSynced,
     this.usesFakeBalance = true,
   }) : _walletProvider = walletProvider,
        _walletUpdates = walletUpdates,
+       _isWalletSynced = isWalletSynced,
        _preferenceProvider = preferenceProvider,
        _priceProvider = priceProvider,
        _targetSatsOf = targetSatsOf,
@@ -133,6 +139,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     historicalPriceService: _historicalPriceService,
     now: _now,
     walletUpdates: _walletUpdates,
+    isWalletSynced: _isWalletSynced,
     usesFakeBalance: false,
   );
 
@@ -393,17 +400,37 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     });
   }
 
-  /// 목표 수량이 있는 지갑들의 잔액 합계 / 목표 합계. 목표가 있는 지갑이 없으면 null.
-  HomeSavingsGoal? savingsGoal({List<int>? walletIds}) {
-    final withTarget = [
-      for (final id in _idsOf(walletIds))
-        if (_targetSatsOf(id) case final target? when target > 0) (id: id, target: target),
-    ];
-    if (withTarget.isEmpty) return null;
-    return HomeSavingsGoal(
-      balance: withTarget.fold(0, (sum, entry) => sum + balanceOf(entry.id)),
-      target: withTarget.fold(0, (sum, entry) => sum + entry.target),
-    );
+  /// 목표 합계(결정 ⑦: 같은 계정은 한 번, 목표가 다르면 큰 목표). 홈 목표 위젯·인사이트·목표 화면·계획이 모두 쓴다.
+  HomeGoalSum savingsGoalSum({List<int>? walletIds}) => HomeGoalSum.of(savingsGoalShares(walletIds: walletIds));
+
+  /// 목표 합계의 잔액 / 목표. 목표가 있는 지갑이 없으면 null.
+  HomeSavingsGoal? savingsGoal({List<int>? walletIds}) => savingsGoalSum(walletIds: walletIds).goal;
+
+  /// 지갑 하나에 정한 목표 수량(0 이하면 없음, [savingsGoal]과 같음). 합계를 거치지 않아 UTXO·주소를 읽지 않는다.
+  /// 지갑 카드 상세처럼 애니메이션 프레임마다 그리는 곳에서 쓴다.
+  int? targetOf(int walletId) {
+    final target = _targetSatsOf(walletId);
+    return target != null && target > 0 ? target : null;
+  }
+
+  /// 확인된 잔액에서 보내는 중(확인 전 송금)인 코인을 뺀 값(B1-a.1). 확인 전 입금은 넣지 않는다.
+  /// 노드 잔액의 확인 전 값은 입금과 송금이 상쇄된 합이라 보내는 중인 UTXO로 뺀다. 그 코인이 확인 전에 받은 것이면
+  /// 더 빼게 되지만 달성을 늦출 뿐이다.
+  int _confirmedUnspentOf(int walletId) {
+    final sending = _walletProvider
+        .getUtxoListByStatus(walletId, UtxoStatus.outgoing)
+        .fold(0, (sum, utxo) => sum + utxo.amount);
+    return math.max(0, _walletProvider.getWalletBalance(walletId).confirmed - sending);
+  }
+
+  /// 주소 가운데 확인 전 입출금이 남은 주소가 있는지. 읽지 못하면 남은 것으로 본다(달성을 성공으로 넘기지 않게, B1-a.1)
+  bool _hasPendingAddress(int walletId) {
+    try {
+      return _walletProvider.hasUnconfirmedAddress(walletId);
+    } catch (error) {
+      Logger.error('Failed to read pending addresses for the savings goal: $error');
+      return true;
+    }
   }
 
   /// 범위 안 지갑마다 잔액과 목표 수량. 지갑 목록 순서이며 목표가 없는 지갑도 포함한다.
@@ -416,7 +443,14 @@ class HomeWidgetsViewModel extends ChangeNotifier {
             walletId: wallet.id,
             name: wallet.name,
             balance: balanceOf(wallet.id),
+            // 달성 판정 잔액(확인된 잔액 − 보내는 중인 코인). 가짜 잔액이면 확인 여부가 없다(전체 잔액과 같게)
+            confirmedUnspent: isFakeBalance ? null : _confirmedUnspentOf(wallet.id),
             target: _targetSatsOf(wallet.id),
+            accountKey: wallet.accountKey,
+            // 같은 계정 지갑의 잔액을 믿을지(B1-a). 노드를 모르면(테스트 등) 성공으로 본다
+            synced: isFakeBalance || (_isWalletSynced?.call(wallet.id) ?? true),
+            // 확인 전 입출금이 남은 주소(B1-a.1). 가짜 잔액이면 보지 않는다
+            pending: !isFakeBalance && _hasPendingAddress(wallet.id),
             colorIndex: wallet.walletImportSource == WalletImportSource.coconutVault ? wallet.colorIndex : null,
           ),
     ];

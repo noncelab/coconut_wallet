@@ -4,6 +4,8 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 
+final Expando<String> _accountKeys = Expando('accountKey');
+
 abstract class WalletItemBase {
   static const String walletTypeField = 'walletType';
 
@@ -35,6 +37,20 @@ abstract class WalletItemBase {
   HotWalletMetadata? get hotWalletMetadata => null;
 
   bool get hasLocalKey => hotWalletMetadata != null;
+
+  /// 같은 계정(같은 지갑)을 가리는 키: 지갑 종류 + 첫 받기 주소. 지갑을 더할 때 같은 지갑을 찾는 기준
+  /// (`WalletProvider._findSameWalletIndex`·`findSameSinglesigWallet`)과 같아서 핫월렛과 그 보기 전용 지갑은 같은 키다.
+  /// 주소를 만드는 비용이 있어 지갑 정보([walletBase])마다 한 번만 만든다.
+  String get accountKey => _accountKeys[walletBase] ??= _accountKeyOf();
+
+  /// 첫 받기 주소를 만들 수 없는 지갑(앱이 만들지 않는 조합)은 다른 지갑과 묶지 않는다(Fable N7).
+  String _accountKeyOf() {
+    try {
+      return '${walletType.name}:${walletBase.getAddress(0)}';
+    } catch (_) {
+      return 'wallet:$id';
+    }
+  }
 
   WalletSigningMethod get signingMethod {
     if (hasLocalKey) return WalletSigningMethod.localSigner;

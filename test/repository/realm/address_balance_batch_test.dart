@@ -202,4 +202,42 @@ void main() {
 
     expectStoredBalances(wallet.id, 5000, 0);
   });
+
+  // 목표 달성 보류(B1-a.1)는 지갑 합계가 아니라 주소별로 저장된 Electrum unconfirmed를 본다
+  test('a pending send and a pending deposit on different addresses still count as pending', () async {
+    // 받는 주소에서 0.3 BTC를 보내는 중(−0.3), 거스름 주소로 0.3 BTC가 들어오는 중(+0.3): 지갑 합계는 0
+    await apply([update(110000000, -30000000), update(0, 30000000, isChange: true)]);
+    expect(wallets.getWalletBalance(wallet.id)!.unconfirmed, 0);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isTrue);
+  });
+
+  test('a send to yourself, a small deposit and a replaced send still waiting all count as pending', () async {
+    // 자기 앞 전송: 1.1 BTC를 다른 내 주소로(수수료 1,000 sats)
+    await apply([update(110000000, -110000000), update(0, 109999000, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isTrue);
+    // 작은 입금 하나(1,000 sats)
+    await apply([update(110000000, 1000), update(0, 0, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isTrue);
+    // RBF로 바뀐 송금이 아직 확인 전: 바뀐 거래로 Electrum unconfirmed가 남는다
+    await apply([update(110000000, -30002000), update(0, 0, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isTrue);
+  });
+
+  test('pending clears once the waiting transaction confirms or drops out of the mempool', () async {
+    await apply([update(110000000, -30000000), update(0, 20000000, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isTrue);
+    // 멤풀에서 빠지면 Electrum unconfirmed가 0으로 돌아온다(거래 기록은 남을 수 있어서 기록이 아니라 이 값을 본다)
+    await apply([update(110000000, 0), update(0, 0, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isFalse);
+    // 확인되면 확인된 잔액으로 옮겨 가고 unconfirmed는 0이다
+    await apply([update(80000000, 0), update(20000000, 0, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isFalse);
+  });
+
+  test('a chain spend of coins received unconfirmed on the same address nets to zero and does not hold', () async {
+    // 확인 전에 받은 0.2 BTC를 같은 주소에서 거스름 없이 다시 보냄: 그 주소의 unconfirmed는 +0.2 − 0.2 = 0.
+    // 확인된 코인은 그대로라 달성 판정이 틀리지 않는다(보내는 중 목록을 빼는 쪽은 더 작게 셀 뿐)
+    await apply([update(110000000, 0), update(0, 0, isChange: true)]);
+    expect(addresses.hasUnconfirmedAddress(wallet.id), isFalse);
+  });
 }

@@ -232,6 +232,10 @@ class NodeProvider extends ChangeNotifier {
       !_hasConnectionError &&
       state.nodeSyncState != NodeSyncState.failed;
 
+  /// 지갑의 마지막 동기화가 성공으로 끝났는지([isWalletSyncSucceeded]). 지갑별 시각은 따로 두지 않는다.
+  bool isWalletSynced(int walletId) =>
+      isWalletSyncSucceeded(state.registeredWallets[walletId], isConnected: isConnected);
+
   NodeProvider(
     this._electrumServer,
     this._networkType,

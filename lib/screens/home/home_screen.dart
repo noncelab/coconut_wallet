@@ -129,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<NodeProvider>(),
         context.read<NodeProvider>().currentBlockNotifier,
       ]),
+      isWalletSynced: context.read<NodeProvider>().isWalletSynced,
     );
   }
 

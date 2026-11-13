@@ -1122,6 +1122,9 @@ class WalletProvider extends ChangeNotifier {
     return _utxoRepository.getUtxoStateList(walletId);
   }
 
+  /// 지갑 주소 가운데 확인 전 입출금이 남은 주소가 있는지(목표 달성 보류, B1-a.1)
+  bool hasUnconfirmedAddress(int walletId) => _addressRepository.hasUnconfirmedAddress(walletId);
+
   List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) {
     return _utxoRepository.getUtxosByStatus(walletId, utxoStatus);
   }

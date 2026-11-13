@@ -288,6 +288,13 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 모든 지갑에서 해당 주소가 존재하는지 확인
+  /// 확인 전 입출금이 남은 주소가 있는지(Electrum이 준 주소별 unconfirmed가 0이 아님). 주소마다 보므로 지갑 합계에서
+  /// 서로 상쇄되는 입출금도 놓치지 않는다. 목표 달성 보류에 쓴다(B1-a.1).
+  bool hasUnconfirmedAddress(int walletId) {
+    realm.refresh();
+    return realm.query<RealmWalletAddress>(r'walletId == $0 AND unconfirmed != 0', [walletId]).isNotEmpty;
+  }
+
   bool containsAddressInAnyWallet(String address) {
     final result = realm.query<RealmWalletAddress>(r'address == $0', [address]);
     return result.isNotEmpty;

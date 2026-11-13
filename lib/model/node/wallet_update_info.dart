@@ -15,6 +15,18 @@ bool calculateWalletSyncing(WalletUpdateInfo? walletUpdateInfo, NodeSyncState no
       walletUpdateInfo.transaction != WalletSyncState.completed;
 }
 
+/// 지갑 하나의 마지막 동기화가 성공으로 끝났는지: 노드에 연결돼 있고([isConnected]는 실패 상태가 아님도 본다),
+/// 대기열이 없고 구독·잔액·거래·UTXO가 모두 완료. 실패하면 잔액 단계가 완료가 아니고 옛 잔액 스냅샷만 남으므로
+/// 스냅샷이 있다고 성공으로 보지 않는다. 목표 합계가 같은 계정 지갑의 잔액을 믿을지 정할 때 쓴다(B1-a).
+bool isWalletSyncSucceeded(WalletUpdateInfo? info, {required bool isConnected}) =>
+    isConnected &&
+    info != null &&
+    !info.isSyncQueued &&
+    info.subscription == WalletSyncState.completed &&
+    info.balance == WalletSyncState.completed &&
+    info.transaction == WalletSyncState.completed &&
+    info.utxo == WalletSyncState.completed;
+
 /// 갱신된 데이터 정보를 담는 클래스
 class WalletUpdateInfo {
   final int walletId;

@@ -82,6 +82,15 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
 
   @override
   List<UtxoState> getUtxoList(int walletId) => utxos[walletId] ?? const [];
+
+  @override
+  bool hasUnconfirmedAddress(int walletId) => false;
+
+  @override
+  List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) => [
+    for (final utxo in utxos[walletId] ?? const <UtxoState>[])
+      if (utxo.status == utxoStatus) utxo,
+  ];
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
