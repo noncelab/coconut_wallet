@@ -39,6 +39,7 @@ import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
+import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -2452,6 +2453,55 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
       expect(tester.getSize(find.byKey(const Key('goal-progress-fill'))).width, fill);
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('the saving plan line under the insights goal card is fresh after returning from the goal screen', (
+      tester,
+    ) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, disableAnimations: true);
+      await tester.pump(const Duration(milliseconds: 300));
+      final line = find.byKey(const Key('hodl-insights-goal-plan'));
+      await tester.ensureVisible(line);
+      // 계획을 아직 정하지 않았으면 이름만 보인다.
+      expect(tester.widget<ValueSelectRow>(line).value, isEmpty);
+      await tester.tap(line);
+      await tester.pumpAndSettle();
+      expect(find.byType(GoalAmountScreen), findsOneWidget);
+      // 목표 화면에서 계획이 정해지고(기본 3개월·매주), 주기를 매일로 바꾼다.
+      await tester.ensureVisible(find.byKey(const ValueKey('goal-plan-cycle-daily')));
+      await tester.tap(find.byKey(const ValueKey('goal-plan-cycle-daily')));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      // 돌아오면 줄이 새 주기와 회당 수량을 보여 준다.
+      expect(tester.widget<ValueSelectRow>(line).value, startsWith('${GoalPlanCycle.daily.label} · '));
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('the saving plan line holds the amount while wallets of one account disagree', (tester) async {
+      // Astra 나: 같은 계정 0.4 / 1.5 BTC, 목표 1 BTC. 목표 화면은 회당 수량을 미룬다. 인사이트 줄도 같아야 한다
+      _testBalances[1] = Balance(40000000, 0);
+      _testBalances[2] = Balance(150000000, 0);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        screen: insights,
+        disableAnimations: true,
+        walletList: [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)],
+        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const Key('hodl-insights-goal-card')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-card')));
+      expect(find.byKey(const Key('goal-plan-on-hold')), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GoalAmountScreen))).pop();
+      await tester.pumpAndSettle();
+      final value = tester.widget<ValueSelectRow>(find.byKey(const Key('hodl-insights-goal-plan'))).value;
+      expect(value, '${GoalPlanCycle.weekly.label} · ${t.hodl_insights.goal_pending}');
+      expect(value, isNot(contains('BTC')));
       await _close(tester);
     });
 

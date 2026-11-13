@@ -14,6 +14,8 @@ import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/goal_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -1150,7 +1152,30 @@ class _GoalCard extends StatelessWidget {
     // 홈 목표 위젯에서 열었으면 이미 그 카드의 Hero 안에 있다. 그 태그로 목표 수량 화면에 이어진다.
     final ancestorHero = context.findAncestorWidgetOfExactType<Hero>();
     final heroTag = ancestorHero?.tag ?? goalAmountHeroTag;
-    return GestureDetector(
+    // 모으기 계획 한 줄: 카드 아래에 따로 둬서 목표 화면으로 넘어가는 카드(Hero)의 모양은 그대로다.
+    // 계획을 정했으면 주기와 이번에 모을 수량, 아니면 이름만. 목표를 다 채웠으면 보이지 않는다.
+    // 목표 화면에서 돌아오면 이 화면이 다시 그려져(경로 변화) 저장된 계획을 다시 읽는다.
+    final remaining = goal.target - goal.balance;
+    String? planValue;
+    if (remaining > 0) {
+      final plan = GoalPlanController();
+      final today = viewModel.data.now;
+      final settled = !plan.needsSettleOn(today);
+      // 같은 계정 잔액을 확인하는 동안은 목표 화면의 계획처럼 회당 수량을 미루고 '확인 대기'(B1-a, Astra 나)
+      final onHold = viewModel.goalSum.hasUnsettledAccounts;
+      final per = settled && !onHold ? plan.perInstallment(remaining, today) : null;
+      // 수량과 단위는 한 덩어리로(줄이 모자라면 '·'에서 넘긴다)
+      planValue =
+          !settled
+              ? ''
+              : onHold
+              ? '${plan.cycle.label} · ${t.hodl_insights.goal_pending}'
+              : per == null
+              ? ''
+              : '${plan.cycle.label} · ${_btcText(viewModel, per).replaceAll(' ', '\u00a0')}';
+      plan.dispose();
+    }
+    final cardWithHero = GestureDetector(
       key: const Key('hodl-insights-goal-card'),
       behavior: HitTestBehavior.opaque,
       onTap: () => GoalAmountScreen.open(context, viewModel, heroTag: heroTag),
@@ -1158,6 +1183,21 @@ class _GoalCard extends StatelessWidget {
           ancestorHero != null
               ? card
               : Hero(tag: goalAmountHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: card),
+    );
+    if (planValue == null) return cardWithHero;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        cardWithHero,
+        const SizedBox(height: 8),
+        ValueSelectRow(
+          key: const Key('hodl-insights-goal-plan'),
+          label: t.hodl_insights.goal_plan_title,
+          value: planValue,
+          backgroundColor: colors.homeSurface,
+          onPressed: () => GoalAmountScreen.open(context, viewModel, heroTag: heroTag),
+        ),
+      ],
     );
   }
 }
