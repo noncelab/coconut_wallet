@@ -194,6 +194,8 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
                     clock: () => viewModel.data.now,
                     amountText: _text,
                     fiatText: _fiat,
+                    awaitingConfirmation: sum.awaitingConfirmation,
+                    amountOnHold: sum.hasUnsettledAccounts,
                   ),
                 ],
               ],

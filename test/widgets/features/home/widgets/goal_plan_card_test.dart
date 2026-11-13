@@ -216,4 +216,105 @@ void main() {
     expect(SharedPrefKeys.keysToReset, containsAll([SharedPrefKeys.kGoalPlanPeriod, SharedPrefKeys.kGoalPlanCycle]));
     expect(SharedPrefKeys.keysToReset, contains(_deadlineKey));
   });
+
+  testWidgets('a deadline that has passed shows a one-line reason until a new period is picked', (tester) async {
+    await _prefs({SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name, _deadlineKey: '2026-11-01'});
+    await _open(tester, _nov12);
+    final notice = find.byKey(const Key('goal-plan-reset'));
+    expect(notice, findsOneWidget);
+    // 보이는 글에는 줄바꿈 막는 문자가 들어가고, 화면 읽기에는 원문이 간다.
+    expect(find.bySemanticsLabel(t.hodl_insights.goal_plan_reset_notice(date: '2026.11.01')), findsOneWidget);
+    // 날짜 시트를 열었다가 고르지 않고 닫으면 그대로 둔다.
+    await _tap(tester, 'goal-plan-period-custom');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(notice, findsOneWidget);
+    await _tap(tester, 'goal-plan-period-${GoalPlanPeriod.sixMonths.name}');
+    expect(notice, findsNothing);
+  });
+
+  testWidgets('a far-future date that cannot be picked is reset without saying it has passed', (tester) async {
+    await _prefs({SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name, _deadlineKey: '2090-01-01'});
+    await _open(tester, _nov12);
+    expect(find.byKey(const Key('goal-plan-reset')), findsNothing);
+  });
+
+  testWidgets('a weekly plan counts from the picked save weekday, today included and the deadline excluded', (
+    tester,
+  ) async {
+    // 2026-11-12는 목요일, 기본 3개월 마감일은 2027-02-12(금)
+    await _prefs({SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.weekly.name});
+    await _open(tester, _nov12);
+    expect(find.text(t.hodl_insights.goal_plan_weekdays[DateTime.thursday - 1]), findsOneWidget);
+    expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanWeekday), '${DateTime.thursday}');
+    expect(_count(tester), contains(t.hodl_insights.goal_plan_count(count: 14)));
+    await _tap(tester, 'goal-plan-weekday');
+    await _tap(tester, 'goal-plan-weekday-${DateTime.friday}');
+    expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanWeekday), '${DateTime.friday}');
+    expect(find.text(t.hodl_insights.goal_plan_weekdays[DateTime.friday - 1]), findsOneWidget);
+    // 금요일은 11-13부터, 마감일(02-12) 당일은 빼서 13번
+    expect(_count(tester), contains(t.hodl_insights.goal_plan_count(count: 13)));
+  });
+
+  testWidgets('the save weekday sheet scrolls with large text on a small screen', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _prefs({SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.weekly.name});
+    await _open(tester, _nov12);
+    await _tap(tester, 'goal-plan-weekday');
+    expect(tester.takeException(), isNull);
+    // 마지막 일요일 줄까지 내려 고를 수 있다
+    await _tap(tester, 'goal-plan-weekday-${DateTime.sunday}');
+    expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanWeekday), '${DateTime.sunday}');
+  });
+
+  testWidgets('a monthly plan keeps the picked save day from 1 to 28', (tester) async {
+    await _prefs({SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.monthly.name});
+    await _open(tester, _nov12);
+    expect(find.text(t.hodl_insights.goal_plan_day_value(day: 12)), findsOneWidget);
+    await _tap(tester, 'goal-plan-day');
+    await tester.drag(find.byKey(const Key('goal-plan-day-picker')), const Offset(0, -40));
+    await tester.pumpAndSettle();
+    await _tap(tester, 'goal-plan-day-done');
+    expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanDay), '13');
+    expect(find.text(t.hodl_insights.goal_plan_day_value(day: 13)), findsOneWidget);
+  });
+
+  testWidgets('a filled goal that is not reached yet says the balance is being checked, whatever the reason', (
+    tester,
+  ) async {
+    await _prefs({});
+    String? notice() {
+      final notice = tester.widget<Text>(
+        find.descendant(of: find.byKey(const Key('goal-plan-pending')), matching: find.byType(Text)).first,
+      );
+      return notice.semanticsLabel;
+    }
+
+    {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: GoalPlanCard(
+                key: UniqueKey(),
+                remainingSats: 0,
+                clock: () => _nov12,
+                amountText: (sats) => '$sats sats',
+                fiatText: (_) => null,
+                awaitingConfirmation: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // 입금인지 송금인지·동기화 중인지 가리지 않는 한 문구(F1)
+      expect(notice(), t.hodl_insights.goal_plan_pending);
+    }
+  });
 }

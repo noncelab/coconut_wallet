@@ -69,6 +69,23 @@ void main() {
       });
     }
 
+    test('the first save weekday is a calendar day, also when summer time ends', () async {
+      // 미국 동부는 2026-11-01에 서머타임이 끝나 이날이 25시간이다. 서울 시간대에서는 하루를 Duration으로 더해도
+      // 통과하므로, 그 회귀는 New York으로 돌려야 잡힌다:
+      //   TZ=America/New_York fvm flutter test test/widgets/features/home/widgets/goal_plan_controller_test.dart
+      await _prefs({
+        SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name,
+        SharedPrefKeys.kGoalPlanDeadline: '2026-11-02',
+        SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.weekly.name,
+        SharedPrefKeys.kGoalPlanWeekday: '${DateTime.monday}',
+      });
+      final plan = GoalPlanController();
+      // 2026-10-31(토)부터 처음 오는 월요일은 11-02이고, 마감일 당일은 세지 않아 0번이다.
+      final today = DateTime(2026, 10, 31);
+      expect(plan.firstSaveDayOn(today), DateTime(2026, 11, 2));
+      expect(plan.occurrencesOn(today), 0);
+    });
+
     test('the last day the date picker allows is kept', () async {
       await _prefs({
         SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name,

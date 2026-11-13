@@ -91,6 +91,18 @@ final Map<int, List<UtxoState>> _testOutgoing = {};
 final Set<int> _testPending = {};
 final Set<int> _testPendingReadFails = {};
 
+UtxoState _outgoingUtxo(int walletId, int amount) => UtxoState(
+  transactionHash: '${walletId % 10}' * 64,
+  index: 0,
+  amount: amount,
+  derivationPath: "m/84'/1'/0'/0/0",
+  blockHeight: 100,
+  to: 'a$walletId',
+  timestamp: DateTime(2026, 11, 1),
+  status: UtxoStatus.outgoing,
+  spentByTransactionHash: 'pending-send-$walletId',
+);
+
 Finder _noticeText(String message) => find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == message);
 
 class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
@@ -2579,6 +2591,32 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('two wallets of one account that disagree show the smaller balance, wait and hold the plan amount', (
+      tester,
+    ) async {
+      // 보낸 뒤 1번은 0.4 BTC(최신), 같은 계정의 2번은 아직 1.5 BTC(옛 잔액). 목표 1 BTC(1번)
+      _testBalances[1] = Balance(40000000, 0);
+      _testBalances[2] = Balance(150000000, 0);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        walletList: [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)],
+        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final goal = _widgetsViewModel!.savingsGoal()!;
+      expect((goal.balance, goal.target), (40000000, 100000000));
+      expect(find.byKey(const Key('goal-amount-unsettled')), findsOneWidget);
+      expect(_noticeText(t.hodl_insights.goal_unsettled_smaller), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-card')));
+      expect(find.byKey(const Key('goal-plan-on-hold')), findsOneWidget);
+      expect(find.byKey(const Key('goal-plan-per')), findsNothing);
+      await _close(tester);
+    });
+
     testWidgets('equal balances still wait while one wallet of the account has not finished syncing', (tester) async {
       await _openWidgetsTab(
         tester,
@@ -2595,6 +2633,80 @@ void main() {
       // 잔액은 같으니 '서로 달라'가 아니라 '확인하는 중'이라고 말한다(Fable C2)
       expect(_noticeText(t.hodl_insights.goal_unsettled_syncing), findsOneWidget);
       expect(_noticeText(t.hodl_insights.goal_unsettled_smaller), findsNothing);
+      await _close(tester);
+    });
+
+    testWidgets('a single wallet still syncing shows its last balance but waits to call the goal reached', (
+      tester,
+    ) async {
+      // 결정 ③: 지갑 하나여도 동기화를 성공으로 마치기 전에는 달성이 아니다(B1-a.2). 마지막 잔액은 그대로 보여 준다
+      _testBalances[1] = Balance(150000000, 0);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 120000000 : null,
+        isWalletSynced: (_) => false,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(_widgetsViewModel!.savingsGoal(walletIds: const [1])!.balance, 150000000);
+      expect(tester.widget<Text>(find.byKey(const Key('goal-remaining-amount'))).data, t.hodl_insights.goal_pending);
+      expect(find.byKey(const Key('goal-amount-unsettled')), findsNothing);
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-card')));
+      expect(_noticeText(t.hodl_insights.goal_plan_pending), findsOneWidget);
+      expect(find.byKey(const Key('goal-plan-reached')), findsNothing);
+      await _close(tester);
+    });
+
+    testWidgets('a deposit and a send both waiting do not reach the goal with the incoming coins', (tester) async {
+      // Astra B1-a.1: 확인 1.1 BTC 가운데 0.3 BTC를 보내는 중, 따로 0.2 BTC가 들어오는 중. 노드 잔액은 확인 1.1 /
+      // 확인 전 −0.1(입금과 송금이 상쇄된 합)이라 전체 1.0 BTC. 확인되고 남는 것은 0.8 BTC라 목표 1 BTC는 아직 아니다
+      _testBalances[1] = Balance(110000000, -10000000);
+      _testOutgoing[1] = [_outgoingUtxo(1, 30000000)];
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final sum = _widgetsViewModel!.savingsGoalSum(walletIds: const [1]);
+      expect(
+        (sum.balance, sum.reachBalance, sum.reached, sum.awaitingConfirmation),
+        (100000000, 80000000, false, true),
+      );
+      expect(tester.widget<Text>(find.byKey(const Key('goal-remaining-amount'))).data, t.hodl_insights.goal_pending);
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-card')));
+      expect(_noticeText(t.hodl_insights.goal_plan_pending), findsOneWidget);
+      expect(find.byKey(const Key('goal-plan-reached')), findsNothing);
+      await _close(tester);
+    });
+
+    testWidgets('a pending address keeps a filled goal waiting when the coins being sent are missing from the list', (
+      tester,
+    ) async {
+      // Astra: 확인 1.1 − 송금 0.3 + 입금 0.2. outgoing 목록을 다시 만들다 난 오류가 삼켜져 목록이 비었다.
+      // 빼기만으로는 1.0 BTC로 달성이 되지만, 주소별 unconfirmed가 남아 확인 대기다(F1)
+      _testBalances[1] = Balance(110000000, -10000000);
+      _testPending.add(1);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final sum = _widgetsViewModel!.savingsGoalSum(walletIds: const [1]);
+      expect((sum.reachBalance, sum.hasPendingActivity, sum.reached), (100000000, true, false));
+      expect(tester.widget<Text>(find.byKey(const Key('goal-remaining-amount'))).data, t.hodl_insights.goal_pending);
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-card')));
+      expect(_noticeText(t.hodl_insights.goal_plan_pending), findsOneWidget);
       await _close(tester);
     });
 
@@ -2635,6 +2747,24 @@ void main() {
         await tester.ensureVisible(row);
         expect(tester.widget<Text>(row).data, t.hodl_insights.goal_pending);
       }
+      await _close(tester);
+    });
+
+    testWidgets('a deposit still waiting for confirmation is not called reached yet', (tester) async {
+      // 1번 지갑 목표 0.1 BTC. 확인 0.09 + 확인 전 0.02 = 0.11 BTC
+      _testBalances[1] = Balance(9000000, 2000000);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 10000000 : null,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(find.byKey(const Key('goal-remaining-amount'))).data, t.hodl_insights.goal_pending);
+      expect(find.byKey(const Key('goal-plan-pending')), findsOneWidget);
+      expect(find.byKey(const Key('goal-plan-reached')), findsNothing);
       await _close(tester);
     });
 

@@ -37,6 +37,12 @@ class SharedPrefKeys {
   /// 모으기 계획의 마감일(yyyy-MM-dd). 기간을 고른 날 정해 계속 쓴다.
   static const String kGoalPlanDeadline = 'GOAL_PLAN_DEADLINE';
 
+  /// 모으기 계획의 모으는 요일(1=월~7=일, 매주). 계획 카드에서 고르고, 알림도 이 날을 따른다.
+  static const String kGoalPlanWeekday = 'GOAL_PLAN_WEEKDAY';
+
+  /// 모으기 계획의 모으는 날짜(1~28일, 매월).
+  static const String kGoalPlanDay = 'GOAL_PLAN_DAY';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -150,6 +156,8 @@ class SharedPrefKeys {
     kGoalPlanPeriod,
     kGoalPlanCycle,
     kGoalPlanDeadline,
+    kGoalPlanWeekday,
+    kGoalPlanDay,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,
