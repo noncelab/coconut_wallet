@@ -3227,6 +3227,43 @@ void main() {
       await _close(tester);
     });
 
+    // 기기 QA 3번: 켜려다 거절 → 꺼진 채로 기기 설정에서 허용하고 앱으로 돌아오면 카드의 '알림이 꺼져 있어요' 안내가 없어진다
+    testWidgets('allowing notifications in the device settings while the reminder is off clears the notice on return', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders(grant: false);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.pumpAndSettle();
+      final popup = find.byKey(const Key('goal-reminder-permission-popup'));
+      await tester.tap(
+        find.descendant(
+          of: popup,
+          matching: find.byWidgetPredicate((w) => w is Text && (w.data == t.cancel || w.semanticsLabel == t.cancel)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-reminder-permission-denied')), findsOneWidget);
+      // 기기 설정에서 허용하고 앱으로 돌아온다
+      reminders.grant = true;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-reminder-permission-denied')), findsNothing);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
+        t.hodl_insights.goal_reminder_off,
+      );
+      await _close(tester);
+    });
+
     testWidgets('without a goal there is no reminder card', (tester) async {
       _useFakeReminders();
       await _openWidgetsTab(

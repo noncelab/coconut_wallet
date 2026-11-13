@@ -233,6 +233,18 @@ void main() {
       expect(scheduler.lastTimes, [DateTime(2026, 11, 19, 21), DateTime(2026, 11, 26, 21)]);
     });
 
+    // 기기 QA 3번: 켜려다 권한을 거절하고, 꺼진 채로 기기 설정에서 허용한 뒤 앱으로 돌아오면 거절 안내가 없어야 한다
+    test('a permission granted in the device settings while the reminder is off clears the denied state', () async {
+      final scheduler = _CountingScheduler()..granted = false;
+      final controller = GoalReminderController(scheduler: scheduler);
+      addTearDown(controller.dispose);
+      expect(await controller.setEnabled(true), isFalse);
+      expect(controller.permissionDenied, isTrue);
+      scheduler.granted = true;
+      await controller.refreshPermission();
+      expect((controller.permissionDenied, controller.settings.enabled), (false, false));
+    });
+
     test('cancels once after being turned off', () async {
       final scheduler = _CountingScheduler();
       final controller = GoalReminderController(scheduler: scheduler);
@@ -787,6 +799,9 @@ class _CountingScheduler implements GoalReminderScheduler {
   /// 지우기가 실패한다
   final bool failCancel;
 
+  /// 알림 권한(기기 설정에서 바꿀 수 있음)
+  bool granted = true;
+
   _CountingScheduler({this.fail = false, this.failCancel = false});
 
   /// 예약마다 [GoalReminderScheduler.schedule]의 keepBooked(참이면 지우지 않고 채우기만)
@@ -825,10 +840,10 @@ class _CountingScheduler implements GoalReminderScheduler {
   }
 
   @override
-  Future<bool?> hasPermission() async => true;
+  Future<bool?> hasPermission() async => granted;
 
   @override
-  Future<bool> requestPermission() async => true;
+  Future<bool> requestPermission() async => granted;
 
   @override
   Future<void> openSettings() async {}

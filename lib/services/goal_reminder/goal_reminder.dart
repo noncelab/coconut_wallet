@@ -670,8 +670,10 @@ class GoalReminderController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  /// 권한을 다시 확인한다(기기 설정에서 바꾸고 돌아올 때). 켜 두었을 때와, 켜려다 거절된 뒤 안내가 보이는 동안만 묻는다.
+  /// 꺼진 채로 기기 설정에서 허용하고 돌아오면 거절 안내를 지운다(기기 QA 3번).
   Future<void> refreshPermission() async {
-    if (!_settings.enabled) return;
+    if (!_settings.enabled && _permission != false) return;
     try {
       final permission = await _scheduler.hasPermission();
       if (permission != _permission) {
