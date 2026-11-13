@@ -233,6 +233,34 @@ void main() {
     expect(notice, findsNothing);
   });
 
+  testWidgets('a deadline that has passed tells the screen once so it can turn the reminder off', (tester) async {
+    await _prefs({
+      SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name,
+      SharedPrefKeys.kGoalPlanDeadline: '2026-11-01',
+    });
+    var resets = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: GoalPlanCard(
+              remainingSats: 50000000,
+              clock: () => _nov12,
+              amountText: (sats) => '$sats sats',
+              fiatText: (_) => null,
+              onDeadlineReset: () => resets++,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(resets, 1);
+    await tester.pump();
+    expect(resets, 1);
+  });
+
   testWidgets('a far-future date that cannot be picked is reset without saying it has passed', (tester) async {
     await _prefs({SharedPrefKeys.kGoalPlanPeriod: GoalPlanPeriod.custom.name, _deadlineKey: '2090-01-01'});
     await _open(tester, _nov12);

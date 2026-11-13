@@ -33,6 +33,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final int? Function(int walletId) _targetSatsOf;
   final DateTime Function() _now;
   final Listenable? _walletUpdates;
+  final DateTime? Function()? _lastSyncedAt;
   final bool Function(int walletId)? _isWalletSynced;
 
   final Map<FiatCode, List<double>> _dailyCloses = {};
@@ -64,10 +65,12 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     HistoricalBitcoinPriceService? historicalPriceService,
     DateTime Function()? now,
     Listenable? walletUpdates,
+    DateTime? Function()? lastSyncedAt,
     bool Function(int walletId)? isWalletSynced,
     this.usesFakeBalance = true,
   }) : _walletProvider = walletProvider,
        _walletUpdates = walletUpdates,
+       _lastSyncedAt = lastSyncedAt,
        _isWalletSynced = isWalletSynced,
        _preferenceProvider = preferenceProvider,
        _priceProvider = priceProvider,
@@ -99,6 +102,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
 
   bool get isWalletDataLoading => _walletProvider.walletLoadState != WalletLoadState.loadCompleted;
 
+  /// 마지막으로 잔액 동기화가 끝난 때(앱을 다시 켜도 남음). 모르면 null. 알림 수량의 기준일로 쓴다.
+  DateTime? get lastSyncedAt => _lastSyncedAt?.call();
+
   /// 시세를 아직 못 받았으면 잠깐 기다리는 중으로 본다.
   /// 오래 오지 않으면(오프라인 등) 기다리지 않고 값 없음으로 보여 준다.
   bool isPriceLoading(FiatCode fiatCode) => priceOf(fiatCode) == null && !_priceWaitExpired;
@@ -128,6 +134,9 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   FiatCode get fiat => _preferenceProvider.selectedFiat;
   bool get isFakeBalance => usesFakeBalance && _preferenceProvider.isFakeBalanceActive;
 
+  /// 잔액 가리기나 가짜 잔액을 켰는지. 가짜 잔액을 쓰지 않는 화면(인사이트)에서도 알 수 있게 설정을 그대로 읽는다.
+  bool get hidesBalance => _preferenceProvider.isBalanceHidden || _preferenceProvider.isFakeBalanceActive;
+
   /// 가짜 잔액은 홈에만 쓴다. 홈 밖(지갑 목록, 상세, 호들 인사이트 등)에서는 이 사본으로 실제 값을 본다.
   final bool usesFakeBalance;
 
@@ -139,6 +148,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     historicalPriceService: _historicalPriceService,
     now: _now,
     walletUpdates: _walletUpdates,
+    lastSyncedAt: _lastSyncedAt,
     isWalletSynced: _isWalletSynced,
     usesFakeBalance: false,
   );

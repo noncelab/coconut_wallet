@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -24,8 +25,10 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder_sync.dart';
 import 'package:coconut_wallet/services/premium/entitlement_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -149,6 +152,32 @@ List<SingleChildWidget> buildAppProviders({
               nodeProvider: context.read<NodeProvider>(),
               entitlement: context.read<EntitlementService>(),
             ),
+      ),
+      // 목표 화면을 열지 않아도 모으기 알림을 목표·잔액·설정에 맞춘다. 목표 화면도 이 알림 컨트롤러를 쓴다.
+      Provider<GoalReminderSync>(
+        lazy: false,
+        create: (context) {
+          final nodeProvider = context.read<NodeProvider>();
+          final safety = context.read<SafetyProvider>();
+          return GoalReminderSync(
+            HomeWidgetsViewModel(
+              walletProvider: context.read<WalletProvider>(),
+              preferenceProvider: context.read<PreferenceProvider>(),
+              priceProvider: context.read<PriceProvider>(),
+              targetSatsOf: SharedPrefsRepository().getWalletTargetSats,
+              walletUpdates: Listenable.merge([
+                nodeProvider,
+                nodeProvider.currentBlockNotifier,
+                safety,
+                SharedPrefsRepository().walletTargetChanges,
+              ]),
+              lastSyncedAt: () => safety.state.lastSuccessfulSyncAt,
+              isWalletSynced: nodeProvider.isWalletSynced,
+              usesFakeBalance: false,
+            ),
+          );
+        },
+        dispose: (_, sync) => sync.dispose(),
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

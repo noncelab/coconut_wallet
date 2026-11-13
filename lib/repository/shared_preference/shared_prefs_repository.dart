@@ -5,6 +5,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsRepository {
@@ -64,6 +65,31 @@ class SharedPrefsRepository {
   List<int>? getHodlInsightsWalletIds({List<int>? fallback}) {
     final selection = _readHodlInsightsWalletSelection();
     return selection.saved ? selection.ids : fallback;
+  }
+
+  /// 목표 화면이 마지막으로 모으기 알림을 맞춘 지갑 범위(카드 9). null은 모든 지갑이거나 아직 없음
+  List<int>? getGoalReminderWalletIds() {
+    final encoded = getStringOrNull(SharedPrefKeys.kGoalReminderWalletIds);
+    if (encoded == null) return null;
+    try {
+      final decoded = jsonDecode(encoded);
+      return decoded is List && decoded.every((id) => id is int) ? decoded.cast<int>() : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// 저장하지 못하면 메모리 캐시를 저장소 값으로 되돌리고 던진다(인사이트 선택 저장과 같음). 그래야 다음에 다시 쓴다.
+  Future<void> setGoalReminderWalletIds(List<int>? walletIds) async {
+    try {
+      if (!await _sharedPrefs.setString(SharedPrefKeys.kGoalReminderWalletIds, jsonEncode(walletIds))) {
+        throw StateError('Failed to save goal reminder wallet scope');
+      }
+    } catch (_) {
+      // setString updates the in-memory cache before the platform confirms persistence.
+      await _sharedPrefs.reload();
+      rethrow;
+    }
   }
 
   Future<void> setHodlInsightsWalletIds(List<int>? walletIds) async {
@@ -198,6 +224,9 @@ class SharedPrefsRepository {
   }
 
   /// 지갑별 목표 수량 (sats)------------------------------------------------------
+  /// 목표를 저장하거나 지울 때마다 1씩 는다. 목표 화면을 열지 않아도 모으기 알림을 맞추려고 듣는다(GoalReminderSync).
+  final ValueNotifier<int> walletTargetChanges = ValueNotifier(0);
+
   int? getWalletTargetSats(int walletId) {
     final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
     if (encodedData == null || encodedData.isEmpty) return null;
@@ -302,6 +331,8 @@ class SharedPrefsRepository {
       // SharedPreferences updates its cache before the platform confirms persistence.
       await _sharedPrefs.reload();
       rethrow;
+    } finally {
+      walletTargetChanges.value++;
     }
   }
 

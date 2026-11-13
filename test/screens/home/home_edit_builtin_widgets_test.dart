@@ -41,6 +41,7 @@ import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_wallet_breakdown.dart';
 import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
 import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder_sync.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_history_period_chips.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
@@ -182,6 +183,9 @@ class _Preferences extends Fake with ChangeNotifier implements PreferenceProvide
   double getFakeBalance(int walletId) => 12345678;
 
   @override
+  bool get isBalanceHidden => SharedPrefsRepository().getBool(SharedPrefKeys.kIsBalanceHidden);
+
+  @override
   UtxoTierTheme get utxoTierTheme => UtxoTierThemes.pastelWallet;
 
   @override
@@ -207,6 +211,9 @@ class _History extends Fake implements HistoricalBitcoinPriceService {
 
 HomeWidgetsViewModel? _widgetsViewModel;
 
+/// [_openWidgetsTab]의 `withReminderSync`로 올린 앱 전체 알림 맞춤(앱과 같이 목표 화면도 이 알림 컨트롤러를 쓴다)
+GoalReminderSync? _reminderSync;
+
 class _RouteObserver extends NavigatorObserver {
   Route<dynamic>? lastPushed;
 
@@ -220,6 +227,8 @@ Future<void> _close(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox());
   _widgetsViewModel?.dispose();
   _widgetsViewModel = null;
+  _reminderSync?.dispose();
+  _reminderSync = null;
 }
 
 Future<void> _openWidgetsTab(
@@ -249,11 +258,20 @@ Future<void> _openWidgetsTab(
   bool gestureGuideDismissed = true,
   int? Function(int walletId)? targetSatsOf,
 
+  /// 앱을 열기 전에 저장돼 있던 값
+  Map<String, Object> initialPrefs = const {},
+
+  /// 마지막으로 잔액 동기화가 끝난 때. 없으면 지금(시계) 막 끝난 것으로 본다. 한 번도 안 했으면 `() => null`
+  DateTime? Function()? lastSyncedAt,
+
   /// 지갑마다 마지막 동기화가 성공으로 끝났는지. 없으면 모두 성공
   bool Function(int walletId)? isWalletSynced,
 
   /// 주면 모든 지갑의 잔액(같은 계정 지갑은 동기화가 끝나면 잔액이 같다)
   int? sameAccountBalance,
+
+  /// 앱처럼 앱 전체 알림 맞춤([GoalReminderSync])을 함께 올린다. 목표 화면은 그 알림 컨트롤러를 쓴다
+  bool withReminderSync = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -267,7 +285,10 @@ Future<void> _openWidgetsTab(
       _testBalances[wallet.id] = Balance(sameAccountBalance, 0);
     }
   }
-  SharedPreferences.setMockInitialValues({SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: gestureGuideDismissed});
+  SharedPreferences.setMockInitialValues({
+    SharedPrefKeys.kBalanceHistoryGestureGuideDismissed: gestureGuideDismissed,
+    ...initialPrefs,
+  });
   final prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
   final appearanceRepository = WalletAppearanceRepository(prefs);
   for (final entry in walletBackgrounds.entries) {
@@ -317,16 +338,27 @@ Future<void> _openWidgetsTab(
     onShortcutTap: (_, __) {},
     widgetDefinitions: widgetDefinitions,
   );
-  final widgetsViewModel =
-      _widgetsViewModel = HomeWidgetsViewModel(
-        walletProvider: _Wallets(wallets, transactions, loadState: loadState),
-        preferenceProvider: _Preferences(isFakeBalanceActive: fake, unit: unit),
-        priceProvider: _Prices(available: pricesAvailable),
-        targetSatsOf: targetSatsOf ?? (id) => id == 1 ? 100000000 : null,
-        historicalPriceService: _History(),
-        now: clock ?? (dataNow == null ? null : () => dataNow),
-        isWalletSynced: isWalletSynced,
-      );
+  // 화면과 앱 전체 알림 맞춤은 같은 가짜 지갑·설정을 본다. 앱처럼 알림 맞춤은 자기 데이터 뷰모델을 갖고, 끝낼 때 그것을 정리한다
+  HomeWidgetsViewModel widgetData() => HomeWidgetsViewModel(
+    walletProvider: _Wallets(wallets, transactions, loadState: loadState),
+    preferenceProvider: _Preferences(isFakeBalanceActive: fake, unit: unit),
+    priceProvider: _Prices(available: pricesAvailable),
+    targetSatsOf: targetSatsOf ?? (id) => id == 1 ? 100000000 : null,
+    historicalPriceService: _History(),
+    now: clock ?? (dataNow == null ? null : () => dataNow),
+    lastSyncedAt: lastSyncedAt ?? (() => clock?.call() ?? dataNow ?? DateTime.now()),
+    isWalletSynced: isWalletSynced,
+  );
+  final widgetsViewModel = _widgetsViewModel = widgetData();
+  final reminderSync = _reminderSync = withReminderSync ? GoalReminderSync(widgetData(), delay: Duration.zero) : null;
+  // 보통은 _close가 정리한다. 그 전에 끝난 테스트만 여기서 한 번 정리한다
+  if (reminderSync != null) {
+    addTearDown(() {
+      if (!identical(_reminderSync, reminderSync)) return;
+      reminderSync.dispose();
+      _reminderSync = null;
+    });
+  }
   Widget home = screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets);
   if (sourceMarkerColor != null) {
     home = Stack(
@@ -348,6 +380,7 @@ Future<void> _openWidgetsTab(
         ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences(isFakeBalanceActive: fake)),
         ChangeNotifierProvider.value(value: homeViewModel),
         ChangeNotifierProvider.value(value: widgetsViewModel),
+        if (reminderSync != null) Provider<GoalReminderSync>.value(value: reminderSync),
       ],
       child:
           cupertinoShell
@@ -3027,75 +3060,122 @@ void main() {
       });
     }
 
-    testWidgets('turning on the saving reminder asks for permission and schedules it with the plan frequency', (
+    testWidgets(
+      'a daily plan longer than the reminders booked at once says how far they go and that the app continues them',
+      (tester) async {
+        // ④ "그 사실을 밝힘": 매일 · 3개월(마감일 2027-02-12)은 한 번에 30개로 다 걸 수 없다
+        final reminders = _useFakeReminders();
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          disableAnimations: true,
+          dataNow: DateTime(2026, 11, 12, 10),
+          initialPrefs: {SharedPrefKeys.kGoalPlanCycle: 'daily'},
+          screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.ensureVisible(find.byKey(const Key('goal-reminder-card')));
+        await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
+        await tester.pumpAndSettle();
+        expect(reminders.lastTimes.length, GoalReminderSchedule.maxScheduled);
+        expect(reminders.lastTimes.last, DateTime(2026, 12, 11, 21));
+        expect(
+          tester.widget<Text>(find.byKey(const Key('goal-reminder-until'))).semanticsLabel,
+          t.hodl_insights.goal_reminder_until_booked(booked: '2026.12.11', date: '2027.02.11'),
+        );
+        await _close(tester);
+      },
+    );
+
+    testWidgets('turning on the saving reminder asks for permission and schedules it on the plan save days', (
       tester,
     ) async {
       final reminders = _useFakeReminders();
+      // 2026-11-12는 목요일
       await _openWidgetsTab(
         tester,
         fake: false,
         disableAnimations: true,
+        dataNow: DateTime(2026, 11, 12, 10),
         screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
       );
       await tester.pump(const Duration(milliseconds: 300));
       final card = find.byKey(const Key('goal-reminder-card'));
       await tester.ensureVisible(card);
-      expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
-        t.hodl_insights.goal_reminder_off,
-      );
+      String summary() => tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel!;
+      expect(summary(), t.hodl_insights.goal_reminder_off);
 
       await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
+      // 요일은 계획의 모으는 날(처음에는 계획 카드를 연 날의 요일)이고, 알림 카드에서는 고르지 않는다.
+      final weekdays = t.hodl_insights.goal_reminder_weekdays;
       expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
-        t.hodl_insights.goal_reminder_summary_weekly(weekday: t.hodl_insights.goal_reminder_weekdays[0], time: '21:00'),
+        summary(),
+        t.hodl_insights.goal_reminder_summary_weekly(weekday: weekdays[DateTime.thursday - 1], time: '21:00'),
       );
       expect(reminders.scheduled.last.$1.enabled, isTrue);
+      expect(reminders.scheduled.last.$1.weekday, DateTime.thursday);
       expect(reminders.scheduled.last.$2, GoalPlanCycle.weekly);
-      expect(reminders.scheduled.last.$3.title, t.hodl_insights.goal_reminder_notification_title);
-      // 계획이 있으면 주기는 계획을 따른다는 안내만 보이고 여기서 고르지 않는다.
-      expect(find.byKey(const Key('goal-reminder-cycle')), findsOneWidget);
-      expect(find.byKey(const Key('goal-reminder-cycle-options')), findsNothing);
-      // 금액은 기본으로 숨긴다.
+      expect(reminders.scheduled.last.$3.title, t.hodl_insights.goal_reminder_title);
+      for (final key in [
+        'goal-reminder-weekday',
+        'goal-reminder-day',
+        'goal-reminder-cycle',
+        'goal-reminder-cycle-options',
+      ]) {
+        expect(find.byKey(Key(key)), findsNothing);
+      }
+      // 마감일(3개월 뒤 2027-02-12) 전날까지 온다고 밝힌다.
+      expect(
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-until'))).semanticsLabel,
+        t.hodl_insights.goal_reminder_until(date: '2027.02.11'),
+      );
+      // 금액은 기본으로 넣지 않는다.
       expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
 
-      // 요일은 값 줄을 눌러 여는 시트에서 고른다.
-      await tester.ensureVisible(find.byKey(const Key('goal-reminder-weekday')));
-      await tester.tap(find.byKey(const Key('goal-reminder-weekday')));
+      // 계획 카드에서 모으는 요일을 바꾸면 알림도 그 요일로 다시 예약한다.
+      await tester.ensureVisible(find.byKey(const Key('goal-plan-weekday')));
+      await tester.tap(find.byKey(const Key('goal-plan-weekday')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('goal-reminder-weekday-5')));
+      await tester.tap(find.byKey(const ValueKey('goal-plan-weekday-5')));
       await tester.pumpAndSettle();
       expect(reminders.scheduled.last.$1.weekday, DateTime.friday);
+      expect(
+        summary(),
+        t.hodl_insights.goal_reminder_summary_weekly(weekday: weekdays[DateTime.friday - 1], time: '21:00'),
+      );
 
       await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-switch')));
       expect(find.byKey(const Key('goal-reminder-amount-disabled-reason')), findsNothing);
       await tester.tap(find.byKey(const Key('goal-reminder-amount-toggle')));
       await tester.pumpAndSettle();
-      expect(reminders.scheduled.last.$3.body, contains('BTC'));
+      // 수량은 마지막으로 확인한 날 기준 계획 수량이다.
+      expect(reminders.scheduled.last.$3.body, allOf(contains('BTC'), contains('2026.11.12')));
       expect(
         tester.widget<Text>(find.byKey(const Key('goal-reminder-preview-body'))).semanticsLabel,
         reminders.scheduled.last.$3.body,
       );
 
-      // 모으기 계획 주기를 매월로 바꾸면 알림도 매월로 다시 예약한다.
+      // 모으기 계획 주기를 매월로 바꾸면 알림도 계획의 날짜로 매월 다시 예약한다.
       await tester.ensureVisible(find.byKey(const ValueKey('goal-plan-cycle-monthly')));
       await tester.tap(find.byKey(const ValueKey('goal-plan-cycle-monthly')));
       await tester.pumpAndSettle();
       expect(reminders.scheduled.last.$2, GoalPlanCycle.monthly);
-      expect(find.byKey(const Key('goal-reminder-day')), findsOneWidget);
+      expect(reminders.scheduled.last.$1.dayOfMonth, 12);
+      expect(summary(), t.hodl_insights.goal_reminder_summary_monthly(day: 12, time: '21:00'));
 
       final saved = GoalReminderSettings.fromJsonString(
         SharedPrefsRepository().getString(SharedPrefKeys.kGoalReminder),
       );
       expect(saved.enabled, isTrue);
-      expect(saved.weekday, DateTime.friday);
       expect(saved.showAmount, isTrue);
 
       await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
       await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
       expect(reminders.cancels, greaterThan(0));
+      // 사용자가 끈 알림에는 이유를 붙이지 않는다.
+      expect(find.byKey(const Key('goal-reminder-off-reason')), findsNothing);
       await _close(tester);
     });
 
@@ -3147,7 +3227,7 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('without a saving plan the amount option is off and says why', (tester) async {
+    testWidgets('without a goal there is no reminder card', (tester) async {
       _useFakeReminders();
       await _openWidgetsTab(
         tester,
@@ -3156,24 +3236,53 @@ void main() {
         screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [2])),
       );
       await tester.pump(const Duration(milliseconds: 300));
+      // 알림은 계획의 모으는 날을 따르므로, 계획이 없으면 알림 카드도 없다.
       expect(find.byKey(const Key('goal-plan-card')), findsNothing);
-      await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
-      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
-      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('goal-reminder-card')), findsNothing);
+      await _close(tester);
+    });
 
-      // 모으기 계획이 없으니 '계획을 따라요' 안내 대신 여기서 주기를 고른다.
-      expect(find.byKey(const Key('goal-reminder-cycle')), findsNothing);
-      expect(find.byKey(const Key('goal-reminder-cycle-options')), findsOneWidget);
-      await tester.ensureVisible(find.byKey(const ValueKey('goal-reminder-cycle-monthly')));
-      await tester.tap(find.byKey(const ValueKey('goal-reminder-cycle-monthly')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('goal-reminder-day')), findsOneWidget);
-      expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCycle), GoalPlanCycle.monthly.name);
+    // Fable N7: 알림을 눌러 앱을 열면 지갑을 다 불러오기 전에 목표 화면이 뜰 수 있다. 그동안은 걸어 둔 예약을 바꾸지
+    // 않는다(목표가 없어 보여 수량 없는 예약으로 바꾸지 않게, 6-2 A·앱 전체 맞춤과 같음)
+    testWidgets('the goal screen leaves the booked reminders alone while wallets load', (tester) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        loadState: WalletLoadState.loadingFromDB,
+        initialPrefs: {
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(reminders.scheduled, isEmpty);
+      expect(reminders.cancels, 0);
+      await _close(tester);
+    });
 
+    testWidgets('while the balance is hidden the amount stays out of reminders and the card says why', (tester) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        initialPrefs: {
+          SharedPrefKeys.kIsBalanceHidden: true,
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-option')));
       // 보이는 글에는 줄바꿈 막는 문자가 들어가므로 화면 읽기용 원문으로 찾는다.
       final reason = find.byWidgetPredicate(
-        (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_no_goal,
+        (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_hidden,
       );
       expect(reason, findsOneWidget);
       // 안내 아이콘은 문구 첫 줄의 세로 가운데에 있다.
@@ -3184,9 +3293,303 @@ void main() {
       );
       expect(iconBox.top, closeTo(reasonText.top, 0.5));
       expect(icon.center.dy, closeTo(iconBox.center.dy, 0.5));
-      // 수량 표시 줄은 비활성으로 읽히고 눌러도 바뀌지 않는다.
+      // 수량 넣기 줄은 비활성으로 읽히고, 켜 두었어도 잠금 화면 알림에 수량이 없다.
       expect(
         tester.getSemantics(find.byKey(const Key('goal-reminder-amount-toggle'))),
+        containsSemantics(hasEnabledState: true, isEnabled: false, hasTapAction: false),
+      );
+      expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
+      await _close(tester);
+    });
+
+    testWidgets('a deposit still waiting for confirmation keeps the reminder on without the amount', (tester) async {
+      final reminders = _useFakeReminders();
+      // 1번 지갑 목표 0.1 BTC. 확인 0.09 + 확인 전 0.02 = 0.11 BTC
+      _testBalances[1] = Balance(9000000, 2000000);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 10000000 : null,
+        initialPrefs: {
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      // 계획 카드는 '이미 채웠어요' 대신 확인 대기, 알림은 켜진 채 수량 없이
+      expect(find.byKey(const Key('goal-plan-pending')), findsOneWidget);
+      expect(find.byKey(const Key('goal-plan-reached')), findsNothing);
+      // 요약의 남은 수량 줄도 '목표 달성' 대신 '확인 대기'
+      expect(tester.widget<Text>(find.byKey(const Key('goal-remaining-amount'))).data, t.hodl_insights.goal_pending);
+      expect(reminders.scheduled.last.$1.enabled, isTrue);
+      expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_pending,
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('goal-reminder-off-reason')), findsNothing);
+      await _close(tester);
+    });
+
+    testWidgets('the reminder amount is dated by the last balance sync, not today', (tester) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        dataNow: DateTime(2026, 11, 12, 10),
+        lastSyncedAt: () => DateTime(2026, 11, 10, 8),
+        initialPrefs: {
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      // 오프라인으로 열어 옛 잔액을 보여 줄 때 '오늘' 기준이라고 하지 않는다
+      expect(reminders.scheduled.last.$3.body, contains('2026.11.10'));
+      expect(reminders.scheduled.last.$3.body, isNot(contains('2026.11.12')));
+      final preview = tester.widget<Text>(find.byKey(const Key('goal-reminder-preview-body')));
+      expect(preview.semanticsLabel, contains('2026.11.10'));
+      await _close(tester);
+    });
+
+    testWidgets('before the first balance sync the reminder leaves the amount out and says why', (tester) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        lastSyncedAt: () => null,
+        initialPrefs: {
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-option')));
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_unsynced,
+        ),
+        findsOneWidget,
+      );
+      expect(reminders.scheduled.last.$1.enabled, isTrue);
+      expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
+      await _close(tester);
+    });
+
+    testWidgets('different goals on one account keep the amount out of reminders until they are tidied', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders();
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        // 같은 지갑 정보(같은 계정). 목표 1 BTC·2 BTC → 큰 목표로 세고, 정리 전에는 알림에 수량을 넣지 않는다(결정 ⑦ 11/12)
+        walletList: [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)],
+        targetSatsOf: (id) => id == 1 ? 100000000 : 200000000,
+        initialPrefs: {
+          SharedPrefKeys.kGoalReminder: jsonEncode(
+            const GoalReminderSettings(enabled: true, showAmount: true).toJson(),
+          ),
+        },
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(reminders.scheduled.last.$1.enabled, isTrue);
+      expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_conflict,
+        ),
+        findsOneWidget,
+      );
+      await _close(tester);
+    });
+
+    // 카드 9(★ 고른 범위를 따르기, "화면과 알림 숫자가 늘 같아요"): 인사이트 선택을 저장한 적 없이 지갑 하나만 담은
+    // 홈 위젯으로 들어오면 목표 화면은 그 위젯 범위로 보인다. 앱 전체 알림 맞춤(GoalReminderSync)도 같은 범위여야 한다.
+    // 서로 다른 계정 A(1번) 0.5/1 BTC는 미달성, B(2번) 2/1 BTC. 전체로 보면 2.5/2 BTC라 달성으로 알림을 끌 수 있다
+    // (Astra landing-ab)
+    testWidgets('the app-wide reminder sync keeps the scope of the goal screen opened from a one-wallet widget', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders();
+      _testBalances[1] = Balance(50000000, 0);
+      _testBalances[2] = Balance(200000000, 0);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        dataNow: DateTime(2026, 11, 12, 10),
+        withReminderSync: true,
+        targetSatsOf: (id) => 100000000,
+        // 홈 위젯이 자기 범위(1번 지갑)를 넘기고, 저장된 인사이트 선택은 없다(builtin_home_widgets의 인사이트 열기와 같음)
+        screen:
+            (_) => GoalAmountScreen(
+              viewModel: HodlInsightsViewModel(
+                _widgetsViewModel!,
+                walletIds: const [1],
+                selectionRepository: SharedPrefsRepository(),
+              ),
+            ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(SharedPrefsRepository().hasSavedHodlInsightsWalletSelection, isFalse);
+      // 목표 화면: 1번 지갑만, 아직 50%
+      expect(tester.widget<Text>(find.byKey(const Key('goal-progress-percent'))).data, '50.0%');
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-card')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-toggle')));
+      await tester.tap(find.byKey(const Key('goal-reminder-amount-toggle')));
+      await tester.pumpAndSettle();
+      final screenBody = reminders.scheduled.last.$3.body;
+      expect(screenBody, contains('BTC'));
+
+      // 앱 전체 맞춤이 한 번 돈다(잔액·시세가 바뀌거나 앱으로 돌아올 때와 같음)
+      await _reminderSync!.run();
+      await tester.pumpAndSettle();
+      final saved = GoalReminderSettings.fromJsonString(
+        SharedPrefsRepository().getString(SharedPrefKeys.kGoalReminder),
+      );
+      // 화면 범위(1번 지갑, 미달성)와 같게: 알림은 켜진 채이고 수량도 화면이 건 것과 같다
+      expect((saved.enabled, saved.offReason), (true, null));
+      expect(reminders.scheduled.last.$3.body, screenBody);
+      await _close(tester);
+    });
+
+    // B5 다시 걸기(home-claude Fold 11/16): 목표 화면을 연 채 오늘 알림 시각이 지나 다시 그려도 오늘 알림을 지우지 않는다
+    testWidgets('the goal screen left open past the reminder time refills without clearing today\'s reminder', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders();
+      var clock = DateTime(2026, 11, 12, 20);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        clock: () => clock,
+        initialPrefs: {SharedPrefKeys.kGoalReminder: jsonEncode(const GoalReminderSettings(enabled: true).toJson())},
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      // 처음 거는 것은 전부 지우고 건다(목요일 21시, 매주)
+      expect(reminders.keeps, [false]);
+      // 21:01: 화면은 그대로이고 잔액·시세 갱신으로 다시 그린다
+      clock = DateTime(2026, 11, 12, 21, 1);
+      _widgetsViewModel!.refresh();
+      await tester.pumpAndSettle();
+      expect(reminders.keeps, [false, true]);
+      expect(reminders.cancels, 0);
+      expect(reminders.lastTimes.first, DateTime(2026, 11, 19, 21));
+      await _close(tester);
+    });
+
+    // Astra P2(landing-ab 11/16): 범위 키 쓰기를 기기가 거절하면 캐시를 되돌린다. 저장된 범위처럼 남지 않고 다음 맞춤에서 다시 쓴다
+    for (final throwsOnWrite in [false, true]) {
+      testWidgets(
+        'a goal reminder scope the device did not save is written again on the next redraw ($throwsOnWrite)',
+        (tester) async {
+          _useFakeReminders();
+          late NavigatorState navigator;
+          await _openWidgetsTab(
+            tester,
+            fake: false,
+            disableAnimations: true,
+            screen:
+                (_) => Scaffold(
+                  body: Builder(
+                    builder: (context) {
+                      navigator = Navigator.of(context);
+                      return const SizedBox();
+                    },
+                  ),
+                ),
+          );
+          final originalStore = SharedPreferencesStorePlatform.instance;
+          final cache = await SharedPreferences.getInstance();
+          final store = _FailingInsightsStore(
+            {for (final key in cache.getKeys()) 'flutter.$key': cache.get(key)!},
+            throwsOnWrite: throwsOnWrite,
+            failingKey: SharedPrefKeys.kGoalReminderWalletIds,
+          );
+          SharedPreferencesStorePlatform.instance = store;
+          addTearDown(() => SharedPreferencesStorePlatform.instance = originalStore);
+          final prefs = SharedPrefsRepository();
+          unawaited(
+            navigator.push(
+              MaterialPageRoute<void>(
+                builder:
+                    (_) => GoalAmountScreen(
+                      viewModel: HodlInsightsViewModel(
+                        _widgetsViewModel!,
+                        walletIds: const [1],
+                        selectionRepository: prefs,
+                      ),
+                    ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          // 거절된 범위는 캐시에도 남지 않는다
+          expect(prefs.getGoalReminderWalletIds(), isNull);
+          // 저장소가 다시 받으면 다음 맞춤(잔액·시세 갱신 등)에서 다시 쓴다
+          store.fail = false;
+          _widgetsViewModel!.refresh();
+          await tester.pumpAndSettle();
+          await prefs.sharedPrefs.reload();
+          expect(prefs.getGoalReminderWalletIds(), [1]);
+          expect(tester.takeException(), isNull);
+          await _close(tester);
+        },
+      );
+    }
+
+    testWidgets('a goal reached with confirmed coins turns the reminder off, says why and keeps it off', (
+      tester,
+    ) async {
+      final reminders = _useFakeReminders();
+      _testBalances[1] = Balance(11000000, 0);
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        targetSatsOf: (id) => id == 1 ? 10000000 : null,
+        initialPrefs: {SharedPrefKeys.kGoalReminder: jsonEncode(const GoalReminderSettings(enabled: true).toJson())},
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!, walletIds: const [1])),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final saved = GoalReminderSettings.fromJsonString(
+        SharedPrefsRepository().getString(SharedPrefKeys.kGoalReminder),
+      );
+      expect(saved.enabled, isFalse);
+      expect(saved.offReason, GoalReminderOffReason.reached);
+      expect(reminders.cancels, greaterThan(0));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-card')));
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_off_reached),
+        findsOneWidget,
+      );
+      // 채운 동안에는 켤 수 없다.
+      expect(
+        tester.getSemantics(find.byKey(const Key('goal-reminder-toggle'))),
         containsSemantics(hasEnabledState: true, isEnabled: false, hasTapAction: false),
       );
       await _close(tester);
@@ -3242,6 +3645,24 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(HodlInsightsScreen), findsNothing);
         expect(find.byKey(const Key('reminder-test-home')), findsOneWidget);
+        await _close(tester);
+      });
+
+      // 카드 9: 알림을 누르면 알림과 같은 범위로 연다. 인사이트 선택을 저장한 적 없으면 목표 화면이 마지막으로 맞춘 범위
+      testWidgets('opens with the wallet scope the reminder follows', (tester) async {
+        _useFakeReminders();
+        await openHome(tester);
+        await SharedPrefsRepository().setGoalReminderWalletIds(const [1]);
+        unawaited(
+          GoalAmountScreen.pushFromReminder(navigator, () => GoalAmountScreen.reminderViewModel(_widgetsViewModel!)),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.widget<GoalAmountScreen>(find.byType(GoalAmountScreen)).viewModel.walletIds, [1]);
+        // 인사이트 선택을 저장했으면 그쪽이 먼저다(인사이트 화면과 같음)
+        await SharedPrefsRepository().setHodlInsightsWalletIds(const [2]);
+        final saved = GoalAmountScreen.reminderViewModel(_widgetsViewModel!);
+        addTearDown(saved.dispose);
+        expect(saved.walletIds, [2]);
         await _close(tester);
       });
 
@@ -4575,14 +4996,21 @@ void main() {
 }
 
 class _FailingInsightsStore extends InMemorySharedPreferencesStore {
-  _FailingInsightsStore(super.data, {required this.throwsOnWrite}) : super.withData();
+  _FailingInsightsStore(
+    super.data, {
+    required this.throwsOnWrite,
+    this.failingKey = SharedPrefKeys.kHodlInsightsWalletIds,
+  }) : super.withData();
 
   final bool throwsOnWrite;
+
+  /// 쓰기를 거절할 키
+  final String failingKey;
   bool fail = true;
 
   @override
   Future<bool> setValue(String valueType, String key, Object value) async {
-    if (fail && key.endsWith(SharedPrefKeys.kHodlInsightsWalletIds)) {
+    if (fail && key.endsWith(failingKey)) {
       if (throwsOnWrite) throw StateError('storage unavailable');
       return false;
     }
@@ -4614,7 +5042,11 @@ String _dotted(DateTime date) =>
 class _FakeReminderScheduler implements GoalReminderScheduler {
   bool grant;
   final List<(GoalReminderSettings, GoalPlanCycle, GoalReminderContent)> scheduled = [];
+  List<DateTime> lastTimes = const [];
   int cancels = 0;
+
+  /// 예약마다 keepBooked(참이면 지우지 않고 채우기만)
+  final List<bool> keeps = [];
   int settingsOpened = 0;
 
   _FakeReminderScheduler({this.grant = true});
@@ -4626,8 +5058,17 @@ class _FakeReminderScheduler implements GoalReminderScheduler {
   Future<bool> requestPermission() async => grant;
 
   @override
-  Future<void> schedule(GoalReminderSettings settings, GoalPlanCycle cycle, GoalReminderContent content) async =>
-      scheduled.add((settings, cycle, content));
+  Future<void> schedule(
+    GoalReminderSettings settings,
+    GoalPlanCycle cycle,
+    GoalReminderContent content,
+    List<DateTime> times, {
+    bool keepBooked = false,
+  }) async {
+    scheduled.add((settings, cycle, content));
+    keeps.add(keepBooked);
+    lastTimes = times;
+  }
 
   @override
   Future<void> cancel() async => cancels++;

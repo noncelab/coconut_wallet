@@ -46,6 +46,13 @@ class SharedPrefKeys {
   /// 모으기 알림 설정(JSON): 켜짐, 시각, 요일·날짜, 수량 표시
   static const String kGoalReminder = 'GOAL_REMINDER';
 
+  /// 기기에 걸어 둔 모으기 알림 예약(JSON): 일정·목표 범위와 넣은 수량·기준일. 동기화를 기다리는 동안 일정·목표 범위가
+  /// 같으면 이 수량을 그대로 둔다(6-2 A). 예약을 바꾸기 시작하면 지우고, 성공하면 쓴다
+  static const String kGoalReminderBooked = 'GOAL_REMINDER_BOOKED';
+
+  /// 모으기 알림이 따르는 지갑 범위: 목표 화면이 마지막으로 알림을 맞춘 범위(카드 9). 인사이트 선택을 저장하지 않았을 때 쓴다
+  static const String kGoalReminderWalletIds = 'GOAL_REMINDER_WALLET_IDS';
+
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
@@ -162,6 +169,8 @@ class SharedPrefKeys {
     kGoalPlanWeekday,
     kGoalPlanDay,
     kGoalReminder,
+    kGoalReminderBooked,
+    kGoalReminderWalletIds,
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,

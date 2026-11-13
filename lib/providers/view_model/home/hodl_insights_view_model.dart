@@ -54,11 +54,17 @@ class HodlInsightsViewModel extends ChangeNotifier {
     _data.addListener(_onDataChanged);
   }
 
+  /// 저장된 지갑 선택에서 사라진 지갑을 뺀다. 남은 지갑이 없으면 전체(null). 모으기 알림도 이 범위를 쓴다.
+  static List<int>? prunedSelection(List<int>? walletIds, Iterable<int> existingIds) {
+    if (walletIds == null) return null;
+    final existing = existingIds.toSet();
+    final validIds = walletIds.where(existing.contains).toList();
+    return validIds.isEmpty ? null : validIds;
+  }
+
   void _pruneWalletSelection() {
     if (_data.isWalletDataLoading || _walletIds == null) return;
-    final existingIds = _data.wallets.map((wallet) => wallet.id).toSet();
-    final validIds = _walletIds!.where(existingIds.contains).toList();
-    final nextIds = validIds.isEmpty ? null : validIds;
+    final nextIds = prunedSelection(_walletIds, _data.wallets.map((wallet) => wallet.id));
     if (listEquals(nextIds, _walletIds)) return;
     _walletIds = nextIds;
     onWalletSelectionPruned?.call(nextIds == null ? null : List.unmodifiable(nextIds));

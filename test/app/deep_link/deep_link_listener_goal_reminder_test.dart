@@ -32,7 +32,13 @@ class _Scheduler implements GoalReminderScheduler {
   Future<bool> requestPermission() async => true;
 
   @override
-  Future<void> schedule(GoalReminderSettings settings, GoalPlanCycle cycle, GoalReminderContent content) async {}
+  Future<void> schedule(
+    GoalReminderSettings settings,
+    GoalPlanCycle cycle,
+    GoalReminderContent content,
+    List<DateTime> times, {
+    bool keepBooked = false,
+  }) async {}
 
   @override
   Future<void> cancel() async {}

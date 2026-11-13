@@ -120,6 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
       allFeaturesHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAllFeaturesHintDismissed),
       onAllFeaturesHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAllFeaturesHintDismissed, true),
     );
+    // 마지막 동기화 시각(알림 수량의 기준일)은 지갑 안전 점검이 기록한다
+    final safety = context.read<SafetyProvider?>();
     _widgetsViewModel = HomeWidgetsViewModel(
       walletProvider: context.read<WalletProvider>(),
       preferenceProvider: context.read<PreferenceProvider>(),
@@ -128,7 +130,9 @@ class _HomeScreenState extends State<HomeScreen> {
       walletUpdates: Listenable.merge([
         context.read<NodeProvider>(),
         context.read<NodeProvider>().currentBlockNotifier,
+        if (safety != null) safety,
       ]),
+      lastSyncedAt: safety == null ? null : () => safety.state.lastSuccessfulSyncAt,
       isWalletSynced: context.read<NodeProvider>().isWalletSynced,
     );
   }

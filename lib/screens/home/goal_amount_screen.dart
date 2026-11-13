@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -7,6 +10,7 @@ import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_mode
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/safety_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -21,6 +25,8 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/text/label_value_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
 import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder_sync.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_reminder_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -65,22 +71,37 @@ class GoalAmountScreen extends StatefulWidget {
   /// 지금 열려 있는 목표 수량 화면의 route. 알림을 눌렀을 때 같은 화면을 또 쌓지 않으려고 기억한다.
   static final List<Route<dynamic>> _openRoutes = [];
 
-  /// 모으기 알림을 눌러 들어올 때. 홈 위젯 데이터 없이 인사이트에서 저장한 지갑 선택으로 연다.
+  /// 알림을 눌러 열 때의 인사이트 뷰모델. 알림과 같은 범위로 연다(카드 9): 인사이트에서 저장한 지갑 선택,
+  /// 저장한 적 없으면 목표 화면이 마지막으로 알림을 맞춘 범위.
+  static HodlInsightsViewModel reminderViewModel(HomeWidgetsViewModel data) => HodlInsightsViewModel(
+    data,
+    initialSection: HodlInsightsSection.goal,
+    walletIds: SharedPrefsRepository().getGoalReminderWalletIds(),
+    selectionRepository: SharedPrefsRepository(),
+  );
+
+  /// 모으기 알림을 눌러 들어올 때. 홈 위젯 데이터 없이 알림과 같은 지갑 범위로 연다([reminderViewModel]).
   static Future<void> openFromReminder(NavigatorState navigator, BuildContext context) {
     final nodeProvider = context.read<NodeProvider>();
+    // 마지막 동기화 시각(알림 수량의 기준일)은 지갑 안전 점검이 기록한다
+    final safety = context.read<SafetyProvider?>();
     return pushFromReminder(
       navigator,
-      () => HodlInsightsViewModel(
+      () => reminderViewModel(
         HomeWidgetsViewModel(
           walletProvider: context.read<WalletProvider>(),
           preferenceProvider: context.read<PreferenceProvider>(),
           priceProvider: context.read<PriceProvider>(),
           targetSatsOf: SharedPrefsRepository().getWalletTargetSats,
-          walletUpdates: Listenable.merge([nodeProvider, nodeProvider.currentBlockNotifier]),
+          walletUpdates: Listenable.merge([
+            nodeProvider,
+            nodeProvider.currentBlockNotifier,
+            if (safety != null) safety,
+          ]),
+          lastSyncedAt: safety == null ? null : () => safety.state.lastSuccessfulSyncAt,
+          isWalletSynced: nodeProvider.isWalletSynced,
           usesFakeBalance: false,
         ),
-        initialSection: HodlInsightsSection.goal,
-        selectionRepository: SharedPrefsRepository(),
       ),
     );
   }
@@ -133,8 +154,11 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> with WidgetsBinding
   }
 
   /// 모으기 계획과 모으기 알림. 알림은 계획의 주기와 이번에 모을 수량을 따른다.
+  /// 앱 전체 알림 맞춤([GoalReminderSync])이 있으면 그 알림 컨트롤러를 같이 써서 설정이 둘로 갈리지 않게 한다.
   late final GoalPlanController _plan = GoalPlanController();
-  late final GoalReminderController _reminder = GoalReminderController();
+  late final GoalReminderSync? _sharedSync = context.read<GoalReminderSync?>();
+  late final GoalReminderController _reminder =
+      _sharedSync?.reminder ?? GoalReminderController(clock: () => widget.viewModel.data.now);
 
   @override
   void initState() {
@@ -154,19 +178,27 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> with WidgetsBinding
     if (_route != null) GoalAmountScreen._openRoutes.remove(_route);
     WidgetsBinding.instance.removeObserver(this);
     _plan.dispose();
-    _reminder.dispose();
+    if (_sharedSync == null) _reminder.dispose();
     super.dispose();
   }
 
-  /// 그린 뒤에 예약을 지금 계획·설정에 맞춘다. 내용이 같으면 다시 예약하지 않는다.
-  void _syncReminder(int? amountSats) {
-    final settings = _reminder.settings;
-    final content = GoalReminderContent.of(
-      _plan.cycle,
-      amount: settings.showAmount && amountSats != null ? _text(amountSats) : null,
-    );
+  /// 그린 뒤에 알림을 [status]대로 맞춘다(꺼야 하면 이유와 함께 끄고, 예약은 계획의 모으는 날·지금 내용으로).
+  /// 내용이 같으면 다시 예약하지 않는다. 다시 켜는 것은 사용자만 한다.
+  void _applyReminderAfterFrame(GoalReminderStatus status, DateTime now) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _reminder.sync(_plan.cycle, content);
+      if (!mounted) return;
+      // 앱 전체 알림 맞춤(GoalReminderSync)과 알림 탭도 이 화면 범위를 따르게 남긴다(카드 9)
+      final prefs = SharedPrefsRepository();
+      final scope = viewModel.walletIds;
+      // 저장하지 못하면 캐시가 되돌아가 다음 맞춤에서 다시 쓴다(저장된 범위처럼 남지 않음)
+      if (!listEquals(prefs.getGoalReminderWalletIds(), scope)) {
+        unawaited(
+          prefs.setGoalReminderWalletIds(scope).catchError((Object error) {
+            Logger.error('Failed to save the goal reminder wallet scope: $error');
+          }),
+        );
+      }
+      _reminder.apply(status, _plan, now, amountText: _text);
     });
   }
 
@@ -203,13 +235,38 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> with WidgetsBinding
         // 범위는 늘 목표를 정한 지갑 전체(합산 기준). 같은 계정은 한 번, 목표가 다르면 큰 목표(결정 ⑦).
         // 지갑 하나씩은 아래 '지갑별 목표'가 지갑마다 따로 보여 준다.
         final sum = viewModel.goalSum;
-        final targeted = GoalAmountSummary.targetedOf(viewModel.goalShares);
+        final shares = viewModel.goalShares;
+        final targeted = GoalAmountSummary.targetedOf(shares);
         final multiple = targeted.length > 1;
         final goal = sum.goal;
-        // 모으기 계획이 있을 때만(목표가 있고 아직 못 채움) 이번에 모을 수량이 있다.
-        final remaining = goal == null ? 0 : goal.target - goal.balance;
-        final amountSats = remaining > 0 ? _plan.perInstallment(remaining, viewModel.data.now) : null;
-        _syncReminder(amountSats);
+        // 목표 달성은 확인된 잔액(계정당 한 번)으로 정한다. 확인 전 입금으로 넘었으면 확인될 때까지 '확인 대기'
+        final reachedConfirmed = sum.reached;
+        // 알림을 끌지·수량을 넣을지는 앱 전체 알림 맞춤(GoalReminderSync)과 같은 규칙으로 정한다.
+        final data = viewModel.data;
+        final now = data.now;
+        final status = GoalReminderStatus.of(
+          sum: sum,
+          plan: _plan,
+          now: now,
+          walletsLoaded: !data.isWalletDataLoading,
+          hidesBalance: data.hidesBalance,
+          lastSyncedAt: data.lastSyncedAt,
+          scope: shares,
+        );
+        // 지갑을 다 불러오기 전에는 목표가 없어 보일 수 있어 알림을 맞추지 않는다(앱 전체 맞춤과 같음, UX X6)
+        if (!data.isWalletDataLoading) _applyReminderAfterFrame(status, now);
+        // 동기화를 기다리는 동안 일정·목표가 걸어 둔 예약과 같으면 그 예약의 수량과 기준일을 보여 준다(6-2 A)
+        final shown = _reminder.shown(status, _plan, now);
+        // 알림에 수량을 넣지 않는 이유. 하나만 보여 준다.
+        final amountUnavailableReason = switch (shown.block) {
+          GoalReminderAmountBlock.reached => t.hodl_insights.goal_reminder_amount_disabled_reached,
+          GoalReminderAmountBlock.pending => t.hodl_insights.goal_reminder_amount_disabled_pending,
+          GoalReminderAmountBlock.hidden => t.hodl_insights.goal_reminder_amount_disabled_hidden,
+          // 같은 계정에 서로 다른 목표가 있으면 정리하기 전까지 수량 없이 일정만(결정 ⑦ 11/12)
+          GoalReminderAmountBlock.conflict => t.hodl_insights.goal_reminder_amount_disabled_conflict,
+          GoalReminderAmountBlock.unsynced => t.hodl_insights.goal_reminder_amount_disabled_unsynced,
+          null => null,
+        };
         return Scaffold(
           backgroundColor: colors.homeBackground,
           appBar: CoconutAppBar.build(
@@ -305,19 +362,21 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> with WidgetsBinding
                     fiatText: _fiat,
                     awaitingConfirmation: sum.awaitingConfirmation,
                     amountOnHold: sum.hasUnsettledAccounts,
+                    onDeadlineReset: () => _reminder.turnOff(GoalReminderOffReason.deadlinePassed),
+                  ),
+                  // 알림은 계획의 모으는 날을 따르므로 목표가 있을 때만 보인다.
+                  CoconutLayout.spacing_400h,
+                  GoalReminderCard(
+                    reminder: _reminder,
+                    plan: _plan,
+                    today: viewModel.data.now,
+                    amountSats: shown.amountSats,
+                    amountAsOf: shown.asOf,
+                    amountUnavailableReason: amountUnavailableReason,
+                    canEnable: !reachedConfirmed,
+                    amountText: _text,
                   ),
                 ],
-                CoconutLayout.spacing_400h,
-                GoalReminderCard(
-                  reminder: _reminder,
-                  plan: _plan,
-                  amountSats: amountSats,
-                  amountUnavailableReason:
-                      goal == null
-                          ? t.hodl_insights.goal_reminder_amount_disabled_no_goal
-                          : t.hodl_insights.goal_reminder_amount_disabled_reached,
-                  amountText: _text,
-                ),
               ],
             ),
           ),

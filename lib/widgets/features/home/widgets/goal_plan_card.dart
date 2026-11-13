@@ -339,6 +339,9 @@ class GoalPlanCard extends StatefulWidget {
   /// 같은 계정 지갑끼리 잔액이 달라 확인 대기 중(B1-a). 회당 수량과 달성을 미루고 그 이유 한 줄
   final bool amountOnHold;
 
+  /// 지난 마감일을 오늘부터 3개월로 다시 잡았을 때(화면이 알림을 끄려고 듣는다)
+  final VoidCallback? onDeadlineReset;
+
   const GoalPlanCard({
     super.key,
     required this.remainingSats,
@@ -349,6 +352,7 @@ class GoalPlanCard extends StatefulWidget {
     this.first,
     this.awaitingConfirmation = false,
     this.amountOnHold = false,
+    this.onDeadlineReset,
   });
 
   @override
@@ -377,7 +381,10 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
       // 마감일이 실제로 지났을 때만 알린다(고를 수 없는 먼 날짜·손상된 값을 다시 잡을 때는 알리지 않는다).
       final expired = _controller.isExpiredOn(today);
       final previous = _controller.settle(today);
-      if (expired && previous != null && mounted) setState(() => _resetFrom = previous);
+      if (expired && previous != null && mounted) {
+        setState(() => _resetFrom = previous);
+        widget.onDeadlineReset?.call();
+      }
     });
   }
 
