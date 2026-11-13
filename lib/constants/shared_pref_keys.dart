@@ -46,6 +46,9 @@ class SharedPrefKeys {
   /// 모으기 알림 설정(JSON): 켜짐, 시각, 요일·날짜, 수량 표시
   static const String kGoalReminder = 'GOAL_REMINDER';
 
+  /// 모으기 알림 예약을 지우는 중이거나 지우지 못함: 다음 실행에서 설정이 꺼져 있어도 다시 지운다(B2-초기화)
+  static const String kGoalReminderCancelPending = 'GOAL_REMINDER_CANCEL_PENDING';
+
   /// 기기에 걸어 둔 모으기 알림 예약(JSON): 일정·목표 범위와 넣은 수량·기준일. 동기화를 기다리는 동안 일정·목표 범위가
   /// 같으면 이 수량을 그대로 둔다(6-2 A). 예약을 바꾸기 시작하면 지우고, 성공하면 쓴다
   static const String kGoalReminderBooked = 'GOAL_REMINDER_BOOKED';

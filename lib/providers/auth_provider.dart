@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -172,7 +173,19 @@ class AuthProvider extends ChangeNotifier {
     _pinLength = 0;
 
     await _secureStorageService.deleteAll();
-    await _sharedPrefs.deleteMultipleKeys(SharedPrefKeys.keysToReset);
+    // 모으기 알림 설정 키만 지우면 기기에 예약한 알림이 남는다(B⑥ 버그 #2). 키를 지우기 전에 새 맞춤을 막고 '다음 실행에
+    // 다시 지움' 표시를 남겨, 진행 중인 예약을 기다리다 앱이 꺼져도 다음 실행이 지운다(R3). 예약이 끝나면 마지막으로 지우고,
+    // 지우지 못하면 다음 실행에서 다시 지운다. 키 지우기가 실패해도 막아 둔 알림은 풀고, 초기화는 이어 간다
+    await GoalReminderController.beginAppReset();
+    try {
+      await _sharedPrefs.deleteMultipleKeys(SharedPrefKeys.keysToReset);
+    } finally {
+      try {
+        await GoalReminderController.resetForAppReset();
+      } catch (error) {
+        Logger.error('Failed to reset goal reminders: $error');
+      }
+    }
     await WalletBackgroundPhotoStore().deleteAll();
     await checkDeviceBiometrics();
   }

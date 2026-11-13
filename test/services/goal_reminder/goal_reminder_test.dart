@@ -370,6 +370,57 @@ void main() {
     });
   });
 
+  // F4(B2-초기화): 초기화는 컨트롤러 줄에 탄다. 진행 중인 예약이 끝난 뒤 마지막으로 지우고, 그 사이 새 맞춤은 받지 않는다
+  group('GoalReminderController reset and cleanup', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({
+        SharedPrefKeys.kGoalReminder: jsonEncode(const GoalReminderSettings(enabled: true, showAmount: true).toJson()),
+      });
+      await SharedPrefsRepository().init();
+    });
+
+    test('a reset waits for the schedule in progress, ignores new requests and cancels last', () async {
+      final scheduler = _GatedScheduler();
+      final controller = GoalReminderController(scheduler: scheduler, clock: () => DateTime(2026, 11, 12, 10));
+      addTearDown(controller.dispose);
+      const amount = GoalReminderContent('t', '0.01 BTC (2026.11.12)');
+      final inFlight = controller.sync(GoalPlanCycle.weekly, amount);
+      await pumpEventQueue();
+      expect(scheduler.log, ['schedule started']);
+      // 초기화는 설정 키를 지운 뒤 부른다
+      await SharedPrefsRepository().deleteSharedPrefsWithKey(SharedPrefKeys.kGoalReminder);
+      final reset = GoalReminderController.resetForAppReset();
+      await controller.sync(GoalPlanCycle.daily, amount);
+      scheduler.gate.complete();
+      await inFlight;
+      await reset;
+      // Astra 재현: 8·9판은 초기화의 취소가 먼저 끝나고 늦은 예약이 알림을 다시 만들었다
+      expect(scheduler.log, ['schedule started', 'schedule done', 'cancel']);
+      expect(controller.settings.enabled, isFalse);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kGoalReminderCancelPending), isFalse);
+    });
+
+    test('a cancel that fails is done again on the next run even though the reminder is now off', () async {
+      const content = GoalReminderContent('t', 'b');
+      final failing = _CountingScheduler(failCancel: true);
+      final before = GoalReminderController(scheduler: failing, clock: () => DateTime(2026, 11, 12, 10));
+      addTearDown(before.dispose);
+      await before.sync(GoalPlanCycle.weekly, content);
+      await before.setEnabled(false);
+      await before.sync(GoalPlanCycle.weekly, content);
+      expect(failing.cancels, 1);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kGoalReminderCancelPending), isTrue);
+      // 다음 실행: 설정은 꺼져 있지만 지우지 못한 표시가 남아 다시 지운다
+      final next = _CountingScheduler();
+      final after = GoalReminderController(scheduler: next, clock: () => DateTime(2026, 11, 12, 10));
+      addTearDown(after.dispose);
+      expect(after.settings.enabled, isFalse);
+      await after.sync(GoalPlanCycle.weekly, content);
+      expect(next.cancels, 1);
+      expect(SharedPrefsRepository().getBool(SharedPrefKeys.kGoalReminderCancelPending), isFalse);
+    });
+  });
+
   // B5 다시 걸기(home-claude Fold 11/16, Fable·Astra 교차): 알림 번호를 날짜에 묶고, 걸어 둔 일정과 같으면 지우지 않고
   // 채우기만 한다. 방금 지난(inexact라 아직 안 울렸을 수 있는) 오늘 알림과 이미 뜬 알림을 지우지 않는다
   group('GoalReminderController keeps today\'s reminder when it refills', () {
@@ -671,7 +722,52 @@ void main() {
       expect(controller.shown(statusOf([wallet(synced: false)]), plan, now).amountSats, isNull);
       expect(heard, 2);
     });
+
+    test('an app reset forgets the booked amount', () async {
+      await bookAndClose(_CountingScheduler());
+      expect(SharedPrefsRepository().getStringOrNull(SharedPrefKeys.kGoalReminderBooked), isNotNull);
+      expect(SharedPrefKeys.keysToReset, contains(SharedPrefKeys.kGoalReminderBooked));
+      await GoalReminderController.resetForAppReset(scheduler: _CountingScheduler());
+      expect(SharedPrefsRepository().getStringOrNull(SharedPrefKeys.kGoalReminderBooked), isNull);
+    });
   });
+}
+
+/// 예약을 붙잡아 두는 예약기(초기화와 진행 중인 예약의 순서를 본다)
+class _GatedScheduler implements GoalReminderScheduler {
+  final List<String> log = [];
+  final Completer<void> gate = Completer<void>();
+
+  @override
+  Future<void> schedule(
+    GoalReminderSettings settings,
+    GoalPlanCycle cycle,
+    GoalReminderContent content,
+    List<DateTime> times, {
+    bool keepBooked = false,
+  }) async {
+    log.add('schedule started');
+    await gate.future;
+    log.add('schedule done');
+  }
+
+  @override
+  Future<void> cancel() async => log.add('cancel');
+
+  @override
+  Future<bool?> hasPermission() async => true;
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> openSettings() async {}
+
+  @override
+  Stream<void> get taps => const Stream.empty();
+
+  @override
+  Future<bool> consumeLaunchTap() async => false;
 }
 
 class _CountingScheduler implements GoalReminderScheduler {
@@ -688,7 +784,10 @@ class _CountingScheduler implements GoalReminderScheduler {
   /// 다음 예약 하나를 일부만 쓰고 실패시킨다(날짜별로 쓰다 멈춤)
   bool partialFailNext = false;
 
-  _CountingScheduler({this.fail = false});
+  /// 지우기가 실패한다
+  final bool failCancel;
+
+  _CountingScheduler({this.fail = false, this.failCancel = false});
 
   /// 예약마다 [GoalReminderScheduler.schedule]의 keepBooked(참이면 지우지 않고 채우기만)
   final List<bool> keeps = [];
@@ -722,6 +821,7 @@ class _CountingScheduler implements GoalReminderScheduler {
   Future<void> cancel() async {
     calls++;
     cancels++;
+    if (failCancel) throw StateError('cancel failed');
   }
 
   @override

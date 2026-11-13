@@ -513,19 +513,87 @@ class GoalReminderController extends ChangeNotifier {
   /// 예약은 한 번에 하나씩 맞춘다(늦게 끝난 옛 예약이 새 예약을 덮지 않게).
   Future<void> _syncing = Future.value();
 
-  /// 기기에 예약된 알림이 있을 수 있는지. 한 번도 켜지 않았으면 지울 것이 없으니 플러그인을 부르지 않는다. 앞 실행의
-  /// 걸어 둔 예약 기록이 남았으면 꺼져 있어도 지운다.
+  /// 기기에 예약된 알림이 있을 수 있는지. 한 번도 켜지 않았으면 지울 것이 없으니 플러그인을 부르지 않는다. 앞 실행에서
+  /// 지우지 못한 표시나 걸어 둔 예약 기록이 남았으면 꺼져 있어도 지운다(B2-초기화).
   bool _mayHaveScheduled;
   final DateTime Function() _clock;
+
+  /// 앱 초기화 중이면 새·기다리는 맞춤을 받지 않는다
+  bool _resetting = false;
+
+  /// 살아 있는 컨트롤러. 앱 초기화가 같은 줄에 태워 정리한다([resetForAppReset])
+  static final Set<GoalReminderController> _live = {};
 
   GoalReminderController({GoalReminderScheduler? scheduler, DateTime Function()? clock})
     : this._(scheduler ?? GoalReminderScheduler.instance, _loadSettings(), clock ?? DateTime.now, _loadBooked());
 
   GoalReminderController._(this._scheduler, this._settings, this._clock, this._booked)
-    : _mayHaveScheduled = _settings.enabled || _booked != null;
+    : _mayHaveScheduled = _settings.enabled || _cancelPending() || _booked != null {
+    _live.add(this);
+  }
 
-  /// 기기 예약을 모두 지운다.
+  static bool _cancelPending() => _preferences?.getBool(SharedPrefKeys.kGoalReminderCancelPending) ?? false;
+
+  /// '다음 실행에 다시 지움' 표시를 쓰거나 지운다. 저장소가 쓰기를 받아들였는지 돌려준다.
+  static Future<bool> _setCancelPending(bool pending) async {
+    final preferences = _preferences;
+    if (preferences == null) return false;
+    try {
+      if (pending) return await preferences.setBoolAndConfirm(SharedPrefKeys.kGoalReminderCancelPending, true);
+      await preferences.deleteSharedPrefsWithKey(SharedPrefKeys.kGoalReminderCancelPending);
+      return true;
+    } catch (error) {
+      Logger.error('Failed to save the goal reminder cleanup mark: $error');
+      return false;
+    }
+  }
+
+  /// 앱 초기화(비밀번호 분실)가 키를 지우기 **전에** 부른다(R3). 살아 있는 컨트롤러의 새·기다리는 맞춤을 막고, '다음 실행에
+  /// 다시 지움' 표시를 먼저 남긴다. 그래서 초기화가 진행 중인 예약을 기다리는 동안 앱이 꺼져도 다음 실행이 예약을 지운다.
+  /// 표시를 저장했는지 돌려준다. 그 뒤 [resetForAppReset]이 마지막으로 지운다.
+  static Future<bool> beginAppReset() async {
+    for (final controller in _live) {
+      controller._resetting = true;
+    }
+    final saved = await _setCancelPending(true);
+    if (!saved) Logger.error('The goal reminder cleanup mark was not saved before the app reset');
+    return saved;
+  }
+
+  /// 앱 초기화(비밀번호 분실)에서 부른다(B⑥). 살아 있는 컨트롤러마다 새·기다리는 맞춤을 막고, 진행 중인 예약이 끝난 뒤
+  /// 마지막으로 기기 예약을 지운다. 컨트롤러가 없으면 잠깐 하나 만들어 지운다. 지우지 못하면 다음 실행에서 다시 지운다.
+  static Future<void> resetForAppReset({GoalReminderScheduler? scheduler}) async {
+    final live = _live.toList();
+    if (live.isEmpty) {
+      final controller = GoalReminderController(scheduler: scheduler);
+      try {
+        await controller._reset();
+      } finally {
+        controller.dispose();
+      }
+      return;
+    }
+    // 모두 한꺼번에 막는다: 차례로 기다리면 뒤 컨트롤러는 그동안 새 맞춤을 받는다
+    await Future.wait([for (final controller in live) controller._reset()]);
+  }
+
+  /// 같은 줄에 태워: 진행 중인 예약이 끝나면 기기 예약을 모두 지우고, 지워진 저장값으로 설정을 다시 읽는다
+  Future<void> _reset() {
+    _resetting = true;
+    return _syncing = _syncing.then((_) async {
+      await _cancelScheduled();
+      _settings = _loadSettings();
+      _applied = null;
+      _failed = null;
+      _permission = null;
+      _resetting = false;
+      _notify();
+    });
+  }
+
+  /// 기기 예약을 모두 지운다. 지우는 동안과 실패한 뒤에는 '다음 실행에 다시 지움' 표시를 남긴다.
   Future<bool> _cancelScheduled() async {
+    await _setCancelPending(true);
     _setBooked(null);
     await _storeBooked(null);
     try {
@@ -536,6 +604,7 @@ class GoalReminderController extends ChangeNotifier {
       return false;
     }
     _mayHaveScheduled = false;
+    await _setCancelPending(false);
     return true;
   }
 
@@ -651,6 +720,7 @@ class GoalReminderController extends ChangeNotifier {
     DateTime now, {
     required String Function(int sats) amountText,
   }) {
+    if (_resetting) return Future.value();
     if (status.offReason != null) turnOff(status.offReason!);
     final settings = _settingsOn(plan, now);
     final cycle = plan.cycle;
@@ -723,12 +793,13 @@ class GoalReminderController extends ChangeNotifier {
     int? dayOfMonth,
     DateTime? until,
   }) {
+    if (_resetting) return Future.value();
     final settings = _settings.copyWith(weekday: weekday, dayOfMonth: dayOfMonth);
     return _enqueue(() => _syncNow(settings, cycle, content, until, schedule: _scheduleOf(settings, cycle, until, '')));
   }
 
-  /// 예약은 한 번에 하나씩 맞춘다.
-  Future<void> _enqueue(Future<void> Function() run) => _syncing = _syncing.then((_) => run());
+  /// 예약은 한 번에 하나씩 맞춘다. 초기화 중이면 기다리던 것도 건너뛴다.
+  Future<void> _enqueue(Future<void> Function() run) => _syncing = _syncing.then((_) => _resetting ? null : run());
 
   Future<void> _syncNow(
     GoalReminderSettings settings,
@@ -795,6 +866,7 @@ class GoalReminderController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _live.remove(this);
     super.dispose();
   }
 }
